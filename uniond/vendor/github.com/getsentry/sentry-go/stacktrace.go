@@ -307,6 +307,9 @@ func createFrames(frames []runtime.Frame) []Frame {
 		}
 	}
 
+	// Fix issues grouping errors with the new fully qualified function names
+	// introduced from Go 1.21
+	result = cleanupFunctionNamePrefix(result)
 	return result
 }
 

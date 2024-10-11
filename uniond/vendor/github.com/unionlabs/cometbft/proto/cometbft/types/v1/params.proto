@@ -1,0 +1,149 @@
+syntax = "proto3";
+package cometbft.types.v1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/types/v1";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+
+option (gogoproto.equal_all) = true;
+
+// ConsensusParams contains consensus critical parameters that determine the
+// validity of blocks.
+message ConsensusParams {
+  BlockParams     block     = 1;
+  EvidenceParams  evidence  = 2;
+  ValidatorParams validator = 3;
+  VersionParams   version   = 4;
+  ABCIParams      abci      = 5 [deprecated = true]; // Use FeatureParams.vote_extensions_enable_height instead
+  SynchronyParams synchrony = 6;
+  FeatureParams   feature   = 7;
+}
+
+// BlockParams define limits on the block size and gas.
+message BlockParams {
+  // Maximum size of a block, in bytes.
+  //
+  // Must be greater or equal to -1 and cannot be greater than the hard-coded
+  // maximum block size, which is 100MB.
+  //
+  // If set to -1, the limit is the hard-coded maximum block size.
+  int64 max_bytes = 1;
+  // Maximum gas wanted by transactions included in a block.
+  //
+  // Must be greater or equal to -1. If set to -1, no limit is enforced.
+  int64 max_gas = 2;
+
+  reserved 3;  // was TimeIotaMs see https://github.com/tendermint/tendermint/pull/5792
+}
+
+// EvidenceParams determine the validity of evidences of Byzantine behavior.
+message EvidenceParams {
+  // Maximum age of evidence, in blocks.
+  //
+  // The recommended formula for calculating it is max_age_duration / {average
+  // block time}.
+  int64 max_age_num_blocks = 1;
+
+  // Maximum age of evidence, in time.
+  //
+  // The recommended value of is should correspond to the application's
+  // "unbonding period" or other similar mechanism for handling
+  // Nothing-At-Stake attacks.
+  // See: https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed.
+  google.protobuf.Duration max_age_duration = 2
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // Maximum size in bytes of evidence allowed to be included in a block.
+  //
+  // It should fall comfortably under the maximum size of a block.
+  int64 max_bytes = 3;
+}
+
+// ValidatorParams restrict the public key types validators can use.
+//
+// NOTE: uses ABCI public keys naming, not Amino names.
+message ValidatorParams {
+  option (gogoproto.populate) = true;
+  option (gogoproto.equal)    = true;
+
+  repeated string pub_key_types = 1;
+}
+
+// VersionParams contain the version of specific components of CometBFT.
+message VersionParams {
+  option (gogoproto.populate) = true;
+  option (gogoproto.equal)    = true;
+
+  // The ABCI application version.
+  //
+  // It was named app_version in CometBFT 0.34.
+  uint64 app = 1;
+}
+
+// HashedParams is a subset of ConsensusParams.
+//
+// It is hashed into the Header.ConsensusHash.
+message HashedParams {
+  int64 block_max_bytes = 1;
+  int64 block_max_gas   = 2;
+}
+
+// SynchronyParams determine the validity of block timestamps.
+//
+// These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.
+// For more information on the relationship of the synchrony parameters to
+// block timestamps validity, refer to the PBTS specification:
+// https://github.com/tendermint/spec/blob/master/spec/consensus/proposer-based-timestamp/README.md
+message SynchronyParams {
+  // Bound for how skewed a proposer's clock may be from any validator on the
+  // network while still producing valid proposals.
+  google.protobuf.Duration precision = 1
+      [(gogoproto.stdduration) = true];
+  // Bound for how long a proposal message may take to reach all validators on
+  // a network and still be considered valid.
+  google.protobuf.Duration message_delay = 2
+      [(gogoproto.stdduration) = true];
+}
+
+// FeatureParams configure the height from which features of CometBFT are enabled.
+message FeatureParams {
+  // Height during which vote extensions will be enabled.
+  //
+  // A value of 0 means vote extensions are disabled. A value > 0 denotes
+  // the height at which vote extensions will be (or have been) enabled.
+  //
+  // During the specified height, and for all subsequent heights, precommit
+  // messages that do not contain valid extension data will be considered
+  // invalid. Prior to this height, or when this height is set to 0, vote
+  // extensions will not be used or accepted by validators on the network.
+  //
+  // Once enabled, vote extensions will be created by the application in
+  // ExtendVote, validated by the application in VerifyVoteExtension, and
+  // used by the application in PrepareProposal, when proposing the next block.
+  //
+  // Cannot be set to heights lower or equal to the current blockchain height.
+  google.protobuf.Int64Value vote_extensions_enable_height = 1 [(gogoproto.nullable) = true];
+
+  // Height at which Proposer-Based Timestamps (PBTS) will be enabled.
+  //
+  // A value of 0 means PBTS is disabled. A value > 0 denotes the height at
+  // which PBTS will be (or has been) enabled.
+  //
+  // From the specified height, and for all subsequent heights, the PBTS
+  // algorithm will be used to produce and validate block timestamps. Prior to
+  // this height, or when this height is set to 0, the legacy BFT Time
+  // algorithm is used to produce and validate timestamps.
+  //
+  // Cannot be set to heights lower or equal to the current blockchain height.
+  google.protobuf.Int64Value pbts_enable_height = 2 [(gogoproto.nullable) = true];
+}
+
+// ABCIParams is deprecated and its contents moved to FeatureParams
+message ABCIParams {
+  option deprecated = true;
+  // vote_extensions_enable_height has been deprecated.
+  // Instead, use FeatureParams.vote_extensions_enable_height.
+  int64 vote_extensions_enable_height = 1;
+}

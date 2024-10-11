@@ -1,0 +1,29 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "analyzer.go",
+        "ineffassign.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/tools/analyzers/ineffassign",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@org_golang_x_tools//go/analysis:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/inspect:go_default_library",
+        "@org_golang_x_tools//go/ast/inspector:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["analyzer_test.go"],
+    data = glob(["testdata/**"]) + [
+        "@go_sdk//:files",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//build/bazel:go_default_library",
+        "@org_golang_x_tools//go/analysis/analysistest:go_default_library",
+    ],
+)

@@ -1,0 +1,30 @@
+syntax = "proto3";
+package cosmos.store.internal.kv.v1beta1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "cosmossdk.io/store/internal/kv";
+
+// This is duplicated from the base kv directory to avoid a circular dependency
+// with the cosmos-sdk
+
+// Pairs defines a repeated slice of Pair objects.
+//
+// Deprecated: Store v1 is deprecated as of v0.50.x, please use Store v2 types
+// instead.
+message Pairs {
+  option deprecated = true;
+
+  repeated Pair pairs = 1 [(gogoproto.nullable) = false];
+}
+
+// Pair defines a key/value bytes tuple.
+//
+// Deprecated: Store v1 is deprecated as of v0.50.x, please use Store v2 types
+// instead.
+message Pair {
+  option deprecated = true;
+
+  bytes key   = 1;
+  bytes value = 2;
+}

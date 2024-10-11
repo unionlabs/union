@@ -1,0 +1,18 @@
+name: 'Close stale issues and PRs'
+on:
+  schedule:
+    - cron: '00 02,14 * * *'
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          stale-issue-message: 'This issue has been stale for 60 days and will be closed automatically in 7 days. Comment to keep it open.'
+          stale-pr-message: 'This PR has been stale for 60 days and will be closed automatically in 7 days. Comment to keep it open.'
+          operations-per-run: 100

@@ -1,0 +1,355 @@
+syntax = "proto3";
+package cosmwasm.wasm.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmwasm/wasm/v1/types.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/wasm/types";
+option (gogoproto.goproto_stringer_all) = false;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.equal_all) = true;
+
+// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
+// an explicit StoreCodeProposal. To submit WASM code to the system,
+// a simple MsgStoreCode can be invoked from the x/gov module via
+// a v1 governance proposal.
+message StoreCodeProposal {
+  option deprecated = true;
+  option (amino.name) = "wasm/StoreCodeProposal";
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
+  // Title is a short summary
+  string title = 1;
+  // Description is a human readable text
+  string description = 2;
+  // RunAs is the address that is passed to the contract's environment as sender
+  string run_as = 3 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // WASMByteCode can be raw or gzip compressed
+  bytes wasm_byte_code = 4 [ (gogoproto.customname) = "WASMByteCode" ];
+  // Used in v1beta1
+  reserved 5, 6;
+  // InstantiatePermission to apply on contract creation, optional
+  AccessConfig instantiate_permission = 7;
+  // UnpinCode code on upload, optional
+  bool unpin_code = 8;
+  // Source is the URL where the code is hosted
+  string source = 9;
+  // Builder is the docker image used to build the code deterministically, used
+  // for smart contract verification
+  string builder = 10;
+  // CodeHash is the SHA256 sum of the code outputted by builder, used for smart
+  // contract verification
+  bytes code_hash = 11;
+}
+
+// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
+// an explicit InstantiateContractProposal. To instantiate a contract,
+// a simple MsgInstantiateContract can be invoked from the x/gov module via
+// a v1 governance proposal.
+message InstantiateContractProposal {
+  option deprecated = true;
+  option (amino.name) = "wasm/InstantiateContractProposal";
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
+  // Title is a short summary
+  string title = 1;
+  // Description is a human readable text
+  string description = 2;
+  // RunAs is the address that is passed to the contract's environment as sender
+  string run_as = 3 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // Admin is an optional address that can execute migrations
+  string admin = 4 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // CodeID is the reference to the stored WASM code
+  uint64 code_id = 5 [ (gogoproto.customname) = "CodeID" ];
+  // Label is optional metadata to be stored with a constract instance.
+  string label = 6;
+  // Msg json encoded message to be passed to the contract on instantiation
+  bytes msg = 7 [
+    (gogoproto.casttype) = "RawContractMessage",
+    (amino.encoding) = "inline_json"
+  ];
+  // Funds coins that are transferred to the contract on instantiation
+  repeated cosmos.base.v1beta1.Coin funds = 8 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.encoding) = "legacy_coins"
+  ];
+}
+
+// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
+// an explicit InstantiateContract2Proposal. To instantiate contract 2,
+// a simple MsgInstantiateContract2 can be invoked from the x/gov module via
+// a v1 governance proposal.
+message InstantiateContract2Proposal {
+  option deprecated = true;
+  option (amino.name) = "wasm/InstantiateContract2Proposal";
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
+  // Title is a short summary
+  string title = 1;
+  // Description is a human readable text
+  string description = 2;
+  // RunAs is the address that is passed to the contract's enviroment as sender
+  string run_as = 3 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // Admin is an optional address that can execute migrations
+  string admin = 4 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // CodeID is the reference to the stored WASM code
+  uint64 code_id = 5 [ (gogoproto.customname) = "CodeID" ];
+  // Label is optional metadata to be stored with a constract instance.
+  string label = 6;
+  // Msg json encode message to be passed to the contract on instantiation
+  bytes msg = 7 [
+    (gogoproto.casttype) = "RawContractMessage",
+    (amino.encoding) = "inline_json"
+  ];
+  // Funds coins that are transferred to the contract on instantiation
+  repeated cosmos.base.v1beta1.Coin funds = 8 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.encoding) = "legacy_coins"
+  ];
+  // Salt is an arbitrary value provided by the sender. Size can be 1 to 64.
+  bytes salt = 9;
+  // FixMsg include the msg value into the hash for the predictable address.
+  // Default is false
+  bool fix_msg = 10;
+}
+
+// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
+// an explicit MigrateContractProposal. To migrate a contract,
+// a simple MsgMigrateContract can be invoked from the x/gov module via
+// a v1 governance proposal.
+message MigrateContractProposal {
+  option deprecated = true;
+  option (amino.name) = "wasm/MigrateContractProposal";
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
+  // Title is a short summary
+  string title = 1;
+  // Description is a human readable text
+  string description = 2;
+  // Note: skipping 3 as this was previously used for unneeded run_as
+
+  // Contract is the address of the smart contract
+  string contract = 4 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // CodeID references the new WASM code
+  uint64 code_id = 5 [ (gogoproto.customname) = "CodeID" ];
+  // Msg json encoded message to be passed to the contract on migration
+  bytes msg = 6 [
+    (gogoproto.casttype) = "RawContractMessage",
+    (amino.encoding) = "inline_json"
+  ];
+}
+
+// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
+// an explicit SudoContractProposal. To call sudo on a contract,
+// a simple MsgSudoContract can be invoked from the x/gov module via
+// a v1 governance proposal.
+message SudoContractProposal {
+  option deprecated = true;
+  option (amino.name) = "wasm/SudoContractProposal";
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
+  // Title is a short summary
+  string title = 1;
+  // Description is a human readable text
+  string description = 2;
+  // Contract is the address of the smart contract
+  string contract = 3 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // Msg json encoded message to be passed to the contract as sudo
+  bytes msg = 4 [
+    (gogoproto.casttype) = "RawContractMessage",
+    (amino.encoding) = "inline_json"
+  ];
+}
+
+// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
+// an explicit ExecuteContractProposal. To call execute on a contract,
+// a simple MsgExecuteContract can be invoked from the x/gov module via
+// a v1 governance proposal.
+message ExecuteContractProposal {
+  option deprecated = true;
+  option (amino.name) = "wasm/ExecuteContractProposal";
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
+  // Title is a short summary
+  string title = 1;
+  // Description is a human readable text
+  string description = 2;
+  // RunAs is the address that is passed to the contract's environment as sender
+  string run_as = 3 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // Contract is the address of the smart contract
+  string contract = 4 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // Msg json encoded message to be passed to the contract as execute
+  bytes msg = 5 [
+    (gogoproto.casttype) = "RawContractMessage",
+    (amino.encoding) = "inline_json"
+  ];
+  // Funds coins that are transferred to the contract on instantiation
+  repeated cosmos.base.v1beta1.Coin funds = 6 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.encoding) = "legacy_coins"
+  ];
+}
+
+// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
+// an explicit UpdateAdminProposal. To set an admin for a contract,
+// a simple MsgUpdateAdmin can be invoked from the x/gov module via
+// a v1 governance proposal.
+message UpdateAdminProposal {
+  option deprecated = true;
+  option (amino.name) = "wasm/UpdateAdminProposal";
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
+  // Title is a short summary
+  string title = 1;
+  // Description is a human readable text
+  string description = 2;
+  // NewAdmin address to be set
+  string new_admin = 3 [
+    (gogoproto.moretags) = "yaml:\"new_admin\"",
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  // Contract is the address of the smart contract
+  string contract = 4 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+}
+
+// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
+// an explicit ClearAdminProposal. To clear the admin of a contract,
+// a simple MsgClearAdmin can be invoked from the x/gov module via
+// a v1 governance proposal.
+message ClearAdminProposal {
+  option deprecated = true;
+  option (amino.name) = "wasm/ClearAdminProposal";
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
+  // Title is a short summary
+  string title = 1;
+  // Description is a human readable text
+  string description = 2;
+  // Contract is the address of the smart contract
+  string contract = 3 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+}
+
+// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
+// an explicit PinCodesProposal. To pin a set of code ids in the wasmvm
+// cache, a simple MsgPinCodes can be invoked from the x/gov module via
+// a v1 governance proposal.
+message PinCodesProposal {
+  option deprecated = true;
+  option (amino.name) = "wasm/PinCodesProposal";
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
+  // Title is a short summary
+  string title = 1;
+  // Description is a human readable text
+  string description = 2;
+  // CodeIDs references the new WASM codes
+  repeated uint64 code_ids = 3 [
+    (gogoproto.customname) = "CodeIDs",
+    (gogoproto.moretags) = "yaml:\"code_ids\""
+  ];
+}
+
+// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
+// an explicit UnpinCodesProposal. To unpin a set of code ids in the wasmvm
+// cache, a simple MsgUnpinCodes can be invoked from the x/gov module via
+// a v1 governance proposal.
+message UnpinCodesProposal {
+  option deprecated = true;
+  option (amino.name) = "wasm/UnpinCodesProposal";
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
+  // Title is a short summary
+  string title = 1;
+  // Description is a human readable text
+  string description = 2;
+  // CodeIDs references the WASM codes
+  repeated uint64 code_ids = 3 [
+    (gogoproto.customname) = "CodeIDs",
+    (gogoproto.moretags) = "yaml:\"code_ids\""
+  ];
+}
+
+// AccessConfigUpdate contains the code id and the access config to be
+// applied.
+message AccessConfigUpdate {
+  // CodeID is the reference to the stored WASM code to be updated
+  uint64 code_id = 1 [ (gogoproto.customname) = "CodeID" ];
+  // InstantiatePermission to apply to the set of code ids
+  AccessConfig instantiate_permission = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
+// an explicit UpdateInstantiateConfigProposal. To update instantiate config
+// to a set of code ids, a simple MsgUpdateInstantiateConfig can be invoked from
+// the x/gov module via a v1 governance proposal.
+message UpdateInstantiateConfigProposal {
+  option deprecated = true;
+  option (amino.name) = "wasm/UpdateInstantiateConfigProposal";
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
+  // Title is a short summary
+  string title = 1 [ (gogoproto.moretags) = "yaml:\"title\"" ];
+  // Description is a human readable text
+  string description = 2 [ (gogoproto.moretags) = "yaml:\"description\"" ];
+  // AccessConfigUpdate contains the list of code ids and the access config
+  // to be applied.
+  repeated AccessConfigUpdate access_config_updates = 3
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
+// an explicit StoreAndInstantiateContractProposal. To store and instantiate
+// the contract, a simple MsgStoreAndInstantiateContract can be invoked from
+// the x/gov module via a v1 governance proposal.
+message StoreAndInstantiateContractProposal {
+  option deprecated = true;
+  option (amino.name) = "wasm/StoreAndInstantiateContractProposal";
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+
+  // Title is a short summary
+  string title = 1;
+  // Description is a human readable text
+  string description = 2;
+  // RunAs is the address that is passed to the contract's environment as sender
+  string run_as = 3 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // WASMByteCode can be raw or gzip compressed
+  bytes wasm_byte_code = 4 [ (gogoproto.customname) = "WASMByteCode" ];
+  // InstantiatePermission to apply on contract creation, optional
+  AccessConfig instantiate_permission = 5;
+  // UnpinCode code on upload, optional
+  bool unpin_code = 6;
+  // Admin is an optional address that can execute migrations
+  string admin = 7;
+  // Label is optional metadata to be stored with a constract instance.
+  string label = 8;
+  // Msg json encoded message to be passed to the contract on instantiation
+  bytes msg = 9 [
+    (gogoproto.casttype) = "RawContractMessage",
+    (amino.encoding) = "inline_json"
+  ];
+  // Funds coins that are transferred to the contract on instantiation
+  repeated cosmos.base.v1beta1.Coin funds = 10 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.encoding) = "legacy_coins"
+  ];
+  // Source is the URL where the code is hosted
+  string source = 11;
+  // Builder is the docker image used to build the code deterministically, used
+  // for smart contract verification
+  string builder = 12;
+  // CodeHash is the SHA256 sum of the code outputted by builder, used for smart
+  // contract verification
+  bytes code_hash = 13;
+}

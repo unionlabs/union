@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "defaultRegion": "us-west-2",
+    "testCases": [
+        {
+            "operationName": "ListDomains",
+            "input": {
+                "registrationStatus": "REGISTERED"
+            },
+            "errorExpectedFromService": false
+        },
+        {
+            "operationName": "DescribeDomain",
+            "input": {
+                "name": "fake_domain"
+            },
+            "errorExpectedFromService": true
+        }
+    ]
+}

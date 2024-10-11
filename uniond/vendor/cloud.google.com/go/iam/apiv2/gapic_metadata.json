@@ -1,0 +1,83 @@
+{
+  "schema": "1.0",
+  "comment": "This file maps proto services/RPCs to the corresponding library clients/methods.",
+  "language": "go",
+  "protoPackage": "google.iam.v2",
+  "libraryPackage": "cloud.google.com/go/iam/apiv2",
+  "services": {
+    "Policies": {
+      "clients": {
+        "grpc": {
+          "libraryClient": "PoliciesClient",
+          "rpcs": {
+            "CreatePolicy": {
+              "methods": [
+                "CreatePolicy"
+              ]
+            },
+            "DeletePolicy": {
+              "methods": [
+                "DeletePolicy"
+              ]
+            },
+            "GetOperation": {
+              "methods": [
+                "GetOperation"
+              ]
+            },
+            "GetPolicy": {
+              "methods": [
+                "GetPolicy"
+              ]
+            },
+            "ListPolicies": {
+              "methods": [
+                "ListPolicies"
+              ]
+            },
+            "UpdatePolicy": {
+              "methods": [
+                "UpdatePolicy"
+              ]
+            }
+          }
+        },
+        "rest": {
+          "libraryClient": "PoliciesClient",
+          "rpcs": {
+            "CreatePolicy": {
+              "methods": [
+                "CreatePolicy"
+              ]
+            },
+            "DeletePolicy": {
+              "methods": [
+                "DeletePolicy"
+              ]
+            },
+            "GetOperation": {
+              "methods": [
+                "GetOperation"
+              ]
+            },
+            "GetPolicy": {
+              "methods": [
+                "GetPolicy"
+              ]
+            },
+            "ListPolicies": {
+              "methods": [
+                "ListPolicies"
+              ]
+            },
+            "UpdatePolicy": {
+              "methods": [
+                "UpdatePolicy"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

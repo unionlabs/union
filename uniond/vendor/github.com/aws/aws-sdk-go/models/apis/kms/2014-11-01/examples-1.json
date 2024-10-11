@@ -1,0 +1,2533 @@
+{
+  "version": "1.0",
+  "examples": {
+    "CancelKeyDeletion": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key whose deletion you are canceling. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          },
+          "output": {
+            "KeyId": "The ARN of the KMS key whose deletion you canceled."
+          }
+        },
+        "description": "The following example cancels deletion of the specified KMS key.",
+        "id": "to-cancel-deletion-of-a-cmk-1477428535102",
+        "title": "To cancel deletion of a KMS key"
+      }
+    ],
+    "ConnectCustomKeyStore": [
+      {
+        "input": {
+          "CustomKeyStoreId": "cks-1234567890abcdef0"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreId": "The ID of the AWS KMS custom key store."
+          },
+          "output": {
+          }
+        },
+        "description": "This example connects an AWS KMS custom key store to its backing key store. For an AWS CloudHSM key store, it connects the key store to its AWS CloudHSM cluster. For an external key store, it connects the key store to the external key store proxy that communicates with your external key manager. This operation does not return any data. To verify that the custom key store is connected, use the <code>DescribeCustomKeyStores</code> operation.",
+        "id": "to-connect-a-custom-key-store-1628626947750",
+        "title": "To connect a custom key store"
+      }
+    ],
+    "CreateAlias": [
+      {
+        "input": {
+          "AliasName": "alias/ExampleAlias",
+          "TargetKeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "AliasName": "The alias to create. Aliases must begin with 'alias/'. Do not use aliases that begin with 'alias/aws' because they are reserved for use by AWS.",
+            "TargetKeyId": "The identifier of the KMS key whose alias you are creating. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          }
+        },
+        "description": "The following example creates an alias for the specified KMS key.",
+        "id": "to-create-an-alias-1477505685119",
+        "title": "To create an alias"
+      }
+    ],
+    "CreateCustomKeyStore": [
+      {
+        "input": {
+          "CloudHsmClusterId": "cluster-234abcdefABC",
+          "CustomKeyStoreName": "ExampleKeyStore",
+          "KeyStorePassword": "kmsPswd",
+          "TrustAnchorCertificate": "<certificate-goes-here>"
+        },
+        "output": {
+          "CustomKeyStoreId": "cks-1234567890abcdef0"
+        },
+        "comments": {
+          "input": {
+            "CloudHsmClusterId": "The ID of the CloudHSM cluster.",
+            "CustomKeyStoreName": "A friendly name for the custom key store.",
+            "KeyStorePassword": "The password for the kmsuser CU account in the specified cluster.",
+            "TrustAnchorCertificate": "The content of the customerCA.crt file that you created when you initialized the cluster."
+          },
+          "output": {
+            "CustomKeyStoreId": "The ID of the new custom key store."
+          }
+        },
+        "description": "This example creates a custom key store that is associated with an AWS CloudHSM cluster.",
+        "id": "to-create-an-aws-cloudhsm-custom-key-store-1",
+        "title": "To create an AWS CloudHSM key store"
+      },
+      {
+        "input": {
+          "CustomKeyStoreName": "ExampleVPCEndpointKeyStore",
+          "CustomKeyStoreType": "EXTERNAL_KEY_STORE",
+          "XksProxyAuthenticationCredential": {
+            "AccessKeyId": "ABCDE12345670EXAMPLE",
+            "RawSecretAccessKey": "DXjSUawnel2fr6SKC7G25CNxTyWKE5PF9XX6H/u9pSo="
+          },
+          "XksProxyConnectivity": "VPC_ENDPOINT_SERVICE",
+          "XksProxyUriEndpoint": "https://myproxy-private.xks.example.com",
+          "XksProxyUriPath": "/example-prefix/kms/xks/v1",
+          "XksProxyVpcEndpointServiceName": "com.amazonaws.vpce.us-east-1.vpce-svc-example1"
+        },
+        "output": {
+          "CustomKeyStoreId": "cks-1234567890abcdef0"
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreName": "A friendly name for the custom key store",
+            "CustomKeyStoreType": "For external key stores, the value must be EXTERNAL_KEY_STORE",
+            "XksProxyAuthenticationCredential": "The access key ID and secret access key that KMS uses to authenticate to your external key store proxy",
+            "XksProxyConnectivity": "Indicates how AWS KMS communicates with the external key store proxy",
+            "XksProxyUriEndpoint": "The URI that AWS KMS uses to connect to the external key store proxy",
+            "XksProxyUriPath": "The URI path to the external key store proxy APIs",
+            "XksProxyVpcEndpointServiceName": "The VPC endpoint service that KMS uses to communicate with the external key store proxy"
+          },
+          "output": {
+            "CustomKeyStoreId": "The ID of the new custom key store."
+          }
+        },
+        "description": "This example creates an external key store that uses an Amazon VPC endpoint service to communicate with AWS KMS.",
+        "id": "to-create-an-external-custom-key-store-with-vpc-connectivity-2",
+        "title": "To create an external key store with VPC endpoint service connectivity"
+      },
+      {
+        "input": {
+          "CustomKeyStoreName": "ExamplePublicEndpointKeyStore",
+          "CustomKeyStoreType": "EXTERNAL_KEY_STORE",
+          "XksProxyAuthenticationCredential": {
+            "AccessKeyId": "ABCDE12345670EXAMPLE",
+            "RawSecretAccessKey": "DXjSUawnel2fr6SKC7G25CNxTyWKE5PF9XX6H/u9pSo="
+          },
+          "XksProxyConnectivity": "PUBLIC_ENDPOINT",
+          "XksProxyUriEndpoint": "https://myproxy.xks.example.com",
+          "XksProxyUriPath": "/kms/xks/v1"
+        },
+        "output": {
+          "CustomKeyStoreId": "cks-987654321abcdef0"
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreName": "A friendly name for the custom key store",
+            "CustomKeyStoreType": "For external key stores, the value must be EXTERNAL_KEY_STORE",
+            "XksProxyAuthenticationCredential": "The access key ID and secret access key that KMS uses to authenticate to your external key store proxy",
+            "XksProxyConnectivity": "Indicates how AWS KMS communicates with the external key store proxy",
+            "XksProxyUriEndpoint": "The URI that AWS KMS uses to connect to the external key store proxy",
+            "XksProxyUriPath": "The URI path to your external key store proxy API"
+          },
+          "output": {
+            "CustomKeyStoreId": "The ID of the new custom key store."
+          }
+        },
+        "description": "This example creates an external key store with public endpoint connectivity.",
+        "id": "to-create-an-external-custom-key-store-with-a-public-endpoint-3",
+        "title": "To create an external key store with public endpoint connectivity"
+      }
+    ],
+    "CreateGrant": [
+      {
+        "input": {
+          "GranteePrincipal": "arn:aws:iam::111122223333:role/ExampleRole",
+          "KeyId": "arn:aws:kms:us-east-2:444455556666:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "Operations": [
+            "Encrypt",
+            "Decrypt"
+          ]
+        },
+        "output": {
+          "GrantId": "0c237476b39f8bc44e45212e08498fbe3151305030726c0590dd8d3e9f3d6a60",
+          "GrantToken": "AQpAM2RhZTk1MGMyNTk2ZmZmMzEyYWVhOWViN2I1MWM4Mzc0MWFiYjc0ZDE1ODkyNGFlNTIzODZhMzgyZjBlNGY3NiKIAgEBAgB4Pa6VDCWW__MSrqnre1HIN0Grt00ViSSuUjhqOC8OT3YAAADfMIHcBgkqhkiG9w0BBwaggc4wgcsCAQAwgcUGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMmqLyBTAegIn9XlK5AgEQgIGXZQjkBcl1dykDdqZBUQ6L1OfUivQy7JVYO2-ZJP7m6f1g8GzV47HX5phdtONAP7K_HQIflcgpkoCqd_fUnE114mSmiagWkbQ5sqAVV3ov-VeqgrvMe5ZFEWLMSluvBAqdjHEdMIkHMlhlj4ENZbzBfo9Wxk8b8SnwP4kc4gGivedzFXo-dwN8fxjjq_ZZ9JFOj2ijIbj5FyogDCN0drOfi8RORSEuCEmPvjFRMFAwcmwFkN2NPp89amA"
+        },
+        "comments": {
+          "input": {
+            "GranteePrincipal": "The identity that is given permission to perform the operations specified in the grant.",
+            "KeyId": "The identifier of the KMS key to which the grant applies. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key.",
+            "Operations": "A list of operations that the grant allows."
+          },
+          "output": {
+            "GrantId": "The unique identifier of the grant.",
+            "GrantToken": "The grant token."
+          }
+        },
+        "description": "The following example creates a grant that allows the specified IAM role to encrypt data with the specified KMS key.",
+        "id": "to-create-a-grant-1477972226782",
+        "title": "To create a grant"
+      }
+    ],
+    "CreateKey": [
+      {
+        "input": {
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "111122223333",
+            "Arn": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+            "CreationDate": "2017-07-05T14:04:55-07:00",
+            "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+            "Description": "",
+            "Enabled": true,
+            "EncryptionAlgorithms": [
+              "SYMMETRIC_DEFAULT"
+            ],
+            "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeySpec": "SYMMETRIC_DEFAULT",
+            "KeyState": "Enabled",
+            "KeyUsage": "ENCRYPT_DECRYPT",
+            "MultiRegion": false,
+            "Origin": "AWS_KMS"
+          }
+        },
+        "comments": {
+          "input": {
+            "Tags": "One or more tags. Each tag consists of a tag key and a tag value."
+          },
+          "output": {
+            "KeyMetadata": "Detailed information about the KMS key that this operation creates."
+          }
+        },
+        "description": "The following example creates a symmetric KMS key for encryption and decryption. No parameters are required for this operation.",
+        "id": "to-create-a-cmk-1",
+        "title": "To create a KMS key"
+      },
+      {
+        "input": {
+          "KeySpec": "RSA_4096",
+          "KeyUsage": "ENCRYPT_DECRYPT"
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "111122223333",
+            "Arn": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+            "CreationDate": "2021-04-05T14:04:55-07:00",
+            "CustomerMasterKeySpec": "RSA_4096",
+            "Description": "",
+            "Enabled": true,
+            "EncryptionAlgorithms": [
+              "RSAES_OAEP_SHA_1",
+              "RSAES_OAEP_SHA_256"
+            ],
+            "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeySpec": "RSA_4096",
+            "KeyState": "Enabled",
+            "KeyUsage": "ENCRYPT_DECRYPT",
+            "MultiRegion": false,
+            "Origin": "AWS_KMS"
+          }
+        },
+        "comments": {
+          "input": {
+            "KeySpec": "Describes the type of key material in the KMS key.",
+            "KeyUsage": "The cryptographic operations for which you can use the KMS key."
+          },
+          "output": {
+            "KeyMetadata": "Detailed information about the KMS key that this operation creates."
+          }
+        },
+        "description": "This example creates a KMS key that contains an asymmetric RSA key pair for encryption and decryption. The key spec and key usage can't be changed after the key is created.",
+        "id": "to-create-an-asymmetric-rsa-kms-key-for-encryption-and-decryption-2",
+        "title": "To create an asymmetric RSA KMS key for encryption and decryption"
+      },
+      {
+        "input": {
+          "KeySpec": "ECC_NIST_P521",
+          "KeyUsage": "SIGN_VERIFY"
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "111122223333",
+            "Arn": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+            "CreationDate": "2019-12-02T07:48:55-07:00",
+            "CustomerMasterKeySpec": "ECC_NIST_P521",
+            "Description": "",
+            "Enabled": true,
+            "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeySpec": "ECC_NIST_P521",
+            "KeyState": "Enabled",
+            "KeyUsage": "SIGN_VERIFY",
+            "MultiRegion": false,
+            "Origin": "AWS_KMS",
+            "SigningAlgorithms": [
+              "ECDSA_SHA_512"
+            ]
+          }
+        },
+        "comments": {
+          "input": {
+            "KeySpec": "Describes the type of key material in the KMS key.",
+            "KeyUsage": "The cryptographic operations for which you can use the KMS key."
+          },
+          "output": {
+            "KeyMetadata": "Detailed information about the KMS key that this operation creates."
+          }
+        },
+        "description": "This example creates a KMS key that contains an asymmetric elliptic curve (ECC) key pair for signing and verification. The key usage is required even though \"SIGN_VERIFY\" is the only valid value for ECC KMS keys. The key spec and key usage can't be changed after the key is created.",
+        "id": "to-create-an-asymmetric-elliptic-curve-kms-key-for-signing-and-verification-3",
+        "title": "To create an asymmetric elliptic curve KMS key for signing and verification"
+      },
+      {
+        "input": {
+          "KeySpec": "HMAC_384",
+          "KeyUsage": "GENERATE_VERIFY_MAC"
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "111122223333",
+            "Arn": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+            "CreationDate": "2022-04-05T14:04:55-07:00",
+            "CustomerMasterKeySpec": "HMAC_384",
+            "Description": "",
+            "Enabled": true,
+            "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeySpec": "HMAC_384",
+            "KeyState": "Enabled",
+            "KeyUsage": "GENERATE_VERIFY_MAC",
+            "MacAlgorithms": [
+              "HMAC_SHA_384"
+            ],
+            "MultiRegion": false,
+            "Origin": "AWS_KMS"
+          }
+        },
+        "comments": {
+          "input": {
+            "KeySpec": "Describes the type of key material in the KMS key.",
+            "KeyUsage": "The cryptographic operations for which you can use the KMS key."
+          },
+          "output": {
+            "KeyMetadata": "Detailed information about the KMS key that this operation creates."
+          }
+        },
+        "description": "This example creates a 384-bit symmetric HMAC KMS key. The GENERATE_VERIFY_MAC key usage value is required even though it's the only valid value for HMAC KMS keys. The key spec and key usage can't be changed after the key is created.",
+        "id": "to-create-an-hmac-kms-key-1630628752841",
+        "title": "To create an HMAC KMS key"
+      },
+      {
+        "input": {
+          "MultiRegion": true
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "111122223333",
+            "Arn": "arn:aws:kms:us-west-2:111122223333:key/mrk-1234abcd12ab34cd56ef12345678990ab",
+            "CreationDate": "2021-09-02T016:15:21-09:00",
+            "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+            "Description": "",
+            "Enabled": true,
+            "EncryptionAlgorithms": [
+              "SYMMETRIC_DEFAULT"
+            ],
+            "KeyId": "mrk-1234abcd12ab34cd56ef12345678990ab",
+            "KeyManager": "CUSTOMER",
+            "KeySpec": "SYMMETRIC_DEFAULT",
+            "KeyState": "Enabled",
+            "KeyUsage": "ENCRYPT_DECRYPT",
+            "MultiRegion": true,
+            "MultiRegionConfiguration": {
+              "MultiRegionKeyType": "PRIMARY",
+              "PrimaryKey": {
+                "Arn": "arn:aws:kms:us-west-2:111122223333:key/mrk-1234abcd12ab34cd56ef12345678990ab",
+                "Region": "us-west-2"
+              },
+              "ReplicaKeys": [
+
+              ]
+            },
+            "Origin": "AWS_KMS"
+          }
+        },
+        "comments": {
+          "input": {
+            "MultiRegion": "Indicates whether the KMS key is a multi-Region (True) or regional (False) key."
+          },
+          "output": {
+            "KeyMetadata": "Detailed information about the KMS key that this operation creates."
+          }
+        },
+        "description": "This example creates a multi-Region primary symmetric encryption key. Because the default values for all parameters create a symmetric encryption key, only the MultiRegion parameter is required for this KMS key.",
+        "id": "to-create-a-multi-region-primary-kms-key-4",
+        "title": "To create a multi-Region primary KMS key"
+      },
+      {
+        "input": {
+          "Origin": "EXTERNAL"
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "111122223333",
+            "Arn": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+            "CreationDate": "2019-12-02T07:48:55-07:00",
+            "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+            "Description": "",
+            "Enabled": false,
+            "EncryptionAlgorithms": [
+              "SYMMETRIC_DEFAULT"
+            ],
+            "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeySpec": "SYMMETRIC_DEFAULT",
+            "KeyState": "PendingImport",
+            "KeyUsage": "ENCRYPT_DECRYPT",
+            "MultiRegion": false,
+            "Origin": "EXTERNAL"
+          }
+        },
+        "comments": {
+          "input": {
+            "Origin": "The source of the key material for the KMS key."
+          },
+          "output": {
+            "KeyMetadata": "Detailed information about the KMS key that this operation creates."
+          }
+        },
+        "description": "This example creates a symmetric KMS key with no key material. When the operation is complete, you can import your own key material into the KMS key. To create this KMS key, set the Origin parameter to EXTERNAL.",
+        "id": "to-create-a-kms-key-for-imported-key-material-5",
+        "title": "To create a KMS key for imported key material"
+      },
+      {
+        "input": {
+          "CustomKeyStoreId": "cks-1234567890abcdef0",
+          "Origin": "AWS_CLOUDHSM"
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "111122223333",
+            "Arn": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+            "CloudHsmClusterId": "cluster-234abcdefABC",
+            "CreationDate": "2019-12-02T07:48:55-07:00",
+            "CustomKeyStoreId": "cks-1234567890abcdef0",
+            "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+            "Description": "",
+            "Enabled": true,
+            "EncryptionAlgorithms": [
+              "SYMMETRIC_DEFAULT"
+            ],
+            "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeySpec": "SYMMETRIC_DEFAULT",
+            "KeyState": "Enabled",
+            "KeyUsage": "ENCRYPT_DECRYPT",
+            "MultiRegion": false,
+            "Origin": "AWS_CLOUDHSM"
+          }
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreId": "Identifies the custom key store that hosts the KMS key.",
+            "Origin": "Indicates the source of the key material for the KMS key."
+          },
+          "output": {
+            "KeyMetadata": "Detailed information about the KMS key that this operation creates."
+          }
+        },
+        "description": "This example creates a KMS key in the specified AWS CloudHSM key store. The operation creates the KMS key and its metadata in AWS KMS and creates the key material in the AWS CloudHSM cluster associated with the custom key store. This example requires the CustomKeyStoreId  and Origin parameters.",
+        "id": "to-create-a-kms-key-in-an-aws-cloudhsm-custom-key-store-6",
+        "title": "To create a KMS key in an AWS CloudHSM key store"
+      },
+      {
+        "input": {
+          "CustomKeyStoreId": "cks-9876543210fedcba9",
+          "Origin": "EXTERNAL_KEY_STORE",
+          "XksKeyId": "bb8562717f809024"
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "111122223333",
+            "Arn": "arn:aws:kms:us-east-2:111122223333:key/0987dcba-09fe-87dc-65ba-ab0987654321",
+            "CreationDate": "2022-02-02T07:48:55-07:00",
+            "CustomKeyStoreId": "cks-9876543210fedcba9",
+            "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+            "Description": "",
+            "Enabled": true,
+            "EncryptionAlgorithms": [
+              "SYMMETRIC_DEFAULT"
+            ],
+            "KeyId": "0987dcba-09fe-87dc-65ba-ab0987654321",
+            "KeyManager": "CUSTOMER",
+            "KeySpec": "SYMMETRIC_DEFAULT",
+            "KeyState": "Enabled",
+            "KeyUsage": "ENCRYPT_DECRYPT",
+            "MultiRegion": false,
+            "Origin": "EXTERNAL_KEY_STORE",
+            "XksKeyConfiguration": {
+              "Id": "bb8562717f809024"
+            }
+          }
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreId": "Identifies the custom key store that hosts the KMS key.",
+            "Origin": "Indicates the source of the key material for the KMS key.",
+            "XksKeyId": "Identifies the encryption key in your external key manager that is associated with the KMS key"
+          },
+          "output": {
+            "KeyMetadata": "Detailed information about the KMS key that this operation creates."
+          }
+        },
+        "description": "This example creates a KMS key in the specified external key store. It uses the XksKeyId parameter to associate the KMS key with an existing symmetric encryption key in your external key manager. This CustomKeyStoreId, Origin, and XksKeyId parameters are required in this operation.",
+        "id": "to-create-a-kms-key-in-an-external-custom-key-store-7",
+        "title": "To create a KMS key in an external key store"
+      }
+    ],
+    "Decrypt": [
+      {
+        "input": {
+          "CiphertextBlob": "<binary data>",
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "EncryptionAlgorithm": "SYMMETRIC_DEFAULT",
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "Plaintext": "<binary data>"
+        },
+        "comments": {
+          "input": {
+            "CiphertextBlob": "The encrypted data (ciphertext).",
+            "KeyId": "A key identifier for the KMS key to use to decrypt the data."
+          },
+          "output": {
+            "EncryptionAlgorithm": "The encryption algorithm that was used to decrypt the ciphertext. SYMMETRIC_DEFAULT is the only valid value for symmetric encryption in AWS KMS.",
+            "KeyId": "The Amazon Resource Name (ARN) of the KMS key that was used to decrypt the data.",
+            "Plaintext": "The decrypted (plaintext) data."
+          }
+        },
+        "description": "The following example decrypts data that was encrypted with a symmetric encryption KMS key. The KeyId is not required when decrypting with a symmetric encryption key, but it is a best practice.",
+        "id": "to-decrypt-data-1",
+        "title": "To decrypt data with a symmetric encryption KMS key"
+      },
+      {
+        "input": {
+          "CiphertextBlob": "<binary data>",
+          "EncryptionAlgorithm": "RSAES_OAEP_SHA_256",
+          "KeyId": "0987dcba-09fe-87dc-65ba-ab0987654321"
+        },
+        "output": {
+          "EncryptionAlgorithm": "RSAES_OAEP_SHA_256",
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/0987dcba-09fe-87dc-65ba-ab0987654321",
+          "Plaintext": "<binary data>"
+        },
+        "comments": {
+          "input": {
+            "CiphertextBlob": "The encrypted data (ciphertext).",
+            "EncryptionAlgorithm": "The encryption algorithm that was used to encrypt the data. This parameter is required to decrypt with an asymmetric KMS key.",
+            "KeyId": "A key identifier for the KMS key to use to decrypt the data. This parameter is required to decrypt with an asymmetric KMS key."
+          },
+          "output": {
+            "EncryptionAlgorithm": "The encryption algorithm that was used to decrypt the ciphertext.",
+            "KeyId": "The Amazon Resource Name (ARN) of the KMS key that was used to decrypt the data.",
+            "Plaintext": "The decrypted (plaintext) data."
+          }
+        },
+        "description": "The following example decrypts data that was encrypted with an asymmetric encryption KMS key. When the KMS encryption key is asymmetric, you must specify the KMS key ID and the encryption algorithm that was used to encrypt the data.",
+        "id": "to-decrypt-data-2",
+        "title": "To decrypt data with an asymmetric encryption KMS key"
+      },
+      {
+        "input": {
+          "CiphertextBlob": "<binary data>",
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "Recipient": {
+            "AttestationDocument": "<attestation document>",
+            "KeyEncryptionAlgorithm": "RSAES_OAEP_SHA_256"
+          }
+        },
+        "output": {
+          "CiphertextForRecipient": "<binary data>",
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "Plaintext": ""
+        },
+        "comments": {
+          "input": {
+            "CiphertextBlob": "The encrypted data. This ciphertext was encrypted with the KMS key",
+            "KeyId": "The KMS key to use to decrypt the ciphertext",
+            "Recipient": "Specifies the attestation document from the Nitro enclave and the encryption algorithm to use with the public key from the attestation document"
+          },
+          "output": {
+            "CiphertextForRecipient": "The decrypted CiphertextBlob encrypted with the public key from the attestation document",
+            "KeyId": "The KMS key that was used to decrypt the encrypted data (CiphertextBlob)",
+            "Plaintext": "This field is null or empty"
+          }
+        },
+        "description": "The following Decrypt example includes the Recipient parameter with a signed attestation document from an AWS Nitro enclave. Instead of returning the decrypted data in plaintext (Plaintext), the operation returns the decrypted data encrypted by the public key from the attestation document (CiphertextForRecipient).",
+        "id": "to-decrypt-data-for-a-nitro-enclave-2",
+        "title": "To decrypt data for a Nitro enclave"
+      }
+    ],
+    "DeleteAlias": [
+      {
+        "input": {
+          "AliasName": "alias/ExampleAlias"
+        },
+        "comments": {
+          "input": {
+            "AliasName": "The alias to delete."
+          }
+        },
+        "description": "The following example deletes the specified alias.",
+        "id": "to-delete-an-alias-1478285209338",
+        "title": "To delete an alias"
+      }
+    ],
+    "DeleteCustomKeyStore": [
+      {
+        "input": {
+          "CustomKeyStoreId": "cks-1234567890abcdef0"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreId": "The ID of the custom key store to be deleted."
+          },
+          "output": {
+          }
+        },
+        "description": "This example deletes a custom key store from AWS KMS. This operation does not affect the backing key store, such as a CloudHSM cluster, external key store proxy, or your external key manager. This operation doesn't return any data. To verify that the operation was successful, use the DescribeCustomKeyStores operation.",
+        "id": "to-delete-a-custom-key-store-from-aws-kms-1628630837145",
+        "title": "To delete a custom key store from AWS KMS"
+      }
+    ],
+    "DeleteImportedKeyMaterial": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key whose imported key material you are deleting. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          }
+        },
+        "description": "The following example deletes the imported key material from the specified KMS key.",
+        "id": "to-delete-imported-key-material-1478561674507",
+        "title": "To delete imported key material"
+      }
+    ],
+    "DeriveSharedSecret": [
+      {
+        "input": {
+          "KeyAgreementAlgorithm": "ECDH",
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "PublicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvH3Yj0wbkLEpUl95Cv1cJVjsVNSjwGq3tCLnzXfhVwVvmzGN8pYj3U8nKwgouaHbBWNJYjP5VutbbkKS4Kv4GojwZBJyHN17kmxo8yTjRmjR15SKIQ8cqRA2uaERMLnpztIXdZp232PQPbWGxDyXYJ0aJ5EFSag"
+        },
+        "output": {
+          "KeyAgreementAlgorithm": "ECDH",
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "KeyOrigin": "AWS_KMS",
+          "SharedSecret": "MEYCIQCKZLWyTk5runarx6XiAkU9gv3lbwPO/pHa+DXFehzdDwIhANwpsIV2g/9SPWLLsF6p/hiSskuIXMTRwqrMdVKWTMHG"
+        },
+        "comments": {
+          "input": {
+            "KeyAgreementAlgorithm": "The key agreement algorithm used to derive the shared secret. The only valid value is ECDH.",
+            "KeyId": "The key identifier for an asymmetric KMS key pair. The private key in the specified key pair is used to derive the shared secret.",
+            "PublicKey": "The public key in your peer's asymmetric key pair."
+          },
+          "output": {
+            "KeyAgreementAlgorithm": "The key agreement algorithm used to derive the shared secret.",
+            "KeyId": "The asymmetric KMS key pair used to derive the shared secret.",
+            "KeyOrigin": "The source of the key material for the specified KMS key.",
+            "SharedSecret": "The raw secret derived from the specified key agreement algorithm, private key in the asymmetric KMS key, and your peer's public key."
+          }
+        },
+        "description": "The following example derives a shared secret using a key agreement algorithm.",
+        "id": "to-derive-a-shared-secret-1718381818754",
+        "title": "To derive a shared secret"
+      }
+    ],
+    "DescribeCustomKeyStores": [
+      {
+        "input": {
+        },
+        "output": {
+          "CustomKeyStores": [
+
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+            "CustomKeyStores": "Details about each custom key store in the account and Region."
+          }
+        },
+        "description": "This example gets detailed information about all AWS KMS custom key stores in an AWS account and Region. To get all key stores, do not enter a custom key store name or ID.",
+        "id": "to-get-detailed-information-about-custom-key-stores-in-the-account-and-region-1",
+        "title": "To get detailed information about custom key stores in the account and Region"
+      },
+      {
+        "input": {
+          "CustomKeyStoreName": "ExampleKeyStore"
+        },
+        "output": {
+          "CustomKeyStores": [
+            {
+              "CloudHsmClusterId": "cluster-234abcdefABC",
+              "ConnectionState": "CONNECTED",
+              "CreationDate": "1.499288695918E9",
+              "CustomKeyStoreId": "cks-1234567890abcdef0",
+              "CustomKeyStoreName": "ExampleKeyStore",
+              "CustomKeyStoreType": "AWS_CLOUDHSM",
+              "TrustAnchorCertificate": "<certificate appears here>"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreName": "The friendly name of the custom key store."
+          },
+          "output": {
+            "CustomKeyStores": "Detailed information about the specified custom key store."
+          }
+        },
+        "description": "This example gets detailed information about a particular AWS CloudHSM key store by specifying its friendly name. To limit the output to a particular custom key store, provide either the custom key store name or ID.",
+        "id": "to-get-detailed-information-about-a-cloudhsm-custom-key-store-by-name-2",
+        "title": "To get detailed information about an AWS CloudHSM key store by specifying its friendly name"
+      },
+      {
+        "input": {
+          "CustomKeyStoreId": "cks-9876543210fedcba9"
+        },
+        "output": {
+          "CustomKeyStores": [
+            {
+              "ConnectionState": "CONNECTED",
+              "CreationDate": "1.599288695918E9",
+              "CustomKeyStoreId": "cks-9876543210fedcba9",
+              "CustomKeyStoreName": "ExampleExternalKeyStore",
+              "CustomKeyStoreType": "EXTERNAL_KEY_STORE",
+              "XksProxyConfiguration": {
+                "AccessKeyId": "ABCDE12345670EXAMPLE",
+                "Connectivity": "PUBLIC_ENDPOINT",
+                "UriEndpoint": "https://myproxy.xks.example.com",
+                "UriPath": "/kms/xks/v1"
+              }
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreId": "The ID of the custom key store."
+          },
+          "output": {
+            "CustomKeyStores": "Detailed information about the specified custom key store."
+          }
+        },
+        "description": "This example gets detailed information about an external key store by specifying its ID.  The example external key store proxy uses public endpoint connectivity.",
+        "id": "to-get-detailed-information-about-an-external-key-store--3",
+        "title": "To get detailed information about an external key store by specifying its ID"
+      },
+      {
+        "input": {
+          "CustomKeyStoreName": "VPCExternalKeystore"
+        },
+        "output": {
+          "CustomKeyStores": [
+            {
+              "ConnectionState": "CONNECTED",
+              "CreationDate": "1.643057863.842",
+              "CustomKeyStoreId": "cks-876543210fedcba98",
+              "CustomKeyStoreName": "ExampleVPCExternalKeyStore",
+              "CustomKeyStoreType": "EXTERNAL_KEY_STORE",
+              "XksProxyConfiguration": {
+                "AccessKeyId": "ABCDE12345670EXAMPLE",
+                "Connectivity": "VPC_ENDPOINT_SERVICE",
+                "UriEndpoint": "https://myproxy-private.xks.example.com",
+                "UriPath": "/example-prefix/kms/xks/v1",
+                "VpcEndpointServiceName": "com.amazonaws.vpce.us-east-1.vpce-svc-example1"
+              }
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreId": "The ID of the custom key store."
+          },
+          "output": {
+            "CustomKeyStores": "Detailed information about the specified custom key store."
+          }
+        },
+        "description": "This example gets detailed information about a particular external key store by specifying its friendly name. To limit the output to a particular custom key store, provide either the custom key store name or ID. The proxy URI path for this external key store includes an optional prefix. Also, because this example external key store uses VPC endpoint connectivity, the response includes the associated VPC endpoint service name.",
+        "id": "to-get-detailed-information-about-an-external-custom-key-store-by-name-4",
+        "title": "To get detailed information about an external key store VPC endpoint connectivity by specifying its friendly name"
+      }
+    ],
+    "DescribeKey": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "111122223333",
+            "Arn": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+            "CreationDate": "2017-07-05T14:04:55-07:00",
+            "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+            "Description": "",
+            "Enabled": true,
+            "EncryptionAlgorithms": [
+              "SYMMETRIC_DEFAULT"
+            ],
+            "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeySpec": "SYMMETRIC_DEFAULT",
+            "KeyState": "Enabled",
+            "KeyUsage": "ENCRYPT_DECRYPT",
+            "MultiRegion": false,
+            "Origin": "AWS_KMS"
+          }
+        },
+        "comments": {
+          "input": {
+            "KeyId": "An identifier for the KMS key. You can use the key ID, key ARN, alias name, alias ARN of the KMS key."
+          },
+          "output": {
+            "KeyMetadata": "An object that contains information about the specified KMS key."
+          }
+        },
+        "description": "The following example gets metadata for a symmetric encryption KMS key.",
+        "id": "get-key-details-1",
+        "title": "To get details about a KMS key"
+      },
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "111122223333",
+            "Arn": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+            "CreationDate": 1571767572.317,
+            "CustomerMasterKeySpec": "RSA_2048",
+            "Description": "",
+            "Enabled": false,
+            "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeySpec": "RSA_2048",
+            "KeyState": "Disabled",
+            "KeyUsage": "SIGN_VERIFY",
+            "MultiRegion": false,
+            "Origin": "AWS_KMS",
+            "SigningAlgorithms": [
+              "RSASSA_PKCS1_V1_5_SHA_256",
+              "RSASSA_PKCS1_V1_5_SHA_384",
+              "RSASSA_PKCS1_V1_5_SHA_512",
+              "RSASSA_PSS_SHA_256",
+              "RSASSA_PSS_SHA_384",
+              "RSASSA_PSS_SHA_512"
+            ]
+          }
+        },
+        "comments": {
+          "input": {
+            "KeyId": "An identifier for the KMS key. You can use the key ID, key ARN, alias name, alias ARN of the KMS key."
+          },
+          "output": {
+            "KeyMetadata": "An object that contains information about the specified KMS key."
+          }
+        },
+        "description": "The following example gets metadata for an asymmetric RSA KMS key used for signing and verification.",
+        "id": "to-get-details-about-an-rsa-asymmetric-kms-key-2",
+        "title": "To get details about an RSA asymmetric KMS key"
+      },
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:ap-northeast-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "111122223333",
+            "Arn": "arn:aws:kms:ap-northeast-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab",
+            "CreationDate": 1586329200.918,
+            "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+            "Description": "",
+            "Enabled": true,
+            "EncryptionAlgorithms": [
+              "SYMMETRIC_DEFAULT"
+            ],
+            "KeyId": "mrk-1234abcd12ab34cd56ef1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeyState": "Enabled",
+            "KeyUsage": "ENCRYPT_DECRYPT",
+            "MultiRegion": true,
+            "MultiRegionConfiguration": {
+              "MultiRegionKeyType": "PRIMARY",
+              "PrimaryKey": {
+                "Arn": "arn:aws:kms:us-west-2:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab",
+                "Region": "us-west-2"
+              },
+              "ReplicaKeys": [
+                {
+                  "Arn": "arn:aws:kms:eu-west-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab",
+                  "Region": "eu-west-1"
+                },
+                {
+                  "Arn": "arn:aws:kms:ap-northeast-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab",
+                  "Region": "ap-northeast-1"
+                },
+                {
+                  "Arn": "arn:aws:kms:sa-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab",
+                  "Region": "sa-east-1"
+                }
+              ]
+            },
+            "Origin": "AWS_KMS"
+          }
+        },
+        "comments": {
+          "input": {
+            "KeyId": "An identifier for the KMS key. You can use the key ID, key ARN, alias name, alias ARN of the KMS key."
+          },
+          "output": {
+            "KeyMetadata": "An object that contains information about the specified KMS key."
+          }
+        },
+        "description": "The following example gets metadata for a multi-Region replica key. This multi-Region key is a symmetric encryption key. DescribeKey returns information about the primary key and all of its replicas.",
+        "id": "to-get-details-about-a-multi-region-key-3",
+        "title": "To get details about a multi-Region key"
+      },
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "123456789012",
+            "Arn": "arn:aws:kms:us-west-2:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+            "CreationDate": 1566160362.664,
+            "CustomerMasterKeySpec": "HMAC_256",
+            "Description": "Development test key",
+            "Enabled": true,
+            "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeyState": "Enabled",
+            "KeyUsage": "GENERATE_VERIFY_MAC",
+            "MacAlgorithms": [
+              "HMAC_SHA_256"
+            ],
+            "MultiRegion": false,
+            "Origin": "AWS_KMS"
+          }
+        },
+        "comments": {
+          "input": {
+            "KeyId": "An identifier for the KMS key. You can use the key ID, key ARN, alias name, alias ARN of the KMS key."
+          },
+          "output": {
+            "KeyMetadata": "An object that contains information about the specified KMS key."
+          }
+        },
+        "description": "The following example gets the metadata of an HMAC KMS key.",
+        "id": "to-get-details-about-an-hmac-kms-key-4",
+        "title": "To get details about an HMAC KMS key"
+      },
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "123456789012",
+            "Arn": "arn:aws:kms:us-west-2:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+            "CloudHsmClusterId": "cluster-234abcdefABC",
+            "CreationDate": 1646160362.664,
+            "CustomKeyStoreId": "cks-1234567890abcdef0",
+            "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+            "Description": "CloudHSM key store test key",
+            "Enabled": true,
+            "EncryptionAlgorithms": [
+              "SYMMETRIC_DEFAULT"
+            ],
+            "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeySpec": "SYMMETRIC_DEFAULT",
+            "KeyState": "Enabled",
+            "KeyUsage": "ENCRYPT_DECRYPT",
+            "MultiRegion": false,
+            "Origin": "AWS_CLOUDHSM"
+          }
+        },
+        "comments": {
+          "input": {
+            "KeyId": "An identifier for the KMS key. You can use the key ID, key ARN, alias name, alias ARN of the KMS key."
+          },
+          "output": {
+            "KeyMetadata": "An object that contains information about the specified KMS key."
+          }
+        },
+        "description": "The following example gets the metadata of a KMS key in an AWS CloudHSM key store.",
+        "id": "to-get-details-about-a-kms-key-in-an-AWS-CloudHSM-key-store-5",
+        "title": "To get details about a KMS key in an AWS CloudHSM key store"
+      },
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "KeyMetadata": {
+            "AWSAccountId": "123456789012",
+            "Arn": "arn:aws:kms:us-west-2:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+            "CreationDate": 1646160362.664,
+            "CustomKeyStoreId": "cks-1234567890abcdef0",
+            "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+            "Description": "External key store test key",
+            "Enabled": true,
+            "EncryptionAlgorithms": [
+              "SYMMETRIC_DEFAULT"
+            ],
+            "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeySpec": "SYMMETRIC_DEFAULT",
+            "KeyState": "Enabled",
+            "KeyUsage": "ENCRYPT_DECRYPT",
+            "MultiRegion": false,
+            "Origin": "EXTERNAL_KEY_STORE",
+            "XksKeyConfiguration": {
+              "Id": "bb8562717f809024"
+            }
+          }
+        },
+        "comments": {
+          "input": {
+            "KeyId": "An identifier for the KMS key. You can use the key ID, key ARN, alias name, alias ARN of the KMS key."
+          },
+          "output": {
+            "KeyMetadata": "An object that contains information about the specified KMS key."
+          }
+        },
+        "description": "The following example gets the metadata of a KMS key in an external key store.",
+        "id": "to-get-details-about-a-kms-key-in-an-external-key-store-6",
+        "title": "To get details about a KMS key in an external key store"
+      }
+    ],
+    "DisableKey": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key to disable. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          }
+        },
+        "description": "The following example disables the specified KMS key.",
+        "id": "to-disable-a-cmk-1478566583659",
+        "title": "To disable a KMS key"
+      }
+    ],
+    "DisableKeyRotation": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key whose key material will no longer be rotated. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          }
+        },
+        "description": "The following example disables automatic annual rotation of the key material for the specified KMS key.",
+        "id": "to-disable-automatic-rotation-of-key-material-1478624396092",
+        "title": "To disable automatic rotation of key material"
+      }
+    ],
+    "DisconnectCustomKeyStore": [
+      {
+        "input": {
+          "CustomKeyStoreId": "cks-1234567890abcdef0"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreId": "The ID of the custom key store."
+          },
+          "output": {
+          }
+        },
+        "description": "This example disconnects an AWS KMS custom key store from its backing key store. For an AWS CloudHSM key store, it disconnects the key store from its AWS CloudHSM cluster. For an external key store, it disconnects the key store from the external key store proxy that communicates with your external key manager. This operation doesn't return any data. To verify that the custom key store is disconnected, use the <code>DescribeCustomKeyStores</code> operation.",
+        "id": "to-disconnect-a-custom-key-store-from-its-cloudhsm-cluster-234abcdefABC",
+        "title": "To disconnect a custom key store from its CloudHSM cluster"
+      }
+    ],
+    "EnableKey": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key to enable. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          }
+        },
+        "description": "The following example enables the specified KMS key.",
+        "id": "to-enable-a-cmk-1478627501129",
+        "title": "To enable a KMS key"
+      }
+    ],
+    "EnableKeyRotation": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "RotationPeriodInDays": 365
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key whose key material will be automatically rotated. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key.",
+            "RotationPeriodInDays": "The number of days between each rotation date. Specify a value between 9 and 2560. If no value is specified, the default value is 365 days."
+          }
+        },
+        "description": "The following example enables automatic rotation with a rotation period of 365 days for the specified KMS key.",
+        "id": "to-enable-automatic-rotation-of-key-material-1712499675853",
+        "title": "To enable automatic rotation of key material"
+      }
+    ],
+    "Encrypt": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "Plaintext": "<binary data>"
+        },
+        "output": {
+          "CiphertextBlob": "<binary data>",
+          "EncryptionAlgorithm": "SYMMETRIC_DEFAULT",
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key to use for encryption. You can use the key ID or Amazon Resource Name (ARN) of the KMS key, or the name or ARN of an alias that refers to the KMS key.",
+            "Plaintext": "The data to encrypt."
+          },
+          "output": {
+            "CiphertextBlob": "The encrypted data (ciphertext).",
+            "EncryptionAlgorithm": "The encryption algorithm that was used in the operation. For symmetric encryption keys, the encryption algorithm is always SYMMETRIC_DEFAULT.",
+            "KeyId": "The ARN of the KMS key that was used to encrypt the data."
+          }
+        },
+        "description": "The following example encrypts data with the specified symmetric encryption KMS key.",
+        "id": "to-encrypt-data-1",
+        "title": "To encrypt data with a symmetric encryption KMS key"
+      },
+      {
+        "input": {
+          "EncryptionAlgorithm": "RSAES_OAEP_SHA_256",
+          "KeyId": "0987dcba-09fe-87dc-65ba-ab0987654321",
+          "Plaintext": "<binary data>"
+        },
+        "output": {
+          "CiphertextBlob": "<binary data>",
+          "EncryptionAlgorithm": "RSAES_OAEP_SHA_256",
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/0987dcba-09fe-87dc-65ba-ab0987654321"
+        },
+        "comments": {
+          "input": {
+            "EncryptionAlgorithm": "The encryption algorithm to use in the operation.",
+            "KeyId": "The identifier of the KMS key to use for encryption. You can use the key ID or Amazon Resource Name (ARN) of the KMS key, or the name or ARN of an alias that refers to the KMS key.",
+            "Plaintext": "The data to encrypt."
+          },
+          "output": {
+            "CiphertextBlob": "The encrypted data (ciphertext).",
+            "EncryptionAlgorithm": "The encryption algorithm that was used in the operation.",
+            "KeyId": "The ARN of the KMS key that was used to encrypt the data."
+          }
+        },
+        "description": "The following example encrypts data with the specified RSA asymmetric KMS key. When you encrypt with an asymmetric key, you must specify the encryption algorithm.",
+        "id": "to-encrypt-data-2",
+        "title": "To encrypt data with an asymmetric encryption KMS key"
+      }
+    ],
+    "GenerateDataKey": [
+      {
+        "input": {
+          "KeyId": "alias/ExampleAlias",
+          "KeySpec": "AES_256"
+        },
+        "output": {
+          "CiphertextBlob": "<binary data>",
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "Plaintext": "<binary data>"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key to use to encrypt the data key. You can use the key ID or Amazon Resource Name (ARN) of the KMS key, or the name or ARN of an alias that refers to the KMS key.",
+            "KeySpec": "Specifies the type of data key to return."
+          },
+          "output": {
+            "CiphertextBlob": "The encrypted data key.",
+            "KeyId": "The ARN of the KMS key that was used to encrypt the data key.",
+            "Plaintext": "The unencrypted (plaintext) data key."
+          }
+        },
+        "description": "The following example generates a 256-bit symmetric data encryption key (data key) in two formats. One is the unencrypted (plainext) data key, and the other is the data key encrypted with the specified KMS key.",
+        "id": "to-generate-a-data-key-1",
+        "title": "To generate a data key"
+      },
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "KeySpec": "AES_256",
+          "Recipient": {
+            "AttestationDocument": "<attestation document>",
+            "KeyEncryptionAlgorithm": "RSAES_OAEP_SHA_256"
+          }
+        },
+        "output": {
+          "CiphertextBlob": "<binary data>",
+          "CiphertextForRecipient": "<binary data>",
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "Plaintext": ""
+        },
+        "comments": {
+          "input": {
+            "KeyId": "Identifies the KMS key used to encrypt the encrypted data key (CiphertextBlob)",
+            "KeySpec": "Specifies the type of data key to return",
+            "Recipient": "Specifies the attestation document from the Nitro enclave and the encryption algorithm to use with the public key from the attestation document"
+          },
+          "output": {
+            "CiphertextBlob": "The data key encrypted by the specified KMS key",
+            "CiphertextForRecipient": "The plaintext data key encrypted by the public key from the attestation document",
+            "KeyId": "The KMS key used to encrypt the CiphertextBlob (encrypted data key)",
+            "Plaintext": "This field is null or empty"
+          }
+        },
+        "description": "The following example includes the Recipient parameter with a signed attestation document from an AWS Nitro enclave. Instead of returning a copy of the data key encrypted by the KMS key and a plaintext copy of the data key, GenerateDataKey returns one copy of the data key encrypted by the KMS key (CiphertextBlob) and one copy of the data key encrypted by the public key from the attestation document (CiphertextForRecipient). The operation doesn't return a plaintext data key. ",
+        "id": "to-generate-a-data-key-for-a-nitro-enclave-2",
+        "title": "To generate a data key pair for a Nitro enclave"
+      }
+    ],
+    "GenerateDataKeyPair": [
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "KeyPairSpec": "RSA_3072"
+        },
+        "output": {
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "KeyPairSpec": "RSA_3072",
+          "PrivateKeyCiphertextBlob": "<binary data>",
+          "PrivateKeyPlaintext": "<binary data>",
+          "PublicKey": "<binary data>"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The key ID of the symmetric encryption KMS key that encrypts the private RSA key in the data key pair.",
+            "KeyPairSpec": "The requested key spec of the RSA data key pair."
+          },
+          "output": {
+            "KeyId": "The key ARN of the symmetric encryption KMS key that was used to encrypt the private key.",
+            "KeyPairSpec": "The actual key spec of the RSA data key pair.",
+            "PrivateKeyCiphertextBlob": "The encrypted private key of the RSA data key pair.",
+            "PrivateKeyPlaintext": "The plaintext private key of the RSA data key pair.",
+            "PublicKey": "The public key (plaintext) of the RSA data key pair."
+          }
+        },
+        "description": "This example generates an RSA data key pair for encryption and decryption. The operation returns a plaintext public key and private key, and a copy of the private key that is encrypted under a symmetric encryption KMS key that you specify.",
+        "id": "to-generate-an-rsa-key-pair-for-encryption-and-decryption-1",
+        "title": "To generate an RSA key pair for encryption and decryption"
+      },
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "KeyPairSpec": "RSA_3072",
+          "Recipient": {
+            "AttestationDocument": "<attestation document>",
+            "KeyEncryptionAlgorithm": "RSAES_OAEP_SHA_256"
+          }
+        },
+        "output": {
+          "CiphertextForRecipient": "<binary data>",
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "KeyPairSpec": "RSA_3072",
+          "PrivateKeyCiphertextBlob": "<binary data>",
+          "PrivateKeyPlaintext": "",
+          "PublicKey": "<binary data>"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The key ID of the symmetric encryption KMS key that encrypts the private RSA key in the data key pair.",
+            "KeyPairSpec": "The requested key spec of the RSA data key pair.",
+            "Recipient": "Specifies the attestation document from the Nitro enclave and the encryption algorithm to use with the public key from the attestation document."
+          },
+          "output": {
+            "CiphertextForRecipient": "The private key of the RSA data key pair encrypted by the public key from the attestation document",
+            "KeyId": "The key ARN of the symmetric encryption KMS key that was used to encrypt the PrivateKeyCiphertextBlob.",
+            "KeyPairSpec": "The actual key spec of the RSA data key pair.",
+            "PrivateKeyCiphertextBlob": "The private key of the RSA data key pair encrypted by the KMS key.",
+            "PrivateKeyPlaintext": "This field is null or empty",
+            "PublicKey": "The public key (plaintext) of the RSA data key pair."
+          }
+        },
+        "description": "The following example includes the Recipient parameter with a signed attestation document from an AWS Nitro enclave. Instead of returning a plaintext copy of the private data key, GenerateDataKeyPair returns a copy of the private data key encrypted by the public key from the attestation document (CiphertextForRecipient). It returns the public data key (PublicKey) and a copy of private data key encrypted under the specified KMS key (PrivateKeyCiphertextBlob), as usual, but plaintext private data key field (PrivateKeyPlaintext) is null or empty. ",
+        "id": "to-generate-a-data-key-pair-for-a-nitro-enclave-2",
+        "title": "To generate a data key pair for a Nitro enclave"
+      }
+    ],
+    "GenerateDataKeyPairWithoutPlaintext": [
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "KeyPairSpec": "ECC_NIST_P521"
+        },
+        "output": {
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "KeyPairSpec": "ECC_NIST_P521",
+          "PrivateKeyCiphertextBlob": "<binary data>",
+          "PublicKey": "<binary data>"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The symmetric encryption KMS key that encrypts the private key of the ECC data key pair.",
+            "KeyPairSpec": "The requested key spec of the ECC asymmetric data key pair."
+          },
+          "output": {
+            "KeyId": "The key ARN of the symmetric encryption KMS key that encrypted the private key in the ECC asymmetric data key pair.",
+            "KeyPairSpec": "The actual key spec of the ECC asymmetric data key pair.",
+            "PrivateKeyCiphertextBlob": "The encrypted private key of the asymmetric ECC data key pair.",
+            "PublicKey": "The public key (plaintext)."
+          }
+        },
+        "description": "This example returns an asymmetric elliptic curve (ECC) data key pair. The private key is encrypted under the symmetric encryption KMS key that you specify. This operation doesn't return a plaintext (unencrypted) private key.",
+        "id": "to-generate-an-asymmetric-data-key-pair-without-a-plaintext-key-1628620971564",
+        "title": "To generate an asymmetric data key pair without a plaintext key"
+      }
+    ],
+    "GenerateDataKeyWithoutPlaintext": [
+      {
+        "input": {
+          "KeyId": "alias/ExampleAlias",
+          "KeySpec": "AES_256"
+        },
+        "output": {
+          "CiphertextBlob": "<binary data>",
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key to use to encrypt the data key. You can use the key ID or Amazon Resource Name (ARN) of the KMS key, or the name or ARN of an alias that refers to the KMS key.",
+            "KeySpec": "Specifies the type of data key to return."
+          },
+          "output": {
+            "CiphertextBlob": "The encrypted data key.",
+            "KeyId": "The ARN of the KMS key that was used to encrypt the data key."
+          }
+        },
+        "description": "The following example generates an encrypted copy of a 256-bit symmetric data encryption key (data key). The data key is encrypted with the specified KMS key.",
+        "id": "to-generate-an-encrypted-data-key-1478914121134",
+        "title": "To generate an encrypted data key"
+      }
+    ],
+    "GenerateMac": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "MacAlgorithm": "HMAC_SHA_384",
+          "Message": "Hello World"
+        },
+        "output": {
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "Mac": "<HMAC_TAG>",
+          "MacAlgorithm": "HMAC_SHA_384"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The HMAC KMS key input to the HMAC algorithm.",
+            "MacAlgorithm": "The HMAC algorithm requested for the operation.",
+            "Message": "The message input to the HMAC algorithm."
+          },
+          "output": {
+            "KeyId": "The key ARN of the HMAC KMS key used in the operation.",
+            "Mac": "The HMAC tag that results from this operation.",
+            "MacAlgorithm": "The HMAC algorithm used in the operation."
+          }
+        },
+        "description": "This example generates an HMAC for a message, an HMAC KMS key, and a MAC algorithm. The algorithm must be supported by the specified HMAC KMS key.",
+        "id": "to-generate-an-hmac-for-a-message-1631570135665",
+        "title": "To generate an HMAC for a message"
+      }
+    ],
+    "GenerateRandom": [
+      {
+        "input": {
+          "NumberOfBytes": 32
+        },
+        "output": {
+          "Plaintext": "<binary data>"
+        },
+        "comments": {
+          "input": {
+            "NumberOfBytes": "The length of the random data, specified in number of bytes."
+          },
+          "output": {
+            "Plaintext": "The random data."
+          }
+        },
+        "description": "The following example generates 32 bytes of random data.",
+        "id": "to-generate-random-data-1",
+        "title": "To generate random data"
+      },
+      {
+        "input": {
+          "NumberOfBytes": 1024,
+          "Recipient": {
+            "AttestationDocument": "<attestation document>",
+            "KeyEncryptionAlgorithm": "RSAES_OAEP_SHA_256"
+          }
+        },
+        "output": {
+          "CiphertextForRecipient": "<binary data>",
+          "Plaintext": ""
+        },
+        "comments": {
+          "input": {
+            "NumberOfBytes": "The length of the random byte string",
+            "Recipient": "Specifies the attestation document from the Nitro enclave and the encryption algorithm to use with the public key from the attestation document"
+          },
+          "output": {
+            "CiphertextForRecipient": "The random data encrypted under the public key from the attestation document",
+            "Plaintext": "This field is null or empty"
+          }
+        },
+        "description": "The following example includes the Recipient parameter with a signed attestation document from an AWS Nitro enclave. Instead of returning a plaintext (unencrypted) byte string, GenerateRandom returns the byte string encrypted by the public key from the enclave's attestation document.",
+        "id": "to-generate-random-data-2",
+        "title": "To generate random data"
+      }
+    ],
+    "GetKeyPolicy": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "PolicyName": "default"
+        },
+        "output": {
+          "Policy": "{\n  \"Version\" : \"2012-10-17\",\n  \"Id\" : \"key-default-1\",\n  \"Statement\" : [ {\n    \"Sid\" : \"Enable IAM User Permissions\",\n    \"Effect\" : \"Allow\",\n    \"Principal\" : {\n      \"AWS\" : \"arn:aws:iam::111122223333:root\"\n    },\n    \"Action\" : \"kms:*\",\n    \"Resource\" : \"*\"\n  } ]\n}"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key whose key policy you want to retrieve. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key.",
+            "PolicyName": "The name of the key policy to retrieve."
+          },
+          "output": {
+            "Policy": "The key policy document."
+          }
+        },
+        "description": "The following example retrieves the key policy for the specified KMS key.",
+        "id": "to-retrieve-a-key-policy-1479170128325",
+        "title": "To retrieve a key policy"
+      }
+    ],
+    "GetKeyRotationStatus": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "KeyRotationEnabled": true,
+          "NextRotationDate": "2024-04-05T15:14:47.757000+00:00",
+          "OnDemandRotationStartDate": "2024-03-02T10:11:36.564000+00:00",
+          "RotationPeriodInDays": 365
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key whose key material rotation status you want to retrieve. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          },
+          "output": {
+            "KeyId": "Identifies the specified symmetric encryption KMS key.",
+            "KeyRotationEnabled": "A boolean that indicates the key material rotation status. Returns true when automatic rotation of the key material is enabled, or false when it is not.",
+            "NextRotationDate": "The next date that the key material will be automatically rotated.",
+            "OnDemandRotationStartDate": "Identifies the date and time that an in progress on-demand rotation was initiated.",
+            "RotationPeriodInDays": "The number of days between each automatic rotation. The default value is 365 days."
+          }
+        },
+        "description": "The following example retrieves detailed information about the rotation status for a KMS key, including whether automatic key rotation is enabled for the specified KMS key, the rotation period, and the next scheduled rotation date.",
+        "id": "to-retrieve-the-rotation-status-for-a-kms-key-1712500357701",
+        "title": "To retrieve the rotation status for a KMS key"
+      }
+    ],
+    "GetParametersForImport": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "WrappingAlgorithm": "RSAES_OAEP_SHA_1",
+          "WrappingKeySpec": "RSA_2048"
+        },
+        "output": {
+          "ImportToken": "<binary data>",
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "ParametersValidTo": "2023-02-01T14:52:17-08:00",
+          "PublicKey": "<binary data>"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key that will be associated with the imported key material. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key.",
+            "WrappingAlgorithm": "The algorithm that you will use to encrypt the key material before importing it.",
+            "WrappingKeySpec": "The type of wrapping key (public key) to return in the response."
+          },
+          "output": {
+            "ImportToken": "The import token to send with a subsequent ImportKeyMaterial request.",
+            "KeyId": "The ARN of the KMS key that will be associated with the imported key material.",
+            "ParametersValidTo": "The date and time when the import token and public key expire. After this time, call GetParametersForImport again.",
+            "PublicKey": "The public key to use to encrypt the key material before importing it."
+          }
+        },
+        "description": "The following example downloads a public key and import token to import symmetric encryption key material. It uses the default wrapping key spec and the RSAES_OAEP_SHA_256 wrapping algorithm.",
+        "id": "to-download-the-public-key-and-import-token-1",
+        "title": "To download the public key and import token for a symmetric encryption KMS key"
+      },
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/8888abcd-12ab-34cd-56ef-1234567890ab",
+          "WrappingAlgorithm": "RSA_AES_KEY_WRAP_SHA_256",
+          "WrappingKeySpec": "RSA_4096"
+        },
+        "output": {
+          "ImportToken": "<binary data>",
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/8888abcd-12ab-34cd-56ef-1234567890ab",
+          "ParametersValidTo": "2023-03-08T13:02:02-07:00",
+          "PublicKey": "<binary data>"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key that will be associated with the imported key material. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key.",
+            "WrappingAlgorithm": "The algorithm that you will use to encrypt the key material before importing it.",
+            "WrappingKeySpec": "The type of wrapping key (public key) to return in the response."
+          },
+          "output": {
+            "ImportToken": "The import token to send with a subsequent ImportKeyMaterial request.",
+            "KeyId": "The ARN of the KMS key that will be associated with the imported key material.",
+            "ParametersValidTo": "The date and time when the import token and public key expire. After this time, call GetParametersForImport again.",
+            "PublicKey": "The public key to use to encrypt the key material before importing it."
+          }
+        },
+        "description": "The following example downloads a public key and import token to import an RSA private key. It uses a required RSA_AES wrapping algorithm and the largest supported private key.",
+        "id": "to-download-the-public-key-and-import-token-2",
+        "title": "To download the public key and import token for an RSA asymmetric KMS key"
+      },
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/9876abcd-12ab-34cd-56ef-1234567890ab",
+          "WrappingAlgorithm": "RSAES_OAEP_SHA_256",
+          "WrappingKeySpec": "RSA_3072"
+        },
+        "output": {
+          "ImportToken": "<binary data>",
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/9876abcd-12ab-34cd-56ef-1234567890ab",
+          "ParametersValidTo": "2023-09-12T03:15:01-20:00",
+          "PublicKey": "<binary data>"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key that will be associated with the imported key material. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key.",
+            "WrappingAlgorithm": "The algorithm that you will use to encrypt the key material before importing it.",
+            "WrappingKeySpec": "The type of wrapping key (public key) to return in the response."
+          },
+          "output": {
+            "ImportToken": "The import token to send with a subsequent ImportKeyMaterial request.",
+            "KeyId": "The ARN of the KMS key that will be associated with the imported key material.",
+            "ParametersValidTo": "The date and time when the import token and public key expire. After this time, call GetParametersForImport again.",
+            "PublicKey": "The public key to use to encrypt the key material before importing it."
+          }
+        },
+        "description": "The following example downloads a public key and import token to import an ECC_NIST_P521 (secp521r1) private key. You cannot directly wrap this ECC key under an RSA_2048 public key, although you can use an RSA_2048 public key with an RSA_AES wrapping algorithm to wrap any supported key material. This example requests an RSA_3072 public key for use with the RSAES_OAEP_SHA_256.",
+        "id": "to-download-the-public-key-and-import-token-3",
+        "title": "To download the public key and import token for an elliptic curve (ECC) asymmetric KMS key"
+      },
+      {
+        "input": {
+          "KeyId": "2468abcd-12ab-34cd-56ef-1234567890ab",
+          "WrappingAlgorithm": "RSAES_OAEP_SHA_256",
+          "WrappingKeySpec": "RSA_4096"
+        },
+        "output": {
+          "ImportToken": "<binary data>",
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/2468abcd-12ab-34cd-56ef-1234567890ab",
+          "ParametersValidTo": "2023-04-02T13:02:02-07:00",
+          "PublicKey": "<binary data>"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key that will be associated with the imported key material. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key.",
+            "WrappingAlgorithm": "The algorithm that you will use to encrypt the key material before importing it.",
+            "WrappingKeySpec": "The type of wrapping key (public key) to return in the response."
+          },
+          "output": {
+            "ImportToken": "The import token to send with a subsequent ImportKeyMaterial request.",
+            "KeyId": "The ARN of the KMS key that will be associated with the imported key material.",
+            "ParametersValidTo": "The date and time when the import token and public key expire. After this time, call GetParametersForImport again.",
+            "PublicKey": "The public key to use to encrypt the key material before importing it."
+          }
+        },
+        "description": "The following example downloads a public key and import token to import an HMAC key. It uses the RSAES_OAEP_SHA_256 wrapping algorithm and an RSA_4096 private key.",
+        "id": "to-download-the-public-key-and-import-token-4",
+        "title": "To download the public key and import token for an HMAC KMS key"
+      }
+    ],
+    "GetPublicKey": [
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/0987dcba-09fe-87dc-65ba-ab0987654321"
+        },
+        "output": {
+          "CustomerMasterKeySpec": "RSA_4096",
+          "EncryptionAlgorithms": [
+            "RSAES_OAEP_SHA_1",
+            "RSAES_OAEP_SHA_256"
+          ],
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/0987dcba-09fe-87dc-65ba-ab0987654321",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "PublicKey": "<binary data>"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The key ARN of the asymmetric KMS key."
+          },
+          "output": {
+            "CustomerMasterKeySpec": "The key spec of the asymmetric KMS key from which the public key was downloaded.",
+            "EncryptionAlgorithms": "The encryption algorithms supported by the asymmetric KMS key that was downloaded.",
+            "KeyId": "The key ARN of the asymmetric KMS key from which the public key was downloaded.",
+            "KeyUsage": "The key usage of the asymmetric KMS key from which the public key was downloaded.",
+            "PublicKey": "The public key (plaintext) of the asymmetric KMS key."
+          }
+        },
+        "description": "This example gets the public key of an asymmetric RSA KMS key used for encryption and decryption. The operation returns the key spec, key usage, and encryption or signing algorithms to help you use the public key correctly outside of AWS KMS.",
+        "id": "to-download-the-public-key-of-an-asymmetric-kms-key-1628621691873",
+        "title": "To download the public key of an asymmetric KMS key"
+      }
+    ],
+    "ImportKeyMaterial": [
+      {
+        "input": {
+          "EncryptedKeyMaterial": "<binary data>",
+          "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+          "ImportToken": "<binary data>",
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "EncryptedKeyMaterial": "The encrypted key material to import.",
+            "ExpirationModel": "A value that specifies whether the key material expires.",
+            "ImportToken": "The import token that you received in the response to a previous GetParametersForImport request.",
+            "KeyId": "The identifier of the KMS key to import the key material into. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          }
+        },
+        "description": "The following example imports key material into the specified KMS key.",
+        "id": "to-import-key-material-into-a-kms-key-1",
+        "title": "To import key material into a KMS key"
+      },
+      {
+        "input": {
+          "EncryptedKeyMaterial": "<binary data>",
+          "ExpirationModel": "KEY_MATERIAL_EXPIRES",
+          "ImportToken": "<binary data>",
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "ValidTo": "2023-09-30T00:00:00-00:00"
+        },
+        "comments": {
+          "input": {
+            "EncryptedKeyMaterial": "The encrypted key material to import.",
+            "ExpirationModel": "A value that specifies whether the key material expires.",
+            "ImportToken": "The import token that you received in the response to a previous GetParametersForImport request.",
+            "KeyId": "The identifier of the KMS key to import the key material into. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key.",
+            "ValidTo": "Specifies the date and time when the imported key material expires."
+          }
+        },
+        "description": "The following example imports key material that expires in 3 days. It might be part of an application that frequently reimports the same key material to comply with business rules or regulations.",
+        "id": "to-import-key-material-into-a-kms-key-2",
+        "title": "To import key material into a KMS key"
+      }
+    ],
+    "ListAliases": [
+      {
+        "output": {
+          "Aliases": [
+            {
+              "AliasArn": "arn:aws:kms:us-east-2:111122223333:alias/aws/acm",
+              "AliasName": "alias/aws/acm",
+              "TargetKeyId": "da03f6f7-d279-427a-9cae-de48d07e5b66"
+            },
+            {
+              "AliasArn": "arn:aws:kms:us-east-2:111122223333:alias/aws/ebs",
+              "AliasName": "alias/aws/ebs",
+              "TargetKeyId": "25a217e7-7170-4b8c-8bf6-045ea5f70e5b"
+            },
+            {
+              "AliasArn": "arn:aws:kms:us-east-2:111122223333:alias/aws/rds",
+              "AliasName": "alias/aws/rds",
+              "TargetKeyId": "7ec3104e-c3f2-4b5c-bf42-bfc4772c6685"
+            },
+            {
+              "AliasArn": "arn:aws:kms:us-east-2:111122223333:alias/aws/redshift",
+              "AliasName": "alias/aws/redshift",
+              "TargetKeyId": "08f7a25a-69e2-4fb5-8f10-393db27326fa"
+            },
+            {
+              "AliasArn": "arn:aws:kms:us-east-2:111122223333:alias/aws/s3",
+              "AliasName": "alias/aws/s3",
+              "TargetKeyId": "d2b0f1a3-580d-4f79-b836-bc983be8cfa5"
+            },
+            {
+              "AliasArn": "arn:aws:kms:us-east-2:111122223333:alias/example1",
+              "AliasName": "alias/example1",
+              "TargetKeyId": "4da1e216-62d0-46c5-a7c0-5f3a3d2f8046"
+            },
+            {
+              "AliasArn": "arn:aws:kms:us-east-2:111122223333:alias/example2",
+              "AliasName": "alias/example2",
+              "TargetKeyId": "f32fef59-2cc2-445b-8573-2d73328acbee"
+            },
+            {
+              "AliasArn": "arn:aws:kms:us-east-2:111122223333:alias/example3",
+              "AliasName": "alias/example3",
+              "TargetKeyId": "1374ef38-d34e-4d5f-b2c9-4e0daee38855"
+            }
+          ],
+          "Truncated": false
+        },
+        "comments": {
+          "output": {
+            "Aliases": "A list of aliases, including the key ID of the KMS key that each alias refers to.",
+            "Truncated": "A boolean that indicates whether there are more items in the list. Returns true when there are more items, or false when there are not."
+          }
+        },
+        "description": "The following example lists aliases.",
+        "id": "to-list-aliases-1480729693349",
+        "title": "To list aliases"
+      }
+    ],
+    "ListGrants": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "Grants": [
+            {
+              "CreationDate": "2016-10-25T14:37:41-07:00",
+              "GrantId": "91ad875e49b04a9d1f3bdeb84d821f9db6ea95e1098813f6d47f0c65fbe2a172",
+              "GranteePrincipal": "acm.us-east-2.amazonaws.com",
+              "IssuingAccount": "arn:aws:iam::111122223333:root",
+              "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+              "Operations": [
+                "Encrypt",
+                "ReEncryptFrom",
+                "ReEncryptTo"
+              ],
+              "RetiringPrincipal": "acm.us-east-2.amazonaws.com"
+            },
+            {
+              "CreationDate": "2016-10-25T14:37:41-07:00",
+              "GrantId": "a5d67d3e207a8fc1f4928749ee3e52eb0440493a8b9cf05bbfad91655b056200",
+              "GranteePrincipal": "acm.us-east-2.amazonaws.com",
+              "IssuingAccount": "arn:aws:iam::111122223333:root",
+              "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+              "Operations": [
+                "ReEncryptFrom",
+                "ReEncryptTo"
+              ],
+              "RetiringPrincipal": "acm.us-east-2.amazonaws.com"
+            },
+            {
+              "CreationDate": "2016-10-25T14:37:41-07:00",
+              "GrantId": "c541aaf05d90cb78846a73b346fc43e65be28b7163129488c738e0c9e0628f4f",
+              "GranteePrincipal": "acm.us-east-2.amazonaws.com",
+              "IssuingAccount": "arn:aws:iam::111122223333:root",
+              "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+              "Operations": [
+                "Encrypt",
+                "ReEncryptFrom",
+                "ReEncryptTo"
+              ],
+              "RetiringPrincipal": "acm.us-east-2.amazonaws.com"
+            },
+            {
+              "CreationDate": "2016-10-25T14:37:41-07:00",
+              "GrantId": "dd2052c67b4c76ee45caf1dc6a1e2d24e8dc744a51b36ae2f067dc540ce0105c",
+              "GranteePrincipal": "acm.us-east-2.amazonaws.com",
+              "IssuingAccount": "arn:aws:iam::111122223333:root",
+              "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+              "Operations": [
+                "Encrypt",
+                "ReEncryptFrom",
+                "ReEncryptTo"
+              ],
+              "RetiringPrincipal": "acm.us-east-2.amazonaws.com"
+            }
+          ],
+          "Truncated": true
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key whose grants you want to list. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          },
+          "output": {
+            "Grants": "A list of grants.",
+            "Truncated": "A boolean that indicates whether there are more items in the list. Returns true when there are more items, or false when there are not."
+          }
+        },
+        "description": "The following example lists grants for the specified KMS key.",
+        "id": "to-list-grants-for-a-cmk-1481067365389",
+        "title": "To list grants for a KMS key"
+      }
+    ],
+    "ListKeyPolicies": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "PolicyNames": [
+            "default"
+          ],
+          "Truncated": false
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key whose key policies you want to list. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          },
+          "output": {
+            "PolicyNames": "A list of key policy names.",
+            "Truncated": "A boolean that indicates whether there are more items in the list. Returns true when there are more items, or false when there are not."
+          }
+        },
+        "description": "The following example lists key policies for the specified KMS key.",
+        "id": "to-list-key-policies-for-a-cmk-1481069780998",
+        "title": "To list key policies for a KMS key"
+      }
+    ],
+    "ListKeyRotations": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "Rotations": [
+            {
+              "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+              "RotationDate": "2024-03-02T10:11:36.564000+00:00",
+              "RotationType": "AUTOMATIC"
+            },
+            {
+              "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+              "RotationDate": "2024-04-05T15:14:47.757000+00:00",
+              "RotationType": "ON_DEMAND"
+            }
+          ],
+          "Truncated": false
+        },
+        "comments": {
+          "input": {
+            "KeyID": "The key ID or the Amazon Resource Name (ARN) of the KMS key."
+          },
+          "output": {
+            "Rotations": "A list of key rotations.",
+            "Truncated": "A flag that indicates whether there are more items in the list. When the value is true, the list in this response is truncated. To get more items, pass the value of the NextMarker element in this response to the Marker parameter in a subsequent request."
+          }
+        },
+        "description": "The following example returns information about all completed key material rotations for the specified KMS key.",
+        "id": "to-retrieve-information-about-all-completed-key-material-rotations-1712585167775",
+        "title": "To retrieve information about all completed key material rotations"
+      }
+    ],
+    "ListKeys": [
+      {
+        "output": {
+          "Keys": [
+            {
+              "KeyArn": "arn:aws:kms:us-east-2:111122223333:key/0d990263-018e-4e65-a703-eff731de951e",
+              "KeyId": "0d990263-018e-4e65-a703-eff731de951e"
+            },
+            {
+              "KeyArn": "arn:aws:kms:us-east-2:111122223333:key/144be297-0ae1-44ac-9c8f-93cd8c82f841",
+              "KeyId": "144be297-0ae1-44ac-9c8f-93cd8c82f841"
+            },
+            {
+              "KeyArn": "arn:aws:kms:us-east-2:111122223333:key/21184251-b765-428e-b852-2c7353e72571",
+              "KeyId": "21184251-b765-428e-b852-2c7353e72571"
+            },
+            {
+              "KeyArn": "arn:aws:kms:us-east-2:111122223333:key/214fe92f-5b03-4ae1-b350-db2a45dbe10c",
+              "KeyId": "214fe92f-5b03-4ae1-b350-db2a45dbe10c"
+            },
+            {
+              "KeyArn": "arn:aws:kms:us-east-2:111122223333:key/339963f2-e523-49d3-af24-a0fe752aa458",
+              "KeyId": "339963f2-e523-49d3-af24-a0fe752aa458"
+            },
+            {
+              "KeyArn": "arn:aws:kms:us-east-2:111122223333:key/b776a44b-df37-4438-9be4-a27494e4271a",
+              "KeyId": "b776a44b-df37-4438-9be4-a27494e4271a"
+            },
+            {
+              "KeyArn": "arn:aws:kms:us-east-2:111122223333:key/deaf6c9e-cf2c-46a6-bf6d-0b6d487cffbb",
+              "KeyId": "deaf6c9e-cf2c-46a6-bf6d-0b6d487cffbb"
+            }
+          ],
+          "Truncated": false
+        },
+        "comments": {
+          "output": {
+            "Keys": "A list of KMS keys, including the key ID and Amazon Resource Name (ARN) of each one.",
+            "Truncated": "A boolean that indicates whether there are more items in the list. Returns true when there are more items, or false when there are not."
+          }
+        },
+        "description": "The following example lists KMS keys.",
+        "id": "to-list-cmks-1481071643069",
+        "title": "To list KMS keys"
+      }
+    ],
+    "ListResourceTags": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "Tags": [
+            {
+              "TagKey": "CostCenter",
+              "TagValue": "87654"
+            },
+            {
+              "TagKey": "CreatedBy",
+              "TagValue": "ExampleUser"
+            },
+            {
+              "TagKey": "Purpose",
+              "TagValue": "Test"
+            }
+          ],
+          "Truncated": false
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key whose tags you are listing. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          },
+          "output": {
+            "Tags": "A list of tags.",
+            "Truncated": "A boolean that indicates whether there are more items in the list. Returns true when there are more items, or false when there are not."
+          }
+        },
+        "description": "The following example lists tags for a KMS key.",
+        "id": "to-list-tags-for-a-cmk-1483996855796",
+        "title": "To list tags for a KMS key"
+      }
+    ],
+    "ListRetirableGrants": [
+      {
+        "input": {
+          "RetiringPrincipal": "arn:aws:iam::111122223333:role/ExampleRole"
+        },
+        "output": {
+          "Grants": [
+            {
+              "CreationDate": "2016-12-07T11:09:35-08:00",
+              "GrantId": "0c237476b39f8bc44e45212e08498fbe3151305030726c0590dd8d3e9f3d6a60",
+              "GranteePrincipal": "arn:aws:iam::111122223333:role/ExampleRole",
+              "IssuingAccount": "arn:aws:iam::444455556666:root",
+              "KeyId": "arn:aws:kms:us-east-2:444455556666:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+              "Operations": [
+                "Decrypt",
+                "Encrypt"
+              ],
+              "RetiringPrincipal": "arn:aws:iam::111122223333:role/ExampleRole"
+            }
+          ],
+          "Truncated": false
+        },
+        "comments": {
+          "input": {
+            "RetiringPrincipal": "The retiring principal whose grants you want to list. Use the Amazon Resource Name (ARN) of a principal such as an AWS account (root), IAM user, federated user, or assumed role user."
+          },
+          "output": {
+            "Grants": "A list of grants that the specified principal can retire.",
+            "Truncated": "A boolean that indicates whether there are more items in the list. Returns true when there are more items, or false when there are not."
+          }
+        },
+        "description": "The following example lists the grants that the specified principal (identity) can retire.",
+        "id": "to-list-grants-that-the-specified-principal-can-retire-1481140499620",
+        "title": "To list grants that the specified principal can retire"
+      }
+    ],
+    "PutKeyPolicy": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "Policy": "{\n    \"Version\": \"2012-10-17\",\n    \"Id\": \"custom-policy-2016-12-07\",\n    \"Statement\": [\n        {\n            \"Sid\": \"Enable IAM User Permissions\",\n            \"Effect\": \"Allow\",\n            \"Principal\": {\n                \"AWS\": \"arn:aws:iam::111122223333:root\"\n            },\n            \"Action\": \"kms:*\",\n            \"Resource\": \"*\"\n        },\n        {\n            \"Sid\": \"Allow access for Key Administrators\",\n            \"Effect\": \"Allow\",\n            \"Principal\": {\n                \"AWS\": [\n                    \"arn:aws:iam::111122223333:user/ExampleAdminUser\",\n                    \"arn:aws:iam::111122223333:role/ExampleAdminRole\"\n                ]\n            },\n            \"Action\": [\n                \"kms:Create*\",\n                \"kms:Describe*\",\n                \"kms:Enable*\",\n                \"kms:List*\",\n                \"kms:Put*\",\n                \"kms:Update*\",\n                \"kms:Revoke*\",\n                \"kms:Disable*\",\n                \"kms:Get*\",\n                \"kms:Delete*\",\n                \"kms:ScheduleKeyDeletion\",\n                \"kms:CancelKeyDeletion\"\n            ],\n            \"Resource\": \"*\"\n        },\n        {\n            \"Sid\": \"Allow use of the key\",\n            \"Effect\": \"Allow\",\n            \"Principal\": {\n                \"AWS\": \"arn:aws:iam::111122223333:role/ExamplePowerUserRole\"\n            },\n            \"Action\": [\n                \"kms:Encrypt\",\n                \"kms:Decrypt\",\n                \"kms:ReEncrypt*\",\n                \"kms:GenerateDataKey*\",\n                \"kms:DescribeKey\"\n            ],\n            \"Resource\": \"*\"\n        },\n        {\n            \"Sid\": \"Allow attachment of persistent resources\",\n            \"Effect\": \"Allow\",\n            \"Principal\": {\n                \"AWS\": \"arn:aws:iam::111122223333:role/ExamplePowerUserRole\"\n            },\n            \"Action\": [\n                \"kms:CreateGrant\",\n                \"kms:ListGrants\",\n                \"kms:RevokeGrant\"\n            ],\n            \"Resource\": \"*\",\n            \"Condition\": {\n                \"Bool\": {\n                    \"kms:GrantIsForAWSResource\": \"true\"\n                }\n            }\n        }\n    ]\n}\n",
+          "PolicyName": "default"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key to attach the key policy to. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key.",
+            "Policy": "The key policy document.",
+            "PolicyName": "The name of the key policy."
+          }
+        },
+        "description": "The following example attaches a key policy to the specified KMS key.",
+        "id": "to-attach-a-key-policy-to-a-cmk-1481147345018",
+        "title": "To attach a key policy to a KMS key"
+      }
+    ],
+    "ReEncrypt": [
+      {
+        "input": {
+          "CiphertextBlob": "<binary data>",
+          "DestinationKeyId": "0987dcba-09fe-87dc-65ba-ab0987654321"
+        },
+        "output": {
+          "CiphertextBlob": "<binary data>",
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/0987dcba-09fe-87dc-65ba-ab0987654321",
+          "SourceKeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "CiphertextBlob": "The data to reencrypt.",
+            "DestinationKeyId": "The identifier of the KMS key to use to reencrypt the data. You can use any valid key identifier.",
+            "SourceKeyId": "The identifier of the KMS key to use to decrypt the data. You can use any valid key identifier."
+          },
+          "output": {
+            "CiphertextBlob": "The reencrypted data.",
+            "KeyId": "The ARN of the KMS key that was used to reencrypt the data.",
+            "SourceKeyId": "The ARN of the KMS key that was originally used to encrypt the data."
+          }
+        },
+        "description": "The following example reencrypts data with the specified KMS key.",
+        "id": "to-reencrypt-data-1481230358001",
+        "title": "To reencrypt data"
+      }
+    ],
+    "ReplicateKey": [
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab",
+          "ReplicaRegion": "us-west-2"
+        },
+        "output": {
+          "ReplicaKeyMetadata": {
+            "AWSAccountId": "111122223333",
+            "Arn": "arn:aws:kms:us-west-2:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab",
+            "CreationDate": 1607472987.918,
+            "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+            "Description": "",
+            "Enabled": true,
+            "EncryptionAlgorithms": [
+              "SYMMETRIC_DEFAULT"
+            ],
+            "KeyId": "mrk-1234abcd12ab34cd56ef1234567890ab",
+            "KeyManager": "CUSTOMER",
+            "KeyState": "Enabled",
+            "KeyUsage": "ENCRYPT_DECRYPT",
+            "MultiRegion": true,
+            "MultiRegionConfiguration": {
+              "MultiRegionKeyType": "REPLICA",
+              "PrimaryKey": {
+                "Arn": "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab",
+                "Region": "us-east-1"
+              },
+              "ReplicaKeys": [
+                {
+                  "Arn": "arn:aws:kms:us-west-2:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab",
+                  "Region": "us-west-2"
+                }
+              ]
+            },
+            "Origin": "AWS_KMS"
+          },
+          "ReplicaPolicy": "{\n  \"Version\" : \"2012-10-17\",\n  \"Id\" : \"key-default-1\",...}",
+          "ReplicaTags": [
+
+          ]
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The key ID or key ARN of the multi-Region primary key",
+            "ReplicaRegion": "The Region of the new replica."
+          },
+          "output": {
+            "ReplicaKeyMetadata": "An object that displays detailed information about the replica key.",
+            "ReplicaPolicy": "The key policy of the replica key. If you don't specify a key policy, the replica key gets the default key policy for a KMS key.",
+            "ReplicaTags": "The tags on the replica key, if any."
+          }
+        },
+        "description": "This example creates a multi-Region replica key in us-west-2 of a multi-Region primary key in us-east-1.",
+        "id": "to-replicate-a-multi-region-key-in-a-different-aws-region-1628622402887",
+        "title": "To replicate a multi-Region key in a different AWS Region"
+      }
+    ],
+    "RetireGrant": [
+      {
+        "input": {
+          "GrantId": "0c237476b39f8bc44e45212e08498fbe3151305030726c0590dd8d3e9f3d6a60",
+          "KeyId": "arn:aws:kms:us-east-2:444455556666:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "GrantId": "The identifier of the grant to retire.",
+            "KeyId": "The Amazon Resource Name (ARN) of the KMS key associated with the grant."
+          }
+        },
+        "description": "The following example retires a grant.",
+        "id": "to-retire-a-grant-1481327028297",
+        "title": "To retire a grant"
+      }
+    ],
+    "RevokeGrant": [
+      {
+        "input": {
+          "GrantId": "0c237476b39f8bc44e45212e08498fbe3151305030726c0590dd8d3e9f3d6a60",
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "GrantId": "The identifier of the grant to revoke.",
+            "KeyId": "The identifier of the KMS key associated with the grant. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          }
+        },
+        "description": "The following example revokes a grant.",
+        "id": "to-revoke-a-grant-1481329549302",
+        "title": "To revoke a grant"
+      }
+    ],
+    "RotateKeyOnDemand": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "output": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key whose key material you want to initiate on-demand rotation on. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          },
+          "output": {
+            "KeyId": "The KMS key that you initiated on-demand rotation on."
+          }
+        },
+        "description": "The following example immediately initiates rotation of the key material for the specified KMS key.",
+        "id": "to-perform-on-demand-rotation-of-key-material-1712499025700",
+        "title": "To perform on-demand rotation of key material"
+      }
+    ],
+    "ScheduleKeyDeletion": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "PendingWindowInDays": 7
+        },
+        "output": {
+          "DeletionDate": "2016-12-17T16:00:00-08:00",
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key to schedule for deletion. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key.",
+            "PendingWindowInDays": "The waiting period, specified in number of days. After the waiting period ends, KMS deletes the KMS key."
+          },
+          "output": {
+            "DeletionDate": "The date and time after which KMS deletes the KMS key.",
+            "KeyId": "The ARN of the KMS key that is scheduled for deletion."
+          }
+        },
+        "description": "The following example schedules the specified KMS key for deletion.",
+        "id": "to-schedule-a-cmk-for-deletion-1481331111094",
+        "title": "To schedule a KMS key for deletion"
+      }
+    ],
+    "Sign": [
+      {
+        "input": {
+          "KeyId": "alias/ECC_signing_key",
+          "Message": "<message to be signed>",
+          "MessageType": "RAW",
+          "SigningAlgorithm": "ECDSA_SHA_384"
+        },
+        "output": {
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "Signature": "<binary data>",
+          "SigningAlgorithm": "ECDSA_SHA_384"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The asymmetric KMS key to be used to generate the digital signature. This example uses an alias of the KMS key.",
+            "Message": "Message to be signed. Use Base-64 for the CLI.",
+            "MessageType": "Indicates whether the message is RAW or a DIGEST.",
+            "SigningAlgorithm": "The requested signing algorithm. This must be an algorithm that the KMS key supports."
+          },
+          "output": {
+            "KeyId": "The key ARN of the asymmetric KMS key that was used to sign the message.",
+            "Signature": "The digital signature of the message.",
+            "SigningAlgorithm": "The actual signing algorithm that was used to generate the signature."
+          }
+        },
+        "description": "This operation uses the private key in an asymmetric elliptic curve (ECC) KMS key to generate a digital signature for a given message.",
+        "id": "to-digitally-sign-a-message-with-an-asymmetric-kms-key-1",
+        "title": "To digitally sign a message with an asymmetric KMS key."
+      },
+      {
+        "input": {
+          "KeyId": "alias/RSA_signing_key",
+          "Message": "<message digest to be signed>",
+          "MessageType": "DIGEST",
+          "SigningAlgorithm": "RSASSA_PKCS1_V1_5_SHA_256"
+        },
+        "output": {
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/0987dcba-09fe-87dc-65ba-ab0987654321",
+          "Signature": "<binary data>",
+          "SigningAlgorithm": "RSASSA_PKCS1_V1_5_SHA_256"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The asymmetric KMS key to be used to generate the digital signature. This example uses an alias of the KMS key.",
+            "Message": "Message to be signed. Use Base-64 for the CLI.",
+            "MessageType": "Indicates whether the message is RAW or a DIGEST. When it is RAW, KMS hashes the message before signing. When it is DIGEST, KMS skips the hashing step and signs the Message value.",
+            "SigningAlgorithm": "The requested signing algorithm. This must be an algorithm that the KMS key supports."
+          },
+          "output": {
+            "KeyId": "The key ARN of the asymmetric KMS key that was used to sign the message.",
+            "Signature": "The digital signature of the message.",
+            "SigningAlgorithm": "The actual signing algorithm that was used to generate the signature."
+          }
+        },
+        "description": "This operation uses the private key in an asymmetric RSA signing KMS key to generate a digital signature for a message digest. In this example, a large message was hashed and the resulting digest is provided in the Message parameter. To tell KMS not to hash the message again, the MessageType field is set to DIGEST",
+        "id": "to-digitally-sign-a-message-digest-with-an-asymmetric-kms-key-2",
+        "title": "To digitally sign a message digest with an asymmetric KMS key."
+      }
+    ],
+    "TagResource": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "Tags": [
+            {
+              "TagKey": "Purpose",
+              "TagValue": "Test"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key you are tagging. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key.",
+            "Tags": "A list of tags."
+          }
+        },
+        "description": "The following example tags a KMS key.",
+        "id": "to-tag-a-cmk-1483997246518",
+        "title": "To tag a KMS key"
+      }
+    ],
+    "UntagResource": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "TagKeys": [
+            "Purpose",
+            "CostCenter"
+          ]
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The identifier of the KMS key whose tags you are removing.",
+            "TagKeys": "A list of tag keys. Provide only the tag keys, not the tag values."
+          }
+        },
+        "description": "The following example removes tags from a KMS key.",
+        "id": "to-remove-tags-from-a-cmk-1483997590962",
+        "title": "To remove tags from a KMS key"
+      }
+    ],
+    "UpdateAlias": [
+      {
+        "input": {
+          "AliasName": "alias/ExampleAlias",
+          "TargetKeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "AliasName": "The alias to update.",
+            "TargetKeyId": "The identifier of the KMS key that the alias will refer to after this operation succeeds. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          }
+        },
+        "description": "The following example updates the specified alias to refer to the specified KMS key.",
+        "id": "to-update-an-alias-1481572726920",
+        "title": "To update an alias"
+      }
+    ],
+    "UpdateCustomKeyStore": [
+      {
+        "input": {
+          "CustomKeyStoreId": "cks-1234567890abcdef0",
+          "NewCustomKeyStoreName": "DevelopmentKeys"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreId": "The ID of the custom key store that you are updating.",
+            "NewCustomKeyStoreName": "A new friendly name for the custom key store."
+          },
+          "output": {
+          }
+        },
+        "description": "This example changes the friendly name of the AWS KMS custom key store to the name that you specify. This operation does not return any data. To verify that the operation worked, use the DescribeCustomKeyStores operation.",
+        "id": "to-edit-the-friendly-name-of-a-custom-key-store-1",
+        "title": "To edit the friendly name of a custom key store"
+      },
+      {
+        "input": {
+          "CustomKeyStoreId": "cks-1234567890abcdef0",
+          "KeyStorePassword": "ExamplePassword"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreId": "The ID of the custom key store that you are updating.",
+            "KeyStorePassword": "The password for the kmsuser crypto user in the CloudHSM cluster."
+          },
+          "output": {
+          }
+        },
+        "description": "This example tells AWS KMS the password for the kmsuser crypto user in the AWS CloudHSM cluster that is associated with the AWS KMS custom key store. (It does not change the password in the CloudHSM cluster.) This operation does not return any data.",
+        "id": "to-edit-the-properties-of-an-aws-cloudhsm-key-store-2",
+        "title": "To edit the password of an AWS CloudHSM key store"
+      },
+      {
+        "input": {
+          "CloudHsmClusterId": "cluster-234abcdefABC",
+          "CustomKeyStoreId": "cks-1234567890abcdef0"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+            "CloudHsmClusterId": "The ID of the AWS CloudHSM cluster that you want to associate with the custom key store. This cluster must be related to the original CloudHSM cluster for this key store.",
+            "CustomKeyStoreId": "The ID of the custom key store that you are updating."
+          },
+          "output": {
+          }
+        },
+        "description": "This example changes the AWS CloudHSM cluster that is associated with an AWS CloudHSM key store to a related cluster, such as a different backup of the same cluster. This operation does not return any data. To verify that the operation worked, use the DescribeCustomKeyStores operation.",
+        "id": "to-associate-the-custom-key-store-with-a-different-but-related-aws-cloudhsm-cluster-3",
+        "title": "To associate the custom key store with a different, but related, AWS CloudHSM cluster."
+      },
+      {
+        "input": {
+          "CustomKeyStoreId": "cks-1234567890abcdef0",
+          "XksProxyAuthenticationCredential": {
+            "AccessKeyId": "ABCDE12345670EXAMPLE",
+            "RawSecretAccessKey": "DXjSUawnel2fr6SKC7G25CNxTyWKE5PF9XX6H/u9pSo="
+          }
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreId": "Identifies the custom key store",
+            "XksProxyAuthenticationCredential": "Specifies the values in the proxy authentication credential"
+          },
+          "output": {
+          }
+        },
+        "description": "To update the proxy authentication credential for your external key store, specify both the <code>RawSecretAccessKey</code> and the <code>AccessKeyId</code>, even if you are changing only one of the values. You can use this feature to fix an invalid credential or to change the credential when the external key store proxy rotates it.",
+        "id": "to-update-the-proxy-authentication-credential-of-an-external-key-store-4",
+        "title": "To update the proxy authentication credential of an external key store"
+      },
+      {
+        "input": {
+          "CustomKeyStoreId": "cks-1234567890abcdef0",
+          "XksProxyUriPath": "/new-path/kms/xks/v1"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreId": "The ID of the custom key store that you are updating",
+            "XksProxyUriPath": "The URI path to the external key store proxy APIs"
+          },
+          "output": {
+          }
+        },
+        "description": "This example updates the proxy URI path for an external key store",
+        "id": "to-update-the-xks-proxy-api-path-of-an-external-key-store-5",
+        "title": "To edit the proxy URI path of an external key store."
+      },
+      {
+        "input": {
+          "CustomKeyStoreId": "cks-1234567890abcdef0",
+          "XksProxyConnectivity": "VPC_ENDPOINT_SERVICE",
+          "XksProxyUriEndpoint": "https://myproxy-private.xks.example.com",
+          "XksProxyVpcEndpointServiceName": "com.amazonaws.vpce.us-east-1.vpce-svc-example"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+            "CustomKeyStoreId": "Identifies the custom key store",
+            "XksProxyConnectivity": "Specifies the connectivity option",
+            "XksProxyUriEndpoint": "Specifies the URI endpoint that AWS KMS uses when communicating with the external key store proxy",
+            "XksProxyVpcEndpointServiceName": "Specifies the name of the VPC endpoint service that the proxy uses for communication"
+          },
+          "output": {
+          }
+        },
+        "description": "To change the external key store proxy connectivity option from public endpoint connectivity to VPC endpoint service connectivity, in addition to changing the <code>XksProxyConnectivity</code> value, you must change the <code>XksProxyUriEndpoint</code> value to reflect the private DNS name associated with the VPC endpoint service. You must also add an <code>XksProxyVpcEndpointServiceName</code> value.",
+        "id": "to-update-the-proxy-connectivity-of-an-external-key-store-to-vpc_endpoint_service-6",
+        "title": "To update the proxy connectivity of an external key store to VPC_ENDPOINT_SERVICE"
+      }
+    ],
+    "UpdateKeyDescription": [
+      {
+        "input": {
+          "Description": "Example description that indicates the intended use of this KMS key.",
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab"
+        },
+        "comments": {
+          "input": {
+            "Description": "The updated description.",
+            "KeyId": "The identifier of the KMS key whose description you are updating. You can use the key ID or the Amazon Resource Name (ARN) of the KMS key."
+          }
+        },
+        "description": "The following example updates the description of the specified KMS key.",
+        "id": "to-update-the-description-of-a-cmk-1481574808619",
+        "title": "To update the description of a KMS key"
+      }
+    ],
+    "UpdatePrimaryRegion": [
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-west-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab",
+          "PrimaryRegion": "eu-central-1"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The current primary key.",
+            "PrimaryRegion": "The Region of the replica key that will become the primary key."
+          }
+        },
+        "description": "The following UpdatePrimaryRegion example changes the multi-Region replica key in the eu-central-1 Region to the primary key. The current primary key in the us-west-1 Region becomes a replica key. \n\nThe KeyId parameter identifies the current primary key in the us-west-1 Region. The PrimaryRegion parameter indicates the Region of the replica key that will become the new primary key.\n\nThis operation does not return any output. To verify that primary key is changed, use the DescribeKey operation.",
+        "id": "to-update-the-primary-region-of-a-multi-region-kms-key-1660249555577",
+        "title": "To update the primary Region of a multi-Region KMS key"
+      }
+    ],
+    "Verify": [
+      {
+        "input": {
+          "KeyId": "alias/ECC_signing_key",
+          "Message": "<message to be verified>",
+          "MessageType": "RAW",
+          "Signature": "<binary data>",
+          "SigningAlgorithm": "ECDSA_SHA_384"
+        },
+        "output": {
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "SignatureValid": true,
+          "SigningAlgorithm": "ECDSA_SHA_384"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The asymmetric KMS key to be used to verify the digital signature. This example uses an alias to identify the KMS key.",
+            "Message": "The message that was signed.",
+            "MessageType": "Indicates whether the message is RAW or a DIGEST.",
+            "Signature": "The signature to be verified.",
+            "SigningAlgorithm": "The signing algorithm to be used to verify the signature."
+          },
+          "output": {
+            "KeyId": "The key ARN of the asymmetric KMS key that was used to verify the digital signature.",
+            "SignatureValid": "A value of 'true' Indicates that the signature was verified. If verification fails, the call to Verify fails.",
+            "SigningAlgorithm": "The signing algorithm that was used to verify the signature."
+          }
+        },
+        "description": "This operation uses the public key in an elliptic curve (ECC) asymmetric key to verify a digital signature within AWS KMS.",
+        "id": "to-use-an-asymmetric-kms-key-to-verify-a-digital-signature-1",
+        "title": "To use an asymmetric KMS key to verify a digital signature"
+      },
+      {
+        "input": {
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/0987dcba-09fe-87dc-65ba-ab0987654321",
+          "Message": "<message digest to be verified>",
+          "MessageType": "DIGEST",
+          "Signature": "<binary data>",
+          "SigningAlgorithm": "RSASSA_PSS_SHA_512"
+        },
+        "output": {
+          "KeyId": "arn:aws:kms:us-east-2:111122223333:key/0987dcba-09fe-87dc-65ba-ab0987654321",
+          "SignatureValid": true,
+          "SigningAlgorithm": "RSASSA_PSS_SHA_512"
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The asymmetric KMS key to be used to verify the digital signature. This example uses an alias to identify the KMS key.",
+            "Message": "The message that was signed.",
+            "MessageType": "Indicates whether the message is RAW or a DIGEST. When it is RAW, KMS hashes the message before signing. When it is DIGEST, KMS skips the hashing step and signs the Message value.",
+            "Signature": "The signature to be verified.",
+            "SigningAlgorithm": "The signing algorithm to be used to verify the signature."
+          },
+          "output": {
+            "KeyId": "The key ARN of the asymmetric KMS key that was used to verify the digital signature.",
+            "SignatureValid": "A value of 'true' Indicates that the signature was verified. If verification fails, the call to Verify fails.",
+            "SigningAlgorithm": "The signing algorithm that was used to verify the signature."
+          }
+        },
+        "description": "This operation uses the public key in an RSA asymmetric signing key pair to verify the digital signature of a message digest. Hashing a message into a digest before sending it to KMS lets you verify messages that exceed the 4096-byte message size limit. To indicate that the value of Message is a digest, use the MessageType parameter ",
+        "id": "to-use-an-asymmetric-kms-key-to-verify-a-digital-signature-on-a-message-digest-2",
+        "title": "To use an asymmetric KMS key to verify a digital signature on a message digest"
+      }
+    ],
+    "VerifyMac": [
+      {
+        "input": {
+          "KeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+          "Mac": "<HMAC_TAG>",
+          "MacAlgorithm": "HMAC_SHA_384",
+          "Message": "Hello World"
+        },
+        "output": {
+          "KeyId": "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "MacAlgorithm": "HMAC_SHA_384",
+          "MacValid": true
+        },
+        "comments": {
+          "input": {
+            "KeyId": "The HMAC KMS key input to the HMAC algorithm.",
+            "Mac": "The HMAC to be verified.",
+            "MacAlgorithm": "The HMAC algorithm requested for the operation.",
+            "Message": "The message input to the HMAC algorithm."
+          },
+          "output": {
+            "KeyId": "The key ARN of the HMAC key used in the operation.",
+            "MacAlgorithm": "The HMAC algorithm used in the operation.",
+            "MacValid": "A value of 'true' indicates that verification succeeded. If verification fails, the call to VerifyMac fails."
+          }
+        },
+        "description": "This example verifies an HMAC for a particular message, HMAC KMS keys, and MAC algorithm. A value of 'true' in the MacValid value in the response indicates that the HMAC is valid.",
+        "id": "to-verify-an-hmac-1631570863401",
+        "title": "To verify an HMAC"
+      }
+    ]
+  }
+}

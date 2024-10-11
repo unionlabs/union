@@ -1,0 +1,39 @@
+syntax = "proto3";
+package cosmos.crypto.ed25519;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519";
+
+// PubKey is an ed25519 public key for handling Tendermint keys in SDK.
+// It's needed for Any serialization and SDK compatibility.
+// It must not be used in a non Tendermint key context because it doesn't implement
+// ADR-28. Nevertheless, you will like to use ed25519 in app user level
+// then you must create a new proto message and follow ADR-28 for Address construction.
+message PubKey {
+  option (amino.name) = "tendermint/PubKeyEd25519";
+  // The Amino encoding is simply the inner bytes field, and not the Amino
+  // encoding of the whole PubKey struct.
+  //
+  // Example (JSON):
+  // s := PubKey{Key: []byte{0x01}}
+  // out := AminoJSONEncoder(s)
+  //
+  // Then we have:
+  // out == `"MQ=="`
+  // out != `{"key":"MQ=="}`
+  option (amino.message_encoding)     = "key_field";
+  option (gogoproto.goproto_stringer) = false;
+
+  bytes key = 1 [(gogoproto.casttype) = "crypto/ed25519.PublicKey"];
+}
+
+// PrivKey defines a ed25519 private key.
+// NOTE: ed25519 keys must not be used in SDK apps except in a tendermint validator context.
+message PrivKey {
+  option (amino.name)             = "tendermint/PrivKeyEd25519";
+  option (amino.message_encoding) = "key_field";
+
+  bytes key = 1 [(gogoproto.casttype) = "crypto/ed25519.PrivateKey"];
+}

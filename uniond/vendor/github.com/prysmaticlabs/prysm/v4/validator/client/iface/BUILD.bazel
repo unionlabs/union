@@ -1,0 +1,26 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "beacon_chain_client.go",
+        "node_client.go",
+        "prysm_beacon_chain_client.go",
+        "validator.go",
+        "validator_client.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/validator/client/iface",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//config/fieldparams:go_default_library",
+        "//config/validator/service:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//consensus-types/validator:go_default_library",
+        "//crypto/bls:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/prysm/v1alpha1/validator-client:go_default_library",
+        "//validator/keymanager:go_default_library",
+        "@com_github_golang_protobuf//ptypes/empty",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)

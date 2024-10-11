@@ -1,0 +1,29 @@
+builds:
+  - main: ./protoc-gen-grpc-gateway/main.go
+    id: protoc-gen-grpc-gateway
+    binary: protoc-gen-grpc-gateway
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+  - main: ./protoc-gen-swagger/main.go
+    id: protoc-gen-swagger
+    binary: protoc-gen-swagger
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+archives:
+  - name_template: "{{ .Binary }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
+    format: binary
+    replacements:
+      amd64: x86_64
+dist: _output

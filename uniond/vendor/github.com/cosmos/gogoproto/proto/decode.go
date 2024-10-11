@@ -39,6 +39,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	protov2 "google.golang.org/protobuf/proto"
 )
 
 // errOverflow is returned when an integer is too large to be represented.
@@ -338,6 +340,9 @@ func Unmarshal(buf []byte, pb Message) error {
 	}
 	if u, ok := pb.(Unmarshaler); ok {
 		return u.Unmarshal(buf)
+	}
+	if m, ok := pb.(protov2.Message); ok {
+		return protov2.Unmarshal(buf, m)
 	}
 	return NewBuffer(buf).Unmarshal(pb)
 }

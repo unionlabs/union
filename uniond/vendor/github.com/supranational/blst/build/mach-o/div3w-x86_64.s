@@ -10,6 +10,9 @@ _div_3_limbs:
 
 
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	(%rdi),%r8
 	movq	8(%rdi),%r9
 	xorq	%rax,%rax
@@ -42,7 +45,15 @@ L$oop:
 	orq	%rcx,%rax
 
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 .globl	_quot_rem_128
@@ -55,6 +66,9 @@ _quot_rem_128:
 
 
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	%rdx,%rax
 	movq	%rdx,%rcx
 
@@ -90,7 +104,15 @@ _quot_rem_128:
 	movq	%rcx,%rax
 
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -108,6 +130,9 @@ _quot_rem_64:
 
 
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	%rdx,%rax
 	imulq	0(%rsi),%rdx
 
@@ -119,6 +144,14 @@ _quot_rem_64:
 	movq	%rax,8(%rdi)
 
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 

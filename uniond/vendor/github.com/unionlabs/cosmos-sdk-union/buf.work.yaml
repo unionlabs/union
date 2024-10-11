@@ -1,0 +1,22 @@
+version: v1
+directories:
+  - proto
+  - x/accounts/proto
+  - x/auth/proto
+  - x/authz/proto
+  - x/bank/proto
+  - x/circuit/proto
+  - x/consensus/proto
+  - x/distribution/proto
+  - x/evidence/proto
+  - x/feegrant/proto
+  - x/genutil/proto
+  - x/gov/proto
+  - x/group/proto
+  - x/mint/proto
+  - x/nft/proto
+  - x/params/proto
+  - x/protocolpool/proto
+  - x/slashing/proto
+  - x/staking/proto
+  - x/upgrade/proto

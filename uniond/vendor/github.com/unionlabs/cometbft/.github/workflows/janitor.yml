@@ -1,0 +1,16 @@
+name: Janitor
+# Janitor cleans up previous runs of various workflows
+# To add more workflows to cancel visit https://api.github.com/repos/cometbft/cometbft/actions/workflows and find the actions name
+on:
+  pull_request:
+
+jobs:
+  cancel:
+    name: "Cancel Previous Runs"
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: styfle/cancel-workflow-action@0.12.1
+        with:
+          workflow_id: 1041851,1401230,2837803
+          access_token: ${{ github.token }}

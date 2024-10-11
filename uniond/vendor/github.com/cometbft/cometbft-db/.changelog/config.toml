@@ -1,0 +1,17 @@
+project_url = 'https://github.com/cometbft/cometbft-db'
+
+sort_releases_by = [
+    "date",
+    "version"
+]
+release_date_formats = [
+    # "*December 1, 2023*
+    "*%B %d, %Y*",
+    # "*Dec 1, 2023*
+    "*%b %d, %Y*",
+    # "2023-12-01" (ISO format)
+    "%F",
+]
+
+[change_set_sections]
+sort_entries_by = "entry-text"

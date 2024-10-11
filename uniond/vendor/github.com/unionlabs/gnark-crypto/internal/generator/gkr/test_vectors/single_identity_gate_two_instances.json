@@ -1,0 +1,36 @@
+{
+	"hash": {
+		"type": "const",
+		"val": -1
+	},
+	"circuit": "resources/single_identity_gate.json",
+	"input": [
+		[
+			4,
+			3
+		]
+	],
+	"output": [
+		[
+			4,
+			3
+		]
+	],
+	"proof": [
+		{
+			"finalEvalProof": [],
+			"partialSumPolys": []
+		},
+		{
+			"finalEvalProof": [
+				5
+			],
+			"partialSumPolys": [
+				[
+					-3,
+					-8
+				]
+			]
+		}
+	]
+}

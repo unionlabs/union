@@ -1,0 +1,91 @@
+policy:
+  approval:
+    - or:
+        - only test files are changed
+        - only proto files are changed
+        - touches consensus critical code
+        - touches sync/blockchain/p2p code
+        - large line count
+        - is critical priority
+approval_rules:
+  - name: only test files are changed
+    if:
+      only_changed_files:
+        paths:
+          - "*_test.go"
+          - "*.bazel"
+    options:
+      ignore_commits_by:
+        users: ["bulldozer[bot]"]
+    requires:
+      count: 1
+      teams:
+        - "prysmaticlabs/core-team"
+  - name: only proto files are changed
+    if:
+      only_changed_files:
+        paths:
+          - "*pb.go"
+          - "*pb.gw.go"
+          - "*.bazel"
+    options:
+      ignore_commits_by:
+        users: ["bulldozer[bot]"]
+    requires:
+      count: 1
+      teams:
+        - "prysmaticlabs/core-team"
+  - name: touches consensus critical code
+    if:
+      only_changed_files:
+        paths:
+          - "beacon-chain/core/*"
+          - "beacon-chain/state/*"
+    options:
+      ignore_commits_by:
+        users: ["bulldozer[bot]"]
+    requires:
+      count: 2
+      teams:
+        - "prysmaticlabs/core-team"
+  - name: touches sync/blockchain/p2p code
+    if:
+      only_changed_files:
+        paths:
+          - "beacon-chain/blockchain/*"
+          - "beacon-chain/sync/*"
+          - "beacon-chain/p2p/*"
+    options:
+      ignore_commits_by:
+        users: ["bulldozer[bot]"]
+    requires:
+      count: 2
+      teams:
+        - "prysmaticlabs/core-team"
+  - name: large line count
+    if:
+      modified_lines:
+        total: "> 1000"
+      changed_files:
+        ignore:
+          - "*pb.go"
+          - "*pb.gw.go"
+          - "*.bazel"
+    options:
+      ignore_commits_by:
+        users: ["bulldozer[bot]"]
+    requires:
+      count: 2
+      teams:
+        - "prysmaticlabs/core-team"
+  - name: is critical priority
+    if:
+      has_labels:
+        - "Priority: Critical"
+    options:
+      ignore_commits_by:
+        users: ["bulldozer[bot]"]
+    requires:
+      count: 3
+      teams:
+        - "prysmaticlabs/core-team"

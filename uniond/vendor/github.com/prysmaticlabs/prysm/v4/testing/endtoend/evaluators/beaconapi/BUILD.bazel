@@ -1,0 +1,32 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = [
+        "requests.go",
+        "types.go",
+        "util.go",
+        "verify.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/testing/endtoend/evaluators/beaconapi",
+    visibility = ["//testing/endtoend:__subpackages__"],
+    deps = [
+        "//api:go_default_library",
+        "//beacon-chain/rpc/eth/beacon:go_default_library",
+        "//beacon-chain/rpc/eth/config:go_default_library",
+        "//beacon-chain/rpc/eth/debug:go_default_library",
+        "//beacon-chain/rpc/eth/node:go_default_library",
+        "//beacon-chain/rpc/eth/validator:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/endtoend/params:go_default_library",
+        "//testing/endtoend/policies:go_default_library",
+        "//testing/endtoend/types:go_default_library",
+        "//time/slots:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
+    ],
+)

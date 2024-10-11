@@ -1,0 +1,115 @@
+reset
+----
+
+populate keylen=1 timestamps=(1, 10, 100)
+----
+wrote 78 keys
+
+# With a filter [20,30) all keys should be hidden, in both forward and reverse
+# iteration directions.
+
+combined-iter point-key-filter=(20,30)
+first
+last
+seek-ge d
+seek-lt m
+----
+.
+.
+.
+.
+
+# With a filter [1,2) only the keys @1 should be visible.
+# Test forward direction.
+
+combined-iter point-key-filter=(1,2)
+first
+next
+next
+next
+next
+next
+next
+next
+next
+next
+----
+a@1: (a@1, .)
+b@1: (b@1, .)
+c@1: (c@1, .)
+d@1: (d@1, .)
+e@1: (e@1, .)
+f@1: (f@1, .)
+g@1: (g@1, .)
+h@1: (h@1, .)
+i@1: (i@1, .)
+j@1: (j@1, .)
+
+
+# With a filter [1,2) only the keys @1 should be visible.
+# And reverse direction.
+
+combined-iter point-key-filter=(1,2)
+last
+prev
+prev
+prev
+prev
+prev
+prev
+prev
+prev
+prev
+----
+z@1: (z@1, .)
+y@1: (y@1, .)
+x@1: (x@1, .)
+w@1: (w@1, .)
+v@1: (v@1, .)
+u@1: (u@1, .)
+t@1: (t@1, .)
+s@1: (s@1, .)
+r@1: (r@1, .)
+q@1: (q@1, .)
+
+# With an expansive filter, all keys should be visible.
+
+combined-iter point-key-filter=(0,1000)
+first
+next
+seek-ge m
+prev
+seek-lt m
+next
+last
+----
+a@100: (a@100, .)
+a@10: (a@10, .)
+m@100: (m@100, .)
+l@1: (l@1, .)
+l@1: (l@1, .)
+m@100: (m@100, .)
+z@1: (z@1, .)
+
+# Test the case where a range key [a,z) is truncated to a seek key
+# at which there exists a point key, but the point key should be skipped.
+# The seek should stop at the seek key, but show no visible point key.
+
+batch commit
+range-key-set a z @5 boop
+----
+committed 1 keys
+
+combined-iter point-key-filter=(9,12)
+seek-ge c@1
+----
+c@1: (., [a-z) @5=boop UPDATED)
+
+
+# Try the same scenario, but this time with a filter that should NOT skip the
+# point key.
+
+combined-iter point-key-filter=(1,12)
+seek-ge c@1
+----
+c@1: (c@1, [a-z) @5=boop UPDATED)

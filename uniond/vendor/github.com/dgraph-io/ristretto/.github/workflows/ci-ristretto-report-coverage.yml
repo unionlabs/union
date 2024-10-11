@@ -1,0 +1,46 @@
+name: ci-ristretto-report-coverage
+# this workflow has access to repository secrets
+# separate workflow required to sanitize input from community PR's
+on:
+  workflow_run:
+    workflows: ["ci-ristretto-tests"]
+    types:
+      - completed
+jobs:
+  report-coverage:
+    runs-on: ubuntu-20.04
+    if: >
+      (github.event.workflow_run.event == 'pull_request' ||
+      github.event.workflow_run.event == 'push' ) &&
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+      - name: 'Download coverage profile'
+        uses: actions/github-script@v7.0.1
+        with:
+          script: |
+            var artifacts = await github.actions.listWorkflowRunArtifacts({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               run_id: ${{github.event.workflow_run.id }},
+            });
+            var matchArtifact = artifacts.data.artifacts.filter((artifact) => {
+              return artifact.name == "covprofile"
+            })[0];
+            var download = await github.actions.downloadArtifact({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               artifact_id: matchArtifact.id,
+               archive_format: 'zip',
+            });
+            var fs = require('fs');
+            fs.writeFileSync('${{github.workspace}}/covprofile.zip', Buffer.from(download.data));
+      - run: unzip covprofile.zip
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.COVERALLSIO_TOKEN }}
+        uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: ./covprofile

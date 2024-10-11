@@ -1,0 +1,51 @@
+start
+----
+
+create-manifest filenum=000001
+----
+
+flush
+000002
+----
+created src/000002.sst
+[JOB 0] flushed 1 memtable (100B) to L0 [000002] (10KB), in 0.1s (0.1s total), output rate 100KB/s
+
+# Wait for 000002.sst to be copied.
+
+wait
+----
+dst:
+  000002.sst
+  MANIFEST-000001
+
+# The file 000002.sst should exist in both src and dst.
+
+ls src dst
+----
+src:
+  000002.sst
+  MANIFEST-000001
+dst:
+  000002.sst
+  MANIFEST-000001
+
+cmp-files src/000002.sst dst/000002.sst
+----
+equal
+
+# Now that the file has been copied, a clean should immediately delete it.
+
+clean
+src/000002.sst
+----
+
+ls src dst
+----
+src:
+  MANIFEST-000001
+dst:
+  000002.sst
+  MANIFEST-000001
+
+stop
+----

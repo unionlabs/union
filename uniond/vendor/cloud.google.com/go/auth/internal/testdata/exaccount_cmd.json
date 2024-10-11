@@ -1,0 +1,14 @@
+{
+    "type": "external_account",
+    "audience": "//iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL_ID/providers/$PROVIDER_ID",
+    "subject_token_type": "urn:ietf:params:oauth:token-type:saml2",
+    "token_url": "https://sts.googleapis.com/v1/token",
+    "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/$EMAIL@project.iam.gserviceaccount.com:generateAccessToken",
+    "credential_source": {
+        "executable": {
+            "command": "/path/to/executable --arg1=value1 --arg2=value2",
+            "timeout_millis": 5000,
+            "output_file": "/path/to/cached/credentials"
+        }
+    }
+}

@@ -1,0 +1,10 @@
+linters:
+  # Enable specific linter
+  # https://golangci-lint.run/usage/linters/#enabled-by-default
+  enable:
+    - gofumpt
+    - goimports
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/CosmWasm/wasmvm

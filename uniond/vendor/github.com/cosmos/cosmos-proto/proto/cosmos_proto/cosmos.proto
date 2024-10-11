@@ -1,0 +1,112 @@
+syntax = "proto3";
+package cosmos_proto;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/cosmos/cosmos-proto;cosmos_proto";
+
+extend google.protobuf.MethodOptions {    
+    
+    // method_added_in is used to indicate from which version the method was added.
+    string method_added_in = 93001;
+}
+
+extend google.protobuf.MessageOptions {
+
+    // implements_interface is used to indicate the type name of the interface
+    // that a message implements so that it can be used in google.protobuf.Any
+    // fields that accept that interface. A message can implement multiple
+    // interfaces. Interfaces should be declared using a declare_interface
+    // file option.
+    repeated string implements_interface = 93001;
+
+    // message_added_in is used to indicate from which version the message was added.
+    string message_added_in = 93002;
+}
+
+extend google.protobuf.FieldOptions {
+
+    // accepts_interface is used to annotate that a google.protobuf.Any
+    // field accepts messages that implement the specified interface.
+    // Interfaces should be declared using a declare_interface file option.
+    string accepts_interface = 93001;
+
+    // scalar is used to indicate that this field follows the formatting defined
+    // by the named scalar which should be declared with declare_scalar. Code
+    // generators may choose to use this information to map this field to a
+    // language-specific type representing the scalar.
+    string scalar = 93002;
+
+    // field_added_in is used to indicate from which version the field was added.
+    string field_added_in = 93003;
+}
+
+extend google.protobuf.FileOptions {
+
+    // declare_interface declares an interface type to be used with
+    // accepts_interface and implements_interface. Interface names are
+    // expected to follow the following convention such that their declaration
+    // can be discovered by tools: for a given interface type a.b.C, it is
+    // expected that the declaration will be found in a protobuf file named
+    // a/b/interfaces.proto in the file descriptor set.
+    repeated InterfaceDescriptor declare_interface = 793021;
+
+    // declare_scalar declares a scalar type to be used with
+    // the scalar field option. Scalar names are
+    // expected to follow the following convention such that their declaration
+    // can be discovered by tools: for a given scalar type a.b.C, it is
+    // expected that the declaration will be found in a protobuf file named
+    // a/b/scalars.proto in the file descriptor set.
+    repeated ScalarDescriptor declare_scalar = 793022;
+
+    // file_added_in is used to indicate from which the version the file was added.
+    string file_added_in = 793023;
+}
+
+// InterfaceDescriptor describes an interface type to be used with
+// accepts_interface and implements_interface and declared by declare_interface.
+message InterfaceDescriptor {
+
+    // name is the name of the interface. It should be a short-name (without
+    // a period) such that the fully qualified name of the interface will be
+    // package.name, ex. for the package a.b and interface named C, the
+    // fully-qualified name will be a.b.C.
+    string name = 1;
+
+    // description is a human-readable description of the interface and its
+    // purpose.
+    string description = 2;
+}
+
+// ScalarDescriptor describes an scalar type to be used with
+// the scalar field option and declared by declare_scalar.
+// Scalars extend simple protobuf built-in types with additional
+// syntax and semantics, for instance to represent big integers.
+// Scalars should ideally define an encoding such that there is only one
+// valid syntactical representation for a given semantic meaning,
+// i.e. the encoding should be deterministic.
+message ScalarDescriptor {
+
+    // name is the name of the scalar. It should be a short-name (without
+    // a period) such that the fully qualified name of the scalar will be
+    // package.name, ex. for the package a.b and scalar named C, the
+    // fully-qualified name will be a.b.C.
+    string name = 1;
+
+    // description is a human-readable description of the scalar and its
+    // encoding format. For instance a big integer or decimal scalar should
+    // specify precisely the expected encoding format.
+    string description = 2;
+
+    // field_type is the type of field with which this scalar can be used.
+    // Scalars can be used with one and only one type of field so that
+    // encoding standards and simple and clear. Currently only string and
+    // bytes fields are supported for scalars.
+    repeated ScalarType field_type = 3;
+}
+
+enum ScalarType {
+    SCALAR_TYPE_UNSPECIFIED = 0;
+    SCALAR_TYPE_STRING = 1;
+    SCALAR_TYPE_BYTES = 2;
+}

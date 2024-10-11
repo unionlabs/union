@@ -1,0 +1,1108 @@
+
+switch 1
+----
+ok
+
+build ext0
+set a 1
+set l 2
+----
+
+ingest ext0
+----
+
+lsm
+----
+6:
+  000004:[a#10,SET-l#10,SET]
+
+
+batch
+set d foo
+set f bar
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+lsm
+----
+6:
+  000008:[a#0,SET-l#0,SET]
+
+switch 2
+----
+ok
+
+iter
+first
+----
+.
+
+replicate 1 2 d g
+----
+replicated 1 shared SSTs
+
+lsm
+----
+6:
+  000005:[d#10,SET-f#10,SET]
+
+iter
+first
+next
+next
+----
+d: (foo, .)
+f: (bar, .)
+.
+
+batch
+set e bar
+set f bar2
+set g bar3
+----
+
+iter
+first
+next
+next
+next
+----
+d: (foo, .)
+e: (bar, .)
+f: (bar2, .)
+g: (bar3, .)
+
+compact a-z
+----
+ok
+
+iter
+first
+next
+next
+next
+----
+d: (foo, .)
+e: (bar, .)
+f: (bar2, .)
+g: (bar3, .)
+
+# Write a new key at f, but don't compact it down.
+
+batch
+set f bar3
+----
+
+switch 1
+----
+ok
+
+lsm
+----
+6:
+  000008:[a#0,SET-l#0,SET]
+
+excise e gg
+----
+would excise 1 files, use ingest-and-excise to excise.
+  deleted:       L6 000008
+  added:         L6 000009:[a#0,1-d#0,1]
+  added:         L6 000010:[l#0,1-l#0,1]
+
+replicate 2 1 e gg
+----
+replicated 1 shared SSTs
+
+iter
+first
+next
+next
+next
+next
+----
+a: (1, .)
+d: (foo, .)
+e: (bar, .)
+f: (bar3, .)
+g: (bar3, .)
+
+# Range key masking test. Write some masked keys, then replicate before
+# compacting, then compact, then replicate back.
+
+batch
+set h@3 foobar
+set i@5 baz
+range-key-set g j @4 value
+----
+
+iter
+first
+next
+next
+next
+next
+next
+next
+next
+----
+a: (1, .)
+d: (foo, .)
+e: (bar, .)
+f: (bar3, .)
+g: (bar3, [g-j) @4=value UPDATED)
+h@3: (foobar, [g-j) @4=value)
+i@5: (baz, [g-j) @4=value)
+l: (2, . UPDATED)
+
+iter mask-filter mask-suffix=@6
+first
+next
+next
+next
+next
+next
+next
+----
+a: (1, .)
+d: (foo, .)
+e: (bar, .)
+f: (bar3, .)
+g: (bar3, [g-j) @4=value UPDATED)
+i@5: (baz, [g-j) @4=value)
+l: (2, . UPDATED)
+
+switch 2
+----
+ok
+
+replicate 1 2 a z
+----
+replicated 3 shared SSTs
+
+iter
+first
+next
+next
+next
+next
+next
+next
+next
+----
+a: (1, .)
+d: (foo, .)
+e: (bar, .)
+f: (bar3, .)
+g: (bar3, [g-j) @4=value UPDATED)
+h@3: (foobar, [g-j) @4=value)
+i@5: (baz, [g-j) @4=value)
+l: (2, . UPDATED)
+
+iter mask-filter mask-suffix=@6
+first
+next
+next
+next
+next
+next
+next
+----
+a: (1, .)
+d: (foo, .)
+e: (bar, .)
+f: (bar3, .)
+g: (bar3, [g-j) @4=value UPDATED)
+i@5: (baz, [g-j) @4=value)
+l: (2, . UPDATED)
+
+compact a-z
+----
+ok
+
+replicate 2 1 a z
+----
+replicated 3 shared SSTs
+
+switch 1
+----
+ok
+
+iter
+first
+next
+next
+next
+next
+next
+next
+next
+next
+----
+a: (1, .)
+d: (foo, .)
+e: (bar, .)
+f: (bar3, .)
+g: (bar3, [g-j) @4=value UPDATED)
+h@3: (foobar, [g-j) @4=value)
+i@5: (baz, [g-j) @4=value)
+l: (2, . UPDATED)
+.
+
+iter mask-filter mask-suffix=@6
+first
+next
+next
+next
+next
+next
+next
+next
+----
+a: (1, .)
+d: (foo, .)
+e: (bar, .)
+f: (bar3, .)
+g: (bar3, [g-j) @4=value UPDATED)
+i@5: (baz, [g-j) @4=value)
+l: (2, . UPDATED)
+.
+
+# Reverse iteration test with masking.
+
+iter mask-filter mask-suffix=@6
+last
+prev
+prev
+prev
+prev
+prev
+prev
+prev
+----
+l: (2, .)
+i@5: (baz, [g-j) @4=value UPDATED)
+g: (bar3, [g-j) @4=value)
+f: (bar3, . UPDATED)
+e: (bar, .)
+d: (foo, .)
+a: (1, .)
+.
+
+# Range del tests.
+
+reset
+----
+
+switch 1
+----
+ok
+
+batch
+set a@3 o
+set b@5 foo
+set c@6 bar
+set e baz
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+batch
+del-range b d
+----
+
+flush
+----
+
+batch
+set a@3 abc
+set b@7 notdeleted
+set c@9 foobar
+----
+
+flush
+----
+
+lsm
+----
+0.1:
+  000010:[a@3#15,SET-c@9#17,SET]
+0.0:
+  000008:[b#14,RANGEDEL-d#inf,RANGEDEL]
+6:
+  000006:[a@3#10,SET-e#13,SET]
+
+iter
+first
+next
+next
+next
+next
+----
+a@3: (abc, .)
+b@7: (notdeleted, .)
+c@9: (foobar, .)
+e: (baz, .)
+.
+
+replicate 1 2 a z
+----
+replicated 1 shared SSTs
+
+switch 2
+----
+ok
+
+lsm
+----
+0.0:
+  000004:[a@3#11,SET-d#inf,RANGEDEL]
+6:
+  000005:[a@3#10,SET-e#10,SET]
+
+iter
+first
+next
+next
+next
+next
+----
+a@3: (abc, .)
+b@7: (notdeleted, .)
+c@9: (foobar, .)
+e: (baz, .)
+.
+
+# Similar to the above test, except this time we bring the rangedel into
+# L5 using an ingestion.
+
+reset
+----
+
+switch 1
+----
+ok
+
+batch
+set a@3 o
+set b@5 foo
+set c@6 bar
+set e baz
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+build s1
+del-range b d
+----
+
+ingest s1
+----
+
+lsm
+----
+5:
+  000007:[b#14,RANGEDEL-d#inf,RANGEDEL]
+6:
+  000006:[a@3#10,SET-e#13,SET]
+
+batch
+set a@3 abc
+set b@7 notdeleted
+set c@9 foobar
+----
+
+flush
+----
+
+lsm
+----
+0.0:
+  000009:[a@3#15,SET-c@9#17,SET]
+5:
+  000007:[b#14,RANGEDEL-d#inf,RANGEDEL]
+6:
+  000006:[a@3#10,SET-e#13,SET]
+
+iter
+first
+next
+next
+next
+next
+next
+----
+a@3: (abc, .)
+b@7: (notdeleted, .)
+c@9: (foobar, .)
+e: (baz, .)
+.
+.
+
+replicate 1 2 a z
+----
+replicated 2 shared SSTs
+
+switch 2
+----
+ok
+
+lsm
+----
+0.0:
+  000004:[a@3#12,SET-c@9#12,SET]
+5:
+  000005:[b#11,RANGEDEL-d#inf,RANGEDEL]
+6:
+  000006:[a@3#10,SET-e#10,SET]
+
+iter
+first
+next
+next
+next
+next
+----
+a@3: (abc, .)
+b@7: (notdeleted, .)
+c@9: (foobar, .)
+e: (baz, .)
+.
+
+# Test for cases where an excise produces a range key on one side and point keys
+# on the other.
+
+reset
+----
+
+switch 1
+----
+ok
+
+batch
+range-key-set a aaa @3 foo
+set d foobar
+set e barbaz
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+lsm
+----
+6:
+  000006:[a#10,RANGEKEYSET-e#12,SET]
+
+switch 2
+----
+ok
+
+batch
+set b bcd
+set c cde
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+replicate 2 1 b cc
+----
+replicated 1 shared SSTs
+
+switch 1
+----
+ok
+
+lsm
+----
+6:
+  000009:[a#10,RANGEKEYSET-aaa#inf,RANGEKEYSET]
+  000008:[b#13,SET-c#13,SET]
+  000010:[d#11,SET-e#12,SET]
+
+iter
+first
+next
+next
+next
+next
+----
+a: (., [a-aaa) @3=foo UPDATED)
+b: (bcd, . UPDATED)
+c: (cde, .)
+d: (foobar, .)
+e: (barbaz, .)
+
+reset
+----
+
+switch 1
+----
+ok
+
+batch
+set a@3 o
+set b@5 foo
+set c@6 bar
+set e baz
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+build s2
+del-range bb g
+----
+
+ingest s2
+----
+
+lsm
+----
+5:
+  000007:[bb#14,RANGEDEL-g#inf,RANGEDEL]
+6:
+  000006:[a@3#10,SET-e#13,SET]
+
+switch 2
+----
+ok
+
+batch
+set ff notdeleted
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+lsm
+----
+6:
+  000006:[ff#10,SET-ff#10,SET]
+
+# This replication should truncate the range deletion in pebble instance 1
+# at f, leaving ff undeleted.
+
+replicate 1 2 b f
+----
+replicated 2 shared SSTs
+
+lsm
+----
+5:
+  000008:[bb#12,RANGEDEL-f#inf,RANGEDEL]
+6:
+  000009:[b@5#11,SET-e#11,SET]
+  000006:[ff#10,SET-ff#10,SET]
+
+iter
+seek-ge b
+next
+next
+----
+b@5: (foo, .)
+ff: (notdeleted, .)
+.
+
+# Same as above, but with a truncated range key instead of a truncated range del.
+
+reset
+----
+
+switch 1
+----
+ok
+
+batch
+set a@3 o
+set b@5 foo
+set c@6 bar
+set e baz
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+build s3
+range-key-set bb g @8 foo
+----
+
+ingest s3
+----
+
+lsm
+----
+5:
+  000007:[bb#14,RANGEKEYSET-g#inf,RANGEKEYSET]
+6:
+  000006:[a@3#10,SET-e#13,SET]
+
+switch 2
+----
+ok
+
+batch
+set ff notcovered
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+lsm
+----
+6:
+  000006:[ff#10,SET-ff#10,SET]
+
+# This replication should truncate the range key in pebble instance 1
+# at f, leaving ff uncovered.
+
+replicate 1 2 b f
+----
+replicated 2 shared SSTs
+
+lsm
+----
+5:
+  000008:[bb#12,RANGEKEYSET-f#inf,RANGEKEYSET]
+6:
+  000009:[b@5#11,SET-e#11,SET]
+  000006:[ff#10,SET-ff#10,SET]
+
+iter
+seek-ge b
+next
+next
+next
+next
+next
+----
+b@5: (foo, .)
+bb: (., [bb-f) @8=foo UPDATED)
+c@6: (bar, [bb-f) @8=foo)
+e: (baz, [bb-f) @8=foo)
+ff: (notcovered, . UPDATED)
+.
+
+
+iter mask-filter mask-suffix=@9
+seek-ge b
+next
+next
+next
+next
+----
+b@5: (foo, .)
+bb: (., [bb-f) @8=foo UPDATED)
+e: (baz, [bb-f) @8=foo)
+ff: (notcovered, . UPDATED)
+.
+
+# Tests for Eventually file-only snapshots.
+
+reset
+----
+
+switch 1
+----
+ok
+
+batch
+set a foo
+set b bar
+set c baz
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+switch 2
+----
+ok
+
+batch
+set b foobar
+----
+
+file-only-snapshot s1
+ aa bb
+ e f
+----
+ok
+
+lsm
+----
+
+iter snapshot=s1
+first
+next
+next
+----
+b: (foobar, .)
+.
+.
+
+# The below call should do a flush.
+
+wait-for-file-only-snapshot s1
+----
+ok
+
+lsm
+----
+0.0:
+  000005:[b#10,SET-b#10,SET]
+
+iter snapshot=s1
+first
+next
+next
+----
+b: (foobar, .)
+.
+.
+
+replicate 1 2 a d
+----
+replicated 1 shared SSTs
+
+iter snapshot=s1
+first
+next
+next
+----
+b: (foobar, .)
+.
+.
+
+iter
+first
+next
+next
+next
+----
+a: (foo, .)
+b: (bar, .)
+c: (baz, .)
+.
+
+switch 1
+----
+ok
+
+batch
+del c
+----
+
+# The below excise and wait should succeed as the flush will end up transitioning
+# the file-only snapshot.
+
+lsm
+----
+6:
+  000006:[a#10,SET-c#12,SET]
+
+file-only-snapshot s2
+ a cc
+----
+ok
+
+iter snapshot=s2
+first
+next
+next
+next
+next
+----
+a: (foo, .)
+b: (bar, .)
+.
+.
+.
+
+flush
+----
+
+compact a-z
+----
+ok
+
+replicate 2 1 a d
+----
+replicated 1 shared SSTs
+
+wait-for-file-only-snapshot s2
+----
+ok
+
+iter snapshot=s2
+first
+next
+next
+next
+----
+a: (foo, .)
+b: (bar, .)
+.
+.
+
+iter snapshot=s2
+first
+clone
+first
+next
+next
+next
+----
+a: (foo, .)
+.
+a: (foo, .)
+b: (bar, .)
+.
+.
+
+iter
+first
+next
+next
+next
+next
+----
+a: (foo, .)
+b: (bar, .)
+c: (baz, .)
+.
+.
+
+batch
+set d foo
+set e bar
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+switch 2
+----
+ok
+
+flush
+----
+
+batch
+set f foobar
+----
+
+# The below file-only snapshot is the more challenging case of a partial overlap
+# between an excise and a file-only snapshot. In this case the EFOS transition
+# blocks on the memtable but the excise proceeds through, causing the EFOS'
+# WaitForFileOnlySnapshot() call to error out. Opening iterators also returns
+# the same errors.
+
+file-only-snapshot s3
+ c g
+----
+ok
+
+iter snapshot=s3
+first
+next
+next
+next
+next
+----
+a: (foo, .)
+b: (bar, .)
+c: (baz, .)
+f: (foobar, .)
+.
+
+iter snapshot=s3
+first
+next
+clone
+first
+next
+next
+next
+----
+a: (foo, .)
+b: (bar, .)
+.
+a: (foo, .)
+b: (bar, .)
+c: (baz, .)
+f: (foobar, .)
+
+
+replicate 1 2 b e
+----
+replicated 2 shared SSTs
+
+wait-for-file-only-snapshot s3
+----
+pebble: snapshot excised before conversion to file-only snapshot
+
+iter snapshot=s3
+first
+next
+next
+next
+next
+----
+pebble: snapshot excised before conversion to file-only snapshot
+
+iter snapshot=s3
+first
+next
+clone
+first
+next
+next
+next
+----
+pebble: snapshot excised before conversion to file-only snapshot
+
+iter
+first
+next
+next
+next
+next
+----
+a: (foo, .)
+b: (bar, .)
+c: (baz, .)
+d: (foo, .)
+f: (foobar, .)
+
+# The below example tests for a file-only snapshot that overlaps completely
+# with an excise right after it. The wait succeeds and snapshot consistency is
+# maintained.
+
+reset
+----
+
+switch 1
+----
+ok
+
+batch
+set a foo
+set b bar
+set c baz
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+switch 2
+----
+ok
+
+batch
+set d foobar
+----
+
+file-only-snapshot s4
+ b e
+----
+ok
+
+iter snapshot=s4
+first
+next
+next
+----
+d: (foobar, .)
+.
+.
+
+replicate 1 2 b e
+----
+replicated 1 shared SSTs
+
+wait-for-file-only-snapshot s4
+----
+ok
+
+iter snapshot=s4
+first
+next
+next
+----
+d: (foobar, .)
+.
+.
+
+compact a-z
+----
+ok
+
+iter snapshot=s4
+first
+next
+next
+----
+d: (foobar, .)
+.
+.
+
+iter
+first
+next
+next
+----
+b: (bar, .)
+c: (baz, .)
+.

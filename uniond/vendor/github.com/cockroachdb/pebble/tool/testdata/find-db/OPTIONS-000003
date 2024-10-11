@@ -1,0 +1,36 @@
+[Version]
+  pebble_version=0.1
+
+[Options]
+  bytes_per_sync=524288
+  cache_size=8388608
+  cleaner=archive
+  comparer=alt-comparer
+  delete_range_flush_delay=0s
+  disable_wal=false
+  flush_split_bytes=4194304
+  l0_compaction_concurrency=10
+  l0_compaction_threshold=4
+  l0_stop_writes_threshold=12
+  lbase_max_bytes=67108864
+  max_concurrent_compactions=1
+  max_manifest_file_size=134217728
+  max_open_files=1000
+  mem_table_size=4194304
+  mem_table_stop_writes_threshold=2
+  min_compaction_rate=4194304
+  min_flush_rate=1048576
+  merger=test-merger
+  strict_wal_tail=true
+  table_property_collectors=[]
+  wal_dir=
+  wal_bytes_per_sync=0
+
+[Level "0"]
+  block_restart_interval=16
+  block_size=4096
+  compression=Snappy
+  filter_policy=none
+  filter_type=table
+  index_block_size=4096
+  target_file_size=2097152

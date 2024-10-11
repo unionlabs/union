@@ -1,0 +1,434 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "examples/internal/proto/examplepb/stream.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/example/a_bit_of_everything": {
+      "get": {
+        "operationId": "StreamService_List",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/examplepbABitOfEverything"
+                },
+                "error": {
+                  "$ref": "#/definitions/runtimeStreamError"
+                }
+              },
+              "title": "Stream result of examplepbABitOfEverything"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "StreamService"
+        ]
+      }
+    },
+    "/v1/example/a_bit_of_everything/bulk": {
+      "post": {
+        "operationId": "StreamService_BulkCreate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": " (streaming inputs)",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbABitOfEverything"
+            }
+          }
+        ],
+        "tags": [
+          "StreamService"
+        ]
+      }
+    },
+    "/v1/example/a_bit_of_everything/echo": {
+      "post": {
+        "operationId": "StreamService_BulkEcho",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/subStringMessage"
+                },
+                "error": {
+                  "$ref": "#/definitions/runtimeStreamError"
+                }
+              },
+              "title": "Stream result of subStringMessage"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": " (streaming inputs)",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/subStringMessage"
+            }
+          }
+        ],
+        "tags": [
+          "StreamService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "ABitOfEverythingNested": {
+      "type": "object",
+      "example": {
+        "ok": "TRUE"
+      },
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "name is nested field."
+        },
+        "amount": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "ok": {
+          "$ref": "#/definitions/NestedDeepEnum",
+          "description": "DeepEnum description."
+        }
+      },
+      "description": "Nested is nested type."
+    },
+    "MessagePathEnumNestedPathEnum": {
+      "type": "string",
+      "enum": [
+        "GHI",
+        "JKL"
+      ],
+      "default": "GHI"
+    },
+    "NestedDeepEnum": {
+      "type": "string",
+      "enum": [
+        "FALSE",
+        "TRUE"
+      ],
+      "default": "FALSE",
+      "description": "DeepEnum is one or zero.\n\n - FALSE: FALSE is false.\n - TRUE: TRUE is true."
+    },
+    "examplepbABitOfEverything": {
+      "type": "object",
+      "example": {
+        "uuid": "0cf361e1-4b44-483d-a159-54dabdf7e814"
+      },
+      "properties": {
+        "single_nested": {
+          "$ref": "#/definitions/ABitOfEverythingNested"
+        },
+        "uuid": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+        },
+        "nested": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ABitOfEverythingNested"
+          }
+        },
+        "float_value": {
+          "type": "number",
+          "format": "float",
+          "default": "0.2",
+          "description": "Float value field",
+          "required": [
+            "float_value"
+          ]
+        },
+        "double_value": {
+          "type": "number",
+          "format": "double"
+        },
+        "int64_value": {
+          "type": "string",
+          "format": "int64"
+        },
+        "uint64_value": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "int32_value": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "fixed64_value": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "fixed32_value": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "bool_value": {
+          "type": "boolean"
+        },
+        "string_value": {
+          "type": "string"
+        },
+        "bytes_value": {
+          "type": "string",
+          "format": "byte"
+        },
+        "uint32_value": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "enum_value": {
+          "$ref": "#/definitions/examplepbNumericEnum"
+        },
+        "path_enum_value": {
+          "$ref": "#/definitions/pathenumPathEnum"
+        },
+        "nested_path_enum_value": {
+          "$ref": "#/definitions/MessagePathEnumNestedPathEnum"
+        },
+        "sfixed32_value": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sfixed64_value": {
+          "type": "string",
+          "format": "int64"
+        },
+        "sint32_value": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sint64_value": {
+          "type": "string",
+          "format": "int64"
+        },
+        "repeated_string_value": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "oneof_empty": {
+          "properties": {}
+        },
+        "oneof_string": {
+          "type": "string"
+        },
+        "map_value": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/examplepbNumericEnum"
+          }
+        },
+        "mapped_string_value": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "mapped_nested_value": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ABitOfEverythingNested"
+          }
+        },
+        "nonConventionalNameValue": {
+          "type": "string"
+        },
+        "timestamp_value": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "repeated_enum_value": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/examplepbNumericEnum"
+          },
+          "title": "repeated enum value. it is comma-separated in query"
+        },
+        "repeated_enum_annotation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/examplepbNumericEnum"
+          },
+          "description": "Repeated numeric enum description.",
+          "title": "Repeated numeric enum title"
+        },
+        "enum_value_annotation": {
+          "$ref": "#/definitions/examplepbNumericEnum",
+          "description": "Numeric enum description.",
+          "title": "Numeric enum title"
+        },
+        "repeated_string_annotation": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Repeated string description.",
+          "title": "Repeated string title"
+        },
+        "repeated_nested_annotation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ABitOfEverythingNested"
+          },
+          "description": "Repeated nested object description.",
+          "title": "Repeated nested object title"
+        },
+        "nested_annotation": {
+          "$ref": "#/definitions/ABitOfEverythingNested",
+          "description": "Nested object description.",
+          "title": "Nested object title"
+        },
+        "int64_override_type": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "description": "Intentionaly complicated message type to cover many features of Protobuf.",
+      "title": "A bit of everything",
+      "externalDocs": {
+        "description": "Find out more about ABitOfEverything",
+        "url": "https://github.com/grpc-ecosystem/grpc-gateway"
+      },
+      "required": [
+        "uuid",
+        "int64_value",
+        "double_value"
+      ]
+    },
+    "examplepbNumericEnum": {
+      "type": "string",
+      "enum": [
+        "ZERO",
+        "ONE"
+      ],
+      "default": "ZERO",
+      "description": "NumericEnum is one or zero.\n\n - ZERO: ZERO means 0\n - ONE: ONE means 1"
+    },
+    "pathenumPathEnum": {
+      "type": "string",
+      "enum": [
+        "ABC",
+        "DEF"
+      ],
+      "default": "ABC"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string",
+          "description": "A URL/resource name that uniquely identifies the type of the serialized\nprotocol buffer message. This string must contain at least\none \"/\" character. The last segment of the URL's path must represent\nthe fully qualified name of the type (as in\n`path/google.protobuf.Duration`). The name should be in a canonical form\n(e.g., leading \".\" is not accepted).\n\nIn practice, teams usually precompile into the binary all types that they\nexpect it to use in the context of Any. However, for URLs which use the\nscheme `http`, `https`, or no scheme, one can optionally set up a type\nserver that maps type URLs to message definitions as follows:\n\n* If no scheme is provided, `https` is assumed.\n* An HTTP GET on the URL must yield a [google.protobuf.Type][]\n  value in binary format, or produce an error.\n* Applications are allowed to cache lookup results based on the\n  URL, or have them precompiled into a binary to avoid any\n  lookup. Therefore, binary compatibility needs to be preserved\n  on changes to types. (Use versioned type names to manage\n  breaking changes.)\n\nNote: this functionality is not currently available in the official\nprotobuf release, and it is not used for type URLs beginning with\ntype.googleapis.com.\n\nSchemes other than `http`, `https` (or the empty scheme) might be\nused with implementation specific semantics."
+        },
+        "value": {
+          "type": "string",
+          "format": "byte",
+          "description": "Must be a valid serialized protocol buffer of the above specified type."
+        }
+      },
+      "description": "`Any` contains an arbitrary serialized protocol buffer message along with a\nURL that describes the type of the serialized message.\n\nProtobuf library provides support to pack/unpack Any values in the form\nof utility functions or additional generated methods of the Any type.\n\nExample 1: Pack and unpack a message in C++.\n\n    Foo foo = ...;\n    Any any;\n    any.PackFrom(foo);\n    ...\n    if (any.UnpackTo(\u0026foo)) {\n      ...\n    }\n\nExample 2: Pack and unpack a message in Java.\n\n    Foo foo = ...;\n    Any any = Any.pack(foo);\n    ...\n    if (any.is(Foo.class)) {\n      foo = any.unpack(Foo.class);\n    }\n\n Example 3: Pack and unpack a message in Python.\n\n    foo = Foo(...)\n    any = Any()\n    any.Pack(foo)\n    ...\n    if any.Is(Foo.DESCRIPTOR):\n      any.Unpack(foo)\n      ...\n\n Example 4: Pack and unpack a message in Go\n\n     foo := \u0026pb.Foo{...}\n     any, err := ptypes.MarshalAny(foo)\n     ...\n     foo := \u0026pb.Foo{}\n     if err := ptypes.UnmarshalAny(any, foo); err != nil {\n       ...\n     }\n\nThe pack methods provided by protobuf library will by default use\n'type.googleapis.com/full.type.name' as the type URL and the unpack\nmethods only use the fully qualified type name after the last '/'\nin the type URL, for example \"foo.bar.com/x/y.z\" will yield type\nname \"y.z\".\n\n\nJSON\n====\nThe JSON representation of an `Any` value uses the regular\nrepresentation of the deserialized, embedded message, with an\nadditional field `@type` which contains the type URL. Example:\n\n    package google.profile;\n    message Person {\n      string first_name = 1;\n      string last_name = 2;\n    }\n\n    {\n      \"@type\": \"type.googleapis.com/google.profile.Person\",\n      \"firstName\": \u003cstring\u003e,\n      \"lastName\": \u003cstring\u003e\n    }\n\nIf the embedded message type is well-known and has a custom JSON\nrepresentation, that representation will be embedded adding a field\n`value` which holds the custom JSON in addition to the `@type`\nfield. Example (for message [google.protobuf.Duration][]):\n\n    {\n      \"@type\": \"type.googleapis.com/google.protobuf.Duration\",\n      \"value\": \"1.212s\"\n    }"
+    },
+    "runtimeError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "runtimeStreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "subStringMessage": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

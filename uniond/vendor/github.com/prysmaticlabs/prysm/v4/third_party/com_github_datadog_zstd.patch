@@ -1,0 +1,147 @@
+diff --git a/BUILD.bazel b/BUILD.bazel
+new file mode 100644
+index 0000000..f15d38e
+--- /dev/null
++++ b/BUILD.bazel
+@@ -0,0 +1,131 @@
++load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
++load("@rules_cc//cc:defs.bzl", "cc_library")
++
++cc_library(
++    name = "zstd_cc",
++    srcs = [
++        "bitstream.h",
++        "clevels.h",
++        "compiler.h",
++        "cover.c",
++        "cover.h",
++        "cpu.h",
++        "debug.c",
++        "debug.h",
++        "divsufsort.c",
++        "divsufsort.h",
++        "entropy_common.c",
++        "error_private.c",
++        "error_private.h",
++        "fastcover.c",
++        "fse.h",
++        "fse_compress.c",
++        "fse_decompress.c",
++        "hist.c",
++        "hist.h",
++        "huf.h",
++        "huf_compress.c",
++        "huf_decompress.c",
++        "huf_decompress_amd64.S",
++        "mem.h",
++        "pool.c",
++        "pool.h",
++        "portability_macros.h",
++        "threading.c",
++        "threading.h",
++        "xxhash.c",
++        "xxhash.h",
++        "zbuff.h",
++        "zbuff_common.c",
++        "zbuff_compress.c",
++        "zbuff_decompress.c",
++        "zdict.c",
++        "zdict.h",
++        "zstd.h",
++        "zstd_common.c",
++        "zstd_compress.c",
++        "zstd_compress_internal.h",
++        "zstd_compress_literals.c",
++        "zstd_compress_literals.h",
++        "zstd_compress_sequences.c",
++        "zstd_compress_sequences.h",
++        "zstd_compress_superblock.c",
++        "zstd_compress_superblock.h",
++        "zstd_cwksp.h",
++        "zstd_ddict.c",
++        "zstd_ddict.h",
++        "zstd_decompress.c",
++        "zstd_decompress_block.c",
++        "zstd_decompress_block.h",
++        "zstd_decompress_internal.h",
++        "zstd_deps.h",
++        "zstd_double_fast.c",
++        "zstd_double_fast.h",
++        "zstd_errors.h",
++        "zstd_fast.c",
++        "zstd_fast.h",
++        "zstd_internal.h",
++        "zstd_lazy.c",
++        "zstd_lazy.h",
++        "zstd_ldm.c",
++        "zstd_ldm.h",
++        "zstd_ldm_geartab.h",
++        "zstd_legacy.h",
++        "zstd_opt.c",
++        "zstd_opt.h",
++        "zstd_trace.h",
++        "zstd_v01.c",
++        "zstd_v01.h",
++        "zstd_v02.c",
++        "zstd_v02.h",
++        "zstd_v03.c",
++        "zstd_v03.h",
++        "zstd_v04.c",
++        "zstd_v04.h",
++        "zstd_v05.c",
++        "zstd_v05.h",
++        "zstd_v06.c",
++        "zstd_v06.h",
++        "zstd_v07.c",
++        "zstd_v07.h",
++        "zstdmt_compress.c",
++        "zstdmt_compress.h",
++    ],
++    copts = ["-DZSTD_LEGACY_SUPPORT=4"],
++
++)
++go_library(
++    name = "zstd",
++    srcs = [
++        "errors.go",
++        "zstd.go",
++        "zstd_bulk.go",
++        "zstd_ctx.go",
++        "zstd_stream.go",
++        "zstd.h",
++    ],
++    cgo = True,
++    cdeps = [":zstd_cc"],
++    copts = ["-DZSTD_LEGACY_SUPPORT=4"],
++    importpath = "github.com/DataDog/zstd",
++    visibility = ["//visibility:public"],
++)
++
++alias(
++    name = "go_default_library",
++    actual = ":zstd",
++    visibility = ["//visibility:public"],
++)
++
++go_test(
++    name = "zstd_test",
++    srcs = [
++        "errors_test.go",
++        "helpers_test.go",
++        "zstd_bullk_test.go",
++        "zstd_ctx_test.go",
++        "zstd_stream_test.go",
++        "zstd_test.go",
++    ],
++    embed = [":zstd"],
++)
+diff --git a/WORKSPACE b/WORKSPACE
+new file mode 100644
+index 0000000..dea5b27
+--- /dev/null
++++ b/WORKSPACE
+@@ -0,0 +1,2 @@
++# DO NOT EDIT: automatically generated WORKSPACE file for go_repository rule
++workspace(name = "com_github_datadog_zstd")
+-- 
+2.34.1

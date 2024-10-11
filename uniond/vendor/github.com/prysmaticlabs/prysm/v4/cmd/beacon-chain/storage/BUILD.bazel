@@ -1,0 +1,31 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["options.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain/storage",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/db/filesystem:go_default_library",
+        "//beacon-chain/node:go_default_library",
+        "//cmd:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_urfave_cli_v2//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["options_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//cmd:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_urfave_cli_v2//:go_default_library",
+    ],
+)

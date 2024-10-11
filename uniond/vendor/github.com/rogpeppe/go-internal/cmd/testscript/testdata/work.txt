@@ -1,0 +1,23 @@
+# Test that passing -work leaves behind the working directory
+# that contains the temporary directories within which the
+# script arguments are expanded.
+#
+# This test also covers the use of multiple scripts which share
+# the same basename, ensuring that the naming of the directories
+# within the working directory.
+
+unquote file.txt dir/file.txt
+
+testscript -v -work file.txt dir/file.txt
+stdout '^temporary work directory: \Q'$WORK'\E[/\\]\.tmp[/\\]'
+expandone $WORK/.tmp/go-test-script*/script-file/foo
+expandone $WORK/.tmp/go-test-script*/script-file#1/bar
+
+-- file.txt --
+>exec true
+>-- foo --
+>hello
+-- dir/file.txt --
+>exec true
+>-- bar --
+>hello

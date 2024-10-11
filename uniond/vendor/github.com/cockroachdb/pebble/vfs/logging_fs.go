@@ -5,6 +5,7 @@
 package vfs
 
 import (
+	"fmt"
 	"io"
 	"os"
 )
@@ -38,7 +39,15 @@ func (fs *loggingFS) Create(name string) (File, error) {
 }
 
 func (fs *loggingFS) Open(name string, opts ...OpenOption) (File, error) {
-	fs.logFn("open: %s", name)
+	var optsStr string
+	if len(opts) > 0 {
+		optsStr = " (options:"
+		for i := range opts {
+			optsStr += fmt.Sprintf(" %T", opts[i])
+		}
+		optsStr += ")"
+	}
+	fs.logFn("open: %s%s", name, optsStr)
 	f, err := fs.FS.Open(name, opts...)
 	if err != nil {
 		return nil, err

@@ -1,0 +1,7 @@
+mod=example.com/basic/v2
+version=v2.1.1
+base=v2.1.0
+proxyVersions=example.com/basic/v2@v2.1.0
+-- want --
+# summary
+Suggested version: v2.1.1

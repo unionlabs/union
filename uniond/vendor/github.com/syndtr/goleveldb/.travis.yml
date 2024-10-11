@@ -1,0 +1,19 @@
+language: go
+
+go:
+  - 1.14.x
+  - 1.15.x
+  - tip
+
+script:
+  - |
+    (set -e
+    if [ "$TRAVIS_GO_VERSION" != "tip" ]; then 
+      echo "executing go vet for go verion $TRAVIS_GO_VERSION"
+      go vet ./...
+    else
+      echo "skipping go vet for go verion $TRAVIS_GO_VERSION"
+    fi
+    )
+  - go test -timeout 1h ./...
+  - go test -timeout 30m -race -run "TestDB_(Concurrent|GoleveldbIssue74)" ./leveldb

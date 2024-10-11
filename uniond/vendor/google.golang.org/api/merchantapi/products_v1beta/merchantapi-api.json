@@ -1,0 +1,1680 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/content": {
+          "description": "Manage your product listings and accounts for Google Shopping"
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://merchantapi.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "Merchant",
+  "description": "Programmatically manage your Merchant Center Accounts.",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://developers.devsite.corp.google.com/merchant/api",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "merchantapi:products_v1beta",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://merchantapi.mtls.googleapis.com/",
+  "name": "merchantapi",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "accounts": {
+      "resources": {
+        "productInputs": {
+          "methods": {
+            "delete": {
+              "description": "Deletes a product input from your Merchant Center account. After inserting, updating, or deleting a product input, it may take several minutes before the processed product can be retrieved.",
+              "flatPath": "products/v1beta/accounts/{accountsId}/productInputs/{productInputsId}",
+              "httpMethod": "DELETE",
+              "id": "merchantapi.accounts.productInputs.delete",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "dataSource": {
+                  "description": "Required. The primary or supplemental data source from which the product input should be deleted. Format: `accounts/{account}/dataSources/{datasource}`.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "Required. The name of the product input resource to delete. Format: accounts/{account}/productInputs/{product}",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/productInputs/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "products/v1beta/{+name}",
+              "response": {
+                "$ref": "Empty"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "insert": {
+              "description": "Uploads a product input to your Merchant Center account. If an input with the same contentLanguage, offerId, and dataSource already exists, this method replaces that entry. After inserting, updating, or deleting a product input, it may take several minutes before the processed product can be retrieved.",
+              "flatPath": "products/v1beta/accounts/{accountsId}/productInputs:insert",
+              "httpMethod": "POST",
+              "id": "merchantapi.accounts.productInputs.insert",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "dataSource": {
+                  "description": "Required. The primary or supplemental product data source name. If the product already exists and data source provided is different, then the product will be moved to a new data source. Format: `accounts/{account}/dataSources/{datasource}`.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "parent": {
+                  "description": "Required. The account where this product will be inserted. Format: accounts/{account}",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "products/v1beta/{+parent}/productInputs:insert",
+              "request": {
+                "$ref": "ProductInput"
+              },
+              "response": {
+                "$ref": "ProductInput"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            }
+          }
+        },
+        "products": {
+          "methods": {
+            "get": {
+              "description": "Retrieves the processed product from your Merchant Center account. After inserting, updating, or deleting a product input, it may take several minutes before the updated final product can be retrieved.",
+              "flatPath": "products/v1beta/accounts/{accountsId}/products/{productsId}",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.products.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the product to retrieve. Format: `accounts/{account}/products/{product}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/products/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "products/v1beta/{+name}",
+              "response": {
+                "$ref": "Product"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "list": {
+              "description": "Lists the processed products in your Merchant Center account. The response might contain fewer items than specified by pageSize. Rely on pageToken to determine if there are more items to be requested. After inserting, updating, or deleting a product input, it may take several minutes before the updated processed product can be retrieved.",
+              "flatPath": "products/v1beta/accounts/{accountsId}/products",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.products.list",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "pageSize": {
+                  "description": "The maximum number of products to return. The service may return fewer than this value. The maximum value is 1000; values above 1000 will be coerced to 1000. If unspecified, the maximum number of products will be returned.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "A page token, received from a previous `ListProducts` call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to `ListProducts` must match the call that provided the page token.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "parent": {
+                  "description": "Required. The account to list processed products for. Format: accounts/{account}",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "products/v1beta/{+parent}/products",
+              "response": {
+                "$ref": "ListProductsResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20240613",
+  "rootUrl": "https://merchantapi.googleapis.com/",
+  "schemas": {
+    "Attributes": {
+      "description": "Attributes.",
+      "id": "Attributes",
+      "properties": {
+        "additionalImageLinks": {
+          "description": "Additional URLs of images of the item.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "adsGrouping": {
+          "description": "Used to group items in an arbitrary way. Only for CPA%, discouraged otherwise.",
+          "type": "string"
+        },
+        "adsLabels": {
+          "description": "Similar to ads_grouping, but only works on CPC.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "adsRedirect": {
+          "description": "Allows advertisers to override the item URL when the product is shown within the context of Product ads.",
+          "type": "string"
+        },
+        "adult": {
+          "description": "Set to true if the item is targeted towards adults.",
+          "type": "boolean"
+        },
+        "ageGroup": {
+          "description": "Target [age group](https://support.google.com/merchants/answer/6324463) of the item.",
+          "type": "string"
+        },
+        "autoPricingMinPrice": {
+          "$ref": "Price",
+          "description": "A safeguard in the \"Automated Discounts\" (https://support.google.com/merchants/answer/10295759) and \"Dynamic Promotions\" (https://support.google.com/merchants/answer/13949249) projects, ensuring that discounts on merchants' offers do not fall below this value, thereby preserving the offer's value and profitability."
+        },
+        "availability": {
+          "description": "Availability status of the item.",
+          "type": "string"
+        },
+        "availabilityDate": {
+          "description": "The day a pre-ordered product becomes available for delivery, in [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601) format.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "brand": {
+          "description": "Brand of the item.",
+          "type": "string"
+        },
+        "canonicalLink": {
+          "description": "URL for the canonical version of your item's landing page.",
+          "type": "string"
+        },
+        "certifications": {
+          "description": "Product Certifications, for example for energy efficiency labeling of products recorded in the [EU EPREL](https://eprel.ec.europa.eu/screen/home) database. See the [Help Center](https://support.google.com/merchants/answer/13528839) article for more information.",
+          "items": {
+            "$ref": "Certification"
+          },
+          "type": "array"
+        },
+        "cloudExportAdditionalProperties": {
+          "description": "Extra fields to export to the Cloud Retail program.",
+          "items": {
+            "$ref": "CloudExportAdditionalProperties"
+          },
+          "type": "array"
+        },
+        "color": {
+          "description": "Color of the item.",
+          "type": "string"
+        },
+        "condition": {
+          "description": "Condition or state of the item.",
+          "type": "string"
+        },
+        "costOfGoodsSold": {
+          "$ref": "Price",
+          "description": "Cost of goods sold. Used for gross profit reporting."
+        },
+        "customLabel0": {
+          "description": "Custom label 0 for custom grouping of items in a Shopping campaign.",
+          "type": "string"
+        },
+        "customLabel1": {
+          "description": "Custom label 1 for custom grouping of items in a Shopping campaign.",
+          "type": "string"
+        },
+        "customLabel2": {
+          "description": "Custom label 2 for custom grouping of items in a Shopping campaign.",
+          "type": "string"
+        },
+        "customLabel3": {
+          "description": "Custom label 3 for custom grouping of items in a Shopping campaign.",
+          "type": "string"
+        },
+        "customLabel4": {
+          "description": "Custom label 4 for custom grouping of items in a Shopping campaign.",
+          "type": "string"
+        },
+        "description": {
+          "description": "Description of the item.",
+          "type": "string"
+        },
+        "disclosureDate": {
+          "description": "The date time when an offer becomes visible in search results across Google’s YouTube surfaces, in [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601) format. See [Disclosure date]( https://support.google.com/merchants/answer/13034208) for more information.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "displayAdsId": {
+          "description": "An identifier for an item for dynamic remarketing campaigns.",
+          "type": "string"
+        },
+        "displayAdsLink": {
+          "description": "URL directly to your item's landing page for dynamic remarketing campaigns.",
+          "type": "string"
+        },
+        "displayAdsSimilarIds": {
+          "description": "Advertiser-specified recommendations.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "displayAdsTitle": {
+          "description": "Title of an item for dynamic remarketing campaigns.",
+          "type": "string"
+        },
+        "displayAdsValue": {
+          "description": "Offer margin for dynamic remarketing campaigns.",
+          "format": "double",
+          "type": "number"
+        },
+        "energyEfficiencyClass": {
+          "description": "The energy efficiency class as defined in EU directive 2010/30/EU.",
+          "type": "string"
+        },
+        "excludedDestinations": {
+          "description": "The list of destinations to exclude for this target (corresponds to unchecked check boxes in Merchant Center).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "expirationDate": {
+          "description": "Date on which the item should expire, as specified upon insertion, in [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601) format. The actual expiration date is exposed in `productstatuses` as [googleExpirationDate](https://support.google.com/merchants/answer/6324499) and might be earlier if `expirationDate` is too far in the future.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "externalSellerId": {
+          "description": "Required for multi-seller accounts. Use this attribute if you're a marketplace uploading products for various sellers to your multi-seller account.",
+          "type": "string"
+        },
+        "freeShippingThreshold": {
+          "description": "Conditions to be met for a product to have free shipping.",
+          "items": {
+            "$ref": "FreeShippingThreshold"
+          },
+          "type": "array"
+        },
+        "gender": {
+          "description": "Target gender of the item.",
+          "type": "string"
+        },
+        "googleProductCategory": {
+          "description": "Google's category of the item (see [Google product taxonomy](https://support.google.com/merchants/answer/1705911)). When querying products, this field will contain the user provided value. There is currently no way to get back the auto assigned google product categories through the API.",
+          "type": "string"
+        },
+        "gtin": {
+          "description": "Global Trade Item Number ([GTIN](https://support.google.com/merchants/answer/188494#gtin)) of the item.",
+          "type": "string"
+        },
+        "identifierExists": {
+          "description": "Set this value to false when the item does not have unique product identifiers appropriate to its category, such as GTIN, MPN, and brand. Defaults to true, if not provided.",
+          "type": "boolean"
+        },
+        "imageLink": {
+          "description": "URL of an image of the item.",
+          "type": "string"
+        },
+        "includedDestinations": {
+          "description": "The list of destinations to include for this target (corresponds to checked check boxes in Merchant Center). Default destinations are always included unless provided in `excludedDestinations`.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "installment": {
+          "$ref": "Installment",
+          "description": "Number and amount of installments to pay for an item."
+        },
+        "isBundle": {
+          "description": "Whether the item is a merchant-defined bundle. A bundle is a custom grouping of different products sold by a merchant for a single price.",
+          "type": "boolean"
+        },
+        "itemGroupId": {
+          "description": "Shared identifier for all variants of the same product.",
+          "type": "string"
+        },
+        "lifestyleImageLinks": {
+          "description": "Additional URLs of lifestyle images of the item, used to explicitly identify images that showcase your item in a real-world context. See the [Help Center article](https://support.google.com/merchants/answer/9103186) for more information.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "link": {
+          "description": "URL directly linking to your item's page on your online store.",
+          "type": "string"
+        },
+        "linkTemplate": {
+          "description": "Link template for merchant hosted local storefront.",
+          "type": "string"
+        },
+        "loyaltyPoints": {
+          "$ref": "LoyaltyPoints",
+          "description": "Loyalty points that users receive after purchasing the item. Japan only."
+        },
+        "loyaltyPrograms": {
+          "description": "A list of loyalty program information that is used to surface loyalty benefits (for example, better pricing, points, etc) to the user of this item.",
+          "items": {
+            "$ref": "LoyaltyProgram"
+          },
+          "type": "array"
+        },
+        "material": {
+          "description": "The material of which the item is made.",
+          "type": "string"
+        },
+        "maxEnergyEfficiencyClass": {
+          "description": "The energy efficiency class as defined in EU directive 2010/30/EU.",
+          "type": "string"
+        },
+        "maxHandlingTime": {
+          "description": "Maximal product handling time (in business days).",
+          "format": "int64",
+          "type": "string"
+        },
+        "minEnergyEfficiencyClass": {
+          "description": "The energy efficiency class as defined in EU directive 2010/30/EU.",
+          "type": "string"
+        },
+        "minHandlingTime": {
+          "description": "Minimal product handling time (in business days).",
+          "format": "int64",
+          "type": "string"
+        },
+        "mobileLink": {
+          "description": "URL for the mobile-optimized version of your item's landing page.",
+          "type": "string"
+        },
+        "mobileLinkTemplate": {
+          "description": "Link template for merchant hosted local storefront optimized for mobile devices.",
+          "type": "string"
+        },
+        "mpn": {
+          "description": "Manufacturer Part Number ([MPN](https://support.google.com/merchants/answer/188494#mpn)) of the item.",
+          "type": "string"
+        },
+        "multipack": {
+          "description": "The number of identical products in a merchant-defined multipack.",
+          "format": "int64",
+          "type": "string"
+        },
+        "pattern": {
+          "description": "The item's pattern (for example, polka dots).",
+          "type": "string"
+        },
+        "pause": {
+          "description": "Publication of this item will be temporarily [paused](https://support.google.com/merchants/answer/11909930).",
+          "type": "string"
+        },
+        "pickupMethod": {
+          "description": "The pick up option for the item.",
+          "type": "string"
+        },
+        "pickupSla": {
+          "description": "Item store pickup timeline.",
+          "type": "string"
+        },
+        "price": {
+          "$ref": "Price",
+          "description": "Price of the item."
+        },
+        "productDetails": {
+          "description": "Technical specification or additional product details.",
+          "items": {
+            "$ref": "ProductDetail"
+          },
+          "type": "array"
+        },
+        "productHeight": {
+          "$ref": "ProductDimension",
+          "description": "The height of the product in the units provided. The value must be between 0 (exclusive) and 3000 (inclusive)."
+        },
+        "productHighlights": {
+          "description": "Bullet points describing the most relevant highlights of a product.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "productLength": {
+          "$ref": "ProductDimension",
+          "description": "The length of the product in the units provided. The value must be between 0 (exclusive) and 3000 (inclusive)."
+        },
+        "productTypes": {
+          "description": "Categories of the item (formatted as in [product data specification](https://support.google.com/merchants/answer/188494#product_type)).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "productWeight": {
+          "$ref": "ProductWeight",
+          "description": "The weight of the product in the units provided. The value must be between 0 (exclusive) and 2000 (inclusive)."
+        },
+        "productWidth": {
+          "$ref": "ProductDimension",
+          "description": "The width of the product in the units provided. The value must be between 0 (exclusive) and 3000 (inclusive)."
+        },
+        "promotionIds": {
+          "description": "The unique ID of a promotion.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "salePrice": {
+          "$ref": "Price",
+          "description": "Advertised sale price of the item."
+        },
+        "salePriceEffectiveDate": {
+          "$ref": "Interval",
+          "description": "Date range during which the item is on sale (see [product data specification](https://support.google.com/merchants/answer/188494#sale_price_effective_date))."
+        },
+        "sellOnGoogleQuantity": {
+          "description": "The quantity of the product that is available for selling on Google. Supported only for online products.",
+          "format": "int64",
+          "type": "string"
+        },
+        "shipping": {
+          "description": "Shipping rules.",
+          "items": {
+            "$ref": "Shipping"
+          },
+          "type": "array"
+        },
+        "shippingHeight": {
+          "$ref": "ShippingDimension",
+          "description": "Height of the item for shipping."
+        },
+        "shippingLabel": {
+          "description": "The shipping label of the product, used to group product in account-level shipping rules.",
+          "type": "string"
+        },
+        "shippingLength": {
+          "$ref": "ShippingDimension",
+          "description": "Length of the item for shipping."
+        },
+        "shippingWeight": {
+          "$ref": "ShippingWeight",
+          "description": "Weight of the item for shipping."
+        },
+        "shippingWidth": {
+          "$ref": "ShippingDimension",
+          "description": "Width of the item for shipping."
+        },
+        "shoppingAdsExcludedCountries": {
+          "description": "List of country codes (ISO 3166-1 alpha-2) to exclude the offer from Shopping Ads destination. Countries from this list are removed from countries configured in data source settings.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "size": {
+          "description": "Size of the item. Only one value is allowed. For variants with different sizes, insert a separate product for each size with the same `itemGroupId` value (see [https://support.google.com/merchants/answer/6324492](size definition)).",
+          "type": "string"
+        },
+        "sizeSystem": {
+          "description": "System in which the size is specified. Recommended for apparel items.",
+          "type": "string"
+        },
+        "sizeTypes": {
+          "description": "The cut of the item. It can be used to represent combined size types for apparel items. Maximum two of size types can be provided (see [https://support.google.com/merchants/answer/6324497](size type)).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "structuredDescription": {
+          "$ref": "ProductStructuredDescription",
+          "description": "Structured description, for algorithmically (AI)-generated descriptions."
+        },
+        "structuredTitle": {
+          "$ref": "ProductStructuredTitle",
+          "description": "Structured title, for algorithmically (AI)-generated titles."
+        },
+        "subscriptionCost": {
+          "$ref": "SubscriptionCost",
+          "description": "Number of periods (months or years) and amount of payment per period for an item with an associated subscription contract."
+        },
+        "taxCategory": {
+          "description": "The tax category of the product, used to configure detailed tax nexus in account-level tax settings.",
+          "type": "string"
+        },
+        "taxes": {
+          "description": "Tax information.",
+          "items": {
+            "$ref": "Tax"
+          },
+          "type": "array"
+        },
+        "title": {
+          "description": "Title of the item.",
+          "type": "string"
+        },
+        "transitTimeLabel": {
+          "description": "The transit time label of the product, used to group product in account-level transit time tables.",
+          "type": "string"
+        },
+        "unitPricingBaseMeasure": {
+          "$ref": "UnitPricingBaseMeasure",
+          "description": "The preference of the denominator of the unit price."
+        },
+        "unitPricingMeasure": {
+          "$ref": "UnitPricingMeasure",
+          "description": "The measure and dimension of an item."
+        },
+        "virtualModelLink": {
+          "description": "URL of the 3D image of the item. See the [Help Center article](https://support.google.com/merchants/answer/13674896) for more information.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Certification": {
+      "description": "Product [certification](https://support.google.com/merchants/answer/13528839), initially introduced for EU energy efficiency labeling compliance using the EU EPREL database.",
+      "id": "Certification",
+      "properties": {
+        "certificationAuthority": {
+          "description": "The certification authority, for example \"European_Commission\". Maximum length is 2000 characters.",
+          "type": "string"
+        },
+        "certificationCode": {
+          "description": "The certification code. Maximum length is 2000 characters.",
+          "type": "string"
+        },
+        "certificationName": {
+          "description": "The name of the certification, for example \"EPREL\". Maximum length is 2000 characters.",
+          "type": "string"
+        },
+        "certificationValue": {
+          "description": "The certification value (also known as class, level or grade), for example \"A+\", \"C\", \"gold\". Maximum length is 2000 characters.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CloudExportAdditionalProperties": {
+      "description": "Product property for the Cloud Retail API. For example, properties for a TV product could be \"Screen-Resolution\" or \"Screen-Size\".",
+      "id": "CloudExportAdditionalProperties",
+      "properties": {
+        "boolValue": {
+          "description": "Boolean value of the given property. For example for a TV product, \"True\" or \"False\" if the screen is UHD.",
+          "type": "boolean"
+        },
+        "floatValue": {
+          "description": "Float values of the given property. For example for a TV product 1.2345. Maximum repeatedness of this value is 400. Values are stored in an arbitrary but consistent order.",
+          "items": {
+            "format": "float",
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "intValue": {
+          "description": "Integer values of the given property. For example, 1080 for a TV product's Screen Resolution. Maximum repeatedness of this value is 400. Values are stored in an arbitrary but consistent order.",
+          "items": {
+            "format": "int64",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "maxValue": {
+          "description": "Maximum float value of the given property. For example for a TV product 100.00.",
+          "format": "float",
+          "type": "number"
+        },
+        "minValue": {
+          "description": "Minimum float value of the given property. For example for a TV product 1.00.",
+          "format": "float",
+          "type": "number"
+        },
+        "propertyName": {
+          "description": "Name of the given property. For example, \"Screen-Resolution\" for a TV product. Maximum string size is 256 characters.",
+          "type": "string"
+        },
+        "textValue": {
+          "description": "Text value of the given property. For example, \"8K(UHD)\" could be a text value for a TV product. Maximum repeatedness of this value is 400. Values are stored in an arbitrary but consistent order. Maximum string size is 256 characters.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "unitCode": {
+          "description": "Unit of the given property. For example, \"Pixels\" for a TV product. Maximum string size is 256B.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CustomAttribute": {
+      "description": "A message that represents custom attributes. Exactly one of `value` or `group_values` must not be empty.",
+      "id": "CustomAttribute",
+      "properties": {
+        "groupValues": {
+          "description": "Subattributes within this attribute group. If `group_values` is not empty, `value` must be empty.",
+          "items": {
+            "$ref": "CustomAttribute"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The name of the attribute.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value of the attribute. If `value` is not empty, `group_values` must be empty.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DestinationStatus": {
+      "description": "The destination status of the product status.",
+      "id": "DestinationStatus",
+      "properties": {
+        "approvedCountries": {
+          "description": "List of country codes (ISO 3166-1 alpha-2) where the offer is approved.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "disapprovedCountries": {
+          "description": "List of country codes (ISO 3166-1 alpha-2) where the offer is disapproved.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "pendingCountries": {
+          "description": "List of country codes (ISO 3166-1 alpha-2) where the offer is pending approval.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "reportingContext": {
+          "description": "The name of the reporting context.",
+          "enum": [
+            "REPORTING_CONTEXT_ENUM_UNSPECIFIED",
+            "SHOPPING_ADS",
+            "DISCOVERY_ADS",
+            "DEMAND_GEN_ADS",
+            "DEMAND_GEN_ADS_DISCOVER_SURFACE",
+            "VIDEO_ADS",
+            "DISPLAY_ADS",
+            "LOCAL_INVENTORY_ADS",
+            "VEHICLE_INVENTORY_ADS",
+            "FREE_LISTINGS",
+            "FREE_LOCAL_LISTINGS",
+            "FREE_LOCAL_VEHICLE_LISTINGS",
+            "YOUTUBE_SHOPPING",
+            "CLOUD_RETAIL",
+            "LOCAL_CLOUD_RETAIL"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "[Shopping ads](https://support.google.com/merchants/answer/6149970).",
+            "Deprecated: Use `DEMAND_GEN_ADS` instead. [Discovery and Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads on Discover surface](https://support.google.com/merchants/answer/13389785).",
+            "[Video ads](https://support.google.com/google-ads/answer/6340491).",
+            "[Display ads](https://support.google.com/merchants/answer/6069387).",
+            "[Local inventory ads](https://support.google.com/merchants/answer/3271956).",
+            "[Vehicle inventory ads](https://support.google.com/merchants/answer/11544533).",
+            "[Free product listings](https://support.google.com/merchants/answer/9199328).",
+            "[Free local product listings](https://support.google.com/merchants/answer/9825611).",
+            "[Free local vehicle listings](https://support.google.com/merchants/answer/11544533).",
+            "[YouTube Shopping](https://support.google.com/merchants/answer/13478370).",
+            "[Cloud retail](https://cloud.google.com/solutions/retail).",
+            "[Local cloud retail](https://cloud.google.com/solutions/retail)."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Empty": {
+      "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); }",
+      "id": "Empty",
+      "properties": {},
+      "type": "object"
+    },
+    "FreeShippingThreshold": {
+      "description": "Conditions to be met for a product to have free shipping.",
+      "id": "FreeShippingThreshold",
+      "properties": {
+        "country": {
+          "description": "The [CLDR territory code](http://www.unicode.org/repos/cldr/tags/latest/common/main/en.xml) of the country to which an item will ship.",
+          "type": "string"
+        },
+        "priceThreshold": {
+          "$ref": "Price",
+          "description": "The minimum product price for the shipping cost to become free. Represented as a number."
+        }
+      },
+      "type": "object"
+    },
+    "Installment": {
+      "description": "A message that represents installment.",
+      "id": "Installment",
+      "properties": {
+        "amount": {
+          "$ref": "Price",
+          "description": "The amount the buyer has to pay per month."
+        },
+        "creditType": {
+          "description": "Type of installment payments. Supported values are: * \"`finance`\" * \"`lease`\"",
+          "type": "string"
+        },
+        "downpayment": {
+          "$ref": "Price",
+          "description": "The up-front down payment amount the buyer has to pay."
+        },
+        "months": {
+          "description": "The number of installments the buyer has to pay.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Interval": {
+      "description": "Represents a time interval, encoded as a Timestamp start (inclusive) and a Timestamp end (exclusive). The start must be less than or equal to the end. When the start equals the end, the interval is empty (matches no time). When both start and end are unspecified, the interval matches any time.",
+      "id": "Interval",
+      "properties": {
+        "endTime": {
+          "description": "Optional. Exclusive end of the interval. If specified, a Timestamp matching this interval will have to be before the end.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "startTime": {
+          "description": "Optional. Inclusive start of the interval. If specified, a Timestamp matching this interval will have to be the same or after the start.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ItemLevelIssue": {
+      "description": "The ItemLevelIssue of the product status.",
+      "id": "ItemLevelIssue",
+      "properties": {
+        "applicableCountries": {
+          "description": "List of country codes (ISO 3166-1 alpha-2) where issue applies to the offer.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "attribute": {
+          "description": "The attribute's name, if the issue is caused by a single attribute.",
+          "type": "string"
+        },
+        "code": {
+          "description": "The error code of the issue.",
+          "type": "string"
+        },
+        "description": {
+          "description": "A short issue description in English.",
+          "type": "string"
+        },
+        "detail": {
+          "description": "A detailed issue description in English.",
+          "type": "string"
+        },
+        "documentation": {
+          "description": "The URL of a web page to help with resolving this issue.",
+          "type": "string"
+        },
+        "reportingContext": {
+          "description": "The reporting context the issue applies to.",
+          "enum": [
+            "REPORTING_CONTEXT_ENUM_UNSPECIFIED",
+            "SHOPPING_ADS",
+            "DISCOVERY_ADS",
+            "DEMAND_GEN_ADS",
+            "DEMAND_GEN_ADS_DISCOVER_SURFACE",
+            "VIDEO_ADS",
+            "DISPLAY_ADS",
+            "LOCAL_INVENTORY_ADS",
+            "VEHICLE_INVENTORY_ADS",
+            "FREE_LISTINGS",
+            "FREE_LOCAL_LISTINGS",
+            "FREE_LOCAL_VEHICLE_LISTINGS",
+            "YOUTUBE_SHOPPING",
+            "CLOUD_RETAIL",
+            "LOCAL_CLOUD_RETAIL"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "[Shopping ads](https://support.google.com/merchants/answer/6149970).",
+            "Deprecated: Use `DEMAND_GEN_ADS` instead. [Discovery and Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads on Discover surface](https://support.google.com/merchants/answer/13389785).",
+            "[Video ads](https://support.google.com/google-ads/answer/6340491).",
+            "[Display ads](https://support.google.com/merchants/answer/6069387).",
+            "[Local inventory ads](https://support.google.com/merchants/answer/3271956).",
+            "[Vehicle inventory ads](https://support.google.com/merchants/answer/11544533).",
+            "[Free product listings](https://support.google.com/merchants/answer/9199328).",
+            "[Free local product listings](https://support.google.com/merchants/answer/9825611).",
+            "[Free local vehicle listings](https://support.google.com/merchants/answer/11544533).",
+            "[YouTube Shopping](https://support.google.com/merchants/answer/13478370).",
+            "[Cloud retail](https://cloud.google.com/solutions/retail).",
+            "[Local cloud retail](https://cloud.google.com/solutions/retail)."
+          ],
+          "type": "string"
+        },
+        "resolution": {
+          "description": "Whether the issue can be resolved by the merchant.",
+          "type": "string"
+        },
+        "severity": {
+          "description": "How this issue affects serving of the offer.",
+          "enum": [
+            "SEVERITY_UNSPECIFIED",
+            "NOT_IMPACTED",
+            "DEMOTED",
+            "DISAPPROVED"
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "This issue represents a warning and does not have a direct affect on the product.",
+            "The product is demoted and most likely have limited performance in search results",
+            "Issue disapproves the product."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListProductsResponse": {
+      "description": "Response message for the ListProducts method.",
+      "id": "ListProductsResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        },
+        "products": {
+          "description": "The processed products from the specified account. These are your processed products after applying rules and supplemental data sources.",
+          "items": {
+            "$ref": "Product"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "LoyaltyPoints": {
+      "description": "A message that represents loyalty points.",
+      "id": "LoyaltyPoints",
+      "properties": {
+        "name": {
+          "description": "Name of loyalty points program. It is recommended to limit the name to 12 full-width characters or 24 Roman characters.",
+          "type": "string"
+        },
+        "pointsValue": {
+          "description": "The retailer's loyalty points in absolute value.",
+          "format": "int64",
+          "type": "string"
+        },
+        "ratio": {
+          "description": "The ratio of a point when converted to currency. Google assumes currency based on Merchant Center settings. If ratio is left out, it defaults to 1.0.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "LoyaltyProgram": {
+      "description": "A message that represents loyalty program.",
+      "id": "LoyaltyProgram",
+      "properties": {
+        "cashbackForFutureUse": {
+          "$ref": "Price",
+          "description": "The cashback that can be used for future purchases."
+        },
+        "loyaltyPoints": {
+          "description": "The amount of loyalty points earned on a purchase.",
+          "format": "int64",
+          "type": "string"
+        },
+        "price": {
+          "$ref": "Price",
+          "description": "The price for members of the given tier, that is, the instant discount price. Must be smaller or equal to the regular price."
+        },
+        "programLabel": {
+          "description": "The label of the loyalty program. This is an internal label that uniquely identifies the relationship between a merchant entity and a loyalty program entity. The label must be provided so that the system can associate the assets below (for example, price and points) with a merchant. The corresponding program must be linked to the merchant account.",
+          "type": "string"
+        },
+        "tierLabel": {
+          "description": "The label of the tier within the loyalty program. Must match one of the labels within the program.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Price": {
+      "description": "The price represented as a number and currency.",
+      "id": "Price",
+      "properties": {
+        "amountMicros": {
+          "description": "The price represented as a number in micros (1 million micros is an equivalent to one's currency standard unit, for example, 1 USD = 1000000 micros).",
+          "format": "int64",
+          "type": "string"
+        },
+        "currencyCode": {
+          "description": "The currency of the price using three-letter acronyms according to [ISO 4217](http://en.wikipedia.org/wiki/ISO_4217).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Product": {
+      "description": "The processed product, built from multiple product inputs after applying rules and supplemental data sources. This processed product matches what is shown in your Merchant Center account and in Shopping ads and other surfaces across Google. Each product is built from exactly one primary data source product input, and multiple supplemental data source inputs. After inserting, updating, or deleting a product input, it may take several minutes before the updated processed product can be retrieved. All fields in the processed product and its sub-messages match the name of their corresponding attribute in the [Product data specification](https://support.google.com/merchants/answer/7052112) with some exceptions.",
+      "id": "Product",
+      "properties": {
+        "attributes": {
+          "$ref": "Attributes",
+          "description": "Output only. A list of product attributes.",
+          "readOnly": true
+        },
+        "channel": {
+          "description": "Output only. The [channel](https://support.google.com/merchants/answer/7361332) of the product.",
+          "enum": [
+            "CHANNEL_ENUM_UNSPECIFIED",
+            "ONLINE",
+            "LOCAL"
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "Online product.",
+            "Local product."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "contentLanguage": {
+          "description": "Output only. The two-letter [ISO 639-1](http://en.wikipedia.org/wiki/ISO_639-1) language code for the product.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "customAttributes": {
+          "description": "Output only. A list of custom (merchant-provided) attributes. It can also be used to submit any attribute of the data specification in its generic form (for example, `{ \"name\": \"size type\", \"value\": \"regular\" }`). This is useful for submitting attributes not explicitly exposed by the API, such as additional attributes used for Buy on Google.",
+          "items": {
+            "$ref": "CustomAttribute"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "dataSource": {
+          "description": "Output only. The primary data source of the product.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "feedLabel": {
+          "description": "Output only. The feed label for the product.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the product. Format: `\"{product.name=accounts/{account}/products/{product}}\"`",
+          "type": "string"
+        },
+        "offerId": {
+          "description": "Output only. Your unique identifier for the product. This is the same for the product input and processed product. Leading and trailing whitespaces are stripped and multiple whitespaces are replaced by a single whitespace upon submission. See the [product data specification](https://support.google.com/merchants/answer/188494#id) for details.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "productStatus": {
+          "$ref": "ProductStatus",
+          "description": "Output only. The status of a product, data validation issues, that is, information about a product computed asynchronously.",
+          "readOnly": true
+        },
+        "versionNumber": {
+          "description": "Output only. Represents the existing version (freshness) of the product, which can be used to preserve the right order when multiple updates are done at the same time. If set, the insertion is prevented when version number is lower than the current version number of the existing product. Re-insertion (for example, product refresh after 30 days) can be performed with the current `version_number`. Only supported for insertions into primary data sources. If the operation is prevented, the aborted exception will be thrown.",
+          "format": "int64",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductChange": {
+      "description": "The change that happened to the product including old value, new value, country code as the region code and reporting context.",
+      "id": "ProductChange",
+      "properties": {
+        "newValue": {
+          "description": "The new value of the changed resource or attribute.",
+          "type": "string"
+        },
+        "oldValue": {
+          "description": "The old value of the changed resource or attribute.",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "Countries that have the change (if applicable)",
+          "type": "string"
+        },
+        "reportingContext": {
+          "description": "Reporting contexts that have the change (if applicable)",
+          "enum": [
+            "REPORTING_CONTEXT_ENUM_UNSPECIFIED",
+            "SHOPPING_ADS",
+            "DISCOVERY_ADS",
+            "DEMAND_GEN_ADS",
+            "DEMAND_GEN_ADS_DISCOVER_SURFACE",
+            "VIDEO_ADS",
+            "DISPLAY_ADS",
+            "LOCAL_INVENTORY_ADS",
+            "VEHICLE_INVENTORY_ADS",
+            "FREE_LISTINGS",
+            "FREE_LOCAL_LISTINGS",
+            "FREE_LOCAL_VEHICLE_LISTINGS",
+            "YOUTUBE_SHOPPING",
+            "CLOUD_RETAIL",
+            "LOCAL_CLOUD_RETAIL"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "[Shopping ads](https://support.google.com/merchants/answer/6149970).",
+            "Deprecated: Use `DEMAND_GEN_ADS` instead. [Discovery and Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads on Discover surface](https://support.google.com/merchants/answer/13389785).",
+            "[Video ads](https://support.google.com/google-ads/answer/6340491).",
+            "[Display ads](https://support.google.com/merchants/answer/6069387).",
+            "[Local inventory ads](https://support.google.com/merchants/answer/3271956).",
+            "[Vehicle inventory ads](https://support.google.com/merchants/answer/11544533).",
+            "[Free product listings](https://support.google.com/merchants/answer/9199328).",
+            "[Free local product listings](https://support.google.com/merchants/answer/9825611).",
+            "[Free local vehicle listings](https://support.google.com/merchants/answer/11544533).",
+            "[YouTube Shopping](https://support.google.com/merchants/answer/13478370).",
+            "[Cloud retail](https://cloud.google.com/solutions/retail).",
+            "[Local cloud retail](https://cloud.google.com/solutions/retail)."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductDetail": {
+      "description": "The product details.",
+      "id": "ProductDetail",
+      "properties": {
+        "attributeName": {
+          "description": "The name of the product detail.",
+          "type": "string"
+        },
+        "attributeValue": {
+          "description": "The value of the product detail.",
+          "type": "string"
+        },
+        "sectionName": {
+          "description": "The section header used to group a set of product details.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductDimension": {
+      "description": "The dimension of the product.",
+      "id": "ProductDimension",
+      "properties": {
+        "unit": {
+          "description": "Required. The dimension units. Acceptable values are: * \"`in`\" * \"`cm`\"",
+          "type": "string"
+        },
+        "value": {
+          "description": "Required. The dimension value represented as a number. The value can have a maximum precision of four decimal places.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "ProductInput": {
+      "description": "This resource represents input data you submit for a product, not the processed product that you see in Merchant Center, in Shopping ads, or across Google surfaces. Product inputs, rules and supplemental data source data are combined to create the processed product. Required product input attributes to pass data validation checks are primarily defined in the [Products Data Specification](https://support.google.com/merchants/answer/188494). The following attributes are required: feedLabel, contentLanguage and offerId. After inserting, updating, or deleting a product input, it may take several minutes before the processed product can be retrieved. All fields in the product input and its sub-messages match the English name of their corresponding attribute in the vertical spec with [some exceptions](https://support.google.com/merchants/answer/7052112).",
+      "id": "ProductInput",
+      "properties": {
+        "attributes": {
+          "$ref": "Attributes",
+          "description": "Optional. A list of product attributes."
+        },
+        "channel": {
+          "description": "Required. Immutable. The [channel](https://support.google.com/merchants/answer/7361332) of the product.",
+          "enum": [
+            "CHANNEL_ENUM_UNSPECIFIED",
+            "ONLINE",
+            "LOCAL"
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "Online product.",
+            "Local product."
+          ],
+          "type": "string"
+        },
+        "contentLanguage": {
+          "description": "Required. Immutable. The two-letter [ISO 639-1](http://en.wikipedia.org/wiki/ISO_639-1) language code for the product.",
+          "type": "string"
+        },
+        "customAttributes": {
+          "description": "Optional. A list of custom (merchant-provided) attributes. It can also be used for submitting any attribute of the data specification in its generic form (for example, `{ \"name\": \"size type\", \"value\": \"regular\" }`). This is useful for submitting attributes not explicitly exposed by the API, such as additional attributes used for Buy on Google. Maximum allowed number of characters for each custom attribute is 10240 (represents sum of characters for name and value). Maximum 2500 custom attributes can be set per product, with total size of 102.4kB. Underscores in custom attribute names are replaced by spaces upon insertion.",
+          "items": {
+            "$ref": "CustomAttribute"
+          },
+          "type": "array"
+        },
+        "feedLabel": {
+          "description": "Required. Immutable. The [feed label](https://developers.google.com/shopping-content/guides/products/feed-labels) for the product.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Identifier. The name of the product input. Format: `\"{productinput.name=accounts/{account}/productInputs/{productinput}}\"`",
+          "type": "string"
+        },
+        "offerId": {
+          "description": "Required. Immutable. Your unique identifier for the product. This is the same for the product input and processed product. Leading and trailing whitespaces are stripped and multiple whitespaces are replaced by a single whitespace upon submission. See the [products data specification](https://support.google.com/merchants/answer/188494#id) for details.",
+          "type": "string"
+        },
+        "product": {
+          "description": "Output only. The name of the processed product. Format: `\"{product.name=accounts/{account}/products/{product}}\"`",
+          "readOnly": true,
+          "type": "string"
+        },
+        "versionNumber": {
+          "description": "Optional. Represents the existing version (freshness) of the product, which can be used to preserve the right order when multiple updates are done at the same time. If set, the insertion is prevented when version number is lower than the current version number of the existing product. Re-insertion (for example, product refresh after 30 days) can be performed with the current `version_number`. Only supported for insertions into primary data sources. If the operation is prevented, the aborted exception will be thrown.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductStatus": {
+      "description": "The status of a product, data validation issues, that is, information about a product computed asynchronously.",
+      "id": "ProductStatus",
+      "properties": {
+        "creationDate": {
+          "description": "Date on which the item has been created, in [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601) format.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "destinationStatuses": {
+          "description": "The intended destinations for the product.",
+          "items": {
+            "$ref": "DestinationStatus"
+          },
+          "type": "array"
+        },
+        "googleExpirationDate": {
+          "description": "Date on which the item expires, in [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601) format.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "itemLevelIssues": {
+          "description": "A list of all issues associated with the product.",
+          "items": {
+            "$ref": "ItemLevelIssue"
+          },
+          "type": "array"
+        },
+        "lastUpdateDate": {
+          "description": "Date on which the item has been last updated, in [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601) format.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductStatusChangeMessage": {
+      "description": "The message that the merchant will receive to notify about product status change event",
+      "id": "ProductStatusChangeMessage",
+      "properties": {
+        "account": {
+          "description": "The target account that owns the entity that changed. Format : `accounts/{merchant_id}`",
+          "type": "string"
+        },
+        "attribute": {
+          "description": "The attribute in the resource that changed, in this case it will be always `Status`.",
+          "enum": [
+            "ATTRIBUTE_UNSPECIFIED",
+            "STATUS"
+          ],
+          "enumDescriptions": [
+            "Unspecified attribute",
+            "Status of the changed entity"
+          ],
+          "type": "string"
+        },
+        "changes": {
+          "description": "A message to describe the change that happened to the product",
+          "items": {
+            "$ref": "ProductChange"
+          },
+          "type": "array"
+        },
+        "managingAccount": {
+          "description": "The account that manages the merchant's account. can be the same as merchant id if it is standalone account. Format : `accounts/{service_provider_id}`",
+          "type": "string"
+        },
+        "resource": {
+          "description": "The product name. Format: `{product.name=accounts/{account}/products/{product}}`",
+          "type": "string"
+        },
+        "resourceId": {
+          "description": "The product id.",
+          "type": "string"
+        },
+        "resourceType": {
+          "description": "The resource that changed, in this case it will always be `Product`.",
+          "enum": [
+            "RESOURCE_UNSPECIFIED",
+            "PRODUCT"
+          ],
+          "enumDescriptions": [
+            "Unspecified resource",
+            "Resource type : product"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductStructuredDescription": {
+      "description": "Structured description, for algorithmically (AI)-generated descriptions.",
+      "id": "ProductStructuredDescription",
+      "properties": {
+        "content": {
+          "description": "The description text Maximum length is 5000 characters",
+          "type": "string"
+        },
+        "digitalSourceType": {
+          "description": "The digital source type, for example \"trained_algorithmic_media\". Following [IPTC](https://cv.iptc.org/newscodes/digitalsourcetype). Maximum length is 40 characters.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductStructuredTitle": {
+      "description": "Structured title, for algorithmically (AI)-generated titles.",
+      "id": "ProductStructuredTitle",
+      "properties": {
+        "content": {
+          "description": "The title text Maximum length is 150 characters",
+          "type": "string"
+        },
+        "digitalSourceType": {
+          "description": "The digital source type, for example \"trained_algorithmic_media\". Following [IPTC](https://cv.iptc.org/newscodes/digitalsourcetype). Maximum length is 40 characters.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductWeight": {
+      "description": "The weight of the product.",
+      "id": "ProductWeight",
+      "properties": {
+        "unit": {
+          "description": "Required. The weight unit. Acceptable values are: * \"`g`\" * \"`kg`\" * \"`oz`\" * \"`lb`\"",
+          "type": "string"
+        },
+        "value": {
+          "description": "Required. The weight represented as a number. The weight can have a maximum precision of four decimal places.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "Shipping": {
+      "description": "The Shipping of the product.",
+      "id": "Shipping",
+      "properties": {
+        "country": {
+          "description": "The [CLDR territory code](http://www.unicode.org/repos/cldr/tags/latest/common/main/en.xml) of the country to which an item will ship.",
+          "type": "string"
+        },
+        "locationGroupName": {
+          "description": "The location where the shipping is applicable, represented by a location group name.",
+          "type": "string"
+        },
+        "locationId": {
+          "description": "The numeric ID of a location that the shipping rate applies to as defined in the [AdWords API](https://developers.google.com/adwords/api/docs/appendix/geotargeting).",
+          "format": "int64",
+          "type": "string"
+        },
+        "maxHandlingTime": {
+          "description": "Maximum handling time (inclusive) between when the order is received and shipped in business days. 0 means that the order is shipped on the same day as it is received if it happens before the cut-off time. Both maxHandlingTime and maxTransitTime are required if providing shipping speeds. minHandlingTime is optional if maxHandlingTime is present.",
+          "format": "int64",
+          "type": "string"
+        },
+        "maxTransitTime": {
+          "description": "Maximum transit time (inclusive) between when the order has shipped and when it is delivered in business days. 0 means that the order is delivered on the same day as it ships. Both maxHandlingTime and maxTransitTime are required if providing shipping speeds. minTransitTime is optional if maxTransitTime is present.",
+          "format": "int64",
+          "type": "string"
+        },
+        "minHandlingTime": {
+          "description": "Minimum handling time (inclusive) between when the order is received and shipped in business days. 0 means that the order is shipped on the same day as it is received if it happens before the cut-off time. minHandlingTime can only be present together with maxHandlingTime; but it is not required if maxHandlingTime is present.",
+          "format": "int64",
+          "type": "string"
+        },
+        "minTransitTime": {
+          "description": "Minimum transit time (inclusive) between when the order has shipped and when it is delivered in business days. 0 means that the order is delivered on the same day as it ships. minTransitTime can only be present together with maxTransitTime; but it is not required if maxTransitTime is present.",
+          "format": "int64",
+          "type": "string"
+        },
+        "postalCode": {
+          "description": "The postal code range that the shipping rate applies to, represented by a postal code, a postal code prefix followed by a * wildcard, a range between two postal codes or two postal code prefixes of equal length.",
+          "type": "string"
+        },
+        "price": {
+          "$ref": "Price",
+          "description": "Fixed shipping price, represented as a number."
+        },
+        "region": {
+          "description": "The geographic region to which a shipping rate applies. See [region](https://support.google.com/merchants/answer/6324484) for more information.",
+          "type": "string"
+        },
+        "service": {
+          "description": "A free-form description of the service class or delivery speed.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ShippingDimension": {
+      "description": "The ShippingDimension of the product.",
+      "id": "ShippingDimension",
+      "properties": {
+        "unit": {
+          "description": "The unit of value.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The dimension of the product used to calculate the shipping cost of the item.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "ShippingWeight": {
+      "description": "The ShippingWeight of the product.",
+      "id": "ShippingWeight",
+      "properties": {
+        "unit": {
+          "description": "The unit of value.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The weight of the product used to calculate the shipping cost of the item.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "SubscriptionCost": {
+      "description": "The SubscriptionCost of the product.",
+      "id": "SubscriptionCost",
+      "properties": {
+        "amount": {
+          "$ref": "Price",
+          "description": "The amount the buyer has to pay per subscription period."
+        },
+        "period": {
+          "description": "The type of subscription period. Supported values are: * \"`month`\" * \"`year`\"",
+          "enum": [
+            "SUBSCRIPTION_PERIOD_UNSPECIFIED",
+            "MONTH",
+            "YEAR"
+          ],
+          "enumDescriptions": [
+            "Indicates that the subscription period is unspecified.",
+            "Indicates that the subscription period is month.",
+            "Indicates that the subscription period is year."
+          ],
+          "type": "string"
+        },
+        "periodLength": {
+          "description": "The number of subscription periods the buyer has to pay.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Tax": {
+      "description": "The Tax of the product.",
+      "id": "Tax",
+      "properties": {
+        "country": {
+          "description": "The country within which the item is taxed, specified as a [CLDR territory code](http://www.unicode.org/repos/cldr/tags/latest/common/main/en.xml).",
+          "type": "string"
+        },
+        "locationId": {
+          "description": "The numeric ID of a location that the tax rate applies to as defined in the [AdWords API](https://developers.google.com/adwords/api/docs/appendix/geotargeting).",
+          "format": "int64",
+          "type": "string"
+        },
+        "postalCode": {
+          "description": "The postal code range that the tax rate applies to, represented by a ZIP code, a ZIP code prefix using * wildcard, a range between two ZIP codes or two ZIP code prefixes of equal length. Examples: 94114, 94*, 94002-95460, 94*-95*.",
+          "type": "string"
+        },
+        "rate": {
+          "description": "The percentage of tax rate that applies to the item price.",
+          "format": "double",
+          "type": "number"
+        },
+        "region": {
+          "description": "The geographic region to which the tax rate applies.",
+          "type": "string"
+        },
+        "taxShip": {
+          "description": "Set to true if tax is charged on shipping.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "UnitPricingBaseMeasure": {
+      "description": "The UnitPricingBaseMeasure of the product.",
+      "id": "UnitPricingBaseMeasure",
+      "properties": {
+        "unit": {
+          "description": "The unit of the denominator.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The denominator of the unit price.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "UnitPricingMeasure": {
+      "description": "The UnitPricingMeasure of the product.",
+      "id": "UnitPricingMeasure",
+      "properties": {
+        "unit": {
+          "description": "The unit of the measure.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The measure of an item.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Merchant API",
+  "version": "products_v1beta",
+  "version_module": true
+}

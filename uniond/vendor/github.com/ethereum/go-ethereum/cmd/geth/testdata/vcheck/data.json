@@ -1,0 +1,61 @@
+[
+  {
+    "name": "CorruptedDAG",
+    "uid": "GETH-2020-01",
+    "summary": "Mining nodes will generate erroneous PoW on epochs > `385`.",
+    "description": "A mining flaw could cause miners to erroneously calculate PoW, due to an index overflow, if DAG size is exceeding the maximum 32 bit unsigned value.\n\nThis occurred on the ETC chain on 2020-11-06. This is likely to trigger for ETH mainnet around block `11550000`/epoch `385`, slated to occur early January 2021.\n\nThis issue is relevant only for miners, non-mining nodes are unaffected, since non-mining nodes use a smaller verification cache instead of a full DAG.",
+    "links": [
+      "https://github.com/ethereum/go-ethereum/pull/21793",
+      "https://blog.ethereum.org/2020/11/12/geth_security_release/",
+      "https://github.com/ethereum/go-ethereum/commit/567d41d9363706b4b13ce0903804e8acf214af49"
+    ],
+    "introduced": "v1.6.0",
+    "fixed": "v1.9.24",
+    "published": "2020-11-12",
+    "severity": "Medium",
+    "check": "Geth\\/v1\\.(6|7|8)\\..*|Geth\\/v1\\.9\\.2(1|2|3)-.*"
+  },
+  {
+    "name": "GoCrash",
+    "uid": "GETH-2020-02",
+    "summary": "A denial-of-service issue can be used to crash Geth nodes during block processing, due to an underlying bug in Go (CVE-2020-28362) versions < `1.15.5`, or `<1.14.12`",
+    "description": "The DoS issue can be used to crash all Geth nodes during block processing, the effects of which would be that a major part of the Ethereum network went offline.\n\nOutside of Go-Ethereum, the issue is most likely relevant for all forks of Geth (such as TurboGeth or ETC’s core-geth) which is built with versions of Go which contains the vulnerability.",
+    "links": [
+      "https://blog.ethereum.org/2020/11/12/geth_security_release/",
+      "https://groups.google.com/g/golang-announce/c/NpBGTTmKzpM",
+      "https://github.com/golang/go/issues/42552"
+    ],
+    "fixed": "v1.9.24",
+    "published": "2020-11-12",
+    "severity": "Critical",
+    "check": "Geth.*\\/go1\\.(11(.*)|12(.*)|13(.*)|14|14\\.(\\d|10|11|)|15|15\\.[0-4])$"
+  },
+  {
+    "name": "ShallowCopy",
+    "uid": "GETH-2020-03",
+    "summary": "A consensus flaw in Geth, related to `datacopy` precompile",
+    "description": "Geth erroneously performed a 'shallow' copy when the precompiled `datacopy` (at `0x00...04`) was invoked. An attacker could deploy a contract that uses the shallow copy to corrupt the contents of the `RETURNDATA`, thus causing a consensus failure.",
+    "links": [
+      "https://blog.ethereum.org/2020/11/12/geth_security_release/"
+    ],
+    "introduced": "v1.9.7",
+    "fixed": "v1.9.17",
+    "published": "2020-11-12",
+    "severity": "Critical",
+    "check": "Geth\\/v1\\.9\\.(7|8|9|10|11|12|13|14|15|16).*$"
+  },
+  {
+    "name": "GethCrash",
+    "uid": "GETH-2020-04",
+    "summary": "A denial-of-service issue can be used to crash Geth nodes during block processing",
+    "description": "Full details to be disclosed at a later date",
+    "links": [
+      "https://blog.ethereum.org/2020/11/12/geth_security_release/"
+    ],
+    "introduced": "v1.9.16",
+    "fixed": "v1.9.18",
+    "published": "2020-11-12",
+    "severity": "Critical",
+    "check": "Geth\\/v1\\.9.(16|17).*$"
+  }
+]

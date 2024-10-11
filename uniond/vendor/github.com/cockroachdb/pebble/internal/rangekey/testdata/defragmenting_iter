@@ -1,0 +1,81 @@
+define
+a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+c-d:{(#4,RANGEKEYSET,@3,bananas)}
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+----
+
+# Iterating with logical defragmentation should combine [a,c) and [c,d)
+# fragments.
+
+iter
+first
+next
+next
+last
+prev
+prev
+----
+first     a-d:{(#1,RANGEKEYSET,@3,bananas)}
+next      d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+next      .
+last      d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+prev      a-d:{(#4,RANGEKEYSET,@3,bananas)}
+prev      .
+
+# Test defragmenting in both directions at seek keys.
+
+define
+a-f:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+f-h:{(#3,RANGEKEYSET,@3,bananas)}
+h-p:{(#3,RANGEKEYSET,@3,bananas)}
+p-t:{(#3,RANGEKEYSET,@3,bananas)}
+----
+
+iter
+seekge b
+prev
+seekge b
+next
+seeklt d
+next
+seeklt d
+prev
+----
+seekge b  a-t:{(#1,RANGEKEYSET,@3,bananas)}
+prev      .
+seekge b  a-t:{(#1,RANGEKEYSET,@3,bananas)}
+next      .
+seeklt d  a-t:{(#3,RANGEKEYSET,@3,bananas)}
+next      .
+seeklt d  a-t:{(#3,RANGEKEYSET,@3,bananas)}
+prev      .
+
+iter
+seeklt d
+next
+prev
+----
+seeklt d  a-t:{(#3,RANGEKEYSET,@3,bananas)}
+next      .
+prev      a-t:{(#3,RANGEKEYSET,@3,bananas)}
+
+# Test next-ing and prev-ing around seek keys.
+
+define
+a-f:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+f-h:{(#3,RANGEKEYSET,@3,bananas)}
+h-p:{(#3,RANGEKEYSET,@3,bananas)}
+p-t:{(#3,RANGEKEYSET,@3,bananas)}
+t-z:{(#4,RANGEKEYSET,@2,oranges)}
+----
+
+iter
+seekge r
+prev
+next
+next
+----
+seekge r  a-t:{(#1,RANGEKEYSET,@3,bananas)}
+prev      .
+next      a-t:{(#1,RANGEKEYSET,@3,bananas)}
+next      t-z:{(#4,RANGEKEYSET,@2,oranges)}

@@ -1,0 +1,3 @@
+path=cache
+version=v1.0.0
+wantErr=missing dot in first path element

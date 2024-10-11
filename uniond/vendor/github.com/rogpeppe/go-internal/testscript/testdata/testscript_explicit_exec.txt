@@ -1,0 +1,32 @@
+# Check that RequireExplicitExec works;
+# it should reject `fprintargs` in favor of `exec fprintargs`,
+# but it shouldn't complain about `some-param-cmd`,
+# as that Params.Cmds entry won't work via `exec some-param-cmd`.
+
+unquote scripts-implicit/testscript.txt
+unquote scripts-explicit/testscript.txt
+
+testscript scripts-implicit
+testscript scripts-explicit
+
+! testscript -explicit-exec scripts-implicit
+testscript -explicit-exec scripts-explicit
+
+-- scripts-implicit/testscript.txt --
+>fprintargs stdout right
+>cmp stdout expect
+>
+>some-param-cmd
+>! exec some-param-cmd
+>
+>-- expect --
+>right
+-- scripts-explicit/testscript.txt --
+>exec fprintargs stdout right
+>cmp stdout expect
+>
+>some-param-cmd
+>! exec some-param-cmd
+>
+>-- expect --
+>right

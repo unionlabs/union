@@ -1,0 +1,24 @@
+name: go-hclog
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        go-version: [1.14.x, 1.15.x, 1.16.x, 1.17.x, 1.18.x, 1.19.x]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - name: Test
+        run: go test -v ./...

@@ -75,3 +75,14 @@ To decompress it use the following command.
 
     $ gxz -d bigfile.xz
 
+## Security & Vulnerabilities
+
+The security policy is documented in [SECURITY.md](SECURITY.md). 
+
+The software is not affected by the supply chain attack on the original xz
+implementation, [CVE-2024-3094](https://nvd.nist.gov/vuln/detail/CVE-2024-3094).
+This implementation doesn't share any files with the original xz implementation
+and no patches or pull requests are accepted without a review.
+
+All security advisories for this project are published under
+[github.com/ulikunitz/xz/security/advisories](https://github.com/ulikunitz/xz/security/advisories?state=published).

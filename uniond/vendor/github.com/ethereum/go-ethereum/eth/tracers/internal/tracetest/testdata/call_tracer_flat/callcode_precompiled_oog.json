@@ -1,0 +1,94 @@
+{
+  "genesis": {
+    "difficulty": "4671584",
+    "extraData": "0xd883010b05846765746888676f312e31342e33856c696e7578",
+    "gasLimit": "9425823",
+    "hash": "0x27dd7d052dbc8a29cc5b9487e1e41d842e7a643fcaea4964caa22b834964acaf",
+    "miner": "0x73f26d124436b0791169d63a3af29c2ae47765a3",
+    "mixHash": "0xb4a050624f5d147fdf02857cbfd55da3ddc1451743acc5c163861584589c3034",
+    "nonce": "0x3c255875b17e0573",
+    "number": "1555277",
+    "stateRoot": "0x6290d79215a2eebc25d5e456b35876c6d78ffc1ea47bdd70e375ebb3cf325620",
+    "timestamp": "1590795308",
+    "totalDifficulty": "2242609643446",
+    "alloc": {
+      "0x0000000000000000000000000000000000000001": {
+        "balance": "0x0",
+        "nonce": "0",
+        "code": "0x",
+        "storage": {}
+      },
+      "0x877bd459c9b7d8576b44e59e09d076c25946f443": {
+        "balance": "0x624329308610ab365fb1",
+        "nonce": "265194",
+        "code": "0x",
+        "storage": {}
+      }
+    },
+    "config": {
+      "chainId": 63,
+      "daoForkSupport": true,
+      "eip150Block": 0,
+      "eip150Hash": "0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d",
+      "eip155Block": 0,
+      "eip158Block": 0,
+      "ethash": {},
+      "homesteadBlock": 0,
+      "byzantiumBlock": 0,
+      "constantinopleBlock": 301243,
+      "petersburgBlock": 999983,
+      "istanbulBlock": 999983
+    }
+  },
+  "context": {
+    "number": "1555278",
+    "difficulty": "4671584",
+    "timestamp": "1590795319",
+    "gasLimit": "9435026",
+    "miner": "0x877bd459c9b7d8576b44e59e09d076c25946f443"
+  },
+  "input": "0xf8ee83040bea843b9aca008301a7588080b8997f18c547e4f7b0f325ad1e56f57e26c745b09a3e503d86e00e5255ff7f715d3d1c600052601c6020527f73b1693892219d736caba55bdb67216e485557ea6b6af75f37096c9aa6a5a75f6040527feeb940b1d03b21e36b0e47e79769f095fe2ab855bd91e3a38756b7d75a9c4549606052602060806080600060006001610bb7f260025560a060020a6080510660005560005432146001550081a1a05b9a162d84bfe84faa7c176e21c26c0083645d4dd0d566547b7be2c2da0b4259a05b37ff12a4c27634cb0da6008d9b69726d415ff4694f9bc38c7806eb1fb60ae9",
+  "result": [
+    {
+      "type": "create",
+      "action": {
+        "from": "0x877bd459c9b7d8576b44e59e09d076c25946f443",
+        "value": "0x0",
+        "gas": "0x1a758",
+        "init": "0x7f18c547e4f7b0f325ad1e56f57e26c745b09a3e503d86e00e5255ff7f715d3d1c600052601c6020527f73b1693892219d736caba55bdb67216e485557ea6b6af75f37096c9aa6a5a75f6040527feeb940b1d03b21e36b0e47e79769f095fe2ab855bd91e3a38756b7d75a9c4549606052602060806080600060006001610bb7f260025560a060020a60805106600055600054321460015500"
+      },
+      "result": {
+        "gasUsed": "0xf3e9",
+        "code": "0x",
+        "address": "0x568c19ecb14b87e4aec29b4d2d700a3ad3fd0613"
+      },
+      "traceAddress": [],
+      "subtraces": 1,
+      "transactionPosition": 141,
+      "transactionHash": "0x1592cbda0d928b8d18eed98857942b91ade32d088e55b8bf63418917cb0231f1",
+      "blockNumber": 1555278,
+      "blockHash": "0x755bd54de4b2f5a7a589a10d69888b4ead48a6311d5d69f2f69ca85ec35fbe0b",
+      "time": "300.9µs"
+    },
+    {
+      "type": "call",
+      "action": {
+        "from": "0x568c19ecb14b87e4aec29b4d2d700a3ad3fd0613",
+        "to": "0x0000000000000000000000000000000000000001",
+        "value": "0x0",
+        "gas": "0xbb7",
+        "input": "0x18c547e4f7b0f325ad1e56f57e26c745b09a3e503d86e00e5255ff7f715d3d1c000000000000000000000000000000000000000000000000000000000000001c73b1693892219d736caba55bdb67216e485557ea6b6af75f37096c9aa6a5a75feeb940b1d03b21e36b0e47e79769f095fe2ab855bd91e3a38756b7d75a9c4549",
+        "callType": "callcode"
+      },
+      "error": "out of gas",
+      "traceAddress": [
+        0
+      ],
+      "subtraces": 0,
+      "transactionPosition": 141,
+      "transactionHash": "0x1592cbda0d928b8d18eed98857942b91ade32d088e55b8bf63418917cb0231f1",
+      "blockNumber": 1555278,
+      "blockHash": "0x755bd54de4b2f5a7a589a10d69888b4ead48a6311d5d69f2f69ca85ec35fbe0b"
+    }
+  ]
+}

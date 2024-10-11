@@ -1,0 +1,206 @@
+reset
+----
+
+batch commit
+range-key-set x z @5 boop
+----
+committed 1 keys
+
+combined-iter
+last
+next
+prev
+----
+x: (., [x-z) @5=boop UPDATED)
+.
+x: (., [x-z) @5=boop UPDATED)
+
+# Test limited reverse iteration. The seek-lt-limit z y must see the [x-z) range
+# key because it covers a key within the range [y, z). The range key start
+# boundary isn't until x.
+
+combined-iter
+seek-lt-limit z y
+next
+prev-limit y
+----
+x: valid (., [x-z) @5=boop UPDATED)
+.
+x: valid (., [x-z) @5=boop UPDATED)
+
+# Test limited forward iteration. Since range keys are interleaved at the start
+# boundaries, the iterator is guaranteed to encounter covering range keys
+# without any special casing in the implementation.
+
+combined-iter
+seek-ge-limit w y
+prev
+next-limit y
+----
+x: valid (., [x-z) @5=boop UPDATED)
+.
+x: valid (., [x-z) @5=boop UPDATED)
+
+# Test another limited backward iteration case where there exists a deleted
+# point key and the underlying internalIterator is Prev'd to a key beyond the
+# limit. This should still surface the covering range key.
+
+batch commit
+del yy
+----
+committed 1 keys
+
+combined-iter
+seek-lt-limit z y
+next
+prev-limit y
+----
+x: valid (., [x-z) @5=boop UPDATED)
+.
+x: valid (., [x-z) @5=boop UPDATED)
+
+# Test a case during limited reverse iteration where a range key covers a
+# portion of the keyspace within the limit. The iterator should NOT pause and
+# should surface the range key.
+
+reset
+----
+
+batch commit
+del b
+range-key-set a d @1 foo
+----
+committed 2 keys
+
+flush
+----
+
+combined-iter
+seek-ge z
+prev-limit c
+----
+.
+a: valid (., [a-d) @1=foo UPDATED)
+
+# Test a case during limited reverse iteration where there exists a range key
+# but it ends before the limit. The iterator should pause.
+
+reset
+----
+
+batch commit
+del b
+range-key-set a c @1 foo
+----
+committed 2 keys
+
+combined-iter
+seek-ge z
+prev-limit c
+----
+.
+. at-limit
+
+# Test at-limit interactions with RangeKeyChanged().
+# Regression test for #1963.
+
+reset
+----
+
+# Construct a range key and points such that there are deleted keys that a
+# -WithLimit iterator operation may pause at both at the beginning and end of
+# the range key's bounds.
+#
+#                    * b.DEL             * cat.SET         * dog.DEL
+#   |-------------------------------------------------------------------) [a,e)@1→foo
+#   a                b                c                d                e
+
+batch commit
+del b
+set cat cat
+del dog
+range-key-set a e @1 foo
+----
+committed 4 keys
+
+combined-iter
+seek-ge-limit a bat
+seek-ge-limit a bat
+seek-ge-limit apple bat
+seek-ge-limit cow zoo
+----
+a: valid (., [a-e) @1=foo UPDATED)
+a: valid (., [a-e) @1=foo)
+apple: valid (., [a-e) @1=foo)
+cow: valid (., [a-e) @1=foo)
+
+combined-iter
+seek-ge a
+next-limit bat
+next-limit dog
+next-limit zoo
+----
+a: (., [a-e) @1=foo UPDATED)
+. at-limit
+cat: valid (cat, [a-e) @1=foo UPDATED)
+. exhausted
+
+combined-iter
+seek-lt-limit f e
+seek-lt-limit e d
+seek-lt-limit e d
+seek-lt-limit f e
+seek-lt-limit e d
+----
+. at-limit
+cat: valid (cat, [a-e) @1=foo UPDATED)
+cat: valid (cat, [a-e) @1=foo)
+. at-limit
+cat: valid (cat, [a-e) @1=foo UPDATED)
+
+# Add a new dz.SET key.
+#
+#                    * b.DEL             * cat.SET         * dog.DEL  * dz.SET
+#   |-------------------------------------------------------------------) [a,e)@1→foo
+#   a                b                c                d                e
+
+batch commit
+set dz dz
+----
+committed 1 keys
+
+combined-iter
+seek-ge dz
+prev-limit e
+prev-limit dy
+prev-limit c
+prev
+next
+----
+dz: (dz, [a-e) @1=foo UPDATED)
+. at-limit
+cat: valid (cat, [a-e) @1=foo UPDATED)
+a: valid (., [a-e) @1=foo)
+.
+a: (., [a-e) @1=foo UPDATED)
+
+# Test enforcing limits even while skipping point keys.
+
+reset
+----
+
+batch commit
+set b@9 b@9
+set c@2 c@2
+set d@8 d@8
+----
+committed 3 keys
+
+combined-iter point-key-filter=(6,10)
+last
+prev-limit c
+seek-ge-limit c@9 d
+----
+d@8: (d@8, .)
+. at-limit
+. at-limit

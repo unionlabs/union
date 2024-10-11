@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package ibc.core.types.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/core/types";
+
+import "gogoproto/gogo.proto";
+import "ibc/core/client/v1/genesis.proto";
+import "ibc/core/connection/v1/genesis.proto";
+import "ibc/core/channel/v1/genesis.proto";
+
+// GenesisState defines the ibc module's genesis state.
+message GenesisState {
+  // ICS002 - Clients genesis state
+  ibc.core.client.v1.GenesisState client_genesis = 1 [(gogoproto.nullable) = false];
+  // ICS003 - Connections genesis state
+  ibc.core.connection.v1.GenesisState connection_genesis = 2 [(gogoproto.nullable) = false];
+  // ICS004 - Channel genesis state
+  ibc.core.channel.v1.GenesisState channel_genesis = 3 [(gogoproto.nullable) = false];
+}

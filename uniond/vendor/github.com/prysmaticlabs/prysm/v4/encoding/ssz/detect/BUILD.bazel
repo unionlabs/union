@@ -1,0 +1,49 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "configfork.go",
+        "fieldspec.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/encoding/ssz/detect",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/state:go_default_library",
+        "//beacon-chain/state/state-native:go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/blocks:go_default_library",
+        "//consensus-types/interfaces:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//network/forks:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//runtime/version:go_default_library",
+        "//time/slots:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_prysmaticlabs_fastssz//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "configfork_test.go",
+        "fieldspec_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//beacon-chain/state:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/blocks:go_default_library",
+        "//consensus-types/interfaces:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//runtime/version:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/util:go_default_library",
+        "//time/slots:go_default_library",
+    ],
+)

@@ -1,0 +1,52 @@
+load("@rules_pkg//:pkg.bzl", "pkg_deb", "pkg_tar")
+
+pkg_tar(
+    name = "beacon-chain-bin",
+    srcs = [
+        "//cmd/beacon-chain",
+    ],
+    mode = "0755",
+    package_dir = "/usr/bin",
+)
+
+pkg_tar(
+    name = "beacon-chain-config",
+    srcs = glob(["beacon-chain.yaml"]),
+    mode = "0640",
+    package_dir = "/etc/prysm",
+)
+
+pkg_tar(
+    name = "beacon-chain-service",
+    srcs = glob(["prysm-beacon-chain.service"]),
+    mode = "0640",
+    package_dir = "/usr/lib/systemd/system",
+)
+
+pkg_tar(
+    name = "debian-data",
+    extension = "tar.gz",
+    deps = [
+        ":beacon-chain-bin",
+        ":beacon-chain-config",
+        ":beacon-chain-service",
+    ],
+)
+
+pkg_deb(
+    name = "deb",
+    architecture = "amd64",
+    conffiles = [
+        "etc/prysm/beacon-chain.yaml",
+    ],
+    data = ":debian-data",
+    description = "Prysm Beacon Chain - Ethereum consensus network communications",
+    homepage = "https://prysmaticlabs.com/",
+    maintainer = "Prysmatic Labs <contact@prysmaticlabs.com>",
+    package = "prysm-beacon-chain",
+    postinst = "postinst.sh",
+    preinst = "preinst.sh",
+    tags = ["no-remote"],
+    version_file = "//runtime:version_file",
+    visibility = ["//beacon-chain:__pkg__"],
+)

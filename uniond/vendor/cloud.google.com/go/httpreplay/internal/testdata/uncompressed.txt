@@ -1,0 +1,15 @@
+This    is  a
+
+test    file    that
+
+includes    some
+
+uncompressed    text.
+
+It's    sister  compressed
+
+file    is  compressed.txt.
+
+This    is  used    to
+
+test    httpreplay.

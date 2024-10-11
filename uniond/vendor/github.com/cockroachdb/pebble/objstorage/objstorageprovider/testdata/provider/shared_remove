@@ -1,0 +1,105 @@
+open p1 1
+----
+<local fs> mkdir-all: p1 0755
+<local fs> open-dir: p1
+<local fs> open-dir: p1
+<local fs> create: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> create: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> close: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+
+create 1 shared 1 100
+----
+<remote> create object "61a6-1-000001.sst"
+<remote> close writer for "61a6-1-000001.sst" after 100 bytes
+<remote> create object "61a6-1-000001.sst.ref.1.000001"
+<remote> close writer for "61a6-1-000001.sst.ref.1.000001" after 0 bytes
+
+create 2 shared 2 100
+----
+<remote> create object "a629-1-000002.sst"
+<remote> close writer for "a629-1-000002.sst" after 100 bytes
+<remote> create object "a629-1-000002.sst.ref.1.000002"
+<remote> close writer for "a629-1-000002.sst.ref.1.000002" after 0 bytes
+
+create 3 shared 3 100
+----
+<remote> create object "eaac-1-000003.sst"
+<remote> close writer for "eaac-1-000003.sst" after 100 bytes
+<remote> create object "eaac-1-000003.sst.ref.1.000003"
+<remote> close writer for "eaac-1-000003.sst.ref.1.000003" after 0 bytes
+
+save-backing b1 1
+----
+
+save-backing b2 2
+----
+
+open p2 2
+----
+<local fs> mkdir-all: p2 0755
+<local fs> open-dir: p2
+<local fs> open-dir: p2
+<local fs> create: p2/REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p2/REMOTE-OBJ-CATALOG-000001
+<local fs> create: p2/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> close: p2/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p2
+<local fs> sync: p2/REMOTE-OBJ-CATALOG-000001
+
+create 4 shared 4 100
+----
+<remote> create object "4c52-2-000004.sst"
+<remote> close writer for "4c52-2-000004.sst" after 100 bytes
+<remote> create object "4c52-2-000004.sst.ref.2.000004"
+<remote> close writer for "4c52-2-000004.sst.ref.2.000004" after 0 bytes
+
+attach
+b1 101
+b2 102
+----
+<remote> create object "61a6-1-000001.sst.ref.2.000101"
+<remote> close writer for "61a6-1-000001.sst.ref.2.000101" after 0 bytes
+<remote> size of object "61a6-1-000001.sst.ref.1.000001": 0
+<remote> create object "a629-1-000002.sst.ref.2.000102"
+<remote> close writer for "a629-1-000002.sst.ref.2.000102" after 0 bytes
+<remote> size of object "a629-1-000002.sst.ref.1.000002": 0
+<local fs> sync: p2/REMOTE-OBJ-CATALOG-000001
+000101 -> remote://61a6-1-000001.sst
+000102 -> remote://a629-1-000002.sst
+
+# Remove of object with no other refs; backing object should be removed.
+remove 4
+----
+<remote> delete object "4c52-2-000004.sst.ref.2.000004"
+<remote> list (prefix="4c52-2-000004.sst.ref.", delimiter="")
+<remote> delete object "4c52-2-000004.sst"
+
+# Object shared with p2; backing object should not be removed.
+remove 101
+----
+<remote> delete object "61a6-1-000001.sst.ref.2.000101"
+<remote> list (prefix="61a6-1-000001.sst.ref.", delimiter="")
+<remote>  - 61a6-1-000001.sst.ref.1.000001
+
+switch p1
+----
+
+# Object no longer shared with p1; backing object should be removed.
+remove 1
+----
+
+# Object shared with p1; backing object should not be removed.
+remove 2
+----
+
+switch p2
+----
+
+remove 102
+----
+<remote> delete object "a629-1-000002.sst.ref.2.000102"
+<remote> list (prefix="a629-1-000002.sst.ref.", delimiter="")
+<remote>  - a629-1-000002.sst.ref.1.000002

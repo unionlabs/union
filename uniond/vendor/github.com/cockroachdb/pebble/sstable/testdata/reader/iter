@@ -1,0 +1,720 @@
+build
+a.SET.1:A
+b.SET.2:B
+c.SET.3:C
+d.SET.4:D
+----
+
+iter
+first
+next
+next
+next
+next
+----
+<a:1>:A
+<b:2>:B
+<c:3>:C
+<d:4>:D
+.
+
+iter
+seek-ge a
+next
+next
+next
+next
+----
+<a:1>:A
+<b:2>:B
+<c:3>:C
+<d:4>:D
+.
+
+iter
+seek-ge b
+next
+next
+next
+----
+<b:2>:B
+<c:3>:C
+<d:4>:D
+.
+
+iter
+seek-ge c
+next
+next
+----
+<c:3>:C
+<d:4>:D
+.
+
+iter
+seek-ge d
+next
+----
+<d:4>:D
+.
+
+iter
+seek-ge e
+----
+.
+
+iter
+seek-ge d
+seek-ge z
+----
+<d:4>:D
+.
+
+iter
+seek-ge b
+seek-ge c
+seek-ge d
+seek-ge e
+----
+<b:2>:B
+<c:3>:C
+<d:4>:D
+.
+
+iter
+last
+prev
+prev
+prev
+prev
+----
+<d:4>:D
+<c:3>:C
+<b:2>:B
+<a:1>:A
+.
+
+iter
+seek-lt e
+prev
+prev
+prev
+prev
+----
+<d:4>:D
+<c:3>:C
+<b:2>:B
+<a:1>:A
+.
+
+iter
+seek-lt d
+prev
+prev
+prev
+----
+<c:3>:C
+<b:2>:B
+<a:1>:A
+.
+
+iter
+seek-lt c
+prev
+prev
+----
+<b:2>:B
+<a:1>:A
+.
+
+iter
+seek-lt b
+prev
+----
+<a:1>:A
+.
+
+iter
+seek-lt a
+----
+.
+
+iter
+seek-lt d
+seek-lt c
+seek-lt b
+seek-lt a
+----
+<c:3>:C
+<b:2>:B
+<a:1>:A
+.
+
+iter globalSeqNum=1
+first
+next
+next
+next
+next
+----
+<a:1>:A
+<b:1>:B
+<c:1>:C
+<d:1>:D
+.
+
+iter globalSeqNum=10
+first
+next
+next
+next
+next
+----
+<a:10>:A
+<b:10>:B
+<c:10>:C
+<d:10>:D
+.
+
+iter globalSeqNum=0
+seek-lt x
+----
+<d:4>:D
+
+get
+b
+a
+f
+d
+c
+----
+B
+A
+<err: pebble: not found>
+D
+C
+
+# Verify that clearing the bounds on an iterator also clears
+# previously set block{Lower,Upper}.
+
+iter
+seek-ge c
+seek-lt b
+set-bounds lower=b upper=c
+seek-ge c
+seek-lt b
+set-bounds lower= upper=
+seek-ge c
+seek-lt b
+----
+<c:3>:C
+<a:1>:A
+.
+.
+.
+.
+<c:3>:C
+<a:1>:A
+
+# Verify that seeking past the end of the sstable leaves the iterator
+# in a state where prev returns the last key in the table.
+
+iter
+seek-lt d
+seek-ge f
+prev
+----
+<c:3>:C
+.
+<d:4>:D
+
+# Verify that seeking before the beginning of the sstable leaves the
+# iterator in a state where next returns the first key in the table.
+
+iter
+seek-ge b
+seek-lt a
+next
+----
+<b:2>:B
+.
+<a:1>:A
+
+
+# Verify the optimization to use next when doing SeekGE.
+
+iter
+seek-ge a false
+seek-ge a true
+seek-ge b true
+seek-ge c true
+seek-ge d true
+seek-ge e true
+----
+<a:1>:A
+<a:1>:A
+<b:2>:B
+<c:3>:C
+<d:4>:D
+.
+
+# Verify the optimization to use next when doing SeekPrefixGE.
+
+iter
+seek-prefix-ge a false
+seek-prefix-ge a true
+seek-prefix-ge b true
+seek-prefix-ge c true
+seek-prefix-ge d true
+seek-prefix-ge e true
+----
+<a:1>:A
+<a:1>:A
+<b:2>:B
+<c:3>:C
+<d:4>:D
+.
+
+# Verify that iteration from before the beginning or after the end of
+# the sstable does not "wrap around". A bug previously allowed this to
+# happen by letting the data block iterator and index iterator get out
+# of sync.
+
+build
+a.SET.1:a
+----
+
+iter
+first
+prev
+next
+next
+next
+----
+<a:1>:a
+.
+<a:1>:a
+.
+.
+
+iter
+last
+next
+prev
+prev
+prev
+----
+<a:1>:a
+.
+<a:1>:a
+.
+.
+
+# Build a sufficiently large SST to enable two-level indexes.
+
+build
+a.SET.1:A
+aae.SET.1:E
+aaf.SET.1:F
+aag.SET.1:G
+aah.SET.1:H
+aai.SET.1:I
+aaj.SET.1:J
+aak.SET.1:K
+aal.SET.1:L
+aam.SET.1:M
+aan.SET.1:N
+aao.SET.1:O
+aap.SET.1:P
+aaq.SET.1:Q
+aar.SET.1:R
+aas.SET.1:S
+aat.SET.1:T
+aau.SET.1:U
+aav.SET.1:V
+aaw.SET.1:W
+aax.SET.1:X
+aay.SET.1:Y
+aaz.SET.1:Z
+b.SET.2:B
+bbe.SET.2:E
+bbf.SET.2:F
+bbg.SET.2:G
+bbh.SET.2:H
+bbi.SET.2:I
+bbj.SET.2:J
+bbk.SET.2:K
+bbl.SET.2:L
+bbm.SET.2:M
+bbn.SET.2:N
+bbo.SET.2:O
+bbp.SET.2:P
+bbq.SET.2:Q
+bbr.SET.2:R
+bbs.SET.2:S
+bbt.SET.2:T
+bbu.SET.2:U
+bbv.SET.2:V
+bbw.SET.2:W
+bbx.SET.2:X
+bby.SET.2:Y
+bbz.SET.2:Z
+c.SET.3:C
+cc.RANGEDEL.3:ccc
+cce.SET.3:E
+ccf.SET.3:F
+ccg.SET.3:G
+cch.SET.3:H
+cci.SET.3:I
+ccj.SET.3:J
+cck.SET.3:K
+ccl.SET.3:L
+ccm.SET.3:M
+ccn.SET.3:N
+cco.SET.3:O
+ccp.SET.3:P
+ccq.SET.3:Q
+ccr.SET.3:R
+ccs.SET.3:S
+cct.SET.3:T
+ccu.SET.3:U
+ccv.SET.3:V
+ccw.SET.3:W
+ccx.SET.3:X
+ccy.SET.3:Y
+ccz.SET.3:Z
+d.SET.4:D
+dd.RANGEDEL.4:ddd
+dde.SET.4:E
+ddf.SET.4:F
+ddg.SET.4:G
+ddh.SET.4:H
+ddi.SET.4:I
+ddj.SET.4:J
+ddk.SET.4:K
+ddl.SET.4:L
+ddm.SET.4:M
+ddn.SET.4:N
+ddo.SET.4:O
+ddp.SET.4:P
+ddq.SET.4:Q
+ddr.SET.4:R
+dds.SET.4:S
+ddt.SET.4:T
+ddu.SET.4:U
+ddv.SET.4:V
+ddw.SET.4:W
+ddx.SET.4:X
+ddy.SET.4:Y
+ddz.SET.4:Z
+----
+
+iter
+first
+prev
+next
+next
+next
+next
+next
+----
+<a:1>:A
+.
+<a:1>:A
+<aae:1>:E
+<aaf:1>:F
+<aag:1>:G
+<aah:1>:H
+
+iter
+last
+next
+prev
+prev
+prev
+----
+<ddz:4>:Z
+.
+<ddz:4>:Z
+<ddy:4>:Y
+<ddx:4>:X
+
+iter
+first
+prev
+next
+next
+seek-ge x
+prev
+prev
+----
+<a:1>:A
+.
+<a:1>:A
+<aae:1>:E
+.
+<ddz:4>:Z
+<ddy:4>:Y
+
+iter
+first
+prev
+next
+next
+seek-prefix-ge x
+prev
+prev
+----
+<a:1>:A
+.
+<a:1>:A
+<aae:1>:E
+.
+.
+.
+
+iter
+last
+next
+prev
+prev
+seek-lt a
+next
+next
+----
+<ddz:4>:Z
+.
+<ddz:4>:Z
+<ddy:4>:Y
+.
+<a:1>:A
+<aae:1>:E
+
+# Test that SeekPrefixGE does not position the iterator far outside the iterator bounds.
+# Doing so would break the subsequent SeekGE that is utilizing the next instead of seek
+# optimization.
+iter
+set-bounds lower=a upper=aae
+seek-ge a
+seek-prefix-ge aad
+set-bounds lower=aae upper=b
+seek-ge aae
+next
+----
+.
+<a:1>:A
+.
+.
+<aae:1>:E
+<aaf:1>:F
+
+# Test that using Next does not mislead a twoLevelIterator into believing that the
+# iterator has been positioned based on the latest iterator bounds. The Next call
+# immediately after SetBounds has a non-deterministic result, hence we use
+# next-ignore-result.
+iter
+set-bounds lower=bbq upper=d
+seek-ge bbq
+set-bounds lower=b upper=bbf
+next-ignore-result
+set-bounds lower=bbf upper=c
+seek-ge bbf
+next
+----
+.
+<bbq:2>:Q
+.
+.
+.
+<bbf:2>:F
+<bbg:2>:G
+
+build
+a@10.SET.10:a10
+a@5.SET.5:a5
+b@20.SET.20:b20
+b@17.SET.17:b17
+c@30.SET.30:c30
+d@40.SET.40:d40
+----
+
+iter
+first
+next
+next
+next
+next
+next
+next
+----
+<a@10:10>:a10
+<a@5:5>:a5
+<b@20:20>:b20
+<b@17:17>:b17
+<c@30:30>:c30
+<d@40:40>:d40
+.
+
+iter
+seek-ge a@5
+prev
+seek-lt b
+next
+next
+seek-lt c
+prev
+seek-ge b@18
+prev
+next
+----
+<a@5:5>:a5
+<a@10:10>:a10
+<a@5:5>:a5
+<b@20:20>:b20
+<b@17:17>:b17
+<b@17:17>:b17
+<b@20:20>:b20
+<b@17:17>:b17
+<b@20:20>:b20
+<b@17:17>:b17
+
+iter
+seek-ge a@10
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+----
+<a@10:10>:a10
+<b@20:20>:b20
+<c@30:30>:c30
+<d@40:40>:d40
+.
+
+build
+a@10.SET.10:a10
+a@5.SET.5:a5
+a@3.DEL.3:
+aa@30.SET.10:aa30
+abcd@50.SET.10:abcd50
+abcd@49.SET.9:abcd49
+abcd@48.SET.8:abcd48
+abcd@47.SET.7:abcd47
+b@20.SET.20:b20
+b@17.SET.17:b17
+b@15.SET.15:b15
+c.SET.20:c
+c@90.SET.18:c90
+d@70.SET.16:d70
+----
+
+iter
+seek-ge a@10
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+----
+<a@10:10>:a10
+<aa@30:10>:aa30
+<abcd@50:10>:abcd50
+<b@20:20>:b20
+<c:20>:c
+<d@70:16>:d70
+.
+
+
+build
+a@49.SET.49:a49
+a@48.SET.48:a48
+a@47.SET.47:a47
+a@46.SET.46:a46
+a@45.SET.45:a45
+a@44.SET.44:a44
+a@43.SET.43:a43
+a@42.SET.42:a42
+a@41.SET.41:a41
+a@40.SET.40:a40
+a@39.SET.39:a39
+a@38.SET.38:a38
+a@37.SET.37:a37
+a@36.SET.36:a36
+a@35.SET.35:a35
+a@34.SET.34:a34
+a@33.SET.33:a33
+a@32.SET.32:a32
+a@31.SET.31:a31
+a@30.SET.30:a30
+a@29.SET.29:a29
+a@28.SET.28:a28
+a@27.SET.27:a27
+a@26.SET.26:a26
+a@25.SET.25:a25
+a@24.SET.24:a24
+a@23.SET.23:a23
+a@22.SET.22:a22
+a@21.SET.21:a21
+a@20.SET.20:a20
+a@19.SET.19:a19
+a@18.SET.18:a18
+a@17.SET.17:a17
+a@16.SET.16:a16
+a@15.SET.15:a15
+a@14.SET.14:a14
+a@13.SET.13:a13
+a@12.SET.12:a12
+a@11.SET.11:a11
+a@10.SET.10:a10
+b@20.SET.20:b20
+----
+
+iter
+seek-ge a@49
+next-prefix
+next-prefix
+seek-ge a@47
+next-prefix
+next-prefix
+seek-ge a@36
+next-prefix
+next-prefix
+seek-ge a@33
+next-prefix
+next-prefix
+seek-ge a@30
+next-prefix
+next-prefix
+seek-ge a@26
+next-prefix
+next-prefix
+seek-ge a@20
+next-prefix
+next-prefix
+seek-ge aa@10
+next-prefix
+----
+<a@49:49>:a49
+<b@20:20>:b20
+.
+<a@47:47>:a47
+<b@20:20>:b20
+.
+<a@36:36>:a36
+<b@20:20>:b20
+.
+<a@33:33>:a33
+<b@20:20>:b20
+.
+<a@30:30>:a30
+<b@20:20>:b20
+.
+<a@26:26>:a26
+<b@20:20>:b20
+.
+<a@20:20>:a20
+<b@20:20>:b20
+.
+<b@20:20>:b20
+.

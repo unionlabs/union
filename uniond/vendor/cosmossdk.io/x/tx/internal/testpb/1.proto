@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/descriptor.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "cosmossdk.io/x/tx/internal/testpb";
+
+// A is used for testing value renderers.
+message A {
+  // Fields that are parseable by SIGN_MODE_TEXTUAL.
+  uint32                   UINT32             = 1;
+  uint64                   UINT64             = 2;
+  int32                    INT32              = 3;
+  int64                    INT64              = 4;
+  string                   SDKINT             = 5 [(cosmos_proto.scalar) = "cosmos.Int"];
+  string                   SDKDEC             = 6 [(cosmos_proto.scalar) = "cosmos.Dec"];
+  cosmos.base.v1beta1.Coin COIN               = 7;
+  repeated cosmos.base.v1beta1.Coin COINS     = 8;
+  bytes                             BYTES     = 9;
+  google.protobuf.Timestamp         TIMESTAMP = 10;
+  google.protobuf.Duration          DURATION  = 11;
+  ExternalEnum                      ENUM      = 12;
+  google.protobuf.Any               ANY       = 13;
+
+  // Fields that are not handled by SIGN_MODE_TEXTUAL.
+  sint32         SINT32   = 101;
+  sint64         SINT64   = 102;
+  sfixed32       SFIXED32 = 105;
+  fixed32        FIXED32  = 106;
+  float          FLOAT    = 107;
+  sfixed64       SFIXED64 = 108;
+  fixed64        FIXED64  = 109;
+  double         DOUBLE   = 110;
+  map<string, A> MAP      = 111;
+}
+
+// Foo is a sample message type used for testing message rendering.
+message Foo {
+  string                    full_name = 1;
+  string                    nickname  = 2;
+  google.protobuf.Timestamp mtime     = 3;
+  Foo                       left      = 4;
+  Foo                       right     = 5;
+  Bar                       bar       = 8; // skip some field numbers
+}
+
+// Bar is a sample message type used for testing message rendering.
+message Bar {
+  string              bar_id  = 1;
+  bytes               data    = 2;
+  google.protobuf.Any payload = 3;
+}
+
+enum ExternalEnum {
+  One                 = 0;
+  Two                 = 1;
+  EXTERNAL_ENUM_THREE = 127;
+}
+
+// Baz is a sample message type used for testing enum rendering.
+message Baz {
+  enum Internal_Enum {
+    Four = 0;
+    Five = 1;
+  }
+
+  ExternalEnum  ee     = 1;
+  Internal_Enum ie     = 2;
+  BallotOption  option = 3;
+}
+
+enum BallotOption {
+  BALLOT_OPTION_UNSPECIFIED  = 0;
+  BALLOT_OPTION_YES          = 1;
+  BALLOT_OPTION_ABSTAIN      = 2;
+  BALLOT_OPTION_NO           = 3;
+  BALLOT_OPTION_NO_WITH_VETO = 4;
+}
+
+// Qux is a sample message type used for testing repeated rendering.
+message Qux {
+  repeated Foo    messages                       = 1;
+  repeated string string_messages                = 2;
+  Ballot          vote                           = 3;
+  repeated cosmos.base.v1beta1.Coin price        = 4;
+  repeated google.protobuf.Timestamp expirations = 5;
+}
+
+message WeightedBallotOption {
+  // TODO: Enumeration rendering
+  // BallotOption option = 1;
+  string option = 1;
+  string weight = 2 [(cosmos_proto.scalar) = "cosmos.Dec"];
+}
+
+message Ballot {
+  uint64 proposal_id = 1;
+  // TODO: cosmos.AddressString rendering
+  // string voter       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string voter = 2;
+  reserved 3;
+  repeated WeightedBallotOption options = 4;
+}

@@ -1,0 +1,8 @@
+
+struct Property {
+  property: bool;
+}
+
+table TestMutatingBool {
+  b: Property;
+}

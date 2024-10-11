@@ -1,3 +1,5 @@
+ GBLA __SIZEOF_POINTER__
+__SIZEOF_POINTER__ SETA 64/8
 	AREA	|.text|,CODE,ALIGN=8,ARM64
 
 
@@ -6,406 +8,501 @@
 	ALIGN	32
 |ct_inverse_mod_256| PROC
 	DCDU	3573752639
-	stp	x29, x30, [sp,#-80]!
+	stp	x29, x30, [sp,#-10*__SIZEOF_POINTER__]!
 	add	x29, sp, #0
-	stp	x19, x20, [sp,#16]
-	stp	x21, x22, [sp,#32]
-	stp	x23, x24, [sp,#48]
-	stp	x25, x26, [sp,#64]
+	stp	x19, x20, [sp,#2*__SIZEOF_POINTER__]
+	stp	x21, x22, [sp,#4*__SIZEOF_POINTER__]
+	stp	x23, x24, [sp,#6*__SIZEOF_POINTER__]
+	stp	x25, x26, [sp,#8*__SIZEOF_POINTER__]
 	sub	sp, sp, #1040
 
 	ldp	x4, x5, [x1,#8*0]
 	ldp	x6, x7, [x1,#8*2]
 
-	add	x1, sp, #16+511	// find closest 512-byte-aligned spot
-	and	x1, x1, #-512	// in the frame...
+ if :def:	__CHERI_PURE_CAPABILITY__
+	add	x1,sp,#16+511
+	alignd	c1,c1,#9
+ else
+	add	x1, sp, #16+511
+	and	x1, x1, #-512
+ endif
 	str	x0, [sp]
 
 	ldp	x8, x9, [x2,#8*0]
 	ldp	x10, x11, [x2,#8*2]
 
-	stp	x4, x5, [x1,#8*0]	// copy input to |a|
+	stp	x4, x5, [x1,#8*0]
 	stp	x6, x7, [x1,#8*2]
-	stp	x8, x9, [x1,#8*4]	// copy modulus to |b|
+	stp	x8, x9, [x1,#8*4]
 	stp	x10, x11, [x1,#8*6]
 
-	////////////////////////////////////////// first iteration
+
 	bl	|$Lab_approximation_31_256_loaded|
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	str	x12,[x0,#8*8]		// initialize |u| with |f0|
+	str	x12,[x0,#8*8]
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to dst |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
-	str	x12, [x0,#8*9]		// initialize |v| with |f1|
+	str	x12, [x0,#8*9]
 
-	////////////////////////////////////////// second iteration
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	ldr	x8, [x1,#8*8]		// |u|
-	ldr	x9, [x1,#8*13]	// |v|
-	madd	x4, x16, x8, xzr	// |u|*|f0|
-	madd	x4, x17, x9, x4	// |v|*|g0|
+	ldr	x8, [x1,#8*8]
+	ldr	x9, [x1,#8*13]
+	madd	x4, x16, x8, xzr
+	madd	x4, x17, x9, x4
 	str	x4, [x0,#8*4]
-	asr	x5, x4, #63		// sign extension
+	asr	x5, x4, #63
 	stp	x5, x5, [x0,#8*5]
 	stp	x5, x5, [x0,#8*7]
 
-	madd	x4, x12, x8, xzr	// |u|*|f1|
-	madd	x4, x13, x9, x4	// |v|*|g1|
+	madd	x4, x12, x8, xzr
+	madd	x4, x13, x9, x4
 	str	x4, [x0,#8*9]
-	asr	x5, x4, #63		// sign extension
+	asr	x5, x4, #63
 	stp	x5, x5, [x0,#8*10]
 	stp	x5, x5, [x0,#8*12]
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	stp	x22, x22, [x0,#8*4]
 	stp	x22, x22, [x0,#8*6]
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	stp	x22, x22, [x0,#8*4]
 	stp	x22, x22, [x0,#8*6]
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	stp	x22, x22, [x0,#8*4]
 	stp	x22, x22, [x0,#8*6]
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	stp	x22, x22, [x0,#8*4]
 	stp	x22, x22, [x0,#8*6]
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	stp	x22, x22, [x0,#8*4]
 	stp	x22, x22, [x0,#8*6]
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	stp	x22, x22, [x0,#8*4]
 	stp	x22, x22, [x0,#8*6]
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__ab_approximation_31_256
 
-	eor	x0, x1, #256		// pointer to dst |a|b|u|v|
+	eor	x0, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 	bl	__smul_256_n_shift_by_31
-	mov	x16, x12			// corrected |f0|
-	mov	x17, x13			// corrected |g0|
+	mov	x16, x12
+	mov	x17, x13
 
-	mov	x12, x14			// |f1|
-	mov	x13, x15			// |g1|
-	add	x0, x0, #8*4	// pointer to destination |b|
+	mov	x12, x14
+	mov	x13, x15
+	add	x0,x0,#8*4
 	bl	__smul_256_n_shift_by_31
 
-	add	x0, x0, #8*4	// pointer to destination |u|
+	add	x0,x0,#8*4
 	bl	__smul_256x63
 	adc	x22, x22, x23
 	str	x22, [x0,#8*4]
 
-	mov	x16, x12			// corrected |f1|
-	mov	x17, x13			// corrected |g1|
-	add	x0, x0, #8*5	// pointer to destination |v|
+	mov	x16, x12
+	mov	x17, x13
+	add	x0,x0,#8*5
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
-	////////////////////////////////////////// two[!] last iterations
-	eor	x1, x1, #256		// flip-flop src |a|b|u|v|
-	mov	x2, #47			// 31 + 512 % 31
-	//bl	__ab_approximation_62_256	// |a| and |b| are exact,
-	ldr	x7, [x1,#8*0]		// just load
+
+	eor	x1, x1, #256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
+	mov	x2, #47
+
+	ldr	x7, [x1,#8*0]
 	ldr	x11, [x1,#8*4]
 	bl	__inner_loop_62_256
 
 	mov	x16, x14
 	mov	x17, x15
-	ldr	x0, [sp]			// original out_ptr
+	ldr	x0, [sp]
 	bl	__smul_256x63
 	bl	__smul_512x63_tail
-	ldr	x30, [x29,#8]
+	ldr	x30, [x29,#__SIZEOF_POINTER__]
 
-	smulh	x20, x7, x17		// figure out top-most limb
+	smulh	x20, x7, x17
 	ldp	x8, x9, [x3,#8*0]
 	adc	x23, x23, x25
 	ldp	x10, x11, [x3,#8*2]
 
-	add	x20, x20, x23		// x20 is 1, 0 or -1
-	asr	x19, x20, #63		// sign as mask
+	add	x20, x20, x23
+	asr	x19, x20, #63
 
-	and	x23,   x8, x19		// add mod<<256 conditionally
+	and	x23,   x8, x19
 	and	x24,   x9, x19
 	adds	x4, x4, x23
 	and	x25,   x10, x19
@@ -413,18 +510,18 @@
 	and	x26,   x11, x19
 	adcs	x6, x6, x25
 	adcs	x7, x22,   x26
-	adc	x20, x20, xzr		// x20 is 1, 0 or -1
+	adc	x20, x20, xzr
 
 	neg	x19, x20
-	orr	x20, x20, x19		// excess bit or sign as mask
-	asr	x19, x19, #63		// excess bit as mask
+	orr	x20, x20, x19
+	asr	x19, x19, #63
 
-	and	x8, x8, x20		// mask |mod|
+	and	x8, x8, x20
 	and	x9, x9, x20
 	and	x10, x10, x20
 	and	x11, x11, x20
 
-	eor	x8, x8, x19		// conditionally negate |mod|
+	eor	x8, x8, x19
 	eor	x9, x9, x19
 	adds	x8, x8, x19, lsr#63
 	eor	x10, x10, x19
@@ -433,7 +530,7 @@
 	adcs	x10, x10, xzr
 	adc	x11, x11, xzr
 
-	adds	x4, x4, x8	// final adjustment for |mod|<<256
+	adds	x4, x4, x8
 	adcs	x5, x5, x9
 	adcs	x6, x6, x10
 	stp	x4, x5, [x0,#8*4]
@@ -441,26 +538,26 @@
 	stp	x6, x7, [x0,#8*6]
 
 	add	sp, sp, #1040
-	ldp	x19, x20, [x29,#16]
-	ldp	x21, x22, [x29,#32]
-	ldp	x23, x24, [x29,#48]
-	ldp	x25, x26, [x29,#64]
-	ldr	x29, [sp],#80
+	ldp	x19, x20, [x29,#2*__SIZEOF_POINTER__]
+	ldp	x21, x22, [x29,#4*__SIZEOF_POINTER__]
+	ldp	x23, x24, [x29,#6*__SIZEOF_POINTER__]
+	ldp	x25, x26, [x29,#8*__SIZEOF_POINTER__]
+	ldr	x29, [sp],#10*__SIZEOF_POINTER__
 	DCDU	3573752767
 	ret
 	ENDP
 
-////////////////////////////////////////////////////////////////////////
+
 
 	ALIGN	32
 |__smul_256x63| PROC
-	ldp	x4, x5, [x1,#8*0+64]	// load |u| (or |v|)
-	asr	x14, x16, #63		// |f_|'s sign as mask (or |g_|'s)
+	ldp	x4, x5, [x1,#8*0+64]
+	asr	x14, x16, #63
 	ldp	x6, x7, [x1,#8*2+64]
-	eor	x16, x16, x14		// conditionally negate |f_| (or |g_|)
+	eor	x16, x16, x14
 	ldr	x22, [x1,#8*4+64]
 
-	eor	x4, x4, x14	// conditionally negate |u| (or |v|)
+	eor	x4, x4, x14
 	sub	x16, x16, x14
 	eor	x5, x5, x14
 	adds	x4, x4, x14, lsr#63
@@ -484,13 +581,13 @@
 	adcs	x6, x6, x20
 	adcs	x24, x24, x21
 	adc	x26, xzr, xzr
-	ldp	x8, x9, [x1,#8*0+104]	// load |u| (or |v|)
-	asr	x14, x17, #63		// |f_|'s sign as mask (or |g_|'s)
+	ldp	x8, x9, [x1,#8*0+104]
+	asr	x14, x17, #63
 	ldp	x10, x11, [x1,#8*2+104]
-	eor	x17, x17, x14		// conditionally negate |f_| (or |g_|)
+	eor	x17, x17, x14
 	ldr	x23, [x1,#8*4+104]
 
-	eor	x8, x8, x14	// conditionally negate |u| (or |v|)
+	eor	x8, x8, x14
 	sub	x17, x17, x14
 	eor	x9, x9, x14
 	adds	x8, x8, x14, lsr#63
@@ -504,7 +601,7 @@
 	umulh	x20, x9, x17
 	adcs	x23, x23, xzr
 	umulh	x21, x10, x17
-	adc	x15, xzr, xzr		// used in __smul_512x63_tail
+	adc	x15, xzr, xzr
 	mul	x8, x8, x17
 	cmp	x17, #0
 	mul	x9, x9, x17
@@ -530,17 +627,17 @@
 	ALIGN	32
 |__smul_512x63_tail| PROC
 	umulh	x24, x7, x16
-	ldp	x5, x6, [x1,#8*18]	// load rest of |v|
+	ldp	x5, x6, [x1,#8*18]
 	adc	x26, x26, xzr
 	ldr	x7, [x1,#8*20]
 	and	x22, x22, x16
 
-	umulh	x11, x11, x17	// resume |v|*|g1| chain
+	umulh	x11, x11, x17
 
-	sub	x24, x24, x22	// tie up |u|*|f1| chain
+	sub	x24, x24, x22
 	asr	x25, x24, #63
 
-	eor	x5, x5, x14	// conditionally negate rest of |v|
+	eor	x5, x5, x14
 	eor	x6, x6, x14
 	adds	x5, x5, x15
 	eor	x7, x7, x14
@@ -559,13 +656,13 @@
 	mul	x22,   x7, x17
 	adcs	x6, x6, x20
 	adcs	x22,   x22,   x21
-	adc	x23, xzr, xzr		// used in the final step
+	adc	x23, xzr, xzr
 
 	adds	x4, x4, x24
 	adcs	x5, x5, x25
 	adcs	x6, x6, x25
 	stp	x4, x5, [x0,#8*4]
-	adcs	x22,   x22,   x25	// carry is used in the final step
+	adcs	x22,   x22,   x25
 	stp	x6, x22,   [x0,#8*6]
 
 	ret
@@ -574,12 +671,12 @@
 
 	ALIGN	32
 |__smul_256_n_shift_by_31| PROC
-	ldp	x4, x5, [x1,#8*0+0]	// load |a| (or |b|)
-	asr	x24, x12, #63		// |f0|'s sign as mask (or |g0|'s)
+	ldp	x4, x5, [x1,#8*0+0]
+	asr	x24, x12, #63
 	ldp	x6, x7, [x1,#8*2+0]
-	eor	x25, x12, x24	// conditionally negate |f0| (or |g0|)
+	eor	x25, x12, x24
 
-	eor	x4, x4, x24	// conditionally negate |a| (or |b|)
+	eor	x4, x4, x24
 	sub	x25, x25, x24
 	eor	x5, x5, x24
 	adds	x4, x4, x24, lsr#63
@@ -603,12 +700,12 @@
 	adcs	x6, x6, x20
 	adcs	x7, x7, x21
 	adc	x22, x22, x24
-	ldp	x8, x9, [x1,#8*0+32]	// load |a| (or |b|)
-	asr	x24, x13, #63		// |f0|'s sign as mask (or |g0|'s)
+	ldp	x8, x9, [x1,#8*0+32]
+	asr	x24, x13, #63
 	ldp	x10, x11, [x1,#8*2+32]
-	eor	x25, x13, x24	// conditionally negate |f0| (or |g0|)
+	eor	x25, x13, x24
 
-	eor	x8, x8, x24	// conditionally negate |a| (or |b|)
+	eor	x8, x8, x24
 	sub	x25, x25, x24
 	eor	x9, x9, x24
 	adds	x8, x8, x24, lsr#63
@@ -641,10 +738,10 @@
 	extr	x4, x5, x4, #31
 	extr	x5, x6, x5, #31
 	extr	x6, x7, x6, #31
-	asr	x23, x8, #63	// result's sign as mask
+	asr	x23, x8, #63
 	extr	x7, x8, x7, #31
 
-	eor	x4, x4, x23	// ensure the result is positive
+	eor	x4, x4, x23
 	eor	x5, x5, x23
 	adds	x4, x4, x23, lsr#63
 	eor	x6, x6, x23
@@ -655,7 +752,7 @@
 	adc	x7, x7, xzr
 	stp	x6, x7, [x0,#8*2]
 
-	eor	x12, x12, x23		// adjust |f/g| accordingly
+	eor	x12, x12, x23
 	eor	x13, x13, x23
 	sub	x12, x12, x23
 	sub	x13, x13, x23
@@ -671,19 +768,19 @@
 	ldp	x8, x9, [x1,#8*4]
 
 |$Lab_approximation_31_256_loaded|
-	orr	x19, x7, x11	// check top-most limbs, ...
+	orr	x19, x7, x11
 	cmp	x19, #0
 	cselne	x7,x7,x6
 	cselne	x11,x11,x10
 	cselne	x6,x6,x5
-	orr	x19, x7, x11	// and ones before top-most, ...
+	orr	x19, x7, x11
 	cselne	x10,x10,x9
 
 	cmp	x19, #0
 	cselne	x7,x7,x6
 	cselne	x11,x11,x10
 	cselne	x6,x6,x4
-	orr	x19, x7, x11	// and one more, ...
+	orr	x19, x7, x11
 	cselne	x10,x10,x8
 
 	clz	x19, x19
@@ -693,7 +790,7 @@
 	cselne	x11,x11,x10
 	neg	x20, x19
 
-	lslv	x7, x7, x19	// align high limbs to the left
+	lslv	x7, x7, x19
 	lslv	x11, x11, x19
 	lsrv	x6, x6, x20
 	lsrv	x10, x10, x20
@@ -713,16 +810,16 @@
 	ALIGN	16
 |__inner_loop_31_256| PROC
 	mov	x2, #31
-	mov	x13, #0x7FFFFFFF80000000	// |f0|=1, |g0|=0
-	mov	x15, #0x800000007FFFFFFF	// |f1|=0, |g1|=1
+	mov	x13, #0x7FFFFFFF80000000
+	mov	x15, #0x800000007FFFFFFF
 	mov	x23,#0x7FFFFFFF7FFFFFFF
 
 |$Loop_31_256|
-	sbfx	x22, x7, #0, #1	// if |a_| is odd, then we'll be subtracting
+	sbfx	x22, x7, #0, #1
 	sub	x2, x2, #1
 	and	x19, x11, x22
-	sub	x20, x11, x7	// |b_|-|a_|
-	subs	x21, x7, x19	// |a_|-|b_| (or |a_|-0 if |a_| was even)
+	sub	x20, x11, x7
+	subs	x21, x7, x19
 	mov	x19, x15
 	cselhs	x11,x11,x7
 	cselhs	x7,x21,x20
@@ -731,8 +828,8 @@
 	lsr	x7, x7, #1
 	and	x19, x15, x22
 	and	x20, x23, x22
-	sub	x13, x13, x19	// |f0|-=|f1| (or |f0-=0| if |a_| was even)
-	add	x15, x15, x15	// |f1|<<=1
+	sub	x13, x13, x19
+	add	x15, x15, x15
 	add	x13, x13, x20
 	sub	x15, x15, x23
 	cbnz	x2, |$Loop_31_256|
@@ -742,7 +839,7 @@
 	ubfx	x13, x13, #32, #32
 	ubfx	x14, x15, #0, #32
 	ubfx	x15, x15, #32, #32
-	sub	x12, x12, x23		// remove bias
+	sub	x12, x12, x23
 	sub	x13, x13, x23
 	sub	x14, x14, x23
 	sub	x15, x15, x23
@@ -753,17 +850,17 @@
 
 	ALIGN	16
 |__inner_loop_62_256| PROC
-	mov	x12, #1		// |f0|=1
-	mov	x13, #0		// |g0|=0
-	mov	x14, #0		// |f1|=0
-	mov	x15, #1		// |g1|=1
+	mov	x12, #1
+	mov	x13, #0
+	mov	x14, #0
+	mov	x15, #1
 
 |$Loop_62_256|
-	sbfx	x22, x7, #0, #1	// if |a_| is odd, then we'll be subtracting
+	sbfx	x22, x7, #0, #1
 	sub	x2, x2, #1
 	and	x19, x11, x22
-	sub	x20, x11, x7	// |b_|-|a_|
-	subs	x21, x7, x19	// |a_|-|b_| (or |a_|-0 if |a_| was even)
+	sub	x20, x11, x7
+	subs	x21, x7, x19
 	mov	x19, x12
 	cselhs	x11,x11,x7
 	cselhs	x7,x21,x20
@@ -775,10 +872,10 @@
 	lsr	x7, x7, #1
 	and	x19, x14, x22
 	and	x20, x15, x22
-	add	x14, x14, x14		// |f1|<<=1
-	add	x15, x15, x15		// |g1|<<=1
-	sub	x12, x12, x19		// |f0|-=|f1| (or |f0-=0| if |a_| was even)
-	sub	x13, x13, x20		// |g0|-=|g1| (or |g0-=0| ...)
+	add	x14, x14, x14
+	add	x15, x15, x15
+	sub	x12, x12, x19
+	sub	x13, x13, x20
 	cbnz	x2, |$Loop_62_256|
 
 	ret

@@ -1,0 +1,122 @@
+
+# Simple case.
+
+build-remote f1
+set a foo
+set b bar
+set c foobar
+----
+
+ingest-external
+f1,5,a,cc
+----
+
+lsm
+----
+6:
+  000004:[a#10,DELSIZED-cc#inf,RANGEDEL]
+
+iter
+first
+next
+next
+next
+----
+a: (foo, .)
+b: (bar, .)
+c: (foobar, .)
+.
+
+# Above case but with c left out at ingestion time.
+
+reset
+----
+
+build-remote f2
+set a foo
+set b bar
+set c foobar
+----
+
+ingest-external
+f2,5,a,c
+----
+
+lsm
+----
+6:
+  000004:[a#10,DELSIZED-c#inf,RANGEDEL]
+
+iter
+first
+next
+next
+next
+----
+a: (foo, .)
+b: (bar, .)
+.
+.
+
+build-remote f3
+set c foobarbaz
+set d haha
+set e something
+----
+
+build-remote f4
+set f foo
+set g foo
+set h foo
+----
+
+# This ingestion should error out due to the overlap between file spans.
+
+ingest-external
+f3,10,c,f
+f4,10,e,h
+----
+pebble: external sstables have overlapping ranges
+
+ingest-external
+f3,10,c,f
+f4,10,f,hh
+----
+
+lsm
+----
+6:
+  000004:[a#10,DELSIZED-c#inf,RANGEDEL]
+  000007:[c#11,DELSIZED-f#inf,RANGEDEL]
+  000008:[f#12,DELSIZED-hh#inf,RANGEDEL]
+
+iter
+first
+next
+next
+next
+next
+next
+next
+next
+next
+----
+a: (foo, .)
+b: (bar, .)
+c: (foobarbaz, .)
+d: (haha, .)
+e: (something, .)
+f: (foo, .)
+g: (foo, .)
+h: (foo, .)
+.
+
+compact a z
+----
+
+lsm
+----
+6:
+  000004:[a#10,DELSIZED-c#inf,RANGEDEL]
+  000007:[c#11,DELSIZED-f#inf,RANGEDEL]
+  000008:[f#12,DELSIZED-hh#inf,RANGEDEL]

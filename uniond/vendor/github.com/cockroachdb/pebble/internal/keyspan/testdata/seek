@@ -1,0 +1,309 @@
+build
+1:  b-d
+----
+b-d:{(#1,RANGEDEL)}
+
+seek-ge
+a 2
+b 2
+b 1
+d 2
+----
+b-d:{(#1,RANGEDEL)}
+b-d:{(#1,RANGEDEL)}
+b-d:{}
+<nil>
+
+seek-le
+a 2
+b 2
+b 1
+d 2
+----
+<nil>
+b-d:{(#1,RANGEDEL)}
+b-d:{}
+b-d:{(#1,RANGEDEL)}
+
+build
+3:  b-d
+2:  b-d
+1:  b-d
+----
+b-d:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+
+seek-ge
+a 4
+b 4
+b 3
+b 2
+b 1
+d 4
+----
+b-d:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+b-d:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+b-d:{(#2,RANGEDEL) (#1,RANGEDEL)}
+b-d:{(#1,RANGEDEL)}
+b-d:{}
+<nil>
+
+seek-le
+a 4
+b 4
+b 3
+b 2
+b 1
+d 4
+----
+<nil>
+b-d:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+b-d:{(#2,RANGEDEL) (#1,RANGEDEL)}
+b-d:{(#1,RANGEDEL)}
+b-d:{}
+b-d:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+
+build
+1:  b-d
+2:    d-f
+----
+b-d:{(#1,RANGEDEL)}
+d-f:{(#2,RANGEDEL)}
+
+seek-ge
+b 2
+d 2
+d 3
+e 3
+----
+b-d:{(#1,RANGEDEL)}
+d-f:{}
+d-f:{(#2,RANGEDEL)}
+d-f:{(#2,RANGEDEL)}
+
+seek-le
+a 3
+b 2
+d 2
+d 3
+e 3
+f 3
+----
+<nil>
+b-d:{(#1,RANGEDEL)}
+d-f:{}
+d-f:{(#2,RANGEDEL)}
+d-f:{(#2,RANGEDEL)}
+d-f:{(#2,RANGEDEL)}
+
+build
+3: a-----------m
+2:      f------------s
+1:          j---------------z
+----
+a-f:{(#3,RANGEDEL)}
+f-j:{(#3,RANGEDEL) (#2,RANGEDEL)}
+j-m:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+m-s:{(#2,RANGEDEL) (#1,RANGEDEL)}
+s-z:{(#1,RANGEDEL)}
+
+seek-ge
+a 4
+a 3
+a 2
+a 1
+f 4
+f 3
+f 2
+f 1
+j 4
+j 3
+j 2
+j 1
+m 3
+m 2
+m 1
+s 2
+s 1
+z 2
+----
+a-f:{(#3,RANGEDEL)}
+a-f:{}
+a-f:{}
+a-f:{}
+f-j:{(#3,RANGEDEL) (#2,RANGEDEL)}
+f-j:{(#2,RANGEDEL)}
+f-j:{}
+f-j:{}
+j-m:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+j-m:{(#2,RANGEDEL) (#1,RANGEDEL)}
+j-m:{(#1,RANGEDEL)}
+j-m:{}
+m-s:{(#2,RANGEDEL) (#1,RANGEDEL)}
+m-s:{(#1,RANGEDEL)}
+m-s:{}
+s-z:{(#1,RANGEDEL)}
+s-z:{}
+<nil>
+
+seek-le
+a 4
+a 3
+a 2
+a 1
+f 4
+f 3
+f 2
+f 1
+j 4
+j 3
+j 2
+j 1
+m 3
+m 2
+m 1
+s 2
+s 1
+z 2
+----
+a-f:{(#3,RANGEDEL)}
+a-f:{}
+a-f:{}
+a-f:{}
+f-j:{(#3,RANGEDEL) (#2,RANGEDEL)}
+f-j:{(#2,RANGEDEL)}
+f-j:{}
+f-j:{}
+j-m:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+j-m:{(#2,RANGEDEL) (#1,RANGEDEL)}
+j-m:{(#1,RANGEDEL)}
+j-m:{}
+m-s:{(#2,RANGEDEL) (#1,RANGEDEL)}
+m-s:{(#1,RANGEDEL)}
+m-s:{}
+s-z:{(#1,RANGEDEL)}
+s-z:{}
+s-z:{(#1,RANGEDEL)}
+
+build
+1: a-----------m
+2:      f------------s
+3:          j---------------z
+----
+a-f:{(#1,RANGEDEL)}
+f-j:{(#2,RANGEDEL) (#1,RANGEDEL)}
+j-m:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+m-s:{(#3,RANGEDEL) (#2,RANGEDEL)}
+s-z:{(#3,RANGEDEL)}
+
+seek-ge
+a 2
+a 1
+f 3
+f 2
+f 1
+j 4
+j 3
+j 2
+j 1
+m 4
+m 3
+m 2
+m 1
+s 4
+s 3
+s 2
+s 1
+z 4
+----
+a-f:{(#1,RANGEDEL)}
+a-f:{}
+f-j:{(#2,RANGEDEL) (#1,RANGEDEL)}
+f-j:{(#1,RANGEDEL)}
+f-j:{}
+j-m:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+j-m:{(#2,RANGEDEL) (#1,RANGEDEL)}
+j-m:{(#1,RANGEDEL)}
+j-m:{}
+m-s:{(#3,RANGEDEL) (#2,RANGEDEL)}
+m-s:{(#2,RANGEDEL)}
+m-s:{}
+m-s:{}
+s-z:{(#3,RANGEDEL)}
+s-z:{}
+s-z:{}
+s-z:{}
+<nil>
+
+seek-le
+a 2
+a 1
+f 3
+f 2
+f 1
+j 4
+j 3
+j 2
+j 1
+m 4
+m 3
+m 2
+m 1
+s 4
+s 3
+s 2
+s 1
+z 4
+z 3
+z 2
+----
+a-f:{(#1,RANGEDEL)}
+a-f:{}
+f-j:{(#2,RANGEDEL) (#1,RANGEDEL)}
+f-j:{(#1,RANGEDEL)}
+f-j:{}
+j-m:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+j-m:{(#2,RANGEDEL) (#1,RANGEDEL)}
+j-m:{(#1,RANGEDEL)}
+j-m:{}
+m-s:{(#3,RANGEDEL) (#2,RANGEDEL)}
+m-s:{(#2,RANGEDEL)}
+m-s:{}
+m-s:{}
+s-z:{(#3,RANGEDEL)}
+s-z:{}
+s-z:{}
+s-z:{}
+s-z:{(#3,RANGEDEL)}
+s-z:{}
+s-z:{}
+
+build
+1: a-c
+3: a-c
+5: a-c
+5: c-e
+----
+a-c:{(#5,RANGEDEL) (#3,RANGEDEL) (#1,RANGEDEL)}
+c-e:{(#5,RANGEDEL)}
+
+# Regression test for a bug where seek-le was failing to find the most recent
+# version of a tombstone. The bug existed when seek-{ge,le} performed snapshot
+# filtering, and the problematic case was "seek-le c 4". The seeking code was
+# finding the tombstone c-e#5, determining it wasn't visible and then return the
+# immediately preceding tombstone a-c#1. Now we return c-e:{} immediately,
+# because the span c-e covers c and contains no visible keys.
+
+seek-le
+c 1
+c 2
+c 3
+c 4
+c 5
+c 6
+----
+c-e:{}
+c-e:{}
+c-e:{}
+c-e:{}
+c-e:{}
+c-e:{(#5,RANGEDEL)}

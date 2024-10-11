@@ -1,0 +1,6 @@
+path=example.com/m
+version=v1.0.0
+wantErr=example.com/m@v1.0.0: path does not have prefix "example.com/m@v1.0.0/"
+-- example.com/m@v1.0.0 --
+-- example.com/m@v1.0.0/go.mod --
+module example.com/m

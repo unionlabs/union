@@ -18,6 +18,9 @@ $L$SEH_begin_div_3_limbs::
 	mov	rdx,r8
 $L$SEH_body_div_3_limbs::
 
+ifdef	__SGX_LVI_HARDENING__
+	lfence
+endif
 	mov	r8,QWORD PTR[rdi]
 	mov	r9,QWORD PTR[8+rdi]
 	xor	rax,rax
@@ -53,7 +56,15 @@ $L$SEH_epilogue_div_3_limbs::
 	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD PTR[16+rsp]
 
-	DB	0F3h,0C3h		;repret
+	
+ifdef	__SGX_LVI_HARDENING__
+	pop	rdx
+	lfence
+	jmp	rdx
+	ud2
+else
+	DB	0F3h,0C3h
+endif
 
 $L$SEH_end_div_3_limbs::
 div_3_limbs	ENDP
@@ -74,6 +85,9 @@ $L$SEH_begin_quot_rem_128::
 	mov	rdx,r8
 $L$SEH_body_quot_rem_128::
 
+ifdef	__SGX_LVI_HARDENING__
+	lfence
+endif
 	mov	rax,rdx
 	mov	rcx,rdx
 
@@ -112,7 +126,15 @@ $L$SEH_epilogue_quot_rem_128::
 	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD PTR[16+rsp]
 
-	DB	0F3h,0C3h		;repret
+	
+ifdef	__SGX_LVI_HARDENING__
+	pop	rdx
+	lfence
+	jmp	rdx
+	ud2
+else
+	DB	0F3h,0C3h
+endif
 
 $L$SEH_end_quot_rem_128::
 quot_rem_128	ENDP
@@ -138,6 +160,9 @@ $L$SEH_begin_quot_rem_64::
 	mov	rdx,r8
 $L$SEH_body_quot_rem_64::
 
+ifdef	__SGX_LVI_HARDENING__
+	lfence
+endif
 	mov	rax,rdx
 	imul	rdx,QWORD PTR[rsi]
 
@@ -152,7 +177,15 @@ $L$SEH_epilogue_quot_rem_64::
 	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD PTR[16+rsp]
 
-	DB	0F3h,0C3h		;repret
+	
+ifdef	__SGX_LVI_HARDENING__
+	pop	rdx
+	lfence
+	jmp	rdx
+	ud2
+else
+	DB	0F3h,0C3h
+endif
 
 $L$SEH_end_quot_rem_64::
 quot_rem_64	ENDP

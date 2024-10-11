@@ -1,0 +1,43 @@
+
+syntax = "proto3";
+package ibc.lightclients.wasm.v1;
+
+import "gogoproto/gogo.proto";
+import "ibc/core/client/v1/client.proto";
+
+option go_package = "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types";
+
+// Wasm light client's Client state
+message ClientState {
+  option (gogoproto.goproto_getters) = false;
+  // bytes encoding the client state of the underlying light client
+  // implemented as a Wasm contract.
+  bytes                     data          = 1;
+  bytes                     checksum      = 2;
+  ibc.core.client.v1.Height latest_height = 3 [(gogoproto.nullable) = false];
+}
+
+// Wasm light client's ConsensusState
+message ConsensusState {
+  option (gogoproto.goproto_getters) = false;
+  // bytes encoding the consensus state of the underlying light client
+  // implemented as a Wasm contract.
+  bytes data = 1;
+}
+
+// Wasm light client message (either header(s) or misbehaviour)
+message ClientMessage {
+  option (gogoproto.goproto_getters) = false;
+
+  bytes data = 1;
+}
+
+// Checksums defines a list of all checksums that are stored
+//
+// Deprecated: This message is deprecated in favor of storing the checksums
+// using a Collections.KeySet.
+message Checksums {
+  option deprecated = true;
+
+  repeated bytes checksums = 1;
+}

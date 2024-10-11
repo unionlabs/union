@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM"],
+    "module": "NodeNext",
+    "declaration": true,
+    "strict": true
+  },
+  "include": [
+    "monster_test.ts",
+    "typescript_keywords.ts",
+    "my-game/**/*.ts",
+    "typescript/**/*.ts",
+    "optional_scalars/**/*.ts",
+    "namespace_test/**/*.ts",
+    "union_vector/**/*.ts",
+    "arrays_test_complex/**/*.ts",
+    "union_underlying_type_test.ts"
+  ]
+}

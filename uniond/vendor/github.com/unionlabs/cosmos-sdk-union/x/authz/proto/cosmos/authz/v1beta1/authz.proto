@@ -1,0 +1,48 @@
+// Since: cosmos-sdk 0.43
+syntax = "proto3";
+package cosmos.authz.v1beta1;
+
+import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+
+option go_package                      = "cosmossdk.io/x/authz";
+option (gogoproto.goproto_getters_all) = false;
+
+// GenericAuthorization gives the grantee unrestricted permissions to execute
+// the provided method on behalf of the granter's account.
+message GenericAuthorization {
+  option (amino.name)                        = "cosmos-sdk/GenericAuthorization";
+  option (cosmos_proto.implements_interface) = "cosmos.authz.v1beta1.Authorization";
+
+  // Msg, identified by it's type URL, to grant unrestricted permissions to execute
+  string msg = 1;
+}
+
+// Grant gives permissions to execute
+// the provide method with expiration time.
+message Grant {
+  google.protobuf.Any authorization = 1 [(cosmos_proto.accepts_interface) = "cosmos.authz.v1beta1.Authorization"];
+  // time when the grant will expire and will be pruned. If null, then the grant
+  // doesn't have a time expiration (other conditions  in `authorization`
+  // may apply to invalidate the grant)
+  google.protobuf.Timestamp expiration = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = true];
+}
+
+// GrantAuthorization extends a grant with both the addresses of the grantee and granter.
+// It is used in genesis.proto and query.proto
+message GrantAuthorization {
+  string granter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string grantee = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  google.protobuf.Any       authorization = 3 [(cosmos_proto.accepts_interface) = "cosmos.authz.v1beta1.Authorization"];
+  google.protobuf.Timestamp expiration    = 4 [(gogoproto.stdtime) = true];
+}
+
+// GrantQueueItem contains the list of TypeURL of a sdk.Msg.
+message GrantQueueItem {
+  // msg_type_urls contains the list of TypeURL of a sdk.Msg.
+  repeated string msg_type_urls = 1;
+}

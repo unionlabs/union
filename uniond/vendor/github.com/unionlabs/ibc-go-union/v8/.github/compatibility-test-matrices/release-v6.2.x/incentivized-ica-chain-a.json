@@ -1,0 +1,23 @@
+{
+  "chain-a": [
+    "release-v6.2.x"
+  ],
+  "chain-b": [
+    "v7.3.0",
+    "v7.2.1",
+    "v7.2.0",
+    "v6.2.0",
+    "v6.1.1",
+    "release-v6.2.x"
+  ],
+  "entrypoint": [
+    "TestIncentivizedInterchainAccountsTestSuite"
+  ],
+  "test": [
+    "TestMsgSendTx_SuccessfulBankSend_Incentivized",
+    "TestMsgSendTx_FailedBankSend_Incentivized"
+  ],
+  "relayer-type": [
+    "rly"
+  ]
+}

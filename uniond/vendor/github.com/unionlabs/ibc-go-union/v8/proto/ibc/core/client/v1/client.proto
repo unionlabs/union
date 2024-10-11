@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package ibc.core.client.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/core/02-client/types";
+
+import "cosmos/upgrade/v1beta1/upgrade.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+
+// IdentifiedClientState defines a client state with an additional client
+// identifier field.
+message IdentifiedClientState {
+  // client identifier
+  string client_id = 1;
+  // client state
+  google.protobuf.Any client_state = 2;
+}
+
+// ConsensusStateWithHeight defines a consensus state with an additional height
+// field.
+message ConsensusStateWithHeight {
+  // consensus state height
+  Height height = 1 [(gogoproto.nullable) = false];
+  // consensus state
+  google.protobuf.Any consensus_state = 2;
+}
+
+// ClientConsensusStates defines all the stored consensus states for a given
+// client.
+message ClientConsensusStates {
+  // client identifier
+  string client_id = 1;
+  // consensus states and their heights associated with the client
+  repeated ConsensusStateWithHeight consensus_states = 2 [(gogoproto.nullable) = false];
+}
+
+// Height is a monotonically increasing data type
+// that can be compared against another Height for the purposes of updating and
+// freezing clients
+//
+// Normally the RevisionHeight is incremented at each height while keeping
+// RevisionNumber the same. However some consensus algorithms may choose to
+// reset the height in certain conditions e.g. hard forks, state-machine
+// breaking changes In these cases, the RevisionNumber is incremented so that
+// height continues to be monitonically increasing even as the RevisionHeight
+// gets reset
+message Height {
+  option (gogoproto.goproto_getters)  = false;
+  option (gogoproto.goproto_stringer) = false;
+
+  // the revision that the client is currently on
+  uint64 revision_number = 1;
+  // the height within the given revision
+  uint64 revision_height = 2;
+}
+
+// Params defines the set of IBC light client parameters.
+message Params {
+  // allowed_clients defines the list of allowed client state types which can be created
+  // and interacted with. If a client type is removed from the allowed clients list, usage
+  // of this client will be disabled until it is added again to the list.
+  repeated string allowed_clients = 1;
+}
+
+// ClientUpdateProposal is a legacy governance proposal. If it passes, the substitute
+// client's latest consensus state is copied over to the subject client. The proposal
+// handler may fail if the subject and the substitute do not match in client and
+// chain parameters (with exception to latest height, frozen height, and chain-id).
+//
+// Deprecated: Please use MsgRecoverClient in favour of this message type.
+message ClientUpdateProposal {
+  option deprecated = true;
+
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+  option (gogoproto.goproto_getters)         = false;
+
+  // the title of the update proposal
+  string title = 1;
+  // the description of the proposal
+  string description = 2;
+  // the client identifier for the client to be updated if the proposal passes
+  string subject_client_id = 3 [(gogoproto.moretags) = "yaml:\"subject_client_id\""];
+  // the substitute client identifier for the client standing in for the subject
+  // client
+  string substitute_client_id = 4 [(gogoproto.moretags) = "yaml:\"substitute_client_id\""];
+}
+
+// UpgradeProposal is a gov Content type for initiating an IBC breaking
+// upgrade.
+//
+// Deprecated: Please use MsgIBCSoftwareUpgrade in favour of this message type.
+message UpgradeProposal {
+  option deprecated = true;
+
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+  option (gogoproto.goproto_getters)         = false;
+  option (gogoproto.goproto_stringer)        = false;
+  option (gogoproto.equal)                   = true;
+
+  string                      title       = 1;
+  string                      description = 2;
+  cosmos.upgrade.v1beta1.Plan plan        = 3 [(gogoproto.nullable) = false];
+
+  // An UpgradedClientState must be provided to perform an IBC breaking upgrade.
+  // This will make the chain commit to the correct upgraded (self) client state
+  // before the upgrade occurs, so that connecting chains can verify that the
+  // new upgraded client is valid by verifying a proof on the previous version
+  // of the chain. This will allow IBC connections to persist smoothly across
+  // planned chain upgrades
+  google.protobuf.Any upgraded_client_state = 4 [(gogoproto.moretags) = "yaml:\"upgraded_client_state\""];
+}

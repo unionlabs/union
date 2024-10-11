@@ -1,0 +1,1719 @@
+{
+  "version": "2.0",
+  "service": "<p>The Amazon Chime SDK media pipeline APIs in this section allow software developers to create Amazon Chime SDK media pipelines that capture, concatenate, or stream your Amazon Chime SDK meetings. For more information about media pipelines, see <a href=\"https://docs.aws.amazon.com/chime-sdk/latest/APIReference/API_Operations_Amazon_Chime_SDK_Media_Pipelines.html\">Amazon Chime SDK media pipelines</a>. </p>",
+  "operations": {
+    "CreateMediaCapturePipeline": "<p>Creates a media pipeline.</p>",
+    "CreateMediaConcatenationPipeline": "<p>Creates a media concatenation pipeline.</p>",
+    "CreateMediaInsightsPipeline": "<p>Creates a media insights pipeline.</p>",
+    "CreateMediaInsightsPipelineConfiguration": "<p>A structure that contains the static configurations for a media insights pipeline.</p>",
+    "CreateMediaLiveConnectorPipeline": "<p>Creates a media live connector pipeline in an Amazon Chime SDK meeting.</p>",
+    "CreateMediaPipelineKinesisVideoStreamPool": "<p>Creates an Kinesis video stream pool for the media pipeline.</p>",
+    "CreateMediaStreamPipeline": "<p>Creates a streaming media pipeline.</p>",
+    "DeleteMediaCapturePipeline": "<p>Deletes the media pipeline.</p>",
+    "DeleteMediaInsightsPipelineConfiguration": "<p>Deletes the specified configuration settings.</p>",
+    "DeleteMediaPipeline": "<p>Deletes the media pipeline.</p>",
+    "DeleteMediaPipelineKinesisVideoStreamPool": "<p>Deletes an Kinesis video stream pool.</p>",
+    "GetMediaCapturePipeline": "<p>Gets an existing media pipeline.</p>",
+    "GetMediaInsightsPipelineConfiguration": "<p>Gets the configuration settings for a media insights pipeline.</p>",
+    "GetMediaPipeline": "<p>Gets an existing media pipeline.</p>",
+    "GetMediaPipelineKinesisVideoStreamPool": "<p>Gets an Kinesis video stream pool.</p>",
+    "GetSpeakerSearchTask": "<p>Retrieves the details of the specified speaker search task.</p>",
+    "GetVoiceToneAnalysisTask": "<p>Retrieves the details of a voice tone analysis task.</p>",
+    "ListMediaCapturePipelines": "<p>Returns a list of media pipelines.</p>",
+    "ListMediaInsightsPipelineConfigurations": "<p>Lists the available media insights pipeline configurations.</p>",
+    "ListMediaPipelineKinesisVideoStreamPools": "<p>Lists the video stream pools in the media pipeline.</p>",
+    "ListMediaPipelines": "<p>Returns a list of media pipelines.</p>",
+    "ListTagsForResource": "<p>Lists the tags available for a media pipeline.</p>",
+    "StartSpeakerSearchTask": "<p>Starts a speaker search task.</p> <important> <p>Before starting any speaker search tasks, you must provide all notices and obtain all consents from the speaker as required under applicable privacy and biometrics laws, and as required under the <a href=\"https://aws.amazon.com/service-terms/\">AWS service terms</a> for the Amazon Chime SDK.</p> </important>",
+    "StartVoiceToneAnalysisTask": "<p>Starts a voice tone analysis task. For more information about voice tone analysis, see <a href=\"https://docs.aws.amazon.com/chime-sdk/latest/dg/voice-analytics.html\">Using Amazon Chime SDK voice analytics</a> in the <i>Amazon Chime SDK Developer Guide</i>.</p> <important> <p>Before starting any voice tone analysis tasks, you must provide all notices and obtain all consents from the speaker as required under applicable privacy and biometrics laws, and as required under the <a href=\"https://aws.amazon.com/service-terms/\">AWS service terms</a> for the Amazon Chime SDK.</p> </important>",
+    "StopSpeakerSearchTask": "<p>Stops a speaker search task.</p>",
+    "StopVoiceToneAnalysisTask": "<p>Stops a voice tone analysis task.</p>",
+    "TagResource": "<p>The ARN of the media pipeline that you want to tag. Consists of the pipeline's endpoint region, resource ID, and pipeline ID.</p>",
+    "UntagResource": "<p>Removes any tags from a media pipeline.</p>",
+    "UpdateMediaInsightsPipelineConfiguration": "<p>Updates the media insights pipeline's configuration settings.</p>",
+    "UpdateMediaInsightsPipelineStatus": "<p>Updates the status of a media insights pipeline.</p>",
+    "UpdateMediaPipelineKinesisVideoStreamPool": "<p>Updates an Kinesis video stream pool in a media pipeline.</p>"
+  },
+  "shapes": {
+    "ActiveSpeakerOnlyConfiguration": {
+      "base": "<p>Defines the configuration for an <code>ActiveSpeakerOnly</code> video tile.</p>",
+      "refs": {
+        "GridViewConfiguration$ActiveSpeakerOnlyConfiguration": "<p>The configuration settings for an <code>ActiveSpeakerOnly</code> video tile.</p>"
+      }
+    },
+    "ActiveSpeakerPosition": {
+      "base": null,
+      "refs": {
+        "ActiveSpeakerOnlyConfiguration$ActiveSpeakerPosition": "<p>The position of the <code>ActiveSpeakerOnly</code> video tile.</p>"
+      }
+    },
+    "AmazonResourceName": {
+      "base": null,
+      "refs": {
+        "ListTagsForResourceRequest$ResourceARN": "<p>The ARN of the media pipeline associated with any tags. The ARN consists of the pipeline's region, resource ID, and pipeline ID.</p>",
+        "MediaCapturePipeline$MediaPipelineArn": "<p>The ARN of the media capture pipeline</p>",
+        "MediaCapturePipelineSummary$MediaPipelineArn": "<p>The ARN of the media pipeline in the summary.</p>",
+        "MediaConcatenationPipeline$MediaPipelineArn": "<p>The ARN of the media pipeline that you specify in the <code>SourceConfiguration</code> object.</p>",
+        "MediaLiveConnectorPipeline$MediaPipelineArn": "<p>The connector pipeline's ARN.</p>",
+        "MediaPipelineSummary$MediaPipelineArn": "<p>The ARN of the media pipeline in the summary.</p>",
+        "MediaStreamPipeline$MediaPipelineArn": "<p>The ARN of the media stream pipeline.</p>",
+        "TagResourceRequest$ResourceARN": "<p>The ARN of the media pipeline associated with any tags. The ARN consists of the pipeline's endpoint region, resource ID, and pipeline ID.</p>",
+        "UntagResourceRequest$ResourceARN": "<p>The ARN of the pipeline that you want to untag.</p>"
+      }
+    },
+    "AmazonTranscribeCallAnalyticsProcessorConfiguration": {
+      "base": "<p>A structure that contains the configuration settings for an Amazon Transcribe call analytics processor.</p>",
+      "refs": {
+        "MediaInsightsPipelineConfigurationElement$AmazonTranscribeCallAnalyticsProcessorConfiguration": "<p>The analytics configuration settings for transcribing audio in a media insights pipeline configuration element.</p>"
+      }
+    },
+    "AmazonTranscribeProcessorConfiguration": {
+      "base": "<p>A structure that contains the configuration settings for an Amazon Transcribe processor.</p>",
+      "refs": {
+        "MediaInsightsPipelineConfigurationElement$AmazonTranscribeProcessorConfiguration": "<p>The transcription processor configuration settings in a media insights pipeline configuration element.</p>"
+      }
+    },
+    "Arn": {
+      "base": null,
+      "refs": {
+        "ChimeSdkMeetingLiveConnectorConfiguration$Arn": "<p>The configuration object's Chime SDK meeting ARN.</p>",
+        "CreateMediaCapturePipelineRequest$SourceArn": "<p>ARN of the source from which the media artifacts are captured.</p>",
+        "CreateMediaCapturePipelineRequest$SinkArn": "<p>The ARN of the sink type.</p>",
+        "CreateMediaInsightsPipelineConfigurationRequest$ResourceAccessRoleArn": "<p>The ARN of the role used by the service to access Amazon Web Services resources, including <code>Transcribe</code> and <code>Transcribe Call Analytics</code>, on the caller’s behalf.</p>",
+        "CreateMediaInsightsPipelineRequest$MediaInsightsPipelineConfigurationArn": "<p>The ARN of the pipeline's configuration.</p>",
+        "KinesisDataStreamSinkConfiguration$InsightsTarget": "<p>The ARN of the sink.</p>",
+        "KinesisVideoStreamPoolConfiguration$PoolArn": "<p>The ARN of the video stream pool configuration.</p>",
+        "KinesisVideoStreamPoolSummary$PoolArn": "<p>The ARN of the video stream pool.</p>",
+        "LambdaFunctionSinkConfiguration$InsightsTarget": "<p>The ARN of the sink.</p>",
+        "MediaCapturePipeline$SourceArn": "<p>ARN of the source from which the media artifacts are saved.</p>",
+        "MediaCapturePipeline$SinkArn": "<p>ARN of the destination to which the media artifacts are saved.</p>",
+        "MediaCapturePipelineSourceConfiguration$MediaPipelineArn": "<p>The media pipeline ARN in the configuration object of a media capture pipeline.</p>",
+        "MediaInsightsPipeline$MediaPipelineArn": "<p>The ARN of a media insights pipeline.</p>",
+        "MediaInsightsPipeline$MediaInsightsPipelineConfigurationArn": "<p>The ARN of a media insight pipeline's configuration settings.</p>",
+        "MediaInsightsPipelineConfiguration$MediaInsightsPipelineConfigurationArn": "<p>The ARN of the configuration.</p>",
+        "MediaInsightsPipelineConfiguration$ResourceAccessRoleArn": "<p>The ARN of the role used by the service to access Amazon Web Services resources.</p>",
+        "MediaInsightsPipelineConfigurationSummary$MediaInsightsPipelineConfigurationArn": "<p>The ARN of the media insights pipeline configuration.</p>",
+        "MediaStreamSink$SinkArn": "<p>The ARN of the media stream sink.</p>",
+        "MediaStreamSource$SourceArn": "<p>The ARN of the media stream source. </p>",
+        "S3BucketSinkConfiguration$Destination": "<p>The destination URL of the S3 bucket.</p>",
+        "S3RecordingSinkConfiguration$Destination": "<p>The default URI of the Amazon S3 bucket used as the recording sink.</p>",
+        "S3RecordingSinkRuntimeConfiguration$Destination": "<p>The URI of the S3 bucket used as the sink.</p>",
+        "SnsTopicSinkConfiguration$InsightsTarget": "<p>The ARN of the SNS sink.</p>",
+        "SqsQueueSinkConfiguration$InsightsTarget": "<p>The ARN of the SQS sink.</p>",
+        "StartSpeakerSearchTaskRequest$VoiceProfileDomainArn": "<p>The ARN of the voice profile domain that will store the voice profile.</p>",
+        "UpdateMediaInsightsPipelineConfigurationRequest$ResourceAccessRoleArn": "<p>The ARN of the role used by the service to access Amazon Web Services resources.</p>"
+      }
+    },
+    "ArtifactsConcatenationConfiguration": {
+      "base": "<p>The configuration for the artifacts concatenation.</p>",
+      "refs": {
+        "ChimeSdkMeetingConcatenationConfiguration$ArtifactsConfiguration": "<p>The configuration for the artifacts in an Amazon Chime SDK meeting concatenation.</p>"
+      }
+    },
+    "ArtifactsConcatenationState": {
+      "base": null,
+      "refs": {
+        "CompositedVideoConcatenationConfiguration$State": "<p>Enables or disables the configuration object.</p>",
+        "ContentConcatenationConfiguration$State": "<p>Enables or disables the configuration object.</p>",
+        "DataChannelConcatenationConfiguration$State": "<p>Enables or disables the configuration object.</p>",
+        "MeetingEventsConcatenationConfiguration$State": "<p>Enables or disables the configuration object.</p>",
+        "TranscriptionMessagesConcatenationConfiguration$State": "<p>Enables or disables the configuration object.</p>",
+        "VideoConcatenationConfiguration$State": "<p>Enables or disables the configuration object.</p>"
+      }
+    },
+    "ArtifactsConfiguration": {
+      "base": "<p>The configuration for the artifacts.</p>",
+      "refs": {
+        "ChimeSdkMeetingConfiguration$ArtifactsConfiguration": "<p>The configuration for the artifacts in an Amazon Chime SDK meeting.</p>"
+      }
+    },
+    "ArtifactsState": {
+      "base": null,
+      "refs": {
+        "ContentArtifactsConfiguration$State": "<p>Indicates whether the content artifact is enabled or disabled.</p>",
+        "VideoArtifactsConfiguration$State": "<p>Indicates whether the video artifact is enabled or disabled.</p>"
+      }
+    },
+    "AttendeeIdList": {
+      "base": null,
+      "refs": {
+        "SelectedVideoStreams$AttendeeIds": "<p>The attendee IDs of the streams selected for a media pipeline. </p>"
+      }
+    },
+    "AudioArtifactsConcatenationState": {
+      "base": null,
+      "refs": {
+        "AudioConcatenationConfiguration$State": "<p>Enables or disables the configuration object.</p>"
+      }
+    },
+    "AudioArtifactsConfiguration": {
+      "base": "<p>The audio artifact configuration object.</p>",
+      "refs": {
+        "ArtifactsConfiguration$Audio": "<p>The configuration for the audio artifacts.</p>"
+      }
+    },
+    "AudioChannelsOption": {
+      "base": null,
+      "refs": {
+        "LiveConnectorRTMPConfiguration$AudioChannels": "<p>The audio channels set for the RTMP configuration</p>"
+      }
+    },
+    "AudioConcatenationConfiguration": {
+      "base": "<p>The audio artifact concatenation configuration object.</p>",
+      "refs": {
+        "ArtifactsConcatenationConfiguration$Audio": "<p>The configuration for the audio artifacts concatenation.</p>"
+      }
+    },
+    "AudioMuxType": {
+      "base": null,
+      "refs": {
+        "AudioArtifactsConfiguration$MuxType": "<p>The MUX type of the audio artifact configuration object.</p>"
+      }
+    },
+    "AudioSampleRateOption": {
+      "base": null,
+      "refs": {
+        "LiveConnectorRTMPConfiguration$AudioSampleRate": "<p>The audio sample rate set for the RTMP configuration. Default: 48000.</p>"
+      }
+    },
+    "AwsRegion": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamConfiguration$Region": "<p>The Amazon Web Services Region of the video stream.</p>"
+      }
+    },
+    "BadRequestException": {
+      "base": "<p>The input parameters don't match the service's restrictions.</p>",
+      "refs": {
+      }
+    },
+    "Boolean": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$EnablePartialResultsStabilization": "<p>Enables partial result stabilization for your transcription. Partial result stabilization can reduce latency in your output, but may impact accuracy. For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/streaming.html#streaming-partial-result-stabilization\">Partial-result stabilization</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>",
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$FilterPartialResults": "<p>If true, <code>UtteranceEvents</code> with <code>IsPartial: true</code> are filtered out of the insights target.</p>",
+        "AmazonTranscribeProcessorConfiguration$ShowSpeakerLabel": "<p>Enables speaker partitioning (diarization) in your transcription output. Speaker partitioning labels the speech from individual speakers in your media file.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/diarization.html\">Partitioning speakers (diarization)</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>",
+        "AmazonTranscribeProcessorConfiguration$EnablePartialResultsStabilization": "<p>Enables partial result stabilization for your transcription. Partial result stabilization can reduce latency in your output, but may impact accuracy.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/streaming.html#streaming-partial-result-stabilization\">Partial-result stabilization</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>",
+        "AmazonTranscribeProcessorConfiguration$FilterPartialResults": "<p>If true, <code>TranscriptEvents</code> with <code>IsPartial: true</code> are filtered out of the insights target.</p>",
+        "AmazonTranscribeProcessorConfiguration$IdentifyLanguage": "<p>Turns language identification on or off.</p>",
+        "KeywordMatchConfiguration$Negate": "<p>Matches keywords or phrases on their presence or absence. If set to <code>TRUE</code>, the rule matches when all the specified keywords or phrases are absent. Default: <code>FALSE</code>.</p>",
+        "RealTimeAlertConfiguration$Disabled": "<p>Turns off real-time alerts.</p>",
+        "VoiceEnhancementSinkConfiguration$Disabled": "<p>Disables the <code>VoiceEnhancementSinkConfiguration</code> element.</p>"
+      }
+    },
+    "BorderColor": {
+      "base": null,
+      "refs": {
+        "VideoAttribute$BorderColor": "<p>Defines the border color of all video tiles.</p>"
+      }
+    },
+    "BorderThickness": {
+      "base": null,
+      "refs": {
+        "VideoAttribute$BorderThickness": "<p>Defines the border thickness for all video tiles.</p>"
+      }
+    },
+    "CallAnalyticsLanguageCode": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$LanguageCode": "<p>The language code in the configuration.</p>",
+        "AmazonTranscribeProcessorConfiguration$LanguageCode": "<p>The language code that represents the language spoken in your audio.</p> <p>If you're unsure of the language spoken in your audio, consider using <code>IdentifyLanguage</code> to enable automatic language identification.</p> <p>For a list of languages that real-time Call Analytics supports, see the <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/supported-languages.html\">Supported languages table</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>",
+        "AmazonTranscribeProcessorConfiguration$PreferredLanguage": "<p>The preferred language for the transcription.</p>"
+      }
+    },
+    "CanvasOrientation": {
+      "base": null,
+      "refs": {
+        "GridViewConfiguration$CanvasOrientation": "<p>The orientation setting, horizontal or vertical.</p>"
+      }
+    },
+    "CategoryName": {
+      "base": null,
+      "refs": {
+        "CategoryNameList$member": null
+      }
+    },
+    "CategoryNameList": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$CallAnalyticsStreamCategories": "<p>By default, all <code>CategoryEvents</code> are sent to the insights target. If this parameter is specified, only included categories are sent to the insights target. </p>"
+      }
+    },
+    "ChannelDefinition": {
+      "base": "<p>Defines an audio channel in a Kinesis video stream.</p>",
+      "refs": {
+        "ChannelDefinitions$member": null
+      }
+    },
+    "ChannelDefinitions": {
+      "base": null,
+      "refs": {
+        "StreamChannelDefinition$ChannelDefinitions": "<p>The definitions of the channels in a streaming channel.</p>"
+      }
+    },
+    "ChannelId": {
+      "base": null,
+      "refs": {
+        "ChannelDefinition$ChannelId": "<p>The channel ID.</p>",
+        "KinesisVideoStreamSourceTaskConfiguration$ChannelId": "<p>The channel ID.</p>"
+      }
+    },
+    "ChimeSdkMeetingConcatenationConfiguration": {
+      "base": "<p>The configuration object of the Amazon Chime SDK meeting concatenation for a specified media pipeline.</p>",
+      "refs": {
+        "MediaCapturePipelineSourceConfiguration$ChimeSdkMeetingConfiguration": "<p>The meeting configuration settings in a media capture pipeline configuration object. </p>"
+      }
+    },
+    "ChimeSdkMeetingConfiguration": {
+      "base": "<p>The configuration object of the Amazon Chime SDK meeting for a specified media pipeline. <code>SourceType</code> must be <code>ChimeSdkMeeting</code>.</p>",
+      "refs": {
+        "CreateMediaCapturePipelineRequest$ChimeSdkMeetingConfiguration": "<p>The configuration for a specified media pipeline. <code>SourceType</code> must be <code>ChimeSdkMeeting</code>.</p>",
+        "MediaCapturePipeline$ChimeSdkMeetingConfiguration": "<p>The configuration for a specified media pipeline. <code>SourceType</code> must be <code>ChimeSdkMeeting</code>.</p>"
+      }
+    },
+    "ChimeSdkMeetingLiveConnectorConfiguration": {
+      "base": "<p>The media pipeline's configuration object.</p>",
+      "refs": {
+        "LiveConnectorSourceConfiguration$ChimeSdkMeetingLiveConnectorConfiguration": "<p>The configuration settings of the connector pipeline.</p>"
+      }
+    },
+    "ClientRequestToken": {
+      "base": null,
+      "refs": {
+        "CreateMediaCapturePipelineRequest$ClientRequestToken": "<p>The unique identifier for the client request. The token makes the API request idempotent. Use a unique token for each media pipeline request.</p>",
+        "CreateMediaConcatenationPipelineRequest$ClientRequestToken": "<p>The unique identifier for the client request. The token makes the API request idempotent. Use a unique token for each media concatenation pipeline request.</p>",
+        "CreateMediaInsightsPipelineConfigurationRequest$ClientRequestToken": "<p>The unique identifier for the media insights pipeline configuration request.</p>",
+        "CreateMediaInsightsPipelineRequest$ClientRequestToken": "<p>The unique identifier for the media insights pipeline request.</p>",
+        "CreateMediaLiveConnectorPipelineRequest$ClientRequestToken": "<p>The token assigned to the client making the request.</p>",
+        "CreateMediaPipelineKinesisVideoStreamPoolRequest$ClientRequestToken": "<p>The token assigned to the client making the request.</p>",
+        "CreateMediaStreamPipelineRequest$ClientRequestToken": "<p>The token assigned to the client making the request.</p>",
+        "StartSpeakerSearchTaskRequest$ClientRequestToken": "<p>The unique identifier for the client request. Use a different token for different speaker search tasks.</p>",
+        "StartVoiceToneAnalysisTaskRequest$ClientRequestToken": "<p>The unique identifier for the client request. Use a different token for different voice tone analysis tasks.</p>"
+      }
+    },
+    "CompositedVideoArtifactsConfiguration": {
+      "base": "<p>Specifies the configuration for compositing video artifacts.</p>",
+      "refs": {
+        "ArtifactsConfiguration$CompositedVideo": "<p>Enables video compositing.</p>",
+        "ChimeSdkMeetingLiveConnectorConfiguration$CompositedVideo": "<p>The media pipeline's composited video.</p>"
+      }
+    },
+    "CompositedVideoConcatenationConfiguration": {
+      "base": "<p>The composited video configuration object for a specified media pipeline. <code>SourceType</code> must be <code>ChimeSdkMeeting</code>.</p>",
+      "refs": {
+        "ArtifactsConcatenationConfiguration$CompositedVideo": "<p>The configuration for the composited video artifacts concatenation.</p>"
+      }
+    },
+    "ConcatenationSink": {
+      "base": "<p>The data sink of the configuration object.</p>",
+      "refs": {
+        "ConcatenationSinkList$member": null
+      }
+    },
+    "ConcatenationSinkList": {
+      "base": null,
+      "refs": {
+        "CreateMediaConcatenationPipelineRequest$Sinks": "<p>An object that specifies the data sinks for the media concatenation pipeline.</p>",
+        "MediaConcatenationPipeline$Sinks": "<p>The data sinks of the concatenation pipeline.</p>"
+      }
+    },
+    "ConcatenationSinkType": {
+      "base": null,
+      "refs": {
+        "ConcatenationSink$Type": "<p>The type of data sink in the configuration object.</p>"
+      }
+    },
+    "ConcatenationSource": {
+      "base": "<p>The source type and media pipeline configuration settings in a configuration object.</p>",
+      "refs": {
+        "ConcatenationSourceList$member": null
+      }
+    },
+    "ConcatenationSourceList": {
+      "base": null,
+      "refs": {
+        "CreateMediaConcatenationPipelineRequest$Sources": "<p>An object that specifies the sources for the media concatenation pipeline.</p>",
+        "MediaConcatenationPipeline$Sources": "<p>The data sources being concatenated.</p>"
+      }
+    },
+    "ConcatenationSourceType": {
+      "base": null,
+      "refs": {
+        "ConcatenationSource$Type": "<p>The type of concatenation source in a configuration object.</p>"
+      }
+    },
+    "ConflictException": {
+      "base": "<p>The request could not be processed because of conflict in the current state of the resource.</p>",
+      "refs": {
+      }
+    },
+    "ContentArtifactsConfiguration": {
+      "base": "<p>The content artifact object.</p>",
+      "refs": {
+        "ArtifactsConfiguration$Content": "<p>The configuration for the content artifacts.</p>"
+      }
+    },
+    "ContentConcatenationConfiguration": {
+      "base": "<p>The composited content configuration object for a specified media pipeline. </p>",
+      "refs": {
+        "ArtifactsConcatenationConfiguration$Content": "<p>The configuration for the content artifacts concatenation.</p>"
+      }
+    },
+    "ContentMuxType": {
+      "base": null,
+      "refs": {
+        "ContentArtifactsConfiguration$MuxType": "<p>The MUX type of the artifact configuration.</p>"
+      }
+    },
+    "ContentRedactionOutput": {
+      "base": null,
+      "refs": {
+        "PostCallAnalyticsSettings$ContentRedactionOutput": "<p>The content redaction output settings for a post-call analysis task.</p>"
+      }
+    },
+    "ContentShareLayoutOption": {
+      "base": null,
+      "refs": {
+        "GridViewConfiguration$ContentShareLayout": "<p>Defines the layout of the video tiles when content sharing is enabled.</p>"
+      }
+    },
+    "ContentType": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$ContentIdentificationType": "<p>Labels all personally identifiable information (PII) identified in your transcript.</p> <p>Content identification is performed at the segment level; PII specified in <code>PiiEntityTypes</code> is flagged upon complete transcription of an audio segment.</p> <p>You can’t set <code>ContentIdentificationType</code> and <code>ContentRedactionType</code> in the same request. If you do, your request returns a <code>BadRequestException</code>.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/pii-redaction.html\">Redacting or identifying personally identifiable information</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>",
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$ContentRedactionType": "<p>Redacts all personally identifiable information (PII) identified in your transcript.</p> <p>Content redaction is performed at the segment level; PII specified in <code>PiiEntityTypes</code> is redacted upon complete transcription of an audio segment.</p> <p>You can’t set <code>ContentRedactionType</code> and <code>ContentIdentificationType</code> in the same request. If you do, your request returns a <code>BadRequestException</code>.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/pii-redaction.html\">Redacting or identifying personally identifiable information</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>",
+        "AmazonTranscribeProcessorConfiguration$ContentIdentificationType": "<p>Labels all personally identifiable information (PII) identified in your transcript.</p> <p>Content identification is performed at the segment level; PII specified in <code>PiiEntityTypes</code> is flagged upon complete transcription of an audio segment.</p> <p>You can’t set <code>ContentIdentificationType</code> and <code>ContentRedactionType</code> in the same request. If you set both, your request returns a <code>BadRequestException</code>.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/pii-redaction.html\">Redacting or identifying personally identifiable information</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>",
+        "AmazonTranscribeProcessorConfiguration$ContentRedactionType": "<p>Redacts all personally identifiable information (PII) identified in your transcript.</p> <p>Content redaction is performed at the segment level; PII specified in PiiEntityTypes is redacted upon complete transcription of an audio segment.</p> <p>You can’t set ContentRedactionType and ContentIdentificationType in the same request. If you set both, your request returns a <code>BadRequestException</code>.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/pii-redaction.html\">Redacting or identifying personally identifiable information</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>"
+      }
+    },
+    "CornerRadius": {
+      "base": null,
+      "refs": {
+        "VideoAttribute$CornerRadius": "<p>Sets the corner radius of all video tiles.</p>"
+      }
+    },
+    "CreateMediaCapturePipelineRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaCapturePipelineResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaConcatenationPipelineRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaConcatenationPipelineResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaInsightsPipelineConfigurationRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaInsightsPipelineConfigurationResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaInsightsPipelineRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaInsightsPipelineResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaLiveConnectorPipelineRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaLiveConnectorPipelineResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaPipelineKinesisVideoStreamPoolRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaPipelineKinesisVideoStreamPoolResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaStreamPipelineRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateMediaStreamPipelineResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DataChannelConcatenationConfiguration": {
+      "base": "<p>The content configuration object's data channel.</p>",
+      "refs": {
+        "ArtifactsConcatenationConfiguration$DataChannel": "<p>The configuration for the data channel artifacts concatenation.</p>"
+      }
+    },
+    "DataRetentionChangeInHours": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamConfigurationUpdate$DataRetentionInHours": "<p>The updated time that data is retained.</p>"
+      }
+    },
+    "DataRetentionInHours": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamConfiguration$DataRetentionInHours": "<p>The amount of time that data is retained.</p>"
+      }
+    },
+    "DeleteMediaCapturePipelineRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteMediaInsightsPipelineConfigurationRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteMediaPipelineKinesisVideoStreamPoolRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteMediaPipelineRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ErrorCode": {
+      "base": null,
+      "refs": {
+        "BadRequestException$Code": null,
+        "ConflictException$Code": null,
+        "ForbiddenException$Code": null,
+        "NotFoundException$Code": null,
+        "ResourceLimitExceededException$Code": null,
+        "ServiceFailureException$Code": null,
+        "ServiceUnavailableException$Code": null,
+        "ThrottledClientException$Code": null,
+        "UnauthorizedClientException$Code": null
+      }
+    },
+    "ExternalUserIdList": {
+      "base": null,
+      "refs": {
+        "SelectedVideoStreams$ExternalUserIds": "<p>The external user IDs of the streams selected for a media pipeline.</p>"
+      }
+    },
+    "ExternalUserIdType": {
+      "base": null,
+      "refs": {
+        "ExternalUserIdList$member": null
+      }
+    },
+    "ForbiddenException": {
+      "base": "<p>The client is permanently forbidden from making the request.</p>",
+      "refs": {
+      }
+    },
+    "FragmentNumberString": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamSourceTaskConfiguration$FragmentNumber": "<p>The unique identifier of the fragment to begin processing.</p>",
+        "StreamConfiguration$FragmentNumber": "<p>The unique identifier of the fragment to begin processing.</p>"
+      }
+    },
+    "FragmentSelector": {
+      "base": "<p>Describes the timestamp range and timestamp origin of a range of fragments.</p> <p>Only fragments with a start timestamp greater than or equal to the given start time and less than or equal to the end time are returned. For example, say a stream contains fragments with the following start timestamps:</p> <ul> <li> <p>00:00:00</p> </li> <li> <p>00:00:02</p> </li> <li> <p>00:00:04</p> </li> <li> <p>00:00:06</p> </li> </ul> <p>A fragment selector range with a start time of 00:00:01 and end time of 00:00:04 would return the fragments with start times of 00:00:02 and 00:00:04.</p>",
+      "refs": {
+        "KinesisVideoStreamRecordingSourceRuntimeConfiguration$FragmentSelector": "<p>Describes the timestamp range and timestamp origin of a range of fragments in the Kinesis video stream.</p>"
+      }
+    },
+    "FragmentSelectorType": {
+      "base": null,
+      "refs": {
+        "FragmentSelector$FragmentSelectorType": "<p>The origin of the timestamps to use, <code>Server</code> or <code>Producer</code>. For more information, see <a href=\"https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/API_dataplane_StartSelector.html\">StartSelectorType</a> in the <i>Amazon Kinesis Video Streams Developer Guide</i>.</p>"
+      }
+    },
+    "GetMediaCapturePipelineRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetMediaCapturePipelineResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetMediaInsightsPipelineConfigurationRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetMediaInsightsPipelineConfigurationResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetMediaPipelineKinesisVideoStreamPoolRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetMediaPipelineKinesisVideoStreamPoolResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetMediaPipelineRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetMediaPipelineResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetSpeakerSearchTaskRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetSpeakerSearchTaskResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetVoiceToneAnalysisTaskRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetVoiceToneAnalysisTaskResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GridViewConfiguration": {
+      "base": "<p>Specifies the type of grid layout.</p>",
+      "refs": {
+        "CompositedVideoArtifactsConfiguration$GridViewConfiguration": "<p>The <code>GridView</code> configuration setting.</p>"
+      }
+    },
+    "GuidString": {
+      "base": null,
+      "refs": {
+        "AttendeeIdList$member": null,
+        "DeleteMediaCapturePipelineRequest$MediaPipelineId": "<p>The ID of the media pipeline being deleted. </p>",
+        "DeleteMediaPipelineRequest$MediaPipelineId": "<p>The ID of the media pipeline to delete.</p>",
+        "GetMediaCapturePipelineRequest$MediaPipelineId": "<p>The ID of the pipeline that you want to get.</p>",
+        "GetMediaPipelineRequest$MediaPipelineId": "<p>The ID of the pipeline that you want to get.</p>",
+        "GetSpeakerSearchTaskRequest$SpeakerSearchTaskId": "<p>The ID of the speaker search task.</p>",
+        "GetVoiceToneAnalysisTaskRequest$VoiceToneAnalysisTaskId": "<p>The ID of the voice tone analysis task.</p>",
+        "MediaCapturePipeline$MediaPipelineId": "<p>The ID of a media pipeline.</p>",
+        "MediaCapturePipelineSummary$MediaPipelineId": "<p>The ID of the media pipeline in the summary.</p>",
+        "MediaConcatenationPipeline$MediaPipelineId": "<p>The ID of the media pipeline being concatenated.</p>",
+        "MediaInsightsPipeline$MediaPipelineId": "<p>The ID of a media insights pipeline.</p>",
+        "MediaInsightsPipelineConfiguration$MediaInsightsPipelineConfigurationId": "<p>The ID of the configuration.</p>",
+        "MediaInsightsPipelineConfigurationSummary$MediaInsightsPipelineConfigurationId": "<p>The ID of the media insights pipeline configuration.</p>",
+        "MediaLiveConnectorPipeline$MediaPipelineId": "<p>The connector pipeline's ID.</p>",
+        "MediaPipelineSummary$MediaPipelineId": "<p>The ID of the media pipeline in the summary.</p>",
+        "MediaStreamPipeline$MediaPipelineId": "<p>The ID of the media stream pipeline</p>",
+        "SpeakerSearchTask$SpeakerSearchTaskId": "<p>The speaker search task ID.</p>",
+        "StopSpeakerSearchTaskRequest$SpeakerSearchTaskId": "<p>The speaker search task ID.</p>",
+        "StopVoiceToneAnalysisTaskRequest$VoiceToneAnalysisTaskId": "<p>The ID of the voice tone analysis task.</p>",
+        "VoiceToneAnalysisTask$VoiceToneAnalysisTaskId": "<p>The ID of the voice tone analysis task.</p>"
+      }
+    },
+    "HighlightColor": {
+      "base": null,
+      "refs": {
+        "VideoAttribute$HighlightColor": "<p>Defines the highlight color for the active video tile.</p>"
+      }
+    },
+    "HorizontalLayoutConfiguration": {
+      "base": "<p>Defines the configuration settings for the horizontal layout.</p>",
+      "refs": {
+        "GridViewConfiguration$HorizontalLayoutConfiguration": "<p>The configuration settings for a horizontal layout.</p>"
+      }
+    },
+    "HorizontalTilePosition": {
+      "base": null,
+      "refs": {
+        "HorizontalLayoutConfiguration$TilePosition": "<p>Sets the position of horizontal tiles.</p>"
+      }
+    },
+    "Iso8601Timestamp": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamPoolConfiguration$CreatedTimestamp": "<p>The time at which the configuration was created.</p>",
+        "KinesisVideoStreamPoolConfiguration$UpdatedTimestamp": "<p>The time at which the configuration was updated.</p>",
+        "MediaCapturePipeline$CreatedTimestamp": "<p>The time at which the pipeline was created, in ISO 8601 format.</p>",
+        "MediaCapturePipeline$UpdatedTimestamp": "<p>The time at which the pipeline was updated, in ISO 8601 format.</p>",
+        "MediaConcatenationPipeline$CreatedTimestamp": "<p>The time at which the concatenation pipeline was created.</p>",
+        "MediaConcatenationPipeline$UpdatedTimestamp": "<p>The time at which the concatenation pipeline was last updated.</p>",
+        "MediaInsightsPipeline$CreatedTimestamp": "<p>The time at which the media insights pipeline was created.</p>",
+        "MediaInsightsPipelineConfiguration$CreatedTimestamp": "<p>The time at which the configuration was created.</p>",
+        "MediaInsightsPipelineConfiguration$UpdatedTimestamp": "<p>The time at which the configuration was last updated.</p>",
+        "MediaLiveConnectorPipeline$CreatedTimestamp": "<p>The time at which the connector pipeline was created.</p>",
+        "MediaLiveConnectorPipeline$UpdatedTimestamp": "<p>The time at which the connector pipeline was last updated.</p>",
+        "MediaStreamPipeline$CreatedTimestamp": "<p>The time at which the media stream pipeline was created.</p>",
+        "MediaStreamPipeline$UpdatedTimestamp": "<p>The time at which the media stream pipeline was updated.</p>",
+        "SpeakerSearchTask$CreatedTimestamp": "<p>The time at which a speaker search task was created.</p>",
+        "SpeakerSearchTask$UpdatedTimestamp": "<p>The time at which a speaker search task was updated.</p>",
+        "VoiceToneAnalysisTask$CreatedTimestamp": "<p>The time at which a voice tone analysis task was created.</p>",
+        "VoiceToneAnalysisTask$UpdatedTimestamp": "<p>The time at which a voice tone analysis task was updated.</p>"
+      }
+    },
+    "IssueDetectionConfiguration": {
+      "base": "<p>A structure that contains the configuration settings for an issue detection task.</p>",
+      "refs": {
+        "RealTimeAlertRule$IssueDetectionConfiguration": "<p>Specifies the issue detection settings for a real-time alert rule.</p>"
+      }
+    },
+    "Keyword": {
+      "base": null,
+      "refs": {
+        "KeywordMatchWordList$member": null
+      }
+    },
+    "KeywordMatchConfiguration": {
+      "base": "<p>A structure that contains the settings for a keyword match task.</p>",
+      "refs": {
+        "RealTimeAlertRule$KeywordMatchConfiguration": "<p>Specifies the settings for matching the keywords in a real-time alert rule.</p>"
+      }
+    },
+    "KeywordMatchWordList": {
+      "base": null,
+      "refs": {
+        "KeywordMatchConfiguration$Keywords": "<p>The keywords or phrases that you want to match.</p>"
+      }
+    },
+    "KinesisDataStreamSinkConfiguration": {
+      "base": "<p>A structure that contains the configuration settings for a Kinesis Data Stream sink.</p>",
+      "refs": {
+        "MediaInsightsPipelineConfigurationElement$KinesisDataStreamSinkConfiguration": "<p>The configuration settings for the Kinesis Data Stream Sink in a media insights pipeline configuration element.</p>"
+      }
+    },
+    "KinesisVideoStreamArn": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamSourceTaskConfiguration$StreamArn": "<p>The ARN of the stream.</p>",
+        "RecordingStreamConfiguration$StreamArn": "<p>The ARN of the recording stream.</p>",
+        "StreamConfiguration$StreamArn": "<p>The ARN of the stream.</p>"
+      }
+    },
+    "KinesisVideoStreamConfiguration": {
+      "base": "<p>The configuration of an Kinesis video stream.</p>",
+      "refs": {
+        "CreateMediaPipelineKinesisVideoStreamPoolRequest$StreamConfiguration": "<p>The configuration settings for the video stream.</p>",
+        "KinesisVideoStreamPoolConfiguration$StreamConfiguration": "<p>The Kinesis video stream pool configuration object.</p>"
+      }
+    },
+    "KinesisVideoStreamConfigurationUpdate": {
+      "base": "<p>The updated Kinesis video stream configuration object.</p>",
+      "refs": {
+        "UpdateMediaPipelineKinesisVideoStreamPoolRequest$StreamConfiguration": "<p>The configuration settings for the video stream.</p>"
+      }
+    },
+    "KinesisVideoStreamPoolConfiguration": {
+      "base": "<p>The video stream pool configuration object.</p>",
+      "refs": {
+        "CreateMediaPipelineKinesisVideoStreamPoolResponse$KinesisVideoStreamPoolConfiguration": "<p>The configuration for the Kinesis video stream pool.</p>",
+        "GetMediaPipelineKinesisVideoStreamPoolResponse$KinesisVideoStreamPoolConfiguration": "<p>The video stream pool configuration object.</p>",
+        "UpdateMediaPipelineKinesisVideoStreamPoolResponse$KinesisVideoStreamPoolConfiguration": "<p>The video stream pool configuration object.</p>"
+      }
+    },
+    "KinesisVideoStreamPoolId": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamPoolConfiguration$PoolId": "<p>The ID of the video stream pool in the configuration.</p>",
+        "KinesisVideoStreamPoolSummary$PoolId": "<p>The ID of the video stream pool.</p>"
+      }
+    },
+    "KinesisVideoStreamPoolName": {
+      "base": null,
+      "refs": {
+        "CreateMediaPipelineKinesisVideoStreamPoolRequest$PoolName": "<p>The name of the video stream pool.</p>",
+        "KinesisVideoStreamPoolConfiguration$PoolName": "<p>The name of the video stream pool configuration.</p>",
+        "KinesisVideoStreamPoolSummary$PoolName": "<p>The name of the video stream pool.</p>"
+      }
+    },
+    "KinesisVideoStreamPoolSize": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamPoolConfiguration$PoolSize": "<p>The size of the video stream pool in the configuration.</p>"
+      }
+    },
+    "KinesisVideoStreamPoolStatus": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamPoolConfiguration$PoolStatus": "<p>The status of the video stream pool in the configuration. </p>"
+      }
+    },
+    "KinesisVideoStreamPoolSummary": {
+      "base": "<p>A summary of the Kinesis video stream pool.</p>",
+      "refs": {
+        "KinesisVideoStreamPoolSummaryList$member": null
+      }
+    },
+    "KinesisVideoStreamPoolSummaryList": {
+      "base": null,
+      "refs": {
+        "ListMediaPipelineKinesisVideoStreamPoolsResponse$KinesisVideoStreamPools": "<p>The list of video stream pools.</p>"
+      }
+    },
+    "KinesisVideoStreamRecordingSourceRuntimeConfiguration": {
+      "base": "<p>A structure that contains the runtime settings for recording a Kinesis video stream.</p>",
+      "refs": {
+        "CreateMediaInsightsPipelineRequest$KinesisVideoStreamRecordingSourceRuntimeConfiguration": "<p>The runtime configuration for the Kinesis video recording stream source.</p>",
+        "MediaInsightsPipeline$KinesisVideoStreamRecordingSourceRuntimeConfiguration": "<p>The runtime configuration settings for a Kinesis recording video stream in a media insights pipeline.</p>"
+      }
+    },
+    "KinesisVideoStreamSourceRuntimeConfiguration": {
+      "base": "<p>The runtime configuration settings for the Kinesis video stream source.</p>",
+      "refs": {
+        "CreateMediaInsightsPipelineRequest$KinesisVideoStreamSourceRuntimeConfiguration": "<p>The runtime configuration for the Kinesis video stream source of the media insights pipeline.</p>",
+        "MediaInsightsPipeline$KinesisVideoStreamSourceRuntimeConfiguration": "<p>The configuration settings for a Kinesis runtime video stream in a media insights pipeline.</p>"
+      }
+    },
+    "KinesisVideoStreamSourceTaskConfiguration": {
+      "base": "<p>The task configuration settings for the Kinesis video stream source.</p>",
+      "refs": {
+        "StartSpeakerSearchTaskRequest$KinesisVideoStreamSourceTaskConfiguration": "<p>The task configuration for the Kinesis video stream source of the media insights pipeline.</p>",
+        "StartVoiceToneAnalysisTaskRequest$KinesisVideoStreamSourceTaskConfiguration": "<p>The task configuration for the Kinesis video stream source of the media insights pipeline.</p>"
+      }
+    },
+    "LambdaFunctionSinkConfiguration": {
+      "base": "<p>A structure that contains the configuration settings for an AWS Lambda function's data sink.</p>",
+      "refs": {
+        "MediaInsightsPipelineConfigurationElement$LambdaFunctionSinkConfiguration": "<p>The configuration settings for the Amazon Web Services Lambda sink in a media insights pipeline configuration element.</p>"
+      }
+    },
+    "LanguageOptions": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeProcessorConfiguration$LanguageOptions": "<p>The language options for the transcription, such as automatic language detection.</p>"
+      }
+    },
+    "LayoutOption": {
+      "base": null,
+      "refs": {
+        "CompositedVideoArtifactsConfiguration$Layout": "<p>The layout setting, such as <code>GridView</code> in the configuration object.</p>"
+      }
+    },
+    "ListMediaCapturePipelinesRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListMediaCapturePipelinesResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListMediaInsightsPipelineConfigurationsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListMediaInsightsPipelineConfigurationsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListMediaPipelineKinesisVideoStreamPoolsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListMediaPipelineKinesisVideoStreamPoolsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListMediaPipelinesRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListMediaPipelinesResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTagsForResourceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTagsForResourceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "LiveConnectorMuxType": {
+      "base": null,
+      "refs": {
+        "ChimeSdkMeetingLiveConnectorConfiguration$MuxType": "<p>The configuration object's multiplex type.</p>"
+      }
+    },
+    "LiveConnectorRTMPConfiguration": {
+      "base": "<p>The media pipeline's RTMP configuration object.</p>",
+      "refs": {
+        "LiveConnectorSinkConfiguration$RTMPConfiguration": "<p>The sink configuration's RTMP configuration settings.</p>"
+      }
+    },
+    "LiveConnectorSinkConfiguration": {
+      "base": "<p>The media pipeline's sink configuration settings.</p>",
+      "refs": {
+        "LiveConnectorSinkList$member": null
+      }
+    },
+    "LiveConnectorSinkList": {
+      "base": null,
+      "refs": {
+        "CreateMediaLiveConnectorPipelineRequest$Sinks": "<p>The media live connector pipeline's data sinks.</p>",
+        "MediaLiveConnectorPipeline$Sinks": "<p>The connector pipeline's data sinks.</p>"
+      }
+    },
+    "LiveConnectorSinkType": {
+      "base": null,
+      "refs": {
+        "LiveConnectorSinkConfiguration$SinkType": "<p>The sink configuration's sink type.</p>"
+      }
+    },
+    "LiveConnectorSourceConfiguration": {
+      "base": "<p>The data source configuration object of a streaming media pipeline.</p>",
+      "refs": {
+        "LiveConnectorSourceList$member": null
+      }
+    },
+    "LiveConnectorSourceList": {
+      "base": null,
+      "refs": {
+        "CreateMediaLiveConnectorPipelineRequest$Sources": "<p>The media live connector pipeline's data sources.</p>",
+        "MediaLiveConnectorPipeline$Sources": "<p>The connector pipeline's data sources.</p>"
+      }
+    },
+    "LiveConnectorSourceType": {
+      "base": null,
+      "refs": {
+        "LiveConnectorSourceConfiguration$SourceType": "<p>The source configuration's media source type.</p>"
+      }
+    },
+    "MediaCapturePipeline": {
+      "base": "<p>A media pipeline object consisting of an ID, source type, source ARN, a sink type, a sink ARN, and a configuration object.</p>",
+      "refs": {
+        "CreateMediaCapturePipelineResponse$MediaCapturePipeline": "<p>A media pipeline object, the ID, source type, source ARN, sink type, and sink ARN of a media pipeline object.</p>",
+        "GetMediaCapturePipelineResponse$MediaCapturePipeline": "<p>The media pipeline object.</p>",
+        "MediaPipeline$MediaCapturePipeline": "<p>A pipeline that enables users to capture audio and video.</p>"
+      }
+    },
+    "MediaCapturePipelineSourceConfiguration": {
+      "base": "<p>The source configuration object of a media capture pipeline.</p>",
+      "refs": {
+        "ConcatenationSource$MediaCapturePipelineSourceConfiguration": "<p>The concatenation settings for the media pipeline in a configuration object.</p>"
+      }
+    },
+    "MediaCapturePipelineSummary": {
+      "base": "<p>The summary data of a media capture pipeline.</p>",
+      "refs": {
+        "MediaCapturePipelineSummaryList$member": null
+      }
+    },
+    "MediaCapturePipelineSummaryList": {
+      "base": null,
+      "refs": {
+        "ListMediaCapturePipelinesResponse$MediaCapturePipelines": "<p>The media pipeline objects in the list.</p>"
+      }
+    },
+    "MediaConcatenationPipeline": {
+      "base": "<p>Concatenates audio and video data from one or more data streams.</p>",
+      "refs": {
+        "CreateMediaConcatenationPipelineResponse$MediaConcatenationPipeline": "<p>A media concatenation pipeline object, the ID, source type, <code>MediaPipelineARN</code>, and sink of a media concatenation pipeline object.</p>",
+        "MediaPipeline$MediaConcatenationPipeline": "<p>The media concatenation pipeline in a media pipeline.</p>"
+      }
+    },
+    "MediaEncoding": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamSourceRuntimeConfiguration$MediaEncoding": "<p>Specifies the encoding of your input audio. Supported format: PCM (only signed 16-bit little-endian audio formats, which does not include WAV)</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/how-input.html#how-input-audio\">Media formats</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>"
+      }
+    },
+    "MediaInsightsPipeline": {
+      "base": "<p>A media pipeline that streams call analytics data.</p>",
+      "refs": {
+        "CreateMediaInsightsPipelineResponse$MediaInsightsPipeline": "<p>The media insights pipeline object.</p>",
+        "MediaPipeline$MediaInsightsPipeline": "<p>The media insights pipeline of a media pipeline.</p>"
+      }
+    },
+    "MediaInsightsPipelineConfiguration": {
+      "base": "<p>A structure that contains the configuration settings for a media insights pipeline.</p>",
+      "refs": {
+        "CreateMediaInsightsPipelineConfigurationResponse$MediaInsightsPipelineConfiguration": "<p>The configuration settings for the media insights pipeline.</p>",
+        "GetMediaInsightsPipelineConfigurationResponse$MediaInsightsPipelineConfiguration": "<p>The requested media insights pipeline configuration.</p>",
+        "UpdateMediaInsightsPipelineConfigurationResponse$MediaInsightsPipelineConfiguration": "<p>The updated configuration settings.</p>"
+      }
+    },
+    "MediaInsightsPipelineConfigurationElement": {
+      "base": "<p>An element in a media insights pipeline configuration.</p>",
+      "refs": {
+        "MediaInsightsPipelineConfigurationElements$member": null
+      }
+    },
+    "MediaInsightsPipelineConfigurationElementType": {
+      "base": null,
+      "refs": {
+        "MediaInsightsPipelineConfigurationElement$Type": "<p>The element type.</p>",
+        "MediaInsightsPipelineElementStatus$Type": "<p>The type of status.</p>"
+      }
+    },
+    "MediaInsightsPipelineConfigurationElements": {
+      "base": null,
+      "refs": {
+        "CreateMediaInsightsPipelineConfigurationRequest$Elements": "<p>The elements in the request, such as a processor for Amazon Transcribe or a sink for a Kinesis Data Stream.</p>",
+        "MediaInsightsPipelineConfiguration$Elements": "<p>The elements in the configuration.</p>",
+        "UpdateMediaInsightsPipelineConfigurationRequest$Elements": "<p>The elements in the request, such as a processor for Amazon Transcribe or a sink for a Kinesis Data Stream..</p>"
+      }
+    },
+    "MediaInsightsPipelineConfigurationNameString": {
+      "base": null,
+      "refs": {
+        "CreateMediaInsightsPipelineConfigurationRequest$MediaInsightsPipelineConfigurationName": "<p>The name of the media insights pipeline configuration.</p>",
+        "MediaInsightsPipelineConfiguration$MediaInsightsPipelineConfigurationName": "<p>The name of the configuration.</p>",
+        "MediaInsightsPipelineConfigurationSummary$MediaInsightsPipelineConfigurationName": "<p>The name of the media insights pipeline configuration.</p>"
+      }
+    },
+    "MediaInsightsPipelineConfigurationSummary": {
+      "base": "<p>A summary of the media insights pipeline configuration.</p>",
+      "refs": {
+        "MediaInsightsPipelineConfigurationSummaryList$member": null
+      }
+    },
+    "MediaInsightsPipelineConfigurationSummaryList": {
+      "base": null,
+      "refs": {
+        "ListMediaInsightsPipelineConfigurationsResponse$MediaInsightsPipelineConfigurations": "<p>The requested list of media insights pipeline configurations.</p>"
+      }
+    },
+    "MediaInsightsPipelineElementStatus": {
+      "base": "<p>The status of the pipeline element.</p>",
+      "refs": {
+        "MediaInsightsPipelineElementStatuses$member": null
+      }
+    },
+    "MediaInsightsPipelineElementStatuses": {
+      "base": null,
+      "refs": {
+        "MediaInsightsPipeline$ElementStatuses": "<p>The statuses that the elements in a media insights pipeline can have during data processing.</p>"
+      }
+    },
+    "MediaInsightsRuntimeMetadata": {
+      "base": null,
+      "refs": {
+        "CreateMediaInsightsPipelineRequest$MediaInsightsRuntimeMetadata": "<p>The runtime metadata for the media insights pipeline. Consists of a key-value map of strings.</p>",
+        "MediaInsightsPipeline$MediaInsightsRuntimeMetadata": "<p>The runtime metadata of a media insights pipeline.</p>"
+      }
+    },
+    "MediaLiveConnectorPipeline": {
+      "base": "<p>The connector pipeline.</p>",
+      "refs": {
+        "CreateMediaLiveConnectorPipelineResponse$MediaLiveConnectorPipeline": "<p>The new media live connector pipeline.</p>",
+        "MediaPipeline$MediaLiveConnectorPipeline": "<p>The connector pipeline of the media pipeline.</p>"
+      }
+    },
+    "MediaPipeline": {
+      "base": "<p>A pipeline consisting of a media capture, media concatenation, or live-streaming pipeline.</p>",
+      "refs": {
+        "GetMediaPipelineResponse$MediaPipeline": "<p>The media pipeline object.</p>"
+      }
+    },
+    "MediaPipelineElementStatus": {
+      "base": null,
+      "refs": {
+        "MediaInsightsPipelineElementStatus$Status": "<p>The element's status.</p>"
+      }
+    },
+    "MediaPipelineList": {
+      "base": null,
+      "refs": {
+        "ListMediaPipelinesResponse$MediaPipelines": "<p>The media pipeline objects in the list.</p>"
+      }
+    },
+    "MediaPipelineSinkType": {
+      "base": null,
+      "refs": {
+        "CreateMediaCapturePipelineRequest$SinkType": "<p>Destination type to which the media artifacts are saved. You must use an S3 bucket.</p>",
+        "MediaCapturePipeline$SinkType": "<p>Destination type to which the media artifacts are saved. You must use an S3 Bucket.</p>"
+      }
+    },
+    "MediaPipelineSourceType": {
+      "base": null,
+      "refs": {
+        "CreateMediaCapturePipelineRequest$SourceType": "<p>Source type from which the media artifacts are captured. A Chime SDK Meeting is the only supported source.</p>",
+        "MediaCapturePipeline$SourceType": "<p>Source type from which media artifacts are saved. You must use <code>ChimeMeeting</code>.</p>",
+        "MediaStreamSource$SourceType": "<p>The type of media stream source.</p>"
+      }
+    },
+    "MediaPipelineStatus": {
+      "base": null,
+      "refs": {
+        "MediaCapturePipeline$Status": "<p>The status of the media pipeline.</p>",
+        "MediaConcatenationPipeline$Status": "<p>The status of the concatenation pipeline.</p>",
+        "MediaInsightsPipeline$Status": "<p>The status of a media insights pipeline.</p>",
+        "MediaLiveConnectorPipeline$Status": "<p>The connector pipeline's status.</p>",
+        "MediaStreamPipeline$Status": "<p>The status of the media stream pipeline.</p>"
+      }
+    },
+    "MediaPipelineStatusUpdate": {
+      "base": null,
+      "refs": {
+        "UpdateMediaInsightsPipelineStatusRequest$UpdateStatus": "<p>The requested status of the media insights pipeline.</p>"
+      }
+    },
+    "MediaPipelineSummary": {
+      "base": "<p>The summary of the media pipeline.</p>",
+      "refs": {
+        "MediaPipelineList$member": null
+      }
+    },
+    "MediaPipelineTaskStatus": {
+      "base": null,
+      "refs": {
+        "SpeakerSearchTask$SpeakerSearchTaskStatus": "<p>The status of the speaker search task.</p>",
+        "VoiceToneAnalysisTask$VoiceToneAnalysisTaskStatus": "<p>The status of a voice tone analysis task.</p>"
+      }
+    },
+    "MediaSampleRateHertz": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamSourceRuntimeConfiguration$MediaSampleRate": "<p>The sample rate of the input audio (in hertz). Low-quality audio, such as telephone audio, is typically around 8,000 Hz. High-quality audio typically ranges from 16,000 Hz to 48,000 Hz. Note that the sample rate you specify must match that of your audio.</p> <p>Valid Range: Minimum value of 8000. Maximum value of 48000.</p>"
+      }
+    },
+    "MediaStreamPipeline": {
+      "base": "<p>Structure that contains the settings for a media stream pipeline.</p>",
+      "refs": {
+        "CreateMediaStreamPipelineResponse$MediaStreamPipeline": "<p>The requested media pipeline.</p>",
+        "MediaPipeline$MediaStreamPipeline": "<p>Designates a media pipeline as a media stream pipeline.</p>"
+      }
+    },
+    "MediaStreamPipelineSinkType": {
+      "base": null,
+      "refs": {
+        "MediaStreamSink$SinkType": "<p>The media stream sink's type.</p>"
+      }
+    },
+    "MediaStreamSink": {
+      "base": "<p>Structure that contains the settings for a media stream sink.</p>",
+      "refs": {
+        "MediaStreamSinkList$member": null
+      }
+    },
+    "MediaStreamSinkList": {
+      "base": null,
+      "refs": {
+        "CreateMediaStreamPipelineRequest$Sinks": "<p>The data sink for the media pipeline.</p>",
+        "MediaStreamPipeline$Sinks": "<p>The media stream pipeline's data sinks.</p>"
+      }
+    },
+    "MediaStreamSource": {
+      "base": "<p>Structure that contains the settings for media stream sources.</p>",
+      "refs": {
+        "MediaStreamSourceList$member": null
+      }
+    },
+    "MediaStreamSourceList": {
+      "base": null,
+      "refs": {
+        "CreateMediaStreamPipelineRequest$Sources": "<p>The data sources for the media pipeline.</p>",
+        "MediaStreamPipeline$Sources": "<p>The media stream pipeline's data sources.</p>"
+      }
+    },
+    "MediaStreamType": {
+      "base": null,
+      "refs": {
+        "MediaStreamSink$MediaStreamType": "<p>The media stream sink's media stream type.</p>"
+      }
+    },
+    "MeetingEventsConcatenationConfiguration": {
+      "base": "<p>The configuration object for an event concatenation pipeline.</p>",
+      "refs": {
+        "ArtifactsConcatenationConfiguration$MeetingEvents": "<p>The configuration for the meeting events artifacts concatenation.</p>"
+      }
+    },
+    "ModelName": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$LanguageModelName": "<p>Specifies the name of the custom language model to use when processing a transcription. Note that language model names are case sensitive.</p> <p>The language of the specified language model must match the language code specified in the transcription request. If the languages don't match, the custom language model isn't applied. Language mismatches don't generate errors or warnings.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/custom-language-models.html\">Custom language models</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>",
+        "AmazonTranscribeProcessorConfiguration$LanguageModelName": "<p>The name of the custom language model that you want to use when processing your transcription. Note that language model names are case sensitive.</p> <p>The language of the specified language model must match the language code you specify in your transcription request. If the languages don't match, the custom language model isn't applied. There are no errors or warnings associated with a language mismatch.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/custom-language-models.html\">Custom language models</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>"
+      }
+    },
+    "NonEmptyString": {
+      "base": null,
+      "refs": {
+        "DeleteMediaInsightsPipelineConfigurationRequest$Identifier": "<p>The unique identifier of the resource to be deleted. Valid values include the name and ARN of the media insights pipeline configuration.</p>",
+        "DeleteMediaPipelineKinesisVideoStreamPoolRequest$Identifier": "<p>The ID of the pool being deleted.</p>",
+        "GetMediaInsightsPipelineConfigurationRequest$Identifier": "<p>The unique identifier of the requested resource. Valid values include the name and ARN of the media insights pipeline configuration.</p>",
+        "GetMediaPipelineKinesisVideoStreamPoolRequest$Identifier": "<p>The ID of the video stream pool.</p>",
+        "GetSpeakerSearchTaskRequest$Identifier": "<p>The unique identifier of the resource to be updated. Valid values include the ID and ARN of the media insights pipeline.</p>",
+        "GetVoiceToneAnalysisTaskRequest$Identifier": "<p>The unique identifier of the resource to be updated. Valid values include the ID and ARN of the media insights pipeline.</p>",
+        "MediaInsightsRuntimeMetadata$key": null,
+        "StartSpeakerSearchTaskRequest$Identifier": "<p>The unique identifier of the resource to be updated. Valid values include the ID and ARN of the media insights pipeline.</p>",
+        "StartVoiceToneAnalysisTaskRequest$Identifier": "<p>The unique identifier of the resource to be updated. Valid values include the ID and ARN of the media insights pipeline.</p>",
+        "StopSpeakerSearchTaskRequest$Identifier": "<p>The unique identifier of the resource to be updated. Valid values include the ID and ARN of the media insights pipeline.</p>",
+        "StopVoiceToneAnalysisTaskRequest$Identifier": "<p>The unique identifier of the resource to be updated. Valid values include the ID and ARN of the media insights pipeline.</p>",
+        "UpdateMediaInsightsPipelineConfigurationRequest$Identifier": "<p>The unique identifier for the resource to be updated. Valid values include the name and ARN of the media insights pipeline configuration.</p>",
+        "UpdateMediaInsightsPipelineStatusRequest$Identifier": "<p>The unique identifier of the resource to be updated. Valid values include the ID and ARN of the media insights pipeline.</p>",
+        "UpdateMediaPipelineKinesisVideoStreamPoolRequest$Identifier": "<p>The ID of the video stream pool.</p>"
+      }
+    },
+    "NotFoundException": {
+      "base": "<p>One or more of the resources in the request does not exist in the system.</p>",
+      "refs": {
+      }
+    },
+    "NumberOfChannels": {
+      "base": null,
+      "refs": {
+        "StreamChannelDefinition$NumberOfChannels": "<p>The number of channels in a streaming channel.</p>"
+      }
+    },
+    "PartialResultsStability": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$PartialResultsStability": "<p>Specifies the level of stability to use when you enable partial results stabilization (<code>EnablePartialResultsStabilization</code>).</p> <p>Low stability provides the highest accuracy. High stability transcribes faster, but with slightly lower accuracy.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/streaming.html#streaming-partial-result-stabilization\">Partial-result stabilization</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>",
+        "AmazonTranscribeProcessorConfiguration$PartialResultsStability": "<p>The level of stability to use when you enable partial results stabilization (<code>EnablePartialResultsStabilization</code>).</p> <p>Low stability provides the highest accuracy. High stability transcribes faster, but with slightly lower accuracy.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/streaming.html#streaming-partial-result-stabilization\">Partial-result stabilization</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>"
+      }
+    },
+    "ParticipantRole": {
+      "base": null,
+      "refs": {
+        "ChannelDefinition$ParticipantRole": "<p>Specifies whether the audio in a channel belongs to the <code>AGENT</code> or <code>CUSTOMER</code>.</p>"
+      }
+    },
+    "PiiEntityTypes": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$PiiEntityTypes": "<p>Specifies the types of personally identifiable information (PII) to redact from a transcript. You can include as many types as you'd like, or you can select <code>ALL</code>.</p> <p>To include <code>PiiEntityTypes</code> in your Call Analytics request, you must also include <code>ContentIdentificationType</code> or <code>ContentRedactionType</code>, but you can't include both. </p> <p>Values must be comma-separated and can include: <code>ADDRESS</code>, <code>BANK_ACCOUNT_NUMBER</code>, <code>BANK_ROUTING</code>, <code>CREDIT_DEBIT_CVV</code>, <code>CREDIT_DEBIT_EXPIRY</code>, <code>CREDIT_DEBIT_NUMBER</code>, <code>EMAIL</code>, <code>NAME</code>, <code>PHONE</code>, <code>PIN</code>, <code>SSN</code>, or <code>ALL</code>.</p> <p>Length Constraints: Minimum length of 1. Maximum length of 300.</p>",
+        "AmazonTranscribeProcessorConfiguration$PiiEntityTypes": "<p>The types of personally identifiable information (PII) to redact from a transcript. You can include as many types as you'd like, or you can select <code>ALL</code>.</p> <p>To include <code>PiiEntityTypes</code> in your Call Analytics request, you must also include <code>ContentIdentificationType</code> or <code>ContentRedactionType</code>, but you can't include both.</p> <p>Values must be comma-separated and can include: <code>ADDRESS</code>, <code>BANK_ACCOUNT_NUMBER</code>, <code>BANK_ROUTING</code>, <code>CREDIT_DEBIT_CVV</code>, <code>CREDIT_DEBIT_EXPIRY</code>, <code>CREDIT_DEBIT_NUMBER</code>, <code>EMAIL</code>, <code>NAME</code>, <code>PHONE</code>, <code>PIN</code>, <code>SSN</code>, or <code>ALL</code>.</p> <p>If you leave this parameter empty, the default behavior is equivalent to <code>ALL</code>.</p>"
+      }
+    },
+    "PostCallAnalyticsSettings": {
+      "base": "<p>Allows you to specify additional settings for your Call Analytics post-call request, including output locations for your redacted transcript, which IAM role to use, and which encryption key to use.</p> <p> <code>DataAccessRoleArn</code> and <code>OutputLocation</code> are required fields.</p> <p> <code>PostCallAnalyticsSettings</code> provides the same insights as a Call Analytics post-call transcription. For more information, refer to <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/tca-post-call.html\">Post-call analytics with real-time transcriptions</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>",
+      "refs": {
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$PostCallAnalyticsSettings": "<p>The settings for a post-call analysis task in an analytics configuration.</p>"
+      }
+    },
+    "PresenterOnlyConfiguration": {
+      "base": "<p>Defines the configuration for a presenter-only video tile.</p>",
+      "refs": {
+        "GridViewConfiguration$PresenterOnlyConfiguration": "<p>Defines the configuration options for a presenter only video tile.</p>"
+      }
+    },
+    "PresenterPosition": {
+      "base": null,
+      "refs": {
+        "PresenterOnlyConfiguration$PresenterPosition": "<p>Defines the position of the presenter video tile. Default: <code>TopRight</code>.</p>"
+      }
+    },
+    "RealTimeAlertConfiguration": {
+      "base": "<p>A structure that contains the configuration settings for real-time alerts.</p>",
+      "refs": {
+        "CreateMediaInsightsPipelineConfigurationRequest$RealTimeAlertConfiguration": "<p>The configuration settings for the real-time alerts in a media insights pipeline configuration.</p>",
+        "MediaInsightsPipelineConfiguration$RealTimeAlertConfiguration": "<p>Lists the rules that trigger a real-time alert.</p>",
+        "UpdateMediaInsightsPipelineConfigurationRequest$RealTimeAlertConfiguration": "<p>The configuration settings for real-time alerts for the media insights pipeline.</p>"
+      }
+    },
+    "RealTimeAlertRule": {
+      "base": "<p>Specifies the words or phrases that trigger an alert.</p>",
+      "refs": {
+        "RealTimeAlertRuleList$member": null
+      }
+    },
+    "RealTimeAlertRuleList": {
+      "base": null,
+      "refs": {
+        "RealTimeAlertConfiguration$Rules": "<p>The rules in the alert. Rules specify the words or phrases that you want to be notified about.</p>"
+      }
+    },
+    "RealTimeAlertRuleType": {
+      "base": null,
+      "refs": {
+        "RealTimeAlertRule$Type": "<p>The type of alert rule.</p>"
+      }
+    },
+    "RecordingFileFormat": {
+      "base": null,
+      "refs": {
+        "S3RecordingSinkConfiguration$RecordingFileFormat": "<p>The default file format for the media files sent to the Amazon S3 bucket.</p>",
+        "S3RecordingSinkRuntimeConfiguration$RecordingFileFormat": "<p>The file format for the media files sent to the Amazon S3 bucket.</p>"
+      }
+    },
+    "RecordingStreamConfiguration": {
+      "base": "<p>A structure that holds the settings for recording media.</p>",
+      "refs": {
+        "RecordingStreamList$member": null
+      }
+    },
+    "RecordingStreamList": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamRecordingSourceRuntimeConfiguration$Streams": "<p>The stream or streams to be recorded.</p>"
+      }
+    },
+    "ReservedStreamCapacity": {
+      "base": null,
+      "refs": {
+        "MediaStreamSink$ReservedStreamCapacity": "<p>Specifies the number of streams that the sink can accept.</p>"
+      }
+    },
+    "ResolutionOption": {
+      "base": null,
+      "refs": {
+        "CompositedVideoArtifactsConfiguration$Resolution": "<p>The video resolution setting in the configuration object. Default: HD at 1280 x 720. FHD resolution: 1920 x 1080.</p>"
+      }
+    },
+    "ResourceLimitExceededException": {
+      "base": "<p>The request exceeds the resource limit.</p>",
+      "refs": {
+      }
+    },
+    "ResultMax": {
+      "base": null,
+      "refs": {
+        "ListMediaCapturePipelinesRequest$MaxResults": "<p>The maximum number of results to return in a single call. Valid Range: 1 - 99.</p>",
+        "ListMediaInsightsPipelineConfigurationsRequest$MaxResults": "<p>The maximum number of results to return in a single call.</p>",
+        "ListMediaPipelineKinesisVideoStreamPoolsRequest$MaxResults": "<p>The maximum number of results to return in a single call.</p>",
+        "ListMediaPipelinesRequest$MaxResults": "<p>The maximum number of results to return in a single call. Valid Range: 1 - 99.</p>"
+      }
+    },
+    "RuleName": {
+      "base": null,
+      "refs": {
+        "IssueDetectionConfiguration$RuleName": "<p>The name of the issue detection rule.</p>",
+        "KeywordMatchConfiguration$RuleName": "<p>The name of the keyword match rule.</p>",
+        "SentimentConfiguration$RuleName": "<p>The name of the rule in the sentiment configuration.</p>"
+      }
+    },
+    "S3BucketSinkConfiguration": {
+      "base": "<p>The configuration settings for the S3 bucket.</p>",
+      "refs": {
+        "ConcatenationSink$S3BucketSinkConfiguration": "<p>The configuration settings for an Amazon S3 bucket sink.</p>"
+      }
+    },
+    "S3RecordingSinkConfiguration": {
+      "base": "<p>The structure that holds the settings for transmitting media to the Amazon S3 bucket. These values are used as defaults if <code>S3RecordingSinkRuntimeConfiguration</code> is not specified.</p>",
+      "refs": {
+        "MediaInsightsPipelineConfigurationElement$S3RecordingSinkConfiguration": "<p>The configuration settings for the Amazon S3 recording bucket in a media insights pipeline configuration element.</p>"
+      }
+    },
+    "S3RecordingSinkRuntimeConfiguration": {
+      "base": "<p>A structure that holds the settings for transmitting media files to the Amazon S3 bucket. If specified, the settings in this structure override any settings in <code>S3RecordingSinkConfiguration</code>.</p>",
+      "refs": {
+        "CreateMediaInsightsPipelineRequest$S3RecordingSinkRuntimeConfiguration": "<p>The runtime configuration for the S3 recording sink. If specified, the settings in this structure override any settings in <code>S3RecordingSinkConfiguration</code>.</p>",
+        "MediaInsightsPipeline$S3RecordingSinkRuntimeConfiguration": "<p>The runtime configuration of the Amazon S3 bucket that stores recordings in a media insights pipeline.</p>"
+      }
+    },
+    "SelectedVideoStreams": {
+      "base": "<p>The video streams for a specified media pipeline. The total number of video streams can't exceed 25.</p>",
+      "refs": {
+        "SourceConfiguration$SelectedVideoStreams": "<p>The selected video streams for a specified media pipeline. The number of video streams can't exceed 25.</p>"
+      }
+    },
+    "SensitiveString": {
+      "base": null,
+      "refs": {
+        "LiveConnectorRTMPConfiguration$Url": "<p>The URL of the RTMP configuration.</p>"
+      }
+    },
+    "SentimentConfiguration": {
+      "base": "<p>A structure that contains the configuration settings for a sentiment analysis task.</p>",
+      "refs": {
+        "RealTimeAlertRule$SentimentConfiguration": "<p>Specifies the settings for predicting sentiment in a real-time alert rule.</p>"
+      }
+    },
+    "SentimentTimePeriodInSeconds": {
+      "base": null,
+      "refs": {
+        "SentimentConfiguration$TimePeriod": "<p>Specifies the analysis interval.</p>"
+      }
+    },
+    "SentimentType": {
+      "base": null,
+      "refs": {
+        "SentimentConfiguration$SentimentType": "<p>The type of sentiment, <code>POSITIVE</code>, <code>NEGATIVE</code>, or <code>NEUTRAL</code>.</p>"
+      }
+    },
+    "ServiceFailureException": {
+      "base": "<p>The service encountered an unexpected error.</p>",
+      "refs": {
+      }
+    },
+    "ServiceUnavailableException": {
+      "base": "<p>The service is currently unavailable.</p>",
+      "refs": {
+      }
+    },
+    "SnsTopicSinkConfiguration": {
+      "base": "<p>The configuration settings for the SNS topic sink.</p>",
+      "refs": {
+        "MediaInsightsPipelineConfigurationElement$SnsTopicSinkConfiguration": "<p>The configuration settings for an SNS topic sink in a media insights pipeline configuration element.</p>"
+      }
+    },
+    "SourceConfiguration": {
+      "base": "<p>Source configuration for a specified media pipeline.</p>",
+      "refs": {
+        "ChimeSdkMeetingConfiguration$SourceConfiguration": "<p>The source configuration for a specified media pipeline.</p>",
+        "ChimeSdkMeetingLiveConnectorConfiguration$SourceConfiguration": "<p>The source configuration settings of the media pipeline's configuration object.</p>"
+      }
+    },
+    "SpeakerSearchTask": {
+      "base": "<p>A representation of an asynchronous request to perform speaker search analysis on a media insights pipeline.</p>",
+      "refs": {
+        "GetSpeakerSearchTaskResponse$SpeakerSearchTask": "<p>The details of the speaker search task.</p>",
+        "StartSpeakerSearchTaskResponse$SpeakerSearchTask": "<p>The details of the speaker search task.</p>"
+      }
+    },
+    "SqsQueueSinkConfiguration": {
+      "base": "<p>The configuration settings for the SQS sink.</p>",
+      "refs": {
+        "MediaInsightsPipelineConfigurationElement$SqsQueueSinkConfiguration": "<p>The configuration settings for an SQS queue sink in a media insights pipeline configuration element.</p>"
+      }
+    },
+    "StartSpeakerSearchTaskRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StartSpeakerSearchTaskResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StartVoiceToneAnalysisTaskRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StartVoiceToneAnalysisTaskResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StopSpeakerSearchTaskRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StopVoiceToneAnalysisTaskRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StreamChannelDefinition": {
+      "base": "<p>Defines a streaming channel.</p>",
+      "refs": {
+        "StreamConfiguration$StreamChannelDefinition": "<p>The streaming channel definition in the stream configuration.</p>"
+      }
+    },
+    "StreamConfiguration": {
+      "base": "<p>The configuration settings for a stream.</p>",
+      "refs": {
+        "Streams$member": null
+      }
+    },
+    "Streams": {
+      "base": null,
+      "refs": {
+        "KinesisVideoStreamSourceRuntimeConfiguration$Streams": "<p>The streams in the source runtime configuration of a Kinesis video stream.</p>"
+      }
+    },
+    "String": {
+      "base": null,
+      "refs": {
+        "BadRequestException$Message": null,
+        "BadRequestException$RequestId": "<p>The request ID associated with the call responsible for the exception.</p>",
+        "ConflictException$Message": null,
+        "ConflictException$RequestId": "<p>The request ID associated with the call responsible for the exception.</p>",
+        "ForbiddenException$Message": null,
+        "ForbiddenException$RequestId": "<p>The request id associated with the call responsible for the exception.</p>",
+        "ListMediaCapturePipelinesRequest$NextToken": "<p>The token used to retrieve the next page of results.</p>",
+        "ListMediaCapturePipelinesResponse$NextToken": "<p>The token used to retrieve the next page of results. </p>",
+        "ListMediaInsightsPipelineConfigurationsRequest$NextToken": "<p>The token used to return the next page of results.</p>",
+        "ListMediaInsightsPipelineConfigurationsResponse$NextToken": "<p>The token used to return the next page of results. </p>",
+        "ListMediaPipelineKinesisVideoStreamPoolsRequest$NextToken": "<p>The token used to return the next page of results. </p>",
+        "ListMediaPipelineKinesisVideoStreamPoolsResponse$NextToken": "<p>The token used to return the next page of results.</p>",
+        "ListMediaPipelinesRequest$NextToken": "<p>The token used to retrieve the next page of results.</p>",
+        "ListMediaPipelinesResponse$NextToken": "<p>The token used to retrieve the next page of results. </p>",
+        "MediaInsightsRuntimeMetadata$value": null,
+        "NotFoundException$Message": null,
+        "NotFoundException$RequestId": "<p>The request ID associated with the call responsible for the exception.</p>",
+        "PostCallAnalyticsSettings$OutputLocation": "<p>The URL of the Amazon S3 bucket that contains the post-call data.</p>",
+        "PostCallAnalyticsSettings$DataAccessRoleArn": "<p>The ARN of the role used by Amazon Web Services Transcribe to upload your post call analysis. For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/tca-post-call.html\">Post-call analytics with real-time transcriptions</a> in the <i>Amazon Transcribe Developer Guide</i>.</p>",
+        "PostCallAnalyticsSettings$OutputEncryptionKMSKeyId": "<p>The ID of the KMS (Key Management Service) key used to encrypt the output.</p>",
+        "ResourceLimitExceededException$Message": null,
+        "ResourceLimitExceededException$RequestId": "<p>The request ID associated with the call responsible for the exception.</p>",
+        "ServiceFailureException$Message": null,
+        "ServiceFailureException$RequestId": "<p>The request ID associated with the call responsible for the exception.</p>",
+        "ServiceUnavailableException$Message": null,
+        "ServiceUnavailableException$RequestId": "<p>The request ID associated with the call responsible for the exception.</p>",
+        "ThrottledClientException$Message": null,
+        "ThrottledClientException$RequestId": "<p>The request ID associated with the call responsible for the exception.</p>",
+        "UnauthorizedClientException$Message": null,
+        "UnauthorizedClientException$RequestId": "<p>The request ID associated with the call responsible for the exception.</p>"
+      }
+    },
+    "Tag": {
+      "base": "<p>A key/value pair that grants users access to meeting resources.</p>",
+      "refs": {
+        "TagList$member": null
+      }
+    },
+    "TagKey": {
+      "base": null,
+      "refs": {
+        "Tag$Key": "<p>The key half of a tag.</p>",
+        "TagKeyList$member": null
+      }
+    },
+    "TagKeyList": {
+      "base": null,
+      "refs": {
+        "UntagResourceRequest$TagKeys": "<p>The key/value pairs in the tag that you want to remove.</p>"
+      }
+    },
+    "TagList": {
+      "base": null,
+      "refs": {
+        "CreateMediaCapturePipelineRequest$Tags": "<p>The tag key-value pairs.</p>",
+        "CreateMediaConcatenationPipelineRequest$Tags": "<p>The tags associated with the media concatenation pipeline.</p>",
+        "CreateMediaInsightsPipelineConfigurationRequest$Tags": "<p>The tags assigned to the media insights pipeline configuration.</p>",
+        "CreateMediaInsightsPipelineRequest$Tags": "<p>The tags assigned to the media insights pipeline.</p>",
+        "CreateMediaLiveConnectorPipelineRequest$Tags": "<p>The tags associated with the media live connector pipeline.</p>",
+        "CreateMediaPipelineKinesisVideoStreamPoolRequest$Tags": "<p>The tags assigned to the video stream pool.</p>",
+        "CreateMediaStreamPipelineRequest$Tags": "<p>The tags assigned to the media pipeline.</p>",
+        "ListTagsForResourceResponse$Tags": "<p>The tags associated with the specified media pipeline.</p>",
+        "TagResourceRequest$Tags": "<p>The tags associated with the specified media pipeline.</p>"
+      }
+    },
+    "TagResourceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "TagResourceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "TagValue": {
+      "base": null,
+      "refs": {
+        "Tag$Value": "<p>The value half of a tag.</p>"
+      }
+    },
+    "ThrottledClientException": {
+      "base": "<p>The client exceeded its request rate limit.</p>",
+      "refs": {
+      }
+    },
+    "TileAspectRatio": {
+      "base": null,
+      "refs": {
+        "HorizontalLayoutConfiguration$TileAspectRatio": "<p>Specifies the aspect ratio of all video tiles.</p>",
+        "VerticalLayoutConfiguration$TileAspectRatio": "<p>Sets the aspect ratio of the video tiles, such as 16:9.</p>"
+      }
+    },
+    "TileCount": {
+      "base": null,
+      "refs": {
+        "HorizontalLayoutConfiguration$TileCount": "<p>The maximum number of video tiles to display.</p>",
+        "VerticalLayoutConfiguration$TileCount": "<p>The maximum number of tiles to display.</p>"
+      }
+    },
+    "TileOrder": {
+      "base": null,
+      "refs": {
+        "HorizontalLayoutConfiguration$TileOrder": "<p>Sets the automatic ordering of the video tiles.</p>",
+        "VerticalLayoutConfiguration$TileOrder": "<p>Sets the automatic ordering of the video tiles.</p>"
+      }
+    },
+    "Timestamp": {
+      "base": null,
+      "refs": {
+        "TimestampRange$StartTimestamp": "<p>The starting timestamp for the specified range.</p>",
+        "TimestampRange$EndTimestamp": "<p>The ending timestamp for the specified range.</p>"
+      }
+    },
+    "TimestampRange": {
+      "base": "<p>The range of timestamps to return.</p>",
+      "refs": {
+        "FragmentSelector$TimestampRange": "<p>The range of timestamps to return.</p>"
+      }
+    },
+    "TranscriptionMessagesConcatenationConfiguration": {
+      "base": "<p>The configuration object for concatenating transcription messages.</p>",
+      "refs": {
+        "ArtifactsConcatenationConfiguration$TranscriptionMessages": "<p>The configuration for the transcription messages artifacts concatenation.</p>"
+      }
+    },
+    "UnauthorizedClientException": {
+      "base": "<p>The client is not currently authorized to make the request.</p>",
+      "refs": {
+      }
+    },
+    "UntagResourceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UntagResourceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateMediaInsightsPipelineConfigurationRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateMediaInsightsPipelineConfigurationResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateMediaInsightsPipelineStatusRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateMediaPipelineKinesisVideoStreamPoolRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateMediaPipelineKinesisVideoStreamPoolResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "VerticalLayoutConfiguration": {
+      "base": "<p>Defines the configuration settings for a vertical layout.</p>",
+      "refs": {
+        "GridViewConfiguration$VerticalLayoutConfiguration": "<p>The configuration settings for a vertical layout.</p>"
+      }
+    },
+    "VerticalTilePosition": {
+      "base": null,
+      "refs": {
+        "VerticalLayoutConfiguration$TilePosition": "<p>Sets the position of vertical tiles.</p>"
+      }
+    },
+    "VideoArtifactsConfiguration": {
+      "base": "<p>The video artifact configuration object.</p>",
+      "refs": {
+        "ArtifactsConfiguration$Video": "<p>The configuration for the video artifacts.</p>"
+      }
+    },
+    "VideoAttribute": {
+      "base": "<p>Defines the settings for a video tile.</p>",
+      "refs": {
+        "GridViewConfiguration$VideoAttribute": "<p>The attribute settings for the video tiles.</p>"
+      }
+    },
+    "VideoConcatenationConfiguration": {
+      "base": "<p>The configuration object of a video concatenation pipeline.</p>",
+      "refs": {
+        "ArtifactsConcatenationConfiguration$Video": "<p>The configuration for the video artifacts concatenation.</p>"
+      }
+    },
+    "VideoMuxType": {
+      "base": null,
+      "refs": {
+        "VideoArtifactsConfiguration$MuxType": "<p>The MUX type of the video artifact configuration object.</p>"
+      }
+    },
+    "VocabularyFilterMethod": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$VocabularyFilterMethod": "<p>Specifies how to apply a vocabulary filter to a transcript.</p> <p>To replace words with <b>***</b>, choose <code>mask</code>.</p> <p>To delete words, choose <code>remove</code>.</p> <p>To flag words without changing them, choose <code>tag</code>. </p>",
+        "AmazonTranscribeProcessorConfiguration$VocabularyFilterMethod": "<p>The vocabulary filtering method used in your Call Analytics transcription.</p>"
+      }
+    },
+    "VocabularyFilterName": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$VocabularyFilterName": "<p>Specifies the name of the custom vocabulary filter to use when processing a transcription. Note that vocabulary filter names are case sensitive.</p> <p>If the language of the specified custom vocabulary filter doesn't match the language identified in your media, the vocabulary filter is not applied to your transcription.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/vocabulary-filtering.html\">Using vocabulary filtering with unwanted words</a> in the <i>Amazon Transcribe Developer Guide</i>.</p> <p>Length Constraints: Minimum length of 1. Maximum length of 200. </p>",
+        "AmazonTranscribeProcessorConfiguration$VocabularyFilterName": "<p>The name of the custom vocabulary filter that you specified in your Call Analytics request.</p> <p>Length Constraints: Minimum length of 1. Maximum length of 200.</p>"
+      }
+    },
+    "VocabularyFilterNames": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeProcessorConfiguration$VocabularyFilterNames": "<p>The names of the custom vocabulary filter or filters using during transcription.</p>"
+      }
+    },
+    "VocabularyName": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeCallAnalyticsProcessorConfiguration$VocabularyName": "<p>Specifies the name of the custom vocabulary to use when processing a transcription. Note that vocabulary names are case sensitive.</p> <p>If the language of the specified custom vocabulary doesn't match the language identified in your media, the custom vocabulary is not applied to your transcription.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/transcribe/latest/dg/custom-vocabulary.html\">Custom vocabularies</a> in the <i>Amazon Transcribe Developer Guide</i>.</p> <p>Length Constraints: Minimum length of 1. Maximum length of 200. </p>",
+        "AmazonTranscribeProcessorConfiguration$VocabularyName": "<p>The name of the custom vocabulary that you specified in your Call Analytics request.</p> <p>Length Constraints: Minimum length of 1. Maximum length of 200.</p>"
+      }
+    },
+    "VocabularyNames": {
+      "base": null,
+      "refs": {
+        "AmazonTranscribeProcessorConfiguration$VocabularyNames": "<p>The names of the custom vocabulary or vocabularies used during transcription.</p>"
+      }
+    },
+    "VoiceAnalyticsConfigurationStatus": {
+      "base": null,
+      "refs": {
+        "VoiceAnalyticsProcessorConfiguration$SpeakerSearchStatus": "<p>The status of the speaker search task.</p>",
+        "VoiceAnalyticsProcessorConfiguration$VoiceToneAnalysisStatus": "<p>The status of the voice tone analysis task.</p>"
+      }
+    },
+    "VoiceAnalyticsLanguageCode": {
+      "base": null,
+      "refs": {
+        "StartVoiceToneAnalysisTaskRequest$LanguageCode": "<p>The language code.</p>"
+      }
+    },
+    "VoiceAnalyticsProcessorConfiguration": {
+      "base": "<p>The configuration settings for a voice analytics processor.</p>",
+      "refs": {
+        "MediaInsightsPipelineConfigurationElement$VoiceAnalyticsProcessorConfiguration": "<p>The voice analytics configuration settings in a media insights pipeline configuration element.</p>"
+      }
+    },
+    "VoiceEnhancementSinkConfiguration": {
+      "base": "<p>A static structure that contains the configuration data for a <code>VoiceEnhancementSinkConfiguration</code> element.</p>",
+      "refs": {
+        "MediaInsightsPipelineConfigurationElement$VoiceEnhancementSinkConfiguration": "<p>The configuration settings for voice enhancement sink in a media insights pipeline configuration element.</p>"
+      }
+    },
+    "VoiceToneAnalysisTask": {
+      "base": "<p>A representation of an asynchronous request to perform voice tone analysis on a media insights pipeline.</p>",
+      "refs": {
+        "GetVoiceToneAnalysisTaskResponse$VoiceToneAnalysisTask": "<p>The details of the voice tone analysis task.</p>",
+        "StartVoiceToneAnalysisTaskResponse$VoiceToneAnalysisTask": "<p>The details of the voice tone analysis task.</p>"
+      }
+    }
+  }
+}

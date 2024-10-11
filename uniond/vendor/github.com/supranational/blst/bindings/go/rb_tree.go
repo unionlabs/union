@@ -69,7 +69,7 @@ func (tree *rbTree) insert(data *[]byte) bool {
     /* re-balance |tree| */
     for k >= 2 /* && IS_RED(y = nodes[k-1]) */ {
         y := nodes[k-1]
-        if y.colour == black  {
+        if y.colour == black  { //nolint:gosimple
             break
         }
 
@@ -77,7 +77,7 @@ func (tree *rbTree) insert(data *[]byte) bool {
         x := nodes[k-2]         /* |z|'s grandparent    */
         s := x.leafs[ydir^1]    /* |z|'s uncle          */
 
-        if s != nil && s.colour == red {
+        if s != nil && s.colour == red { //nolint:gosimple,revive
             x.colour = red
             y.colour = black
             s.colour = black

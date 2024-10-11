@@ -1,0 +1,11 @@
+---
+Language: Proto
+BasedOnStyle: Google
+IndentWidth: 2
+ColumnLimit: 0
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+SpacesInSquareBrackets: true
+ReflowComments:  true
+SortIncludes:    true
+SortUsingDeclarations: true

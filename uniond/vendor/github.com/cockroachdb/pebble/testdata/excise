@@ -1,0 +1,339 @@
+
+build ext0 format=pebblev2
+set a 1
+set l 2
+----
+
+ingest ext0
+----
+
+lsm
+----
+6:
+  000004:[a#10,SET-l#10,SET]
+
+
+batch
+set d foo
+set f bar
+----
+
+flush
+----
+
+lsm
+----
+0.0:
+  000006:[d#11,SET-f#12,SET]
+6:
+  000004:[a#10,SET-l#10,SET]
+
+excise c k
+----
+would excise 2 files, use ingest-and-excise to excise.
+  deleted:       L0 000006
+  deleted:       L6 000004
+  added:         L6 000007:[a#10,SET-a#10,SET] seqnums:[10-10] points:[a#10,SET-a#10,SET]
+  added:         L6 000008:[l#10,SET-l#10,SET] seqnums:[10-10] points:[l#10,SET-l#10,SET]
+
+
+excise a e
+----
+would excise 2 files, use ingest-and-excise to excise.
+  deleted:       L0 000006
+  deleted:       L6 000004
+  added:         L0 000009:[f#12,SET-f#12,SET] seqnums:[11-12] points:[f#12,SET-f#12,SET]
+  added:         L6 000010:[l#10,SET-l#10,SET] seqnums:[10-10] points:[l#10,SET-l#10,SET]
+
+excise e z
+----
+would excise 2 files, use ingest-and-excise to excise.
+  deleted:       L0 000006
+  deleted:       L6 000004
+  added:         L0 000011:[d#11,SET-d#11,SET] seqnums:[11-12] points:[d#11,SET-d#11,SET]
+  added:         L6 000012:[a#10,SET-a#10,SET] seqnums:[10-10] points:[a#10,SET-a#10,SET]
+
+excise f l
+----
+would excise 2 files, use ingest-and-excise to excise.
+  deleted:       L0 000006
+  deleted:       L6 000004
+  added:         L0 000013:[d#11,SET-d#11,SET] seqnums:[11-12] points:[d#11,SET-d#11,SET]
+  added:         L6 000014:[a#10,SET-a#10,SET] seqnums:[10-10] points:[a#10,SET-a#10,SET]
+  added:         L6 000015:[l#10,SET-l#10,SET] seqnums:[10-10] points:[l#10,SET-l#10,SET]
+
+excise f ll
+----
+would excise 2 files, use ingest-and-excise to excise.
+  deleted:       L0 000006
+  deleted:       L6 000004
+  added:         L0 000016:[d#11,SET-d#11,SET] seqnums:[11-12] points:[d#11,SET-d#11,SET]
+  added:         L6 000017:[a#10,SET-a#10,SET] seqnums:[10-10] points:[a#10,SET-a#10,SET]
+
+excise p q
+----
+would excise 0 files, use ingest-and-excise to excise.
+
+lsm
+----
+0.0:
+  000006:[d#11,SET-f#12,SET]
+6:
+  000004:[a#10,SET-l#10,SET]
+
+iter
+first
+next
+next
+next
+next
+----
+a: (1, .)
+d: (foo, .)
+f: (bar, .)
+l: (2, .)
+.
+
+build ext1 format=pebblev2
+set d foo3
+set e bar2
+----
+
+ingest-and-excise ext1 excise=c-k
+----
+
+lsm
+----
+6:
+  000019:[a#10,SET-a#10,SET]
+  000018:[d#13,SET-e#13,SET]
+  000020:[l#10,SET-l#10,SET]
+
+iter
+first
+next
+next
+next
+next
+----
+a: (1, .)
+d: (foo3, .)
+e: (bar2, .)
+l: (2, .)
+.
+
+# More complex cases, with the truncation of file bounds happening at rangedel
+# and rangekey bounds.
+
+reset
+----
+
+build ext3 format=pebblev2
+range-key-set c f @4 foobar
+----
+
+ingest ext3
+----
+
+build ext4 format=pebblev2
+set b bar
+del-range g i
+----
+
+ingest ext4
+----
+
+lsm
+----
+0.0:
+  000005:[b#11,SET-i#inf,RANGEDEL]
+6:
+  000004:[c#10,RANGEKEYSET-f#inf,RANGEKEYSET]
+
+excise f g
+----
+would excise 1 files, use ingest-and-excise to excise.
+  deleted:       L0 000005
+  added:         L0 000006:[b#11,SET-b#11,SET] seqnums:[11-11] points:[b#11,SET-b#11,SET]
+  added:         L0 000007:[g#11,RANGEDEL-i#inf,RANGEDEL] seqnums:[11-11] points:[g#11,RANGEDEL-i#inf,RANGEDEL]
+
+excise b c
+----
+would excise 1 files, use ingest-and-excise to excise.
+  deleted:       L0 000005
+  added:         L0 000008:[g#11,RANGEDEL-i#inf,RANGEDEL] seqnums:[11-11] points:[g#11,RANGEDEL-i#inf,RANGEDEL]
+
+excise i j
+----
+would excise 0 files, use ingest-and-excise to excise.
+
+# Excise mid range key. This will not happen in practice, but excise()
+# supports it.
+
+excise c d
+----
+would excise 2 files, use ingest-and-excise to excise.
+  deleted:       L0 000005
+  deleted:       L6 000004
+  added:         L0 000009:[b#11,SET-b#11,SET] seqnums:[11-11] points:[b#11,SET-b#11,SET]
+  added:         L0 000010:[g#11,RANGEDEL-i#inf,RANGEDEL] seqnums:[11-11] points:[g#11,RANGEDEL-i#inf,RANGEDEL]
+  added:         L6 000011:[d#10,RANGEKEYSET-f#inf,RANGEKEYSET] seqnums:[10-10] ranges:[d#10,RANGEKEYSET-f#inf,RANGEKEYSET]
+
+reset
+----
+
+# Create an sstable with a range key set.
+batch
+set a a
+set b b
+set d d
+range-key-set e ee @1 foo
+----
+
+flush
+----
+
+lsm
+----
+0.0:
+  000005:[a#10,SET-ee#inf,RANGEKEYSET]
+
+build ext2
+set z z
+----
+
+ingest-and-excise ext2 excise=b-c
+----
+
+lsm
+----
+0.0:
+  000007:[a#10,SET-a#10,SET]
+  000008:[d#12,SET-ee#inf,RANGEKEYSET]
+6:
+  000006:[z#14,SET-z#14,SET]
+
+# Regression test for https://github.com/cockroachdb/pebble/issues/2947.
+reset
+----
+
+batch
+set a a
+set b b
+set c c
+set d d
+set e e
+set f f
+set g g
+set h h
+set i i
+set j j
+----
+
+flush
+----
+
+lsm
+----
+0.0:
+  000005:[a#10,SET-j#19,SET]
+
+build ext2
+set z z
+----
+
+ingest-and-excise ext2 excise=d-e
+----
+
+lsm
+----
+0.0:
+  000007:[a#10,SET-c#12,SET]
+  000008:[e#14,SET-j#19,SET]
+6:
+  000006:[z#20,SET-z#20,SET]
+
+build ext3
+set zz zz
+----
+
+ingest-and-excise ext3 excise=g-h
+----
+
+# 7, 10, 11 should have the same file backing struct.
+lsm
+----
+0.0:
+  000007:[a#10,SET-c#12,SET]
+  000010:[e#14,SET-f#15,SET]
+  000011:[h#17,SET-j#19,SET]
+6:
+  000006:[z#20,SET-z#20,SET]
+  000009:[zz#21,SET-zz#21,SET]
+
+confirm-backing 7 10 11
+----
+file backings are the same
+
+reopen
+----
+
+# 7, 10, 11 should still have the same file backing struct even after manifest
+# replay.
+lsm
+----
+0.0:
+  000007:[a#10,SET-c#12,SET]
+  000010:[e#14,SET-f#15,SET]
+  000011:[h#17,SET-j#19,SET]
+6:
+  000006:[z#20,SET-z#20,SET]
+  000009:[zz#21,SET-zz#21,SET]
+
+confirm-backing 7 10 11
+----
+file backings are the same
+
+# Excise one boundary, the file backing should still be set.
+reset
+----
+
+batch
+set a a
+set b b
+set c c
+set d d
+set e e
+----
+
+flush
+----
+
+lsm
+----
+0.0:
+  000005:[a#10,SET-e#14,SET]
+
+build ext2
+set z z
+----
+
+ingest-and-excise ext2 excise=d-f
+----
+
+lsm
+----
+0.0:
+  000007:[a#10,SET-c#12,SET]
+6:
+  000006:[z#15,SET-z#15,SET]
+
+reopen
+----
+
+lsm
+----
+0.0:
+  000007:[a#10,SET-c#12,SET]
+6:
+  000006:[z#15,SET-z#15,SET]

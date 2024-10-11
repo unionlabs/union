@@ -1,0 +1,15 @@
+-- go.mod --
+module example.com/private
+
+go 1.12
+-- p/p.go --
+package p
+
+import "example.com/private/internal/i"
+
+type P i.I
+
+-- internal/i/i.go --
+package i
+
+type I interface{}

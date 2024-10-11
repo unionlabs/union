@@ -1,0 +1,13 @@
+load("@prysm//tools/go:def.bzl", "go_test")
+
+go_test(
+    name = "go_default_test",
+    size = "medium",
+    timeout = "short",
+    srcs = ["shuffle_test.go"],
+    data = glob(["*.yaml"]) + [
+        "@consensus_spec_tests_mainnet//:test_data",
+    ],
+    tags = ["spectest"],
+    deps = ["//testing/spectest/shared/phase0/shuffling/core/shuffle:go_default_library"],
+)

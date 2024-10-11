@@ -1,0 +1,36 @@
+# Use a debian version that is old enough to lead to a low
+# glibc requirement of builds.
+# Debian 11 "Bullseye" has long-term support until August 31st, 2026
+FROM --platform=linux/amd64 debian:11-slim
+
+RUN apt update -y \
+  && apt install -y gcc make gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu wget
+
+# GET FROM https://github.com/rust-lang/docker-rust-nightly
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
+
+RUN wget --no-verbose "https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init" \
+  && chmod +x rustup-init \
+  && ./rustup-init -y --no-modify-path --profile minimal --default-toolchain 1.77.0 \
+  && rm rustup-init \
+  && chmod -R a+w $RUSTUP_HOME $CARGO_HOME \
+  && rustup --version \
+  && cargo --version \
+  && rustc --version \
+  && chmod -R 777 /usr/local/cargo \
+  && rustup target add aarch64-unknown-linux-gnu
+
+## COPY BUILD SCRIPTS
+
+WORKDIR /code
+
+COPY guest/*.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/*.sh
+
+RUN mkdir /.cargo
+RUN chmod +rx /.cargo
+COPY guest/cargo-config /.cargo/config
+
+CMD ["bash", "-c", "echo 'Argument missing. Pass one build script (e.g. build_linux.sh) to docker run' && exit 1"]

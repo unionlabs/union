@@ -1,0 +1,168 @@
+% ---------------------------------------------------------------
+%
+% $Id: latex8.sty,v 1.2 1995/09/15 15:31:13 ienne Exp $
+%
+% by Paolo.Ienne@di.epfl.ch
+%
+% ---------------------------------------------------------------
+%
+% no guarantee is given that the format corresponds perfectly to
+% IEEE 8.5" x 11" Proceedings, but most features should be ok.
+%
+% ---------------------------------------------------------------
+% with LaTeX2e:
+% =============
+%
+% use as
+%   \documentclass[times,10pt,twocolumn]{article}
+%   \usepackage{latex8}
+%   \usepackage{times}
+%
+% ---------------------------------------------------------------
+
+% with LaTeX 2.09:
+% ================
+%
+% use as
+%   \documentstyle[times,art10,twocolumn,latex8]{article}
+%
+% ---------------------------------------------------------------
+% with both versions:
+% ===================
+%
+% specify \pagestyle{empty} to omit page numbers in the final
+% version
+%
+% specify references as
+%   \bibliographystyle{latex8}
+%   \bibliography{...your files...}
+%
+% use Section{} and SubSection{} instead of standard section{}
+%    and subsection{} to obtain headings in the form
+%    "1.3. My heading"
+%
+% ---------------------------------------------------------------
+
+\typeout{IEEE 8.5 x 11-Inch Proceedings Style `latex8.sty'.}
+
+% ten point helvetica bold required for captions
+% in some sites the name of the helvetica bold font may differ,
+% change the name here:
+\font\tenhv  = phvb at 10pt
+%\font\tenhv  = phvb7t at 10pt
+
+% eleven point times bold required for second-order headings
+% \font\elvbf  = cmbx10 scaled 1100
+\font\elvbf  = ptmb scaled 1100
+
+% set dimensions of columns, gap between columns, and paragraph indent
+\setlength{\textheight}{8.875in}
+\setlength{\textwidth}{6.875in}
+\setlength{\columnsep}{0.3125in}
+\setlength{\topmargin}{0in}
+\setlength{\headheight}{0in}
+\setlength{\headsep}{0in}
+\setlength{\parindent}{1pc}
+\setlength{\oddsidemargin}{-.304in}
+\setlength{\evensidemargin}{-.304in}
+
+% memento from size10.clo
+% \normalsize{\@setfontsize\normalsize\@xpt\@xiipt}
+% \small{\@setfontsize\small\@ixpt{11}}
+% \footnotesize{\@setfontsize\footnotesize\@viiipt{9.5}}
+% \scriptsize{\@setfontsize\scriptsize\@viipt\@viiipt}
+% \tiny{\@setfontsize\tiny\@vpt\@vipt}
+% \large{\@setfontsize\large\@xiipt{14}}
+% \Large{\@setfontsize\Large\@xivpt{18}}
+% \LARGE{\@setfontsize\LARGE\@xviipt{22}}
+% \huge{\@setfontsize\huge\@xxpt{25}}
+% \Huge{\@setfontsize\Huge\@xxvpt{30}}
+
+\def\@maketitle
+   {
+   \newpage
+   \null
+   \vskip .375in
+   \begin{center}
+      {\Large \bf \@title \par}
+      % additional two empty lines at the end of the title
+      \vspace*{24pt}
+      {
+      \large
+      \lineskip .5em
+      \begin{tabular}[t]{c}
+         \@author
+      \end{tabular}
+      \par
+      }
+      % additional small space at the end of the author name
+      \vskip .5em
+      {
+       \large
+      \begin{tabular}[t]{c}
+         \@affiliation
+      \end{tabular}
+      \par
+      \ifx \@empty \@email
+      \else
+         \begin{tabular}{r@{~}l}
+            E-mail: & {\tt \@email}
+         \end{tabular}
+         \par
+      \fi
+      }
+      % additional empty line at the end of the title block
+      \vspace*{12pt}
+   \end{center}
+   }
+
+\def\abstract
+   {%
+   \centerline{\large\bf Abstract}%
+   \vspace*{12pt}%
+   \it%
+   }
+
+\def\endabstract
+   {
+   % additional empty line at the end of the abstract
+   \vspace*{12pt}
+   }
+
+\def\affiliation#1{\gdef\@affiliation{#1}} \gdef\@affiliation{}
+
+\def\email#1{\gdef\@email{#1}}
+\gdef\@email{}
+
+\newlength{\@ctmp}
+\newlength{\@figindent}
+\setlength{\@figindent}{1pc}
+
+\long\def\@makecaption#1#2{
+   \vskip 10pt
+   \setbox\@tempboxa\hbox{\tenhv\noindent #1.~#2}
+   \setlength{\@ctmp}{\hsize}
+   \addtolength{\@ctmp}{-\@figindent}\addtolength{\@ctmp}{-\@figindent}
+   % IF longer than one indented paragraph line
+   \ifdim \wd\@tempboxa >\@ctmp
+      % THEN set as an indented paragraph
+      \begin{list}{}{\leftmargin\@figindent \rightmargin\leftmargin}
+         \item[]\tenhv #1.~#2\par
+      \end{list}
+   \else
+      % ELSE center
+      \hbox to\hsize{\hfil\box\@tempboxa\hfil}
+   \fi}
+
+% correct heading spacing and type
+\def\section{\@startsection {section}{1}{\z@}
+   {14pt plus 2pt minus 2pt}{14pt plus 2pt minus 2pt} {\large\bf}}
+\def\subsection{\@startsection {subsection}{2}{\z@}
+   {13pt plus 2pt minus 2pt}{13pt plus 2pt minus 2pt} {\elvbf}}
+
+% add the period after section numbers
+\newcommand{\Section}[1]{\section{\hskip -1em.~#1}}
+\newcommand{\SubSection}[1]{\subsection{\hskip -1em.~#1}}
+
+% end of file latex8.sty
+% ---------------------------------------------------------------

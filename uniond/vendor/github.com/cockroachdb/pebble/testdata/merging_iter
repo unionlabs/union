@@ -1,0 +1,592 @@
+# Format for define command:
+# Levels are ordered from higher to lower, and each new level starts with an L
+# Each level is defined using an even number of lines where every pair of lines represents
+# a file. The files within a level are ordered from smaller to larger keys.
+# Each file is defined using: the first line specifies the smallest and largest internal
+# keys and the second line the point key-value pairs in the sstable in order. The rangedel
+# key-value pairs should also be in increasing order relative to the other rangedel pairs.
+# The largest file key can take the form of <userkey>.RANGEDEL.72057594037927935, which
+# represents the range deletion sentinel.
+
+# The rangedel should not delete any points in any sstable.  The two files were involved in a
+# compaction and then the second file got moved to a lower level.
+define
+L
+a.SET.30 e.RANGEDEL.72057594037927935
+a.SET.30:30 c.SET.27:27 a.RANGEDEL.8:f
+L
+e.SET.10 g.SET.20
+e.SET.10:10 g.SET.20:20 e.RANGEDEL.8:f
+----
+1:
+  000000:[a#30,SET-e#inf,RANGEDEL]
+2:
+  000001:[e#10,SET-g#20,SET]
+
+# isNextEntryDeleted() should not allow the rangedel to act on the points in the lower sstable
+# that are after it.
+iter
+first
+next
+next
+next
+next
+stats
+reset-stats
+stats
+----
+a#30,1:30
+c#27,1:27
+e#10,1:10
+g#20,1:20
+.
+{BlockBytes:116 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:5 ValueBytes:8 PointCount:5 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+{BlockBytes:0 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+
+# seekGE() should not allow the rangedel to act on points in the lower sstable that are after it.
+iter
+seek-ge d
+next
+next
+----
+e#10,1:10
+g#20,1:20
+.
+
+# isPrevEntryDeleted() should not allow the rangedel to act on the points in the lower sstable
+# that are after it.
+iter
+last
+prev
+prev
+prev
+----
+g#20,1:20
+e#10,1:10
+c#27,1:27
+a#30,1:30
+
+# seekLT() should not allow the rangedel to act on points in the lower sstable that are after it.
+iter
+seek-lt h
+prev
+prev
+prev
+----
+g#20,1:20
+e#10,1:10
+c#27,1:27
+a#30,1:30
+
+# We keep the rangedel alive by having a point in the higher level past the first point in the
+# lower level. This rangedel hides that first point in the lower level but we should not seek to
+# h and hide the second point.
+define
+L
+a.SET.15 f.SET.16
+a.SET.15:15 c.SET.13:13 f.SET.16:16 a.RANGEDEL.12:h
+L
+e.SET.10 g.SET.15
+e.SET.10:10 g.SET.15:15
+----
+1:
+  000002:[a#15,SET-f#16,SET]
+2:
+  000003:[e#10,SET-g#15,SET]
+
+iter
+first
+next
+next
+next
+----
+a#15,1:15
+c#13,1:13
+f#16,1:16
+g#15,1:15
+
+iter
+seek-ge d
+next
+----
+f#16,1:16
+g#15,1:15
+
+iter
+last
+prev
+prev
+prev
+----
+g#15,1:15
+f#16,1:16
+c#13,1:13
+a#15,1:15
+
+# The rangedel should not delete any points in any sstable.  The two files were involved in an
+# compaction and then the first file got moved to a lower level.
+define
+L
+c.SET.30 f.RANGEDEL.0
+c.SET.30:30 d.SET.27:27 a.RANGEDEL.8:f
+L
+a.SET.10 c.RANGEDEL.72057594037927935
+a.SET.10:10 b.SET.12:12 a.RANGEDEL.8:f
+----
+1:
+  000004:[c#30,SET-f#0,RANGEDEL]
+2:
+  000005:[a#10,SET-c#inf,RANGEDEL]
+
+# isNextEntryDeleted() should not allow the rangedel to act on the points in the lower sstable
+# that are before it.
+iter
+first
+next
+next
+next
+----
+a#10,1:10
+b#12,1:12
+c#30,1:30
+d#27,1:27
+
+# seekGE() should not allow the rangedel to act on points in the lower sstable that are before it.
+iter
+seek-ge a
+next
+next
+next
+----
+a#10,1:10
+b#12,1:12
+c#30,1:30
+d#27,1:27
+
+# isPrevEntryDeleted() should not allow the rangedel to act on the points in the lower sstable
+# that are before it.
+iter
+last
+prev
+prev
+prev
+----
+d#27,1:27
+c#30,1:30
+b#12,1:12
+a#10,1:10
+
+# seekLT() should not allow the rangedel to act on points in the lower sstable that are before it.
+iter
+seek-lt e
+prev
+prev
+prev
+----
+d#27,1:27
+c#30,1:30
+b#12,1:12
+a#10,1:10
+
+# We keep the rangedel alive in prev iteration by having a point in the higher level before
+# the last point in the lower level. This rangedel hides that first point in the lower level
+# but we should not seek to a and hide the second point.
+define
+L
+c.SET.15 g.SET.16
+c.SET.15:15 f.SET.13:13 g.SET.16:16 a.RANGEDEL.12:h
+L
+b.SET.14 d.SET.10
+b.SET.14:14 d.SET.10:10
+----
+1:
+  000006:[c#15,SET-g#16,SET]
+2:
+  000007:[b#14,SET-d#10,SET]
+
+iter
+last
+prev
+prev
+prev
+----
+g#16,1:16
+f#13,1:13
+c#15,1:15
+b#14,1:14
+
+iter
+seek-lt f
+prev
+----
+c#15,1:15
+b#14,1:14
+
+# The rangedel should not delete anything.
+define
+L
+a.SET.30 e.RANGEDEL.72057594037927935
+a.SET.30:30 c.SET.27:27 a.RANGEDEL.8:g
+L
+e.SET.10 g.SET.20
+e.SET.10:10 g.SET.20:20 e.RANGEDEL.8:g
+----
+1:
+  000008:[a#30,SET-e#inf,RANGEDEL]
+2:
+  000009:[e#10,SET-g#20,SET]
+
+# When doing seek-lt f, the rangedel should not apply to e in the lower sstable. This is the
+# reason we cannot just use largest user key to constrain the rangedel and we need to
+# know whether it is the sentinel key.
+iter
+seek-lt f
+prev
+prev
+----
+e#10,1:10
+c#27,1:27
+a#30,1:30
+
+iter
+seek-ge e
+next
+----
+e#10,1:10
+g#20,1:20
+
+iter
+first
+seek-ge e
+next
+----
+a#30,1:30
+e#10,1:10
+g#20,1:20
+
+iter
+first
+next
+next
+next
+next
+----
+a#30,1:30
+c#27,1:27
+e#10,1:10
+g#20,1:20
+.
+
+# Verify that switching directions respects lower/upper bound.
+
+define
+L
+a.SET.9 d.SET.6
+a.SET.9:9 b.SET.8:8 c.SET.7:7 d.SET.6:6
+----
+1:
+  000010:[a#9,SET-d#6,SET]
+
+# Verify the lower bound is respected in switchToMinHeap() when the
+# heap is empty.
+
+iter
+set-bounds lower=c
+seek-ge c
+prev
+prev
+next
+----
+c#7,1:7
+.
+.
+c#7,1:7
+
+# Verify the upper bound is respected in switchToMaxHeap() when the
+# heap is empty.
+
+iter
+set-bounds upper=c
+seek-lt c
+next
+next
+prev
+----
+b#8,1:8
+.
+.
+b#8,1:8
+
+# Verify the lower bound is respected in switchToMinHeap() when the
+# heap is not empty.
+
+define
+L
+a.SET.9 d.SET.6
+a.SET.9:9 b.SET.8:8 c.SET.7:7 d.SET.6:6
+L
+c.SET.5 f.SET.2
+c.SET.5:5 d.SET.4:4 e.SET.3:3 f.SET.2:2
+----
+1:
+  000011:[a#9,SET-d#6,SET]
+2:
+  000012:[c#5,SET-f#2,SET]
+
+iter
+set-bounds lower=d
+seek-ge d
+prev
+prev
+next
+next
+----
+d#6,1:6
+.
+.
+d#6,1:6
+d#4,1:4
+
+# Check the behavior of reverse prefix iteration.
+
+iter
+seek-prefix-ge d
+prev
+next
+----
+d#6,1:6
+err=pebble: unsupported reverse prefix iteration
+err=pebble: unsupported reverse prefix iteration
+
+# Verify the upper bound is respected in switchToMaxHeap() when the
+# heap is not empty.
+
+define
+L
+c.SET.9 f.SET.6
+c.SET.9:9 d.SET.8:8 e.SET.7:7 f.SET.6:6
+L
+a.SET.5 d.SET.2
+a.SET.5:5 b.SET.4:4 c.SET.3:3 d.SET.2:2
+----
+1:
+  000013:[c#9,SET-f#6,SET]
+2:
+  000014:[a#5,SET-d#2,SET]
+
+iter
+set-bounds upper=d
+seek-lt d
+next
+next
+prev
+prev
+----
+c#3,1:3
+.
+.
+c#3,1:3
+c#9,1:9
+
+# Verify that the tombstone for the current level is updated correctly
+# when we advance the iterator on the level and step into a new
+# sstable. In the scenario below, the keys "c" and "d" should not show
+# up in the iteration output.
+
+define
+L
+a.SET.2 a.SET.2
+a.SET.2:2
+c.RANGEDEL.4 e.RANGEDEL.72057594037927935
+c.RANGEDEL.4:e
+f.SET.3 f.SET.3
+f.SET.3:3
+L
+a.SET.0 f.SET.0
+a.SET.0:1 b.SET.0:1 c.SET.0:1 d.SET.0:1 e.SET.0:1 f.SET.0:1
+----
+1:
+  000015:[a#2,SET-a#2,SET]
+  000016:[c#4,RANGEDEL-e#inf,RANGEDEL]
+  000017:[f#3,SET-f#3,SET]
+2:
+  000018:[a#0,SET-f#0,SET]
+
+iter
+first
+next
+next
+next
+next
+next
+next
+next
+----
+a#2,1:2
+a#0,1:1
+b#0,1:1
+e#0,1:1
+f#3,1:3
+f#0,1:1
+.
+.
+
+iter
+last
+prev
+prev
+prev
+prev
+prev
+prev
+prev
+----
+f#0,1:1
+f#3,1:3
+e#0,1:1
+b#0,1:1
+a#0,1:1
+a#2,1:2
+.
+.
+
+# Verify the upper bound is respected when switching directions at a RANGEDEL
+# boundary.
+
+define
+L
+kq.RANGEDEL.100 p.RANGEDEL.72057594037927935
+kq.RANGEDEL.100:p
+L
+b.SET.90 o.SET.65
+b.SET.90:90 cat.SET.70:70 g.SET.80:80 o.SET.65:65
+L
+a.SET.41 z.RANGEDEL.72057594037927935
+a.SET.41:41 koujdlp.MERGE.37:37 ok.SET.46:46 v.SET.43:43 v.RANGEDEL.19:z
+----
+1:
+  000019:[kq#100,RANGEDEL-p#inf,RANGEDEL]
+2:
+  000020:[b#90,SET-o#65,SET]
+3:
+  000021:[a#41,SET-z#inf,RANGEDEL]
+
+iter
+set-bounds upper=n
+seek-ge krgywquurww
+prev
+----
+.
+koujdlp#37,2:37
+
+# Verify the lower bound is respected when switching directions at a RANGEDEL
+# boundary.
+
+define
+L
+a.SET.103 jyk.RANGEDEL.72057594037927935
+a.SET.103:103 imd.SET.793:793 iwoeionch.SET.792:792 c.RANGEDEL.101:jyk
+L
+b.SET.90 o.SET.65
+b.SET.90:90 cat.SET.70:70 g.SET.80:80 o.SET.65:65
+L
+all.SET.0 zk.SET.722
+all.SET.0:0 c.SET.0:0 zk.SET.722:722
+----
+1:
+  000022:[a#103,SET-jyk#inf,RANGEDEL]
+2:
+  000023:[b#90,SET-o#65,SET]
+3:
+  000024:[all#0,SET-zk#722,SET]
+
+iter
+set-bounds lower=cz upper=jd
+seek-lt jd
+next
+----
+iwoeionch#792,1:792
+.
+
+# Exercise the early stopping behavior for prefix iteration when encountering
+# range deletion tombstones. Keys a, d are not deleted, while the rest are.
+define
+L
+a.SET.10 d.SET.10
+a.SET.10:a10 b.SET.10:b10 c.SET.10:c10 d.SET.10:d10 b.RANGEDEL.12:d
+----
+1:
+  000025:[a#10,SET-d#10,SET]
+
+iter
+first
+next
+next
+----
+a#10,1:a10
+d#10,1:d10
+.
+
+# The seek to c finds d since iteration cannot stop at c as it matches the
+# prefix, and when it steps to d, it finds d is not deleted. Note that
+# mergingIter is an InternalIterator and does not need to guarantee prefix
+# match -- that is job of the higher-level Iterator. So "seek-prefix-ge c" is
+# allowed to return d.
+iter
+seek-prefix-ge a false
+seek-prefix-ge aa true
+seek-prefix-ge b true
+seek-prefix-ge c true
+seek-prefix-ge d true
+----
+a#10,1:a10
+.
+.
+d#10,1:d10
+d#10,1:d10
+
+iter
+seek-prefix-ge a false
+next
+seek-prefix-ge b false
+seek-prefix-ge d true
+next
+----
+a#10,1:a10
+.
+.
+d#10,1:d10
+.
+
+# Create a sstable which has a range tombstone that covers 4 points in the
+# same sstable. This tests the PointsCoveredByRangeTombstones and PointCount
+# stats.
+define
+L
+a.SET.30 g.RANGEDEL.72057594037927935
+a.SET.30:30 a.RANGEDEL.20:g b.SET.19:19 c.SET.18:18 d.SET.17:17 e.SET.16:16 f.SET.21:21
+----
+1:
+  000026:[a#30,SET-g#inf,RANGEDEL]
+
+iter
+first
+stats
+reset-stats
+stats
+next
+stats
+next
+stats
+next
+stats
+----
+a#30,1:30
+{BlockBytes:97 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:1 ValueBytes:2 PointCount:1 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+{BlockBytes:0 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+f#21,1:21
+{BlockBytes:0 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:5 ValueBytes:10 PointCount:5 PointsCoveredByRangeTombstones:4 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+.
+{BlockBytes:0 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:6 ValueBytes:10 PointCount:6 PointsCoveredByRangeTombstones:4 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+.
+{BlockBytes:0 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:6 ValueBytes:10 PointCount:6 PointsCoveredByRangeTombstones:4 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}

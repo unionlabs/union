@@ -1,0 +1,29 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+
+package(default_visibility = ["//visibility:public"])
+
+proto_library(
+    name = "pathenum_proto",
+    srcs = ["path_enum.proto"],
+)
+
+go_proto_library(
+    name = "pathenum_go_proto",
+    compilers = ["//:go_apiv2"],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/v2/examples/internal/proto/pathenum",
+    proto = ":pathenum_proto",
+)
+
+go_library(
+    name = "pathenum",
+    embed = [":pathenum_go_proto"],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/v2/examples/internal/proto/pathenum",
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":pathenum",
+    visibility = ["//examples:__subpackages__"],
+)

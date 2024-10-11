@@ -1,0 +1,52 @@
+echo echos the value provided by the user as a proto JSON object with populated with the provided fields and positional arguments
+
+Usage:
+  test echo [pos1] [pos2] [pos3...] [flags]
+
+Aliases:
+  echo, e
+
+Examples:
+echo 1 abc {}
+
+Flags:
+      --a-bool                                                               
+      --a-coin cosmos.base.v1beta1.Coin                                      some random coin
+      --a-consensus-address account address or key name                      
+      --a-message testpb.AMessage (json)                                     
+      --a-validator-address account address or key name                      
+      --an-address account address or key name                               
+      --an-enum Enum (unspecified | one | two | five | neg-three)             (default unspecified)
+      --bools bools                                                           (default [])
+      --bz binary                                                            some bytes
+      --coins cosmos.base.v1beta1.Coin (repeated)                            
+      --deprecated-field string                                               (DEPRECATED: don't use this)
+      --duration duration                                                    some random duration
+      --durations duration (repeated)                                        
+      --enums Enum (unspecified | one | two | five | neg-three) (repeated)   
+      --grpc-addr string                                                     the gRPC endpoint to use for this chain
+      --grpc-insecure                                                        allow gRPC over insecure channels, if not the server must use TLS
+      --height int                                                           Use a specific height to query state at (this can error if the node is pruning state)
+  -h, --help                                                                 help for echo
+      --i32 int32                                                            some random int32
+      --i64 int                                                              
+      --map-string-coin map[string]cosmos.base.v1beta1.Coin                  some map of string to coin
+      --map-string-string stringToString                                     some map of string to string (default [])
+      --map-string-uint32 stringToUint32                                     some map of string to int32
+      --no-indent                                                            Do not indent JSON output
+      --node string                                                          <host>:<port> to CometBFT RPC interface for this chain (default "tcp://localhost:26657")
+  -o, --output string                                                        Output format (text|json) (default "text")
+      --page-count-total                                                     
+      --page-key binary                                                      
+      --page-limit uint                                                      
+      --page-offset uint                                                     
+      --page-reverse                                                         
+  -s, --shorthand-deprecated-field string                                     (DEPRECATED: bad idea)
+      --some-messages testpb.AMessage (json) (repeated)                      
+      --str string                                                           
+      --strings strings                                                      
+      --timestamp timestamp (RFC 3339)                                       
+      --u64 uint                                                             some random uint64
+  -u, --uint32 uint32                                                        some random uint32
+      --uints uints                                                           (default [])
+  -v, --version                                                              version for echo

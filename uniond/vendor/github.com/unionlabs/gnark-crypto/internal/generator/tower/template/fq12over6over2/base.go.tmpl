@@ -1,0 +1,18 @@
+{{ define "base" }}
+
+{{ $TypeTitle := print "E" .TotalDegree}}
+func (z *{{$TypeTitle}}) Select(cond int, caseZ *{{$TypeTitle}}, caseNz *{{$TypeTitle}}) *{{$TypeTitle}}{
+	//Might be able to save a nanosecond or two by an aggregate implementation
+	{{range $i := interval 0 .RecursionDegree}}{{$ii := print $.BaseElementName $i}}
+	z.{{$ii}}.Select(cond, &caseZ.{{$ii}}, &caseNz.{{$ii}}){{end}}
+
+	return z
+}
+
+func (z *{{$TypeTitle}}) Div(x *{{$TypeTitle}}, y *{{$TypeTitle}}) *{{$TypeTitle}} {
+	var r {{$TypeTitle}}
+	r.Inverse(y).Mul(x, &r)
+	return z.Set(&r)
+}
+
+{{ end }}

@@ -1,0 +1,59 @@
+sstable check
+../sstable/testdata/h.sst
+----
+h.sst
+
+sstable check
+testdata/out-of-order.sst
+----
+out-of-order.sst
+WARNING: OUT OF ORDER KEYS!
+    c#0,SET >= b#0,SET
+
+sstable check
+--key=%x
+testdata/out-of-order.sst
+----
+out-of-order.sst
+WARNING: OUT OF ORDER KEYS!
+    63#0,SET >= 62#0,SET
+
+sstable check
+--key=pretty
+testdata/out-of-order.sst
+----
+out-of-order.sst
+WARNING: OUT OF ORDER KEYS!
+    c#0,SET >= b#0,SET
+
+sstable check
+--key=pretty:test-comparer
+testdata/out-of-order.sst
+----
+out-of-order.sst
+WARNING: OUT OF ORDER KEYS!
+    test formatter: c#0,SET >= test formatter: b#0,SET
+
+sstable check
+--key=null
+testdata/out-of-order.sst
+----
+out-of-order.sst
+WARNING: OUT OF ORDER KEYS!
+
+sstable check
+testdata/corrupted.sst
+----
+corrupted.sst
+pebble/table: invalid table 000000 (checksum mismatch at 0/57)
+
+sstable check
+testdata/bad-magic.sst
+----
+bad-magic.sst
+pebble/table: invalid table (bad magic number: 0xf6cff485b741e288)
+
+sstable check
+./testdata/mixed/000005.sst
+----
+000005.sst

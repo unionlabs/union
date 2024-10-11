@@ -1,0 +1,9 @@
+check_tx "abc"
+check_tx "def=567"
+finalize_block "def=567"
+commit
+finalize_block "hello=world"
+commit
+finalize_block "first=second"
+commit
+info

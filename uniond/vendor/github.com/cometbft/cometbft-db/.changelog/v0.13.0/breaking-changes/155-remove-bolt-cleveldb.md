@@ -1,0 +1,1 @@
+- removed deprecated boltdb and cleveldb ([\#155](https://github.com/cometbft/cometbft-db/pull/155))

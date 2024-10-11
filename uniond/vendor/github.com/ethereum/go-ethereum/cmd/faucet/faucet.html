@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<title>{{.Network}}: Authenticated Faucet</title>
+
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-noty/2.4.1/packaged/jquery.noty.packaged.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.0/moment.min.js"></script>
+
+		<style>
+			.vertical-center {
+				min-height: 100%;
+				min-height: 100vh;
+				display: flex;
+				align-items: center;
+			}
+			.progress {
+				position: relative;
+			}
+			.progress span {
+				position: absolute;
+				display: block;
+				width: 100%;
+				color: white;
+			 }
+			 pre {
+				 padding: 6px;
+				 margin: 0;
+			 }
+		</style>
+	</head>
+
+	<body>
+		<div class="vertical-center">
+			<div class="container">
+				<div class="row" style="margin-bottom: 16px;">
+					<div class="col-lg-12">
+						<h1 style="text-align: center;"><i class="fa fa-bath" aria-hidden="true"></i> {{.Network}} Authenticated Faucet</h1>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-lg-8 col-lg-offset-2">
+						<div class="input-group">
+							<input id="url" name="url" type="text" class="form-control" placeholder="Social network URL containing your Ethereum address..."/>
+							<span class="input-group-btn">
+								<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Give me Ether	<i class="fa fa-caret-down" aria-hidden="true"></i></button>
+				        <ul class="dropdown-menu dropdown-menu-right">{{range $idx, $amount := .Amounts}}
+				          <li><a style="text-align: center;" onclick="tier={{$idx}}; {{if $.Recaptcha}}grecaptcha.execute(){{else}}submit({{$idx}}){{end}}">{{$amount}} / {{index $.Periods $idx}}</a></li>{{end}}
+				        </ul>
+							</span>
+						</div>{{if .Recaptcha}}
+						<div class="g-recaptcha" data-sitekey="{{.Recaptcha}}" data-callback="submit" data-size="invisible"></div>{{end}}
+					</div>
+				</div>
+				<div class="row" style="margin-top: 32px;">
+						<div class="col-lg-6 col-lg-offset-3">
+						<div class="panel panel-small panel-default">
+							<div class="panel-body" style="padding: 0; overflow: auto; max-height: 300px;">
+								<table id="requests" class="table table-condensed" style="margin: 0;"></table>
+							</div>
+							<div class="panel-footer">
+								<table style="width: 100%"><tr>
+									<td style="text-align: center;"><i class="fa fa-rss" aria-hidden="true"></i> <span id="peers"></span> peers</td>
+									<td style="text-align: center;"><i class="fa fa-database" aria-hidden="true"></i> <span id="block"></span> blocks</td>
+									<td style="text-align: center;"><i class="fa fa-heartbeat" aria-hidden="true"></i> <span id="funds"></span> Ethers</td>
+									<td style="text-align: center;"><i class="fa fa-university" aria-hidden="true"></i> <span id="funded"></span> funded</td>
+								</tr></table>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row" style="margin-top: 32px;">
+					<div class="col-lg-12">
+						<h3>How does this work?</h3>
+						<p>This Ether faucet is running on the {{.Network}} network. To prevent malicious actors from exhausting all available funds or accumulating enough Ether to mount long running spam attacks, requests are tied to common 3rd party social network accounts. Anyone having a Twitter or Facebook account may request funds within the permitted limits.</p>
+						<dl class="dl-horizontal">
+							<dt style="width: auto; margin-left: 40px;"><i class="fa fa-twitter" aria-hidden="true" style="font-size: 36px;"></i></dt>
+							<dd style="margin-left: 88px; margin-bottom: 10px;"></i> To request funds via Twitter, make a <a href="https://twitter.com/intent/tweet?text=Requesting%20faucet%20funds%20into%200x0000000000000000000000000000000000000000%20on%20the%20%23{{.Network}}%20%23Ethereum%20test%20network." target="_about:blank">tweet</a> with your Ethereum address pasted into the contents (surrounding text doesn't matter).<br/>Copy-paste the <a href="https://support.twitter.com/articles/80586" target="_about:blank">tweets URL</a> into the above input box and fire away!</dd>
+
+							<dt style="width: auto; margin-left: 40px;"><i class="fa fa-facebook" aria-hidden="true" style="font-size: 36px;"></i></dt>
+							<dd style="margin-left: 88px; margin-bottom: 10px;"></i> To request funds via Facebook, publish a new <strong>public</strong> post with your Ethereum address embedded into the content (surrounding text doesn't matter).<br/>Copy-paste the <a href="https://www.facebook.com/help/community/question/?id=282662498552845" target="_about:blank">posts URL</a> into the above input box and fire away!</dd>
+
+							{{if .NoAuth}}
+								<dt class="text-danger" style="width: auto; margin-left: 40px;"><i class="fa fa-unlock-alt" aria-hidden="true" style="font-size: 36px;"></i></dt>
+								<dd class="text-danger" style="margin-left: 88px; margin-bottom: 10px;"></i> To request funds <strong>without authentication</strong>, simply copy-paste your Ethereum address into the above input box (surrounding text doesn't matter) and fire away.<br/>This mode is susceptible to Byzantine attacks. Only use for debugging or private networks!</dd>
+							{{end}}
+						</dl>
+						<p>You can track the current pending requests below the input field to see how much you have to wait until your turn comes.</p>
+						{{if .Recaptcha}}<em>The faucet is running invisible reCaptcha protection against bots.</em>{{end}}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			// Global variables to hold the current status of the faucet
+			var attempt = 0;
+			var server;
+			var tier = 0;
+			var requests = [];
+
+			// Define a function that creates closures to drop old requests
+			var dropper = function(hash) {
+				return function() {
+					for (var i=0; i<requests.length; i++) {
+						if (requests[i].tx.hash == hash) {
+							requests.splice(i, 1);
+							break;
+						}
+					}
+				}
+			};
+			// Define the function that submits a gist url to the server
+			var submit = function({{if .Recaptcha}}captcha{{end}}) {
+				server.send(JSON.stringify({url: $("#url")[0].value, tier: tier{{if .Recaptcha}}, captcha: captcha{{end}}}));{{if .Recaptcha}}
+				grecaptcha.reset();{{end}}
+			};
+			// Define a method to reconnect upon server loss
+			var reconnect = function() {
+				server = new WebSocket(((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host + "/api");
+
+				server.onmessage = function(event) {
+					var msg = JSON.parse(event.data);
+					if (msg === null) {
+						return;
+					}
+
+					if (msg.funds !== undefined) {
+						$("#funds").text(msg.funds);
+					}
+					if (msg.funded !== undefined) {
+						$("#funded").text(msg.funded);
+					}
+					if (msg.peers !== undefined) {
+						$("#peers").text(msg.peers);
+					}
+					if (msg.number !== undefined) {
+						$("#block").text(parseInt(msg.number, 16));
+					}
+					if (msg.error !== undefined) {
+						noty({layout: 'topCenter', text: msg.error, type: 'error', timeout: 5000, progressBar: true});
+					}
+					if (msg.success !== undefined) {
+						noty({layout: 'topCenter', text: msg.success, type: 'success', timeout: 5000, progressBar: true});
+					}
+					if (msg.requests !== undefined && msg.requests !== null) {
+						// Mark all previous requests missing as done
+						for (var i=0; i<requests.length; i++) {
+							if (msg.requests.length > 0 && msg.requests[0].tx.hash == requests[i].tx.hash) {
+								break;
+							}
+							if (requests[i].time != "") {
+								requests[i].time = "";
+								setTimeout(dropper(requests[i].tx.hash), 3000);
+							}
+						}
+						// Append any new requests into our local collection
+						var common = -1;
+						if (requests.length > 0) {
+							for (var i=0; i<msg.requests.length; i++) {
+								if (requests[requests.length-1].tx.hash == msg.requests[i].tx.hash) {
+									common = i;
+									break;
+								}
+							}
+						}
+						for (var i=common+1; i<msg.requests.length; i++) {
+							requests.push(msg.requests[i]);
+						}
+						// Iterate over our entire local collection and re-render the funding table
+						var content = "";
+						for (var i=requests.length-1; i >= 0; i--) {
+							var done    = requests[i].time == "";
+							var elapsed = moment().unix()-moment(requests[i].time).unix();
+
+							content += "<tr id='" + requests[i].tx.hash + "'>";
+							content += "  <td><div style=\"background: url('" + requests[i].avatar + "'); background-size: cover; width:32px; height: 32px; border-radius: 4px;\"></div></td>";
+							content += "  <td><pre>" + requests[i].account + "</pre></td>";
+							content += "  <td style=\"width: 100%; text-align: center; vertical-align: middle;\">";
+							if (done) {
+								content += "    funded";
+							} else {
+								content += "    <span id='time-" + i + "' class='timer'>" + moment.duration(-elapsed, 'seconds').humanize(true) + "</span>";
+							}
+							content += "    <div class='progress' style='height: 4px; margin: 0;'>";
+							if (done) {
+								content += "      <div class='progress-bar progress-bar-success' role='progressbar' aria-valuenow='30' style='width:100%;'></div>";
+							} else if (elapsed > 30) {
+								content += "      <div class='progress-bar progress-bar-danger progress-bar-striped active' role='progressbar' aria-valuenow='30' style='width:100%;'></div>";
+							} else {
+								content += "      <div class='progress-bar progress-bar-striped active' role='progressbar' aria-valuenow='" + elapsed + "' style='width:" + (elapsed * 100 / 30) + "%;'></div>";
+							}
+							content += "    </div>";
+							content += "  </td>";
+							content += "</tr>";
+						}
+						$("#requests").html("<tbody>" + content + "</tbody>");
+					}
+				}
+				server.onclose = function() { setTimeout(reconnect, 3000); };
+			}
+			// Start a UI updater to push the progress bars forward until they are done
+			setInterval(function() {
+				$('.progress-bar').each(function() {
+					var progress = Number($(this).attr('aria-valuenow')) + 1;
+					if (progress < 30) {
+						$(this).attr('aria-valuenow', progress);
+						$(this).css('width', (progress * 100 / 30) + '%');
+					} else if (progress == 30) {
+						$(this).css('width', '100%');
+						$(this).addClass("progress-bar-danger");
+					}
+				})
+				$('.timer').each(function() {
+					var index = Number($(this).attr('id').substring(5));
+					$(this).html(moment.duration(moment(requests[index].time).unix()-moment().unix(), 'seconds').humanize(true));
+				})
+			}, 1000);
+
+			// Establish a websocket connection to the API server
+			reconnect();
+		</script>{{if .Recaptcha}}
+		<script src="https://www.google.com/recaptcha/api.js" async defer></script>{{end}}
+	</body>
+</html>

@@ -34,25 +34,25 @@ $code.=<<___;
 .align	5
 add_mod_384:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@mod[0],@mod[1],[$n_ptr]
 	ldp	@mod[2],@mod[3],[$n_ptr,#16]
 	ldp	@mod[4],@mod[5],[$n_ptr,#32]
 
 	bl	__add_mod_384
-	ldr	x30,[sp,#8]
+	ldr	c30,[csp,#__SIZEOF_POINTER__]
 
 	stp	@a[0],@a[1],[$r_ptr]
 	stp	@a[2],@a[3],[$r_ptr,#16]
 	stp	@a[4],@a[5],[$r_ptr,#32]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	add_mod_384,.-add_mod_384
@@ -100,10 +100,10 @@ __add_mod_384_ab_are_loaded:
 .align	5
 add_mod_384x:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@mod[0],@mod[1],[$n_ptr]
 	ldp	@mod[2],@mod[3],[$n_ptr,#16]
@@ -112,21 +112,21 @@ add_mod_384x:
 	bl	__add_mod_384
 
 	stp	@a[0],@a[1],[$r_ptr]
-	add	$a_ptr,$a_ptr,#48
+	cadd	$a_ptr,$a_ptr,#48
 	stp	@a[2],@a[3],[$r_ptr,#16]
-	add	$b_ptr,$b_ptr,#48
+	cadd	$b_ptr,$b_ptr,#48
 	stp	@a[4],@a[5],[$r_ptr,#32]
 
 	bl	__add_mod_384
-	ldr	x30,[sp,#8]
+	ldr	c30,[csp,#__SIZEOF_POINTER__]
 
 	stp	@a[0],@a[1],[$r_ptr,#48]
 	stp	@a[2],@a[3],[$r_ptr,#64]
 	stp	@a[4],@a[5],[$r_ptr,#80]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	add_mod_384x,.-add_mod_384x
@@ -137,10 +137,10 @@ add_mod_384x:
 .align	5
 rshift_mod_384:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldp	@a[2],@a[3],[$a_ptr,#16]
@@ -155,14 +155,14 @@ rshift_mod_384:
 	bl	__rshift_mod_384
 	cbnz	$b_ptr,.Loop_rshift_mod_384
 
-	ldr	x30,[sp,#8]
+	ldr	c30,[csp,#__SIZEOF_POINTER__]
 	stp	@a[0],@a[1],[$r_ptr]
 	stp	@a[2],@a[3],[$r_ptr,#16]
 	stp	@a[4],@a[5],[$r_ptr,#32]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	rshift_mod_384,.-rshift_mod_384
@@ -199,10 +199,10 @@ __rshift_mod_384:
 .align	5
 div_by_2_mod_384:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldp	@a[2],@a[3],[$a_ptr,#16]
@@ -214,14 +214,14 @@ div_by_2_mod_384:
 
 	bl	__rshift_mod_384
 
-	ldr	x30,[sp,#8]
+	ldr	c30,[csp,#__SIZEOF_POINTER__]
 	stp	@a[0],@a[1],[$r_ptr]
 	stp	@a[2],@a[3],[$r_ptr,#16]
 	stp	@a[4],@a[5],[$r_ptr,#32]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	div_by_2_mod_384,.-div_by_2_mod_384
@@ -232,10 +232,10 @@ div_by_2_mod_384:
 .align	5
 lshift_mod_384:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldp	@a[2],@a[3],[$a_ptr,#16]
@@ -250,14 +250,14 @@ lshift_mod_384:
 	bl	__lshift_mod_384
 	cbnz	$b_ptr,.Loop_lshift_mod_384
 
-	ldr	x30,[sp,#8]
+	ldr	c30,[csp,#__SIZEOF_POINTER__]
 	stp	@a[0],@a[1],[$r_ptr]
 	stp	@a[2],@a[3],[$r_ptr,#16]
 	stp	@a[4],@a[5],[$r_ptr,#32]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	lshift_mod_384,.-lshift_mod_384
@@ -297,10 +297,10 @@ __lshift_mod_384:
 .align	5
 mul_by_3_mod_384:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldp	@a[2],@a[3],[$a_ptr,#16]
@@ -317,15 +317,15 @@ mul_by_3_mod_384:
 	ldp	@b[4],@b[5],[$a_ptr,#32]
 
 	bl	__add_mod_384_ab_are_loaded
-	ldr	x30,[sp,#8]
+	ldr	c30,[csp,#__SIZEOF_POINTER__]
 
 	stp	@a[0],@a[1],[$r_ptr]
 	stp	@a[2],@a[3],[$r_ptr,#16]
 	stp	@a[4],@a[5],[$r_ptr,#32]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	mul_by_3_mod_384,.-mul_by_3_mod_384
@@ -336,10 +336,10 @@ mul_by_3_mod_384:
 .align	5
 mul_by_8_mod_384:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldp	@a[2],@a[3],[$a_ptr,#16]
@@ -352,15 +352,15 @@ mul_by_8_mod_384:
 	bl	__lshift_mod_384
 	bl	__lshift_mod_384
 	bl	__lshift_mod_384
-	ldr	x30,[sp,#8]
+	ldr	c30,[csp,#__SIZEOF_POINTER__]
 
 	stp	@a[0],@a[1],[$r_ptr]
 	stp	@a[2],@a[3],[$r_ptr,#16]
 	stp	@a[4],@a[5],[$r_ptr,#32]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	mul_by_8_mod_384,.-mul_by_8_mod_384
@@ -371,10 +371,10 @@ mul_by_8_mod_384:
 .align	5
 mul_by_3_mod_384x:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldp	@a[2],@a[3],[$a_ptr,#16]
@@ -406,15 +406,15 @@ mul_by_3_mod_384x:
 	ldp	@b[4],@b[5],[$a_ptr,#80]
 
 	bl	__add_mod_384_ab_are_loaded
-	ldr	x30,[sp,#8]
+	ldr	c30,[csp,#__SIZEOF_POINTER__]
 
 	stp	@a[0],@a[1],[$r_ptr,#48]
 	stp	@a[2],@a[3],[$r_ptr,#64]
 	stp	@a[4],@a[5],[$r_ptr,#80]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	mul_by_3_mod_384x,.-mul_by_3_mod_384x
@@ -425,10 +425,10 @@ mul_by_3_mod_384x:
 .align	5
 mul_by_8_mod_384x:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldp	@a[2],@a[3],[$a_ptr,#16]
@@ -452,15 +452,15 @@ mul_by_8_mod_384x:
 	bl	__lshift_mod_384
 	bl	__lshift_mod_384
 	bl	__lshift_mod_384
-	ldr	x30,[sp,#8]
+	ldr	c30,[csp,#__SIZEOF_POINTER__]
 
 	stp	@a[0],@a[1],[$r_ptr,#48]
 	stp	@a[2],@a[3],[$r_ptr,#64]
 	stp	@a[4],@a[5],[$r_ptr,#80]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	mul_by_8_mod_384x,.-mul_by_8_mod_384x
@@ -471,10 +471,10 @@ mul_by_8_mod_384x:
 .align	5
 cneg_mod_384:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldp	@mod[0],@mod[1],[$n_ptr]
@@ -509,9 +509,9 @@ cneg_mod_384:
 	csel	@a[5],@a[5],@b[5],eq
 	stp	@a[4],@a[5],[$r_ptr,#32]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	cneg_mod_384,.-cneg_mod_384
@@ -522,25 +522,25 @@ cneg_mod_384:
 .align	5
 sub_mod_384:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@mod[0],@mod[1],[$n_ptr]
 	ldp	@mod[2],@mod[3],[$n_ptr,#16]
 	ldp	@mod[4],@mod[5],[$n_ptr,#32]
 
 	bl	__sub_mod_384
-	ldr	x30,[sp,#8]
+	ldr	c30,[csp,#__SIZEOF_POINTER__]
 
 	stp	@a[0],@a[1],[$r_ptr]
 	stp	@a[2],@a[3],[$r_ptr,#16]
 	stp	@a[4],@a[5],[$r_ptr,#32]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	sub_mod_384,.-sub_mod_384
@@ -585,10 +585,10 @@ __sub_mod_384:
 .align	5
 sub_mod_384x:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@mod[0],@mod[1],[$n_ptr]
 	ldp	@mod[2],@mod[3],[$n_ptr,#16]
@@ -597,21 +597,21 @@ sub_mod_384x:
 	bl	__sub_mod_384
 
 	stp	@a[0],@a[1],[$r_ptr]
-	add	$a_ptr,$a_ptr,#48
+	cadd	$a_ptr,$a_ptr,#48
 	stp	@a[2],@a[3],[$r_ptr,#16]
-	add	$b_ptr,$b_ptr,#48
+	cadd	$b_ptr,$b_ptr,#48
 	stp	@a[4],@a[5],[$r_ptr,#32]
 
 	bl	__sub_mod_384
-	ldr	x30,[sp,#8]
+	ldr	c30,[csp,#__SIZEOF_POINTER__]
 
 	stp	@a[0],@a[1],[$r_ptr,#48]
 	stp	@a[2],@a[3],[$r_ptr,#64]
 	stp	@a[4],@a[5],[$r_ptr,#80]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	sub_mod_384x,.-sub_mod_384x
@@ -622,15 +622,15 @@ sub_mod_384x:
 .align	5
 mul_by_1_plus_i_mod_384x:
 	paciasp
-	stp	x29,x30,[sp,#-48]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	c29,c30,[csp,#-6*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
 
 	ldp	@mod[0],@mod[1],[$b_ptr]
 	ldp	@mod[2],@mod[3],[$b_ptr,#16]
 	ldp	@mod[4],@mod[5],[$b_ptr,#32]
-	add	$b_ptr,$a_ptr,#48
+	cadd	$b_ptr,$a_ptr,#48
 
 	bl	__sub_mod_384			// a->re - a->im
 
@@ -645,15 +645,15 @@ mul_by_1_plus_i_mod_384x:
 	ldp	@a[4],@a[5],[$a_ptr,#80]
 
 	bl	__add_mod_384_ab_are_loaded	// a->re + a->im
-	ldr	x30,[sp,#8]
+	ldr	c30,[csp,#__SIZEOF_POINTER__]
 
 	stp	@a[0],@a[1],[$r_ptr,#48]
 	stp	@a[2],@a[3],[$r_ptr,#64]
 	stp	@a[4],@a[5],[$r_ptr,#80]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#6*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	mul_by_1_plus_i_mod_384x,.-mul_by_1_plus_i_mod_384x
@@ -888,7 +888,7 @@ vec_is_zero_16x:
 .Loop_is_zero_done:
 	dup	v1.2d, v0.2d[1]
 	orr	v0.16b, v0.16b, v1.16b
-	mov	x1, v0.2d[0]
+	umov	x1, v0.2d[0]
 	mov	x0, #1
 	cmp	x1, #0
 	csel	x0, x0, xzr, eq
@@ -923,7 +923,7 @@ vec_is_equal_16x:
 .Loop_is_equal_done:
 	dup	v1.2d, v0.2d[1]
 	orr	v0.16b, v0.16b, v1.16b
-	mov	x1, v0.2d[0]
+	umov	x1, v0.2d[0]
 	mov	x0, #1
 	cmp	x1, #0
 	csel	x0, x0, xzr, eq

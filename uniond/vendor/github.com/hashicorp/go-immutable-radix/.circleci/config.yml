@@ -1,0 +1,72 @@
+version: 2.1
+
+references:
+  images:
+    go: &GOLANG_IMAGE docker.mirror.hashicorp.services/circleci/golang:1.15.3
+
+# reusable 'executor' object for jobs
+executors:
+  go:
+    docker:
+      - image: *GOLANG_IMAGE
+    environment:
+      - TEST_RESULTS: /tmp/test-results # path to where test results are saved
+
+jobs:
+  go-fmt-and-vet:
+    executor: go
+    steps:
+      - checkout
+
+      # Restore go module cache if there is one
+      - restore_cache:
+          keys:
+            - go-immutable-radix-modcache-v1-{{ checksum "go.mod" }}
+
+      - run: go mod download
+
+      # Save go module cache if the go.mod file has changed
+      - save_cache:
+          key: go-immutable-radix-modcache-v1-{{ checksum "go.mod" }}
+          paths:
+            - "/go/pkg/mod"
+
+      # check go fmt output because it does not report non-zero when there are fmt changes
+      - run:
+          name: check go fmt
+          command: |
+            files=$(go fmt ./...)
+            if [ -n "$files" ]; then
+              echo "The following file(s) do not conform to go fmt:"
+              echo "$files"
+              exit 1
+            fi
+      - run: go vet ./...
+
+  go-test:
+    executor: go
+    steps:
+      - checkout
+      - run: mkdir -p $TEST_RESULTS
+
+      - restore_cache: # restore cache from dev-build job
+          keys:
+            - go-immutable-radix-modcache-v1-{{ checksum "go.mod" }}
+
+      # run go tests with gotestsum
+      - run: |
+          PACKAGE_NAMES=$(go list ./...)
+          gotestsum --format=short-verbose --junitfile $TEST_RESULTS/gotestsum-report.xml -- $PACKAGE_NAMES
+      - store_test_results:
+          path: /tmp/test-results
+      - store_artifacts:
+          path: /tmp/test-results
+
+workflows:
+  version: 2
+  test-and-build:
+    jobs:
+      - go-fmt-and-vet
+      - go-test:
+          requires:
+            - go-fmt-and-vet

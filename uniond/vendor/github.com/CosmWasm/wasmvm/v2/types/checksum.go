@@ -10,6 +10,10 @@ import (
 // The length of a checksum must always be ChecksumLen.
 type Checksum []byte
 
+func (cs Checksum) String() string {
+	return hex.EncodeToString(cs)
+}
+
 func (cs Checksum) MarshalJSON() ([]byte, error) {
 	return json.Marshal(hex.EncodeToString(cs))
 }

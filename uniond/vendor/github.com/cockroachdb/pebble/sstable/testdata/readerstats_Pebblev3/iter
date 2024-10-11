@@ -1,0 +1,79 @@
+build print-layout=true
+c@10.SET.10:cAT10
+c@9.SET.9:cAT9
+c@8.SET.8:cAT8
+d@7.SET.9:dAT7
+e@39.SET.49:eAT39
+e@38.SET.48:eAT38
+e@37.SET.47:eAT37
+e@36.SET.46:eAT36
+e@35.SET.45:eAT35
+e@34.SET.44:eAT34
+e@33.SET.43:eAT33
+e@32.SET.42:eAT32
+e@31.SET.41:eAT31
+e@30.SET.40:eAT30
+e@29.SET.39:eAT29
+e@28.SET.38:eAT28
+e@27.SET.37:eAT27
+e@26.SET.36:eAT26
+----
+index entries:
+ f: size 228
+
+# Iterating across older versions and fetching the older version values.
+iter
+first
+stats
+next
+stats
+next
+stats
+next
+stats
+----
+<c@10:10>
+{BlockBytes:251 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+<c@9:9>
+{BlockBytes:328 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:1 ValueBytes:4 ValueBytesFetched:4}}
+<c@8:8>
+{BlockBytes:328 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:2 ValueBytes:8 ValueBytesFetched:8}}
+<d@7:9>
+{BlockBytes:328 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:2 ValueBytes:8 ValueBytesFetched:8}}
+
+# seek-ge e@37 starts at the restart point at the beginning of the block and
+# iterates over 3 irrelevant separated versions before getting to e@37
+# (another separated version). Which is why the SeparatedPointValue count is
+# 4. Only the last separated version has its value fetched.
+iter
+seek-ge e@37
+stats
+next
+next
+next
+next
+stats
+----
+<e@37:47>
+{BlockBytes:328 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:4 ValueBytes:18 ValueBytesFetched:5}}
+<e@36:46>
+<e@35:45>
+<e@34:44>
+<e@33:43>
+{BlockBytes:328 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:8 ValueBytes:38 ValueBytesFetched:25}}
+
+# seek-ge e@26 lands at the restart point e@26.
+iter
+seek-ge e@26
+stats
+prev
+stats
+prev
+stats
+----
+<e@26:36>
+{BlockBytes:328 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:1 ValueBytes:5 ValueBytesFetched:5}}
+<e@27:37>
+{BlockBytes:328 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:2 ValueBytes:10 ValueBytesFetched:10}}
+<e@28:38>
+{BlockBytes:328 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:3 ValueBytes:15 ValueBytesFetched:15}}

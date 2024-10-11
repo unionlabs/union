@@ -1,0 +1,71 @@
+syntax = "proto3";
+option go_package = "examplepb";
+
+// Merging Services
+//
+// This is an example of merging two proto files.
+package grpc.gateway.examples.internal.examplepb;
+
+import "google/api/annotations.proto";
+
+// InMessageA represents a message to ServiceA and ServiceC.
+message InMessageA {
+	// Here is the explanation about InMessageA.values
+	repeated string values = 1;
+}
+
+// OutMessageA represents a message returned from ServiceA.
+message OutMessageA {
+	// Here is the explanation about OutMessageA.value
+	string value = 1;
+}
+
+// OutMessageC represents a message returned from ServiceC.
+message OutMessageC {
+	// Here is the explanation about OutMessageC.value
+	string value = 1;
+}
+
+// ServiceA provices MethodOne and MethodTwo
+service ServiceA {
+	// ServiceA.MethodOne receives InMessageA and returns OutMessageA
+	//
+	// Here is the detail explanation about ServiceA.MethodOne.
+	rpc MethodOne(InMessageA) returns (OutMessageA) {
+		option (google.api.http) = {
+            post: "/v1/example/a/1"
+            body: "*"
+		};
+	}
+	// ServiceA.MethodTwo receives OutMessageA and returns InMessageA
+	//
+	// Here is the detail explanation about ServiceA.MethodTwo.
+	rpc MethodTwo(OutMessageA) returns (InMessageA) {
+		option (google.api.http) = {
+            post: "/v1/example/a/2"
+            body: "*"
+		};
+	}
+}
+
+// ServiceC service responds to incoming merge requests.
+service ServiceC {
+	// ServiceC.MethodOne receives InMessageA and returns OutMessageC
+	//
+	// Here is the detail explanation about ServiceC.MethodOne.
+	rpc MethodOne(InMessageA) returns (OutMessageC) {
+		option (google.api.http) = {
+            post: "/v1/example/c/1"
+            body: "*"
+		};
+	}
+	// ServiceC.MethodTwo receives OutMessageA and returns InMessageA
+	//
+	// Here is the detail explanation about ServiceC.MethodTwo.
+	rpc MethodTwo(OutMessageA) returns (InMessageA) {
+		option (google.api.http) = {
+            post: "/v1/example/c/2"
+            body: "*"
+		};
+	}
+}

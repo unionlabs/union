@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2022 The Decred developers
+// Copyright (c) 2015-2024 The Decred developers
 // Copyright 2013-2014 The btcsuite developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
@@ -1221,6 +1221,25 @@ func ScalarMultNonConst(k *ModNScalar, point, result *JacobianPoint) {
 //
 // NOTE: The resulting point will be normalized.
 func ScalarBaseMultNonConst(k *ModNScalar, result *JacobianPoint) {
+	scalarBaseMultNonConst(k, result)
+}
+
+// jacobianG is the secp256k1 base point converted to Jacobian coordinates and
+// is defined here to avoid repeatedly converting it.
+var jacobianG = func() JacobianPoint {
+	var G JacobianPoint
+	bigAffineToJacobian(curveParams.Gx, curveParams.Gy, &G)
+	return G
+}()
+
+// scalarBaseMultNonConstSlow computes k*G through ScalarMultNonConst.
+func scalarBaseMultNonConstSlow(k *ModNScalar, result *JacobianPoint) {
+	ScalarMultNonConst(k, &jacobianG, result)
+}
+
+// scalarBaseMultNonConstFast computes k*G through the precomputed lookup
+// tables.
+func scalarBaseMultNonConstFast(k *ModNScalar, result *JacobianPoint) {
 	bytePoints := s256BytePoints()
 
 	// Start with the point at infinity.

@@ -1,0 +1,53 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["server.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/prysm/v1alpha1/node",
+    visibility = ["//beacon-chain:__subpackages__"],
+    deps = [
+        "//beacon-chain/blockchain:go_default_library",
+        "//beacon-chain/db:go_default_library",
+        "//beacon-chain/execution:go_default_library",
+        "//beacon-chain/p2p:go_default_library",
+        "//beacon-chain/sync:go_default_library",
+        "//io/logs:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//runtime/version:go_default_library",
+        "@com_github_golang_protobuf//ptypes/empty",
+        "@com_github_golang_protobuf//ptypes/timestamp",
+        "@com_github_libp2p_go_libp2p//core/network:go_default_library",
+        "@com_github_libp2p_go_libp2p//core/peer:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
+        "@org_golang_google_protobuf//types/known/timestamppb:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["server_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//beacon-chain/blockchain/testing:go_default_library",
+        "//beacon-chain/db/testing:go_default_library",
+        "//beacon-chain/p2p:go_default_library",
+        "//beacon-chain/p2p/testing:go_default_library",
+        "//beacon-chain/rpc/testutil:go_default_library",
+        "//beacon-chain/sync/initial-sync/testing:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//runtime/version:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/util:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+        "@com_github_ethereum_go_ethereum//crypto:go_default_library",
+        "@com_github_ethereum_go_ethereum//p2p/enode:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//reflection:go_default_library",
+        "@org_golang_google_protobuf//types/known/emptypb:go_default_library",
+        "@org_golang_google_protobuf//types/known/timestamppb:go_default_library",
+    ],
+)

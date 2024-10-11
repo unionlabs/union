@@ -14,6 +14,6 @@
 
 // Package errutil combines primitives from the library, the Go errors
 // package and github.com/pkg/errors. It aims to serve as drop-in
-// replacement to gitub.com/pkg/errors and replace the legacy
+// replacement to github.com/pkg/errors and replace the legacy
 // implementation of `pgerrors`.
 package errutil

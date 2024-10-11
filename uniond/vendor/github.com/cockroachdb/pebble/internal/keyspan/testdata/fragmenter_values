@@ -1,0 +1,65 @@
+build
+3: a-----------m              apples
+2:      f------------s        bananas
+1:          j---------------z coconuts
+----
+3: a----f                     apples
+3:      f---j                 apples
+2:      f---j                 bananas
+3:          j--m              apples
+2:          j--m              bananas
+1:          j--m              coconuts
+2:             m-----s        bananas
+1:             m-----s        coconuts
+1:                   s------z coconuts
+
+# Building is idempotent.
+build
+3: a----f                     a
+3:      f---j                 b
+2:      f---j                 c
+3:          j--m              d
+2:          j--m              e
+1:          j--m              f
+2:             m-----s        g
+1:             m-----s        h
+1:                   s------z i
+----
+3: a----f                     a
+3:      f---j                 b
+2:      f---j                 c
+3:          j--m              d
+2:          j--m              e
+1:          j--m              f
+2:             m-----s        g
+1:             m-----s        h
+1:                   s------z i
+
+build
+2: a--c                       apple
+1:  b--d                      banana
+truncate-and-flush-to c
+----
+2: ab                         apple
+2:  bc                        apple
+1:  bc                        banana
+1:   cd                       banana
+
+build
+3: a-c                        apple
+2: a---e                      banana
+1: a-----g                    coconut
+truncate-and-flush-to d
+3:    d----i                  orange
+----
+3: a-c                        apple
+2: a-c                        banana
+1: a-c                        coconut
+2:   cd                       banana
+1:   cd                       coconut
+3:    de                      orange
+2:    de                      banana
+1:    de                      coconut
+3:     e-g                    orange
+1:     e-g                    coconut
+3:       g-i                  orange

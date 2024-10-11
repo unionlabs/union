@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -exuo pipefail
+
+repo="github.com/mmcloughlin/addchain"
+
+# Find files.
+mapfile -t files < <(find . -name '*.go' -print0 | xargs -0 grep -L '// Code generated')
+
+# Go formatting.
+sed -i.fmtbackup '/^import (/,/)/ { /^$$/ d; }' "${files[@]}"
+find . -name '*.fmtbackup' -delete
+
+gofumports -w -local "${repo}" "${files[@]}"
+
+# Math formatting.
+mathfmt -w "${files[@]}"
+
+# Bibliography references.
+bib process -bib doc/references.bib -w "${files[@]}"
+
+# Format the bibliography itself.
+bib fmt -bib doc/references.bib -w

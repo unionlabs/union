@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package ibc.applications.interchain_accounts.controller.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types";
+
+// Params defines the set of on-chain interchain accounts parameters.
+// The following parameters may be used to disable the controller submodule.
+message Params {
+  // controller_enabled enables or disables the controller submodule.
+  bool controller_enabled = 1;
+}

@@ -1,0 +1,100 @@
+# no grandparents
+define
+----
+
+compact max-overlap=1
+a b c d e f g
+----
+a-g
+
+# 3 equal size grandparents
+define
+a-b 2
+c-d 2
+e-f 2
+----
+
+compact max-overlap=1
+a b c d e f
+----
+a-c
+d-e
+f-f
+
+compact max-overlap=2
+a b c d e f
+----
+a-c
+d-e
+f-f
+
+compact max-overlap=4
+a b c d e f
+----
+a-e
+f-f
+
+compact max-overlap=1
+b c d e f g h i j
+----
+b-c
+d-e
+f-j
+
+compact max-overlap=1
+a g h i j
+----
+a-a
+g-j
+
+compact max-overlap=1
+a e ee eee eeee f
+----
+a-a
+e-f
+
+compact max-overlap=1
+c d e f
+----
+c-e
+f-f
+
+# Unequal size grandparents
+define
+a-b 1
+c-d 2
+e-f 3
+----
+
+compact max-overlap=1
+a b c d e f
+----
+a-c
+d-e
+f-f
+
+compact max-overlap=3
+a b c d e f
+----
+a-e
+f-f
+
+# Unequal size grandparents
+define
+a-b 3
+c-d 2
+e-f 1
+----
+
+compact max-overlap=1
+a b c d e f
+----
+a-c
+d-e
+f-f
+
+compact max-overlap=3
+a b c d e f
+----
+a-c
+d-f

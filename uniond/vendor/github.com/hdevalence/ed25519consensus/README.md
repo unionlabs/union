@@ -38,7 +38,6 @@ for [ZIP215] verification.
 
 Note that the ZIP215 rules ensure that individual and batch verification are
 guaranteed to give the same results, so unlike `ed25519.Verify`, `ed25519consensus.Verify` is
-compatible with batch verification (though this is not yet implemented by this
-library).
+compatible with batch verification.
 
 [ZIP215]: https://zips.z.cash/zip-0215

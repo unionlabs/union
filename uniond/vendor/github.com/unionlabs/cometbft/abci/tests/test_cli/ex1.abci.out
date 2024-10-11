@@ -1,0 +1,62 @@
+> echo hello
+-> code: OK
+-> data: hello
+-> data.hex: 0x68656C6C6F
+
+> info 
+-> code: OK
+-> data: {"size":0}
+-> data.hex: 0x7B2273697A65223A307D
+
+> prepare_proposal "abc=123"
+-> code: OK
+-> log: Succeeded. Tx: abc=123
+
+> process_proposal "abc==456"
+-> code: OK
+-> status: PROCESS_PROPOSAL_STATUS_REJECT
+
+> process_proposal "abc=123"
+-> code: OK
+-> status: PROCESS_PROPOSAL_STATUS_ACCEPT
+
+> finalize_block "abc=123"
+-> code: OK
+-> code: OK
+-> data.hex: 0x0200000000000000
+
+> commit 
+-> code: OK
+
+> info 
+-> code: OK
+-> data: {"size":1}
+-> data.hex: 0x7B2273697A65223A317D
+
+> query "abc"
+-> code: OK
+-> log: exists
+-> height: 0
+-> key: abc
+-> key.hex: 616263
+-> value: 123
+-> value.hex: 313233
+
+> finalize_block "def=xyz" "ghi=123"
+-> code: OK
+-> code: OK
+-> code: OK
+-> data.hex: 0x0600000000000000
+
+> commit 
+-> code: OK
+
+> query "def"
+-> code: OK
+-> log: exists
+-> height: 0
+-> key: def
+-> key.hex: 646566
+-> value: xyz
+-> value.hex: 78797A
+

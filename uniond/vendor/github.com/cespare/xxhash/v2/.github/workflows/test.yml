@@ -1,0 +1,56 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.18.x, 1.19.x]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Install go
+        uses: WillAbides/setup-go-faster@v1.5.0
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Test
+        run: go test -count 1 -bench . -benchtime 1x ./...
+
+      - name: Test with -tags purego
+        run: go test -count 1 -bench . -benchtime 1x -tags purego ./...
+
+  test-qemu:
+    needs: test
+    strategy:
+      matrix:
+        go-version: [1.18.x, 1.19.x]
+        arch: [386, arm, arm64]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install go
+        uses: WillAbides/setup-go-faster@v1.5.0
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Install QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Run test via qemu/binfmt
+        # TODO: Run the dynamic linking tests as well. That is a little more
+        # involved.
+        run: go test -v -count 1 -bench . -benchtime 1x
+        env:
+          GOARCH: ${{ matrix.arch }}

@@ -1,0 +1,7 @@
+namespace bazel_repository_test;
+
+table One {
+  information:int;
+}
+
+root_type One;

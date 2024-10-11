@@ -1,0 +1,119 @@
+name: 🐛 Bug report
+description: Report a bug to help us improve Viper
+labels: [kind/bug]
+body:
+- type: markdown
+  attributes:
+    value: |
+      Thank you for submitting a bug report!
+
+      Please fill out the template below to make it easier to debug your problem.
+
+      If you are not sure if it is a bug or not, you can contact us via the available [support channels](https://github.com/spf13/viper/issues/new/choose).
+- type: checkboxes
+  attributes:
+    label: Preflight Checklist
+    description: Please ensure you've completed all of the following.
+    options:
+      - label: I have searched the [issue tracker](https://www.github.com/spf13/viper/issues) for an issue that matches the one I want to file, without success.
+        required: true
+      - label: I am not looking for support or already pursued the available [support channels](https://github.com/spf13/viper/issues/new/choose) without success.
+        required: true
+      - label: I have checked the [troubleshooting guide](https://github.com/spf13/viper/blob/master/TROUBLESHOOTING.md) for my problem, without success.
+        required: true
+- type: input
+  attributes:
+    label: Viper Version
+    description: What version of Viper are you using?
+    placeholder: 1.8.1
+  validations:
+    required: true
+- type: input
+  attributes:
+    label: Go Version
+    description: What version of Go are you using?
+    placeholder: "1.16"
+  validations:
+    required: true
+- type: dropdown
+  attributes:
+    label: Config Source
+    description: What sources do you load configuration from?
+    options:
+      - Manual set
+      - Flags
+      - Environment variables
+      - Files
+      - Remove K/V stores
+      - Defaults
+    multiple: true
+  validations:
+    required: true
+- type: dropdown
+  attributes:
+    label: Format
+    description: Which file formats do you use?
+    options:
+      - JSON
+      - YAML
+      - TOML
+      - Dotenv
+      - HCL
+      - Java properties
+      - INI
+      - Other (specify below)
+    multiple: true
+- type: input
+  attributes:
+    label: Repl.it link
+    description: Complete example on Repl.it reproducing the issue. [Here](https://repl.it/@sagikazarmark/Viper-example) is an example you can use.
+    placeholder: https://repl.it/@sagikazarmark/Viper-example
+- type: textarea
+  attributes:
+    label: Code reproducing the issue
+    description: Please provide a Repl.it link if possible.
+    render: go
+    placeholder: |
+      package main
+
+      import (
+        "github.com/spf13/viper"
+      )
+
+      func main() {
+        v := viper.New()
+
+        // ...
+
+        var config Config
+
+        err = v.Unmarshal(&config)
+        if err != nil {
+          panic(err)
+        }
+      }
+- type: textarea
+  attributes:
+    label: Expected Behavior
+    description: A clear and concise description of what you expected to happen.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Actual Behavior
+    description: A clear description of what actually happens.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Steps To Reproduce
+    description: Steps to reproduce the behavior if it is not self-explanatory.
+    placeholder: |
+      1. In this environment...
+      2. With this config...
+      3. Run '...'
+      4. See error...
+- type: textarea
+  attributes:
+    label: Additional Information
+    description: Links? References? Anything that will give us more context about the issue that you are encountering!

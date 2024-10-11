@@ -1,0 +1,6 @@
+-- .mod --
+module example.com/nomod
+-- p/p.go --
+package p // import "example.com/something/different"
+
+// The import comment above is ignored by gorelease and by modules.

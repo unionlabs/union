@@ -1,0 +1,335 @@
+// Since: cosmos-sdk 0.46
+syntax = "proto3";
+
+package cosmos.group.v1;
+
+option go_package = "cosmossdk.io/x/group";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "cosmos_proto/cosmos.proto";
+import "google/protobuf/any.proto";
+import "amino/amino.proto";
+
+// Member represents a group member with an account address,
+// non-zero weight, metadata and added_at timestamp.
+message Member {
+  // address is the member's account address.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // weight is the member's voting weight that should be greater than 0.
+  string weight = 2;
+
+  // metadata is any arbitrary metadata attached to the member.
+  string metadata = 3;
+
+  // added_at is a timestamp specifying when a member was added.
+  google.protobuf.Timestamp added_at = 4
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true, (gogoproto.stdtime) = true];
+}
+
+// MemberRequest represents a group member to be used in Msg server requests.
+// Contrary to `Member`, it doesn't have any `added_at` field
+// since this field cannot be set as part of requests.
+message MemberRequest {
+  // address is the member's account address.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // weight is the member's voting weight that should be greater than 0.
+  string weight = 2;
+
+  // metadata is any arbitrary metadata attached to the member.
+  string metadata = 3;
+}
+
+// ThresholdDecisionPolicy is a decision policy where a proposal passes when it
+// satisfies the two following conditions:
+// 1. The sum of all `YES` voter's weights is greater or equal than the defined
+//    `threshold`.
+// 2. The voting and execution periods of the proposal respect the parameters
+//    given by `windows`.
+message ThresholdDecisionPolicy {
+  option (cosmos_proto.implements_interface) = "cosmos.group.v1.DecisionPolicy";
+  option (amino.name)                        = "cosmos-sdk/ThresholdDecisionPolicy";
+
+  // threshold is the minimum weighted sum of `YES` votes that must be met or
+  // exceeded for a proposal to succeed.
+  string threshold = 1;
+
+  // windows defines the different windows for voting and execution.
+  DecisionPolicyWindows windows = 2;
+}
+
+// PercentageDecisionPolicy is a decision policy where a proposal passes when
+// it satisfies the two following conditions:
+// 1. The percentage of all `YES` voters' weights out of the total group weight
+//    is greater or equal than the given `percentage`.
+// 2. The voting and execution periods of the proposal respect the parameters
+//    given by `windows`.
+message PercentageDecisionPolicy {
+  option (cosmos_proto.implements_interface) = "cosmos.group.v1.DecisionPolicy";
+  option (amino.name)                        = "cosmos-sdk/PercentageDecisionPolicy";
+
+  // percentage is the minimum percentage of the weighted sum of `YES` votes must
+  // meet for a proposal to succeed.
+  string percentage = 1;
+
+  // windows defines the different windows for voting and execution.
+  DecisionPolicyWindows windows = 2;
+}
+
+// DecisionPolicyWindows defines the different windows for voting and execution.
+message DecisionPolicyWindows {
+  // voting_period is the duration from submission of a proposal to the end of voting period
+  // Within this times votes can be submitted with MsgVote.
+  google.protobuf.Duration voting_period = 1
+      [(gogoproto.stdduration) = true, (gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // min_execution_period is the minimum duration after the proposal submission
+  // where members can start sending MsgExec. This means that the window for
+  // sending a MsgExec transaction is:
+  // `[ submission + min_execution_period ; submission + voting_period + max_execution_period]`
+  // where max_execution_period is a app-specific config, defined in the keeper.
+  // If not set, min_execution_period will default to 0.
+  //
+  // Please make sure to set a `min_execution_period` that is smaller than
+  // `voting_period + max_execution_period`, or else the above execution window
+  // is empty, meaning that all proposals created with this decision policy
+  // won't be able to be executed.
+  google.protobuf.Duration min_execution_period = 2
+      [(gogoproto.stdduration) = true, (gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// VoteOption enumerates the valid vote options for a given proposal.
+enum VoteOption {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // VOTE_OPTION_UNSPECIFIED defines an unspecified vote option which will
+  // return an error.
+  VOTE_OPTION_UNSPECIFIED = 0;
+  // VOTE_OPTION_YES defines a yes vote option.
+  VOTE_OPTION_YES = 1;
+  // VOTE_OPTION_ABSTAIN defines an abstain vote option.
+  VOTE_OPTION_ABSTAIN = 2;
+  // VOTE_OPTION_NO defines a no vote option.
+  VOTE_OPTION_NO = 3;
+  // VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+  VOTE_OPTION_NO_WITH_VETO = 4;
+}
+
+//
+// State
+//
+
+// GroupInfo represents the high-level on-chain information for a group.
+message GroupInfo {
+  // id is the unique ID of the group.
+  uint64 id = 1;
+
+  // admin is the account address of the group's admin.
+  string admin = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // metadata is any arbitrary metadata to attached to the group.
+  // the recommended format of the metadata is to be found here: https://docs.cosmos.network/v0.47/modules/group#group-1
+  string metadata = 3;
+
+  // version is used to track changes to a group's membership structure that
+  // would break existing proposals. Whenever any members weight is changed,
+  // or any member is added or removed this version is incremented and will
+  // cause proposals based on older versions of this group to fail
+  uint64 version = 4;
+
+  // total_weight is the sum of the group members' weights.
+  string total_weight = 5;
+
+  // created_at is a timestamp specifying when a group was created.
+  google.protobuf.Timestamp created_at = 6
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true, (gogoproto.stdtime) = true];
+}
+
+// GroupMember represents the relationship between a group and a member.
+message GroupMember {
+  // group_id is the unique ID of the group.
+  uint64 group_id = 1;
+
+  // member is the member data.
+  Member member = 2;
+}
+
+// GroupPolicyInfo represents the high-level on-chain information for a group policy.
+message GroupPolicyInfo {
+  option (gogoproto.equal)           = true;
+  option (gogoproto.goproto_getters) = false;
+
+  // address is the account address of group policy.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // group_id is the unique ID of the group.
+  uint64 group_id = 2;
+
+  // admin is the account address of the group admin.
+  string admin = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // metadata is any arbitrary metadata attached to the group policy.
+  // the recommended format of the metadata is to be found here:
+  // https://docs.cosmos.network/v0.47/modules/group#decision-policy-1
+  string metadata = 4;
+
+  // version is used to track changes to a group's GroupPolicyInfo structure that
+  // would create a different result on a running proposal.
+  uint64 version = 5;
+
+  // decision_policy specifies the group policy's decision policy.
+  google.protobuf.Any decision_policy = 6 [(cosmos_proto.accepts_interface) = "cosmos.group.v1.DecisionPolicy"];
+
+  // created_at is a timestamp specifying when a group policy was created.
+  google.protobuf.Timestamp created_at = 7
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true, (gogoproto.stdtime) = true];
+}
+
+// Proposal defines a group proposal. Any member of a group can submit a proposal
+// for a group policy to decide upon.
+// A proposal consists of a set of `sdk.Msg`s that will be executed if the proposal
+// passes as well as some optional metadata associated with the proposal.
+message Proposal {
+  option (gogoproto.goproto_getters) = false;
+
+  // id is the unique id of the proposal.
+  uint64 id = 1;
+
+  // group_policy_address is the account address of group policy.
+  string group_policy_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // metadata is any arbitrary metadata attached to the proposal.
+  // the recommended format of the metadata is to be found here:
+  // https://docs.cosmos.network/v0.47/modules/group#proposal-4
+  string metadata = 3;
+
+  // proposers are the account addresses of the proposers.
+  repeated string proposers = 4 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // submit_time is a timestamp specifying when a proposal was submitted.
+  google.protobuf.Timestamp submit_time = 5
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true, (gogoproto.stdtime) = true];
+
+  // group_version tracks the version of the group at proposal submission.
+  // This field is here for informational purposes only.
+  uint64 group_version = 6;
+
+  // group_policy_version tracks the version of the group policy at proposal submission.
+  // When a decision policy is changed, existing proposals from previous policy
+  // versions will become invalid with the `ABORTED` status.
+  // This field is here for informational purposes only.
+  uint64 group_policy_version = 7;
+
+  // status represents the high level position in the life cycle of the proposal. Initial value is Submitted.
+  ProposalStatus status = 8;
+
+  // final_tally_result contains the sums of all weighted votes for this
+  // proposal for each vote option. It is empty at submission, and only
+  // populated after tallying, at voting period end or at proposal execution,
+  // whichever happens first.
+  TallyResult final_tally_result = 9 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // voting_period_end is the timestamp before which voting must be done.
+  // Unless a successful MsgExec is called before (to execute a proposal whose
+  // tally is successful before the voting period ends), tallying will be done
+  // at this point, and the `final_tally_result`and `status` fields will be
+  // accordingly updated.
+  google.protobuf.Timestamp voting_period_end = 10
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true, (gogoproto.stdtime) = true];
+
+  // executor_result is the final result of the proposal execution. Initial value is NotRun.
+  ProposalExecutorResult executor_result = 11;
+
+  // messages is a list of `sdk.Msg`s that will be executed if the proposal passes.
+  repeated google.protobuf.Any messages = 12;
+
+  // title is the title of the proposal
+  string title = 13 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+
+  // summary is a short summary of the proposal
+  string summary = 14 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+}
+
+// ProposalStatus defines proposal statuses.
+enum ProposalStatus {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // An empty value is invalid and not allowed.
+  PROPOSAL_STATUS_UNSPECIFIED = 0;
+
+  // Initial status of a proposal when submitted.
+  PROPOSAL_STATUS_SUBMITTED = 1;
+
+  // Final status of a proposal when the final tally is done and the outcome
+  // passes the group policy's decision policy.
+  PROPOSAL_STATUS_ACCEPTED = 2;
+
+  // Final status of a proposal when the final tally is done and the outcome
+  // is rejected by the group policy's decision policy.
+  PROPOSAL_STATUS_REJECTED = 3;
+
+  // Final status of a proposal when the group policy is modified before the
+  // final tally.
+  PROPOSAL_STATUS_ABORTED = 4;
+
+  // A proposal can be withdrawn before the voting start time by the owner.
+  // When this happens the final status is Withdrawn.
+  PROPOSAL_STATUS_WITHDRAWN = 5;
+}
+
+// ProposalExecutorResult defines types of proposal executor results.
+enum ProposalExecutorResult {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // An empty value is not allowed.
+  PROPOSAL_EXECUTOR_RESULT_UNSPECIFIED = 0;
+
+  // We have not yet run the executor.
+  PROPOSAL_EXECUTOR_RESULT_NOT_RUN = 1;
+
+  // The executor was successful and proposed action updated state.
+  PROPOSAL_EXECUTOR_RESULT_SUCCESS = 2;
+
+  // The executor returned an error and proposed action didn't update state.
+  PROPOSAL_EXECUTOR_RESULT_FAILURE = 3;
+}
+
+// TallyResult represents the sum of weighted votes for each vote option.
+message TallyResult {
+  option (gogoproto.goproto_getters) = false;
+
+  // yes_count is the weighted sum of yes votes.
+  string yes_count = 1;
+
+  // abstain_count is the weighted sum of abstainers.
+  string abstain_count = 2;
+
+  // no_count is the weighted sum of no votes.
+  string no_count = 3;
+
+  // no_with_veto_count is the weighted sum of veto.
+  string no_with_veto_count = 4;
+}
+
+// Vote represents a vote for a proposal.string metadata
+message Vote {
+  // proposal is the unique ID of the proposal.
+  uint64 proposal_id = 1;
+
+  // voter is the account address of the voter.
+  string voter = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // option is the voter's choice on the proposal.
+  VoteOption option = 3;
+
+  // metadata is any arbitrary metadata attached to the vote.
+  // the recommended format of the metadata is to be found here: https://docs.cosmos.network/v0.47/modules/group#vote-2
+  string metadata = 4;
+
+  // submit_time is the timestamp when the vote was submitted.
+  google.protobuf.Timestamp submit_time = 5
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true, (gogoproto.stdtime) = true];
+}

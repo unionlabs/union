@@ -1,0 +1,9 @@
+# Connect Grafana to Prometheus through a Grafana datasource. Hostname is derived from the docker name.
+apiVersion: 1
+datasources:
+  - name: prometheus
+    uid: prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    is_default: true
+    editable: true

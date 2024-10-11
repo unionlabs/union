@@ -1,0 +1,1572 @@
+define
+a.SET.1:b
+----
+
+iter seq=2
+seek-ge a
+next
+prev
+----
+a: (b, .)
+.
+a: (b, .)
+stats: seeked 1 times (1 fwd/0 rev, internal: 1 fwd/1 rev); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2
+seek-ge b
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal)
+
+iter seq=2
+seek-lt a
+----
+.
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 0 times (0 internal)
+
+
+define
+a.SET.2:c
+a.SET.1:b
+----
+
+iter seq=2
+seek-ge a
+next
+prev
+----
+a: (b, .)
+.
+a: (b, .)
+stats: seeked 1 times (1 fwd/0 rev, internal: 1 fwd/1 rev); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/1 rev); blocks: 0B cached; points: 4 (4B keys, 4B values)
+
+iter seq=3
+seek-ge a
+next
+prev
+----
+a: (c, .)
+.
+a: (c, .)
+stats: seeked 1 times (1 fwd/0 rev, internal: 1 fwd/1 rev); stepped 2 times (1 fwd/1 rev, internal: 2 fwd/2 rev); blocks: 0B cached; points: 4 (4B keys, 4B values)
+
+iter seq=2
+seek-prefix-ge a
+next
+prev
+next
+----
+a: (b, .)
+.
+err=pebble: unsupported reverse prefix iteration
+err=pebble: unsupported reverse prefix iteration
+stats: seeked 1 times (1 internal); stepped 3 times (2 fwd/1 rev, internal: 1 fwd/0 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=3
+seek-prefix-ge a
+next
+----
+a: (c, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (2 internal); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+
+define
+a.DEL.2:
+a.SET.1:b
+----
+
+iter seq=3
+seek-ge a
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (2 internal); blocks: 0B cached; points: 2 (2B keys, 1B values)
+
+iter seq=2
+seek-ge 1
+next
+----
+a: (b, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (2B keys, 1B values)
+
+iter seq=3
+seek-lt b
+----
+.
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 0 times (0 fwd/0 rev, internal: 0 fwd/2 rev); blocks: 0B cached; points: 2 (2B keys, 1B values)
+
+iter seq=2
+seek-lt b
+prev
+next
+----
+a: (b, .)
+.
+a: (b, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 1 fwd/1 rev); stepped 2 times (1 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 4 (4B keys, 2B values)
+
+iter seq=3
+seek-prefix-ge a
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (2 internal); blocks: 0B cached; points: 2 (2B keys, 1B values)
+
+iter seq=2
+seek-prefix-ge 1
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 1 (1B keys, 0B values)
+
+define
+a.DEL.2:
+a.SET.1:b
+b.SET.3:c
+----
+
+iter seq=4
+seek-ge a
+next
+----
+b: (c, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (3 internal); blocks: 0B cached; points: 3 (3B keys, 2B values)
+
+iter seq=3
+seek-ge a
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (2 internal); blocks: 0B cached; points: 3 (3B keys, 2B values)
+
+iter seq=2
+seek-ge a
+----
+a: (b, .)
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 2 (2B keys, 1B values)
+
+iter seq=4
+seek-prefix-ge a
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (2 internal); blocks: 0B cached; points: 3 (3B keys, 2B values)
+
+iter seq=3
+seek-prefix-ge a
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (2 internal); blocks: 0B cached; points: 3 (3B keys, 2B values)
+
+iter seq=2
+seek-prefix-ge a
+----
+a: (b, .)
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 2 (2B keys, 1B values)
+
+iter seq=2
+seek-prefix-ge a
+seek-prefix-ge b
+----
+a: (b, .)
+.
+stats: seeked 2 times (2 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 3 (3B keys, 2B values)
+
+define
+a.DEL.3:
+a.SET.1:b
+b.DEL.3:
+b.SET.2:c
+c.SET.3:d
+----
+
+iter seq=4
+seek-prefix-ge a
+seek-prefix-ge b
+seek-prefix-ge c
+----
+.
+.
+c: (d, .)
+stats: seeked 3 times (3 internal); stepped 0 times (4 internal); blocks: 0B cached; points: 7 (7B keys, 4B values)
+
+iter seq=3
+seek-prefix-ge a
+seek-prefix-ge b
+seek-prefix-ge c
+----
+a: (b, .)
+b: (c, .)
+.
+stats: seeked 3 times (3 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 5 (5B keys, 3B values)
+
+iter seq=3
+seek-ge a
+seek-ge b
+seek-ge c
+----
+a: (b, .)
+b: (c, .)
+.
+stats: seeked 3 times (3 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 5 (5B keys, 3B values)
+
+define
+a.SET.1:a
+b.SET.2:b
+c.SET.3:c
+----
+
+iter seq=4
+seek-ge a
+next
+next
+next
+----
+a: (a, .)
+b: (b, .)
+c: (c, .)
+.
+stats: seeked 1 times (1 internal); stepped 3 times (3 internal); blocks: 0B cached; points: 3 (3B keys, 3B values)
+
+iter seq=4
+seek-ge b
+next
+----
+b: (b, .)
+c: (c, .)
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=4
+seek-ge c
+----
+c: (c, .)
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+iter seq=4
+seek-lt a
+----
+.
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 0 times (0 internal)
+
+iter seq=4
+seek-lt b
+prev
+next
+----
+a: (a, .)
+.
+a: (a, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 1 fwd/1 rev); stepped 2 times (1 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=4
+seek-lt c
+prev
+prev
+next
+----
+b: (b, .)
+a: (a, .)
+.
+a: (a, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 1 fwd/1 rev); stepped 3 times (1 fwd/2 rev, internal: 0 fwd/2 rev); blocks: 0B cached; points: 3 (3B keys, 3B values)
+
+
+iter seq=4
+seek-lt d
+prev
+prev
+prev
+next
+----
+c: (c, .)
+b: (b, .)
+a: (a, .)
+.
+a: (a, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 1 fwd/1 rev); stepped 4 times (1 fwd/3 rev, internal: 0 fwd/3 rev); blocks: 0B cached; points: 4 (4B keys, 4B values)
+
+iter seq=4
+seek-prefix-ge a
+next
+----
+a: (a, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=4
+seek-prefix-ge b
+next
+----
+b: (b, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+
+iter seq=4
+seek-prefix-ge c
+next
+----
+c: (c, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+
+iter seq=4
+seek-prefix-ge d
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal)
+
+iter seq=4
+seek-prefix-ge a
+seek-prefix-ge c
+seek-prefix-ge b
+----
+a: (a, .)
+c: (c, .)
+b: (b, .)
+stats: seeked 3 times (3 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 3 (3B keys, 3B values)
+
+define
+a.SET.b2:b
+b.SET.2:c
+----
+
+iter seq=2
+seek-ge a
+next
+prev
+----
+a: (b, .)
+.
+a: (b, .)
+stats: seeked 1 times (1 fwd/0 rev, internal: 1 fwd/1 rev); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/1 rev); blocks: 0B cached; points: 4 (4B keys, 4B values)
+
+iter seq=2
+seek-ge b
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+iter seq=2
+seek-lt a
+----
+.
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 0 times (0 internal)
+
+iter seq=2
+seek-lt b
+prev
+next
+----
+a: (b, .)
+.
+a: (b, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 1 fwd/1 rev); stepped 2 times (1 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2
+seek-lt c
+prev
+next
+----
+a: (b, .)
+.
+a: (b, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 1 fwd/1 rev); stepped 2 times (1 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 3 (3B keys, 3B values)
+
+iter seq=2
+seek-prefix-ge a
+next
+----
+a: (b, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2
+seek-prefix-ge b
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+
+define
+a.SET.1:a
+aa.SET.2:aa
+aaa.SET.3:aaa
+b.SET.4:b
+----
+
+iter seq=5
+seek-prefix-ge a
+next
+----
+a: (a, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (3B keys, 3B values)
+
+iter seq=5
+seek-prefix-ge a
+next
+----
+a: (a, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (3B keys, 3B values)
+
+iter seq=5
+seek-prefix-ge aa
+----
+aa: (aa, .)
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 1 (2B keys, 2B values)
+
+iter seq=5
+seek-prefix-ge aa
+next
+----
+aa: (aa, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (5B keys, 5B values)
+
+iter seq=5
+seek-prefix-ge aa
+next
+----
+aa: (aa, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (5B keys, 5B values)
+
+iter seq=5
+seek-prefix-ge aaa
+next
+----
+aaa: (aaa, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (4B keys, 4B values)
+
+iter seq=5
+seek-prefix-ge aaa
+----
+aaa: (aaa, .)
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 1 (3B keys, 3B values)
+
+iter seq=5
+seek-prefix-ge b
+next
+----
+b: (b, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+iter seq=5
+seek-prefix-ge aa
+last
+prev
+prev
+prev
+prev
+----
+aa: (aa, .)
+b: (b, .)
+aaa: (aaa, .)
+aa: (aa, .)
+a: (a, .)
+.
+stats: seeked 2 times (1 fwd/1 rev, internal: 1 fwd/1 rev); stepped 4 times (0 fwd/4 rev, internal: 0 fwd/4 rev); blocks: 0B cached; points: 5 (9B keys, 9B values)
+
+iter seq=5
+seek-prefix-ge aa
+first
+next
+next
+next
+next
+----
+aa: (aa, .)
+a: (a, .)
+aa: (aa, .)
+aaa: (aaa, .)
+b: (b, .)
+.
+stats: seeked 2 times (2 internal); stepped 4 times (4 internal); blocks: 0B cached; points: 5 (9B keys, 9B values)
+
+iter seq=5
+seek-prefix-ge aaa
+seek-ge aa
+next
+next
+next
+----
+aaa: (aaa, .)
+aa: (aa, .)
+aaa: (aaa, .)
+b: (b, .)
+.
+stats: seeked 2 times (2 internal); stepped 3 times (3 internal); blocks: 0B cached; points: 4 (9B keys, 9B values)
+
+iter seq=5
+seek-prefix-ge aaa
+seek-ge aaa
+next
+next
+----
+aaa: (aaa, .)
+aaa: (aaa, .)
+b: (b, .)
+.
+stats: seeked 2 times (2 internal); stepped 2 times (2 internal); blocks: 0B cached; points: 3 (7B keys, 7B values)
+
+iter seq=5
+seek-prefix-ge aaa
+seek-lt aa
+next
+next
+next
+next
+----
+aaa: (aaa, .)
+a: (a, .)
+aa: (aa, .)
+aaa: (aaa, .)
+b: (b, .)
+.
+stats: seeked 2 times (1 fwd/1 rev, internal: 2 fwd/1 rev); stepped 4 times (4 fwd/0 rev, internal: 4 fwd/1 rev); blocks: 0B cached; points: 6 (11B keys, 11B values)
+
+
+iter seq=5
+seek-prefix-ge aaa
+seek-lt b
+next
+next
+----
+aaa: (aaa, .)
+aaa: (aaa, .)
+b: (b, .)
+.
+stats: seeked 2 times (1 fwd/1 rev, internal: 1 fwd/1 rev); stepped 2 times (2 fwd/0 rev, internal: 3 fwd/1 rev); blocks: 0B cached; points: 5 (12B keys, 12B values)
+
+iter seq=4
+seek-prefix-ge a
+seek-prefix-ge aa
+seek-prefix-ge aaa
+seek-prefix-ge b
+----
+a: (a, .)
+aa: (aa, .)
+aaa: (aaa, .)
+.
+stats: seeked 4 times (4 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 4 (7B keys, 7B values)
+
+iter seq=3
+seek-prefix-ge aaa
+seek-prefix-ge b
+seek-prefix-ge a
+seek-prefix-ge aa
+seek-prefix-ge aaa
+----
+.
+.
+a: (a, .)
+aa: (aa, .)
+.
+stats: seeked 5 times (5 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 7 (12B keys, 12B values)
+
+define
+bb.DEL.2:
+bb.SET.1:1
+bb2.SET.3:2
+----
+
+iter seq=4
+seek-prefix-ge bb
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (2 internal); blocks: 0B cached; points: 3 (7B keys, 2B values)
+
+
+define
+a.MERGE.3:d
+a.MERGE.2:c
+a.SET.1:b
+b.MERGE.2:b
+b.MERGE.1:a
+----
+
+iter seq=4
+seek-ge a
+next
+next
+prev
+----
+a: (bcd, .)
+b: (ab, .)
+.
+b: (ab, .)
+stats: seeked 1 times (1 fwd/0 rev, internal: 1 fwd/1 rev); stepped 3 times (2 fwd/1 rev, internal: 5 fwd/2 rev); blocks: 0B cached; points: 8 (8B keys, 8B values)
+
+iter seq=3
+seek-ge a
+next
+----
+a: (bc, .)
+b: (ab, .)
+stats: seeked 1 times (1 internal); stepped 1 times (4 internal); blocks: 0B cached; points: 5 (5B keys, 5B values)
+
+iter seq=2
+seek-ge a
+next
+----
+a: (b, .)
+b: (a, .)
+stats: seeked 1 times (1 internal); stepped 1 times (2 internal); blocks: 0B cached; points: 5 (5B keys, 5B values)
+
+iter seq=4
+seek-lt c
+prev
+prev
+next
+----
+b: (ab, .)
+a: (bcd, .)
+.
+a: (bcd, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 1 fwd/1 rev); stepped 3 times (1 fwd/2 rev, internal: 2 fwd/5 rev); blocks: 0B cached; points: 8 (8B keys, 8B values)
+
+iter seq=3
+seek-lt c
+prev
+----
+b: (ab, .)
+a: (bc, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/4 rev); blocks: 0B cached; points: 5 (5B keys, 5B values)
+
+iter seq=2
+seek-lt c
+prev
+----
+b: (a, .)
+a: (b, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/2 rev); blocks: 0B cached; points: 5 (5B keys, 5B values)
+
+iter seq=4
+seek-ge a
+next
+prev
+next
+----
+a: (bcd, .)
+b: (ab, .)
+a: (bcd, .)
+b: (ab, .)
+stats: seeked 1 times (1 fwd/0 rev, internal: 2 fwd/1 rev); stepped 3 times (2 fwd/1 rev, internal: 10 fwd/5 rev); blocks: 0B cached; points: 15 (15B keys, 15B values)
+
+iter seq=3
+seek-ge a
+next
+prev
+next
+----
+a: (bc, .)
+b: (ab, .)
+a: (bc, .)
+b: (ab, .)
+stats: seeked 1 times (1 fwd/0 rev, internal: 2 fwd/1 rev); stepped 3 times (2 fwd/1 rev, internal: 8 fwd/4 rev); blocks: 0B cached; points: 15 (15B keys, 15B values)
+
+iter seq=2
+seek-ge a
+next
+prev
+next
+----
+a: (b, .)
+b: (a, .)
+a: (b, .)
+b: (a, .)
+stats: seeked 1 times (1 fwd/0 rev, internal: 2 fwd/1 rev); stepped 3 times (2 fwd/1 rev, internal: 4 fwd/2 rev); blocks: 0B cached; points: 15 (15B keys, 15B values)
+
+iter seq=4
+seek-lt c
+prev
+next
+prev
+----
+b: (ab, .)
+a: (bcd, .)
+b: (ab, .)
+a: (bcd, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 1 fwd/2 rev); stepped 3 times (1 fwd/2 rev, internal: 5 fwd/10 rev); blocks: 0B cached; points: 15 (15B keys, 15B values)
+
+iter seq=3
+seek-lt c
+prev
+next
+prev
+----
+b: (ab, .)
+a: (bc, .)
+b: (ab, .)
+a: (bc, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 1 fwd/2 rev); stepped 3 times (1 fwd/2 rev, internal: 4 fwd/8 rev); blocks: 0B cached; points: 15 (15B keys, 15B values)
+
+iter seq=2
+seek-lt c
+prev
+next
+prev
+----
+b: (a, .)
+a: (b, .)
+b: (a, .)
+a: (b, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 1 fwd/2 rev); stepped 3 times (1 fwd/2 rev, internal: 2 fwd/4 rev); blocks: 0B cached; points: 15 (15B keys, 15B values)
+
+iter seq=3
+seek-prefix-ge a
+next
+----
+a: (bc, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (2 internal); blocks: 0B cached; points: 4 (4B keys, 4B values)
+
+iter seq=2
+seek-prefix-ge a
+next
+----
+a: (b, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 4 (4B keys, 4B values)
+
+iter seq=4
+seek-prefix-ge a
+next
+----
+a: (bcd, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (3 internal); blocks: 0B cached; points: 4 (4B keys, 4B values)
+
+iter seq=2
+seek-prefix-ge a
+next
+----
+a: (b, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 4 (4B keys, 4B values)
+
+iter seq=3
+seek-prefix-ge a
+next
+----
+a: (bc, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (2 internal); blocks: 0B cached; points: 4 (4B keys, 4B values)
+
+iter seq=3
+seek-prefix-ge c
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal)
+
+iter seq=3
+seek-prefix-ge 1
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+iter seq=3
+seek-prefix-ge a
+----
+a: (bc, .)
+stats: seeked 1 times (1 internal); stepped 0 times (1 internal); blocks: 0B cached; points: 3 (3B keys, 3B values)
+
+
+define
+a.MERGE.3:d
+a.MERGE.2:c
+a.MERGE.1:b
+aa.MERGE.2:b
+aa.MERGE.1:a
+b.MERGE.2:b
+b.MERGE.1:a
+----
+
+iter seq=3
+seek-prefix-ge a
+next
+next
+----
+a: (bc, .)
+.
+.
+stats: seeked 1 times (1 internal); stepped 2 times (2 internal); blocks: 0B cached; points: 4 (5B keys, 4B values)
+
+iter seq=2
+seek-prefix-ge a
+next
+next
+----
+a: (b, .)
+.
+.
+stats: seeked 1 times (1 internal); stepped 2 times (1 internal); blocks: 0B cached; points: 4 (5B keys, 4B values)
+
+iter seq=4
+seek-prefix-ge a
+next
+----
+a: (bcd, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (3 internal); blocks: 0B cached; points: 4 (5B keys, 4B values)
+
+iter seq=2
+seek-prefix-ge a
+next
+----
+a: (b, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 4 (5B keys, 4B values)
+
+iter seq=3
+seek-prefix-ge aa
+next
+----
+aa: (ab, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (2 internal); blocks: 0B cached; points: 3 (5B keys, 3B values)
+
+iter seq=4
+seek-prefix-ge aa
+----
+aa: (ab, .)
+stats: seeked 1 times (1 internal); stepped 0 times (2 internal); blocks: 0B cached; points: 3 (5B keys, 3B values)
+
+define
+a.SET.1:a
+b.SET.1:b
+c.SET.1:c
+d.SET.1:d
+----
+
+iter seq=2 lower=a
+seek-ge a
+first
+prev
+----
+a: (a, .)
+a: (a, .)
+.
+stats: seeked 2 times (2 internal); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2 lower=b
+seek-ge a
+first
+prev
+----
+b: (b, .)
+b: (b, .)
+.
+stats: seeked 2 times (2 internal); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2 lower=c
+seek-ge a
+first
+prev
+----
+c: (c, .)
+c: (c, .)
+.
+stats: seeked 2 times (2 internal); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2 lower=d
+seek-ge a
+first
+prev
+----
+d: (d, .)
+d: (d, .)
+.
+stats: seeked 2 times (2 internal); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2 lower=e
+seek-ge a
+first
+----
+.
+.
+stats: seeked 2 times (2 internal); stepped 0 times (0 internal)
+
+iter seq=2 upper=d
+seek-lt d
+last
+next
+----
+c: (c, .)
+c: (c, .)
+.
+stats: seeked 2 times (0 fwd/2 rev, internal: 0 fwd/2 rev); stepped 1 times (1 fwd/0 rev, internal: 2 fwd/2 rev); blocks: 0B cached; points: 5 (5B keys, 5B values)
+
+iter seq=2 upper=c
+seek-lt d
+last
+next
+----
+b: (b, .)
+b: (b, .)
+.
+stats: seeked 2 times (0 fwd/2 rev, internal: 0 fwd/2 rev); stepped 1 times (1 fwd/0 rev, internal: 2 fwd/2 rev); blocks: 0B cached; points: 5 (5B keys, 5B values)
+
+iter seq=2 upper=b
+seek-lt d
+last
+next
+----
+a: (a, .)
+a: (a, .)
+.
+stats: seeked 2 times (0 fwd/2 rev, internal: 1 fwd/2 rev); stepped 1 times (1 fwd/0 rev, internal: 1 fwd/2 rev); blocks: 0B cached; points: 3 (3B keys, 3B values)
+
+iter seq=2 upper=a
+seek-lt d
+last
+----
+.
+.
+stats: seeked 2 times (0 fwd/2 rev, internal: 0 fwd/2 rev); stepped 0 times (0 internal)
+
+iter seq=2 lower=b upper=c
+seek-ge a
+next
+----
+b: (b, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+iter seq=2
+set-bounds lower=a
+seek-ge a
+first
+prev
+----
+.
+a: (a, .)
+a: (a, .)
+.
+stats: seeked 2 times (2 internal); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2
+set-bounds lower=b
+seek-ge a
+first
+prev
+----
+.
+b: (b, .)
+b: (b, .)
+.
+stats: seeked 2 times (2 internal); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2
+set-bounds lower=c
+seek-ge a
+first
+prev
+----
+.
+c: (c, .)
+c: (c, .)
+.
+stats: seeked 2 times (2 internal); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2
+set-bounds lower=d
+seek-ge a
+first
+prev
+----
+.
+d: (d, .)
+d: (d, .)
+.
+stats: seeked 2 times (2 internal); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2
+set-bounds lower=e
+seek-ge a
+first
+----
+.
+.
+.
+stats: seeked 2 times (2 internal); stepped 0 times (0 internal)
+
+iter seq=2
+set-bounds upper=d
+seek-lt d
+last
+next
+----
+.
+c: (c, .)
+c: (c, .)
+.
+stats: seeked 2 times (0 fwd/2 rev, internal: 0 fwd/2 rev); stepped 1 times (1 fwd/0 rev, internal: 2 fwd/2 rev); blocks: 0B cached; points: 5 (5B keys, 5B values)
+
+iter seq=2
+set-bounds upper=c
+seek-lt d
+last
+next
+----
+.
+b: (b, .)
+b: (b, .)
+.
+stats: seeked 2 times (0 fwd/2 rev, internal: 0 fwd/2 rev); stepped 1 times (1 fwd/0 rev, internal: 2 fwd/2 rev); blocks: 0B cached; points: 5 (5B keys, 5B values)
+
+iter seq=2
+set-bounds upper=b
+seek-lt d
+last
+next
+----
+.
+a: (a, .)
+a: (a, .)
+.
+stats: seeked 2 times (0 fwd/2 rev, internal: 1 fwd/2 rev); stepped 1 times (1 fwd/0 rev, internal: 1 fwd/2 rev); blocks: 0B cached; points: 3 (3B keys, 3B values)
+
+iter seq=2
+set-bounds upper=a
+seek-lt d
+last
+----
+.
+.
+.
+stats: seeked 2 times (0 fwd/2 rev, internal: 0 fwd/2 rev); stepped 0 times (0 internal)
+
+iter seq=2
+set-bounds lower=a
+seek-lt d
+next
+next
+----
+.
+c: (c, .)
+d: (d, .)
+.
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 2 times (2 fwd/0 rev, internal: 3 fwd/1 rev); blocks: 0B cached; points: 4 (4B keys, 4B values)
+
+iter seq=2
+set-bounds lower=b upper=c
+seek-ge a
+next
+----
+.
+b: (b, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+iter seq=2
+set-bounds lower=b
+seek-ge a
+set-bounds lower=b upper=z
+seek-ge a
+----
+.
+b: (b, .)
+.
+b: (b, .)
+stats: seeked 2 times (2 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2
+seek-ge a
+set-bounds upper=e
+----
+a: (a, .)
+.
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+iter seq=2
+set-bounds lower=b
+seek-ge a
+set-bounds upper=e
+----
+.
+b: (b, .)
+.
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+iter seq=2
+set-bounds lower=b
+first
+----
+.
+b: (b, .)
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+iter seq=2
+set-bounds upper=b
+first
+----
+.
+a: (a, .)
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+iter seq=2
+set-bounds lower=b
+last
+----
+.
+d: (d, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 0 times (0 fwd/0 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2
+set-bounds upper=b
+last
+----
+.
+a: (a, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 0 times (0 fwd/0 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+# The prev call after "set-bounds upper=c" will assume that the iterator
+# is exhausted due to having stepped up to c. Which means prev should step
+# back to below c, hence returning b.
+iter seq=2
+last
+next
+set-bounds upper=c
+prev
+----
+d: (d, .)
+.
+.
+b: (b, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/2 rev); stepped 2 times (1 fwd/1 rev, internal: 2 fwd/2 rev); blocks: 0B cached; points: 5 (5B keys, 5B values)
+
+# The next call after "set-bounds lower=b" will assume that the iterator
+# is exhausted due to having stepped below b. Which means next should step
+# up to b (or higher), hence returning b.
+iter seq=2
+first
+prev
+set-bounds lower=b
+next
+----
+a: (a, .)
+.
+.
+b: (b, .)
+stats: seeked 1 times (2 internal); stepped 2 times (1 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+iter seq=2
+set-bounds lower=b
+seek-lt c
+next
+----
+.
+b: (b, .)
+c: (c, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 1 fwd/1 rev); stepped 1 times (1 fwd/0 rev, internal: 1 fwd/1 rev); blocks: 0B cached; points: 3 (3B keys, 3B values)
+
+iter seq=2
+set-bounds upper=d
+seek-ge c
+prev
+----
+.
+c: (c, .)
+b: (b, .)
+stats: seeked 1 times (1 internal); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/2 rev); blocks: 0B cached; points: 3 (3B keys, 3B values)
+
+define
+a.SET.1:a
+aa.SET.1:aa
+aaa.SET.1:aaa
+b.SET.1:b
+----
+
+iter seq=2 lower=a
+seek-prefix-ge a
+first
+prev
+----
+a: (a, .)
+a: (a, .)
+.
+stats: seeked 2 times (2 internal); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+
+iter seq=2 lower=aa
+seek-prefix-ge a
+----
+err=pebble: SeekPrefixGE supplied with key outside of lower bound
+stats: seeked 1 times (0 internal); stepped 0 times (0 internal)
+
+iter seq=2 lower=a upper=aa
+seek-prefix-ge a
+next
+----
+a: (a, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 1 (1B keys, 1B values)
+
+iter seq=2 lower=a upper=aaa
+seek-prefix-ge a
+next
+----
+a: (a, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (3B keys, 3B values)
+
+iter seq=2 lower=a upper=b
+seek-prefix-ge a
+next
+----
+a: (a, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (3B keys, 3B values)
+
+iter seq=2 lower=a upper=c
+seek-prefix-ge a
+next
+----
+a: (a, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 2 (3B keys, 3B values)
+
+iter seq=2 lower=a upper=aaa
+seek-prefix-ge aa
+----
+aa: (aa, .)
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 1 (2B keys, 2B values)
+
+iter seq=2 lower=a upper=aaa
+seek-prefix-ge aa
+next
+----
+aa: (aa, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached; points: 1 (2B keys, 2B values)
+
+define
+a.SET.1:a
+b.SET.2:b
+----
+
+iter seq=4
+first
+next
+next
+----
+a: (a, .)
+b: (b, .)
+.
+stats: seeked 1 times (1 internal); stepped 2 times (2 internal); blocks: 0B cached; points: 2 (2B keys, 2B values)
+
+define
+a.SINGLEDEL.1:
+----
+
+iter seq=2
+first
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (1 internal); blocks: 0B cached; points: 1 (1B keys, 0B values)
+
+define
+a.SINGLEDEL.2:
+a.SINGLEDEL.1:
+----
+
+iter seq=3
+first
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (2 internal); blocks: 0B cached; points: 2 (2B keys, 0B values)
+
+define
+a.SINGLEDEL.2:
+a.DEL.1:
+----
+
+iter seq=3
+first
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (2 internal); blocks: 0B cached; points: 2 (2B keys, 0B values)
+
+define
+a.SINGLEDEL.2:
+a.MERGE.1:
+----
+
+iter seq=3
+first
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (2 internal); blocks: 0B cached; points: 2 (2B keys, 0B values)
+
+define
+a.SINGLEDEL.2:
+a.SET.1:b
+----
+
+iter seq=3
+first
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (2 internal); blocks: 0B cached; points: 2 (2B keys, 1B values)
+
+define
+a.SET.2:b
+a.SINGLEDEL.1:
+----
+
+iter seq=3
+first
+next
+----
+a: (b, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (2 internal); blocks: 0B cached; points: 2 (2B keys, 1B values)
+
+define
+a.SINGLEDEL.2:
+a.SET.1:b
+b.SET.3:c
+----
+
+iter seq=4
+first
+next
+----
+b: (c, .)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (3 internal); blocks: 0B cached; points: 3 (3B keys, 2B values)
+
+define
+a.SINGLEDEL.3:
+a.SET.2:b
+a.SET.1:a
+----
+
+iter
+first
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached; points: 3 (3B keys, 2B values)
+
+define
+a.SINGLEDEL.3:
+a.MERGE.2:b
+a.MERGE.1:a
+----
+
+iter seq=4
+first
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (3 internal); blocks: 0B cached; points: 3 (3B keys, 2B values)
+
+define
+a.SINGLEDEL.4:
+a.SET.3:val
+a.SINGLEDEL.2:
+a.SET.1:val
+----
+
+iter seq=5
+first
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (4 internal); blocks: 0B cached; points: 4 (4B keys, 6B values)
+
+define
+a.SINGLEDEL.4:
+a.SET.3:val
+a.DEL.2:
+a.SET.1:val
+----
+
+iter seq=5
+first
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (4 internal); blocks: 0B cached; points: 4 (4B keys, 6B values)
+
+define
+a.SINGLEDEL.4:
+a.SET.3:c
+a.MERGE.2:b
+a.SET.1:a
+----
+
+iter seq=5
+first
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (4 internal); blocks: 0B cached; points: 4 (4B keys, 3B values)
+
+define
+a.SINGLEDEL.3:
+a.SET.1:val
+----
+
+iter seq=4
+first
+----
+.
+stats: seeked 1 times (1 internal); stepped 0 times (2 internal); blocks: 0B cached; points: 2 (2B keys, 3B values)
+
+# Exercise iteration with limits, when there are no deletes.
+define
+a.SET.1:a
+b.SET.1:b
+c.SET.1:c
+d.SET.1:d
+----
+
+iter seq=2
+seek-ge-limit a b
+next-limit b
+prev-limit a
+next-limit b
+next-limit b
+seek-lt-limit d d
+prev-limit d
+next-limit e
+prev-limit d
+prev-limit c
+prev-limit b
+prev-limit a
+prev-limit a
+next-limit a
+next-limit b
+----
+a: valid (a, .)
+. at-limit
+a: valid (a, .)
+. at-limit
+. at-limit
+. at-limit
+. at-limit
+d: valid (d, .)
+. at-limit
+c: valid (c, .)
+b: valid (b, .)
+a: valid (a, .)
+. exhausted
+. at-limit
+a: valid (a, .)
+stats: seeked 2 times (1 fwd/1 rev, internal: 3 fwd/1 rev); stepped 13 times (6 fwd/7 rev, internal: 3 fwd/6 rev); blocks: 0B cached; points: 11 (11B keys, 11B values)
+
+# Exercise iteration with limits when we have deletes.
+
+define
+a.SET.1:a
+b.DEL.3:
+b.SET.2:b
+c.DEL.3:
+c.SET.2:c
+d.SET.1:d
+----
+
+iter seq=4
+seek-ge-limit a b
+next-limit b
+prev-limit a
+prev-limit a
+next-limit b
+next-limit b
+next-limit b
+prev-limit a
+next-limit c
+prev-limit b
+next-limit c
+next-limit d
+next-limit e
+next-limit e
+prev-limit d
+next-limit e
+----
+a: valid (a, .)
+. at-limit
+a: valid (a, .)
+. exhausted
+a: valid (a, .)
+. at-limit
+. at-limit
+a: valid (a, .)
+. at-limit
+. at-limit
+. at-limit
+. at-limit
+d: valid (d, .)
+. exhausted
+d: valid (d, .)
+. exhausted
+stats: seeked 1 times (1 fwd/0 rev, internal: 3 fwd/1 rev); stepped 15 times (10 fwd/5 rev, internal: 13 fwd/8 rev); blocks: 0B cached; points: 21 (21B keys, 14B values)
+
+iter seq=4
+seek-ge-limit b d
+next-limit d
+prev-limit b
+next-limit e
+----
+. at-limit
+. at-limit
+. at-limit
+d: valid (d, .)
+stats: seeked 1 times (1 internal); stepped 3 times (2 fwd/1 rev, internal: 9 fwd/5 rev); blocks: 0B cached; points: 15 (15B keys, 9B values)
+
+iter seq=4
+seek-lt-limit d c
+prev-limit c
+prev-limit b
+prev-limit a
+prev-limit a
+next-limit b
+----
+. at-limit
+. at-limit
+. at-limit
+a: valid (a, .)
+. exhausted
+a: valid (a, .)
+stats: seeked 1 times (0 fwd/1 rev, internal: 1 fwd/1 rev); stepped 5 times (1 fwd/4 rev, internal: 0 fwd/5 rev); blocks: 0B cached; points: 6 (6B keys, 4B values)
+
+# NB: Zero values are skipped by deletable merger.
+define merger=deletable
+a.MERGE.1:1
+a.MERGE.2:2
+a.MERGE.3:-1
+a.MERGE.4:-2
+b.MERGE.4:-3
+b.MERGE.3:3
+b.MERGE.2:2
+b.MERGE.1:-2
+----
+
+iter seq=5
+seek-ge a
+next
+next
+prev
+prev
+----
+.
+.
+.
+.
+.
+stats: seeked 1 times (1 fwd/0 rev, internal: 1 fwd/1 rev); stepped 4 times (2 fwd/2 rev, internal: 8 fwd/8 rev); blocks: 0B cached; points: 16 (16B keys, 24B values)
+
+iter seq=4
+seek-ge a
+next
+next
+prev
+prev
+----
+a: (2, .)
+b: (3, .)
+.
+b: (3, .)
+a: (2, .)
+stats: seeked 1 times (1 fwd/0 rev, internal: 1 fwd/1 rev); stepped 4 times (2 fwd/2 rev, internal: 6 fwd/6 rev); blocks: 0B cached; points: 16 (16B keys, 24B values)

@@ -1,0 +1,75 @@
+syntax = "proto3";
+option go_package = "examplepb";
+package grpc.gateway.examples.internal.examplepb;
+
+import "google/api/annotations.proto";
+import "google/protobuf/field_mask.proto";
+
+// NonStandardMessage has oddly named fields.
+message NonStandardMessage {
+    // Id represents the message identifier.
+    string id = 1;
+    int64 Num = 2;
+    int64 line_num = 3;
+    string langIdent = 4;
+    string STATUS = 5;
+    int64 en_GB = 6;
+    string no = 7;
+
+    message Thing {
+        message SubThing {
+            string sub_value = 1;
+        }
+        SubThing subThing = 1;
+    }
+    Thing thing = 8;
+}
+
+message NonStandardUpdateRequest {
+    NonStandardMessage body = 1;
+    google.protobuf.FieldMask update_mask = 2;
+}
+
+// NonStandardMessageWithJSONNames maps odd field names to odd JSON names for maximum confusion.
+message NonStandardMessageWithJSONNames {
+    // Id represents the message identifier.
+    string id = 1           [json_name="ID"];
+    int64 Num = 2           [json_name="Num"];
+    int64 line_num = 3      [json_name="LineNum"];
+    string langIdent = 4    [json_name="langIdent"];
+    string STATUS = 5       [json_name="status"];
+    int64 en_GB = 6         [json_name="En_GB"];
+    string no = 7           [json_name="yes"];
+
+    message Thing {
+        message SubThing {
+            string sub_value = 1    [json_name="sub_Value"];
+        }
+        SubThing subThing = 1   [json_name="SubThing"];
+    }
+    Thing thing = 8         [json_name="Thingy"];
+}
+
+message NonStandardWithJSONNamesUpdateRequest {
+    NonStandardMessageWithJSONNames body = 1;
+    google.protobuf.FieldMask update_mask = 2;
+}
+
+// NonStandardService responds to incoming messages, applies a field mask and returns the masked response.
+service NonStandardService {
+    // Apply field mask to empty NonStandardMessage and return result.
+    rpc Update(NonStandardUpdateRequest) returns (NonStandardMessage) {
+        option (google.api.http) = {
+            patch: "/v1/example/non_standard/update"
+            body: "body"
+        };
+    }
+
+    // Apply field mask to empty NonStandardMessageWithJSONNames and return result.
+    rpc UpdateWithJSONNames(NonStandardWithJSONNamesUpdateRequest) returns (NonStandardMessageWithJSONNames) {
+        option (google.api.http) = {
+            patch: "/v1/example/non_standard/update_with_json_names"
+            body: "body"
+        };
+    }
+}

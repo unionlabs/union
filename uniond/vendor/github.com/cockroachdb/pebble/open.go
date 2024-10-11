@@ -310,6 +310,7 @@ func Open(dirname string, opts *Options) (db *DB, _ error) {
 		NoSyncOnClose:       opts.NoSyncOnClose,
 		BytesPerSync:        opts.BytesPerSync,
 	}
+	providerSettings.Local.ReadaheadConfigFn = opts.Local.ReadaheadConfigFn
 	providerSettings.Remote.StorageFactory = opts.Experimental.RemoteStorage
 	providerSettings.Remote.CreateOnShared = opts.Experimental.CreateOnShared
 	providerSettings.Remote.CreateOnSharedLocator = opts.Experimental.CreateOnSharedLocator

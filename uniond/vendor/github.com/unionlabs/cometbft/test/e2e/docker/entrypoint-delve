@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# Forcibly remove any stray UNIX sockets left behind from previous runs
+rm -rf /var/run/privval.sock /var/run/app.sock
+
+# dlv won't run the app until you connect to it with a client.
+# Once the app is run, the signer will try only a few times before stopping, so don't take long to let comet run as well.
+dlv --headless --listen=:2345 --log --log-output=debugger,debuglineerr,gdbwire,lldbout,rpc --accept-multiclient --api-version=2 exec /usr/bin/app -- /cometbft/config/app.toml &
+
+sleep 30
+
+dlv --headless --listen=:2346 --log --log-output=debugger,debuglineerr,gdbwire,lldbout,rpc --accept-multiclient --api-version=2 exec /usr/bin/cometbft -- "$@"

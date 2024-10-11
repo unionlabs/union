@@ -1,0 +1,28 @@
+name: LSIF
+on:
+  push:
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - '.github/workflows/lsif.yml'
+env:
+  GOPROXY: "https://proxy.golang.org"
+
+jobs:
+  lsif-go:
+    if: github.repository == 'go-ini/ini'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Generate LSIF data
+        uses: sourcegraph/lsif-go-action@master
+      - name: Upload LSIF data to sourcegraph.com
+        continue-on-error: true
+        uses: docker://sourcegraph/src-cli:latest
+        with:
+          args: lsif upload -github-token=${{ secrets.GITHUB_TOKEN }}
+      - name: Upload LSIF data to cs.unknwon.dev
+        continue-on-error: true
+        uses: docker://sourcegraph/src-cli:latest
+        with:
+          args: -endpoint=https://cs.unknwon.dev lsif upload -github-token=${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,36 @@
+[
+  [
+    {
+      "gate": "mimc",
+      "inputs": [[1,0], [5,5]]
+    }
+  ],
+  [
+    {
+      "gate": "mimc",
+      "inputs": [[2,0], [5,4]]
+    }
+  ],
+  [
+    {
+      "gate": "mimc",
+      "inputs": [[3,0], [5,3]]
+    }
+  ],
+  [
+    {
+      "gate": "mimc",
+      "inputs": [[4,0], [5,2]]
+    }
+  ],
+  [
+    {
+      "gate": "mimc",
+      "inputs": [[5,0], [5,1]]
+    }
+  ],
+  [
+    {"gate": null, "inputs": []}, {"gate": null, "inputs": []}, {"gate": null, "inputs": []},
+    {"gate": null, "inputs": []}, {"gate": null, "inputs": []}, {"gate": null, "inputs": []}
+  ]
+]

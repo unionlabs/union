@@ -1,0 +1,115 @@
+syntax = "proto3";
+option go_package = "examplepb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+package grpc.gateway.runtime.internal.examplepb;
+
+// SimpleMessage represents a simple message sent to the Echo service.
+message SimpleMessage {
+	string id = 1;
+}
+
+message ABitOfEverything {
+	// Nested is nested type.
+	message Nested {
+		// name is nested field.
+		string name = 1;
+		uint32 amount = 2;
+		// DeepEnum is one or zero.
+		enum DeepEnum {
+			// FALSE is false.
+			FALSE = 0;
+			// TRUE is true.
+			TRUE = 1;
+		}
+
+		// DeepEnum comment.
+		DeepEnum ok = 3;
+	}
+	Nested single_nested = 25;
+
+	string uuid = 1;
+	repeated Nested nested = 2;
+	float float_value = 3;
+	double double_value = 4;
+	int64 int64_value = 5;
+	uint64 uint64_value = 6;
+	int32 int32_value = 7;
+	fixed64 fixed64_value = 8;
+	fixed32 fixed32_value = 9;
+	bool bool_value = 10;
+	string string_value = 11;
+	bytes bytes_value = 29;
+	uint32 uint32_value = 13;
+	NumericEnum enum_value = 14;
+	sfixed32 sfixed32_value = 15;
+	sfixed64 sfixed64_value = 16;
+	sint32 sint32_value = 17;
+	sint64 sint64_value = 18;
+	repeated string repeated_string_value = 19;
+	oneof oneof_value {
+		google.protobuf.Empty oneof_empty = 20;
+		string oneof_string = 21;
+	}
+
+	map<string, NumericEnum> map_value = 22;
+	map<string, string> mapped_string_value = 23;
+	map<string, Nested> mapped_nested_value = 24;
+
+	string nonConventionalNameValue = 26;
+
+	google.protobuf.Timestamp timestamp_value = 27;
+
+	// repeated enum value. it is comma-separated in query
+	repeated NumericEnum repeated_enum_value = 28;
+
+	// repeated numeric enum comment (This comment is overridden by the field annotation)
+	repeated NumericEnum repeated_enum_annotation = 32;
+
+	// numeric enum comment (This comment is overridden by the field annotation)
+	NumericEnum enum_value_annotation = 33;
+
+	// repeated string comment (This comment is overridden by the field annotation)
+	repeated string repeated_string_annotation = 34;
+
+	// repeated nested object comment (This comment is overridden by the field annotation)
+	repeated Nested repeated_nested_annotation = 35;
+
+	// nested object comments (This comment is overridden by the field annotation)
+	Nested nested_annotation = 36;
+
+	int64 int64_override_type = 37;
+}
+
+// NumericEnum is one or zero.
+enum NumericEnum {
+	// ZERO means 0
+	ZERO = 0;
+	// ONE means 1
+	ONE = 1;
+}
+
+message ResponseBodyOut {
+	message Response {
+		string data = 1;
+	}
+	Response response = 2;
+}
+
+message RepeatedResponseBodyOut {
+	message Response {
+		string data = 1;
+		enum ResponseType {
+			// UNKNOWN
+			UNKNOWN = 0;
+			// A is 1
+			A = 1;
+			// B is 2
+			B = 2;
+		}
+		ResponseType type = 3;
+	}
+	repeated Response response = 2;
+}

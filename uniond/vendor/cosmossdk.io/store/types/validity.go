@@ -1,9 +1,12 @@
 package types
 
 var (
-	// 128K - 1
+	// MaxKeyLength is the maximum allowed length for a key in bytes.
+	// It is set to 128K - 1 (131,071 bytes).
 	MaxKeyLength = (1 << 17) - 1
-	// 2G - 1
+
+	// MaxValueLength is the maximum allowed length for a value in bytes.
+	// It is set to 2G - 1 (2,147,483,647 bytes).
 	MaxValueLength = (1 << 31) - 1
 )
 

@@ -1,0 +1,11 @@
+{
+    "installed": {
+        "client_id": "222-installed.apps.googleusercontent.com",
+        "client_secret": "shhhh",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://accounts.google.com/o/oauth2/token",
+        "redirect_uris": [
+            "https://www.example.com/oauth2callback"
+        ]
+    }
+}

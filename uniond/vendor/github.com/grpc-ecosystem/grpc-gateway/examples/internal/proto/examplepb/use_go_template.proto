@@ -1,0 +1,85 @@
+syntax = "proto3";
+option go_package = "examplepb";
+package grpc.gateway.examples.internal.examplepb;
+
+import "google/api/annotations.proto";
+
+service LoginService {
+    // Login
+    // 
+    // {{.MethodDescriptorProto.Name}} is a call with the method(s) {{$first := true}}{{range .Bindings}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{.HTTPMethod}}{{end}} within the "{{.Service.Name}}" service.
+    // It takes in "{{.RequestType.Name}}" and returns a "{{.ResponseType.Name}}".
+    // 
+    // ## {{.RequestType.Name}}
+    // | Field ID    | Name      | Type                                                       | Description                  |
+    // | ----------- | --------- | ---------------------------------------------------------  | ---------------------------- | {{range .RequestType.Fields}}
+    // | {{.Number}} | {{.Name}} | {{if eq .Label.String "LABEL_REPEATED"}}[]{{end}}{{.Type}} | {{fieldcomments .Message .}} | {{end}}  
+    // 
+    // ## {{.ResponseType.Name}}
+    // | Field ID    | Name      | Type                                                       | Description                  |
+    // | ----------- | --------- | ---------------------------------------------------------- | ---------------------------- | {{range .ResponseType.Fields}}
+    // | {{.Number}} | {{.Name}} | {{if eq .Label.String "LABEL_REPEATED"}}[]{{end}}{{.Type}} | {{fieldcomments .Message .}} | {{end}}  
+    rpc Login (LoginRequest) returns (LoginReply) {
+        option (google.api.http) = {
+            post: "/v1/example/login"
+            body: "*"
+        };
+    }
+
+    // Logout
+    // 
+    // {{.MethodDescriptorProto.Name}} is a call with the method(s) {{$first := true}}{{range .Bindings}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{.HTTPMethod}}{{end}} within the "{{.Service.Name}}" service.
+    // It takes in "{{.RequestType.Name}}" and returns a "{{.ResponseType.Name}}".
+    // 
+    // ## {{.RequestType.Name}}
+    // | Field ID    | Name      | Type                                                       | Description                  |
+    // | ----------- | --------- | ---------------------------------------------------------  | ---------------------------- | {{range .RequestType.Fields}}
+    // | {{.Number}} | {{.Name}} | {{if eq .Label.String "LABEL_REPEATED"}}[]{{end}}{{.Type}} | {{fieldcomments .Message .}} | {{end}}  
+    // 
+    // ## {{.ResponseType.Name}}
+    // | Field ID    | Name      | Type                                                       | Description                  |
+    // | ----------- | --------- | ---------------------------------------------------------- | ---------------------------- | {{range .ResponseType.Fields}}
+    // | {{.Number}} | {{.Name}} | {{if eq .Label.String "LABEL_REPEATED"}}[]{{end}}{{.Type}} | {{fieldcomments .Message .}} | {{end}}  
+    rpc Logout (LogoutRequest) returns (LogoutReply) {
+        option (google.api.http) = {
+            post: "/v1/example/logout"
+            body: "*"
+        };
+    }
+}
+
+message LoginRequest {
+    // The entered username 
+    string username = 1;
+    // The entered password
+    string password = 2;
+}
+
+message LoginReply {
+    string message = 1;
+    // Whether you have access or not
+    bool access = 2;
+}
+
+message LogoutRequest {
+    // The time the logout was registered
+    string timeoflogout = 1;
+    // This is the title
+    //
+    // This is the "Description" of field test
+    // you can use as many newlines as you want
+    //
+    //
+    // it will still format the same in the table
+    int32 test = 2;
+    // This is an array
+    // 
+    // It displays that using [] infront of the type
+    repeated string stringarray = 3;
+}
+
+message LogoutReply {
+    // Message that tells you whether your
+    // logout was succesful or not
+    string message = 1;
+}

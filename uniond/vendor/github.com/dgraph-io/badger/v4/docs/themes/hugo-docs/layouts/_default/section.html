@@ -1,0 +1,7 @@
+{{ partial "header.html" . }}
+
+{{ range .Data.Pages.ByWeight  }}
+  {{ .Render "article" }}
+{{ end }}
+
+{{ partial "footer.html" . }}

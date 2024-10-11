@@ -1,0 +1,23 @@
+name: main
+on: [push, pull_request]
+jobs:
+  test:
+    strategy:
+      matrix:
+        go:
+          - 1.18.x
+          - 1.17.x
+          - 1.16.x
+        os:
+          - ubuntu-latest
+    name: ${{ matrix.os }}/go${{ matrix.go }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go }}
+
+      - run: make ci

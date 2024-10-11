@@ -1,0 +1,370 @@
+// Since: cosmos-sdk 0.46
+syntax = "proto3";
+package cosmos.gov.v1;
+
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+
+option go_package = "cosmossdk.io/x/gov/types/v1";
+
+// ProposalType enumerates the valid proposal types.
+// All proposal types are v1.Proposal which have different voting periods or tallying logic.
+enum ProposalType {
+  // PROPOSAL_TYPE_UNSPECIFIED defines no proposal type, which fallback to PROPOSAL_TYPE_STANDARD.
+  PROPOSAL_TYPE_UNSPECIFIED = 0;
+  // PROPOSAL_TYPE_STANDARD defines the type for a standard proposal.
+  PROPOSAL_TYPE_STANDARD = 1;
+  // PROPOSAL_TYPE_MULTIPLE_CHOICE defines the type for a multiple choice proposal.
+  PROPOSAL_TYPE_MULTIPLE_CHOICE = 2;
+  // PROPOSAL_TYPE_OPTIMISTIC defines the type for an optimistic proposal.
+  PROPOSAL_TYPE_OPTIMISTIC = 3;
+  // PROPOSAL_TYPE_EXPEDITED defines the type for an expedited proposal.
+  PROPOSAL_TYPE_EXPEDITED = 4;
+}
+
+// VoteOption enumerates the valid vote options for a given governance proposal.
+enum VoteOption {
+  option allow_alias = true;
+
+  // VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
+  VOTE_OPTION_UNSPECIFIED = 0;
+  // VOTE_OPTION_YES defines the yes proposal vote option.
+  VOTE_OPTION_YES = 1;
+  // VOTE_OPTION_ONE defines the first proposal vote option.
+  VOTE_OPTION_ONE = 1;
+  // VOTE_OPTION_ABSTAIN defines the abstain proposal vote option.
+  VOTE_OPTION_ABSTAIN = 2;
+  // VOTE_OPTION_TWO defines the second proposal vote option.
+  VOTE_OPTION_TWO = 2;
+  // VOTE_OPTION_NO defines the no proposal vote option.
+  VOTE_OPTION_NO = 3;
+  // VOTE_OPTION_THREE defines the third proposal vote option.
+  VOTE_OPTION_THREE = 3;
+  // VOTE_OPTION_NO_WITH_VETO defines the no with veto proposal vote option.
+  VOTE_OPTION_NO_WITH_VETO = 4;
+  // VOTE_OPTION_FOUR defines the fourth proposal vote option.
+  VOTE_OPTION_FOUR = 4;
+  // VOTE_OPTION_SPAM defines the spam proposal vote option.
+  VOTE_OPTION_SPAM = 5;
+}
+
+// WeightedVoteOption defines a unit of vote for vote split.
+message WeightedVoteOption {
+  // option defines the valid vote options, it must not contain duplicate vote options.
+  VoteOption option = 1;
+
+  // weight is the vote weight associated with the vote option.
+  string weight = 2 [(cosmos_proto.scalar) = "cosmos.Dec"];
+}
+
+// Deposit defines an amount deposited by an account address to an active
+// proposal.
+message Deposit {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+
+  // depositor defines the deposit addresses from the proposals.
+  string depositor = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // amount to be deposited by depositor.
+  repeated cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// Proposal defines the core field members of a governance proposal.
+message Proposal {
+  // id defines the unique id of the proposal.
+  uint64 id = 1;
+
+  // messages are the arbitrary messages to be executed if the proposal passes.
+  repeated google.protobuf.Any messages = 2;
+
+  // status defines the proposal status.
+  ProposalStatus status = 3;
+
+  // final_tally_result is the final tally result of the proposal. When
+  // querying a proposal via gRPC, this field is not populated until the
+  // proposal's voting period has ended.
+  TallyResult final_tally_result = 4;
+
+  // submit_time is the time of proposal submission.
+  google.protobuf.Timestamp submit_time = 5 [(gogoproto.stdtime) = true];
+
+  // deposit_end_time is the end time for deposition.
+  google.protobuf.Timestamp deposit_end_time = 6 [(gogoproto.stdtime) = true];
+
+  // total_deposit is the total deposit on the proposal.
+  repeated cosmos.base.v1beta1.Coin total_deposit = 7 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // voting_start_time is the starting time to vote on a proposal.
+  google.protobuf.Timestamp voting_start_time = 8 [(gogoproto.stdtime) = true];
+
+  // voting_end_time is the end time of voting on a proposal.
+  google.protobuf.Timestamp voting_end_time = 9 [(gogoproto.stdtime) = true];
+
+  // metadata is any arbitrary metadata attached to the proposal.
+  // the recommended format of the metadata is to be found here:
+  // https://docs.cosmos.network/v0.47/modules/gov#proposal-3
+  string metadata = 10;
+
+  // title is the title of the proposal
+  string title = 11 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+
+  // summary is a short summary of the proposal
+  string summary = 12 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+
+  // proposer is the address of the proposal sumbitter
+  string proposer = 13
+      [(cosmos_proto.scalar) = "cosmos.AddressString", (cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+
+  // expedited defines if the proposal is expedited
+  //
+  // Deprecated: Use ProposalType instead.
+  bool expedited = 14 [deprecated = true, (cosmos_proto.field_added_in) = "cosmos-sdk 0.50"];
+
+  // failed_reason defines the reason why the proposal failed
+  string failed_reason = 15 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.50"];
+
+  // proposal_type defines the type of the proposal
+  ProposalType proposal_type = 16 [(cosmos_proto.field_added_in) = "x/gov v0.2.0"];
+}
+
+// ProposalStatus enumerates the valid statuses of a proposal.
+enum ProposalStatus {
+  // PROPOSAL_STATUS_UNSPECIFIED defines the default proposal status.
+  PROPOSAL_STATUS_UNSPECIFIED = 0;
+  // PROPOSAL_STATUS_DEPOSIT_PERIOD defines a proposal status during the deposit
+  // period.
+  PROPOSAL_STATUS_DEPOSIT_PERIOD = 1;
+  // PROPOSAL_STATUS_VOTING_PERIOD defines a proposal status during the voting
+  // period.
+  PROPOSAL_STATUS_VOTING_PERIOD = 2;
+  // PROPOSAL_STATUS_PASSED defines a proposal status of a proposal that has
+  // passed.
+  PROPOSAL_STATUS_PASSED = 3;
+  // PROPOSAL_STATUS_REJECTED defines a proposal status of a proposal that has
+  // been rejected.
+  PROPOSAL_STATUS_REJECTED = 4;
+  // PROPOSAL_STATUS_FAILED defines a proposal status of a proposal that has
+  // failed.
+  PROPOSAL_STATUS_FAILED = 5;
+}
+
+// ProposalVoteOptions defines the stringified vote options for proposals.
+// This allows to support multiple choice options for a given proposal.
+message ProposalVoteOptions {
+  option (cosmos_proto.message_added_in) = "x/gov v0.2.0";
+  // option_one is the first option of the proposal
+  string option_one = 1;
+
+  // option_two is the second option of the proposal
+  string option_two = 2;
+
+  // option_three is the third option of the proposal
+  string option_three = 3;
+
+  // option_four is the fourth option of the proposal
+  string option_four = 4;
+
+  // option_spam is always present for all proposals.
+  string option_spam = 5;
+}
+
+// TallyResult defines a standard tally for a governance proposal.
+message TallyResult {
+  // yes_count is the number of yes votes on a proposal.
+  string yes_count = 1 [(cosmos_proto.scalar) = "cosmos.Int", deprecated = true]; // option 1
+  // abstain_count is the number of abstain votes on a proposal.
+  string abstain_count = 2 [(cosmos_proto.scalar) = "cosmos.Int", deprecated = true]; // option 2
+  // no_count is the number of no votes on a proposal.
+  string no_count = 3 [(cosmos_proto.scalar) = "cosmos.Int", deprecated = true]; // option 3
+  // no_with_veto_count is the number of no with veto votes on a proposal.
+  string no_with_veto_count = 4 [(cosmos_proto.scalar) = "cosmos.Int", deprecated = true]; // option 4
+  // option_one_count corresponds to the number of votes for option one (= yes_count for non multiple choice proposals).
+  string option_one_count = 5 [(cosmos_proto.scalar) = "cosmos.Int"];
+  // option_two_count corresponds to the number of votes for option two (= abstain_count for non multiple choice
+  // proposals).
+  string option_two_count = 6 [(cosmos_proto.scalar) = "cosmos.Int"];
+  // option_three_count corresponds to the number of votes for option three (= no_count for non multiple choice
+  // proposals).
+  string option_three_count = 7 [(cosmos_proto.scalar) = "cosmos.Int"];
+  // option_four_count corresponds to the number of votes for option four (= no_with_veto_count for non multiple choice
+  // proposals).
+  string option_four_count = 8 [(cosmos_proto.scalar) = "cosmos.Int"];
+  // spam_count is the number of spam votes on a proposal.
+  string spam_count = 9 [(cosmos_proto.scalar) = "cosmos.Int"];
+}
+
+// Vote defines a vote on a governance proposal.
+// A Vote consists of a proposal ID, the voter, and the vote option.
+message Vote {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+
+  // voter is the voter address of the proposal.
+  string voter = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  reserved 3;
+
+  // options is the weighted vote options.
+  repeated WeightedVoteOption options = 4;
+
+  // metadata is any arbitrary metadata attached to the vote.
+  // the recommended format of the metadata is to be found here: https://docs.cosmos.network/v0.47/modules/gov#vote-5
+  string metadata = 5;
+}
+
+// DepositParams defines the params for deposits on governance proposals.
+message DepositParams {
+  option deprecated = true;
+
+  // Minimum deposit for a proposal to enter voting period.
+  repeated cosmos.base.v1beta1.Coin min_deposit = 1
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "min_deposit,omitempty"];
+
+  // Maximum period for Atom holders to deposit on a proposal. Initial value: 2
+  // months.
+  google.protobuf.Duration max_deposit_period = 2
+      [(gogoproto.stdduration) = true, (gogoproto.jsontag) = "max_deposit_period,omitempty"];
+}
+
+// VotingParams defines the params for voting on governance proposals.
+message VotingParams {
+  option deprecated = true;
+
+  // Duration of the voting period.
+  google.protobuf.Duration voting_period = 1 [(gogoproto.stdduration) = true];
+}
+
+// TallyParams defines the params for tallying votes on governance proposals.
+message TallyParams {
+  option deprecated = true;
+
+  // Minimum percentage of total stake needed to vote for a result to be
+  // considered valid.
+  string quorum = 1 [(cosmos_proto.scalar) = "cosmos.Dec"];
+
+  // Minimum proportion of Yes votes for proposal to pass. Default value: 0.5.
+  string threshold = 2 [(cosmos_proto.scalar) = "cosmos.Dec"];
+
+  // Minimum value of Veto votes to Total votes ratio for proposal to be
+  // vetoed. Default value: 1/3.
+  string veto_threshold = 3 [(cosmos_proto.scalar) = "cosmos.Dec"];
+}
+
+// Params defines the parameters for the x/gov module.
+message Params {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
+  // Minimum deposit for a proposal to enter voting period.
+  repeated cosmos.base.v1beta1.Coin min_deposit = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // Maximum period for stake holders to deposit on a proposal. Initial value: 2
+  // months.
+  google.protobuf.Duration max_deposit_period = 2 [(gogoproto.stdduration) = true];
+
+  // Duration of the voting period.
+  google.protobuf.Duration voting_period = 3 [(gogoproto.stdduration) = true];
+
+  //  Minimum percentage of total stake needed to vote for a result to be
+  //  considered valid.
+  string quorum = 4 [(cosmos_proto.scalar) = "cosmos.Dec"];
+
+  //  Minimum proportion of Yes votes for proposal to pass. Default value: 0.5.
+  string threshold = 5 [(cosmos_proto.scalar) = "cosmos.Dec"];
+
+  //  Minimum value of Veto votes to Total votes ratio for proposal to be
+  //  vetoed. Default value: 1/3.
+  string veto_threshold = 6 [(cosmos_proto.scalar) = "cosmos.Dec"];
+
+  //  The ratio representing the proportion of the deposit value that must be paid at proposal submission.
+  string min_initial_deposit_ratio = 7 [(cosmos_proto.scalar) = "cosmos.Dec"];
+
+  // The cancel ratio which will not be returned back to the depositors when a proposal is cancelled.
+  string proposal_cancel_ratio = 8
+      [(cosmos_proto.scalar) = "cosmos.Dec", (cosmos_proto.field_added_in) = "cosmos-sdk 0.50"];
+
+  // The address which will receive (proposal_cancel_ratio * deposit) proposal deposits.
+  // If empty, the (proposal_cancel_ratio * deposit) proposal deposits will be burned.
+  string proposal_cancel_dest = 9
+      [(cosmos_proto.scalar) = "cosmos.AddressString", (cosmos_proto.field_added_in) = "cosmos-sdk 0.50"];
+
+  // Duration of the voting period of an expedited proposal.
+  google.protobuf.Duration expedited_voting_period = 10
+      [(gogoproto.stdduration) = true, (cosmos_proto.field_added_in) = "cosmos-sdk 0.50"];
+
+  // Minimum proportion of Yes votes for proposal to pass. Default value: 0.67.
+  string expedited_threshold = 11
+      [(cosmos_proto.scalar) = "cosmos.Dec", (cosmos_proto.field_added_in) = "cosmos-sdk 0.50"];
+
+  //  Minimum expedited deposit for a proposal to enter voting period.
+  repeated cosmos.base.v1beta1.Coin expedited_min_deposit = 12
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // burn deposits if a proposal does not meet quorum
+  bool burn_vote_quorum = 13 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+
+  // burn deposits if the proposal does not enter voting period
+  bool burn_proposal_deposit_prevote = 14 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+
+  // burn deposits if quorum with vote type no_veto is met
+  bool burn_vote_veto = 15 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+
+  // The ratio representing the proportion of the deposit value minimum that must be met when making a deposit.
+  // Default value: 0.01. Meaning that for a chain with a min_deposit of 100stake, a deposit of 1stake would be
+  // required.
+  string min_deposit_ratio = 16
+      [(cosmos_proto.scalar) = "cosmos.Dec", (cosmos_proto.field_added_in) = "cosmos-sdk 0.50"];
+
+  // proposal_cancel_max_period defines how far in the voting period a proposer can cancel a proposal.
+  // If the proposal is cancelled before the max cancel period, the deposit will be returned/burn to the
+  // depositors, according to the proposal_cancel_ratio and proposal_cancel_dest parameters.
+  // After the max cancel period, the proposal cannot be cancelled anymore.
+  string proposal_cancel_max_period = 17
+      [(cosmos_proto.scalar) = "cosmos.Dec", (cosmos_proto.field_added_in) = "x/gov v0.2.0"];
+
+  // optimistic_authorized_addresses is an optional governance parameter that limits the authorized accounts than can
+  // submit optimistic proposals
+  repeated string optimistic_authorized_addresses = 18
+      [(cosmos_proto.scalar) = "cosmos.AddressString", (cosmos_proto.field_added_in) = "x/gov v0.2.0"];
+
+  // optimistic rejected threshold defines at which percentage of NO votes, the optimistic proposal should fail and be
+  // converted to a standard proposal. The threshold is expressed as a percentage of the total bonded tokens.
+  string optimistic_rejected_threshold = 19
+      [(cosmos_proto.scalar) = "cosmos.Dec", (cosmos_proto.field_added_in) = "x/gov v0.2.0"];
+
+  // yes_quorum defines the minimum percentage of Yes votes in quorum for proposal to pass.
+  // Default value: 0 (disabled).
+  string yes_quorum = 20 [(cosmos_proto.scalar) = "cosmos.Dec", (cosmos_proto.field_added_in) = "x/gov v0.2.0"];
+
+  // Minimum percentage of total stake needed to vote for a result to be
+  // considered valid for an expedited proposal.
+  string expedited_quorum = 21 [(cosmos_proto.scalar) = "cosmos.Dec", (cosmos_proto.field_added_in) = "x/gov v1.0.0"];
+
+  uint64 proposal_execution_gas = 22 [(cosmos_proto.field_added_in) = "x/gov v0.2.0"];
+}
+
+// MessageBasedParams defines the parameters of specific messages in a proposal.
+// It is used to define the parameters of a proposal that is based on a specific message.
+// Once a message has message based params, it only supports a standard proposal type.
+message MessageBasedParams {
+  option (cosmos_proto.message_added_in) = "x/gov v0.2.0";
+  // Duration of the voting period.
+  google.protobuf.Duration voting_period = 1 [(gogoproto.stdduration) = true];
+
+  // Minimum percentage of total stake needed to vote for a result to be considered valid.
+  string quorum = 2 [(cosmos_proto.scalar) = "cosmos.Dec"];
+
+  // yes_quorum defines the minimum percentage of Yes votes in quorum for proposal to pass.
+  // If zero then the yes_quorum is disabled.
+  string yes_quorum = 20 [(cosmos_proto.scalar) = "cosmos.Dec"];
+
+  // Minimum proportion of Yes votes for proposal to pass.
+  string threshold = 3 [(cosmos_proto.scalar) = "cosmos.Dec"];
+
+  // Minimum value of Veto votes to Total votes ratio for proposal to be vetoed.
+  string veto_threshold = 4 [(cosmos_proto.scalar) = "cosmos.Dec"];
+}

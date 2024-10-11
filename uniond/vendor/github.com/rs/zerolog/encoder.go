@@ -13,13 +13,13 @@ type encoder interface {
 	AppendBool(dst []byte, val bool) []byte
 	AppendBools(dst []byte, vals []bool) []byte
 	AppendBytes(dst, s []byte) []byte
-	AppendDuration(dst []byte, d time.Duration, unit time.Duration, useInt bool) []byte
-	AppendDurations(dst []byte, vals []time.Duration, unit time.Duration, useInt bool) []byte
+	AppendDuration(dst []byte, d time.Duration, unit time.Duration, useInt bool, precision int) []byte
+	AppendDurations(dst []byte, vals []time.Duration, unit time.Duration, useInt bool, precision int) []byte
 	AppendEndMarker(dst []byte) []byte
-	AppendFloat32(dst []byte, val float32) []byte
-	AppendFloat64(dst []byte, val float64) []byte
-	AppendFloats32(dst []byte, vals []float32) []byte
-	AppendFloats64(dst []byte, vals []float64) []byte
+	AppendFloat32(dst []byte, val float32, precision int) []byte
+	AppendFloat64(dst []byte, val float64, precision int) []byte
+	AppendFloats32(dst []byte, vals []float32, precision int) []byte
+	AppendFloats64(dst []byte, vals []float64, precision int) []byte
 	AppendHex(dst, s []byte) []byte
 	AppendIPAddr(dst []byte, ip net.IP) []byte
 	AppendIPPrefix(dst []byte, pfx net.IPNet) []byte

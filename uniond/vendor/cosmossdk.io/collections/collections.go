@@ -3,7 +3,7 @@ package collections
 import (
 	"context"
 	"errors"
-	io "io"
+	"io"
 	"math"
 
 	"cosmossdk.io/collections/codec"
@@ -29,7 +29,7 @@ var (
 	Uint64Key = codec.NewUint64Key[uint64]()
 	// Int32Key can be used to encode int32 keys. Encoding retains ordering by toggling the MSB.
 	Int32Key = codec.NewInt32Key[int32]()
-	// Int64Key can be used to encode int64. Encoding retains ordering by toggling the MSB.
+	// Int64Key can be used to encode int64 keys. Encoding retains ordering by toggling the MSB.
 	Int64Key = codec.NewInt64Key[int64]()
 	// StringKey can be used to encode string keys. The encoding just converts the string
 	// to bytes.

@@ -1,0 +1,103 @@
+syntax = "proto3";
+package ethereum.validator.accounts.v2;
+
+import "proto/eth/ext/options.proto";
+import "proto/prysm/v1alpha1/attestation.proto";
+import "proto/prysm/v1alpha1/beacon_block.proto";
+import "proto/prysm/v1alpha1/beacon_state.proto";
+import "proto/prysm/v1alpha1/sync_committee.proto";
+
+option csharp_namespace = "Ethereum.Validator.Accounts.V2";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client;validatorpb";
+option java_multiple_files = true;
+option java_outer_classname = "KeymanagerProto";
+option java_package = "org.ethereum.validator.accounts.v2";
+option php_namespace = "Ethereum\\Validator\\Accounts\\V2";
+
+// SignRequest is a message type used by a keymanager
+// as part of Prysm's accounts v2 implementation.
+message SignRequest {
+    // 48 byte public key corresponding to an associated private key
+    // being requested to sign data.
+    bytes public_key = 1;
+
+    // Raw bytes signing root the client is requesting to sign. The client is
+    // expected to determine these raw bytes from the appropriate BLS
+    // signing domain as well as the signing root of the data structure
+    // the bytes represent.
+    bytes signing_root = 2;
+
+    // Signature domain and the beacon chain objects to allow server to verify
+    // the contents and to prevent slashing.
+    bytes signature_domain = 3;
+    // Beacon chain objects. [100-200]
+    oneof object {
+        // Phase0 objects.
+        ethereum.eth.v1alpha1.BeaconBlock block = 101;
+        ethereum.eth.v1alpha1.AttestationData attestation_data = 102;
+        ethereum.eth.v1alpha1.AggregateAttestationAndProof aggregate_attestation_and_proof = 103;
+        ethereum.eth.v1alpha1.VoluntaryExit exit = 104;
+        uint64 slot = 105 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+        uint64 epoch = 106 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+        // Altair objects.
+        ethereum.eth.v1alpha1.BeaconBlockAltair block_altair = 107;
+        ethereum.eth.v1alpha1.SyncAggregatorSelectionData sync_aggregator_selection_data = 108;
+        ethereum.eth.v1alpha1.ContributionAndProof contribution_and_proof = 109;
+        bytes sync_message_block_root  = 110;
+
+        // Bellatrix objects.
+        ethereum.eth.v1alpha1.BeaconBlockBellatrix block_bellatrix = 111;
+        ethereum.eth.v1alpha1.BlindedBeaconBlockBellatrix blinded_block_bellatrix = 112;
+
+        // Builder objects.
+        ethereum.eth.v1alpha1.ValidatorRegistrationV1 registration = 113;
+
+        // Capella objects.
+        ethereum.eth.v1alpha1.BeaconBlockCapella block_capella = 114;
+        ethereum.eth.v1alpha1.BlindedBeaconBlockCapella blinded_block_capella = 115;
+
+        // Deneb objects.
+        ethereum.eth.v1alpha1.BeaconBlockDeneb block_deneb = 116;
+        ethereum.eth.v1alpha1.BlindedBeaconBlockDeneb blinded_block_deneb = 117;
+    }
+    reserved 4, 5; // Reserving old, deleted fields.
+    uint64 signing_slot = 6 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+}
+
+// SignResponse returned by a RemoteSigner gRPC service.
+message SignResponse {
+    enum Status {
+        UNKNOWN = 0;
+        SUCCEEDED = 1;
+        DENIED = 2;
+        FAILED = 3;
+    }
+
+    // BLS12-381 signature for the data specified in the request.
+    bytes signature = 1;
+
+    // Status of the signing response, standardized as an enum
+    // to ensure different remote signing servers follow the
+    // same conventions.
+    Status status = 2;
+}
+
+// ProposerOptionPayload is a property of ProposerSettingsPayload
+message ProposerOptionPayload {
+  string fee_recipient = 1;
+  BuilderConfig builder = 2;
+}
+
+// BuilderConfig is a property of ProposerOptionPayload
+message BuilderConfig {
+  bool enabled = 1;
+  uint64 gas_limit = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/validator.Uint64"];
+  repeated string relays = 3;
+}
+
+// ProposerSettingsPayload is used to unmarshal files sent from the validator flag as well as safe to bolt db bucket
+message ProposerSettingsPayload {
+  map<string, ProposerOptionPayload> proposer_config = 1;
+  ProposerOptionPayload default_config = 2;
+}

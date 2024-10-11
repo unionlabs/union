@@ -1,0 +1,20 @@
+
+error-on-user-key-overlap
+a.SET.2-b.SET.3
+c.SET.4-d.SET.5
+----
+OK
+
+# If the end key is the rangedel sentinel key, no error should be returned.
+
+error-on-user-key-overlap
+a.SET.2-c.RANGEDEL.72057594037927935
+c.SET.4-d.SET.5
+----
+OK
+
+error-on-user-key-overlap
+a.SET.2-c.SET.5
+c.SET.4-d.SET.5
+----
+pebble: compaction split user key across two sstables: c#5,SET in 000001 and 000002

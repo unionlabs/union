@@ -1,0 +1,22 @@
+diff --git a/protoc-gen-grpc-gateway/internal/gengateway/template.go b/protoc-gen-grpc-gateway/internal/gengateway/template.go
+index 6d3476df..6392af9a 100644
+--- a/protoc-gen-grpc-gateway/internal/gengateway/template.go
++++ b/protoc-gen-grpc-gateway/internal/gengateway/template.go
+@@ -243,8 +243,7 @@ It translates gRPC into RESTful JSON APIs.
+ package {{.GoPkg.Name}}
+ import (
+ 	github_com_prysmaticlabs_prysm_v4_consensus_types_primitives "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
+-	emptypb "github.com/golang/protobuf/ptypes/empty"
+-	"github.com/golang/protobuf/ptypes/empty"
++	"google.golang.org/protobuf/types/known/emptypb"
+ 	{{range $i := .Imports}}{{if $i | printf "%q" | ne "github.com/golang/protobuf/ptypes/empty"}}{{$i | printf "%s\n"}}{{end}}{{end}}
+ )
+ 
+@@ -257,7 +256,6 @@ var _ = utilities.NewDoubleArray
+ var _ = metadata.Join
+ var _ = github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Epoch(0)
+ var _ = emptypb.Empty{}
+-var _ = empty.Empty{}
+ `))
+ 
+ 	handlerTemplate = template.Must(template.New("handler").Parse(`

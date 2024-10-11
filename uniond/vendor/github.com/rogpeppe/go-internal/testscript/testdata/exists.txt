@@ -1,0 +1,12 @@
+chmod 444 foo_r
+exists foo
+! exists unfoo
+# TODO The following line fails but probably should not.
+# ! exists -readonly foo
+exists foo_r
+exists -readonly foo_r
+
+-- foo --
+foo
+
+-- foo_r --

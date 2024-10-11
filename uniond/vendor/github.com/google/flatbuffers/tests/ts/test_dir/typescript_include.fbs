@@ -1,0 +1,13 @@
+include 'typescript_transitive_include.fbs';
+
+namespace foobar;
+
+enum class: int {
+  arguments,
+}
+
+table Tab {
+  abc:Abc;
+  arg:class;
+  name:string;
+}

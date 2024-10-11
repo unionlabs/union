@@ -1,0 +1,643 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/content": {
+          "description": "Manage your product listings and accounts for Google Shopping"
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://merchantapi.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "Merchant",
+  "description": "Programmatically manage your Merchant Center Accounts.",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://developers.devsite.corp.google.com/merchant/api",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "merchantapi:inventories_v1beta",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://merchantapi.mtls.googleapis.com/",
+  "name": "merchantapi",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "accounts": {
+      "resources": {
+        "products": {
+          "resources": {
+            "localInventories": {
+              "methods": {
+                "delete": {
+                  "description": "Deletes the specified `LocalInventory` from the given product in your merchant account. It might take a up to an hour for the `LocalInventory` to be deleted from the specific product. Once you have received a successful delete response, wait for that period before attempting a delete again.",
+                  "flatPath": "inventories/v1beta/accounts/{accountsId}/products/{productsId}/localInventories/{localInventoriesId}",
+                  "httpMethod": "DELETE",
+                  "id": "merchantapi.accounts.products.localInventories.delete",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. The name of the local inventory for the given product to delete. Format: `accounts/{account}/products/{product}/localInventories/{store_code}`",
+                      "location": "path",
+                      "pattern": "^accounts/[^/]+/products/[^/]+/localInventories/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "inventories/v1beta/{+name}",
+                  "response": {
+                    "$ref": "Empty"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/content"
+                  ]
+                },
+                "insert": {
+                  "description": "Inserts a `LocalInventory` resource to a product in your merchant account. Replaces the full `LocalInventory` resource if an entry with the same `storeCode` already exists for the product. It might take up to 30 minutes for the new or updated `LocalInventory` resource to appear in products.",
+                  "flatPath": "inventories/v1beta/accounts/{accountsId}/products/{productsId}/localInventories:insert",
+                  "httpMethod": "POST",
+                  "id": "merchantapi.accounts.products.localInventories.insert",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "parent": {
+                      "description": "Required. The account and product where this inventory will be inserted. Format: `accounts/{account}/products/{product}`",
+                      "location": "path",
+                      "pattern": "^accounts/[^/]+/products/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "inventories/v1beta/{+parent}/localInventories:insert",
+                  "request": {
+                    "$ref": "LocalInventory"
+                  },
+                  "response": {
+                    "$ref": "LocalInventory"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/content"
+                  ]
+                },
+                "list": {
+                  "description": "Lists the `LocalInventory` resources for the given product in your merchant account. The response might contain fewer items than specified by `pageSize`. If `pageToken` was returned in previous request, it can be used to obtain additional results. `LocalInventory` resources are listed per product for a given account.",
+                  "flatPath": "inventories/v1beta/accounts/{accountsId}/products/{productsId}/localInventories",
+                  "httpMethod": "GET",
+                  "id": "merchantapi.accounts.products.localInventories.list",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "pageSize": {
+                      "description": "The maximum number of `LocalInventory` resources for the given product to return. The service returns fewer than this value if the number of inventories for the given product is less that than the `pageSize`. The default value is 25000. The maximum value is 25000; If a value higher than the maximum is specified, then the `pageSize` will default to the maximum",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "A page token, received from a previous `ListLocalInventories` call. Provide the page token to retrieve the subsequent page. When paginating, all other parameters provided to `ListLocalInventories` must match the call that provided the page token. The token returned as nextPageToken in the response to the previous request.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. The `name` of the parent product to list local inventories for. Format: `accounts/{account}/products/{product}`",
+                      "location": "path",
+                      "pattern": "^accounts/[^/]+/products/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "inventories/v1beta/{+parent}/localInventories",
+                  "response": {
+                    "$ref": "ListLocalInventoriesResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/content"
+                  ]
+                }
+              }
+            },
+            "regionalInventories": {
+              "methods": {
+                "delete": {
+                  "description": "Deletes the specified `RegionalInventory` resource from the given product in your merchant account. It might take up to an hour for the `RegionalInventory` to be deleted from the specific product. Once you have received a successful delete response, wait for that period before attempting a delete again.",
+                  "flatPath": "inventories/v1beta/accounts/{accountsId}/products/{productsId}/regionalInventories/{regionalInventoriesId}",
+                  "httpMethod": "DELETE",
+                  "id": "merchantapi.accounts.products.regionalInventories.delete",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. The name of the `RegionalInventory` resource to delete. Format: `accounts/{account}/products/{product}/regionalInventories/{region}`",
+                      "location": "path",
+                      "pattern": "^accounts/[^/]+/products/[^/]+/regionalInventories/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "inventories/v1beta/{+name}",
+                  "response": {
+                    "$ref": "Empty"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/content"
+                  ]
+                },
+                "insert": {
+                  "description": "Inserts a `RegionalInventory` to a given product in your merchant account. Replaces the full `RegionalInventory` resource if an entry with the same `region` already exists for the product. It might take up to 30 minutes for the new or updated `RegionalInventory` resource to appear in products.",
+                  "flatPath": "inventories/v1beta/accounts/{accountsId}/products/{productsId}/regionalInventories:insert",
+                  "httpMethod": "POST",
+                  "id": "merchantapi.accounts.products.regionalInventories.insert",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "parent": {
+                      "description": "Required. The account and product where this inventory will be inserted. Format: `accounts/{account}/products/{product}`",
+                      "location": "path",
+                      "pattern": "^accounts/[^/]+/products/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "inventories/v1beta/{+parent}/regionalInventories:insert",
+                  "request": {
+                    "$ref": "RegionalInventory"
+                  },
+                  "response": {
+                    "$ref": "RegionalInventory"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/content"
+                  ]
+                },
+                "list": {
+                  "description": "Lists the `RegionalInventory` resources for the given product in your merchant account. The response might contain fewer items than specified by `pageSize`. If `pageToken` was returned in previous request, it can be used to obtain additional results. `RegionalInventory` resources are listed per product for a given account.",
+                  "flatPath": "inventories/v1beta/accounts/{accountsId}/products/{productsId}/regionalInventories",
+                  "httpMethod": "GET",
+                  "id": "merchantapi.accounts.products.regionalInventories.list",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "pageSize": {
+                      "description": "The maximum number of `RegionalInventory` resources for the given product to return. The service returns fewer than this value if the number of inventories for the given product is less that than the `pageSize`. The default value is 25000. The maximum value is 100000; If a value higher than the maximum is specified, then the `pageSize` will default to the maximum.",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "A page token, received from a previous `ListRegionalInventories` call. Provide the page token to retrieve the subsequent page. When paginating, all other parameters provided to `ListRegionalInventories` must match the call that provided the page token. The token returned as nextPageToken in the response to the previous request.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. The `name` of the parent product to list `RegionalInventory` resources for. Format: `accounts/{account}/products/{product}`",
+                      "location": "path",
+                      "pattern": "^accounts/[^/]+/products/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "inventories/v1beta/{+parent}/regionalInventories",
+                  "response": {
+                    "$ref": "ListRegionalInventoriesResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/content"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20240613",
+  "rootUrl": "https://merchantapi.googleapis.com/",
+  "schemas": {
+    "CustomAttribute": {
+      "description": "A message that represents custom attributes. Exactly one of `value` or `group_values` must not be empty.",
+      "id": "CustomAttribute",
+      "properties": {
+        "groupValues": {
+          "description": "Subattributes within this attribute group. If `group_values` is not empty, `value` must be empty.",
+          "items": {
+            "$ref": "CustomAttribute"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The name of the attribute.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value of the attribute. If `value` is not empty, `group_values` must be empty.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Empty": {
+      "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); }",
+      "id": "Empty",
+      "properties": {},
+      "type": "object"
+    },
+    "Interval": {
+      "description": "Represents a time interval, encoded as a Timestamp start (inclusive) and a Timestamp end (exclusive). The start must be less than or equal to the end. When the start equals the end, the interval is empty (matches no time). When both start and end are unspecified, the interval matches any time.",
+      "id": "Interval",
+      "properties": {
+        "endTime": {
+          "description": "Optional. Exclusive end of the interval. If specified, a Timestamp matching this interval will have to be before the end.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "startTime": {
+          "description": "Optional. Inclusive start of the interval. If specified, a Timestamp matching this interval will have to be the same or after the start.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListLocalInventoriesResponse": {
+      "description": "Response message for the `ListLocalInventories` method.",
+      "id": "ListLocalInventoriesResponse",
+      "properties": {
+        "localInventories": {
+          "description": "The `LocalInventory` resources for the given product from the specified account.",
+          "items": {
+            "$ref": "LocalInventory"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token, which can be sent as `pageToken` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListRegionalInventoriesResponse": {
+      "description": "Response message for the `ListRegionalInventories` method.",
+      "id": "ListRegionalInventoriesResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token, which can be sent as `pageToken` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        },
+        "regionalInventories": {
+          "description": "The `RegionalInventory` resources for the given product from the specified account.",
+          "items": {
+            "$ref": "RegionalInventory"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "LocalInventory": {
+      "description": "Local inventory information for the product. Represents in-store information for a specific product at the store specified by `storeCode`. For a list of all accepted attribute values, see the [local product inventory data specification](https://support.google.com/merchants/answer/3061342).",
+      "id": "LocalInventory",
+      "properties": {
+        "account": {
+          "description": "Output only. The account that owns the product. This field will be ignored if set by the client.",
+          "format": "int64",
+          "readOnly": true,
+          "type": "string"
+        },
+        "availability": {
+          "description": "Availability of the product at this store. For accepted attribute values, see the [local product inventory data specification](https://support.google.com/merchants/answer/3061342)",
+          "type": "string"
+        },
+        "customAttributes": {
+          "description": "A list of custom (merchant-provided) attributes. You can also use `CustomAttribute` to submit any attribute of the data specification in its generic form.",
+          "items": {
+            "$ref": "CustomAttribute"
+          },
+          "type": "array"
+        },
+        "instoreProductLocation": {
+          "description": "Location of the product inside the store. Maximum length is 20 bytes.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Output only. The name of the `LocalInventory` resource. Format: `accounts/{account}/products/{product}/localInventories/{store_code}`",
+          "readOnly": true,
+          "type": "string"
+        },
+        "pickupMethod": {
+          "description": "Supported pickup method for this product. Unless the value is `\"not supported\"`, this field must be submitted together with `pickupSla`. For accepted attribute values, see the [local product inventory data specification](https://support.google.com/merchants/answer/3061342)",
+          "type": "string"
+        },
+        "pickupSla": {
+          "description": "Relative time period from the order date for an order for this product, from this store, to be ready for pickup. Must be submitted with `pickupMethod`. For accepted attribute values, see the [local product inventory data specification](https://support.google.com/merchants/answer/3061342)",
+          "type": "string"
+        },
+        "price": {
+          "$ref": "Price",
+          "description": "Price of the product at this store."
+        },
+        "quantity": {
+          "description": "Quantity of the product available at this store. Must be greater than or equal to zero.",
+          "format": "int64",
+          "type": "string"
+        },
+        "salePrice": {
+          "$ref": "Price",
+          "description": "Sale price of the product at this store. Mandatory if `salePriceEffectiveDate` is defined."
+        },
+        "salePriceEffectiveDate": {
+          "$ref": "Interval",
+          "description": "The `TimePeriod` of the sale at this store."
+        },
+        "storeCode": {
+          "description": "Required. Immutable. Store code (the store ID from your Business Profile) of the physical store the product is sold in. See the [Local product inventory data specification](https://support.google.com/merchants/answer/3061342) for more information.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Price": {
+      "description": "The price represented as a number and currency.",
+      "id": "Price",
+      "properties": {
+        "amountMicros": {
+          "description": "The price represented as a number in micros (1 million micros is an equivalent to one's currency standard unit, for example, 1 USD = 1000000 micros).",
+          "format": "int64",
+          "type": "string"
+        },
+        "currencyCode": {
+          "description": "The currency of the price using three-letter acronyms according to [ISO 4217](http://en.wikipedia.org/wiki/ISO_4217).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductChange": {
+      "description": "The change that happened to the product including old value, new value, country code as the region code and reporting context.",
+      "id": "ProductChange",
+      "properties": {
+        "newValue": {
+          "description": "The new value of the changed resource or attribute.",
+          "type": "string"
+        },
+        "oldValue": {
+          "description": "The old value of the changed resource or attribute.",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "Countries that have the change (if applicable)",
+          "type": "string"
+        },
+        "reportingContext": {
+          "description": "Reporting contexts that have the change (if applicable)",
+          "enum": [
+            "REPORTING_CONTEXT_ENUM_UNSPECIFIED",
+            "SHOPPING_ADS",
+            "DISCOVERY_ADS",
+            "DEMAND_GEN_ADS",
+            "DEMAND_GEN_ADS_DISCOVER_SURFACE",
+            "VIDEO_ADS",
+            "DISPLAY_ADS",
+            "LOCAL_INVENTORY_ADS",
+            "VEHICLE_INVENTORY_ADS",
+            "FREE_LISTINGS",
+            "FREE_LOCAL_LISTINGS",
+            "FREE_LOCAL_VEHICLE_LISTINGS",
+            "YOUTUBE_SHOPPING",
+            "CLOUD_RETAIL",
+            "LOCAL_CLOUD_RETAIL"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "[Shopping ads](https://support.google.com/merchants/answer/6149970).",
+            "Deprecated: Use `DEMAND_GEN_ADS` instead. [Discovery and Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads on Discover surface](https://support.google.com/merchants/answer/13389785).",
+            "[Video ads](https://support.google.com/google-ads/answer/6340491).",
+            "[Display ads](https://support.google.com/merchants/answer/6069387).",
+            "[Local inventory ads](https://support.google.com/merchants/answer/3271956).",
+            "[Vehicle inventory ads](https://support.google.com/merchants/answer/11544533).",
+            "[Free product listings](https://support.google.com/merchants/answer/9199328).",
+            "[Free local product listings](https://support.google.com/merchants/answer/9825611).",
+            "[Free local vehicle listings](https://support.google.com/merchants/answer/11544533).",
+            "[YouTube Shopping](https://support.google.com/merchants/answer/13478370).",
+            "[Cloud retail](https://cloud.google.com/solutions/retail).",
+            "[Local cloud retail](https://cloud.google.com/solutions/retail)."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductStatusChangeMessage": {
+      "description": "The message that the merchant will receive to notify about product status change event",
+      "id": "ProductStatusChangeMessage",
+      "properties": {
+        "account": {
+          "description": "The target account that owns the entity that changed. Format : `accounts/{merchant_id}`",
+          "type": "string"
+        },
+        "attribute": {
+          "description": "The attribute in the resource that changed, in this case it will be always `Status`.",
+          "enum": [
+            "ATTRIBUTE_UNSPECIFIED",
+            "STATUS"
+          ],
+          "enumDescriptions": [
+            "Unspecified attribute",
+            "Status of the changed entity"
+          ],
+          "type": "string"
+        },
+        "changes": {
+          "description": "A message to describe the change that happened to the product",
+          "items": {
+            "$ref": "ProductChange"
+          },
+          "type": "array"
+        },
+        "managingAccount": {
+          "description": "The account that manages the merchant's account. can be the same as merchant id if it is standalone account. Format : `accounts/{service_provider_id}`",
+          "type": "string"
+        },
+        "resource": {
+          "description": "The product name. Format: `{product.name=accounts/{account}/products/{product}}`",
+          "type": "string"
+        },
+        "resourceId": {
+          "description": "The product id.",
+          "type": "string"
+        },
+        "resourceType": {
+          "description": "The resource that changed, in this case it will always be `Product`.",
+          "enum": [
+            "RESOURCE_UNSPECIFIED",
+            "PRODUCT"
+          ],
+          "enumDescriptions": [
+            "Unspecified resource",
+            "Resource type : product"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "RegionalInventory": {
+      "description": "Regional inventory information for the product. Represents specific information like price and availability for a given product in a specific `region`. For a list of all accepted attribute values, see the [regional product inventory data specification](https://support.google.com/merchants/answer/9698880).",
+      "id": "RegionalInventory",
+      "properties": {
+        "account": {
+          "description": "Output only. The account that owns the product. This field will be ignored if set by the client.",
+          "format": "int64",
+          "readOnly": true,
+          "type": "string"
+        },
+        "availability": {
+          "description": "Availability of the product in this region. For accepted attribute values, see the [regional product inventory data specification](https://support.google.com/merchants/answer/3061342)",
+          "type": "string"
+        },
+        "customAttributes": {
+          "description": "A list of custom (merchant-provided) attributes. You can also use `CustomAttribute` to submit any attribute of the data specification in its generic form.",
+          "items": {
+            "$ref": "CustomAttribute"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "Output only. The name of the `RegionalInventory` resource. Format: `{regional_inventory.name=accounts/{account}/products/{product}/regionalInventories/{region}`",
+          "readOnly": true,
+          "type": "string"
+        },
+        "price": {
+          "$ref": "Price",
+          "description": "Price of the product in this region."
+        },
+        "region": {
+          "description": "Required. Immutable. ID of the region for this `RegionalInventory` resource. See the [Regional availability and pricing](https://support.google.com/merchants/answer/9698880) for more details.",
+          "type": "string"
+        },
+        "salePrice": {
+          "$ref": "Price",
+          "description": "Sale price of the product in this region. Mandatory if `salePriceEffectiveDate` is defined."
+        },
+        "salePriceEffectiveDate": {
+          "$ref": "Interval",
+          "description": "The `TimePeriod` of the sale price in this region."
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Merchant API",
+  "version": "inventories_v1beta",
+  "version_module": true
+}

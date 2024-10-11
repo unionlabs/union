@@ -1,0 +1,38 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = [
+        "effective_balance_updates.go",
+        "eth1_data_reset.go",
+        "helpers.go",
+        "historical_summaries_update.go",
+        "inactivity_updates.go",
+        "justification_and_finalization.go",
+        "participation_flag_updates.go",
+        "randao_mixes_reset.go",
+        "registry_updates.go",
+        "rewards_and_penalties.go",
+        "slashings.go",
+        "slashings_reset.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/testing/spectest/shared/deneb/epoch_processing",
+    visibility = ["//testing/spectest:__subpackages__"],
+    deps = [
+        "//beacon-chain/core/altair:go_default_library",
+        "//beacon-chain/core/epoch:go_default_library",
+        "//beacon-chain/core/epoch/precompute:go_default_library",
+        "//beacon-chain/core/helpers:go_default_library",
+        "//beacon-chain/state:go_default_library",
+        "//beacon-chain/state/state-native:go_default_library",
+        "//config/params:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/spectest/utils:go_default_library",
+        "//testing/util:go_default_library",
+        "@com_github_golang_snappy//:go_default_library",
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
+    ],
+)

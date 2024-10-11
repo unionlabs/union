@@ -1,0 +1,28 @@
+# Default owner for all directories not owned by others
+*                       @googleapis/yoshi-go-admins
+
+/ai/                    @googleapis/go-vertexai @googleapis/yoshi-go-admins
+/aiplatform/            @googleapis/go-vertexai @googleapis/yoshi-go-admins
+/bigtable/              @googleapis/cloud-native-db-dpes @googleapis/api-bigtable-partners @googleapis/api-bigtable @googleapis/yoshi-go-admins
+/bigtable/cmd/cbt       @igorbernstein2 @googleapis/cloud-native-db-dpes @googleapis/api-bigtable-partners @googleapis/api-bigtable @googleapis/yoshi-go-admins
+/bigtable/cmd/emulator  @igorbernstein2 @googleapis/cloud-native-db-dpes @googleapis/api-bigtable-partners @googleapis/api-bigtable @googleapis/yoshi-go-admins
+/bigtable/bttest        @igorbernstein2 @googleapis/cloud-native-db-dpes @googleapis/api-bigtable-partners @googleapis/api-bigtable @googleapis/yoshi-go-admins
+/bigquery/              @googleapis/api-bigquery @googleapis/yoshi-go-admins
+/datastore/             @googleapis/cloud-native-db-dpes @googleapis/api-firestore-partners @googleapis/yoshi-go-admins
+/firestore/             @googleapis/cloud-native-db-dpes @googleapis/api-firestore-partners @googleapis/yoshi-go-admins
+/pubsub/                @googleapis/api-pubsub @googleapis/yoshi-go-admins @shollyman
+/pubsublite/            @googleapis/api-pubsub @googleapis/yoshi-go-admins @shollyman
+/spanner/               @googleapis/api-spanner-go @googleapis/yoshi-go-admins
+/storage/               @googleapis/cloud-storage-dpe @googleapis/yoshi-go-admins
+/httpreplay/            @googleapis/cloud-storage-dpe @googleapis/yoshi-go-admins
+/errorreporting/        @googleapis/api-logging @googleapis/api-logging-partners @googleapis/yoshi-go-admins
+/logging/               @googleapis/api-logging @googleapis/api-logging-partners @googleapis/yoshi-go-admins
+/profiler/              @googleapis/api-profiler @googleapis/yoshi-go-admins
+/vertexai/              @googleapis/go-vertexai @googleapis/yoshi-go-admins
+/internal/protoveneer/  @googleapis/yoshi-go-admins @jba @eliben
+
+# individual release versions manifest is unowned (to avoid notifying every team)
+.release-please-manifest-individual.json
+# Owned by all
+go.work
+go.work.sum

@@ -1,0 +1,78 @@
+name: "Release"
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"  # Push events to matching v*, i.e. v1.0, v20.15.10
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      # Similar check to ./release-version.yml, but enforces this when pushing
+      # tags. The ./release-version.yml check can be bypassed and is mainly
+      # present for informational purposes.
+      - name: Check release version
+        run: |
+          # We strip the refs/tags/v prefix of the tag name.
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          # Get the version of the code, which has no "v" prefix.
+          CODE_VERSION=`go run ./cmd/cometbft/ version`
+          if [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
+            echo ""
+            echo "Tag version ${TAG_VERSION} does not match code version ${CODE_VERSION}"
+            echo ""
+            echo "Please either fix the release tag or the version of the software in version/version.go."
+            exit 1
+          fi
+
+      - name: Generate release notes
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION_REF="${VERSION//[\.]/}"
+          CHANGELOG_URL="https://github.com/cometbft/cometbft/blob/${VERSION}/CHANGELOG.md#${VERSION_REF}"
+          echo "See the [CHANGELOG](${CHANGELOG_URL}) for this release." > ../release_notes.md
+
+      - name: Release
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean --release-notes ../release_notes.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-success:
+    needs: release
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack upon release
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          RELEASE_URL: "${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":rocket: New CometBFT release: <${{ env.RELEASE_URL }}|${{ github.ref_name }}>"
+                  }
+                }
+              ]
+            }

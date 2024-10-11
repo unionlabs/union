@@ -1,0 +1,38 @@
+---
+# This action is synced from https://github.com/prometheus/prometheus
+name: golangci-lint
+on:
+  push:
+    paths:
+      - "go.sum"
+      - "go.mod"
+      - "**.go"
+      - "scripts/errcheck_excludes.txt"
+      - ".github/workflows/golangci-lint.yml"
+      - ".golangci.yml"
+  pull_request:
+
+permissions:  # added using https://github.com/step-security/secure-repo
+  contents: read
+
+jobs:
+  golangci:
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for golangci/golangci-lint-action to fetch pull requests
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - name: install Go
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version: 1.22.x
+      - name: Install snmp_exporter/generator dependencies
+        run: sudo apt-get update && sudo apt-get -y install libsnmp-dev
+        if: github.repository == 'prometheus/snmp_exporter'
+      - name: Lint
+        uses: golangci/golangci-lint-action@3cfe3a4abbb849e10058ce4af15d205b6da42804 # v4.0.0
+        with:
+          version: v1.56.2

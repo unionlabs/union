@@ -1,0 +1,84 @@
+package a
+
+import "sort"
+
+// IncorrectSort tries to sort an integer.
+func IncorrectSort() {
+	i := 5
+	sortFn := func(i, j int) bool { return false }
+	sort.Slice(i, sortFn)         // want "sort.Slice's argument must be a slice; is called with int"
+	sort.SliceStable(i, sortFn)   // want "sort.SliceStable's argument must be a slice; is called with int"
+	sort.SliceIsSorted(i, sortFn) // want "sort.SliceIsSorted's argument must be a slice; is called with int"
+}
+
+// CorrectSort sorts integers. It should not produce a diagnostic.
+func CorrectSort() {
+	s := []int{2, 3, 5, 6}
+	sortFn := func(i, j int) bool { return s[i] < s[j] }
+	sort.Slice(s, sortFn)
+	sort.SliceStable(s, sortFn)
+	sort.SliceIsSorted(s, sortFn)
+}
+
+// CorrectInterface sorts an interface with a slice
+// as the concrete type. It should not produce a diagnostic.
+func CorrectInterface() {
+	var s interface{}
+	s = interface{}([]int{2, 1, 0})
+	sortFn := func(i, j int) bool { return s.([]int)[i] < s.([]int)[j] }
+	sort.Slice(s, sortFn)
+	sort.SliceStable(s, sortFn)
+	sort.SliceIsSorted(s, sortFn)
+}
+
+type slicecompare interface {
+	compare(i, j int) bool
+}
+
+type intslice []int
+
+func (s intslice) compare(i, j int) bool {
+	return s[i] < s[j]
+}
+
+// UnderlyingInterface sorts an interface with a slice
+// as the concrete type. It should not produce a diagnostic.
+func UnderlyingInterface() {
+	var s slicecompare
+	s = intslice([]int{2, 1, 0})
+	sort.Slice(s, s.compare)
+	sort.SliceStable(s, s.compare)
+	sort.SliceIsSorted(s, s.compare)
+}
+
+type mySlice []int
+
+// UnderlyingSlice sorts a type with an underlying type of
+// slice of ints. It should not produce a diagnostic.
+func UnderlyingSlice() {
+	s := mySlice{2, 3, 5, 6}
+	sortFn := func(i, j int) bool { return s[i] < s[j] }
+	sort.Slice(s, sortFn)
+	sort.SliceStable(s, sortFn)
+	sort.SliceIsSorted(s, sortFn)
+}
+
+// FunctionResultsAsArguments passes a function which returns two values
+// that satisfy sort.Slice signature. It should not produce a diagnostic.
+func FunctionResultsAsArguments() {
+	s := []string{"a", "z", "ooo"}
+	sort.Slice(less(s))
+	sort.Slice(lessPtr(s)) // want `sort.Slice's argument must be a slice; is called with \(\*\[\]string,.*`
+}
+
+func less(s []string) ([]string, func(i, j int) bool) {
+	return s, func(i, j int) bool {
+		return s[i] < s[j]
+	}
+}
+
+func lessPtr(s []string) (*[]string, func(i, j int) bool) {
+	return &s, func(i, j int) bool {
+		return s[i] < s[j]
+	}
+}

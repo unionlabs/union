@@ -1,0 +1,59 @@
+namespace optional_scalars;
+
+enum OptionalByte: byte {
+  None = 0,
+  One = 1,
+  Two = 2,
+}
+
+// This table tests optional scalars in tables. It should be integrated with
+// the main monster test once most languages support optional scalars.
+table ScalarStuff {
+  just_i8: int8;
+  maybe_i8: int8 = null;
+  default_i8: int8 = 42;
+  just_u8: uint8;
+  maybe_u8: uint8 = null;
+  default_u8: uint8 = 42;
+
+  just_i16: int16;
+  maybe_i16: int16 = null;
+  default_i16: int16 = 42;
+  just_u16: uint16;
+  maybe_u16: uint16 = null;
+  default_u16: uint16 = 42;
+
+  just_i32: int32;
+  maybe_i32: int32 = null;
+  default_i32: int32 = 42;
+  just_u32: uint32;
+  maybe_u32: uint32 = null;
+  default_u32: uint32 = 42;
+
+  just_i64: int64;
+  maybe_i64: int64 = null;
+  default_i64: int64 = 42;
+  just_u64: uint64;
+  maybe_u64: uint64 = null;
+  default_u64: uint64 = 42;
+
+  just_f32: float32;
+  maybe_f32: float32 = null;
+  default_f32: float32 = 42;
+  just_f64: float64;
+  maybe_f64: float64 = null;
+  default_f64: float64 = 42;
+
+  just_bool: bool;
+  maybe_bool: bool = null;
+  default_bool: bool = true;
+
+  just_enum: OptionalByte;
+  maybe_enum: OptionalByte = null;
+  default_enum: OptionalByte = One;
+}
+
+root_type ScalarStuff;
+
+file_identifier "NULL";
+file_extension "mon";

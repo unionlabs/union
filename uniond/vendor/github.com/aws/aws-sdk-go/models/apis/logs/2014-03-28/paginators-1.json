@@ -1,0 +1,79 @@
+{
+  "pagination": {
+    "DescribeDeliveries": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "deliveries"
+    },
+    "DescribeDeliveryDestinations": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "deliveryDestinations"
+    },
+    "DescribeDeliverySources": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "deliverySources"
+    },
+    "DescribeDestinations": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "destinations"
+    },
+    "DescribeLogGroups": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "logGroups"
+    },
+    "DescribeLogStreams": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "logStreams"
+    },
+    "DescribeMetricFilters": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "metricFilters"
+    },
+    "DescribeSubscriptionFilters": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "subscriptionFilters"
+    },
+    "FilterLogEvents": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": [
+        "events",
+        "searchedLogStreams"
+      ]
+    },
+    "GetLogEvents": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextForwardToken",
+      "result_key": "events"
+    },
+    "ListAnomalies": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "anomalies"
+    },
+    "ListLogAnomalyDetectors": {
+      "input_token": "nextToken",
+      "limit_key": "limit",
+      "output_token": "nextToken",
+      "result_key": "anomalyDetectors"
+    }
+  }
+}

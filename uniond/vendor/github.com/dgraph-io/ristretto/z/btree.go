@@ -30,6 +30,7 @@ import (
 var (
 	pageSize = os.Getpagesize()
 	maxKeys  = (pageSize / 16) - 1
+	//nolint:unused
 	oneThird = int(float64(maxKeys) / 3)
 )
 
@@ -480,6 +481,8 @@ func (t *Tree) split(pid uint64) node {
 // shareWithSiblingXXX is unused for now. The idea is to move some keys to
 // sibling when a node is full. But, I don't see any special benefits in our
 // access pattern. It doesn't result in better occupancy ratios.
+//
+//nolint:unused
 func (t *Tree) shareWithSiblingXXX(n node, idx int) bool {
 	if idx == 0 {
 		return false

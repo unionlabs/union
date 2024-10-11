@@ -33,6 +33,9 @@ mul_mont_sparse_256$1:
 
 
 	movq	%rdx,%rbx
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rdx),%rdx
 	movq	0(%rsi),%r14
 	movq	8(%rsi),%r15
@@ -59,7 +62,15 @@ mul_mont_sparse_256$1:
 	leaq	56(%rsp),%rsp
 .cfi_adjust_cfa_offset	-56
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 .size	mulx_mont_sparse_256,.-mulx_mont_sparse_256
 
@@ -98,6 +109,9 @@ sqr_mont_sparse_256$1:
 	movq	%rsi,%rbx
 	movq	%rcx,%r8
 	movq	%rdx,%rcx
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%rdx
 	movq	8(%rsi),%r15
 	movq	16(%rsi),%rbp
@@ -123,7 +137,15 @@ sqr_mont_sparse_256$1:
 	leaq	56(%rsp),%rsp
 .cfi_adjust_cfa_offset	-56
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 .size	sqrx_mont_sparse_256,.-sqrx_mont_sparse_256
 .type	__mulx_mont_sparse_256,@function
@@ -322,7 +344,15 @@ __mulx_mont_sparse_256:
 	movq	%r10,16(%rdi)
 	movq	%r11,24(%rdi)
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	__mulx_mont_sparse_256,.-__mulx_mont_sparse_256
 .globl	fromx_mont_256
@@ -397,7 +427,15 @@ from_mont_256$1:
 	leaq	56(%rsp),%rsp
 .cfi_adjust_cfa_offset	-56
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 .size	fromx_mont_256,.-fromx_mont_256
 
@@ -479,7 +517,15 @@ redc_mont_256$1:
 	leaq	56(%rsp),%rsp
 .cfi_adjust_cfa_offset	-56
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 .size	redcx_mont_256,.-redcx_mont_256
 .type	__mulx_by_1_mont_256,@function
@@ -488,6 +534,9 @@ __mulx_by_1_mont_256:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%rax
 	movq	8(%rsi),%r11
 	movq	16(%rsi),%r12
@@ -618,14 +667,24 @@ __mulx_by_1_mont_256:
 	addq	%r11,%r10
 	adcq	$0,%rdx
 	movq	%rdx,%r11
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	__mulx_by_1_mont_256,.-__mulx_by_1_mont_256
 
 .section	.note.GNU-stack,"",@progbits
+#ifndef	__SGX_LVI_HARDENING__
 .section	.note.gnu.property,"a",@note
 	.long	4,2f-1f,5
 	.byte	0x47,0x4E,0x55,0
 1:	.long	0xc0000002,4,3
 .align	8
 2:
+#endif

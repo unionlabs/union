@@ -1,0 +1,48 @@
+# Manually run the nightly E2E tests for a particular branch, but test with
+# multiple versions.
+name: e2e-manual-multiversion
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e-manual-multiversion-test:
+    # Run parallel jobs for the listed testnet groups (must match the
+    # ./build/generator -g flag)
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ['00', '01', '02', '03', '04', '05']
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+
+      - name: Build
+        working-directory: test/e2e
+        # Run make jobs in parallel, since we can't run steps in parallel.
+        run: make -j2 docker generator runner tests
+
+      - name: Generate testnets
+        if: matrix.group != 5
+        working-directory: test/e2e
+        # When changing -g, also change the matrix groups above
+        # Generate multi-version tests with double the quantity of E2E nodes
+        # based on the current branch as compared to the latest version.
+        run: ./build/generator -g 5 -m "latest:1,local:2" -d networks/nightly/ -p
+
+      - name: Run p2p testnets (${{ matrix.group }})
+        if: matrix.group != 5
+        working-directory: test/e2e
+        run: ./run-multiple.sh networks/nightly/*-group${{ matrix.group }}-*.toml
+
+      - name: Run p2p testnets (regression)
+        if: matrix.group == 5
+        working-directory: test/e2e
+        run: ./run-multiple.sh networks_regressions/*.toml

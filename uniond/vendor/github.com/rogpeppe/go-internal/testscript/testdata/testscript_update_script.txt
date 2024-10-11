@@ -1,0 +1,23 @@
+# Check that we support both txt and txtar extensions.
+
+unquote scripts/testscript.txt
+unquote testscript-new.txt
+
+cp scripts/testscript.txt scripts/testscript2.txtar
+
+testscript -update scripts
+cmp scripts/testscript.txt testscript-new.txt
+cmp scripts/testscript2.txtar testscript-new.txt
+
+-- scripts/testscript.txt --
+>fprintargs stdout right
+>cmp stdout expect
+>
+>-- expect --
+>wrong
+-- testscript-new.txt --
+>fprintargs stdout right
+>cmp stdout expect
+>
+>-- expect --
+>right

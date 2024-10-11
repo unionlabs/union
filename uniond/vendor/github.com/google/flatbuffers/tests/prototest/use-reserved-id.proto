@@ -1,0 +1,10 @@
+// Sample .proto file that we can not translate to the corresponding .fbs because it has used ids from reserved ids.
+
+option some_option = is_ignored;
+
+package proto.test;
+
+message ProtoMessage {
+  reserved 200, 9 to 11, 1500;
+  optional sint32 reserved_id_usage = 10;
+}

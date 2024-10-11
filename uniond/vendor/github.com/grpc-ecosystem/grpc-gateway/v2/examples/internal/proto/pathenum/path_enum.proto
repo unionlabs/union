@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package grpc.gateway.examples.internal.pathenum;
+
+option go_package = "github.com/grpc-ecosystem/grpc-gateway/v2/examples/internal/proto/pathenum";
+
+enum PathEnum {
+  ABC = 0;
+  DEF = 1;
+}
+
+message MessagePathEnum {
+  enum NestedPathEnum {
+    GHI = 0;
+    JKL = 1;
+  }
+}
+
+message MessageWithPathEnum {
+  PathEnum value = 1;
+}
+
+message MessageWithNestedPathEnum {
+  MessagePathEnum.NestedPathEnum value = 1;
+}
+
+// Ignoring lint warnings as this enum type exist to validate proper functionality
+// for projects that don't follow these lint rules.
+// buf:lint:ignore ENUM_PASCAL_CASE
+enum snake_case_for_import {
+  // buf:lint:ignore ENUM_VALUE_UPPER_SNAKE_CASE
+  value_x = 0;
+  // buf:lint:ignore ENUM_VALUE_UPPER_SNAKE_CASE
+  value_y = 1;
+}

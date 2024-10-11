@@ -1,0 +1,100 @@
+# Basic provider tests without shared storage.
+
+open p0 0
+----
+<local fs> mkdir-all: p0 0755
+<local fs> open-dir: p0
+
+create 1 local 1 1024
+foo
+----
+<local fs> create: p0/000001.sst
+<local fs> sync-data: p0/000001.sst
+<local fs> close: p0/000001.sst
+
+read 1
+0 512
+0 1024
+512 1024
+----
+<local fs> open: p0/000001.sst (options: *vfs.randomReadsOption)
+size: 1024
+<local fs> read-at(0, 512): p0/000001.sst
+0 512: ok (salt 1)
+<local fs> read-at(0, 1024): p0/000001.sst
+0 1024: ok (salt 1)
+<local fs> prefetch(512, 65536): p0/000001.sst
+<local fs> read-at(512, 1024): p0/000001.sst
+512 1024: EOF
+<local fs> close: p0/000001.sst
+
+# A provider without shared storage creates object with shared preference
+# locally.
+create 2 shared 2 1024
+----
+<local fs> create: p0/000002.sst
+<local fs> sync-data: p0/000002.sst
+<local fs> close: p0/000002.sst
+
+read 2
+0 512
+0 1024
+512 1024
+----
+<local fs> open: p0/000002.sst (options: *vfs.randomReadsOption)
+size: 1024
+<local fs> read-at(0, 512): p0/000002.sst
+0 512: ok (salt 2)
+<local fs> read-at(0, 1024): p0/000002.sst
+0 1024: ok (salt 2)
+<local fs> prefetch(512, 65536): p0/000002.sst
+<local fs> read-at(512, 1024): p0/000002.sst
+512 1024: EOF
+<local fs> close: p0/000002.sst
+
+remove 1
+----
+<local fs> remove: p0/000001.sst
+
+list
+----
+000002 -> p0/000002.sst
+
+read 1
+----
+file 000001 (type 2) unknown to the objstorage provider: file does not exist
+
+link-or-copy 3 local 3 100
+----
+<local fs> create: temp-file-1
+<local fs> close: temp-file-1
+<local fs> link: temp-file-1 -> p0/000003.sst
+
+read 3
+0 100
+----
+<local fs> open: p0/000003.sst (options: *vfs.randomReadsOption)
+size: 100
+<local fs> read-at(0, 100): p0/000003.sst
+0 100: ok (salt 3)
+<local fs> close: p0/000003.sst
+
+link-or-copy 4 shared 4 1234
+----
+<local fs> create: temp-file-2
+<local fs> close: temp-file-2
+<local fs> link: temp-file-2 -> p0/000004.sst
+
+read 4
+0 1234
+----
+<local fs> open: p0/000004.sst (options: *vfs.randomReadsOption)
+size: 1234
+<local fs> read-at(0, 1234): p0/000004.sst
+0 1234: ok (salt 4)
+<local fs> close: p0/000004.sst
+
+close
+----
+<local fs> sync: p0
+<local fs> close: p0

@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package ibc.applications.transfer.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types";
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "ibc/core/client/v1/client.proto";
+import "ibc/applications/transfer/v1/transfer.proto";
+
+// Msg defines the ibc/transfer Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // Transfer defines a rpc handler method for MsgTransfer.
+  rpc Transfer(MsgTransfer) returns (MsgTransferResponse);
+
+  // UpdateParams defines a rpc handler for MsgUpdateParams.
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgTransfer defines a msg to transfer fungible tokens (i.e Coins) between
+// ICS20 enabled chains. See ICS Spec here:
+// https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
+message MsgTransfer {
+  option (amino.name)           = "cosmos-sdk/MsgTransfer";
+  option (cosmos.msg.v1.signer) = "sender";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // the port on which the packet will be sent
+  string source_port = 1;
+  // the channel by which the packet will be sent
+  string source_channel = 2;
+  // the tokens to be transferred
+  cosmos.base.v1beta1.Coin token = 3 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  // the sender address
+  string sender = 4;
+  // the recipient address on the destination chain
+  string receiver = 5;
+  // Timeout height relative to the current block height.
+  // The timeout is disabled when set to 0.
+  ibc.core.client.v1.Height timeout_height = 6 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  // Timeout timestamp in absolute nanoseconds since unix epoch.
+  // The timeout is disabled when set to 0.
+  uint64 timeout_timestamp = 7;
+  // optional memo
+  string memo = 8;
+}
+
+// MsgTransferResponse defines the Msg/Transfer response type.
+message MsgTransferResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  // sequence number of the transfer packet sent
+  uint64 sequence = 1;
+}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // signer address
+  string signer = 1;
+
+  // params defines the transfer parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+message MsgUpdateParamsResponse {}

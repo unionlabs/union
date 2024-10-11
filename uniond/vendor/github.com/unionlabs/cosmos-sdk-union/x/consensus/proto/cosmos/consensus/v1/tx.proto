@@ -1,0 +1,48 @@
+// Since: cosmos-sdk 0.47
+syntax = "proto3";
+package cosmos.consensus.v1;
+
+import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cometbft/types/v1/params.proto";
+
+option go_package = "cosmossdk.io/x/consensus/types";
+
+// Msg defines the consensus Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // UpdateParams defines a governance operation for updating the x/consensus module parameters.
+  // The authority is defined in the keeper.
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse) {
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.47";
+  }
+}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/x/consensus/MsgUpdateParams";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // params defines the x/consensus parameters to update.
+  // VersionsParams is not included in this Msg because it is tracked
+  // separarately in x/upgrade.
+  //
+  // NOTE: All parameters must be supplied.
+  cometbft.types.v1.BlockParams     block     = 2;
+  cometbft.types.v1.EvidenceParams  evidence  = 3;
+  cometbft.types.v1.ValidatorParams validator = 4;
+
+  cometbft.types.v1.ABCIParams abci = 5 [deprecated = true, (cosmos_proto.field_added_in) = "cosmos-sdk 0.50"];
+
+  cometbft.types.v1.SynchronyParams synchrony = 6 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.52"];
+  cometbft.types.v1.FeatureParams   feature   = 7 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.52"];
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+message MsgUpdateParamsResponse {}

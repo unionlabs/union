@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package ibc.applications.interchain_accounts.host.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types";
+
+// Params defines the set of on-chain interchain accounts parameters.
+// The following parameters may be used to disable the host submodule.
+message Params {
+  // host_enabled enables or disables the host submodule.
+  bool host_enabled = 1;
+  // allow_messages defines a list of sdk message typeURLs allowed to be executed on a host chain.
+  repeated string allow_messages = 2;
+}
+
+// QueryRequest defines the parameters for a particular query request
+// by an interchain account.
+message QueryRequest {
+  // path defines the path of the query request as defined by ADR-021.
+  // https://github.com/cosmos/cosmos-sdk/blob/main/docs/architecture/adr-021-protobuf-query-encoding.md#custom-query-registration-and-routing
+  string path = 1;
+  // data defines the payload of the query request as defined by ADR-021.
+  // https://github.com/cosmos/cosmos-sdk/blob/main/docs/architecture/adr-021-protobuf-query-encoding.md#custom-query-registration-and-routing
+  bytes data = 2;
+}

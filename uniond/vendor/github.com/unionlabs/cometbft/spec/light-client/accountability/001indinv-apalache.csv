@@ -1,0 +1,13 @@
+no,filename,tool,timeout,init,inv,next,args
+1,MC_n4_f1.tla,apalache,10h,TypedInv,TypedInv,,--length=1 --cinit=ConstInit
+2,MC_n4_f2.tla,apalache,10h,TypedInv,TypedInv,,--length=1 --cinit=ConstInit
+3,MC_n5_f1.tla,apalache,10h,TypedInv,TypedInv,,--length=1 --cinit=ConstInit
+4,MC_n5_f2.tla,apalache,10h,TypedInv,TypedInv,,--length=1 --cinit=ConstInit
+5,MC_n4_f1.tla,apalache,20h,Init,TypedInv,,--length=0 --cinit=ConstInit
+6,MC_n4_f2.tla,apalache,20h,Init,TypedInv,,--length=0 --cinit=ConstInit
+7,MC_n5_f1.tla,apalache,20h,Init,TypedInv,,--length=0 --cinit=ConstInit
+8,MC_n5_f2.tla,apalache,20h,Init,TypedInv,,--length=0 --cinit=ConstInit
+9,MC_n4_f1.tla,apalache,20h,TypedInv,Agreement,,--length=0 --cinit=ConstInit
+10,MC_n4_f2.tla,apalache,20h,TypedInv,Accountability,,--length=0 --cinit=ConstInit
+11,MC_n5_f1.tla,apalache,20h,TypedInv,Agreement,,--length=0 --cinit=ConstInit
+12,MC_n5_f2.tla,apalache,20h,TypedInv,Accountability,,--length=0 --cinit=ConstInit

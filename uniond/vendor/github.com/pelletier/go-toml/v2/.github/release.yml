@@ -1,0 +1,21 @@
+changelog:
+  exclude:
+    labels:
+      - build
+      - testing
+  categories:
+    - title: What's new
+      labels:
+        - feature
+    - title: Performance
+      labels:
+        - performance
+    - title: Fixed bugs
+      labels:
+        - bug
+    - title: Documentation
+      labels:
+        - doc
+    - title: Other changes
+      labels:
+        - "*"

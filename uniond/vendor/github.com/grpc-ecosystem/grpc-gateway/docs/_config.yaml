@@ -1,0 +1,19 @@
+theme: jekyll-theme-architect
+
+repository: grpc-ecosystem/grpc-gateway
+
+collections:
+  docs:
+    output: true
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"
+
+plugins:
+  - jekyll-toc
+
+exclude:
+  - run.sh

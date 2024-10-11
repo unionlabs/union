@@ -1,0 +1,476 @@
+---
+swagger: "2.0"
+info:
+  description: "Unannotated Echo Service\nSimilar to echo_service.proto but without\
+    \ annotations. See\nunannotated_echo_service.yaml for the equivalent of the annotations\
+    \ in\ngRPC API configuration format.\n\nEcho Service API consists of a single\
+    \ service which returns\na message."
+  version: "1.0"
+  title: "Unannotated Echo"
+  contact:
+    name: "gRPC-Gateway project"
+    url: "https://github.com/grpc-ecosystem/grpc-gateway"
+    email: "none@example.com"
+  license:
+    name: "BSD 3-Clause License"
+    url: "https://github.com/grpc-ecosystem/grpc-gateway/blob/main/LICENSE.txt"
+  x-something-something: "yadda"
+tags:
+- name: "UnannotatedEchoService"
+  description: "UnannotatedEchoService description -- which should not be used in\
+    \ place of the documentation comment!"
+  externalDocs:
+    description: "Find out more about UnannotatedEchoService"
+    url: "https://github.com/grpc-ecosystem/grpc-gateway"
+- name: "Echo"
+  description: "Echo description"
+- name: "Internal"
+  description: "Internal description"
+  x-traitTag: true
+schemes:
+- "http"
+- "https"
+- "wss"
+consumes:
+- "application/json"
+- "application/x-foo-mime"
+produces:
+- "application/json"
+- "application/x-foo-mime"
+security:
+- ApiKeyAuth: []
+  BasicAuth: []
+- ApiKeyAuth: []
+  OAuth2:
+  - "read"
+  - "write"
+paths:
+  /v1/example/echo/{id}:
+    post:
+      tags:
+      - "UnannotatedEchoService"
+      summary: "Summary: Echo rpc"
+      description: "Description Echo"
+      operationId: "UnannotatedEchoService_Echo"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "Id represents the message identifier."
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - name: "num"
+        in: "query"
+        description: "Int value field"
+        required: true
+        type: "string"
+        default: "42"
+        format: "int64"
+        x-exportParamName: "Num"
+      - name: "duration"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "Duration"
+        x-optionalDataType: "String"
+      - name: "lineNum"
+        in: "query"
+        required: false
+        type: "string"
+        format: "int64"
+        x-exportParamName: "LineNum"
+        x-optionalDataType: "String"
+      - name: "lang"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "Lang"
+        x-optionalDataType: "String"
+      - name: "status.progress"
+        in: "query"
+        required: false
+        type: "string"
+        format: "int64"
+        x-exportParamName: "StatusProgress"
+        x-optionalDataType: "String"
+      - name: "status.note"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "StatusNote"
+        x-optionalDataType: "String"
+      - name: "en"
+        in: "query"
+        required: false
+        type: "string"
+        format: "int64"
+        x-exportParamName: "En"
+        x-optionalDataType: "String"
+      - name: "no.progress"
+        in: "query"
+        required: false
+        type: "string"
+        format: "int64"
+        x-exportParamName: "NoProgress"
+        x-optionalDataType: "String"
+      - name: "no.note"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "NoNote"
+        x-optionalDataType: "String"
+      - name: "resourceId"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "ResourceId"
+        x-optionalDataType: "String"
+      responses:
+        200:
+          description: "A successful response."
+          examples:
+            application/json:
+              value: "the input value"
+          schema:
+            $ref: "#/definitions/examplepbUnannotatedSimpleMessage"
+        403:
+          description: "Returned when the user does not have permission to access\
+            \ the resource."
+          schema: {}
+        404:
+          description: "Returned when the resource does not exist."
+          schema:
+            type: "integer"
+            format: "integer"
+        503:
+          description: "Returned when the resource is temporarily unavailable."
+          schema: {}
+          x-number: 100
+        default:
+          description: "An unexpected error response."
+          schema:
+            $ref: "#/definitions/rpcStatus"
+      externalDocs:
+        description: "Find out more Echo"
+        url: "https://github.com/grpc-ecosystem/grpc-gateway"
+  /v1/example/echo/{id}/{num}:
+    get:
+      tags:
+      - "UnannotatedEchoService"
+      summary: "Summary: Echo rpc"
+      description: "Description Echo"
+      operationId: "UnannotatedEchoService_Echo2"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "Id represents the message identifier."
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - name: "num"
+        in: "path"
+        description: "Int value field"
+        required: true
+        type: "string"
+        default: "42"
+        format: "int64"
+        x-exportParamName: "Num"
+      - name: "duration"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "Duration"
+        x-optionalDataType: "String"
+      - name: "lineNum"
+        in: "query"
+        required: false
+        type: "string"
+        format: "int64"
+        x-exportParamName: "LineNum"
+        x-optionalDataType: "String"
+      - name: "lang"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "Lang"
+        x-optionalDataType: "String"
+      - name: "status.progress"
+        in: "query"
+        required: false
+        type: "string"
+        format: "int64"
+        x-exportParamName: "StatusProgress"
+        x-optionalDataType: "String"
+      - name: "status.note"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "StatusNote"
+        x-optionalDataType: "String"
+      - name: "en"
+        in: "query"
+        required: false
+        type: "string"
+        format: "int64"
+        x-exportParamName: "En"
+        x-optionalDataType: "String"
+      - name: "no.progress"
+        in: "query"
+        required: false
+        type: "string"
+        format: "int64"
+        x-exportParamName: "NoProgress"
+        x-optionalDataType: "String"
+      - name: "no.note"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "NoNote"
+        x-optionalDataType: "String"
+      - name: "resourceId"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "ResourceId"
+        x-optionalDataType: "String"
+      responses:
+        200:
+          description: "A successful response."
+          examples:
+            application/json:
+              value: "the input value"
+          schema:
+            $ref: "#/definitions/examplepbUnannotatedSimpleMessage"
+        403:
+          description: "Returned when the user does not have permission to access\
+            \ the resource."
+          schema: {}
+        404:
+          description: "Returned when the resource does not exist."
+          schema:
+            type: "integer"
+            format: "integer"
+        503:
+          description: "Returned when the resource is temporarily unavailable."
+          schema: {}
+          x-number: 100
+        default:
+          description: "An unexpected error response."
+          schema:
+            $ref: "#/definitions/rpcStatus"
+      externalDocs:
+        description: "Find out more Echo"
+        url: "https://github.com/grpc-ecosystem/grpc-gateway"
+  /v1/example/echo_body:
+    post:
+      tags:
+      - "UnannotatedEchoService"
+      summary: "EchoBody method receives a simple message and returns it."
+      operationId: "UnannotatedEchoService_EchoBody"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "A simple message with many types"
+        required: true
+        schema:
+          $ref: "#/definitions/examplepbUnannotatedSimpleMessage"
+        x-exportParamName: "Body"
+      responses:
+        200:
+          description: "A successful response."
+          schema:
+            $ref: "#/definitions/examplepbUnannotatedSimpleMessage"
+        403:
+          description: "Returned when the user does not have permission to access\
+            \ the resource."
+          schema: {}
+        404:
+          description: "Returned when the resource does not exist."
+          schema:
+            type: "string"
+            format: "string"
+        default:
+          description: "An unexpected error response."
+          schema:
+            $ref: "#/definitions/rpcStatus"
+  /v1/example/echo_delete:
+    delete:
+      tags:
+      - "UnannotatedEchoService"
+      summary: "EchoDelete method receives a simple message and returns it."
+      operationId: "UnannotatedEchoService_EchoDelete"
+      parameters:
+      - name: "id"
+        in: "query"
+        description: "Id represents the message identifier."
+        required: false
+        type: "string"
+        x-exportParamName: "Id"
+        x-optionalDataType: "String"
+      - name: "num"
+        in: "query"
+        description: "Int value field"
+        required: true
+        type: "string"
+        default: "42"
+        format: "int64"
+        x-exportParamName: "Num"
+      - name: "duration"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "Duration"
+        x-optionalDataType: "String"
+      - name: "lineNum"
+        in: "query"
+        required: false
+        type: "string"
+        format: "int64"
+        x-exportParamName: "LineNum"
+        x-optionalDataType: "String"
+      - name: "lang"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "Lang"
+        x-optionalDataType: "String"
+      - name: "status.progress"
+        in: "query"
+        required: false
+        type: "string"
+        format: "int64"
+        x-exportParamName: "StatusProgress"
+        x-optionalDataType: "String"
+      - name: "status.note"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "StatusNote"
+        x-optionalDataType: "String"
+      - name: "en"
+        in: "query"
+        required: false
+        type: "string"
+        format: "int64"
+        x-exportParamName: "En"
+        x-optionalDataType: "String"
+      - name: "no.progress"
+        in: "query"
+        required: false
+        type: "string"
+        format: "int64"
+        x-exportParamName: "NoProgress"
+        x-optionalDataType: "String"
+      - name: "no.note"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "NoNote"
+        x-optionalDataType: "String"
+      - name: "resourceId"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "ResourceId"
+        x-optionalDataType: "String"
+      responses:
+        200:
+          description: "A successful response."
+          schema:
+            $ref: "#/definitions/examplepbUnannotatedSimpleMessage"
+        403:
+          description: "Returned when the user does not have permission to access\
+            \ the resource."
+          schema: {}
+        404:
+          description: "Returned when the resource does not exist."
+          schema:
+            type: "string"
+            format: "string"
+        default:
+          description: "An unexpected error response."
+          schema:
+            $ref: "#/definitions/rpcStatus"
+securityDefinitions:
+  ApiKeyAuth:
+    type: "apiKey"
+    name: "X-API-Key"
+    in: "header"
+    x-amazon-apigateway-authorizer:
+      authorizerResultTtlInSeconds: 60
+      type: "token"
+    x-amazon-apigateway-authtype: "oauth2"
+  BasicAuth:
+    type: "basic"
+definitions:
+  examplepbUnannotatedEmbedded:
+    type: "object"
+    properties:
+      progress:
+        type: "string"
+        format: "int64"
+      note:
+        type: "string"
+    description: "Embedded represents a message embedded in SimpleMessage."
+  examplepbUnannotatedSimpleMessage:
+    type: "object"
+    required:
+    - "id"
+    - "num"
+    properties:
+      id:
+        type: "string"
+        description: "Id represents the message identifier."
+      num:
+        type: "string"
+        format: "int64"
+        description: "Int value field"
+        default: "42"
+      duration:
+        type: "string"
+      lineNum:
+        type: "string"
+        format: "int64"
+      lang:
+        type: "string"
+      status:
+        $ref: "#/definitions/examplepbUnannotatedEmbedded"
+      en:
+        type: "string"
+        format: "int64"
+      "no":
+        $ref: "#/definitions/examplepbUnannotatedEmbedded"
+      resourceId:
+        type: "string"
+    externalDocs:
+      description: "Find out more about UnannotatedSimpleMessage"
+      url: "https://github.com/grpc-ecosystem/grpc-gateway"
+    title: "A bit of everything"
+    description: "A simple message with many types"
+    example:
+      id: "myid"
+  protobufAny:
+    type: "object"
+    properties:
+      '@type':
+        type: "string"
+    additionalProperties: {}
+  rpcStatus:
+    type: "object"
+    properties:
+      code:
+        type: "integer"
+        format: "int32"
+      message:
+        type: "string"
+      details:
+        type: "array"
+        items:
+          $ref: "#/definitions/protobufAny"
+externalDocs:
+  description: "More about gRPC-Gateway"
+  url: "https://github.com/grpc-ecosystem/grpc-gateway"
+x-grpc-gateway-baz-list:
+- "one"
+- true
+x-grpc-gateway-foo: "bar"

@@ -1,0 +1,4 @@
+# The encoded file descriptors are annoying to display in git diff,
+# and we would never hand edit them anyway;
+# so tell git not to show them in diffs.
+simd-*.json -diff

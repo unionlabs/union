@@ -1,0 +1,36 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/tools/interop/split-keys",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//io/file:go_default_library",
+        "//validator/accounts/wallet:go_default_library",
+        "//validator/keymanager:go_default_library",
+        "//validator/keymanager/derived:go_default_library",
+        "//validator/keymanager/local:go_default_library",
+        "@com_github_tyler_smith_go_bip39//:go_default_library",
+        "@com_github_wealdtech_go_eth2_util//:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "split-keys",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["main_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//testing/require:go_default_library",
+        "//validator/accounts/wallet:go_default_library",
+        "//validator/keymanager:go_default_library",
+        "//validator/keymanager/local:go_default_library",
+    ],
+)

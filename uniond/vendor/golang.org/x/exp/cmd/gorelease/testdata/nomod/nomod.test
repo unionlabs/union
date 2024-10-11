@@ -1,0 +1,8 @@
+mod=example.com/nomod
+version=v0.0.2
+base=v0.0.1
+release=v0.0.2
+proxyVersions=example.com/nomod@v0.0.1
+-- want --
+# summary
+v0.0.2 is a valid semantic version for this release.

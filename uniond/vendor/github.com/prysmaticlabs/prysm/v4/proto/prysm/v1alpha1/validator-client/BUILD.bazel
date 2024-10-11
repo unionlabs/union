@@ -1,0 +1,115 @@
+##############################################################################
+# Common
+##############################################################################
+
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+##############################################################################
+# Go
+##############################################################################
+# gazelle:ignore
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+
+##############################################################################
+# OpenAPI (Swagger) V2
+##############################################################################
+load("@com_github_grpc_ecosystem_grpc_gateway_v2//protoc-gen-openapiv2:defs.bzl", "protoc_gen_openapiv2")
+
+proto_library(
+    name = "proto",
+    srcs = [
+        "keymanager.proto",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto/eth/ext:proto",
+        "//proto/prysm/v1alpha1:proto",
+        "@com_github_grpc_ecosystem_grpc_gateway_v2//protoc-gen-openapiv2/options:options_proto",
+        "@com_google_protobuf//:any_proto",
+        "@com_google_protobuf//:descriptor_proto",
+        "@com_google_protobuf//:empty_proto",
+        "@com_google_protobuf//:timestamp_proto",
+        "@googleapis//google/api:annotations_proto",
+    ],
+)
+
+go_proto_library(
+    name = "go_proto",
+    compilers = [
+        "@com_github_prysmaticlabs_protoc_gen_go_cast//:go_cast_grpc",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client",
+    proto = ":proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//consensus-types/primitives:go_default_library",
+        "//consensus-types/validator:go_default_library",
+        "//proto/eth/ext:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_grpc_ecosystem_grpc_gateway_v2//protoc-gen-openapiv2/options:options_go_proto",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+        "@googleapis//google/api:annotations_go_proto",
+        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
+        "@io_bazel_rules_go//proto/wkt:empty_go_proto",
+        "@io_bazel_rules_go//proto/wkt:timestamp_go_proto",
+        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
+        "@org_golang_google_protobuf//runtime/protoimpl:go_default_library",
+        "@org_golang_google_protobuf//types/known/emptypb:go_default_library",
+        "@org_golang_google_protobuf//types/known/timestamppb:go_default_library",
+    ],
+)
+
+go_proto_library(
+    name = "go_grpc_gateway_library",
+    compilers = [
+        "@com_github_grpc_ecosystem_grpc_gateway_v2//protoc-gen-grpc-gateway:go_gen_grpc_gateway",
+    ],
+    embed = [":go_proto"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client",
+    protos = [":proto"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//proto/eth/ext:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_grpc_ecosystem_grpc_gateway_v2//protoc-gen-openapiv2/options:options_go_proto",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+        "@googleapis//google/api:annotations_go_proto",
+        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
+        "@io_bazel_rules_go//proto/wkt:empty_go_proto",
+        "@io_bazel_rules_go//proto/wkt:timestamp_go_proto",
+    ],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "interface.go",
+    ],
+    embed = [
+        ":go_grpc_gateway_library",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto/eth/ext:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_grpc_ecosystem_grpc_gateway_v2//protoc-gen-openapiv2/options:options_go_proto",
+        "@com_github_grpc_ecosystem_grpc_gateway_v2//runtime:go_default_library",
+        "@com_github_grpc_ecosystem_grpc_gateway_v2//utilities:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",  # keep
+        "@googleapis//google/api:annotations_go_proto",
+        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
+        "@io_bazel_rules_go//proto/wkt:empty_go_proto",
+        "@io_bazel_rules_go//proto/wkt:timestamp_go_proto",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//grpclog:go_default_library",
+        "@org_golang_google_grpc//metadata:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
+        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
+        "@org_golang_google_protobuf//runtime/protoimpl:go_default_library",
+    ],  # keep
+)

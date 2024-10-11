@@ -1,0 +1,39 @@
+// Since: cosmos-sdk 0.46
+syntax = "proto3";
+
+package cosmos.group.v1;
+
+option go_package = "cosmossdk.io/x/group";
+
+import "cosmos/group/v1/types.proto";
+
+// GenesisState defines the group module's genesis state.
+message GenesisState {
+
+  // group_seq is the group table orm.Sequence,
+  // it is used to get the next group ID.
+  uint64 group_seq = 1;
+
+  // groups is the list of groups info.
+  repeated GroupInfo groups = 2;
+
+  // group_members is the list of groups members.
+  repeated GroupMember group_members = 3;
+
+  // group_policy_seq is the group policy table orm.Sequence,
+  // it is used to generate the next group policy account address.
+  uint64 group_policy_seq = 4;
+
+  // group_policies is the list of group policies info.
+  repeated GroupPolicyInfo group_policies = 5;
+
+  // proposal_seq is the proposal table orm.Sequence,
+  // it is used to get the next proposal ID.
+  uint64 proposal_seq = 6;
+
+  // proposals is the list of proposals.
+  repeated Proposal proposals = 7;
+
+  // votes is the list of votes.
+  repeated Vote votes = 8;
+}

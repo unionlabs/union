@@ -1,0 +1,119 @@
+import (
+	"encoding/json"
+	"fmt"
+	fiatshamir "github.com/consensys/gnark-crypto/fiat-shamir"
+	"github.com/consensys/gnark-crypto/internal/generator/test_vector_utils/small_rational"
+	"github.com/consensys/gnark-crypto/internal/generator/test_vector_utils/small_rational/gkr"
+	"github.com/consensys/gnark-crypto/internal/generator/test_vector_utils/small_rational/polynomial"
+	"github.com/consensys/gnark-crypto/internal/generator/test_vector_utils/small_rational/sumcheck"
+	"github.com/consensys/gnark-crypto/internal/generator/test_vector_utils/small_rational/test_vector_utils"
+	"os"
+	"path/filepath"
+	"reflect"
+	"hash"
+)
+
+func main() {
+	if err := GenerateVectors(); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(-1)
+	}
+}
+
+func GenerateVectors() error {
+    testDirPath, err := filepath.Abs("gkr/test_vectors")
+    if err != nil {
+        return err
+    }
+
+    fmt.Printf("generating GKR test cases: scanning directory %s for test specs\n", testDirPath)
+
+    dirEntries, err := os.ReadDir(testDirPath)
+    if err != nil {
+        return err
+    }
+    for _, dirEntry := range dirEntries {
+        if !dirEntry.IsDir() {
+
+            if filepath.Ext(dirEntry.Name()) == ".json" {
+                fmt.Println("\tprocessing", dirEntry.Name())
+                path := filepath.Join(testDirPath, dirEntry.Name())
+                if err = run(path); err != nil {
+                    return err
+                }
+            }
+        }
+    }
+
+    return nil
+}
+
+func run(absPath string) error {
+    testCase, err := newTestCase(absPath)
+     if err != nil {
+         return err
+    }
+
+    transcriptSetting := fiatshamir.WithHash(testCase.Hash)
+
+	var proof gkr.Proof
+    proof, err = gkr.Prove(testCase.Circuit, testCase.FullAssignment, transcriptSetting)
+    if err != nil {
+		return err
+    }
+
+    if testCase.Info.Proof, err = toPrintableProof(proof); err != nil {
+        return err
+    }
+    var outBytes []byte
+    if outBytes, err = json.MarshalIndent(testCase.Info, "", "\t"); err == nil {
+        if err = os.WriteFile(absPath, outBytes, 0); err != nil {
+            return err
+        }
+    } else {
+        return err
+    }
+
+	testCase, err = newTestCase(absPath)
+	if err != nil {
+		return err
+    }
+
+    err = gkr.Verify(testCase.Circuit, testCase.InOutAssignment, proof, transcriptSetting)
+	if err != nil {
+        return err
+    }
+
+    testCase, err = newTestCase(absPath)
+    if err != nil {
+        return err
+    }
+
+    err = gkr.Verify(testCase.Circuit, testCase.InOutAssignment, proof, fiatshamir.WithHash(test_vector_utils.NewMessageCounter(2, 0)))
+    if err == nil {
+	    return fmt.Errorf("bad proof accepted")
+    }
+	return nil
+}
+
+func toPrintableProof(proof gkr.Proof) (PrintableProof, error) {
+	res := make(PrintableProof, len(proof))
+
+	for i := range proof {
+
+		partialSumPolys := make([][]interface{}, len(proof[i].PartialSumPolys))
+		for k, partialK := range proof[i].PartialSumPolys {
+			partialSumPolys[k] = test_vector_utils.ElementSliceToInterfaceSlice(partialK)
+		}
+
+		res[i] = PrintableSumcheckProof{
+			FinalEvalProof:  test_vector_utils.ElementSliceToInterfaceSlice(proof[i].FinalEvalProof),
+			PartialSumPolys: partialSumPolys,
+		}
+	}
+	return res, nil
+}
+
+var Gates = gkr.Gates
+
+{{template "gkrTestVectors" .}}

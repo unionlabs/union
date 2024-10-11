@@ -1,10 +1,22 @@
 package bbolt
 
-import "sort"
+import (
+	"sort"
+
+	"go.etcd.io/bbolt/internal/common"
+)
 
 // hashmapFreeCount returns count of free pages(hashmap version)
 func (f *freelist) hashmapFreeCount() int {
-	// use the forwardMap to get the total count
+	common.Verify(func() {
+		expectedFreePageCount := f.hashmapFreeCountSlow()
+		common.Assert(int(f.freePagesCount) == expectedFreePageCount,
+			"freePagesCount (%d) is out of sync with free pages map (%d)", f.freePagesCount, expectedFreePageCount)
+	})
+	return int(f.freePagesCount)
+}
+
+func (f *freelist) hashmapFreeCountSlow() int {
 	count := 0
 	for _, size := range f.forwardMap {
 		count += int(size)
@@ -13,7 +25,7 @@ func (f *freelist) hashmapFreeCount() int {
 }
 
 // hashmapAllocate serves the same purpose as arrayAllocate, but use hashmap as backend
-func (f *freelist) hashmapAllocate(txid txid, n int) pgid {
+func (f *freelist) hashmapAllocate(txid common.Txid, n int) common.Pgid {
 	if n == 0 {
 		return 0
 	}
@@ -26,7 +38,7 @@ func (f *freelist) hashmapAllocate(txid txid, n int) pgid {
 
 			f.allocs[pid] = txid
 
-			for i := pgid(0); i < pgid(n); i++ {
+			for i := common.Pgid(0); i < common.Pgid(n); i++ {
 				delete(f.cache, pid+i)
 			}
 			return pid
@@ -48,9 +60,9 @@ func (f *freelist) hashmapAllocate(txid txid, n int) pgid {
 			remain := size - uint64(n)
 
 			// add remain span
-			f.addSpan(pid+pgid(n), remain)
+			f.addSpan(pid+common.Pgid(n), remain)
 
-			for i := pgid(0); i < pgid(n); i++ {
+			for i := common.Pgid(0); i < common.Pgid(n); i++ {
 				delete(f.cache, pid+i)
 			}
 			return pid
@@ -61,7 +73,7 @@ func (f *freelist) hashmapAllocate(txid txid, n int) pgid {
 }
 
 // hashmapReadIDs reads pgids as input an initial the freelist(hashmap version)
-func (f *freelist) hashmapReadIDs(pgids []pgid) {
+func (f *freelist) hashmapReadIDs(pgids []common.Pgid) {
 	f.init(pgids)
 
 	// Rebuild the page cache.
@@ -69,25 +81,33 @@ func (f *freelist) hashmapReadIDs(pgids []pgid) {
 }
 
 // hashmapGetFreePageIDs returns the sorted free page ids
-func (f *freelist) hashmapGetFreePageIDs() []pgid {
+func (f *freelist) hashmapGetFreePageIDs() []common.Pgid {
 	count := f.free_count()
 	if count == 0 {
 		return nil
 	}
 
-	m := make([]pgid, 0, count)
-	for start, size := range f.forwardMap {
-		for i := 0; i < int(size); i++ {
-			m = append(m, start+pgid(i))
+	m := make([]common.Pgid, 0, count)
+
+	startPageIds := make([]common.Pgid, 0, len(f.forwardMap))
+	for k := range f.forwardMap {
+		startPageIds = append(startPageIds, k)
+	}
+	sort.Sort(common.Pgids(startPageIds))
+
+	for _, start := range startPageIds {
+		if size, ok := f.forwardMap[start]; ok {
+			for i := 0; i < int(size); i++ {
+				m = append(m, start+common.Pgid(i))
+			}
 		}
 	}
-	sort.Sort(pgids(m))
 
 	return m
 }
 
 // hashmapMergeSpans try to merge list of pages(represented by pgids) with existing spans
-func (f *freelist) hashmapMergeSpans(ids pgids) {
+func (f *freelist) hashmapMergeSpans(ids common.Pgids) {
 	for _, id := range ids {
 		// try to see if we can merge and update
 		f.mergeWithExistingSpan(id)
@@ -95,7 +115,7 @@ func (f *freelist) hashmapMergeSpans(ids pgids) {
 }
 
 // mergeWithExistingSpan merges pid to the existing free spans, try to merge it backward and forward
-func (f *freelist) mergeWithExistingSpan(pid pgid) {
+func (f *freelist) mergeWithExistingSpan(pid common.Pgid) {
 	prev := pid - 1
 	next := pid + 1
 
@@ -106,10 +126,10 @@ func (f *freelist) mergeWithExistingSpan(pid pgid) {
 
 	if mergeWithPrev {
 		//merge with previous span
-		start := prev + 1 - pgid(preSize)
+		start := prev + 1 - common.Pgid(preSize)
 		f.delSpan(start, preSize)
 
-		newStart -= pgid(preSize)
+		newStart -= common.Pgid(preSize)
 		newSize += preSize
 	}
 
@@ -122,42 +142,46 @@ func (f *freelist) mergeWithExistingSpan(pid pgid) {
 	f.addSpan(newStart, newSize)
 }
 
-func (f *freelist) addSpan(start pgid, size uint64) {
-	f.backwardMap[start-1+pgid(size)] = size
+func (f *freelist) addSpan(start common.Pgid, size uint64) {
+	f.backwardMap[start-1+common.Pgid(size)] = size
 	f.forwardMap[start] = size
 	if _, ok := f.freemaps[size]; !ok {
-		f.freemaps[size] = make(map[pgid]struct{})
+		f.freemaps[size] = make(map[common.Pgid]struct{})
 	}
 
 	f.freemaps[size][start] = struct{}{}
+	f.freePagesCount += size
 }
 
-func (f *freelist) delSpan(start pgid, size uint64) {
+func (f *freelist) delSpan(start common.Pgid, size uint64) {
 	delete(f.forwardMap, start)
-	delete(f.backwardMap, start+pgid(size-1))
+	delete(f.backwardMap, start+common.Pgid(size-1))
 	delete(f.freemaps[size], start)
 	if len(f.freemaps[size]) == 0 {
 		delete(f.freemaps, size)
 	}
+	f.freePagesCount -= size
 }
 
 // initial from pgids using when use hashmap version
 // pgids must be sorted
-func (f *freelist) init(pgids []pgid) {
+func (f *freelist) init(pgids []common.Pgid) {
 	if len(pgids) == 0 {
 		return
 	}
 
 	size := uint64(1)
 	start := pgids[0]
+	// reset the counter when freelist init
+	f.freePagesCount = 0
 
-	if !sort.SliceIsSorted([]pgid(pgids), func(i, j int) bool { return pgids[i] < pgids[j] }) {
+	if !sort.SliceIsSorted([]common.Pgid(pgids), func(i, j int) bool { return pgids[i] < pgids[j] }) {
 		panic("pgids not sorted")
 	}
 
 	f.freemaps = make(map[uint64]pidSet)
-	f.forwardMap = make(map[pgid]uint64)
-	f.backwardMap = make(map[pgid]uint64)
+	f.forwardMap = make(map[common.Pgid]uint64)
+	f.backwardMap = make(map[common.Pgid]uint64)
 
 	for i := 1; i < len(pgids); i++ {
 		// continuous page

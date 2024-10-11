@@ -1,0 +1,46 @@
+---
+name: third_party_check
+on:
+  pull_request:
+    paths:
+      - '**/go.mod'
+
+permissions:
+  contents: read
+
+jobs:
+  changed_gomods:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+    - uses: actions/setup-go@v5
+      with:
+        go-version: 1.22.x
+    - name: Find modified go.mod files
+      id: modfiles
+      run: |
+        dirs=$(go run ./internal/actions/cmd/changefinder -q -internal --base=HEAD~1 --diff-filter=d --path-filter='*go.mod')
+        if [ -z "$dirs" ]
+        then
+          echo "skip=1" >> "$GITHUB_OUTPUT"
+          echo "No new/modified go.mod files!"
+        else
+          for d in $dirs; do list=${list},\"${d}\"; done
+          echo "mods={\"mods\":[${list#,}]}" >> "$GITHUB_OUTPUT"
+          echo "skip=" >> "$GITHUB_OUTPUT"
+        fi
+    outputs:
+      mods: ${{ steps.modfiles.outputs.mods }}
+      skip: ${{ steps.modfiles.outputs.skip }}
+  check_deps:
+    needs: changed_gomods
+    runs-on: ubuntu-latest
+    if: "!needs.changed_gomods.outputs.skip"
+    continue-on-error: true
+    strategy:
+      matrix: ${{ fromJson(needs.changed_gomods.outputs.mods) }}
+    steps:
+    - uses: actions/checkout@v4
+    - run: go run ./internal/actions/cmd/thirdpartycheck -q -mod ${{ matrix.mods }}/go.mod

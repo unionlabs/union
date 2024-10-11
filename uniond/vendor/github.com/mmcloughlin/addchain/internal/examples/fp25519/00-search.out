@@ -1,0 +1,5 @@
+addchain: expr: "2^255 - 19 - 2"
+addchain: hex: 7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeb
+addchain: dec: 57896044618658097711785492504343953926634992332820282019728792003956564819947
+addchain: best: opt(runs(continued_fractions(dichotomic)))
+addchain: cost: 266

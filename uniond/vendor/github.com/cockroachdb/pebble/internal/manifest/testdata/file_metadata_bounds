@@ -1,0 +1,81 @@
+# Points only (single update).
+
+extend-point-key-bounds
+a.SET.0 - z.DEL.42
+----
+000000:[a#0,SET-z#42,DEL] seqnums:[0-0] points:[a#0,SET-z#42,DEL]
+  bounds: (smallest=point,largest=point) (0x00000111)
+
+# Rangedels only (single update).
+
+reset
+----
+
+extend-point-key-bounds
+a.RANGEDEL.0:z
+----
+000000:[a#0,RANGEDEL-z#inf,RANGEDEL] seqnums:[0-0] points:[a#0,RANGEDEL-z#inf,RANGEDEL]
+  bounds: (smallest=point,largest=point) (0x00000111)
+
+# Range keys only (single update).
+
+reset
+----
+
+extend-range-key-bounds
+a.RANGEKEYSET.0:z
+----
+000000:[a#0,RANGEKEYSET-z#inf,RANGEKEYSET] seqnums:[0-0] ranges:[a#0,RANGEKEYSET-z#inf,RANGEKEYSET]
+  bounds: (smallest=range,largest=range) (0x00000000)
+
+# Multiple updates with various key kinds.
+
+reset
+----
+
+extend-point-key-bounds
+m.SET.0 - n.SET.0
+----
+000000:[m#0,SET-n#0,SET] seqnums:[0-0] points:[m#0,SET-n#0,SET]
+  bounds: (smallest=point,largest=point) (0x00000111)
+
+# Extend the lower point key bound.
+
+extend-point-key-bounds
+j.SET.0 - k.SET.0
+----
+000000:[j#0,SET-n#0,SET] seqnums:[0-0] points:[j#0,SET-n#0,SET]
+  bounds: (smallest=point,largest=point) (0x00000111)
+
+# Extend the upper point key bound with a rangedel.
+
+extend-point-key-bounds
+k.RANGEDEL.0:o
+----
+000000:[j#0,SET-o#inf,RANGEDEL] seqnums:[0-0] points:[j#0,SET-o#inf,RANGEDEL]
+  bounds: (smallest=point,largest=point) (0x00000111)
+
+# Extend the lower bounds bound with a range key.
+
+extend-range-key-bounds
+a.RANGEKEYSET.42:m
+----
+000000:[a#42,RANGEKEYSET-o#inf,RANGEDEL] seqnums:[0-0] points:[j#0,SET-o#inf,RANGEDEL] ranges:[a#42,RANGEKEYSET-m#inf,RANGEKEYSET]
+  bounds: (smallest=range,largest=point) (0x00000101)
+
+# Extend again with a wide range key (equal keys tiebreak on seqnums descending,
+# so the overall lower bound is unchanged).
+
+extend-range-key-bounds
+a.RANGEKEYSET.0:z
+----
+000000:[a#42,RANGEKEYSET-z#inf,RANGEKEYSET] seqnums:[0-0] points:[j#0,SET-o#inf,RANGEDEL] ranges:[a#42,RANGEKEYSET-z#inf,RANGEKEYSET]
+  bounds: (smallest=range,largest=range) (0x00000001)
+
+# Extend again with a wide rangedel over the same range.
+
+extend-point-key-bounds
+A.RANGEDEL.0:y
+----
+000000:[A#0,RANGEDEL-z#inf,RANGEKEYSET] seqnums:[0-0] points:[A#0,RANGEDEL-y#inf,RANGEDEL] ranges:[a#42,RANGEKEYSET-z#inf,RANGEKEYSET]
+  bounds: (smallest=point,largest=range) (0x00000011)

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("[{\"iD\":7},{\"iD\":7}]")

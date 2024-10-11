@@ -1,0 +1,5 @@
+# MacOS
+.DS_Store
+
+# compiled binaries
+build/bin/**

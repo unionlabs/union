@@ -1,0 +1,12 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["types.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/consensus-types/forkchoice",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//consensus-types/primitives:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+    ],
+)

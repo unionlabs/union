@@ -1,0 +1,10 @@
+# By default, do not attempt to do any end-of-line conversion upon
+# checkin or checkout.
+*       -text
+
+# For specific file-types, force conversion to LF line endings. This
+# can be overridden below or in a more specific .gitattributes if, for
+# example, we want to allow a .txt file to contain a CRLF line ending
+*.go    text eol=lf
+*.txt   text eol=lf
+*.txtar text eol=lf

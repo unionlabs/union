@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package cosmos.msg.v1;
+
+import "google/protobuf/descriptor.proto";
+
+// TODO(fdymylja): once we fully migrate to protov2 the go_package needs to be updated.
+// We need this right now because gogoproto codegen needs to import the extension.
+option go_package = "github.com/cosmos/cosmos-sdk/types/msgservice";
+
+extend google.protobuf.ServiceOptions {
+  // service indicates that the service is a Msg service and that requests
+  // must be transported via blockchain transactions rather than gRPC.
+  // Tooling can use this annotation to distinguish between Msg services and
+  // other types of services via reflection.
+  bool service = 11110000;
+}
+
+extend google.protobuf.MessageOptions {
+  // signer must be used in cosmos messages in order
+  // to signal to external clients which fields in a
+  // given cosmos message must be filled with signer
+  // information (address).
+  // The field must be the protobuf name of the message
+  // field extended with this MessageOption.
+  // The field must either be of string kind, or of message
+  // kind in case the signer information is contained within
+  // a message inside the cosmos message.
+  repeated string signer = 11110000;
+}

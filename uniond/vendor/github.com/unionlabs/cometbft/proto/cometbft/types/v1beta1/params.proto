@@ -1,0 +1,81 @@
+syntax = "proto3";
+package cometbft.types.v1beta1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/types/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
+
+option (gogoproto.equal_all) = true;
+
+// ConsensusParams contains consensus critical parameters that determine the
+// validity of blocks.
+message ConsensusParams {
+  BlockParams     block     = 1 [(gogoproto.nullable) = false];
+  EvidenceParams  evidence  = 2 [(gogoproto.nullable) = false];
+  ValidatorParams validator = 3 [(gogoproto.nullable) = false];
+  VersionParams   version   = 4 [(gogoproto.nullable) = false];
+}
+
+// BlockParams contains limits on the block size.
+message BlockParams {
+  // Max block size, in bytes.
+  // Note: must be greater than 0
+  int64 max_bytes = 1;
+  // Max gas per block.
+  // Note: must be greater or equal to -1
+  int64 max_gas = 2;
+  // Minimum time increment between consecutive blocks (in milliseconds) If the
+  // block header timestamp is ahead of the system clock, decrease this value.
+  //
+  // Not exposed to the application.
+  int64 time_iota_ms = 3;
+}
+
+// EvidenceParams determine how we handle evidence of malfeasance.
+message EvidenceParams {
+  // Max age of evidence, in blocks.
+  //
+  // The basic formula for calculating this is: MaxAgeDuration / {average block
+  // time}.
+  int64 max_age_num_blocks = 1;
+
+  // Max age of evidence, in time.
+  //
+  // It should correspond with an app's "unbonding period" or other similar
+  // mechanism for handling [Nothing-At-Stake
+  // attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
+  google.protobuf.Duration max_age_duration = 2
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // This sets the maximum size of total evidence in bytes that can be committed in a single block.
+  // and should fall comfortably under the max block bytes.
+  // Default is 1048576 or 1MB
+  int64 max_bytes = 3;
+}
+
+// ValidatorParams restrict the public key types validators can use.
+// NOTE: uses ABCI pubkey naming, not Amino names.
+message ValidatorParams {
+  option (gogoproto.populate) = true;
+  option (gogoproto.equal)    = true;
+
+  repeated string pub_key_types = 1;
+}
+
+// VersionParams contains the ABCI application version.
+message VersionParams {
+  option (gogoproto.populate) = true;
+  option (gogoproto.equal)    = true;
+
+  // Was named app_version in Tendermint 0.34
+  uint64 app = 1;
+}
+
+// HashedParams is a subset of ConsensusParams.
+//
+// It is hashed into the Header.ConsensusHash.
+message HashedParams {
+  int64 block_max_bytes = 1;
+  int64 block_max_gas   = 2;
+}

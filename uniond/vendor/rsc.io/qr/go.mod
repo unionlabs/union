@@ -1,0 +1,1 @@
+module rsc.io/qr

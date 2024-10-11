@@ -1,0 +1,10 @@
+{
+  "cert_configs": {
+    "test": {
+      "issuer": "Test Issuer"
+    }
+  },
+  "libs": {
+    "ecp": "./testdata/signer_invalid_pem.sh"
+  }
+}

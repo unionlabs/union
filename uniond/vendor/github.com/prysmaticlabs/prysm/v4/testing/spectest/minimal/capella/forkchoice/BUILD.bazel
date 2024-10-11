@@ -1,0 +1,20 @@
+load("@prysm//tools/go:def.bzl", "go_test")
+
+go_test(
+    name = "go_default_test",
+    size = "enormous",
+    timeout = "short",
+    srcs = ["forkchoice_test.go"],
+    data = [
+        "@consensus_spec_tests_minimal//:test_data",
+    ],
+    eth_network = "minimal",
+    tags = [
+        "minimal",
+        "spectest",
+    ],
+    deps = [
+        "//runtime/version:go_default_library",
+        "//testing/spectest/shared/common/forkchoice:go_default_library",
+    ],
+)

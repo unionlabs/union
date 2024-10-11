@@ -12,7 +12,7 @@ _mul_mont_sparse_256:
 
 #ifdef __BLST_PORTABLE__
 	testl	$1,___blst_platform_cap(%rip)
-	jnz	mul_mont_sparse_256$1
+	jnz	L$mul_mont_sparse_256$1
 #endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
@@ -65,7 +65,15 @@ _mul_mont_sparse_256:
 	leaq	56(%rsp),%rsp
 .cfi_adjust_cfa_offset	-56
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -80,7 +88,7 @@ _sqr_mont_sparse_256:
 
 #ifdef __BLST_PORTABLE__
 	testl	$1,___blst_platform_cap(%rip)
-	jnz	sqr_mont_sparse_256$1
+	jnz	L$sqr_mont_sparse_256$1
 #endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
@@ -134,7 +142,15 @@ _sqr_mont_sparse_256:
 	leaq	56(%rsp),%rsp
 .cfi_adjust_cfa_offset	-56
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -416,7 +432,15 @@ __mulq_mont_sparse_256:
 	movq	%r15,16(%rsi)
 	movq	%r9,24(%rsi)
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 .globl	_from_mont_256
@@ -430,7 +454,7 @@ _from_mont_256:
 
 #ifdef __BLST_PORTABLE__
 	testl	$1,___blst_platform_cap(%rip)
-	jnz	from_mont_256$1
+	jnz	L$from_mont_256$1
 #endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
@@ -494,7 +518,15 @@ _from_mont_256:
 	leaq	56(%rsp),%rsp
 .cfi_adjust_cfa_offset	-56
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -509,7 +541,7 @@ _redc_mont_256:
 
 #ifdef __BLST_PORTABLE__
 	testl	$1,___blst_platform_cap(%rip)
-	jnz	redc_mont_256$1
+	jnz	L$redc_mont_256$1
 #endif
 	pushq	%rbp
 .cfi_adjust_cfa_offset	8
@@ -579,7 +611,15 @@ _redc_mont_256:
 	leaq	56(%rsp),%rsp
 .cfi_adjust_cfa_offset	-56
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -718,6 +758,14 @@ __mulq_by_1_mont_256:
 	addq	%r9,%r15
 	adcq	$0,%rdx
 	movq	%rdx,%r9
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 

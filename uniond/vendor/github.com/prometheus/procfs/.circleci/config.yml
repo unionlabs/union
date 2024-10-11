@@ -1,0 +1,61 @@
+---
+version: 2.1
+
+jobs:
+  lint:
+    docker:
+    - image: cimg/go:1.22
+    steps:
+    - checkout
+    - run: make check_license
+    - run: ./scripts/check_build_tags.sh
+    - run: make fixtures
+    - run: make update_fixtures
+    - run: make style
+    - run: git diff --exit-code
+
+  test:
+    parameters:
+      go_version:
+        type: string
+      os:
+        type: string
+      run_test:
+        type: boolean
+        default: true
+    docker:
+    - image: cimg/go:<< parameters.go_version >>
+    environment:
+      GOOS: "<< parameters.os >>"
+    steps:
+    - checkout
+    - run: make lint
+    - when:
+        condition: << parameters.run_test >>
+        steps:
+        - run: make test
+
+workflows:
+  version: 2
+  procfs:
+    jobs:
+    - lint
+    - test:
+        name: test-linux
+        os: linux
+        matrix:
+          parameters:
+            go_version:
+            - "1.20"
+            - "1.21"
+            - "1.22"
+    - test:
+        name: test-windows
+        os: windows
+        run_test: false
+        matrix:
+          parameters:
+            go_version:
+            - "1.20"
+            - "1.21"
+            - "1.22"

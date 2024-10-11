@@ -1,0 +1,14 @@
+unquote blah/withsep
+unquote expect
+txtar-c -quote blah
+! stderr .+
+cmp stdout expect
+
+-- blah/withsep --
+>-- separator --
+>foo
+-- expect --
+>unquote withsep
+>-- withsep --
+>>-- separator --
+>>foo

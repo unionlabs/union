@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package ibc.applications.transfer.v2;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types";
+
+// FungibleTokenPacketData defines a struct for the packet payload
+// See FungibleTokenPacketData spec:
+// https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
+message FungibleTokenPacketData {
+  // the token denomination to be transferred
+  string denom = 1;
+  // the token amount to be transferred
+  string amount = 2;
+  // the sender address
+  string sender = 3;
+  // the recipient address on the destination chain
+  string receiver = 4;
+  // optional memo
+  string memo = 5;
+}

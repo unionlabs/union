@@ -1,0 +1,2 @@
+printargs a b 'c d'
+stdout '\["printargs" "a" "b" "c d"\]\n'

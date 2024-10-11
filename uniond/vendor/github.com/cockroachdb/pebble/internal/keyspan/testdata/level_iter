@@ -1,0 +1,475 @@
+
+# Simple case.
+
+define
+file
+  a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+file
+  b-c:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+  c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+----
+
+iter
+seek-ge a
+seek-ge apple
+seek-ge b
+seek-ge banana
+seek-ge c
+seek-ge cantalope
+seek-ge d
+seek-ge dragonfruit
+----
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+b-c:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+b-c:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+.
+.
+
+iter
+seek-lt a
+seek-lt apple
+seek-lt b
+seek-lt banana
+seek-lt c
+seek-lt cantalope
+seek-lt d
+seek-lt dragonfruit
+prev
+----
+.
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+b-c:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+b-c:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+b-c:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+
+iter
+seek-ge a
+prev
+seek-lt d
+next
+----
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+.
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+.
+
+iter
+first
+next
+next
+next
+----
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+b-c:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+.
+
+iter
+last
+prev
+prev
+prev
+----
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+b-c:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+.
+
+# Set some bounds
+
+iter
+seek-ge a
+seek-ge b
+seek-ge c
+seek-ge d
+seek-lt a
+seek-lt b
+seek-lt c
+seek-lt d
+----
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+b-c:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+.
+.
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+b-c:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+
+
+iter
+seek-lt cc
+prev
+prev
+prev
+----
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+b-c:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+.
+
+# Test skipping over empty/point-key-only files in both directions.
+
+define
+file
+  a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+file
+  point:b.SET.1:foo
+file
+  c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+  d-e:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+----
+
+num-files
+----
+3
+
+iter
+first
+next
+next
+next
+----
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+b-c:{} (file = 000001.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+d-e:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+
+iter
+last
+prev
+prev
+prev
+----
+d-e:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+b-c:{} (file = 000003.sst)
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+
+# Test straddle keys between files.
+
+define
+file
+  a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+file
+  c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+file
+  e-f:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+file
+  g-h:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+----
+
+iter
+first
+next
+next
+next
+next
+next
+next
+next
+----
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+b-c:{} (file = 000001.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+d-e:{} (file = 000002.sst)
+e-f:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+f-g:{} (file = 000003.sst)
+g-h:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000004.sst)
+.
+
+iter
+last
+prev
+prev
+prev
+prev
+prev
+prev
+prev
+----
+g-h:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000004.sst)
+f-g:{} (file = 000004.sst)
+e-f:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+d-e:{} (file = 000003.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+b-c:{} (file = 000002.sst)
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+.
+
+# The below case seeks into a file straddle, then iterates forward and back to
+# it, and confirms that changing iterator directions on a straddle does the
+# right thing.
+
+iter
+seek-ge bb
+next
+prev
+next
+prev
+prev
+----
+b-c:{} (file = 000001.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+b-c:{} (file = 000002.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+b-c:{} (file = 000002.sst)
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+
+# The same case as above, but with inverted directions.
+
+iter
+seek-lt dd
+prev
+next
+prev
+next
+next
+----
+d-e:{} (file = 000001.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+d-e:{} (file = 000002.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+d-e:{} (file = 000002.sst)
+e-f:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+
+iter
+seek-lt dd
+prev
+next
+prev
+next
+next
+----
+d-e:{} (file = 000003.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+d-e:{} (file = 000002.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+d-e:{} (file = 000002.sst)
+e-f:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+
+# Seeks right at the bound should return nothing.
+
+iter
+seek-lt bb
+----
+b-c:{} (file = 000003.sst)
+
+iter
+seek-ge dd
+----
+d-e:{} (file = 000003.sst)
+
+iter
+seek-lt d
+prev
+next
+prev
+prev
+prev
+next
+next
+----
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+b-c:{} (file = 000002.sst)
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+b-c:{} (file = 000002.sst)
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+.
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+b-c:{} (file = 000001.sst)
+
+# A bunch of files with point keys only should not fragment straddles.
+
+define
+file
+  a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+file
+  point:c.SET.1:foo
+file
+  point:d.SET.1:foo
+file
+  e-f:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+file
+  point:g.SET.1:foo
+file
+  h-i:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+----
+
+iter
+first
+next
+next
+next
+next
+next
+----
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+b-e:{} (file = 000001.sst)
+e-f:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000004.sst)
+f-h:{} (file = 000004.sst)
+h-i:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000006.sst)
+.
+
+iter
+last
+prev
+prev
+prev
+prev
+prev
+----
+h-i:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000006.sst)
+f-h:{} (file = 000006.sst)
+e-f:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000004.sst)
+b-e:{} (file = 000004.sst)
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+.
+
+# Test files with range keys and rangedels
+
+define
+file
+  a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+  point:a.SET.1:foo
+  point:b.SET.1:foo
+file
+  c-e:{(#3,RANGEKEYSET,@3,baz) (#3,RANGEKEYSET,@1,bar)}
+  point:c.RANGEDEL.2:f
+  point:d.SET.1:foo
+file
+  g-h:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+  i-j:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+  point:f.RANGEDEL.2:g
+----
+
+iter rangedel
+first
+next
+next
+next
+----
+c-f:{(#2,RANGEDEL)} (file = 000002.sst)
+f-g:{(#2,RANGEDEL)} (file = 000003.sst)
+.
+.
+
+iter rangedel
+last
+prev
+prev
+prev
+----
+f-g:{(#2,RANGEDEL)} (file = 000003.sst)
+c-f:{(#2,RANGEDEL)} (file = 000002.sst)
+.
+.
+
+iter rangedel
+seek-ge c
+next
+next
+----
+c-f:{(#2,RANGEDEL)} (file = 000002.sst)
+f-g:{(#2,RANGEDEL)} (file = 000003.sst)
+.
+
+iter rangedel
+seek-lt ff
+prev
+next
+prev
+prev
+----
+f-g:{(#2,RANGEDEL)} (file = 000003.sst)
+c-f:{(#2,RANGEDEL)} (file = 000002.sst)
+f-g:{(#2,RANGEDEL)} (file = 000003.sst)
+c-f:{(#2,RANGEDEL)} (file = 000002.sst)
+.
+
+close-iter
+----
+ok
+
+# Test that a regular LevelIter ignores rangedels and emits straddle spans.
+
+iter
+first
+next
+next
+next
+next
+next
+----
+a-b:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+b-c:{} (file = 000001.sst)
+c-e:{(#3,RANGEKEYSET,@3,baz) (#3,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+e-g:{} (file = 000002.sst)
+g-h:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+i-j:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+
+iter
+seek-ge c
+next
+next
+next
+next
+----
+c-e:{(#3,RANGEKEYSET,@3,baz) (#3,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+e-g:{} (file = 000002.sst)
+g-h:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+i-j:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+.
+
+# Test seeking outside of bounds with straddles.
+
+define
+file
+  c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+file
+  e-f:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+file
+  g-h:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)}
+----
+
+iter
+seek-lt j
+next
+prev
+prev
+----
+g-h:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+.
+g-h:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+f-g:{} (file = 000003.sst)
+
+iter
+seek-lt j
+prev
+prev
+next
+next
+----
+g-h:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+f-g:{} (file = 000003.sst)
+e-f:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000002.sst)
+f-g:{} (file = 000002.sst)
+g-h:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000003.sst)
+
+iter
+seek-ge a
+prev
+next
+next
+----
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+.
+c-d:{(#2,RANGEKEYSET,@3,foo) (#1,RANGEKEYSET,@1,bar)} (file = 000001.sst)
+d-e:{} (file = 000001.sst)

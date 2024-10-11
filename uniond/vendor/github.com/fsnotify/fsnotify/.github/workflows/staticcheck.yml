@@ -1,0 +1,37 @@
+name: 'staticcheck'
+on:
+  pull_request:
+    paths: ['**.go', 'go.mod', '.github/workflows/*']
+  push:
+    branches: ['main', 'aix']
+
+jobs:
+  staticcheck:
+    name:    'staticcheck'
+    runs-on: ubuntu-latest
+    steps:
+      - id: install_go
+        uses: WillAbides/setup-go-faster@v1.7.0
+        with:
+          go-version: "1.19.x"
+
+      - uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-staticcheck
+          path: |
+            ${{ runner.temp }}/staticcheck
+            ${{ steps.install_go.outputs.GOCACHE || '' }}
+
+      - run: |
+          export STATICCHECK_CACHE="${{ runner.temp }}/staticcheck"
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+
+          $(go env GOPATH)/bin/staticcheck -matrix <<EOF
+          windows: GOOS=windows
+          linux: GOOS=linux
+          freebsd: GOOS=freebsd
+          openbsd: GOOS=openbsd
+          netbsd: GOOS=netbsd
+          darwin: GOOS=darwin
+          illumos: GOOS=illumos
+          EOF

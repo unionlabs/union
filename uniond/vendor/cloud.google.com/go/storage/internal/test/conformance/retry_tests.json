@@ -1,0 +1,283 @@
+{
+  "retryTests": [
+    {
+      "id": 1,
+      "description": "always_idempotent",
+      "cases": [
+        {
+          "instructions": ["return-503", "return-503"]
+        },
+        {
+          "instructions": ["return-reset-connection", "return-reset-connection"]
+        },
+        {
+          "instructions": ["return-reset-connection", "return-503"]
+        }
+      ],
+      "methods": [
+        {"name": "storage.bucket_acl.get",                "resources": ["BUCKET"]},
+        {"name": "storage.bucket_acl.list",               "resources": ["BUCKET"]},
+        {"name": "storage.buckets.delete",                "resources": ["BUCKET"]},
+        {"name": "storage.buckets.get",                   "resources": ["BUCKET"]},
+        {"name": "storage.buckets.getIamPolicy",          "resources": ["BUCKET"]},
+        {"name": "storage.buckets.insert",                "resources": []},
+        {"name": "storage.buckets.list",                  "resources": ["BUCKET"]},
+        {"name": "storage.buckets.lockRetentionPolicy",   "resources": ["BUCKET"]},
+        {"name": "storage.buckets.testIamPermissions",    "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.get",        "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.list",       "resources": ["BUCKET"]},
+        {"name": "storage.hmacKey.delete",                "resources": ["HMAC_KEY"]},
+        {"name": "storage.hmacKey.get",                   "resources": ["HMAC_KEY"]},
+        {"name": "storage.hmacKey.list",                  "resources": ["HMAC_KEY"]},
+        {"name": "storage.notifications.delete",          "resources": ["BUCKET", "NOTIFICATION"]},
+        {"name": "storage.notifications.get",             "resources": ["BUCKET", "NOTIFICATION"]},
+        {"name": "storage.notifications.list",            "resources": ["BUCKET", "NOTIFICATION"]},
+        {"name": "storage.object_acl.get",                "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.object_acl.list",               "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.get",                   "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.list",                  "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.serviceaccount.get",            "resources": []}
+      ],
+      "preconditionProvided": false,
+      "expectSuccess": true
+    },
+    {
+      "id": 2,
+      "description": "conditionally_idempotent_retries_when_precondition_is_present",
+      "cases": [
+        {
+          "instructions": ["return-503", "return-503"]
+        },
+        {
+          "instructions": ["return-reset-connection", "return-reset-connection"]
+        },
+        {
+          "instructions": ["return-reset-connection", "return-503"]
+        }
+      ],
+      "methods": [
+        {"name": "storage.buckets.patch",         "resources": ["BUCKET"]},
+        {"name": "storage.buckets.setIamPolicy",  "resources": ["BUCKET"]},
+        {"name": "storage.buckets.update",        "resources": ["BUCKET"]},
+        {"name": "storage.hmacKey.update",        "resources": ["HMAC_KEY"]},
+        {"name": "storage.objects.compose",       "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.copy",          "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.delete",        "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.insert",        "resources": ["BUCKET"]},
+        {"name": "storage.objects.patch",         "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.rewrite",       "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.update",        "resources": ["BUCKET", "OBJECT"]}
+      ],
+      "preconditionProvided": true,
+      "expectSuccess": true
+    },
+    {
+      "id": 3,
+      "description": "conditionally_idempotent_no_retries_when_precondition_is_absent",
+      "cases": [
+        {
+          "instructions": ["return-503"]
+        },
+        {
+          "instructions": ["return-reset-connection"]
+        }
+      ],
+      "methods": [
+        {"name": "storage.buckets.patch",         "resources": ["BUCKET"]},
+        {"name": "storage.buckets.setIamPolicy",  "resources": ["BUCKET"]},
+        {"name": "storage.buckets.update",        "resources": ["BUCKET"]},
+        {"name": "storage.hmacKey.update",        "resources": ["HMAC_KEY"]},
+        {"name": "storage.objects.compose",       "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.copy",          "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.delete",        "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.patch",         "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.rewrite",       "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.update",        "resources": ["BUCKET", "OBJECT"]}
+      ],
+      "preconditionProvided": false,
+      "expectSuccess": false
+    },
+    {
+      "id": 4,
+      "description": "non_idempotent",
+      "cases": [
+        {
+          "instructions": ["return-503"]
+        },
+        {
+          "instructions": ["return-reset-connection"]
+        }
+      ],
+      "methods": [
+        {"name": "storage.bucket_acl.delete",             "resources": ["BUCKET"]},
+        {"name": "storage.bucket_acl.insert",             "resources": ["BUCKET"]},
+        {"name": "storage.bucket_acl.patch",              "resources": ["BUCKET"]},
+        {"name": "storage.bucket_acl.update",             "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.delete",     "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.insert",     "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.patch",      "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.update",     "resources": ["BUCKET"]},
+        {"name": "storage.hmacKey.create",                "resources": []},
+        {"name": "storage.notifications.insert",          "resources": ["BUCKET"]},
+        {"name": "storage.object_acl.delete",             "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.object_acl.insert",             "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.object_acl.patch",              "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.object_acl.update",             "resources": ["BUCKET", "OBJECT"]}
+      ],
+      "preconditionProvided": false,
+      "expectSuccess": false
+    },
+    {
+      "id": 5,
+      "description": "non-retryable errors",
+      "cases": [
+        {
+          "instructions": ["return-400"]
+        },
+        {
+          "instructions": ["return-401"]
+        }
+      ],
+      "methods": [
+        {"name": "storage.bucket_acl.delete",             "resources": ["BUCKET"]},
+        {"name": "storage.bucket_acl.get",                "resources": ["BUCKET"]},
+        {"name": "storage.bucket_acl.insert",             "resources": ["BUCKET"]},
+        {"name": "storage.bucket_acl.list",               "resources": ["BUCKET"]},
+        {"name": "storage.bucket_acl.patch",              "resources": ["BUCKET"]},
+        {"name": "storage.bucket_acl.update",             "resources": ["BUCKET"]},
+        {"name": "storage.buckets.delete",                "resources": ["BUCKET"]},
+        {"name": "storage.buckets.get",                   "resources": ["BUCKET"]},
+        {"name": "storage.buckets.getIamPolicy",          "resources": ["BUCKET"]},
+        {"name": "storage.buckets.insert",                "resources": ["BUCKET"]},
+        {"name": "storage.buckets.list",                  "resources": ["BUCKET"]},
+        {"name": "storage.buckets.lockRetentionPolicy",   "resources": ["BUCKET"]},
+        {"name": "storage.buckets.patch",                 "resources": ["BUCKET"]},
+        {"name": "storage.buckets.setIamPolicy",          "resources": ["BUCKET"]},
+        {"name": "storage.buckets.testIamPermissions",    "resources": ["BUCKET"]},
+        {"name": "storage.buckets.update",                "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.delete",     "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.get",        "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.insert",     "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.list",       "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.patch",      "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.update",     "resources": ["BUCKET"]},
+        {"name": "storage.hmacKey.create",                "resources": []},
+        {"name": "storage.hmacKey.delete",                "resources": ["HMAC_KEY"]},
+        {"name": "storage.hmacKey.get",                   "resources": ["HMAC_KEY"]},
+        {"name": "storage.hmacKey.list",                  "resources": ["HMAC_KEY"]},
+        {"name": "storage.hmacKey.update",                "resources": ["HMAC_KEY"]},
+        {"name": "storage.notifications.delete",          "resources": ["BUCKET", "NOTIFICATION"]},
+        {"name": "storage.notifications.get",             "resources": ["BUCKET", "NOTIFICATION"]},
+        {"name": "storage.notifications.insert",          "resources": ["BUCKET", "NOTIFICATION"]},
+        {"name": "storage.notifications.list",            "resources": ["BUCKET", "NOTIFICATION"]},
+        {"name": "storage.object_acl.delete",             "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.object_acl.get",                "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.object_acl.insert",             "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.object_acl.list",               "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.object_acl.patch",              "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.object_acl.update",             "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.compose",               "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.copy",                  "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.delete",                "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.get",                   "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.insert",                "resources": ["BUCKET"]},
+        {"name": "storage.objects.list",                  "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.patch",                 "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.rewrite",               "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.update",                "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.serviceaccount.get",            "resources": []}
+      ],
+      "preconditionProvided": false,
+      "expectSuccess": false
+    },
+    {
+      "id": 6,
+      "description": "mix_retryable_non_retryable_errors",
+      "cases": [
+        {
+          "instructions": ["return-503", "return-400"]
+        },
+        {
+          "instructions": ["return-reset-connection", "return-401"]
+        }
+      ],
+      "methods": [
+        {"name": "storage.bucket_acl.get",                "resources": ["BUCKET"]},
+        {"name": "storage.bucket_acl.list",               "resources": ["BUCKET"]},
+        {"name": "storage.buckets.delete",                "resources": ["BUCKET"]},
+        {"name": "storage.buckets.get",                   "resources": ["BUCKET"]},
+        {"name": "storage.buckets.getIamPolicy",          "resources": ["BUCKET"]},
+        {"name": "storage.buckets.insert",                "resources": []},
+        {"name": "storage.buckets.list",                  "resources": ["BUCKET"]},
+        {"name": "storage.buckets.lockRetentionPolicy",   "resources": ["BUCKET"]},
+        {"name": "storage.buckets.patch",                 "resources": ["BUCKET"]},
+        {"name": "storage.buckets.setIamPolicy",          "resources": ["BUCKET"]},
+        {"name": "storage.buckets.testIamPermissions",    "resources": ["BUCKET"]},
+        {"name": "storage.buckets.update",                "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.get",        "resources": ["BUCKET"]},
+        {"name": "storage.default_object_acl.list",       "resources": ["BUCKET"]},
+        {"name": "storage.hmacKey.delete",                "resources": ["HMAC_KEY"]},
+        {"name": "storage.hmacKey.get",                   "resources": ["HMAC_KEY"]},
+        {"name": "storage.hmacKey.list",                  "resources": ["HMAC_KEY"]},
+        {"name": "storage.hmacKey.update",                "resources": ["HMAC_KEY"]},
+        {"name": "storage.notifications.delete",          "resources": ["BUCKET", "NOTIFICATION"]},
+        {"name": "storage.notifications.get",             "resources": ["BUCKET", "NOTIFICATION"]},
+        {"name": "storage.notifications.list",            "resources": ["BUCKET", "NOTIFICATION"]},
+        {"name": "storage.object_acl.get",                "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.object_acl.list",               "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.compose",               "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.copy",                  "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.delete",                "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.get",                   "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.list",                  "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.insert",                "resources": ["BUCKET"]},
+        {"name": "storage.objects.patch",                 "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.rewrite",               "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.objects.update",                "resources": ["BUCKET", "OBJECT"]},
+        {"name": "storage.serviceaccount.get",            "resources": []}
+      ],
+      "preconditionProvided": true,
+      "expectSuccess": false
+    },
+    {
+      "id": 7,
+      "description": "resumable_uploads_handle_complex_retries",
+      "cases": [
+        {
+          "instructions": ["return-reset-connection", "return-503"]
+        },
+        {
+          "instructions": ["return-408"]
+        },
+        {
+          "instructions": ["return-503-after-256K"]
+        },
+        {
+          "instructions": ["return-503-after-8192K", "return-408"]
+        }
+      ],
+      "methods": [
+        {"name": "storage.objects.insert", "group": "storage.resumable.upload", "resources": ["BUCKET"]}
+      ],
+      "preconditionProvided": true,
+      "expectSuccess": true
+    },
+    {
+      "id": 8,
+      "description": "downloads_handle_complex_retries",
+      "cases": [
+        {
+          "instructions": ["return-broken-stream"]
+        },
+        {
+          "instructions": ["return-broken-stream-after-256K"]
+        }
+      ],
+      "methods": [
+        {"name": "storage.objects.get", "group": "storage.objects.download", "resources": ["BUCKET", "OBJECT"]}
+      ],
+      "preconditionProvided": false,
+      "expectSuccess": true
+    }
+  ]
+}

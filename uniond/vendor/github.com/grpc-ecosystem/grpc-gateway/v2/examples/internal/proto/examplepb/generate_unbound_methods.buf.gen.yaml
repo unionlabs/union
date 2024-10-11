@@ -1,0 +1,11 @@
+version: v1
+plugins:
+  - plugin: grpc-gateway
+    out: .
+    opt:
+      - paths=source_relative
+      - generate_unbound_methods=true
+  - plugin: openapiv2
+    out: .
+    opt:
+      - generate_unbound_methods=true

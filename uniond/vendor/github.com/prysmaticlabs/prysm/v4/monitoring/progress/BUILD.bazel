@@ -1,0 +1,12 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["progress.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/monitoring/progress",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_k0kubun_go_ansi//:go_default_library",
+        "@com_github_schollz_progressbar_v3//:go_default_library",
+    ],
+)

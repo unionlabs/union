@@ -1,0 +1,21 @@
+path=example.com/various
+version=v1.0.0
+-- want --
+valid:
+example.com/various@v1.0.0/valid.go
+
+omitted:
+
+invalid:
+noprefix: path does not have prefix "example.com/various@v1.0.0/"
+example.com/various@v1.0.0/not/../clean: file path is not clean
+example.com/various@v1.0.0/invalid.go': malformed file path "invalid.go'": invalid char '\''
+example.com/various@v1.0.0/GO.MOD: go.mod files must have lowercase names
+example.com/various@v1.0.0/valid.go: multiple entries for file "valid.go"
+-- noprefix --
+-- example.com/various@v1.0.0/valid.go --
+-- example.com/various@v1.0.0/not/../clean --
+-- example.com/various@v1.0.0/invalid.go' --
+-- example.com/various@v1.0.0/GO.MOD --
+-- example.com/various@v1.0.0/valid.go --
+duplicate

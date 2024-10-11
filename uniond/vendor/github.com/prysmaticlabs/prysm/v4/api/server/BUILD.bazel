@@ -1,0 +1,30 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "error.go",
+        "middleware.go",
+        "util.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/api/server",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_gorilla_mux//:go_default_library",
+        "@com_github_rs_cors//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "error_test.go",
+        "middleware_test.go",
+        "util_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+    ],
+)

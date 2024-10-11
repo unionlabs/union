@@ -1,0 +1,6 @@
+-- go.mod --
+module example.com/sub/nest/v2
+
+go 1.12
+-- nest.go --
+package nest

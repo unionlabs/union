@@ -1,0 +1,55 @@
+name: CodeQL
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  schedule:
+    - cron: '0 12 * * 6'
+  push:
+    branches:
+      - 'main'
+      - 'release/*'
+    tags:
+      - 'v*'
+  pull_request:
+
+permissions:
+  contents: read # to fetch code (actions/checkout)
+
+jobs:
+  analyze:
+    permissions:
+      contents: read # to fetch code (actions/checkout)
+      security-events: write # to upload SARIF results (github/codeql-action/analyze)
+
+    name: Analyze
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language:
+          - go
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      -
+        name: Checkout HEAD on PR
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          git checkout HEAD^2
+      -
+        name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+      -
+        name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+      -
+        name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2

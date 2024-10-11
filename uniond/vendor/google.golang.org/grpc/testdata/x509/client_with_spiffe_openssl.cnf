@@ -1,0 +1,17 @@
+[req]
+distinguished_name = req_distinguished_name
+attributes = req_attributes
+
+[req_distinguished_name]
+
+[req_attributes]
+
+[test_client]
+basicConstraints        = critical,CA:FALSE
+subjectKeyIdentifier    = hash
+keyUsage                = critical,nonRepudiation,digitalSignature,keyEncipherment
+extendedKeyUsage        = critical,clientAuth
+subjectAltName = @alt_names
+
+[alt_names]
+URI = spiffe://foo.bar.com/client/workload/1

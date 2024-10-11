@@ -1,0 +1,19 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = ["mock.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/contracts/deposit/mock",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//contracts/deposit:go_default_library",
+        "@com_github_ethereum_go_ethereum//accounts/abi:go_default_library",
+        "@com_github_ethereum_go_ethereum//accounts/abi/bind:go_default_library",
+        "@com_github_ethereum_go_ethereum//accounts/abi/bind/backends:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+        "@com_github_ethereum_go_ethereum//core:go_default_library",
+        "@com_github_ethereum_go_ethereum//core/types:go_default_library",
+        "@com_github_ethereum_go_ethereum//crypto:go_default_library",
+    ],
+)

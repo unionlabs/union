@@ -539,7 +539,15 @@ ct_inverse_mod_383:
 	leaq	48(%r8),%rsp
 .cfi_adjust_cfa_offset	-1112-8*6
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 .size	ct_inverse_mod_383,.-ct_inverse_mod_383
 .type	__smulq_767x63,@function
@@ -752,7 +760,15 @@ __smulq_767x63:
 	movq	%rcx,80(%rdx)
 	movq	%rax,88(%rdx)
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	__smulq_767x63,.-__smulq_767x63
 .type	__smulq_383x63,@function
@@ -896,7 +912,15 @@ __smulq_383x63:
 	movq	%r12,32(%rdi)
 	movq	%r13,40(%rdi)
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	__smulq_383x63,.-__smulq_383x63
 .type	__smulq_383_n_shift_by_62,@function
@@ -1075,7 +1099,15 @@ __smulq_383_n_shift_by_62:
 	addq	%rbp,%rdx
 	addq	%rbp,%rcx
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%r8
+	lfence
+	jmpq	*%r8
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	__smulq_383_n_shift_by_62,.-__smulq_383_n_shift_by_62
 .type	__ab_approximation_62,@function
@@ -1133,7 +1165,15 @@ __ab_approximation_62:
 
 	jmp	__inner_loop_62
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	__ab_approximation_62,.-__ab_approximation_62
 .type	__inner_loop_62,@function
@@ -1188,14 +1228,24 @@ __inner_loop_62:
 	jnz	.Loop_62
 
 	movq	8(%rsp),%rsi
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rax
+	lfence
+	jmpq	*%rax
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	__inner_loop_62,.-__inner_loop_62
 
 .section	.note.GNU-stack,"",@progbits
+#ifndef	__SGX_LVI_HARDENING__
 .section	.note.gnu.property,"a",@note
 	.long	4,2f-1f,5
 	.byte	0x47,0x4E,0x55,0
 1:	.long	0xc0000002,4,3
 .align	8
 2:
+#endif

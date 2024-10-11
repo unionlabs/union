@@ -1,0 +1,71 @@
+name: PR code coverage (generate)
+
+on:
+  # This workflow does not have access to secrets because it runs on top of
+  # potentially unsafe changes.
+  pull_request:
+    types: [ opened, reopened, synchronize ]
+    branches: [ master ]
+
+jobs:
+  # The results of this job are uploaded as artifacts. A separate job will
+  # download the artifacts and upload them to a GCS bucket.
+  code-cover-gen:
+    runs-on: ubuntu-latest
+    env:
+      PR: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          # By default, checkout merges the PR into the current master.
+          # Instead, we want to check out the PR as-is.
+          ref: ${{ github.event.pull_request.head.sha }}
+          # Fetch all branches and history (we'll need the origin/master ref and
+          # the base commit).
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.21"
+
+      - name: Get list of changed packages
+        shell: bash
+        run: |
+          set -euxo pipefail
+          # To get the base commit, we get the number of commits in the PR.
+          # Note that github.event.pull_request.base.sha is not what we want,
+          # that is the tip of master and not necessarily the PR fork point.
+          NUM_COMMITS=$(gh pr view $PR --json commits --jq '.commits | length')
+          BASE_SHA=$(git rev-parse HEAD~${NUM_COMMITS})
+          CHANGED_PKGS=$(scripts/changed-go-pkgs.sh ${BASE_SHA} ${HEAD_SHA})
+          echo "BASE_SHA=${BASE_SHA}" >> "${GITHUB_ENV}"
+          echo "CHANGED_PKGS=${CHANGED_PKGS}" >> "${GITHUB_ENV}"
+
+      - name: Generate "after" coverage
+        shell: bash
+        run: |
+          set -euxo pipefail
+          CHANGED_PKGS='${{ env.CHANGED_PKGS }}'
+          mkdir -p artifacts
+          # Make a copy of the script so that the "before" run below uses the
+          # same version.
+          cp scripts/pr-codecov-run-tests.sh ${RUNNER_TEMP}/
+          ${RUNNER_TEMP}/pr-codecov-run-tests.sh artifacts/cover-${PR}-${HEAD_SHA}.json "${CHANGED_PKGS}"
+
+      - name: Generate "before" coverage
+        shell: bash
+        run: |
+          set -euxo pipefail
+          BASE_SHA='${{ env.BASE_SHA }}'
+          CHANGED_PKGS='${{ env.CHANGED_PKGS }}'
+          git checkout -f ${BASE_SHA}
+          ${RUNNER_TEMP}/pr-codecov-run-tests.sh artifacts/cover-${PR}-${BASE_SHA}.json "${CHANGED_PKGS}"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: cover
+          path: artifacts/cover-*.json

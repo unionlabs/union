@@ -1,0 +1,72 @@
+define
+L2
+  c.SET.2:2
+----
+2:
+  000004:[c#2,SET-c#2,SET]
+
+allow-zero-seqnum
+L0:b-b
+L0:c-c
+L0:d-d
+----
+true
+false
+true
+
+allow-zero-seqnum
+L0:c-c L0:d-d
+L0:c-c L1:d-d
+L0:b-b L0:b-c
+L0:b-b L1:b-c
+----
+false
+false
+false
+false
+
+# We only look for overlaps at L<N+2> as it isn't valid for a
+# compaction rooted at L<N> to not include overlapping tables at
+# L<N+1>.
+
+allow-zero-seqnum
+L1:c-c
+----
+true
+
+# Regression test for a bug where the allow-zero-seqnum check was not
+# actually working for flushes due to a failure to clone the
+# lower-bound key used for checking for overlap. This caused the
+# overlap check to use [b,b] in the test below, rather than [a,b].
+
+define
+mem
+  a.SET.2:2
+  b.SET.3:3
+L1
+  a.SET.0:0
+----
+1:
+  000004:[a#0,SET-a#0,SET]
+
+allow-zero-seqnum
+flush
+----
+false
+
+# We never allow zeroing of seqnums during flushing as doing so runs
+# afoul of the WAL replay logic which flushes after each WAL is
+# replayed, but doesn't construct a version edit in between each
+# flush. Both disallowing of seqnum zeroing during flushing, and the
+# WAL replay behavior match RocksDB's behavior.
+
+define
+mem
+  a.SET.2:2
+  b.SET.3:3
+----
+
+allow-zero-seqnum
+flush
+----
+false

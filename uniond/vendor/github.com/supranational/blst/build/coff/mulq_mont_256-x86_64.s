@@ -71,7 +71,15 @@ mul_mont_sparse_256:
 	mov	8(%rsp),%rdi
 	mov	16(%rsp),%rsi
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .LSEH_end_mul_mont_sparse_256:
 
@@ -145,7 +153,15 @@ sqr_mont_sparse_256:
 	mov	8(%rsp),%rdi
 	mov	16(%rsp),%rsi
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .LSEH_end_sqr_mont_sparse_256:
 .def	__mulq_mont_sparse_256;	.scl 3;	.type 32;	.endef
@@ -426,7 +442,15 @@ __mulq_mont_sparse_256:
 	movq	%r15,16(%rsi)
 	movq	%r9,24(%rsi)
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 
 .globl	from_mont_256
@@ -509,7 +533,15 @@ from_mont_256:
 	mov	8(%rsp),%rdi
 	mov	16(%rsp),%rsi
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .LSEH_end_from_mont_256:
 
@@ -599,7 +631,15 @@ redc_mont_256:
 	mov	8(%rsp),%rdi
 	mov	16(%rsp),%rsi
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .LSEH_end_redc_mont_256:
 .def	__mulq_by_1_mont_256;	.scl 3;	.type 32;	.endef
@@ -737,7 +777,15 @@ __mulq_by_1_mont_256:
 	addq	%r9,%r15
 	adcq	$0,%rdx
 	movq	%rdx,%r9
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .section	.pdata
 .p2align	2

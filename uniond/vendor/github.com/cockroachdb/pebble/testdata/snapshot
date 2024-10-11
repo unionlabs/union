@@ -1,0 +1,180 @@
+define
+set a 1
+snapshot 1
+set b 2
+snapshot 2
+set c 3
+snapshot 3
+----
+
+iter snapshot=1
+first
+next
+prev
+----
+a:1
+.
+a:1
+
+iter snapshot=2
+first
+next
+next
+prev
+----
+a:1
+b:2
+.
+b:2
+
+iter snapshot=3
+first
+next
+next
+next
+prev
+----
+a:1
+b:2
+c:3
+.
+c:3
+
+define
+set a 1
+snapshot 1
+set a 2
+snapshot 2
+set a 3
+snapshot 3
+----
+
+iter snapshot=1
+first
+next
+prev
+----
+a:1
+.
+a:1
+
+iter snapshot=2
+first
+next
+prev
+----
+a:2
+.
+a:2
+
+iter snapshot=3
+first
+next
+prev
+----
+a:3
+.
+a:3
+
+define
+set a 1
+snapshot 1
+set a 2
+snapshot 2
+set a 3
+snapshot 3
+compact a-b
+----
+
+iter snapshot=1
+first
+next
+prev
+----
+a:1
+.
+a:1
+
+iter snapshot=2
+first
+next
+prev
+----
+a:2
+.
+a:2
+
+iter snapshot=3
+first
+next
+prev
+----
+a:3
+.
+a:3
+
+define
+merge a 1
+snapshot 1
+merge a 2
+snapshot 2
+merge a 3
+snapshot 3
+compact a-b
+----
+
+iter snapshot=1
+first
+next
+prev
+----
+a:1
+.
+a:1
+
+iter snapshot=2
+first
+next
+prev
+----
+a:12
+.
+a:12
+
+iter snapshot=3
+first
+next
+prev
+----
+a:123
+.
+a:123
+
+# Fix for #2705. levelIter encounters two files where the first has seqnum
+# below snapshot seqnum, so obsolete points can be hidden. The second file has
+# a more recent seqnum so obsolete points cannot be hidden. But the in-place
+# modification of the filters slice was causing obsolete points to be hidden
+# in the second file.
+define block-size=1
+set a 1
+compact a-b
+set c 2
+snapshot 1
+set c 3
+compact c-d
+----
+
+db-state
+----
+6:
+  000005:[a#10,SET-a#10,SET]
+  000007:[c#12,SET-c#11,SET]
+
+iter snapshot=1
+first
+next
+next
+----
+a:1
+c:2
+.

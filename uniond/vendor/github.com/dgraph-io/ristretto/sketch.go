@@ -103,7 +103,7 @@ func newCmRow(numCounters int64) cmRow {
 }
 
 func (r cmRow) get(n uint64) byte {
-	return byte(r[n/2]>>((n&1)*4)) & 0x0f
+	return (r[n/2] >> ((n & 1) * 4)) & 0x0f
 }
 
 func (r cmRow) increment(n uint64) {

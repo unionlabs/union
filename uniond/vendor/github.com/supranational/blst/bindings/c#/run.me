@@ -25,7 +25,7 @@ using System.IO;
 namespace supranational { public static class blst {
 
 #if NET5_0_OR_GREATER
-private static string dll;
+private static readonly string dll;
 
 static blst()
 {
@@ -40,7 +40,26 @@ static blst()
             Architecture.Arm64 => "arm64",
             _ => "unsupported"
         };
-        dll = Path.Combine(dir, arch, name);
+
+#if NET8_0_OR_GREATER
+        // RuntimeInformation.RuntimeIdentifier changed between .NET 7 and 8
+        // and only aligns to the nuget layout in 8+
+        var rid = RuntimeInformation.RuntimeIdentifier;
+#else
+        // Mimic pre-8 RuntimeInformation.RuntimeIdentifier as
+        // "win-x64", "linux-x64", "linux-arm64", "osx-x64", etc.
+        var os = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win"
+               : RuntimeInformation.IsOSPlatform(OSPlatform.OSX)     ? "osx"
+               : RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) ? "freebsd"
+               : "linux";
+        var rid = $"{os}-{arch}";
+#endif
+
+        // first look for the file in the standard locations for a nuget installed native lib
+        dll = Path.Combine(dir, "runtimes", rid, "native", name);
+
+        if (!File.Exists(dll))
+            dll = Path.Combine(dir, arch, name); // try the original non-standard location
 
         if (!File.Exists(dll))
             dll = Path.Combine(Environment.CurrentDirectory, name);

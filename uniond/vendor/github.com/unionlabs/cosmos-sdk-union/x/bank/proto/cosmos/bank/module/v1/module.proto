@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package cosmos.bank.module.v1;
+
+import "cosmos/app/v1alpha1/module.proto";
+
+// Module is the config object of the bank module.
+message Module {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "cosmossdk.io/x/bank"
+  };
+
+  // blocked_module_accounts_override configures exceptional module accounts which should be blocked from receiving
+  // funds. If left empty it defaults to the list of account names supplied in the auth module configuration as
+  // module_account_permissions
+  repeated string blocked_module_accounts_override = 1;
+
+  // authority defines the custom module authority. If not set, defaults to the governance module.
+  string authority = 2;
+
+  // restrictions_order specifies the order of send restrictions and should be
+  // a list of module names which provide a send restriction instance. If no
+  // order is provided, then restrictions will be applied in alphabetical order
+  // of module names.
+  repeated string restrictions_order = 3;
+}

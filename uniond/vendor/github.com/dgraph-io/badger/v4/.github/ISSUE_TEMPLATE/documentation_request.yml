@@ -1,0 +1,30 @@
+name: "📃 Documentation Request"
+description: Suggest improvements, additions, or revisions to Badger documentation
+title: "[Documentation]: <Title>"
+labels: ["area/documentation", "status/triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue.
+        If you think Badger's documentation is lacking, please explain it here.
+  - type: textarea
+    attributes:
+      label: What version of Badger is the target?
+      description: Is it the latest version? 
+      placeholder: |
+        Type here.
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Documentation.
+      description: Explain which part of the documentation is lacking.
+      placeholder: |
+          Type here.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Additional information.
+      description: Tell us anything else you think we should know.

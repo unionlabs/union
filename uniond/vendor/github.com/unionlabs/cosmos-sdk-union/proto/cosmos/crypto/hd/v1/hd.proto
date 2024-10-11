@@ -1,0 +1,27 @@
+// Since: cosmos-sdk 0.46
+syntax = "proto3";
+package cosmos.crypto.hd.v1;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+
+option go_package                      = "github.com/cosmos/cosmos-sdk/crypto/hd";
+option (gogoproto.goproto_getters_all) = false;
+
+// BIP44Params is used as path field in ledger item in Record.
+message BIP44Params {
+  option (amino.name) = "crypto/keys/hd/BIP44Params";
+
+  option (gogoproto.goproto_stringer) = false;
+  // purpose is a constant set to 44' (or 0x8000002C) following the BIP43 recommendation
+  uint32 purpose = 1;
+  // coin_type is a constant that improves privacy
+  uint32 coin_type = 2;
+  // account splits the key space into independent user identities
+  uint32 account = 3;
+  // change is a constant used for public derivation. Constant 0 is used for external chain and constant 1 for internal
+  // chain.
+  bool change = 4;
+  // address_index is used as child index in BIP32 derivation
+  uint32 address_index = 5;
+}

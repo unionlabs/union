@@ -1,0 +1,93 @@
+run:
+  skip-files:
+    - validator/web/site_data.go
+    - .*_test.go
+  skip-dirs:
+    - proto
+    - tools/analyzers
+  timeout: 10m
+  go: '1.21.5'
+
+linters:
+  enable-all: true
+  disable:
+    # Deprecated linters:
+    - deadcode
+    - exhaustivestruct
+    - golint
+    - govet
+    - ifshort
+    - interfacer
+    - maligned
+    - nosnakecase
+    - scopelint
+    - structcheck
+    - varcheck
+
+    # Disabled for now:
+    - asasalint
+    - bodyclose
+    - containedctx
+    - contextcheck
+    - cyclop
+    - depguard
+    - dogsled
+    - dupl
+    - durationcheck
+    - errorlint
+    - exhaustive
+    - exhaustruct
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gci
+    - gochecknoglobals
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - godox
+    - goerr113
+    - gofumpt
+    - gomnd
+    - gomoddirectives
+    - inamedparam
+    - interfacebloat
+    - ireturn
+    - lll
+    - maintidx
+    - makezero
+    - musttag
+    - nakedret
+    - nestif
+    - nilnil
+    - nlreturn
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
+    - perfsprint
+    - prealloc
+    - predeclared
+    - promlinter
+    - protogetter
+    - revive
+    - staticcheck
+    - stylecheck
+    - tagalign
+    - tagliatelle
+    - thelper
+    - unparam
+    - varnamelen
+    - wrapcheck
+    - wsl
+
+linters-settings:
+  gocognit:
+    # TODO: We should target for < 50
+    min-complexity: 65
+
+output:
+  print-issued-lines: true
+  sort-results: true

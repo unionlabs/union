@@ -1,0 +1,19 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = ["rewards_penalties.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/testing/spectest/shared/deneb/rewards",
+    visibility = ["//testing/spectest:__subpackages__"],
+    deps = [
+        "//beacon-chain/core/altair:go_default_library",
+        "//beacon-chain/core/helpers:go_default_library",
+        "//beacon-chain/state/state-native:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/spectest/utils:go_default_library",
+        "//testing/util:go_default_library",
+        "@com_github_golang_snappy//:go_default_library",
+    ],
+)

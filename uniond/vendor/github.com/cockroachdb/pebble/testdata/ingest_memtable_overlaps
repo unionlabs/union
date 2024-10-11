@@ -1,0 +1,175 @@
+define
+set a 1
+----
+
+overlaps
+a-b
+b-c
+aa-ab
+----
+true
+false
+false
+
+define
+set b 1
+----
+
+overlaps
+a-b
+b-c
+----
+true
+true
+
+define
+set c 1
+----
+
+overlaps
+a-b
+a-c
+----
+false
+true
+
+define
+set a 1
+set d 2
+set g 3
+----
+
+overlaps
+b-c
+e-f
+b-c e-f
+b-c e-g
+----
+false
+false
+false
+true
+
+define
+set a 1
+set d 2
+set e 3
+set g 4
+----
+
+overlaps
+b-c
+e-f
+b-c e-f
+b-c e0-f
+----
+false
+true
+true
+false
+
+define
+set a 1
+set c 2
+set d 3
+set g 4
+----
+
+overlaps
+b-c
+e-f
+b-c e-f
+b-b1 e-f
+----
+true
+false
+true
+false
+
+# The del-range tests are specific to the comparer.
+
+define default
+del-range a c
+del-range e g
+----
+
+overlaps
+a-b
+b-c
+c-d
+c-e
+f-h
+g-h
+----
+true
+true
+false
+true
+true
+false
+
+define reverse
+del-range d b
+----
+
+overlaps
+c-b
+b-a
+e-d
+----
+true
+false
+true
+
+define default
+set b 1
+----
+
+overlaps
+a.RANGEDEL.2-b.RANGEDEL.72057594037927935
+----
+false
+
+define default
+del-range b c
+----
+
+overlaps
+a.RANGEDEL.2-b.RANGEDEL.72057594037927935
+----
+false
+
+define default
+del-range a f
+del-range b c
+----
+
+overlaps
+d.RANGEDEL.2-e.RANGEDEL.72057594037927935
+----
+true
+
+define default
+range-key-set a f 1 val1
+range-key-set b c 2 val2
+----
+
+overlaps
+d-e
+----
+true
+
+define default
+range-key-set a c 1 val1
+----
+
+overlaps
+a-c
+b-c
+a.RANGEDEL.2-b.RANGEDEL.72057594037927935
+d-e
+----
+true
+true
+true
+false

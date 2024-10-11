@@ -1,0 +1,1283 @@
+{
+    "testCases": [
+        {
+            "documentation": "For region af-south-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.af-south-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "af-south-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region ap-east-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.ap-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "ap-east-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region ap-northeast-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.ap-northeast-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "ap-northeast-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region ap-northeast-2 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.ap-northeast-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "ap-northeast-2",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region ap-northeast-3 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.ap-northeast-3.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "ap-northeast-3",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region ap-south-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.ap-south-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "ap-south-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region ap-southeast-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.ap-southeast-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "ap-southeast-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region ap-southeast-2 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.ap-southeast-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "ap-southeast-2",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region ap-southeast-3 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.ap-southeast-3.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "ap-southeast-3",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region aws-global with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "aws-global",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region ca-central-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.ca-central-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "ca-central-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region eu-central-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.eu-central-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "eu-central-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region eu-north-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.eu-north-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "eu-north-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region eu-south-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.eu-south-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "eu-south-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region eu-west-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.eu-west-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "eu-west-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region eu-west-2 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.eu-west-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "eu-west-2",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region eu-west-3 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.eu-west-3.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "eu-west-3",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region me-south-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.me-south-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "me-south-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region sa-east-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.sa-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "sa-east-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts-fips.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": true,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-east-2 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-east-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-east-2",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-east-2 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts-fips.us-east-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-east-2",
+                "UseFIPS": true,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-west-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-west-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-west-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-west-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts-fips.us-west-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-west-1",
+                "UseFIPS": true,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-west-2 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-west-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-west-2",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-west-2 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts-fips.us-west-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-west-2",
+                "UseFIPS": true,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts-fips.us-east-1.api.aws"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": true,
+                "UseDualStack": true
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-east-1.api.aws"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": false,
+                "UseDualStack": true
+            }
+        },
+        {
+            "documentation": "For region cn-north-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.cn-north-1.amazonaws.com.cn"
+                }
+            },
+            "params": {
+                "Region": "cn-north-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region cn-northwest-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.cn-northwest-1.amazonaws.com.cn"
+                }
+            },
+            "params": {
+                "Region": "cn-northwest-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region cn-north-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts-fips.cn-north-1.api.amazonwebservices.com.cn"
+                }
+            },
+            "params": {
+                "Region": "cn-north-1",
+                "UseFIPS": true,
+                "UseDualStack": true
+            }
+        },
+        {
+            "documentation": "For region cn-north-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts-fips.cn-north-1.amazonaws.com.cn"
+                }
+            },
+            "params": {
+                "Region": "cn-north-1",
+                "UseFIPS": true,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region cn-north-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.cn-north-1.api.amazonwebservices.com.cn"
+                }
+            },
+            "params": {
+                "Region": "cn-north-1",
+                "UseFIPS": false,
+                "UseDualStack": true
+            }
+        },
+        {
+            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-gov-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-gov-east-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-gov-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-gov-east-1",
+                "UseFIPS": true,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-gov-west-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-gov-west-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-gov-west-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-gov-west-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-gov-west-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-gov-west-1",
+                "UseFIPS": true,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts-fips.us-gov-east-1.api.aws"
+                }
+            },
+            "params": {
+                "Region": "us-gov-east-1",
+                "UseFIPS": true,
+                "UseDualStack": true
+            }
+        },
+        {
+            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-gov-east-1.api.aws"
+                }
+            },
+            "params": {
+                "Region": "us-gov-east-1",
+                "UseFIPS": false,
+                "UseDualStack": true
+            }
+        },
+        {
+            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-iso-east-1.c2s.ic.gov"
+                }
+            },
+            "params": {
+                "Region": "us-iso-east-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-iso-west-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-iso-west-1.c2s.ic.gov"
+                }
+            },
+            "params": {
+                "Region": "us-iso-west-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+            },
+            "params": {
+                "Region": "us-iso-east-1",
+                "UseFIPS": true,
+                "UseDualStack": true
+            }
+        },
+        {
+            "documentation": "For region us-iso-east-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts-fips.us-iso-east-1.c2s.ic.gov"
+                }
+            },
+            "params": {
+                "Region": "us-iso-east-1",
+                "UseFIPS": true,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-iso-east-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "error": "DualStack is enabled but this partition does not support DualStack"
+            },
+            "params": {
+                "Region": "us-iso-east-1",
+                "UseFIPS": false,
+                "UseDualStack": true
+            }
+        },
+        {
+            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts.us-isob-east-1.sc2s.sgov.gov"
+                }
+            },
+            "params": {
+                "Region": "us-isob-east-1",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "error": "FIPS and DualStack are enabled, but this partition does not support one or both"
+            },
+            "params": {
+                "Region": "us-isob-east-1",
+                "UseFIPS": true,
+                "UseDualStack": true
+            }
+        },
+        {
+            "documentation": "For region us-isob-east-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://sts-fips.us-isob-east-1.sc2s.sgov.gov"
+                }
+            },
+            "params": {
+                "Region": "us-isob-east-1",
+                "UseFIPS": true,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "For region us-isob-east-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "error": "DualStack is enabled but this partition does not support DualStack"
+            },
+            "params": {
+                "Region": "us-isob-east-1",
+                "UseFIPS": false,
+                "UseDualStack": true
+            }
+        },
+        {
+            "documentation": "For custom endpoint with region set and fips disabled and dualstack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://example.com"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "For custom endpoint with region not set and fips disabled and dualstack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://example.com"
+                }
+            },
+            "params": {
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "For custom endpoint with fips enabled and dualstack disabled",
+            "expect": {
+                "error": "Invalid Configuration: FIPS and custom endpoint are not supported"
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": true,
+                "UseDualStack": false,
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "For custom endpoint with fips disabled and dualstack enabled",
+            "expect": {
+                "error": "Invalid Configuration: Dualstack and custom endpoint are not supported"
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": false,
+                "UseDualStack": true,
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "Missing region",
+            "expect": {
+                "error": "Invalid Configuration: Missing Region"
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `ap-northeast-1`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "ap-northeast-1",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "ap-northeast-1",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `ap-south-1`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "ap-south-1",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "ap-south-1",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `ap-southeast-1`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "ap-southeast-1",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "ap-southeast-1",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `ap-southeast-2`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "ap-southeast-2",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "ap-southeast-2",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `aws-global`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "aws-global",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "aws-global",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `ca-central-1`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "ca-central-1",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "ca-central-1",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `eu-central-1`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "eu-central-1",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "eu-central-1",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `eu-north-1`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "eu-north-1",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "eu-north-1",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `eu-west-1`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "eu-west-1",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "eu-west-1",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `eu-west-2`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "eu-west-2",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "eu-west-2",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `eu-west-3`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "eu-west-3",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "eu-west-3",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `sa-east-1`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "sa-east-1",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "sa-east-1",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `us-east-1`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-1",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `us-east-2`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "us-east-2",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `us-west-1`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-1",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "us-west-1",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region `us-west-2`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-1"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "us-west-2",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with Non-legacy region `us-east-3`",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "sts",
+                                "signingRegion": "us-east-3"
+                            }
+                        ]
+                    },
+                    "url": "https://sts.us-east-3.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-3",
+                        "AWS::STS::UseGlobalEndpoint": true
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "us-east-3",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with legacy region and custom endpoint",
+            "expect": {
+                "endpoint": {
+                    "url": "https://example.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-1",
+                        "AWS::STS::UseGlobalEndpoint": true,
+                        "SDK::Endpoint": "https://example.com"
+                    },
+                    "operationName": "GetCallerIdentity"
+                }
+            ],
+            "params": {
+                "Region": "us-west-1",
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": true,
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "UseGlobalEndpoint with unset region and custom endpoint",
+            "expect": {
+                "endpoint": {
+                    "url": "https://example.com"
+                }
+            },
+            "params": {
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "UseGlobalEndpoint": false,
+                "Endpoint": "https://example.com"
+            }
+        }
+    ],
+    "version": "1.0"
+}

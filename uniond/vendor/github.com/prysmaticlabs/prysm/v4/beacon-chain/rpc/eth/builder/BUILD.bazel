@@ -1,0 +1,48 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "handlers.go",
+        "server.go",
+        "structs.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/eth/builder",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/blockchain:go_default_library",
+        "//beacon-chain/core/helpers:go_default_library",
+        "//beacon-chain/core/transition:go_default_library",
+        "//beacon-chain/rpc/lookup:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//network/httputil:go_default_library",
+        "//proto/engine/v1:go_default_library",
+        "//time/slots:go_default_library",
+        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
+        "@com_github_gorilla_mux//:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["handlers_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//beacon-chain/blockchain/testing:go_default_library",
+        "//beacon-chain/rpc/testutil:go_default_library",
+        "//beacon-chain/state:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//crypto/bls:go_default_library",
+        "//network/httputil:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/util:go_default_library",
+        "//time/slots:go_default_library",
+        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
+        "@com_github_gorilla_mux//:go_default_library",
+    ],
+)

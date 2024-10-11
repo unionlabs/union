@@ -1,0 +1,209 @@
+// Copyright 2019 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package google.cloud.conformance.storage.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Google.Cloud.Storage.V1.Tests.Conformance";
+option java_package = "com.google.cloud.conformance.storage.v1";
+option java_multiple_files = true;
+option go_package = "google/cloud/conformance/storage/v1";
+
+message TestFile {
+  repeated SigningV4Test signing_v4_tests = 1;
+  repeated PostPolicyV4Test post_policy_v4_tests = 2;
+  repeated RetryTest retry_tests = 3;
+}
+
+enum UrlStyle {
+  PATH_STYLE = 0;
+  VIRTUAL_HOSTED_STYLE = 1;
+  BUCKET_BOUND_HOSTNAME = 2;
+}
+
+message SigningV4Test {
+  string fileName = 1;
+  string description = 2;
+  string bucket = 3;
+  string object = 4;
+  string method = 5;
+  int64 expiration = 6;
+  google.protobuf.Timestamp timestamp = 7;
+  string expectedUrl = 8;
+  map<string, string> headers = 9;
+  map<string, string> query_parameters = 10;
+  string scheme = 11;
+  UrlStyle urlStyle = 12;
+  string bucketBoundHostname = 13;
+  string expectedCanonicalRequest = 14;
+  string expectedStringToSign = 15;
+  string hostname = 16;
+  string clientEndpoint = 17;
+  string emulatorHostname = 18;
+  string universeDomain = 19;
+}
+
+message ConditionalMatches {
+  repeated string expression = 1;
+}
+
+message PolicyConditions {
+  repeated int32 contentLengthRange = 1;
+  repeated string startsWith = 2;
+}
+
+// Specification documentation is located at:
+// https://cloud.google.com/storage/docs/authentication/signatures
+
+message PolicyInput {
+  // http or https
+  string scheme = 1;
+  UrlStyle urlStyle = 2;
+  string bucketBoundHostname = 3;
+  string bucket = 4;
+  string object = 5;
+  int32 expiration = 6;
+  google.protobuf.Timestamp timestamp = 7;
+  /*
+    fields with strict equivalence which are added into
+    PolicyOutput.expectedDecodedPolicy to generate the
+    signature.
+    Expectations
+    E.1: Order them in lexigraphical order so it's the
+    signature can be verified across different language
+    implementations.
+  */
+  map<string, string> fields = 8;
+  PolicyConditions conditions = 9;
+}
+
+message PolicyOutput {
+  string url = 1;
+  map<string, string> fields = 2;
+  /*
+    Expectations
+    E.1: PolicyInput.fields must be prepended to form expectedDecodedPolicy
+    for consistent result across languages. Ordering doesn't matter to the
+    service but the decision is made to make it easier to conform implementations
+    in implementation.
+    Example:
+    # Step 1
+    PolicyInput.fields has:
+    {
+      "content-disposition":"attachment; filename=\"~._-%=/é0Aa\"",
+      "content-encoding":"gzip",
+      "content-type":"text/plain",
+      "success_action_redirect":"http://www.google.com/"
+    }
+    # Step 2
+    The expectedDecodedPolicy before prepending the PolicyInput.fields
+    would look like this:
+    {
+      "conditions":[
+        ...prepend here in the same order provided in PolicyInput.fields...
+        {"bucket":"bucket-name"},
+        {"key":"test-object"},
+        {"x-goog-date":"20200123T043530Z"},
+        {"x-goog-credential":"test-iam-credentials@dummy-project-id.iam.gserviceaccount.com/20200123/auto/storage/goog4_request"},
+        {"x-goog-algorithm":"GOOG4-RSA-SHA256"}
+      ],
+      "expiration":"2020-01-23T04:35:40Z"
+    }
+    # Step 3
+    Then expectedDecodedPolicy should prepends PolicyInput.fields in
+    the same order to PolicyOutput.expectedDecodedPolicy `conditions` key.
+    {
+      "conditions":[
+        {"content-disposition":"attachment; filename=\"~._-%=/é0Aa\""},
+        {"content-encoding":"gzip"},
+        {"content-type":"text/plain"},
+        {"success_action_redirect":"http://www.google.com/"},
+        {"bucket":"bucket-name"},
+        {"key":"test-object"},
+        {"x-goog-date":"20200123T043530Z"},
+        {"x-goog-credential":"test-iam-credentials@dummy-project-id.iam.gserviceaccount.com/20200123/auto/storage/goog4_request"},
+        {"x-goog-algorithm":"GOOG4-RSA-SHA256"}
+      ],
+      "expiration":"2020-01-23T04:35:40Z"
+    }
+  */
+
+  string expectedDecodedPolicy = 3;
+}
+
+message PostPolicyV4Test {
+  string description = 1;
+  PolicyInput policyInput = 2;
+  PolicyOutput policyOutput = 3;
+}
+
+/*
+ ------------------------------------------------------------------------------
+  Data types for retry conformance tests
+ ------------------------------------------------------------------------------
+*/
+
+message RetryTests {
+  repeated RetryTest retryTests = 1;
+}
+
+// A list of instructions to send as headers to the GCS emulator. Each
+// instruction will force a specified failure for that request.
+message InstructionList {
+  repeated string instructions = 1;
+} 
+
+// Test resources that are necessary for a method call. For example,
+// storage.objects.get would require BUCKET and OBJECT.
+enum Resource {
+  BUCKET = 0;
+  OBJECT = 1;
+  NOTIFICATION = 2;
+  HMAC_KEY = 3;
+}
+
+// A particular storage API method and required resources in order to test it.
+// Methods must be implemented in tests for each language.
+message Method {
+  string name = 1;  // e.g. storage.objects.get
+  repeated Resource resources = 2;
+  string group = 3; // e.g. storage.resumable.upload
+}
+
+// Schema for a retry test, corresponding to a single scenario from the design
+// doc.
+message RetryTest {
+  // Scenario number
+  int32 id = 1;
+
+  // Human-readable description of the test case.
+  string description = 2;
+
+  // list of emulator instruction sets.
+  repeated InstructionList cases = 3;
+
+  // List of API methods to be tested.
+  repeated Method methods = 4;
+
+  // Whether a precondition is provided (for conditionally-idempotent methods
+  // only).
+  bool preconditionProvided = 5;
+
+  // Whether we expect the method calls to eventually succeed after the client
+  // library retries.
+  bool expectSuccess = 6;
+}

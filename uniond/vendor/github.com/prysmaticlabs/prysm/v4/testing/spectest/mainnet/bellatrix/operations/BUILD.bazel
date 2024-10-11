@@ -1,0 +1,22 @@
+load("@prysm//tools/go:def.bzl", "go_test")
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = [
+        "attestation_test.go",
+        "attester_slashing_test.go",
+        "block_header_test.go",
+        "deposit_test.go",
+        "execution_payload_test.go",
+        "proposer_slashing_test.go",
+        "sync_committee_test.go",
+        "voluntary_exit_test.go",
+    ],
+    data = glob(["*.yaml"]) + [
+        "@consensus_spec_tests_mainnet//:test_data",
+    ],
+    shard_count = 4,
+    tags = ["spectest"],
+    deps = ["//testing/spectest/shared/bellatrix/operations:go_default_library"],
+)

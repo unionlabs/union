@@ -1,0 +1,52 @@
+{
+    "extends": [
+        "config:base"
+    ],
+    "baseBranches": [
+        "v1",
+        "master"
+    ],
+    "postUpdateOptions": [
+        "gomodTidy"
+    ],
+    "packageRules": [
+        {
+            "updateTypes": [
+                "minor",
+                "patch",
+                "pin",
+                "digest"
+            ],
+            "automerge": true
+        },
+        {
+            "baseBranchList": [
+                "v1"
+            ],
+            "packageNames": [
+                "github.com/golang/protobuf",
+                "google.golang.org/genproto",
+                "io_bazel_rules_go",
+                "golang.org/x/oauth2"
+            ],
+            "enabled": false
+        },
+        {
+            "baseBranchList": [
+                "master"
+            ],
+            "packageNames": [
+                "github.com/golang/protobuf",
+                "google.golang.org/protobuf"
+            ],
+            "groupName": "golang/protobuf"
+        },
+        {
+            "packagePatterns": [
+                "jekyll-.*",
+                "github-pages"
+            ],
+            "enabled": false
+        }
+    ]
+}

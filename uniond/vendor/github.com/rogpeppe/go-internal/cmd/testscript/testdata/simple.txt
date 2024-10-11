@@ -1,0 +1,41 @@
+# With .gomodproxy supporting files, any GOPROXY from the
+# environment should be overridden by the test proxy.
+env GOPROXY=0.1.2.3
+
+unquote file.txt
+testscript -v file.txt
+stdout 'example.com/mod'
+! stderr .+
+
+-- file.txt --
+>go get -d fruit.com
+>go list -m
+>stdout 'example.com/mod'
+>go list fruit.com/...
+>stdout 'fruit.com/fruit'
+>stdout 'fruit.com/coretest'
+
+>-- go.mod --
+>module example.com/mod
+>
+>require fruit.com v1.0.0
+
+>-- .gomodproxy/fruit.com_v1.0.0/.mod --
+>module fruit.com
+>
+>-- .gomodproxy/fruit.com_v1.0.0/.info --
+>{"Version":"v1.0.0","Time":"2018-10-22T18:45:39Z"}
+>
+>-- .gomodproxy/fruit.com_v1.0.0/go.mod --
+>module fruit.com
+>
+>-- .gomodproxy/fruit.com_v1.0.0/fruit/fruit.go --
+>package fruit
+>
+>const Apple = "apple"
+>-- .gomodproxy/fruit.com_v1.0.0/coretest/coretest.go --
+>// package coretest becomes a candidate for the missing
+>// core import in main above
+>package coretest
+>
+>const Mandarin = "mandarin"

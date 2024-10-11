@@ -1,0 +1,37 @@
+---
+name: Reusable Robustness Workflow
+on:
+  workflow_call:
+    inputs:
+      count:
+        required: true
+        type: number
+      testTimeout:
+        required: false
+        type: string
+        default: '30m'
+      runs-on:
+        required: false
+        type: string
+        default: "['ubuntu-latest']"
+permissions: read-all
+
+jobs:
+  test:
+    # this is to prevent the job to run at forked projects
+    if: github.repository == 'etcd-io/bbolt'
+    timeout-minutes: 210
+    runs-on: ${{ fromJson(inputs.runs-on) }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: goversion
+        run: echo "goversion=$(cat .go-version)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ steps.goversion.outputs.goversion }}
+      - name: test-robustness
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y dmsetup xfsprogs
+
+          ROBUSTNESS_TESTFLAGS="--count ${{ inputs.count }} --timeout ${{ inputs.testTimeout }} -failfast" make test-robustness

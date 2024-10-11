@@ -1,0 +1,100 @@
+{
+  "description": "Transforms an Apalache counterexample into the test for ICS20 Token Transfer OnRecvPacket",
+  "usage": "jsonatr --use apalache-to-recv-test.json --in counterexample.json --out recv-test.json",
+  "input": [
+    {
+      "name": "history",
+      "description": "extract history from the last state of Apalache CE",
+      "kind": "INLINE",
+      "source": "$.declarations[-2].body.and..[?(@.eq == 'history')].arg.atat..arg.record"
+    },
+    {
+      "name": "bankRecordToBalance",
+      "description": "",
+      "kind": "INLINE",
+      "source": {
+        "address": [
+          "$.colonGreater.tuple[0]..[?(@.key.str == 'port')].value.str | unwrap",
+          "$.colonGreater.tuple[0]..[?(@.key.str == 'channel')].value.str | unwrap",
+          "$.colonGreater.tuple[0]..[?(@.key.str == 'id')].value.str | unwrap"
+        ],
+        "denom": [
+          "$.colonGreater.tuple[1]..[?(@.key.str == 'port')].value.str | unwrap",
+          "$.colonGreater.tuple[1]..[?(@.key.str == 'channel')].value.str | unwrap",
+          "$.colonGreater.tuple[1]..[?(@.key.str == 'denom')].value.str | unwrap"
+        ],
+        "amount": "$.arg | unwrap"
+      }
+    },
+    {
+      "name": "bankBefore",
+      "description": "extract bankBefore from the history state",
+      "kind": "INLINE",
+      "source": "$..[?(@.key.str == 'bankBefore')].value.atat | unwrap | map(bankRecordToBalance)"
+    },
+    {
+      "name": "bankAfter",
+      "description": "extract bankAfter from the history state",
+      "kind": "INLINE",
+      "source": "$..[?(@.key.str == 'bankAfter')].value.atat | unwrap | map(bankRecordToBalance)"
+    },
+    {
+      "name": "packet",
+      "description": "extract packet from the history state",
+      "kind": "INLINE",
+      "source": "$..[?(@.key.str == 'packet')].value.record"
+    },
+    {
+      "name": "packetData",
+      "description": "extract bankAfter from the history state",
+      "kind": "INLINE",
+      "source": "$..[?(@.key.str == 'data')].value.record"
+    },
+    {
+      "name": "packetDataDenom",
+      "description": "extract bankAfter from the history state",
+      "kind": "INLINE",
+      "source": "$..[?(@.key.str == 'data')].value.record.[?(@.key.str == 'denomTrace')].value.record"
+    },
+    {
+      "name": "packetRecord",
+      "description": "decompose packet",
+      "kind": "INLINE",
+      "source": {
+        "sourceChannel" : "$.[?(@.key.str == 'sourceChannel')].value.str | unwrap",
+        "sourcePort" : "$.[?(@.key.str == 'sourcePort')].value.str | unwrap",
+        "destChannel" : "$.[?(@.key.str == 'destChannel')].value.str | unwrap",
+        "destPort" : "$.[?(@.key.str == 'destPort')].value.str | unwrap",
+        "data": {
+          "sender": "$packetData.[?(@.key.str == 'sender')].value.str | unwrap",
+          "receiver": "$packetData.[?(@.key.str == 'receiver')].value.str | unwrap",
+          "amount": "$packetData.[?(@.key.str == 'amount')].value | unwrap",
+          "denom": [
+            "$packetDataDenom.[?(@.key.str == 'port')].value.str | unwrap",
+            "$packetDataDenom.[?(@.key.str == 'channel')].value.str | unwrap",
+            "$packetDataDenom.[?(@.key.str == 'denom')].value.str | unwrap"
+          ]
+        }
+      }
+    },
+    {
+      "name": "handler",
+      "description": "extract handler from the history state",
+      "kind": "INLINE",
+      "source": "$..[?(@.key.str == 'handler')].value.str"
+    },
+    {
+      "name": "historyState",
+      "description": "decompose single history state",
+      "kind": "INLINE",
+      "source": {
+        "packet": "$packet | unwrap | packetRecord",
+        "handler": "$handler | unwrap",
+        "bankBefore": "$bankBefore",
+        "bankAfter": "$bankAfter",
+        "error": "$..[?(@.key.str == 'error')].value | unwrap"
+      }
+    }
+  ],
+  "output": "$history[1:] | map(historyState)"
+}

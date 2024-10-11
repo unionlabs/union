@@ -1,0 +1,391 @@
+[
+	{
+		"name": "minimal",
+		"proto": {
+			"body": {
+				"messages": [
+					{
+						"@type": "/cosmos.bank.v1beta1.MsgSend",
+						"from_address": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs",
+						"to_address": "cosmos1ejrf4cur2wy6kfurg9f2jppp2h3afe5h6pkh5t",
+						"amount": [{ "denom": "uatom", "amount": "10000000" }]
+					}
+				]
+			},
+			"auth_info": {
+				"signer_infos": [
+					{
+						"public_key": {
+							"@type": "/cosmos.crypto.secp256k1.PubKey",
+							"key": "Auvdf+T963bciiBe9l15DNMOijdaXCUo6zqSOvH7TXlN"
+						},
+						"mode_info": { "single": { "mode": "SIGN_MODE_TEXTUAL" } },
+						"sequence": 2
+					}
+				],
+				"fee": {
+					"amount": [{ "denom": "uatom", "amount": "2000" }],
+					"gas_limit": 100000
+				}
+			}
+		},
+		"signer_data": {
+			"account_number": 1,
+			"address": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs",
+			"chain_id": "my-chain",
+			"pub_key": {
+				"@type": "/cosmos.crypto.secp256k1.PubKey",
+				"key": "Auvdf+T963bciiBe9l15DNMOijdaXCUo6zqSOvH7TXlN"
+			},
+			"sequence": 2
+		},
+		"metadata": {
+			"display": "ATOM",
+			"base": "uatom",
+			"denom_units": [
+				{ "denom": "ATOM", "exponent": 6 },
+				{ "denom": "uatom", "exponent": 0 }
+			]
+		},
+		"screens": [
+			{ "title": "Chain id", "content": "my-chain" },
+			{ "title": "Account number", "content": "1" },
+			{ "title": "Sequence", "content": "2" },
+			{ "title": "Address", "content": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs", "expert": true },
+			{ "title": "Public key", "content": "/cosmos.crypto.secp256k1.PubKey", "expert": true },
+			{ "title": "Key", "content": "02EB DD7F E4FD EB76 DC8A 205E F65D 790C D30E 8A37 5A5C 2528 EB3A 923A F1FB 4D79 4D", "indent": 1, "expert": true },
+			{ "content": "This transaction has 1 Message" },
+			{ "title": "Message (1/1)", "content": "/cosmos.bank.v1beta1.MsgSend", "indent": 1 },
+			{ "title": "From address", "content": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs", "indent": 2 },
+			{ "title": "To address", "content": "cosmos1ejrf4cur2wy6kfurg9f2jppp2h3afe5h6pkh5t", "indent": 2 },
+			{ "title": "Amount", "content": "10 ATOM", "indent": 2 },
+			{ "content": "End of Message" },
+			{ "title": "Fees", "content": "0.002 ATOM" },
+			{ "title": "Gas limit", "content": "100'000", "expert": true },
+			{ "title": "Hash of raw bytes", "content": "785bd306ea8962cdb9600089bdd65f3dc029e1aea112dee69e19546c9adad86e", "expert": true }
+		]
+	},
+	{
+		"name": "tricky memo (starts with >, utf-8, trailing whitespaces)",
+		"proto": {
+			"body": {
+				"messages": [
+					{
+						"@type": "/cosmos.bank.v1beta1.MsgSend",
+						"from_address": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs",
+						"to_address": "cosmos1ejrf4cur2wy6kfurg9f2jppp2h3afe5h6pkh5t",
+						"amount": [{ "denom": "uatom", "amount": "10000000" }]
+					}
+				],
+				"memo": "> ⚛️\\u269B⚛️     "
+			},
+			"auth_info": {
+				"signer_infos": [
+					{
+						"public_key": {
+							"@type": "/cosmos.crypto.secp256k1.PubKey",
+							"key": "Auvdf+T963bciiBe9l15DNMOijdaXCUo6zqSOvH7TXlN"
+						},
+						"mode_info": { "single": { "mode": "SIGN_MODE_TEXTUAL" } },
+						"sequence": 2
+					}
+				],
+				"fee": {
+					"amount": [{ "denom": "uatom", "amount": "2000" }],
+					"gas_limit": 100000
+				}
+			}
+		},
+		"signer_data": {
+			"account_number": 1,
+			"address": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs",
+			"chain_id": "my-chain",
+			"pub_key": {
+				"@type": "/cosmos.crypto.secp256k1.PubKey",
+				"key": "Auvdf+T963bciiBe9l15DNMOijdaXCUo6zqSOvH7TXlN"
+			},
+			"sequence": 2
+		},
+		"metadata": {
+			"display": "ATOM",
+			"base": "uatom",
+			"denom_units": [
+				{ "denom": "ATOM", "exponent": 6 },
+				{ "denom": "uatom", "exponent": 0 }
+			]
+		},
+		"screens": [
+			{ "title": "Chain id", "content": "my-chain" },
+			{ "title": "Account number", "content": "1" },
+			{ "title": "Sequence", "content": "2" },
+			{ "title": "Address", "content": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs", "expert": true },
+			{ "title": "Public key", "content": "/cosmos.crypto.secp256k1.PubKey", "expert": true },
+			{ "title": "Key", "content": "02EB DD7F E4FD EB76 DC8A 205E F65D 790C D30E 8A37 5A5C 2528 EB3A 923A F1FB 4D79 4D", "indent": 1, "expert": true },
+			{ "content": "This transaction has 1 Message" },
+			{ "title": "Message (1/1)", "content": "/cosmos.bank.v1beta1.MsgSend", "indent": 1 },
+			{ "title": "From address", "content": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs", "indent": 2 },
+			{ "title": "To address", "content": "cosmos1ejrf4cur2wy6kfurg9f2jppp2h3afe5h6pkh5t", "indent": 2 },
+			{ "title": "Amount", "content": "10 ATOM", "indent": 2 },
+			{ "content": "End of Message" },
+			{ "title": "Memo", "content": "> ⚛️\\u269B⚛️     " },
+			{ "title": "Fees", "content": "0.002 ATOM" },
+			{ "title": "Gas limit", "content": "100'000", "expert": true },
+			{ "title": "Hash of raw bytes", "content": "9c043290109c270b2ffa9f3c0fa55a090c0125ebef881f7da53978dbf93f7385", "expert": true }
+		]
+	},
+	{
+		"name": "long text in nested value",
+		"proto": {
+			"body": {
+				"messages": [
+					{
+						"@type": "/cosmos.gov.v1.MsgVote",
+						"proposal_id": 1,
+						"voter": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs",
+						"option": "VOTE_OPTION_YES",
+						"metadata": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Also it ends in  a single ampersand @"
+					}
+				]
+			},
+			"auth_info": {
+				"signer_infos": [
+					{
+						"public_key": {
+							"@type": "/cosmos.crypto.secp256k1.PubKey",
+							"key": "Auvdf+T963bciiBe9l15DNMOijdaXCUo6zqSOvH7TXlN"
+						},
+						"mode_info": { "single": { "mode": "SIGN_MODE_TEXTUAL" } },
+						"sequence": 2
+					}
+				],
+				"fee": {
+					"amount": [{ "denom": "uatom", "amount": "2000" }],
+					"gas_limit": 100000
+				}
+			}
+		},
+		"signer_data": {
+			"account_number": 1,
+			"address": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs",
+			"chain_id": "my-chain",
+			"pub_key": {
+				"@type": "/cosmos.crypto.secp256k1.PubKey",
+				"key": "Auvdf+T963bciiBe9l15DNMOijdaXCUo6zqSOvH7TXlN"
+			},
+			"sequence": 2
+		},
+		"metadata": {
+			"display": "ATOM",
+			"base": "uatom",
+			"denom_units": [
+				{ "denom": "ATOM", "exponent": 6 },
+				{ "denom": "uatom", "exponent": 0 }
+			]
+		},
+		"screens": [
+			{ "title": "Chain id", "content": "my-chain" },
+			{ "title": "Account number", "content": "1" },
+			{ "title": "Sequence", "content": "2" },
+			{ "title": "Address", "content": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs", "expert": true },
+			{ "title": "Public key", "content": "/cosmos.crypto.secp256k1.PubKey", "expert": true },
+			{ "title": "Key", "content": "02EB DD7F E4FD EB76 DC8A 205E F65D 790C D30E 8A37 5A5C 2528 EB3A 923A F1FB 4D79 4D", "indent": 1, "expert": true },
+			{ "content": "This transaction has 1 Message" },
+			{ "title": "Message (1/1)", "content": "/cosmos.gov.v1.MsgVote", "indent": 1 },
+			{ "title": "Proposal id", "content": "1", "indent": 2 },
+			{ "title": "Voter", "content": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs", "indent": 2 },
+			{ "title": "Option", "content": "VOTE_OPTION_YES", "indent": 2 },
+			{
+				"title": "Metadata",
+				"content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Also it ends in  a single ampersand @",
+				"indent": 2
+			},
+			{ "content": "End of Message" },
+			{ "title": "Fees", "content": "0.002 ATOM" },
+			{ "title": "Gas limit", "content": "100'000", "expert": true },
+			{ "title": "Hash of raw bytes", "content": "0397a88038a9d5f4cc60e3e06bb02bb9f093209fd72057008fddaeab6f039d74", "expert": true }
+		]
+	},
+	{
+		"name": "a bit of everything",
+		"proto": {
+			"body": {
+				"messages": [
+					{
+						"@type": "/cosmos.authz.v1beta1.MsgExec",
+						"grantee": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs",
+						"msgs": [
+							{
+								"@type": "/cosmos.bank.v1beta1.MsgSend",
+								"from_address": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs",
+								"to_address": "cosmos1ejrf4cur2wy6kfurg9f2jppp2h3afe5h6pkh5t",
+								"amount": [{ "denom": "uatom", "amount": "10000000" }]
+							}
+						]
+					},
+					{
+						"@type": "/cosmos.gov.v1.MsgVote",
+						"proposal_id": 1,
+						"voter": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs",
+						"option": "VOTE_OPTION_YES",
+						"metadata": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Also it ends in  a single ampersand @"
+					}
+				],
+				"memo": "> ⚛️\\u269B⚛️     ",
+				"timeout_height": 20,
+				"extension_options": [
+					{
+						"@type": "/cosmos.base.v1beta1.Coin",
+						"amount": "5000000",
+						"denom": "uatom"
+					}
+				],
+				"non_critical_extension_options": [
+					{
+						"@type": "/cosmos.auth.v1beta1.Params",
+						"maxMemoCharacters": 10
+					}
+				]
+			},
+			"auth_info": {
+				"signer_infos": [
+					{
+						"public_key": {
+							"@type": "/cosmos.crypto.secp256k1.PubKey",
+							"key": "Auvdf+T963bciiBe9l15DNMOijdaXCUo6zqSOvH7TXlN"
+						},
+						"mode_info": { "single": { "mode": "SIGN_MODE_TEXTUAL" } },
+						"sequence": 2
+					},
+					{
+						"public_key": {
+							"@type": "/cosmos.crypto.multisig.LegacyAminoPubKey",
+							"threshold": 2,
+							"public_keys": [
+								{
+									"@type": "/cosmos.crypto.secp256k1.PubKey",
+									"key": "AldOvgv8dU9ZZzuhGydQD5FYreLhfhoBgrDKi8ZSTbCT"
+								},
+								{
+									"@type": "/cosmos.crypto.ed25519.PubKey",
+									"key": "AxUMR/GKoycWplR+2otzaQZ9zhHRQWJFt3h1bPg1lnh3"
+								}
+							]
+						},
+						"mode_info": {
+							"multi": {
+								"bitarray": {
+									"extra_bits_stored": 5,
+									"elems": "SA=="
+								},
+								"mode_infos": [
+									{
+										"single": {
+											"mode": "SIGN_MODE_LEGACY_AMINO_JSON"
+										}
+									},
+									{
+										"single": {
+											"mode": "SIGN_MODE_LEGACY_AMINO_JSON"
+										}
+									}
+								]
+							}
+						},
+						"sequence": 5
+					}
+				],
+				"fee": {
+					"amount": [{ "denom": "uatom", "amount": "2000" }],
+					"gas_limit": 100000,
+					"payer": "cosmos1ejrf4cur2wy6kfurg9f2jppp2h3afe5h6pkh5t",
+					"granter": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs"
+				}
+			}
+		},
+		"signer_data": {
+			"account_number": 1,
+			"address": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs",
+			"chain_id": "my-chain",
+			"pub_key": {
+				"@type": "/cosmos.crypto.secp256k1.PubKey",
+				"key": "Auvdf+T963bciiBe9l15DNMOijdaXCUo6zqSOvH7TXlN"
+			},
+			"sequence": 2
+		},
+		"metadata": {
+			"display": "ATOM",
+			"base": "uatom",
+			"denom_units": [
+				{ "denom": "ATOM", "exponent": 6 },
+				{ "denom": "uatom", "exponent": 0 }
+			]
+		},
+		"screens": [
+			{ "title": "Chain id", "content": "my-chain" },
+			{ "title": "Account number", "content": "1" },
+			{ "title": "Sequence", "content": "2" },
+			{ "title": "Address", "content": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs", "expert": true },
+			{ "title": "Public key", "content": "/cosmos.crypto.secp256k1.PubKey", "expert": true },
+			{ "title": "Key", "content": "02EB DD7F E4FD EB76 DC8A 205E F65D 790C D30E 8A37 5A5C 2528 EB3A 923A F1FB 4D79 4D", "indent": 1, "expert": true },
+			{ "content": "This transaction has 2 Messages" },
+			{ "title": "Message (1/2)", "content": "/cosmos.authz.v1beta1.MsgExec", "indent": 1 },
+			{ "title": "Grantee", "content": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs", "indent": 2 },
+			{ "title": "Msgs", "content": "1 Any", "indent": 2 },
+			{ "title": "Msgs (1/1)", "content": "/cosmos.bank.v1beta1.MsgSend", "indent": 3 },
+			{ "title": "From address", "content": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs", "indent": 4 },
+			{ "title": "To address", "content": "cosmos1ejrf4cur2wy6kfurg9f2jppp2h3afe5h6pkh5t", "indent": 4 },
+			{ "title": "Amount", "content": "10 ATOM", "indent": 4 },
+			{ "content": "End of Msgs", "indent": 2 },
+			{ "title": "Message (2/2)", "content": "/cosmos.gov.v1.MsgVote", "indent": 1 },
+			{ "title": "Proposal id", "content": "1", "indent": 2 },
+			{ "title": "Voter", "content": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs", "indent": 2 },
+			{ "title": "Option", "content": "VOTE_OPTION_YES", "indent": 2 },
+			{
+				"title": "Metadata",
+				"content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Also it ends in  a single ampersand @",
+				"indent": 2
+			},
+			{ "content": "End of Message" },
+			{ "title": "Memo", "content": "> ⚛️\\u269B⚛️     " },
+			{ "title": "Fees", "content": "0.002 ATOM" },
+			{ "title": "Fee payer", "content": "cosmos1ejrf4cur2wy6kfurg9f2jppp2h3afe5h6pkh5t", "expert": true },
+			{ "title": "Fee granter", "content": "cosmos1ulav3hsenupswqfkw2y3sup5kgtqwnvqa8eyhs", "expert": true },
+			{ "title": "Gas limit", "content": "100'000", "expert": true },
+			{ "title": "Timeout height", "content": "20", "expert": true },
+			{ "title": "Other signer", "content": "1 SignerInfo", "expert": true },
+			{ "title": "Other signer (1/1)", "content": "SignerInfo object", "indent": 1, "expert": true },
+			{ "title": "Public key", "content": "/cosmos.crypto.multisig.LegacyAminoPubKey", "indent": 2, "expert": true },
+			{ "title": "Threshold", "content": "2", "indent": 3, "expert": true },
+			{ "title": "Public keys", "content": "2 Any", "indent": 3, "expert": true },
+			{ "title": "Public keys (1/2)", "content": "/cosmos.crypto.secp256k1.PubKey", "indent": 4, "expert": true },
+			{ "title": "Key", "content": "0257 4EBE 0BFC 754F 5967 3BA1 1B27 500F 9158 ADE2 E17E 1A01 82B0 CA8B C652 4DB0 93", "indent": 5, "expert": true },
+			{ "title": "Public keys (2/2)", "content": "/cosmos.crypto.ed25519.PubKey", "indent": 4, "expert": true },
+			{ "title": "Key", "content": "0315 0C47 F18A A327 16A6 547E DA8B 7369 067D CE11 D141 6245 B778 756C F835 9678 77", "indent": 5, "expert": true },
+			{ "content": "End of Public keys", "indent": 3, "expert": true },
+			{ "title": "Mode info", "content": "ModeInfo object", "indent": 2, "expert": true },
+			{ "title": "Multi", "content": "Multi object", "indent": 3, "expert": true },
+			{ "title": "Bitarray", "content": "CompactBitArray object", "indent": 4, "expert": true },
+			{ "title": "Extra bits stored", "content": "5", "indent": 5, "expert": true },
+			{ "title": "Elems", "content": "48", "indent": 5, "expert": true },
+			{ "title": "Mode infos", "content": "2 ModeInfo", "indent": 4, "expert": true },
+			{ "title": "Mode infos (1/2)", "content": "ModeInfo object", "indent": 5, "expert": true },
+			{ "title": "Single", "content": "Single object", "indent": 6, "expert": true },
+			{ "title": "Mode", "content": "SIGN_MODE_LEGACY_AMINO_JSON", "indent": 7, "expert": true },
+			{ "title": "Mode infos (2/2)", "content": "ModeInfo object", "indent": 5, "expert": true },
+			{ "title": "Single", "content": "Single object", "indent": 6, "expert": true },
+			{ "title": "Mode", "content": "SIGN_MODE_LEGACY_AMINO_JSON", "indent": 7, "expert": true },
+			{ "content": "End of Mode infos", "indent": 4, "expert": true },
+			{ "title": "Sequence", "content": "5", "indent": 2, "expert": true },
+			{ "content": "End of Other signer", "expert": true },
+			{ "title": "Extension options", "content": "1 Any", "expert": true },
+			{ "title": "Extension options (1/1)", "content": "/cosmos.base.v1beta1.Coin", "indent": 1, "expert": true },
+			{ "content": "5 ATOM", "indent": 2, "expert": true },
+			{ "content": "End of Extension options", "expert": true },
+			{ "title": "Non critical extension options", "content": "1 Any", "expert": true },
+			{ "title": "Non critical extension options (1/1)", "content": "/cosmos.auth.v1beta1.Params", "indent": 1, "expert": true },
+			{ "title": "Max memo characters", "content": "10", "indent": 2, "expert": true },
+			{ "content": "End of Non critical extension options", "expert": true },
+			{ "title": "Hash of raw bytes", "content": "e7be7808de4985bd609811d2a32805cb233c168c7d247d61d37f4a6dd4cf3a2a", "expert": true }
+		]
+	}
+]

@@ -1,0 +1,4 @@
+go test fuzz v1
+[]byte("")
+[]byte("0")
+int(41)

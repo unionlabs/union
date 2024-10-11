@@ -1,4 +1,4 @@
-# blst
+# blst [![Lint Status](https://github.com/supranational/blst/workflows/golang-lint/badge.svg)](https://github.com/supranational/blst/actions/workflows/golang-lint.yml)
 
 The `blst` package provides a Go interface to the blst BLS12-381 signature library.
 
@@ -13,9 +13,9 @@ go test
 
 The generate.py script is used to generate both min-pk and min-sig variants of the binding from a common code base. It consumes the `*.tgo` files along with `blst_minpk_test.go` and produces `blst.go` and `blst_minsig_test.go`. The .tgo files can treated as if they were .go files, including the use of gofmt and goimports. The generate script will filter out extra imports while processing and automatically run goimports on the final blst.go file.
 
-After running generate.py, <nobr>`go build`</nobr> and <nobr>`go test`</nobr> can be run as usual. Cgo will compile `server.c`, which includes the required C implementation files, and `assembly.S`, which includes appropriate pre-generated assembly code for the platform. To compile on Windows one has to have MinGW gcc on the `%PATH%`.
+After running generate.py, <nobr>`go build`</nobr> and <nobr>`go test`</nobr> can be run as usual. Cgo will compile `cgo_server.c`, which includes the required C implementation files, and `cgo_assembly.S`, which includes appropriate pre-generated assembly code for the platform. To compile on Windows one has to have MinGW gcc on the `%PATH%`.
 
-If the test or target application crashes with an "illegal instruction" exception [after copying to an older system], rebuild with `CGO_CFLAGS` environment variable set to <nobr>`-O -D__BLST_PORTABLE__`</nobr>. Don't forget <nobr>`-O`</nobr>!
+If the test or target application crashes with an "illegal instruction" exception [after copying to an older system], rebuild with `CGO_CFLAGS` environment variable set to <nobr>`-O2 -D__BLST_PORTABLE__`</nobr>. Don't forget <nobr>`-O2`</nobr>!
 
 ## Usage
 There are two primary modes of operation that can be chosen based on type definitions in the application.

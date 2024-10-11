@@ -1,0 +1,16 @@
+evidence = 120
+prometheus = true
+pbts_enable_height = 1
+
+[validators]
+  validator01 = 33
+  validator02 = 67
+
+[node]
+  [node.validator01]
+    mode = "validator"
+    persistent_peers = ["validator02"]
+    clock_skew = "40s"
+  [node.validator02]
+    mode = "validator"
+

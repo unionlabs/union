@@ -124,7 +124,7 @@ func (p *ExistenceProof) Verify(spec *ProofSpec, root CommitmentRoot, key []byte
 		return fmt.Errorf("error calculating root, %w", err)
 	}
 	if !bytes.Equal(root, calc) {
-		return fmt.Errorf("calculcated root doesn't match provided root")
+		return fmt.Errorf("calculated root doesn't match provided root")
 	}
 
 	return nil
@@ -163,7 +163,7 @@ func (p *ExistenceProof) calculate(spec *ProofSpec) (CommitmentRoot, error) {
 	return res, nil
 }
 
-// Calculate determines the root hash that matches the given nonexistence rpoog.
+// Calculate determines the root hash that matches the given nonexistence proof.
 // You must validate the result is what you have in a header.
 // Returns error if the calculations cannot be performed.
 func (p *NonExistenceProof) Calculate() (CommitmentRoot, error) {
@@ -180,17 +180,23 @@ func (p *NonExistenceProof) Calculate() (CommitmentRoot, error) {
 
 // CheckAgainstSpec will verify the leaf and all path steps are in the format defined in spec
 func (p *ExistenceProof) CheckAgainstSpec(spec *ProofSpec) error {
-	if p.GetLeaf() == nil {
+	leaf := p.GetLeaf()
+	if leaf == nil {
 		return errors.New("existence Proof needs defined LeafOp")
 	}
-	err := p.Leaf.CheckAgainstSpec(spec)
-	if err != nil {
+	if err := leaf.CheckAgainstSpec(spec); err != nil {
 		return fmt.Errorf("leaf, %w", err)
 	}
 	if spec.MinDepth > 0 && len(p.Path) < int(spec.MinDepth) {
 		return fmt.Errorf("innerOps depth too short: %d", len(p.Path))
 	}
-	if spec.MaxDepth > 0 && len(p.Path) > int(spec.MaxDepth) {
+
+	maxDepth := spec.MaxDepth
+	if maxDepth == 0 {
+		maxDepth = 128
+	}
+
+	if len(p.Path) > int(maxDepth) {
 		return fmt.Errorf("innerOps depth too long: %d", len(p.Path))
 	}
 
@@ -200,7 +206,7 @@ func (p *ExistenceProof) CheckAgainstSpec(spec *ProofSpec) error {
 		if err := inner.CheckAgainstSpec(spec, layerNum); err != nil {
 			return fmt.Errorf("inner, %w", err)
 		}
-		layerNum += 1
+		layerNum++
 	}
 	return nil
 }
@@ -283,7 +289,7 @@ func IsLeftMost(spec *InnerSpec, path []*InnerOp) bool {
 	return true
 }
 
-// IsRightMost returns true if this is the left-most path in the tree, excluding placeholder (empty child) nodes
+// IsRightMost returns true if this is the right-most path in the tree, excluding placeholder (empty child) nodes
 func IsRightMost(spec *InnerSpec, path []*InnerOp) bool {
 	last := len(spec.ChildOrder) - 1
 	minPrefix, maxPrefix, suffix := getPadding(spec, int32(last))
@@ -367,7 +373,7 @@ func getPadding(spec *InnerSpec, branch int32) (minPrefix, maxPrefix, suffix int
 
 	// count how many children are in the suffix
 	suffix = (len(spec.ChildOrder) - 1 - idx) * int(spec.ChildSize)
-	return
+	return minPrefix, maxPrefix, suffix
 }
 
 // leftBranchesAreEmpty returns true if the padding bytes correspond to all empty siblings
@@ -450,15 +456,43 @@ func orderFromPadding(spec *InnerSpec, inner *InnerOp) (int32, error) {
 	return 0, errors.New("cannot find any valid spacing for this node")
 }
 
-// over-declares equality, which we cosnider fine for now.
+// over-declares equality, which we consider fine for now.
 func (p *ProofSpec) SpecEquals(spec *ProofSpec) bool {
-	return p.LeafSpec.Hash == spec.LeafSpec.Hash &&
-		p.LeafSpec.PrehashKey == spec.LeafSpec.PrehashKey &&
-		p.LeafSpec.PrehashValue == spec.LeafSpec.PrehashValue &&
-		p.LeafSpec.Length == spec.LeafSpec.Length &&
-		p.InnerSpec.Hash == spec.InnerSpec.Hash &&
-		p.InnerSpec.MinPrefixLength == spec.InnerSpec.MinPrefixLength &&
-		p.InnerSpec.MaxPrefixLength == spec.InnerSpec.MaxPrefixLength &&
-		p.InnerSpec.ChildSize == spec.InnerSpec.ChildSize &&
-		len(p.InnerSpec.ChildOrder) == len(spec.InnerSpec.ChildOrder)
+	// 1. Compare LeafSpecs values.
+	switch {
+	case (p.LeafSpec == nil) != (spec.LeafSpec == nil): // One of them is nil.
+		return false
+
+	case p.LeafSpec != nil && spec.LeafSpec != nil:
+		ok := p.LeafSpec.Hash == spec.LeafSpec.Hash &&
+			p.LeafSpec.PrehashKey == spec.LeafSpec.PrehashKey &&
+			p.LeafSpec.PrehashValue == spec.LeafSpec.PrehashValue &&
+			p.LeafSpec.Length == spec.LeafSpec.Length
+		if !ok {
+			return false
+		}
+
+	default: // Both are nil, hence LeafSpec values are equal.
+	}
+
+	// 2. Compare InnerSpec values.
+	switch {
+	case (p.InnerSpec == nil) != (spec.InnerSpec == nil): // One of them is not nil.
+		return false
+
+	case p.InnerSpec != nil && spec.InnerSpec != nil: // Both are non-nil
+		ok := p.InnerSpec.Hash == spec.InnerSpec.Hash &&
+			p.InnerSpec.MinPrefixLength == spec.InnerSpec.MinPrefixLength &&
+			p.InnerSpec.MaxPrefixLength == spec.InnerSpec.MaxPrefixLength &&
+			p.InnerSpec.ChildSize == spec.InnerSpec.ChildSize &&
+			len(p.InnerSpec.ChildOrder) == len(spec.InnerSpec.ChildOrder)
+		if !ok {
+			return false
+		}
+
+	default: // Both are nil, hence InnerSpec values are equal.
+	}
+
+	// By this point all the above conditions pass so they are equal.
+	return true
 }

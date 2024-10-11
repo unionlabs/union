@@ -1,0 +1,64 @@
+{
+  "genesis": {
+    "difficulty": "50486697699375",
+    "extraData": "0xd783010406844765746887676f312e362e32856c696e7578",
+    "gasLimit": "4788482",
+    "hash": "0xf6bbc5bbe34d5c93fd5b4712cd498d1026b8b0f586efefe7fe30231ed6b8a1a5",
+    "miner": "0xbcdfc35b86bedf72f0cda046a3c16829a2ef41d1",
+    "mixHash": "0xabca93555584c0463ee5c212251dd002bb3a93a157e06614276f93de53d4fdb8",
+    "nonce": "0xa64136fcb9c2d4ca",
+    "number": "1719576",
+    "stateRoot": "0xab5eec2177a92d633e282936af66c46e24cfa8f2fdc2b8155f33885f483d06f3",
+    "timestamp": "1466150166",
+    "totalDifficulty": "28295412423546970038",
+    "alloc": {
+      "0xf8bda96b67036ee48107f2a0695ea673479dda56": {
+        "balance": "0x1529e844f9ecdeec",
+        "nonce": "33",
+        "code": "0x",
+        "storage": {}
+      }
+    },
+    "config": {
+      "chainId": 1,
+      "daoForkSupport": true,
+      "eip150Block": 0,
+      "eip150Hash": "0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d",
+      "eip155Block": 3000000,
+      "eip158Block": 0,
+      "ethash": {},
+      "homesteadBlock": 1150000,
+      "byzantiumBlock": 8772000,
+      "constantinopleBlock": 9573000,
+      "petersburgBlock": 10500839,
+      "istanbulBlock": 10500839
+    }
+  },
+  "context": {
+    "number": "1719577",
+    "difficulty": "50486697732143",
+    "timestamp": "1466150178",
+    "gasLimit": "4788484",
+    "miner": "0x2a65aca4d5fc5b5c859090a6c34d164135398226"
+  },
+  "input": "0xf874218504a817c800832318608080a35b620186a05a131560135760016020526000565b600080601f600039601f565b6000f31ba0575fa000a1f06659a7b6d3c7877601519a4997f04293f0dfa0eee6d8cd840c77a04c52ce50719ee2ff7a0c5753f4ee69c0340666f582dbb5148845a354ca726e4a",
+  "result": [
+    {
+      "action": {
+        "from": "0xf8bda96b67036ee48107f2a0695ea673479dda56",
+        "gas": "0x231860",
+        "init": "0x5b620186a05a131560135760016020526000565b600080601f600039601f565b6000f3",
+        "value": "0x0"
+      },
+      "blockNumber": 1719577,
+      "result": {
+        "address": "0xb2e6a2546c45889427757171ab05b8b438525b42",
+        "code": "0x",
+        "gasUsed": "0x219202"
+      },
+      "subtraces": 0,
+      "traceAddress": [],
+      "type": "create"
+    }
+  ]
+}

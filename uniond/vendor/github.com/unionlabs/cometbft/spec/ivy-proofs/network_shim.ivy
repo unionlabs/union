@@ -1,0 +1,133 @@
+#lang ivy1.7
+# ---
+# layout: page
+# title: Network model and network shim
+# ---
+
+# Here we define a network module, which is our model of the network, and a
+# shim module that sits on top of the network and which, upon receiving a
+# message, calls the appropriate protocol handler.
+
+include domain_model
+
+# Here we define an enumeration type for identifying the 3 different types of
+# messages that nodes send.
+object msg_kind = { # TODO: merge with step_t
+    type this = {proposal, prevote, precommit}
+}
+
+# Here we define the type of messages `msg`. Its members are structs with the fields described below.
+object msg = {
+    type this = struct {
+        m_kind : msg_kind,
+        m_src  : node,
+        m_round : round,
+        m_value : value,
+        m_vround : round
+    }
+}
+
+# This is our model of the network:
+isolate net = {
+
+    export action recv(dst:node,v:msg)
+    action send(src:node,dst:node,v:msg)
+    # Note that the `recv` action is exported, meaning that it can be called
+    # non-deterministically by the environment any time it is enabled. In other
+    # words, a packet that is in flight can be received at any time. In this
+    # sense, the network is fully asynchronous. Moreover, there is no
+    # requirement that a given message will be received at all.
+
+    # The state of the network consists of all the packets that have been
+    # sent so far, along with their destination.
+    relation sent(V:msg, N:node)
+
+    after init {
+        sent(V, N) := false
+    }
+
+    before send {
+        sent(v,dst) := true
+    }
+
+    before recv {
+        require sent(v,dst) # only sent messages can be received.
+    }
+}
+
+# The network shim sits on top of the network and, upon receiving a message,
+# calls the appropriate protocol handler. It also exposes a `broadcast` action
+# that sends to all nodes.
+
+isolate shim = {
+
+    # In order not repeat the same code for each handler, we use a handler
+    # module parameterized by the type of message it will handle. Below we
+    # instantiate this module for the 3 types of messages of Tendermint
+    module handler(p_kind) = {
+        action handle(dst:node,m:msg)
+        object spec = {
+            before handle {
+                assert sent(m,dst) & m.m_kind = p_kind
+            }
+        }
+    }
+
+    instance proposal_handler : handler(msg_kind.proposal)
+    instance prevote_handler : handler(msg_kind.prevote)
+    instance precommit_handler : handler(msg_kind.precommit)
+
+    relation sent(M:msg,N:node)
+
+    action broadcast(src:node,m:msg)
+    action send(src:node,dst:node,m:msg)
+
+    specification {
+        after init {
+            sent(M,D) := false;
+        }
+        before broadcast {
+            sent(m,D) := true
+        }
+        before send {
+            sent(m,dst) := true
+        }
+    }
+
+    # Here we give an implementation of it that satisfies its specification:
+    implementation {
+
+        implement net.recv(dst:node,m:msg) {
+
+            if m.m_kind = msg_kind.proposal {
+                call proposal_handler.handle(dst,m)
+            }
+            else if m.m_kind = msg_kind.prevote {
+                call prevote_handler.handle(dst,m)
+            }
+            else if m.m_kind = msg_kind.precommit {
+                call precommit_handler.handle(dst,m)
+            }
+        }
+
+        implement broadcast { # broadcast sends to all nodes, including the sender.
+            var iter := node.iter.create(0);
+            while ~iter.is_end
+            invariant net.sent(M,D) -> sent(M,D)
+            {
+                var n := iter.val;
+                call net.send(src,n,m);
+                iter := iter.next;
+            }
+        }
+
+        implement send {
+            call net.send(src,dst,m)
+        }
+
+        private {
+            invariant net.sent(M,D) -> sent(M,D)
+        }
+    }
+
+} with net, node # to prove that the shim implementation satisfies the shim specification, we rely on the specification of net and node.

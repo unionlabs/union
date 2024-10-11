@@ -1,0 +1,18 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = ["setup_db.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/db/testing",
+    visibility = [
+        "//beacon-chain:__subpackages__",
+        "//testing:__subpackages__",
+    ],
+    deps = [
+        "//beacon-chain/db:go_default_library",
+        "//beacon-chain/db/iface:go_default_library",
+        "//beacon-chain/db/kv:go_default_library",
+        "//beacon-chain/db/slasherkv:go_default_library",
+    ],
+)

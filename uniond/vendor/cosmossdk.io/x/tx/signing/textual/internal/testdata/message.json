@@ -1,0 +1,139 @@
+[
+    {
+        "proto": {},
+        "screens": [
+            {"content": "Foo object"}
+        ]
+    },
+    {
+        "proto": {
+            "full_name": "nonempty"
+        },
+        "screens": [
+            {"content": "Foo object"},
+            {"title": "Full name", "content": "nonempty", "indent": 1}
+        ]
+    },
+    {
+        "proto": {
+            "full_name": "thing one",
+            "nickname": ":thing two"
+        },
+        "screens": [
+            {"content": "Foo object"},
+            {"title": "Full name", "content": "thing one", "indent": 1},
+            {"title": "Nickname", "content": ":thing two", "indent": 1}
+        ]
+    },
+    {
+        "proto": {
+            "full_name": "special child message",
+            "mtime": {
+                "seconds": 1136214245
+            }
+        },
+        "screens": [
+            {"content": "Foo object"},
+            {"title": "Full name", "content": "special child message", "indent": 1},
+            {"title": "Mtime", "content": "2006-01-02T15:04:05Z", "indent": 1}
+        ]
+    },
+    {
+        "proto": {
+            "nickname": "empty child",
+            "left": {}
+        },
+        "screens": [
+            {"content": "Foo object"},
+            {"title": "Nickname", "content": "empty child", "indent": 1},
+            {"title": "Left", "content": "Foo object", "indent": 1}
+        ]
+    },
+    {
+        "proto": {
+            "nickname": "empty children",
+            "left": {},
+            "right": {},
+            "bar": {}
+        },
+        "screens": [
+            {"content": "Foo object"},
+            {"title": "Nickname", "content": "empty children", "indent": 1},
+            {"title": "Left", "content": "Foo object", "indent": 1},
+            {"title": "Right", "content": "Foo object", "indent": 1},
+            {"title": "Bar", "content": "Bar object", "indent": 1}
+        ]
+    },
+    {
+        "proto": {
+            "full_name": "subfield",
+            "left": {},
+            "right": {
+                "nickname": "junior"
+            },
+            "bar": {}
+        },
+        "screens": [
+            {"content": "Foo object"},
+            {"title": "Full name", "content": "subfield", "indent": 1},
+            {"title": "Left", "content": "Foo object", "indent": 1},
+            {"title": "Right", "content": "Foo object", "indent": 1},
+            {"title": "Nickname", "content": "junior", "indent": 2},
+            {"title": "Bar", "content": "Bar object", "indent": 1}
+        ]
+    },
+    {
+        "proto": {
+            "full_name": "deep",
+            "left": {
+                "left": {"nickname": "LL"},
+                "right": {"nickname": "LR"}
+            },
+            "right": {
+                "left": {"nickname": "RL"},
+                "right": {"nickname": "RR"}
+            }
+        },
+        "screens": [
+            {"content": "Foo object"},
+            {"title": "Full name", "content": "deep", "indent": 1},
+            {"title": "Left", "content": "Foo object", "indent": 1},
+            {"title": "Left", "content": "Foo object", "indent": 2},
+            {"title": "Nickname", "content": "LL", "indent": 3},
+            {"title": "Right", "content": "Foo object", "indent": 2},
+            {"title": "Nickname", "content": "LR", "indent": 3},
+            {"title": "Right", "content": "Foo object", "indent": 1},
+            {"title": "Left", "content": "Foo object", "indent": 2},
+            {"title": "Nickname", "content": "RL", "indent": 3},
+            {"title": "Right", "content": "Foo object", "indent": 2},
+            {"title": "Nickname", "content": "RR", "indent": 3}
+        ]
+    },
+    {
+        "proto": {
+            "full_name": " the kitchen sink ",
+            "mtime": {},
+            "left": {},
+            "right": {
+                "nickname": "blub",
+                "right": {},
+                "bar": {
+                    "bar_id": "quux",
+                    "data": [255, 254]
+                }
+            }
+        },
+        "screens": [
+            {"content": "Foo object"},
+            {"title": "Full name", "content": " the kitchen sink ", "indent": 1},
+            {"title": "Mtime", "content": "1970-01-01T00:00:00Z", "indent": 1},
+            {"title": "Left", "content": "Foo object", "indent": 1},
+            {"title": "Right", "content": "Foo object", "indent": 1},
+            {"title": "Nickname", "content": "blub", "indent": 2},
+            {"title": "Right", "content": "Foo object", "indent": 2},
+            {"title": "Bar", "content": "Bar object", "indent": 2},
+            {"title": "Bar id", "content": "quux", "indent": 3},
+            {"title": "Data", "content": "FFFE", "indent": 3}
+        ]
+    }
+]

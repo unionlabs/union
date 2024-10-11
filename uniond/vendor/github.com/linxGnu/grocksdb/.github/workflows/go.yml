@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: CI
+
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ^1.17
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+
+      - name: Cache prebuilt static libs
+        uses: actions/cache@v3
+        id: cache-prebuilt-static-libs
+        continue-on-error: false
+        with:
+          path: |
+            dist/
+          key: ${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/build.sh') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Build static libs
+        if: steps.cache-prebuilt-static-libs.outputs.cache-hit != 'true'
+        run: make libs
+
+      - name: Get dependencies
+        run: |
+          go mod download
+
+      - name: Test Coverage
+        run: go test -v -tags testing -count=1 -coverprofile=coverage.out
+
+      - name: Convert coverage to lcov
+        uses: jandelgado/gcov2lcov-action@v1.0.9
+        with:
+          infile: coverage.out
+          outfile: coverage.lcov
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          path-to-lcov: coverage.lcov

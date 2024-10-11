@@ -1,0 +1,328 @@
+{{$Name := .Curve.Name}}
+
+import (
+	"testing"
+
+	"github.com/leanovate/gopter"
+	"github.com/leanovate/gopter/prop"
+)
+
+// ------------------------------------------------------------
+// tests
+
+func TestE6ReceiverIsOperand(t *testing.T) {
+
+	t.Parallel()
+	parameters := gopter.DefaultTestParameters()
+	if testing.Short() {
+		parameters.MinSuccessfulTests = nbFuzzShort
+	} else {
+		parameters.MinSuccessfulTests = nbFuzz
+	}
+
+	properties := gopter.NewProperties(parameters)
+
+	genA := GenE6()
+	genB := GenE6()
+	genE2 := GenE2()
+
+	properties.Property("[{{ toUpper $Name}}] Having the receiver as operand (addition) should output the same result", prop.ForAll(
+		func(a, b *E6) bool {
+			var c, d E6
+			d.Set(a)
+			c.Add(a, b)
+			a.Add(a, b)
+			b.Add(&d, b)
+			return a.Equal(b) && a.Equal(&c) && b.Equal(&c)
+		},
+		genA,
+		genB,
+	))
+
+	properties.Property("[{{ toUpper $Name}}] Having the receiver as operand (sub) should output the same result", prop.ForAll(
+		func(a, b *E6) bool {
+			var c, d E6
+			d.Set(a)
+			c.Sub(a, b)
+			a.Sub(a, b)
+			b.Sub(&d, b)
+			return a.Equal(b) && a.Equal(&c) && b.Equal(&c)
+		},
+		genA,
+		genB,
+	))
+
+	properties.Property("[{{ toUpper $Name}}] Having the receiver as operand (mul) should output the same result", prop.ForAll(
+		func(a, b *E6) bool {
+			var c, d E6
+			d.Set(a)
+			c.Mul(a, b)
+			a.Mul(a, b)
+			b.Mul(&d, b)
+			return a.Equal(b) && a.Equal(&c) && b.Equal(&c)
+		},
+		genA,
+		genB,
+	))
+
+	properties.Property("[{{ toUpper $Name}}] Having the receiver as operand (square) should output the same result", prop.ForAll(
+		func(a *E6) bool {
+			var b E6
+			b.Square(a)
+			a.Square(a)
+			return a.Equal(&b)
+		},
+		genA,
+	))
+
+	properties.Property("[{{ toUpper $Name}}] Having the receiver as operand (neg) should output the same result", prop.ForAll(
+		func(a *E6) bool {
+			var b E6
+			b.Neg(a)
+			a.Neg(a)
+			return a.Equal(&b)
+		},
+		genA,
+	))
+
+	properties.Property("[{{ toUpper $Name}}] Having the receiver as operand (double) should output the same result", prop.ForAll(
+		func(a *E6) bool {
+			var b E6
+			b.Double(a)
+			a.Double(a)
+			return a.Equal(&b)
+		},
+		genA,
+	))
+
+	properties.Property("[{{ toUpper $Name}}] Having the receiver as operand (mul by non residue) should output the same result", prop.ForAll(
+		func(a *E6) bool {
+			var b E6
+			b.MulByNonResidue(a)
+			a.MulByNonResidue(a)
+			return a.Equal(&b)
+		},
+		genA,
+	))
+
+	properties.Property("[{{ toUpper $Name}}] Having the receiver as operand (Inverse) should output the same result", prop.ForAll(
+		func(a *E6) bool {
+			var b E6
+			b.Inverse(a)
+			a.Inverse(a)
+			return a.Equal(&b)
+		},
+		genA,
+	))
+
+	properties.Property("[{{ toUpper $Name}}] Having the receiver as operand (mul by E2) should output the same result", prop.ForAll(
+		func(a *E6, b *E2) bool {
+			var c E6
+			c.MulByE2(a, b)
+			a.MulByE2(a, b)
+			return a.Equal(&c)
+		},
+		genA,
+		genE2,
+	))
+
+	properties.TestingRun(t, gopter.ConsoleReporter(false))
+}
+
+func TestE6Ops(t *testing.T) {
+
+	t.Parallel()
+	parameters := gopter.DefaultTestParameters()
+	if testing.Short() {
+		parameters.MinSuccessfulTests = nbFuzzShort
+	} else {
+		parameters.MinSuccessfulTests = nbFuzz
+	}
+
+	properties := gopter.NewProperties(parameters)
+
+	genA := GenE6()
+	genB := GenE6()
+	genE2 := GenE2()
+
+	properties.Property("[{{ toUpper $Name }}] sub & add should leave an element invariant", prop.ForAll(
+		func(a, b *E6) bool {
+			var c E6
+			c.Set(a)
+			c.Add(&c, b).Sub(&c, b)
+			return c.Equal(a)
+		},
+		genA,
+		genB,
+	))
+
+	properties.Property("[{{ toUpper $Name }}] mul & inverse should leave an element invariant", prop.ForAll(
+		func(a, b *E6) bool {
+			var c, d E6
+			d.Inverse(b)
+			c.Set(a)
+			c.Mul(&c, b).Mul(&c, &d)
+			return c.Equal(a)
+		},
+		genA,
+		genB,
+	))
+
+	properties.Property("[{{ toUpper $Name }}] inverse twice should leave an element invariant", prop.ForAll(
+		func(a *E6) bool {
+			var b E6
+			b.Inverse(a).Inverse(&b)
+			return a.Equal(&b)
+		},
+		genA,
+	))
+
+	properties.Property("[{{ toUpper $Name }}] BatchInvertE6 should output the same result as Inverse", prop.ForAll(
+		func(a, b, c *E6) bool {
+
+			batch := BatchInvertE6([]E6{*a, *b, *c})
+			a.Inverse(a)
+			b.Inverse(b)
+			c.Inverse(c)
+			return a.Equal(&batch[0]) && b.Equal(&batch[1]) && c.Equal(&batch[2])
+		},
+		genA,
+		genA,
+		genA,
+	))
+
+	properties.Property("[{{ toUpper $Name }}] neg twice should leave an element invariant", prop.ForAll(
+		func(a *E6) bool {
+			var b E6
+			b.Neg(a).Neg(&b)
+			return a.Equal(&b)
+		},
+		genA,
+	))
+
+	properties.Property("[{{ toUpper $Name }}] square and mul should output the same result", prop.ForAll(
+		func(a *E6) bool {
+			var b, c E6
+			b.Mul(a, a)
+			c.Square(a)
+			return b.Equal(&c)
+		},
+		genA,
+	))
+
+	properties.Property("[{{ toUpper $Name }}] Double and add twice should output the same result", prop.ForAll(
+		func(a *E6) bool {
+			var b E6
+			b.Add(a, a)
+			a.Double(a)
+			return a.Equal(&b)
+		},
+		genA,
+	))
+
+	properties.Property("[{{ toUpper $Name }}] Mul by non residue should be the same as multiplying by (0,1,0)", prop.ForAll(
+		func(a *E6) bool {
+			var b, c E6
+			b.B1.A0.SetOne()
+			c.Mul(a, &b)
+			a.MulByNonResidue(a)
+			return a.Equal(&c)
+		},
+		genA,
+	))
+
+	properties.Property("[{{ toUpper $Name }}] MulByE2 MulByE2 inverse should leave an element invariant", prop.ForAll(
+		func(a *E6, b *E2) bool {
+			var c E6
+			var d E2
+			d.Inverse(b)
+			c.MulByE2(a, b).MulByE2(&c, &d)
+			return c.Equal(a)
+		},
+		genA,
+		genE2,
+	))
+
+	properties.Property("[{{ toUpper $Name }}] Mul and MulBy01 should output the same result", prop.ForAll(
+		func(a *E6, c0, c1 *E2) bool {
+            var b E6
+            b.B0.Set(c0)
+            b.B1.Set(c1)
+            b.Mul(&b, a)
+            a.MulBy01(c0, c1)
+			return b.Equal(a)
+		},
+		genA,
+		genE2,
+		genE2,
+	))
+
+	properties.Property("[{{ toUpper $Name }}] Mul and MulBy1 should output the same result", prop.ForAll(
+		func(a *E6, c1 *E2) bool {
+			var b E6
+			b.B1.Set(c1)
+			b.Mul(&b, a)
+			a.MulBy1(c1)
+			return b.Equal(a)
+		},
+		genA,
+		genE2,
+	))
+
+
+	properties.TestingRun(t, gopter.ConsoleReporter(false))
+
+}
+
+// ------------------------------------------------------------
+// benches
+
+func BenchmarkE6Add(b *testing.B) {
+	var a, c E6
+_,_=	a.SetRandom()
+_,_=	c.SetRandom()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		a.Add(&a, &c)
+	}
+}
+
+func BenchmarkE6Sub(b *testing.B) {
+	var a, c E6
+_,_=	a.SetRandom()
+_,_=	c.SetRandom()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		a.Sub(&a, &c)
+	}
+}
+
+func BenchmarkE6Mul(b *testing.B) {
+	var a, c E6
+_,_=	a.SetRandom()
+_,_=	c.SetRandom()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		a.Mul(&a, &c)
+	}
+}
+
+func BenchmarkE6Square(b *testing.B) {
+	var a E6
+_,_=	a.SetRandom()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		a.Square(&a)
+	}
+}
+
+func BenchmarkE6Inverse(b *testing.B) {
+	var a E6
+_,_=	a.SetRandom()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		a.Inverse(&a)
+	}
+}
+
+{{ template "base" .}}

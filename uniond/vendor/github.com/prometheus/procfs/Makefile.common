@@ -49,19 +49,19 @@ endif
 GOTEST := $(GO) test
 GOTEST_DIR :=
 ifneq ($(CIRCLE_JOB),)
-ifneq ($(shell command -v gotestsum > /dev/null),)
+ifneq ($(shell command -v gotestsum 2> /dev/null),)
 	GOTEST_DIR := test-results
 	GOTEST := gotestsum --junitfile $(GOTEST_DIR)/unit-tests.xml --
 endif
 endif
 
-PROMU_VERSION ?= 0.15.0
+PROMU_VERSION ?= 0.17.0
 PROMU_URL     := https://github.com/prometheus/promu/releases/download/v$(PROMU_VERSION)/promu-$(PROMU_VERSION).$(GO_BUILD_PLATFORM).tar.gz
 
 SKIP_GOLANGCI_LINT :=
 GOLANGCI_LINT :=
 GOLANGCI_LINT_OPTS ?=
-GOLANGCI_LINT_VERSION ?= v1.55.2
+GOLANGCI_LINT_VERSION ?= v1.59.0
 # golangci-lint only supports linux, darwin and windows platforms on i386/amd64/arm64.
 # windows isn't included here because of the path separator being different.
 ifeq ($(GOHOSTOS),$(filter $(GOHOSTOS),linux darwin))
@@ -182,7 +182,7 @@ endif
 .PHONY: common-yamllint
 common-yamllint:
 	@echo ">> running yamllint on all YAML files in the repository"
-ifeq (, $(shell command -v yamllint > /dev/null))
+ifeq (, $(shell command -v yamllint 2> /dev/null))
 	@echo "yamllint not installed so skipping"
 else
 	yamllint .
@@ -207,6 +207,10 @@ common-build: promu
 common-tarball: promu
 	@echo ">> building release tarball"
 	$(PROMU) tarball --prefix $(PREFIX) $(BIN_DIR)
+
+.PHONY: common-docker-repo-name
+common-docker-repo-name:
+	@echo "$(DOCKER_REPO)/$(DOCKER_IMAGE_NAME)"
 
 .PHONY: common-docker $(BUILD_DOCKER_ARCHS)
 common-docker: $(BUILD_DOCKER_ARCHS)

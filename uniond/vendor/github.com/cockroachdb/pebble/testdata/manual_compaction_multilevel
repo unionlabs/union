@@ -1,0 +1,121 @@
+# This set of tests validates that manually executed multi level compactions work
+# The multilevel compaction tests mainly live in
+# /testdata/compaction_setup_inputs_multilevel_write_amp
+
+# A vanilla multi level compaction
+define level-max-bytes=(L2 : 5) auto-compactions=off
+L1
+  a.SET.3:v b.SET.2:v
+L2
+  a.SET.2:v c.SET.4:v
+L3
+  c.SET.3:v d.SET.2:v
+L4
+  c.SET.2:v d.SET.1:v
+----
+1:
+  000004:[a#3,SET-b#2,SET]
+2:
+  000005:[a#2,SET-c#4,SET]
+3:
+  000006:[c#3,SET-d#2,SET]
+4:
+  000007:[c#2,SET-d#1,SET]
+
+compact a-b L1
+----
+3:
+  000008:[a#3,SET-d#2,SET]
+4:
+  000007:[c#2,SET-d#1,SET]
+
+# Conduct a multi level compaction with no output level files
+define level-max-bytes=(L2 : 5) auto-compactions=off
+L1
+  a.SET.3:v b.SET.2:v
+L2
+  a.SET.2:v c.SET.4:v
+L4
+  c.SET.2:v d.SET.1:v
+----
+1:
+  000004:[a#3,SET-b#2,SET]
+2:
+  000005:[a#2,SET-c#4,SET]
+4:
+  000006:[c#2,SET-d#1,SET]
+
+compact a-b L1
+----
+3:
+  000007:[a#3,SET-c#4,SET]
+4:
+  000006:[c#2,SET-d#1,SET]
+
+# No multilevel compaction because a move to L2 results in less writeamp than the ML compaction
+# which includes the file in L3.
+define level-max-bytes=(L2 : 5) auto-compactions=off
+L1
+  a.SET.3:v b.SET.2:v
+L3
+  a.SET.2:v c.SET.4:v
+L4
+  c.SET.2:v d.SET.1:v
+----
+1:
+  000004:[a#3,SET-b#2,SET]
+3:
+  000005:[a#2,SET-c#4,SET]
+4:
+  000006:[c#2,SET-d#1,SET]
+
+compact a-b L1
+----
+2:
+  000004:[a#3,SET-b#2,SET]
+3:
+  000005:[a#2,SET-c#4,SET]
+4:
+  000006:[c#2,SET-d#1,SET]
+
+# Conduct a multi input compaction without intermediate or output level, basically a move.
+define level-max-bytes=(L2 : 5) auto-compactions=off multi-input-level
+L1
+  a.SET.3:v b.SET.2:v
+L4
+  c.SET.2:v d.SET.1:v
+----
+1:
+  000004:[a#3,SET-b#2,SET]
+4:
+  000005:[c#2,SET-d#1,SET]
+
+compact a-b L1
+----
+3:
+  000004:[a#3,SET-b#2,SET]
+4:
+  000005:[c#2,SET-d#1,SET]
+
+# Don't conduct a multi level compaction on L0.
+define level-max-bytes=(L1 : 5) auto-compactions=off multi-input-level
+L0
+  a.SET.1:v b.SET.2:v
+L1
+  a.SET.3:v c.SET.4:v
+L2
+  c.SET.2:v d.SET.2:v
+----
+0.0:
+  000004:[a#1,SET-b#2,SET]
+1:
+  000005:[a#3,SET-c#4,SET]
+2:
+  000006:[c#2,SET-d#2,SET]
+
+compact a-b L0
+----
+1:
+  000007:[a#3,SET-c#4,SET]
+2:
+  000006:[c#2,SET-d#2,SET]

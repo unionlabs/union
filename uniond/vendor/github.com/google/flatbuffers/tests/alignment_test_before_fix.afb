@@ -1,0 +1,31 @@
+// Annotated Flatbuffer Binary
+//
+// Schema file: alignment_test.fbs
+// Binary file: alignment_test_before_fix.bin
+
+header:
+  +0x00 | 0C 00 00 00             | UOffset32   | 0x0000000C (12) Loc: 0x0C | offset to root table `SmallStructs`
+
+padding:
+  +0x04 | 00 00                   | uint8_t[2]  | ..                        | padding
+
+vtable (SmallStructs):
+  +0x06 | 06 00                   | uint16_t    | 0x0006 (6)                | size of this vtable
+  +0x08 | 08 00                   | uint16_t    | 0x0008 (8)                | size of referring table
+  +0x0A | 04 00                   | VOffset16   | 0x0004 (4)                | offset to field `small_structs` (id: 0)
+
+root_table (SmallStructs):
+  +0x0C | 06 00 00 00             | SOffset32   | 0x00000006 (6) Loc: 0x06  | offset to vtable
+  +0x10 | 04 00 00 00             | UOffset32   | 0x00000004 (4) Loc: 0x14  | offset to field `small_structs` (vector)
+
+vector (SmallStructs.small_structs):
+  +0x14 | 03 00 00 00             | uint32_t    | 0x00000003 (3)            | length of vector (# items)
+  +0x18 | 00                      | uint8_t     | 0x00 (0)                  | struct field `[0].var_0` of 'JustSmallStruct' (UByte)
+  +0x19 | 00                      | uint8_t     | 0x00 (0)                  | struct field `[0].var_1` of 'JustSmallStruct' (UByte)
+  +0x1A | 02                      | uint8_t     | 0x02 (2)                  | struct field `[1].var_0` of 'JustSmallStruct' (UByte)
+  +0x1B | 01                      | uint8_t     | 0x01 (1)                  | struct field `[1].var_1` of 'JustSmallStruct' (UByte)
+  +0x1C | 03                      | uint8_t     | 0x03 (3)                  | struct field `[2].var_0` of 'JustSmallStruct' (UByte)
+  +0x1D | 01                      | uint8_t     | 0x01 (1)                  | struct field `[2].var_1` of 'JustSmallStruct' (UByte)
+
+unknown (no known references):
+  +0x1E | 04 01                   | ?uint8_t[2] | ..                        | WARN: could be corrupted padding region.

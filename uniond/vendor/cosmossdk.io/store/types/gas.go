@@ -191,7 +191,7 @@ func (g *infiniteGasMeter) ConsumeGas(amount Gas, descriptor string) {
 // RefundGas will deduct the given amount from the gas consumed. If the amount is greater than the
 // gas consumed, the function will panic.
 //
-// Use case: This functionality enables refunding gas to the trasaction or block gas pools so that
+// Use case: This functionality enables refunding gas to the transaction or block gas pools so that
 // EVM-compatible chains can fully support the go-ethereum StateDb interface.
 // See https://github.com/cosmos/cosmos-sdk/pull/9403 for reference.
 func (g *infiniteGasMeter) RefundGas(amount Gas, descriptor string) {

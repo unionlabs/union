@@ -1,0 +1,95 @@
+name: Build
+# Tests runs different tests (test_abci_apps, test_abci_cli, test_apps)
+# This workflow runs on every push to main or release branch and  every pull requests
+# All jobs will pass without running if no *{.go, .mod, .sum} files have been modified
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches:
+      - v1.x
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goarch: ["arm", "amd64"]
+        goos: ["linux"]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - uses: technote-space/get-diff-action@v6
+        with:
+          PATTERNS: |
+            **/*.go
+            "!test/"
+            go.mod
+            go.sum
+            Makefile
+
+      - name: install
+        run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} make build
+        if: "env.GIT_DIFF != ''"
+
+  test_abci_cli:
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - uses: technote-space/get-diff-action@v6
+        with:
+          PATTERNS: |
+            **/*.go
+            go.mod
+            go.sum
+      - name: install
+        run: make install_abci
+        if: "env.GIT_DIFF != ''"
+      - run: abci/tests/test_cli/test.sh
+        shell: bash
+        if: "env.GIT_DIFF != ''"
+
+  test_apps:
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - uses: technote-space/get-diff-action@v6
+        with:
+          PATTERNS: |
+            **/*.go
+            go.mod
+            go.sum
+      - name: install
+        run: make install install_abci
+        if: "env.GIT_DIFF != ''"
+      - name: test_apps
+        run: test/app/test.sh
+        shell: bash
+        if: "env.GIT_DIFF != ''"

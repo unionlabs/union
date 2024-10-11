@@ -1,0 +1,106 @@
+# Simple test with a single file per level.
+
+define
+L1
+  b.SET.11:foo
+  c.SET.11:foo
+L2
+  c.SET.0:foo
+  d.SET.0:foo
+----
+1:
+  000004:[b#11,SET-c#11,SET]
+2:
+  000005:[c#0,SET-d#0,SET]
+
+file-sizes
+----
+L1:
+  000004:[b#11,1-c#11,1]: 669 bytes (669B)
+L2:
+  000005:[c#0,1-d#0,1]: 668 bytes (668B)
+
+pick-file L1
+----
+000004:[b#11,1-c#11,1]
+
+pick-file L2
+----
+000005:[c#0,1-d#0,1]
+
+# Test a scenario where we should pick a file with a tiny file size over one
+# with a larger file size, because the tiny sized one overlaps zero data in the
+# output level.
+
+define
+L5
+  b.SET.11:<rand-bytes=65536>
+  c.SET.11:<rand-bytes=65536>
+L5
+  e.SET.11:<rand-bytes=2>
+L6
+  a.SET.0:foo
+  d.SET.0:foo
+----
+5:
+  000004:[b#11,SET-c#11,SET]
+  000005:[e#11,SET-e#11,SET]
+6:
+  000006:[a#0,SET-d#0,SET]
+
+pick-file L5
+----
+000005:[e#11,1-e#11,1]
+
+# Test the same scenario as above, but the larger file that overlaps the next
+# level only overlaps on its start boundary key ("c").
+
+define
+L5
+  c.SET.11:<rand-bytes=65536>
+  d.SET.11:<rand-bytes=65536>
+L5
+  e.SET.11:<rand-bytes=2>
+L6
+  a.SET.0:foo
+  c.SET.0:foo
+----
+5:
+  000004:[c#11,SET-d#11,SET]
+  000005:[e#11,SET-e#11,SET]
+6:
+  000006:[a#0,SET-c#0,SET]
+
+pick-file L5
+----
+000005:[e#11,1-e#11,1]
+
+
+# Test a scenario where the file containing e.SET.11 overlaps an L6 file
+# containing e.SET.0. These files should be considered overlapping, despite the
+# fact that they don't overlap within the internal key keyspace. The overlap
+# should then cause the larger file (with a lower overlapping ratio) to be
+# picked.
+
+define
+L5
+  c.SET.11:<rand-bytes=65536>
+  d.SET.11:<rand-bytes=65536>
+L5
+  e.SET.11:<rand-bytes=2>
+L6
+  a.SET.0:foo
+  c.SET.0:foo
+L6
+  e.SET.0:foo
+----
+5:
+  000004:[c#11,SET-d#11,SET]
+  000005:[e#11,SET-e#11,SET]
+6:
+  000006:[a#0,SET-c#0,SET]
+  000007:[e#0,SET-e#0,SET]
+
+pick-file L5
+----
+000004:[c#11,1-d#11,1]

@@ -1,0 +1,58 @@
+db check ../testdata/db-stage-4
+----
+checked 6 points and 0 tombstone
+
+db get
+../testdata/db-stage-4
+----
+accepts 2 arg(s), received 1
+
+db get
+../testdata/db-stage-4
+key1
+----
+pebble: not found
+
+db set
+../testdata/db-stage-4
+key1
+value1
+----
+
+db get
+../testdata/db-stage-4
+key1
+----
+[76616c756531]
+
+db check ../testdata/db-stage-4
+----
+checked 7 points and 0 tombstone
+
+# 0x6b657941 = "key1", so this test case verifies that
+# hex decoding works too.
+
+db get
+../testdata/db-stage-4
+hex:6b657931
+----
+[76616c756531]
+
+db set
+../testdata/db-stage-4
+hex:6b657931
+hex:1b1b1b
+----
+
+db get
+../testdata/db-stage-4
+hex:6b657931
+----
+[1b1b1b]
+
+db get
+../testdata/db-stage-4
+hex:6b657931
+--value=quoted
+----
+\x1b\x1b\x1b

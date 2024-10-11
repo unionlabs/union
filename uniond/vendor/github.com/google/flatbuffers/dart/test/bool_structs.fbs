@@ -1,0 +1,10 @@
+// Test for #7355
+table Foo {
+  my_foo : foo_properties;
+}
+
+struct foo_properties
+{
+    a : bool;
+    b : bool;
+}

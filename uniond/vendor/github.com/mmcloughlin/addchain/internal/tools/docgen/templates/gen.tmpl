@@ -1,0 +1,106 @@
+# Output Generation
+
+{{ toc }}
+
+{{- $templatereference := "Template Reference" -}}
+{{- $builtins := "Builtin Templates" }}
+
+## Example
+
+Let's show an example of generating code for curve25519 field inversion. Search
+for the best addition chain and save the result:
+
+```sh
+{{ include "internal/examples/fp25519/00-search.sh" -}}
+```
+
+Now we can use the `{{ .Meta.Name }}` generate command to generate code to
+execute the addition chain. By default, the generate command will show us a
+concise listing of the instructions required to compute the addition chain.
+
+```sh
+{{ include "internal/examples/fp25519/01-listing.sh" -}}
+```
+Output:
+```
+{{ include "internal/examples/fp25519/01-listing.out" -}}
+```
+
+This listing is intended to be a simple text format that could directly be
+turned into code. The directives mean:
+
+* `tmp v ...`: declare temporary variables `v ...`
+* `add z x y`: execute addition `z = x+y`
+* `double z x`: execute doubling `z = 2*x`
+* `shift z x n`: execute repeated doubling <code>z = 2<sup>n</sup>*x</code>
+
+Under the hood, `{{ .Meta.Name }}` has processed the addition chain into the {{
+sym "acc/ir" "Program" }} intermediate representation and used an allocation
+pass to assign the minimum number of temporary variables. The listing format is
+intended be a convient and easy-to-parse text format to use as input to other
+tools.
+
+In addition, `{{ .Meta.Name }}` also offers templated output. In fact, the
+listing is actually produced by the [listing](#listing) builtin template. See
+below for details of the [templating language](#{{ anchor $templatereference }})
+and [builtin template examples](#{{ anchor $builtins }}). The following template
+can be used to directly produce Go code to execute the inversion chain:
+
+```
+{{ include "internal/examples/fp25519/inv.tmpl" -}}
+```
+
+Generate code by passing the template to `{{ .Meta.Name }}`:
+```sh
+{{ include "internal/examples/fp25519/02-generate.sh" -}}
+```
+The end product:
+```go
+{{ include "internal/examples/fp25519/inv.go" -}}
+```
+
+This code is part of a [full working example]({{ link
+"internal/examples/fp25519" }}) that passes tests.
+
+## {{ $templatereference }}
+
+Templates use Go {{ stdpkg "text/template" }} syntax. The data structure passed
+to the template is:
+
+```go
+{{ snippet "internal/gen/gen.go" "type Data" "^}" -}}
+```
+
+In addition to the [builtin functions]({{ stdpkgurl "text/template" }}#hdr-Functions),
+templates may use:
+
+| Name | Signature | Description |
+| ---- | --------- | ----------- |
+{{ range .TemplateFunctions -}}
+| **`{{ .Name }}`** | `{{ .Signature }}` | {{ .Description }} |
+{{ end }}
+
+## {{ $builtins }}
+
+Example output for each builtin template is generated from the chain:
+
+```
+{{ include "internal/gen/testdata/input.acc" -}}
+```
+
+{{ range .BuiltinTemplateNames }}
+### {{ . }}
+
+```
+{{ include (printf "internal/gen/templates/%s.tmpl" .) -}}
+```
+
+<details>
+<summary>Output of <code>{{ . }}</code> template</summary>
+
+```
+{{ include (printf "internal/gen/testdata/builtin/%s.golden" .) -}}
+```
+
+</details>
+{{ end }}

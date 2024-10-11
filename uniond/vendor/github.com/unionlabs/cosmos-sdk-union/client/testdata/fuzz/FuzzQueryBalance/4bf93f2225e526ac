@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("\n-cosmos1wrq8cagsama0xwf2vmlzgrkyynfsxuyhturvyz\x12\x0500000")

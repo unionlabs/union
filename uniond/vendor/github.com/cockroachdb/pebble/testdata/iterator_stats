@@ -1,0 +1,73 @@
+build ext1
+merge a 1
+set c 2
+----
+
+ingest ext1
+----
+6:
+  000004:[a#10,MERGE-c#10,SET]
+
+iter
+first
+next
+next
+stats
+----
+a: (1, .)
+c: (2, .)
+.
+stats: seeked 1 times (1 internal); stepped 2 times (2 internal); blocks: 57B cached; points: 2 (2B keys, 2B values)
+
+# Perform the same operation again with a new iterator. It should yield
+# identical statistics.
+
+iter
+first
+next
+next
+stats
+----
+a: (1, .)
+c: (2, .)
+.
+stats: seeked 1 times (1 internal); stepped 2 times (2 internal); blocks: 57B cached; points: 2 (2B keys, 2B values)
+
+build ext2
+set d@10 d10
+set d@9 d9
+set d@8 d8
+set e@20 e20
+set e@18 e18
+----
+
+ingest ext2
+----
+6:
+  000004:[a#10,MERGE-c#10,SET]
+  000005:[d@10#11,SET-e@18#11,SET]
+
+iter
+seek-ge c
+stats
+next
+next
+stats
+next
+stats
+next
+stats
+next
+stats
+----
+c: (2, .)
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 57B cached; points: 1 (1B keys, 1B values)
+d@10: (d10, .)
+d@9: (d9, .)
+stats: seeked 1 times (1 internal); stepped 2 times (2 internal); blocks: 147B cached, 10B not cached (read time: 0s); points: 3 (8B keys, 6B values); separated: 1 (2B, 2B fetched)
+d@8: (d8, .)
+stats: seeked 1 times (1 internal); stepped 3 times (3 internal); blocks: 147B cached, 10B not cached (read time: 0s); points: 4 (11B keys, 8B values); separated: 2 (4B, 4B fetched)
+e@20: (e20, .)
+stats: seeked 1 times (1 internal); stepped 4 times (4 internal); blocks: 147B cached, 10B not cached (read time: 0s); points: 5 (15B keys, 11B values); separated: 2 (4B, 4B fetched)
+e@18: (e18, .)
+stats: seeked 1 times (1 internal); stepped 5 times (5 internal); blocks: 147B cached, 10B not cached (read time: 0s); points: 6 (19B keys, 13B values); separated: 3 (7B, 7B fetched)

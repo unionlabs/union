@@ -1,0 +1,464 @@
+
+reset
+----
+
+batch commit
+range-key-set a c @5 boop
+range-key-set c e @5 beep
+----
+committed 2 keys
+
+snapshot name=foo
+----
+
+batch commit
+set b d
+set e foo
+----
+committed 2 keys
+
+file-only-snapshot efos1
+  b g
+----
+ok
+
+# EFOS work with scan-internal.
+
+scan-internal file-only-snapshot=efos1
+----
+a-c:{(#0,RANGEKEYSET,@5,boop)}
+b#12,1 (d)
+c-e:{(#0,RANGEKEYSET,@5,beep)}
+e#13,1 (foo)
+
+flush
+----
+
+scan-internal
+----
+a-c:{(#0,RANGEKEYSET,@5,boop)}
+b#12,1 (d)
+c-e:{(#0,RANGEKEYSET,@5,beep)}
+e#13,1 (foo)
+
+# Keys deleted by rangedels are elided.
+
+batch commit
+del-range b d
+----
+committed 1 keys
+
+scan-internal
+----
+a-c:{(#0,RANGEKEYSET,@5,boop)}
+b-d#14,RANGEDEL
+c-e:{(#0,RANGEKEYSET,@5,beep)}
+e#13,1 (foo)
+
+flush
+----
+
+scan-internal
+----
+a-c:{(#0,RANGEKEYSET,@5,boop)}
+b-d#14,RANGEDEL
+c-e:{(#0,RANGEKEYSET,@5,beep)}
+e#13,1 (foo)
+
+# Snapshots work with scan internal.
+
+scan-internal snapshot=foo
+----
+a-c:{(#0,RANGEKEYSET,@5,boop)}
+c-e:{(#0,RANGEKEYSET,@5,beep)}
+
+wait-for-file-only-snapshot efos1
+----
+ok
+
+scan-internal file-only-snapshot=efos1
+----
+a-c:{(#0,RANGEKEYSET,@5,boop)}
+b#12,1 (d)
+c-e:{(#0,RANGEKEYSET,@5,beep)}
+e#13,1 (foo)
+
+# Force keys newer than the snapshot into a lower level, then try skip-shared
+# iteration through it. This should return an error as it would expose keys
+# newer than the snapshot in the shared sstable.
+
+compact a-z
+----
+6:
+  000008:[a#10,RANGEKEYSET-e#13,SET]
+
+lsm
+----
+6:
+  000008:[a#10,RANGEKEYSET-e#13,SET]
+
+scan-internal lower=a upper=z skip-shared snapshot=foo
+----
+file 000008 contains keys newer than snapshot: pebble: cannot use skip-shared iteration due to non-shareable files in lower levels
+
+# Range keys and range dels are truncated to [lower,upper).
+
+scan-internal lower=bb upper=dd
+----
+bb-c:{(#0,RANGEKEYSET,@5,boop)}
+bb-d#14,RANGEDEL
+c-dd:{(#0,RANGEKEYSET,@5,beep)}
+
+scan-internal lower=b upper=cc
+----
+b-c:{(#0,RANGEKEYSET,@5,boop)}
+b-cc#14,RANGEDEL
+c-cc:{(#0,RANGEKEYSET,@5,beep)}
+
+reset
+----
+
+# Range key unsets and dels are allowed to delete keys they observe, however
+# the unset/del must also be returned to the user.
+
+batch commit
+range-key-set a c @8
+range-key-set b e @6
+----
+committed 2 keys
+
+flush
+----
+
+compact a-z
+----
+6:
+  000005:[a#10,RANGEKEYSET-e#inf,RANGEKEYSET]
+
+batch commit
+range-key-unset b d @6
+----
+committed 1 keys
+
+flush
+----
+
+batch commit
+range-key-del a b
+----
+committed 1 keys
+
+scan-internal
+----
+a-b:{(#0,RANGEKEYDEL)}
+b-c:{(#0,RANGEKEYSET,@8) (#0,RANGEKEYUNSET,@6)}
+c-d:{(#0,RANGEKEYUNSET,@6)}
+d-e:{(#0,RANGEKEYSET,@6)}
+
+flush
+----
+
+lsm
+----
+0.0:
+  000009:[a#13,RANGEKEYDEL-b#inf,RANGEKEYDEL]
+  000007:[b#12,RANGEKEYUNSET-d#inf,RANGEKEYUNSET]
+6:
+  000005:[a#10,RANGEKEYSET-e#inf,RANGEKEYSET]
+
+scan-internal
+----
+a-b:{(#0,RANGEKEYDEL)}
+b-c:{(#0,RANGEKEYSET,@8) (#0,RANGEKEYUNSET,@6)}
+c-d:{(#0,RANGEKEYUNSET,@6)}
+d-e:{(#0,RANGEKEYSET,@6)}
+
+batch ingest
+range-key-set e f @3
+range-key-unset f g @3
+----
+wrote 2 keys to batch ""
+
+scan-internal
+----
+a-b:{(#0,RANGEKEYDEL)}
+b-c:{(#0,RANGEKEYSET,@8) (#0,RANGEKEYUNSET,@6)}
+c-d:{(#0,RANGEKEYUNSET,@6)}
+d-e:{(#0,RANGEKEYSET,@6)}
+e-f:{(#0,RANGEKEYSET,@3)}
+f-g:{(#0,RANGEKEYUNSET,@3)}
+
+batch ingest
+range-key-unset e f @3
+range-key-set f g @3
+----
+wrote 2 keys to batch ""
+
+scan-internal
+----
+a-b:{(#0,RANGEKEYDEL)}
+b-c:{(#0,RANGEKEYSET,@8) (#0,RANGEKEYUNSET,@6)}
+c-d:{(#0,RANGEKEYUNSET,@6)}
+d-e:{(#0,RANGEKEYSET,@6)}
+e-f:{(#0,RANGEKEYUNSET,@3)}
+f-g:{(#0,RANGEKEYSET,@3)}
+
+# Range key masking is not exercised, with range keys that could mask point
+# keys being returned alongside point keys.
+
+reset
+----
+
+batch commit
+set b@3 bar
+----
+committed 1 keys
+
+batch commit
+range-key-set a c @5 boop
+range-key-set c e @5 beep
+----
+committed 2 keys
+
+scan-internal
+----
+a-c:{(#0,RANGEKEYSET,@5,boop)}
+b@3#10,1 (bar)
+c-e:{(#0,RANGEKEYSET,@5,beep)}
+
+# Point keys are collapsed in a way similar to a compaction.
+
+reset
+----
+
+batch commit
+set b@3 bar
+set c foo
+----
+committed 2 keys
+
+scan-internal
+----
+b@3#10,1 (bar)
+c#11,1 (foo)
+
+batch commit
+set b@3 barfoo
+----
+committed 1 keys
+
+scan-internal
+----
+b@3#12,1 (barfoo)
+c#11,1 (foo)
+
+batch commit
+set b@3 baz
+del c
+set d@4 bar
+----
+committed 3 keys
+
+scan-internal
+----
+b@3#13,1 (baz)
+c#14,0 ()
+d@4#15,1 (bar)
+
+batch commit
+set f barbaz
+----
+committed 1 keys
+
+scan-internal
+----
+b@3#13,1 (baz)
+c#14,0 ()
+d@4#15,1 (bar)
+f#16,1 (barbaz)
+
+# Skip-shared iteration mode. Test truncation of range key at scan bounds.
+
+reset
+----
+
+batch commit
+set b@3 bar
+----
+committed 1 keys
+
+batch commit
+range-key-set a c @5 boop
+del-range c e
+----
+committed 2 keys
+
+flush
+----
+
+compact a-z
+----
+6:
+  000005:[a#11,RANGEKEYSET-e#inf,RANGEDEL]
+
+batch commit
+set f@8 baz
+----
+committed 1 keys
+
+lsm
+----
+6:
+  000005:[a#11,RANGEKEYSET-e#inf,RANGEDEL]
+
+scan-internal
+----
+a-c:{(#0,RANGEKEYSET,@5,boop)}
+b@3#10,1 (bar)
+c-e#12,RANGEDEL
+f@8#13,1 (baz)
+
+scan-internal skip-shared lower=a upper=z
+----
+shared file: 000005 [a#11,21-e#72057594037927935,15] [point=b@3#10,1-e#72057594037927935,15] [range=a#11,21-c#72057594037927935,21]
+f@8#13,1 (baz)
+
+scan-internal skip-shared lower=a upper=e
+----
+shared file: 000005 [a#11,21-e#72057594037927935,15] [point=b@3#10,1-e#72057594037927935,15] [range=a#11,21-c#72057594037927935,21]
+
+scan-internal skip-shared lower=a upper=d
+----
+shared file: 000005 [a#11,21-d#72057594037927935,15] [point=b@3#10,1-d#72057594037927935,15] [range=a#11,21-c#72057594037927935,21]
+
+scan-internal skip-shared lower=a upper=c
+----
+shared file: 000005 [a#11,21-c#72057594037927935,21] [point=b@3#10,1-b@3#10,1] [range=a#11,21-c#72057594037927935,21]
+
+scan-internal skip-shared lower=a upper=b
+----
+shared file: 000005 [a#11,21-b#72057594037927935,21] [point=#0,0-#0,0] [range=a#11,21-b#72057594037927935,21]
+
+scan-internal skip-shared lower=b upper=z
+----
+shared file: 000005 [b#11,21-e#72057594037927935,15] [point=b@3#10,1-e#72057594037927935,15] [range=b#11,21-c#72057594037927935,21]
+f@8#13,1 (baz)
+
+scan-internal skip-shared lower=b upper=bb
+----
+shared file: 000005 [b#11,21-bb#72057594037927935,21] [point=b@3#10,1-b@3#10,1] [range=b#11,21-bb#72057594037927935,21]
+
+scan-internal skip-shared lower=e upper=ff
+----
+f@8#13,1 (baz)
+
+# Shared files that don't have any keys in [lower, upper) are ignored.
+
+reset
+----
+
+batch commit
+set a foo
+set f bar
+del-range b c
+range-key-set e ee @5 boop
+----
+committed 4 keys
+
+flush
+----
+
+compact a-z
+----
+6:
+  000005:[a#10,SET-f#11,SET]
+
+lsm
+----
+6:
+  000005:[a#10,SET-f#11,SET]
+
+scan-internal skip-shared lower=c upper=d
+----
+
+scan-internal skip-shared lower=a upper=d
+----
+shared file: 000005 [a#10,1-c#72057594037927935,15] [point=a#10,1-c#72057594037927935,15] [range=#0,0-#0,0]
+
+scan-internal skip-shared lower=bb upper=d
+----
+shared file: 000005 [bb#12,15-c#72057594037927935,15] [point=bb#12,15-c#72057594037927935,15] [range=#0,0-#0,0]
+
+scan-internal skip-shared lower=c upper=ea
+----
+shared file: 000005 [e#13,21-ea#72057594037927935,21] [point=#0,0-#0,0] [range=e#13,21-ea#72057594037927935,21]
+
+scan-internal skip-shared lower=c upper=z
+----
+shared file: 000005 [e#13,21-f#11,1] [point=f#11,1-f#11,1] [range=e#13,21-ee#72057594037927935,21]
+
+# An upper bound equalling a file's Largest user key should be reason enough to
+# truncate that file's bounds.
+
+scan-internal skip-shared lower=c upper=f
+----
+shared file: 000005 [e#13,21-ee#72057594037927935,21] [point=#0,0-#0,0] [range=e#13,21-ee#72057594037927935,21]
+
+# Construct a file with an exclusive sentinel as the largest key. Verify that
+# scan-internal with skip-shared and an upper bound at that exclusive sentinel
+# does not truncate that file.
+
+reset
+----
+
+batch commit
+set a foo
+del-range b c
+range-key-set e ee @5 boop
+----
+committed 3 keys
+
+flush
+----
+
+compact a-z
+----
+6:
+  000005:[a#10,SET-ee#inf,RANGEKEYSET]
+
+scan-internal skip-shared lower=a upper=ee
+----
+shared file: 000005 [a#10,1-ee#72057594037927935,21] [point=a#10,1-c#72057594037927935,15] [range=e#12,21-ee#72057594037927935,21]
+
+scan-internal skip-shared lower=b upper=ee
+----
+shared file: 000005 [b#11,15-ee#72057594037927935,21] [point=b#11,15-c#72057594037927935,15] [range=e#12,21-ee#72057594037927935,21]
+
+# Ensure we don't leave any range key bounds unintentionally set.
+
+reset
+----
+
+batch commit
+range-key-set a aa @5 boop
+set b foo
+set c bar
+set d baz
+----
+committed 4 keys
+
+flush
+----
+
+compact a-z
+----
+6:
+  000005:[a#10,RANGEKEYSET-d#13,SET]
+
+scan-internal skip-shared lower=b upper=e
+----
+shared file: 000005 [b#11,1-d#13,1] [point=b#11,1-d#13,1] [range=#0,0-#0,0]
+
+scan-internal skip-shared lower=a upper=aaa
+----
+shared file: 000005 [a#10,21-aa#72057594037927935,21] [point=#0,0-#0,0] [range=a#10,21-aa#72057594037927935,21]

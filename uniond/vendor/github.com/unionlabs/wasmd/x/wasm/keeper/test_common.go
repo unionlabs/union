@@ -1,0 +1,788 @@
+package keeper
+
+// import (
+// 	"bytes"
+// 	"encoding/binary"
+// 	"encoding/json"
+// 	"fmt"
+// 	"os"
+// 	"testing"
+// 	"time"
+
+// 	"github.com/cometbft/cometbft/crypto"
+// 	"github.com/cometbft/cometbft/crypto/ed25519"
+// 	"cosmossdk.io/math/unsafe"
+// 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+// 	dbm "github.com/cosmos/cosmos-db"
+// 	"github.com/cosmos/ibc-go/modules/capability"
+// 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
+// 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+// 	"github.com/cosmos/ibc-go/v8/modules/apps/transfer"
+// 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+// 	ibc "github.com/cosmos/ibc-go/v8/modules/core"
+// 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+// 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
+// 	"github.com/stretchr/testify/require"
+
+// 	errorsmod "cosmossdk.io/errors"
+// 	"cosmossdk.io/log"
+// 	sdkmath "cosmossdk.io/math"
+// 	"cosmossdk.io/store"
+// 	storemetrics "cosmossdk.io/store/metrics"
+// 	storetypes "cosmossdk.io/store/types"
+// 	"cosmossdk.io/x/evidence"
+// 	evidencetypes "cosmossdk.io/x/evidence/types"
+// 	"cosmossdk.io/x/feegrant"
+// 	"cosmossdk.io/x/upgrade"
+// 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
+// 	upgradetypes "cosmossdk.io/x/upgrade/types"
+
+// 	"github.com/cosmos/cosmos-sdk/x/auth"
+// 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
+// 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+// 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+// 	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
+// 	authzkeeper "cosmossdk.io/x/authz/keeper"
+// 	"cosmossdk.io/x/bank"
+// 	bankkeeper "cosmossdk.io/x/bank/keeper"
+// 	banktypes "cosmossdk.io/x/bank/types"
+// 	"cosmossdk.io/x/distribution"
+// 	distributionkeeper "cosmossdk.io/x/distribution/keeper"
+// 	distributiontypes "cosmossdk.io/x/distribution/types"
+// 	"cosmossdk.io/x/gov"
+// 	govclient "cosmossdk.io/x/gov/client"
+// 	govkeeper "cosmossdk.io/x/gov/keeper"
+// 	govtypes "cosmossdk.io/x/gov/types"
+// 	govv1 "cosmossdk.io/x/gov/types/v1"
+// 	"cosmossdk.io/x/mint"
+// 	minttypes "cosmossdk.io/x/mint/types"
+// 	"cosmossdk.io/x/params"
+// 	paramsclient "cosmossdk.io/x/params/client"
+// 	paramskeeper "cosmossdk.io/x/params/keeper"
+// 	paramstypes "cosmossdk.io/x/params/types"
+// 	"cosmossdk.io/x/slashing"
+// 	slashingtypes "cosmossdk.io/x/slashing/types"
+// 	"cosmossdk.io/x/staking"
+// 	stakingkeeper "cosmossdk.io/x/staking/keeper"
+// 	stakingtypes "cosmossdk.io/x/staking/types"
+// 	"github.com/cosmos/cosmos-sdk/baseapp"
+// 	"github.com/cosmos/cosmos-sdk/codec"
+// 	"github.com/cosmos/cosmos-sdk/runtime"
+// 	"github.com/cosmos/cosmos-sdk/std"
+// 	sdk "github.com/cosmos/cosmos-sdk/types"
+// 	"github.com/cosmos/cosmos-sdk/types/address"
+// 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+// 	"github.com/cosmos/cosmos-sdk/types/module"
+// 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+
+// 	"github.com/CosmWasm/wasmd/x/wasm/keeper/testdata"
+// 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
+// 	"github.com/CosmWasm/wasmd/x/wasm/types"
+// )
+
+// func MakeTestCodec(t testing.TB) codec.Codec {
+// 	return MakeEncodingConfig(t).Codec
+// }
+
+// func MakeEncodingConfig(_ testing.TB) moduletestutil.TestEncodingConfig {
+// 	encodingConfig := moduletestutil.MakeTestEncodingConfig(
+// 		auth.AppModule{},
+// 		bank.AppModule{},
+// 		staking.AppModule{},
+// 		mint.AppModule{},
+// 		slashing.AppModule{},
+// 		gov.AppModule{},
+// 		ibc.AppModule{},
+// 		transfer.AppModule{},
+// 		vesting.AppModule{},
+// 	)
+// 	amino := encodingConfig.Amino
+// 	interfaceRegistry := encodingConfig.InterfaceRegistry
+
+// 	std.RegisterInterfaces(interfaceRegistry)
+
+// 	// add wasmd types
+// 	types.RegisterInterfaces(interfaceRegistry)
+// 	types.RegisterLegacyAminoCodec(amino)
+
+// 	return encodingConfig
+// }
+
+// var TestingStakeParams = stakingtypes.Params{
+// 	UnbondingTime:     100,
+// 	MaxValidators:     10,
+// 	MaxEntries:        10,
+// 	HistoricalEntries: 10,
+// 	BondDenom:         "stake",
+// 	MinCommissionRate: stakingtypes.DefaultMinCommissionRate,
+// }
+
+// type TestFaucet struct {
+// 	t                testing.TB
+// 	bankKeeper       bankkeeper.Keeper
+// 	sender           sdk.AccAddress
+// 	balance          sdk.Coins
+// 	minterModuleName string
+// }
+
+// func NewTestFaucet(t testing.TB, ctx sdk.Context, bankKeeper bankkeeper.Keeper, minterModuleName string, initialAmount ...sdk.Coin) *TestFaucet {
+// 	require.NotEmpty(t, initialAmount)
+// 	r := &TestFaucet{t: t, bankKeeper: bankKeeper, minterModuleName: minterModuleName}
+// 	_, addr := keyPubAddr()
+// 	r.sender = addr
+// 	r.Mint(ctx, addr, initialAmount...)
+// 	r.balance = initialAmount
+// 	return r
+// }
+
+// func (f *TestFaucet) Mint(parentCtx sdk.Context, addr sdk.AccAddress, amounts ...sdk.Coin) {
+// 	require.NotEmpty(f.t, amounts)
+// 	ctx := parentCtx.WithEventManager(sdk.NewEventManager()) // discard all faucet related events
+// 	err := f.bankKeeper.MintCoins(ctx, f.minterModuleName, amounts)
+// 	require.NoError(f.t, err)
+// 	err = f.bankKeeper.SendCoinsFromModuleToAccount(ctx, f.minterModuleName, addr, amounts)
+// 	require.NoError(f.t, err)
+// 	f.balance = f.balance.Add(amounts...)
+// }
+
+// func (f *TestFaucet) Fund(parentCtx sdk.Context, receiver sdk.AccAddress, amounts ...sdk.Coin) {
+// 	require.NotEmpty(f.t, amounts)
+// 	// ensure faucet is always filled
+// 	if !f.balance.IsAllGTE(amounts) {
+// 		f.Mint(parentCtx, f.sender, amounts...)
+// 	}
+// 	ctx := parentCtx.WithEventManager(sdk.NewEventManager()) // discard all faucet related events
+// 	err := f.bankKeeper.SendCoins(ctx, f.sender, receiver, amounts)
+// 	require.NoError(f.t, err)
+// 	f.balance = f.balance.Sub(amounts...)
+// }
+
+// func (f *TestFaucet) NewFundedRandomAccount(ctx sdk.Context, amounts ...sdk.Coin) sdk.AccAddress {
+// 	_, addr := keyPubAddr()
+// 	f.Fund(ctx, addr, amounts...)
+// 	return addr
+// }
+
+// type TestKeepers struct {
+// 	AccountKeeper    authkeeper.AccountKeeper
+// 	StakingKeeper    *stakingkeeper.Keeper
+// 	DistKeeper       distributionkeeper.Keeper
+// 	BankKeeper       bankkeeper.Keeper
+// 	GovKeeper        *govkeeper.Keeper
+// 	ContractKeeper   types.ContractOpsKeeper
+// 	WasmKeeper       *Keeper
+// 	IBCKeeper        *ibckeeper.Keeper
+// 	Router           MessageRouter
+// 	EncodingConfig   moduletestutil.TestEncodingConfig
+// 	Faucet           *TestFaucet
+// 	MultiStore       storetypes.CommitMultiStore
+// 	ScopedWasmKeeper capabilitykeeper.ScopedKeeper
+// 	WasmStoreKey     *storetypes.KVStoreKey
+// }
+
+// // CreateDefaultTestInput common settings for CreateTestInput
+// func CreateDefaultTestInput(t testing.TB) (sdk.Context, TestKeepers) {
+// 	return CreateTestInput(t, false, []string{"staking"})
+// }
+
+// // CreateTestInput encoders can be nil to accept the defaults, or set it to override some of the message handlers (like default)
+// func CreateTestInput(t testing.TB, isCheckTx bool, availableCapabilities []string, opts ...Option) (sdk.Context, TestKeepers) {
+// 	// Load default wasm config
+// 	return createTestInput(t, isCheckTx, availableCapabilities, types.DefaultWasmConfig(), dbm.NewMemDB(), opts...)
+// }
+
+// // encoders can be nil to accept the defaults, or set it to override some of the message handlers (like default)
+// func createTestInput(
+// 	t testing.TB,
+// 	isCheckTx bool,
+// 	availableCapabilities []string,
+// 	wasmConfig types.WasmConfig,
+// 	db dbm.DB,
+// 	opts ...Option,
+// ) (sdk.Context, TestKeepers) {
+// 	tempDir := t.TempDir()
+
+// 	keys := storetypes.NewKVStoreKeys(
+// 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
+// 		minttypes.StoreKey, distributiontypes.StoreKey, slashingtypes.StoreKey,
+// 		govtypes.StoreKey, paramstypes.StoreKey, ibcexported.StoreKey, upgradetypes.StoreKey,
+// 		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
+// 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
+// 		types.StoreKey,
+// 	)
+// 	logger := log.NewTestLogger(t)
+// 	ms := store.NewCommitMultiStore(db, logger, storemetrics.NewNoOpMetrics())
+// 	for _, v := range keys {
+// 		ms.MountStoreWithDB(v, storetypes.StoreTypeIAVL, db)
+// 	}
+// 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
+// 	for _, v := range tkeys {
+// 		ms.MountStoreWithDB(v, storetypes.StoreTypeTransient, db)
+// 	}
+
+// 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
+// 	for _, v := range memKeys {
+// 		ms.MountStoreWithDB(v, storetypes.StoreTypeMemory, db)
+// 	}
+
+// 	require.NoError(t, ms.LoadLatestVersion())
+
+// 	ctx := sdk.NewContext(ms, isCheckTx, log.NewNopLogger()).WithBlockHeader(tmproto.Header{
+// 		Height: 1234567,
+// 		Time:   time.Date(2020, time.April, 22, 12, 0, 0, 0, time.UTC),
+// 	})
+// 	ctx = types.WithTXCounter(ctx, 0)
+
+// 	encodingConfig := MakeEncodingConfig(t)
+// 	appCodec, legacyAmino := encodingConfig.Codec, encodingConfig.Amino
+
+// 	paramsKeeper := paramskeeper.NewKeeper(
+// 		appCodec,
+// 		legacyAmino,
+// 		keys[paramstypes.StoreKey],
+// 		tkeys[paramstypes.StoreKey],
+// 	)
+// 	for _, m := range []string{
+// 		authtypes.ModuleName,
+// 		banktypes.ModuleName,
+// 		stakingtypes.ModuleName,
+// 		minttypes.ModuleName,
+// 		distributiontypes.ModuleName,
+// 		slashingtypes.ModuleName,
+// 		ibctransfertypes.ModuleName,
+// 		capabilitytypes.ModuleName,
+// 		ibcexported.ModuleName,
+// 		govtypes.ModuleName,
+// 		types.ModuleName,
+// 	} {
+// 		paramsKeeper.Subspace(m)
+// 	}
+// 	subspace := func(m string) paramstypes.Subspace {
+// 		r, ok := paramsKeeper.GetSubspace(m)
+// 		require.True(t, ok)
+// 		return r
+// 	}
+// 	maccPerms := map[string][]string{ // module account permissions
+// 		authtypes.FeeCollectorName:     nil,
+// 		distributiontypes.ModuleName:   nil,
+// 		minttypes.ModuleName:           {authtypes.Minter},
+// 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
+// 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
+// 		govtypes.ModuleName:            {authtypes.Burner},
+// 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+// 		types.ModuleName:               {authtypes.Burner},
+// 	}
+
+// 	accountKeeper := authkeeper.NewAccountKeeper(
+// 		appCodec,
+// 		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
+// 		authtypes.ProtoBaseAccount,
+// 		maccPerms,
+// 		authcodec.NewBech32Codec(sdk.Bech32MainPrefix),
+// 		sdk.Bech32MainPrefix,
+// 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+// 	)
+// 	blockedAddrs := make(map[string]bool)
+// 	for acc := range maccPerms {
+// 		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = true
+// 	}
+// 	require.NoError(t, accountKeeper.Params.Set(ctx, authtypes.DefaultParams()))
+
+// 	bankKeeper := bankkeeper.NewBaseKeeper(
+// 		appCodec,
+// 		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
+// 		accountKeeper,
+// 		blockedAddrs,
+// 		authtypes.NewModuleAddress(banktypes.ModuleName).String(),
+// 		logger,
+// 	)
+// 	require.NoError(t, bankKeeper.SetParams(ctx, banktypes.DefaultParams()))
+
+// 	stakingKeeper := stakingkeeper.NewKeeper(
+// 		appCodec,
+// 		runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
+// 		accountKeeper,
+// 		bankKeeper,
+// 		authtypes.NewModuleAddress(stakingtypes.ModuleName).String(),
+// 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+// 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+// 	)
+// 	stakingtypes.DefaultParams()
+// 	require.NoError(t, stakingKeeper.SetParams(ctx, TestingStakeParams))
+
+// 	distKeeper := distributionkeeper.NewKeeper(
+// 		appCodec,
+// 		runtime.NewKVStoreService(keys[distributiontypes.StoreKey]),
+// 		accountKeeper,
+// 		bankKeeper,
+// 		stakingKeeper,
+// 		authtypes.FeeCollectorName,
+// 		authtypes.NewModuleAddress(distributiontypes.ModuleName).String(),
+// 	)
+// 	require.NoError(t, distKeeper.Params.Set(ctx, distributiontypes.DefaultParams()))
+// 	require.NoError(t, distKeeper.FeePool.Set(ctx, distributiontypes.InitialFeePool()))
+// 	stakingKeeper.SetHooks(distKeeper.Hooks())
+
+// 	upgradeKeeper := upgradekeeper.NewKeeper(
+// 		map[int64]bool{},
+// 		runtime.NewKVStoreService(keys[upgradetypes.StoreKey]),
+// 		appCodec,
+// 		tempDir,
+// 		nil,
+// 		authtypes.NewModuleAddress(upgradetypes.ModuleName).String(),
+// 	)
+
+// 	faucet := NewTestFaucet(t, ctx, bankKeeper, minttypes.ModuleName, sdk.NewCoin("stake", sdkmath.NewInt(100_000_000_000)))
+
+// 	// set some funds ot pay out validatores, based on code from:
+// 	// https://github.com/cosmos/cosmos-sdk/blob/fea231556aee4d549d7551a6190389c4328194eb/x/distribution/keeper/keeper_test.go#L50-L57
+// 	distrAcc := distKeeper.GetDistributionAccount(ctx)
+// 	faucet.Fund(ctx, distrAcc.GetAddress(), sdk.NewCoin("stake", sdkmath.NewInt(2000000)))
+// 	accountKeeper.SetModuleAccount(ctx, distrAcc)
+
+// 	capabilityKeeper := capabilitykeeper.NewKeeper(
+// 		appCodec,
+// 		keys[capabilitytypes.StoreKey],
+// 		memKeys[capabilitytypes.MemStoreKey],
+// 	)
+// 	scopedIBCKeeper := capabilityKeeper.ScopeToModule(ibcexported.ModuleName)
+// 	scopedWasmKeeper := capabilityKeeper.ScopeToModule(types.ModuleName)
+
+// 	ibcKeeper := ibckeeper.NewKeeper(
+// 		appCodec,
+// 		keys[ibcexported.StoreKey],
+// 		subspace(ibcexported.ModuleName),
+// 		stakingKeeper,
+// 		upgradeKeeper,
+// 		scopedIBCKeeper,
+// 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+// 	)
+// 	querier := baseapp.NewGRPCQueryRouter()
+// 	querier.SetInterfaceRegistry(encodingConfig.InterfaceRegistry)
+// 	msgRouter := baseapp.NewMsgServiceRouter()
+// 	msgRouter.SetInterfaceRegistry(encodingConfig.InterfaceRegistry)
+
+// 	cfg := sdk.GetConfig()
+// 	cfg.SetAddressVerifier(types.VerifyAddressLen())
+
+// 	keeper := NewKeeper(
+// 		appCodec,
+// 		runtime.NewKVStoreService(keys[types.StoreKey]),
+// 		accountKeeper,
+// 		bankKeeper,
+// 		stakingKeeper,
+// 		distributionkeeper.NewQuerier(distKeeper),
+// 		ibcKeeper.ChannelKeeper, // ICS4Wrapper
+// 		ibcKeeper.ChannelKeeper,
+// 		ibcKeeper.PortKeeper,
+// 		scopedWasmKeeper,
+// 		wasmtesting.MockIBCTransferKeeper{},
+// 		msgRouter,
+// 		querier,
+// 		tempDir,
+// 		wasmConfig,
+// 		availableCapabilities,
+// 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+// 		opts...,
+// 	)
+// 	require.NoError(t, keeper.SetParams(ctx, types.DefaultParams()))
+
+// 	// add wasm handler so we can loop-back (contracts calling contracts)
+// 	contractKeeper := NewDefaultPermissionKeeper(&keeper)
+
+// 	govKeeper := govkeeper.NewKeeper(
+// 		appCodec,
+// 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
+// 		accountKeeper,
+// 		bankKeeper,
+// 		stakingKeeper,
+// 		distKeeper,
+// 		msgRouter,
+// 		govtypes.DefaultConfig(),
+// 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+// 	)
+// 	require.NoError(t, govKeeper.Params.Set(ctx, govv1.DefaultParams()))
+
+// 	am := module.NewManager( // minimal module set that we use for message/ query tests
+// 		bank.NewAppModule(appCodec, bankKeeper, accountKeeper, subspace(banktypes.ModuleName)),
+// 		staking.NewAppModule(appCodec, stakingKeeper, accountKeeper, bankKeeper, subspace(stakingtypes.ModuleName)),
+// 		distribution.NewAppModule(appCodec, distKeeper, accountKeeper, bankKeeper, stakingKeeper, subspace(distributiontypes.ModuleName)),
+// 		gov.NewAppModule(appCodec, govKeeper, accountKeeper, bankKeeper, subspace(govtypes.ModuleName)),
+// 	)
+// 	am.RegisterServices(module.NewConfigurator(appCodec, msgRouter, querier)) //nolint:errcheck
+// 	types.RegisterMsgServer(msgRouter, NewMsgServerImpl(&keeper))
+// 	types.RegisterQueryServer(querier, NewGrpcQuerier(appCodec, runtime.NewKVStoreService(keys[types.ModuleName]), keeper, keeper.queryGasLimit))
+
+// 	keepers := TestKeepers{
+// 		AccountKeeper:    accountKeeper,
+// 		StakingKeeper:    stakingKeeper,
+// 		DistKeeper:       distKeeper,
+// 		ContractKeeper:   contractKeeper,
+// 		WasmKeeper:       &keeper,
+// 		BankKeeper:       bankKeeper,
+// 		GovKeeper:        govKeeper,
+// 		IBCKeeper:        ibcKeeper,
+// 		Router:           msgRouter,
+// 		EncodingConfig:   encodingConfig,
+// 		Faucet:           faucet,
+// 		MultiStore:       ms,
+// 		ScopedWasmKeeper: scopedWasmKeeper,
+// 		WasmStoreKey:     keys[types.StoreKey],
+// 	}
+// 	return ctx, keepers
+// }
+
+// // TestHandler returns a wasm handler for tests (to avoid circular imports)
+// func TestHandler(k types.ContractOpsKeeper) MessageRouter {
+// 	return MessageRouterFunc(func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
+// 		ctx = ctx.WithEventManager(sdk.NewEventManager())
+// 		switch msg := msg.(type) {
+// 		case *types.MsgStoreCode:
+// 			return handleStoreCode(ctx, k, msg)
+// 		case *types.MsgInstantiateContract:
+// 			return handleInstantiate(ctx, k, msg)
+// 		case *types.MsgExecuteContract:
+// 			return handleExecute(ctx, k, msg)
+// 		default:
+// 			errMsg := fmt.Sprintf("unrecognized wasm message type: %T", msg)
+// 			return nil, errorsmod.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
+// 		}
+// 	})
+// }
+
+// var _ MessageRouter = MessageRouterFunc(nil)
+
+// type MessageRouterFunc func(ctx sdk.Context, req sdk.Msg) (*sdk.Result, error)
+
+// func (m MessageRouterFunc) Handler(_ sdk.Msg) baseapp.MsgServiceHandler {
+// 	return m
+// }
+
+// func handleStoreCode(ctx sdk.Context, k types.ContractOpsKeeper, msg *types.MsgStoreCode) (*sdk.Result, error) {
+// 	senderAddr, err := sdk.AccAddressFromBech32(msg.Sender)
+// 	if err != nil {
+// 		return nil, errorsmod.Wrap(err, "sender")
+// 	}
+// 	codeID, _, err := k.Create(ctx, senderAddr, msg.WASMByteCode, msg.InstantiatePermission)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return &sdk.Result{
+// 		Data:   []byte(fmt.Sprintf("%d", codeID)),
+// 		Events: ctx.EventManager().ABCIEvents(),
+// 	}, nil
+// }
+
+// func handleInstantiate(ctx sdk.Context, k types.ContractOpsKeeper, msg *types.MsgInstantiateContract) (*sdk.Result, error) {
+// 	senderAddr, err := sdk.AccAddressFromBech32(msg.Sender)
+// 	if err != nil {
+// 		return nil, errorsmod.Wrap(err, "sender")
+// 	}
+// 	var adminAddr sdk.AccAddress
+// 	if msg.Admin != "" {
+// 		if adminAddr, err = sdk.AccAddressFromBech32(msg.Admin); err != nil {
+// 			return nil, errorsmod.Wrap(err, "admin")
+// 		}
+// 	}
+
+// 	contractAddr, _, err := k.Instantiate(ctx, msg.CodeID, senderAddr, adminAddr, msg.Msg, msg.Label, msg.Funds)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return &sdk.Result{
+// 		Data:   contractAddr,
+// 		Events: ctx.EventManager().Events().ToABCIEvents(),
+// 	}, nil
+// }
+
+// func handleExecute(ctx sdk.Context, k types.ContractOpsKeeper, msg *types.MsgExecuteContract) (*sdk.Result, error) {
+// 	senderAddr, err := sdk.AccAddressFromBech32(msg.Sender)
+// 	if err != nil {
+// 		return nil, errorsmod.Wrap(err, "sender")
+// 	}
+// 	contractAddr, err := sdk.AccAddressFromBech32(msg.Contract)
+// 	if err != nil {
+// 		return nil, errorsmod.Wrap(err, "admin")
+// 	}
+// 	data, err := k.Execute(ctx, contractAddr, senderAddr, msg.Msg, msg.Funds)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return &sdk.Result{
+// 		Data:   data,
+// 		Events: ctx.EventManager().Events().ToABCIEvents(),
+// 	}, nil
+// }
+
+// func RandomAccountAddress(_ testing.TB) sdk.AccAddress {
+// 	_, addr := keyPubAddr()
+// 	return addr
+// }
+
+// // DeterministicAccountAddress  creates a test address with v repeated to valid address size
+// func DeterministicAccountAddress(_ testing.TB, v byte) sdk.AccAddress {
+// 	return bytes.Repeat([]byte{v}, address.Len)
+// }
+
+// func RandomBech32AccountAddress(t testing.TB) string {
+// 	return RandomAccountAddress(t).String()
+// }
+
+// type ExampleContract struct {
+// 	InitialAmount sdk.Coins
+// 	Creator       crypto.PrivKey
+// 	CreatorAddr   sdk.AccAddress
+// 	CodeID        uint64
+// 	Checksum      []byte
+// }
+
+// func StoreHackatomExampleContract(t testing.TB, ctx sdk.Context, keepers TestKeepers) ExampleContract {
+// 	return StoreExampleContractWasm(t, ctx, keepers, testdata.HackatomContractWasm())
+// }
+
+// func StoreBurnerExampleContract(t testing.TB, ctx sdk.Context, keepers TestKeepers) ExampleContract {
+// 	return StoreExampleContractWasm(t, ctx, keepers, testdata.BurnerContractWasm())
+// }
+
+// func StoreIBCReflectContract(t testing.TB, ctx sdk.Context, keepers TestKeepers) ExampleContract {
+// 	return StoreExampleContractWasm(t, ctx, keepers, testdata.IBCReflectContractWasm())
+// }
+
+// func StoreReflectContract(t testing.TB, ctx sdk.Context, keepers TestKeepers) ExampleContract {
+// 	return StoreExampleContractWasm(t, ctx, keepers, testdata.ReflectContractWasm())
+// }
+
+// func StoreExampleContract(t testing.TB, ctx sdk.Context, keepers TestKeepers, wasmFile string) ExampleContract {
+// 	wasmCode, err := os.ReadFile(wasmFile)
+// 	require.NoError(t, err)
+// 	return StoreExampleContractWasm(t, ctx, keepers, wasmCode)
+// }
+
+// func StoreExampleContractWasm(t testing.TB, ctx sdk.Context, keepers TestKeepers, wasmCode []byte) ExampleContract {
+// 	anyAmount := sdk.NewCoins(sdk.NewInt64Coin("denom", 1000))
+// 	creator, creatorAddr := keyPubAddr()
+// 	fundAccounts(t, ctx, keepers.AccountKeeper, keepers.BankKeeper, creatorAddr, anyAmount)
+
+// 	codeID, _, err := keepers.ContractKeeper.Create(ctx, creatorAddr, wasmCode, nil)
+// 	require.NoError(t, err)
+// 	hash := keepers.WasmKeeper.GetCodeInfo(ctx, codeID).CodeHash
+// 	return ExampleContract{anyAmount, creator, creatorAddr, codeID, hash}
+// }
+
+// var wasmIdent = []byte("\x00\x61\x73\x6D")
+
+// type ExampleContractInstance struct {
+// 	ExampleContract
+// 	Contract sdk.AccAddress
+// }
+
+// // SeedNewContractInstance sets the mock WasmEngine in keeper and calls store + instantiate to init the contract's metadata
+// func SeedNewContractInstance(t testing.TB, ctx sdk.Context, keepers TestKeepers, mock types.WasmEngine) ExampleContractInstance {
+// 	t.Helper()
+// 	exampleContract := StoreRandomContract(t, ctx, keepers, mock)
+// 	contractAddr, _, err := keepers.ContractKeeper.Instantiate(ctx, exampleContract.CodeID, exampleContract.CreatorAddr, exampleContract.CreatorAddr, []byte(`{}`), "", nil)
+// 	require.NoError(t, err)
+// 	return ExampleContractInstance{
+// 		ExampleContract: exampleContract,
+// 		Contract:        contractAddr,
+// 	}
+// }
+
+// // StoreRandomContract sets the mock WasmEngine in keeper and calls store
+// func StoreRandomContract(t testing.TB, ctx sdk.Context, keepers TestKeepers, mock types.WasmEngine) ExampleContract {
+// 	return StoreRandomContractWithAccessConfig(t, ctx, keepers, mock, nil)
+// }
+
+// func StoreRandomContractWithAccessConfig(
+// 	t testing.TB, ctx sdk.Context,
+// 	keepers TestKeepers,
+// 	mock types.WasmEngine,
+// 	cfg *types.AccessConfig,
+// ) ExampleContract {
+// 	t.Helper()
+// 	anyAmount := sdk.NewCoins(sdk.NewInt64Coin("denom", 1000))
+// 	creator, creatorAddr := keyPubAddr()
+// 	fundAccounts(t, ctx, keepers.AccountKeeper, keepers.BankKeeper, creatorAddr, anyAmount)
+// 	keepers.WasmKeeper.wasmVM = mock
+// 	wasmCode := append(wasmIdent, rand.Bytes(10)...)
+// 	codeID, checksum, err := keepers.ContractKeeper.Create(ctx, creatorAddr, wasmCode, cfg)
+// 	require.NoError(t, err)
+// 	exampleContract := ExampleContract{InitialAmount: anyAmount, Creator: creator, CreatorAddr: creatorAddr, CodeID: codeID, Checksum: checksum}
+// 	return exampleContract
+// }
+
+// type HackatomExampleInstance struct {
+// 	ExampleContract
+// 	Contract        sdk.AccAddress
+// 	Verifier        crypto.PrivKey
+// 	VerifierAddr    sdk.AccAddress
+// 	Beneficiary     crypto.PrivKey
+// 	BeneficiaryAddr sdk.AccAddress
+// 	Label           string
+// 	Deposit         sdk.Coins
+// }
+
+// // InstantiateHackatomExampleContract load and instantiate the "./testdata/hackatom.wasm" contract
+// func InstantiateHackatomExampleContract(t testing.TB, ctx sdk.Context, keepers TestKeepers) HackatomExampleInstance {
+// 	contract := StoreHackatomExampleContract(t, ctx, keepers)
+
+// 	verifier, verifierAddr := keyPubAddr()
+// 	fundAccounts(t, ctx, keepers.AccountKeeper, keepers.BankKeeper, verifierAddr, contract.InitialAmount)
+
+// 	beneficiary, beneficiaryAddr := keyPubAddr()
+// 	initMsgBz, err := json.Marshal(HackatomExampleInitMsg{
+// 		Verifier:    verifierAddr,
+// 		Beneficiary: beneficiaryAddr,
+// 	})
+// 	require.NoError(t, err)
+// 	initialAmount := sdk.NewCoins(sdk.NewInt64Coin("denom", 100))
+
+// 	adminAddr := contract.CreatorAddr
+// 	label := "hackatom contract"
+// 	contractAddr, _, err := keepers.ContractKeeper.Instantiate(ctx, contract.CodeID, contract.CreatorAddr, adminAddr, initMsgBz, label, initialAmount)
+// 	require.NoError(t, err)
+// 	return HackatomExampleInstance{
+// 		ExampleContract: contract,
+// 		Contract:        contractAddr,
+// 		Verifier:        verifier,
+// 		VerifierAddr:    verifierAddr,
+// 		Beneficiary:     beneficiary,
+// 		BeneficiaryAddr: beneficiaryAddr,
+// 		Label:           label,
+// 		Deposit:         initialAmount,
+// 	}
+// }
+
+// type ExampleInstance struct {
+// 	ExampleContract
+// 	Contract sdk.AccAddress
+// 	Label    string
+// 	Deposit  sdk.Coins
+// }
+
+// // InstantiateReflectExampleContract load and instantiate the "./testdata/reflect_2_0.wasm" contract
+// func InstantiateReflectExampleContract(t testing.TB, ctx sdk.Context, keepers TestKeepers) ExampleInstance {
+// 	example := StoreReflectContract(t, ctx, keepers)
+// 	initialAmount := sdk.NewCoins(sdk.NewInt64Coin("denom", 100))
+// 	label := "reflect contract"
+// 	contractAddr, _, err := keepers.ContractKeeper.Instantiate(ctx, example.CodeID, example.CreatorAddr, example.CreatorAddr, []byte("{}"), label, initialAmount)
+
+// 	require.NoError(t, err)
+// 	return ExampleInstance{
+// 		ExampleContract: example,
+// 		Contract:        contractAddr,
+// 		Label:           label,
+// 		Deposit:         initialAmount,
+// 	}
+// }
+
+// // InstantiateReflectExampleContractWithPortID load and instantiate the "./testdata/reflect_2_0.wasm" contract with defined port ID
+// func InstantiateReflectExampleContractWithPortID(t testing.TB, ctx sdk.Context, keepers TestKeepers, portID string) ExampleInstance {
+// 	example := StoreReflectContract(t, ctx, keepers)
+// 	initialAmount := sdk.NewCoins(sdk.NewInt64Coin("denom", 100))
+// 	label := "reflect contract with port id"
+// 	contractAddr, _, err := keepers.ContractKeeper.Instantiate(ctx, example.CodeID, example.CreatorAddr, example.CreatorAddr, []byte("{}"), label, initialAmount)
+
+// 	require.NoError(t, err)
+
+// 	cInfo := keepers.WasmKeeper.GetContractInfo(ctx, contractAddr)
+// 	cInfo.IBCPortID = portID
+// 	keepers.WasmKeeper.mustStoreContractInfo(ctx, contractAddr, cInfo)
+
+// 	return ExampleInstance{
+// 		ExampleContract: example,
+// 		Contract:        contractAddr,
+// 		Label:           label,
+// 		Deposit:         initialAmount,
+// 	}
+// }
+
+// type HackatomExampleInitMsg struct {
+// 	Verifier    sdk.AccAddress `json:"verifier"`
+// 	Beneficiary sdk.AccAddress `json:"beneficiary"`
+// }
+
+// func (m HackatomExampleInitMsg) GetBytes(t testing.TB) []byte {
+// 	initMsgBz, err := json.Marshal(m)
+// 	require.NoError(t, err)
+// 	return initMsgBz
+// }
+
+// type IBCReflectExampleInstance struct {
+// 	Contract      sdk.AccAddress
+// 	Admin         sdk.AccAddress
+// 	CodeID        uint64
+// 	ReflectCodeID uint64
+// }
+
+// func (m IBCReflectExampleInstance) GetBytes(t testing.TB) []byte {
+// 	initMsgBz, err := json.Marshal(m)
+// 	require.NoError(t, err)
+// 	return initMsgBz
+// }
+
+// // InstantiateIBCReflectContract load and instantiate the "./testdata/ibc_reflect.wasm" contract
+// func InstantiateIBCReflectContract(t testing.TB, ctx sdk.Context, keepers TestKeepers) IBCReflectExampleInstance {
+// 	reflectID := StoreReflectContract(t, ctx, keepers).CodeID
+// 	ibcReflectID := StoreIBCReflectContract(t, ctx, keepers).CodeID
+
+// 	initMsgBz, err := json.Marshal(IBCReflectInitMsg{
+// 		ReflectCodeID: reflectID,
+// 	})
+// 	require.NoError(t, err)
+// 	adminAddr := RandomAccountAddress(t)
+
+// 	contractAddr, _, err := keepers.ContractKeeper.Instantiate(ctx, ibcReflectID, adminAddr, adminAddr, initMsgBz, "ibc-reflect-factory", nil)
+// 	require.NoError(t, err)
+// 	return IBCReflectExampleInstance{
+// 		Admin:         adminAddr,
+// 		Contract:      contractAddr,
+// 		CodeID:        ibcReflectID,
+// 		ReflectCodeID: reflectID,
+// 	}
+// }
+
+// type IBCReflectInitMsg struct {
+// 	ReflectCodeID uint64 `json:"reflect_code_id"`
+// }
+
+// func (m IBCReflectInitMsg) GetBytes(t testing.TB) []byte {
+// 	initMsgBz, err := json.Marshal(m)
+// 	require.NoError(t, err)
+// 	return initMsgBz
+// }
+
+// type BurnerExampleInitMsg struct {
+// 	Payout sdk.AccAddress `json:"payout"`
+// 	Delete uint32         `json:"delete"`
+// }
+
+// func (m BurnerExampleInitMsg) GetBytes(t testing.TB) []byte {
+// 	initMsgBz, err := json.Marshal(m)
+// 	require.NoError(t, err)
+// 	return initMsgBz
+// }
+
+// func fundAccounts(t testing.TB, ctx sdk.Context, am authkeeper.AccountKeeper, bank bankkeeper.Keeper, addr sdk.AccAddress, coins sdk.Coins) {
+// 	acc := am.NewAccountWithAddress(ctx, addr)
+// 	am.SetAccount(ctx, acc)
+// 	NewTestFaucet(t, ctx, bank, minttypes.ModuleName, coins...).Fund(ctx, addr, coins...)
+// }
+
+// var keyCounter uint64
+
+// // we need to make this deterministic (same every test run), as encoded address size and thus gas cost,
+// // depends on the actual bytes (due to ugly CanonicalAddress encoding)
+// func keyPubAddr() (crypto.PrivKey, sdk.AccAddress) {
+// 	keyCounter++
+// 	seed := make([]byte, 8)
+// 	binary.BigEndian.PutUint64(seed, keyCounter)
+
+// 	key := ed25519.GenPrivKeyFromSecret(seed)
+// 	pub := key.PubKey()
+// 	addr := sdk.AccAddress(pub.Address())
+// 	return key, addr
+// }

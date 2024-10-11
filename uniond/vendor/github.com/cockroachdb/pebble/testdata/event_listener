@@ -1,0 +1,462 @@
+open
+----
+mkdir-all: db 0755
+mkdir-all: wal 0755
+open-dir: db
+open-dir: wal
+lock: db/LOCK
+open-dir: db
+open-dir: db
+open: db/CURRENT
+create: db/MANIFEST-000001
+sync: db/MANIFEST-000001
+remove: db/temporary.000001.dbtmp
+create: db/temporary.000001.dbtmp
+sync: db/temporary.000001.dbtmp
+close: db/temporary.000001.dbtmp
+rename: db/temporary.000001.dbtmp -> db/CURRENT
+sync: db
+[JOB 1] MANIFEST created 000001
+open-dir: db
+sync: db/MANIFEST-000001
+create: wal/000002.log
+sync: wal
+[JOB 1] WAL created 000002
+create: db/marker.manifest.000001.MANIFEST-000001
+close: db/marker.manifest.000001.MANIFEST-000001
+sync: db
+create: db/marker.format-version.000001.002
+close: db/marker.format-version.000001.002
+sync: db
+upgraded to format version: 002
+remove: db/temporary.000000.dbtmp
+create: db/temporary.000000.dbtmp
+sync: db/temporary.000000.dbtmp
+close: db/temporary.000000.dbtmp
+rename: db/temporary.000000.dbtmp -> db/CURRENT
+create: db/marker.format-version.000002.003
+close: db/marker.format-version.000002.003
+remove: db/marker.format-version.000001.002
+sync: db
+upgraded to format version: 003
+create: db/marker.format-version.000003.004
+close: db/marker.format-version.000003.004
+remove: db/marker.format-version.000002.003
+sync: db
+upgraded to format version: 004
+create: db/marker.format-version.000004.005
+close: db/marker.format-version.000004.005
+remove: db/marker.format-version.000003.004
+sync: db
+upgraded to format version: 005
+create: db/marker.format-version.000005.006
+close: db/marker.format-version.000005.006
+remove: db/marker.format-version.000004.005
+sync: db
+upgraded to format version: 006
+create: db/marker.format-version.000006.007
+close: db/marker.format-version.000006.007
+remove: db/marker.format-version.000005.006
+sync: db
+upgraded to format version: 007
+create: db/marker.format-version.000007.008
+close: db/marker.format-version.000007.008
+remove: db/marker.format-version.000006.007
+sync: db
+upgraded to format version: 008
+create: db/marker.format-version.000008.009
+close: db/marker.format-version.000008.009
+remove: db/marker.format-version.000007.008
+sync: db
+upgraded to format version: 009
+create: db/marker.format-version.000009.010
+close: db/marker.format-version.000009.010
+remove: db/marker.format-version.000008.009
+sync: db
+upgraded to format version: 010
+create: db/marker.format-version.000010.011
+close: db/marker.format-version.000010.011
+remove: db/marker.format-version.000009.010
+sync: db
+upgraded to format version: 011
+create: db/marker.format-version.000011.012
+close: db/marker.format-version.000011.012
+remove: db/marker.format-version.000010.011
+sync: db
+upgraded to format version: 012
+create: db/marker.format-version.000012.013
+close: db/marker.format-version.000012.013
+remove: db/marker.format-version.000011.012
+sync: db
+upgraded to format version: 013
+create: db/marker.format-version.000013.014
+close: db/marker.format-version.000013.014
+remove: db/marker.format-version.000012.013
+sync: db
+upgraded to format version: 014
+create: db/marker.format-version.000014.015
+close: db/marker.format-version.000014.015
+remove: db/marker.format-version.000013.014
+sync: db
+upgraded to format version: 015
+create: db/marker.format-version.000015.016
+close: db/marker.format-version.000015.016
+remove: db/marker.format-version.000014.015
+sync: db
+upgraded to format version: 016
+create: db/temporary.000003.dbtmp
+sync: db/temporary.000003.dbtmp
+close: db/temporary.000003.dbtmp
+rename: db/temporary.000003.dbtmp -> db/OPTIONS-000003
+sync: db
+
+flush
+----
+sync-data: wal/000002.log
+sync-data: wal/000002.log
+close: wal/000002.log
+create: wal/000004.log
+sync: wal
+[JOB 4] WAL created 000004
+[JOB 5] flushing 1 memtable (100B) to L0
+create: db/000005.sst
+[JOB 5] flushing: sstable created 000005
+sync-data: db/000005.sst
+close: db/000005.sst
+sync: db
+create: db/MANIFEST-000006
+close: db/MANIFEST-000001
+sync: db/MANIFEST-000006
+create: db/marker.manifest.000002.MANIFEST-000006
+close: db/marker.manifest.000002.MANIFEST-000006
+remove: db/marker.manifest.000001.MANIFEST-000001
+sync: db
+[JOB 5] MANIFEST created 000006
+[JOB 5] flushed 1 memtable (100B) to L0 [000005] (662B), in 1.0s (2.0s total), output rate 662B/s
+
+compact
+----
+sync-data: wal/000004.log
+sync-data: wal/000004.log
+close: wal/000004.log
+reuseForWrite: wal/000002.log -> wal/000007.log
+sync: wal
+[JOB 6] WAL created 000007 (recycled 000002)
+[JOB 7] flushing 1 memtable (100B) to L0
+create: db/000008.sst
+[JOB 7] flushing: sstable created 000008
+sync-data: db/000008.sst
+close: db/000008.sst
+sync: db
+create: db/MANIFEST-000009
+close: db/MANIFEST-000006
+sync: db/MANIFEST-000009
+create: db/marker.manifest.000003.MANIFEST-000009
+close: db/marker.manifest.000003.MANIFEST-000009
+remove: db/marker.manifest.000002.MANIFEST-000006
+sync: db
+[JOB 7] MANIFEST created 000009
+[JOB 7] flushed 1 memtable (100B) to L0 [000008] (662B), in 1.0s (2.0s total), output rate 662B/s
+remove: db/MANIFEST-000001
+[JOB 7] MANIFEST deleted 000001
+[JOB 8] compacting(default) L0 [000005 000008] (1.3KB) Score=0.00 + L6 [] (0B) Score=0.00; OverlappingRatio: Single 0.00, Multi 0.00
+open: db/000005.sst (options: *vfs.randomReadsOption)
+read-at(609, 53): db/000005.sst
+read-at(572, 37): db/000005.sst
+read-at(53, 519): db/000005.sst
+read-at(26, 27): db/000005.sst
+open: db/000005.sst (options: *vfs.sequentialReadsOption)
+close: db/000005.sst
+open: db/000008.sst (options: *vfs.randomReadsOption)
+read-at(609, 53): db/000008.sst
+read-at(572, 37): db/000008.sst
+read-at(53, 519): db/000008.sst
+read-at(26, 27): db/000008.sst
+open: db/000008.sst (options: *vfs.sequentialReadsOption)
+close: db/000008.sst
+open: db/000005.sst (options: *vfs.sequentialReadsOption)
+read-at(0, 26): db/000005.sst
+open: db/000008.sst (options: *vfs.sequentialReadsOption)
+read-at(0, 26): db/000008.sst
+close: db/000008.sst
+close: db/000005.sst
+create: db/000010.sst
+[JOB 8] compacting: sstable created 000010
+sync-data: db/000010.sst
+close: db/000010.sst
+sync: db
+create: db/MANIFEST-000011
+close: db/MANIFEST-000009
+sync: db/MANIFEST-000011
+create: db/marker.manifest.000004.MANIFEST-000011
+close: db/marker.manifest.000004.MANIFEST-000011
+remove: db/marker.manifest.000003.MANIFEST-000009
+sync: db
+[JOB 8] MANIFEST created 000011
+[JOB 8] compacted(default) L0 [000005 000008] (1.3KB) Score=0.00 + L6 [] (0B) Score=0.00 -> L6 [000010] (662B), in 1.0s (3.0s total), output rate 662B/s
+close: db/000005.sst
+close: db/000008.sst
+remove: db/000005.sst
+[JOB 8] sstable deleted 000005
+remove: db/000008.sst
+[JOB 8] sstable deleted 000008
+remove: db/MANIFEST-000006
+[JOB 8] MANIFEST deleted 000006
+
+disable-file-deletions
+----
+
+flush
+----
+sync-data: wal/000007.log
+sync-data: wal/000007.log
+close: wal/000007.log
+reuseForWrite: wal/000004.log -> wal/000012.log
+sync: wal
+[JOB 9] WAL created 000012 (recycled 000004)
+[JOB 10] flushing 1 memtable (100B) to L0
+create: db/000013.sst
+[JOB 10] flushing: sstable created 000013
+sync-data: db/000013.sst
+close: db/000013.sst
+sync: db
+create: db/MANIFEST-000014
+close: db/MANIFEST-000011
+sync: db/MANIFEST-000014
+create: db/marker.manifest.000005.MANIFEST-000014
+close: db/marker.manifest.000005.MANIFEST-000014
+remove: db/marker.manifest.000004.MANIFEST-000011
+sync: db
+[JOB 10] MANIFEST created 000014
+[JOB 10] flushed 1 memtable (100B) to L0 [000013] (662B), in 1.0s (2.0s total), output rate 662B/s
+
+enable-file-deletions
+----
+remove: db/MANIFEST-000009
+[JOB 11] MANIFEST deleted 000009
+
+ingest
+----
+open: ext/0
+read-at(664, 53): ext/0
+read-at(627, 37): ext/0
+read-at(53, 574): ext/0
+read-at(26, 27): ext/0
+read-at(0, 26): ext/0
+close: ext/0
+link: ext/0 -> db/000015.sst
+[JOB 12] ingesting: sstable created 000015
+sync: db
+open: db/000013.sst (options: *vfs.randomReadsOption)
+read-at(609, 53): db/000013.sst
+read-at(572, 37): db/000013.sst
+read-at(53, 519): db/000013.sst
+read-at(26, 27): db/000013.sst
+read-at(0, 26): db/000013.sst
+create: db/MANIFEST-000016
+close: db/MANIFEST-000014
+sync: db/MANIFEST-000016
+create: db/marker.manifest.000006.MANIFEST-000016
+close: db/marker.manifest.000006.MANIFEST-000016
+remove: db/marker.manifest.000005.MANIFEST-000014
+sync: db
+[JOB 12] MANIFEST created 000016
+remove: db/MANIFEST-000011
+[JOB 12] MANIFEST deleted 000011
+remove: ext/0
+[JOB 12] ingested L0:000015 (717B)
+
+metrics
+----
+      |                             |       |       |   ingested   |     moved    |    written   |       |    amp
+level | tables  size val-bl vtables | score |   in  | tables  size | tables  size | tables  size |  read |   r   w
+------+-----------------------------+-------+-------+--------------+--------------+--------------+-------+---------
+    0 |     2  1.3KB     0B       0 |  0.40 |   81B |     1   717B |     0     0B |     3  1.9KB |    0B |   2 24.5
+    1 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+    2 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+    3 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+    4 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+    5 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+    6 |     1   662B     0B       0 |     - | 1.3KB |     0     0B |     0     0B |     1   662B | 1.3KB |   1  0.5
+total |     3  2.0KB     0B       0 |     - |  798B |     1   717B |     0     0B |     4  3.4KB | 1.3KB |   3  4.3
+-------------------------------------------------------------------------------------------------------------------
+WAL: 1 files (0B)  in: 48B  written: 81B (69% overhead)
+Flushes: 3
+Compactions: 1  estimated debt: 2.0KB  in progress: 0 (0B)
+             default: 1  delete: 0  elision: 0  move: 0  read: 0  rewrite: 0  multi-level: 0
+MemTables: 1 (256KB)  zombie: 1 (256KB)
+Zombie tables: 0 (0B)
+Backing tables: 0 (0B)
+Virtual tables: 0 (0B)
+Block cache: 6 entries (1.1KB)  hit rate: 11.1%
+Table cache: 1 entries (808B)  hit rate: 40.0%
+Secondary cache: 0 entries (0B)  hit rate: 0.0%
+Snapshots: 0  earliest seq num: 0
+Table iters: 0
+Filter utility: 0.0%
+Ingestions: 1  as flushable: 0 (0B in 0 tables)
+
+# Set up a scenario where the table to be ingested overlaps with the memtable.
+# The table is ingested as a flushable. The flush metrics refect the flushed
+# ingestion.
+
+ingest-flushable
+----
+sync-data: wal/000012.log
+open: ext/a
+read-at(664, 53): ext/a
+read-at(627, 37): ext/a
+read-at(53, 574): ext/a
+read-at(26, 27): ext/a
+read-at(0, 26): ext/a
+close: ext/a
+open: ext/b
+read-at(664, 53): ext/b
+read-at(627, 37): ext/b
+read-at(53, 574): ext/b
+read-at(26, 27): ext/b
+read-at(0, 26): ext/b
+close: ext/b
+link: ext/a -> db/000017.sst
+[JOB 13] ingesting: sstable created 000017
+link: ext/b -> db/000018.sst
+[JOB 13] ingesting: sstable created 000018
+sync: db
+sync-data: wal/000012.log
+close: wal/000012.log
+reuseForWrite: wal/000007.log -> wal/000019.log
+sync: wal
+[JOB 14] WAL created 000019 (recycled 000007)
+sync-data: wal/000019.log
+sync-data: wal/000019.log
+close: wal/000019.log
+create: wal/000020.log
+sync: wal
+[JOB 15] WAL created 000020
+remove: ext/a
+remove: ext/b
+[JOB 13] ingested as flushable 000017 (717B), 000018 (717B)
+sync-data: wal/000020.log
+close: wal/000020.log
+create: wal/000021.log
+sync: wal
+[JOB 16] WAL created 000021
+[JOB 17] flushing 1 memtable (100B) to L0
+create: db/000022.sst
+[JOB 17] flushing: sstable created 000022
+sync-data: db/000022.sst
+close: db/000022.sst
+sync: db
+sync: db/MANIFEST-000016
+[JOB 17] flushed 1 memtable (100B) to L0 [000022] (662B), in 1.0s (2.0s total), output rate 662B/s
+[JOB 18] flushing 2 ingested tables
+create: db/MANIFEST-000023
+close: db/MANIFEST-000016
+sync: db/MANIFEST-000023
+create: db/marker.manifest.000007.MANIFEST-000023
+close: db/marker.manifest.000007.MANIFEST-000023
+remove: db/marker.manifest.000006.MANIFEST-000016
+sync: db
+[JOB 18] MANIFEST created 000023
+[JOB 18] flushed 2 ingested flushables L0:000017 (717B) + L6:000018 (717B) in 1.0s (2.0s total), output rate 1.4KB/s
+remove: db/MANIFEST-000014
+[JOB 18] MANIFEST deleted 000014
+[JOB 19] flushing 1 memtable (100B) to L0
+sync: db/MANIFEST-000023
+[JOB 19] flush error: pebble: empty table
+
+metrics
+----
+      |                             |       |       |   ingested   |     moved    |    written   |       |    amp
+level | tables  size val-bl vtables | score |   in  | tables  size | tables  size | tables  size |  read |   r   w
+------+-----------------------------+-------+-------+--------------+--------------+--------------+-------+---------
+    0 |     4  2.7KB     0B       0 |  0.80 |  108B |     2  1.4KB |     0     0B |     4  2.6KB |    0B |   4 24.5
+    1 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+    2 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+    3 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+    4 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+    5 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+    6 |     2  1.3KB     0B       0 |     - | 1.3KB |     1   717B |     0     0B |     1   662B | 1.3KB |   1  0.5
+total |     6  4.0KB     0B       0 |     - | 2.2KB |     3  2.1KB |     0     0B |     5  5.4KB | 1.3KB |   5  2.5
+-------------------------------------------------------------------------------------------------------------------
+WAL: 1 files (0B)  in: 82B  written: 108B (32% overhead)
+Flushes: 6
+Compactions: 1  estimated debt: 4.0KB  in progress: 0 (0B)
+             default: 1  delete: 0  elision: 0  move: 0  read: 0  rewrite: 0  multi-level: 0
+MemTables: 1 (512KB)  zombie: 1 (512KB)
+Zombie tables: 0 (0B)
+Backing tables: 0 (0B)
+Virtual tables: 0 (0B)
+Block cache: 12 entries (2.3KB)  hit rate: 14.3%
+Table cache: 1 entries (808B)  hit rate: 50.0%
+Secondary cache: 0 entries (0B)  hit rate: 0.0%
+Snapshots: 0  earliest seq num: 0
+Table iters: 0
+Filter utility: 0.0%
+Ingestions: 1  as flushable: 1 (1.4KB in 2 tables)
+
+sstables
+----
+0:
+  13:[a-a]
+  15:[a-a]
+  22:[a-a]
+  17:[a-a]
+6:
+  10:[a-a]
+  18:[b-b]
+
+checkpoint
+----
+mkdir-all: checkpoint 0755
+open-dir: 
+sync: 
+close: 
+open-dir: checkpoint
+link: db/OPTIONS-000003 -> checkpoint/OPTIONS-000003
+open-dir: checkpoint
+create: checkpoint/marker.format-version.000001.016
+sync-data: checkpoint/marker.format-version.000001.016
+close: checkpoint/marker.format-version.000001.016
+sync: checkpoint
+close: checkpoint
+link: db/000013.sst -> checkpoint/000013.sst
+link: db/000015.sst -> checkpoint/000015.sst
+link: db/000022.sst -> checkpoint/000022.sst
+link: db/000017.sst -> checkpoint/000017.sst
+link: db/000010.sst -> checkpoint/000010.sst
+link: db/000018.sst -> checkpoint/000018.sst
+open: db/MANIFEST-000023 (options: *vfs.sequentialReadsOption)
+create: checkpoint/MANIFEST-000023
+sync-data: checkpoint/MANIFEST-000023
+close: checkpoint/MANIFEST-000023
+close: db/MANIFEST-000023
+open-dir: checkpoint
+create: checkpoint/marker.manifest.000001.MANIFEST-000023
+sync-data: checkpoint/marker.manifest.000001.MANIFEST-000023
+close: checkpoint/marker.manifest.000001.MANIFEST-000023
+sync: checkpoint
+close: checkpoint
+open: wal/000021.log (options: *vfs.sequentialReadsOption)
+create: checkpoint/000021.log
+sync-data: checkpoint/000021.log
+close: checkpoint/000021.log
+close: wal/000021.log
+sync: checkpoint
+close: checkpoint
+
+enable-file-deletions
+----
+pebble: file deletion disablement invariant violated
+
+close
+----
+close: db
+close: db/000013.sst
+sync-data: wal/000021.log
+close: wal/000021.log
+close: db/MANIFEST-000023
+close: db
+close: db
+close: wal
+close: db

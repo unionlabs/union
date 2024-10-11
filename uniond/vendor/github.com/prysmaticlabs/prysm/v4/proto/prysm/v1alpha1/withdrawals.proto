@@ -1,0 +1,48 @@
+// Copyright 2022 Prysmatic Labs.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+
+package ethereum.eth.v1alpha1;
+
+import "proto/eth/ext/options.proto";
+
+option csharp_namespace = "Ethereum.Eth.v1alpha1";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1;eth";
+option java_multiple_files = true;
+option java_outer_classname = "WithdrawalsProto";
+option java_package = "org.ethereum.eth.v1alpha1";
+option php_namespace = "Ethereum\\Eth\\v1alpha1";
+
+// The message requesting a BLS to execution withdrawal credentials change
+message BLSToExecutionChange {
+        // The validator index requesting the change
+        uint64 validator_index = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+        
+        // The public key of the BLS address requesting the change
+        bytes from_bls_pubkey = 2 [(ethereum.eth.ext.ssz_size) = "48"];
+        
+        // The new execution address to be the withdrawal credentials
+        bytes to_execution_address = 3 [(ethereum.eth.ext.ssz_size) = "20"];
+}
+
+// The signed version of a BLSToExecutionChange
+message SignedBLSToExecutionChange {
+        // The BLSToExecutionChange message itself
+        BLSToExecutionChange message = 1; 
+
+        // The 96 byte BLS signature from the withdrawal address requesting the change
+        bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+}
+
+        

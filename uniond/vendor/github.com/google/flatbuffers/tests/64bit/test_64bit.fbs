@@ -1,0 +1,53 @@
+struct LeafStruct {
+  a:int;
+  b:double;
+}
+
+table WrapperTable {
+  // A normal 32-bit sized vector that could be very far away (64-bit address).
+  vector:[int8] (offset64);
+}
+
+table RootTable {
+  // A normal 32-bit sized vector, that could be very far away (64-bit address).
+  far_vector:[ubyte] (offset64);
+
+  // An inplace value just to check that vtable offsets are correct.
+  a:int;
+
+  // A normal 32-bit sized string, that could be very far away (64-bit address).
+  far_string:string (offset64);
+
+  // A big 64-bit sized vector, that could be very far away (64-bit address).
+  big_vector:[ubyte] (vector64);
+
+  // A normal 32-bit sized string that is no far away (32-bit address).
+  near_string:string;
+
+  // A big 64-bit sized vector that is a nested flatbuffers (64-bit address).
+  nested_root:[ubyte] (vector64, nested_flatbuffer: "RootTable");
+
+  // A normal 32-bit size vector of structs, that could be very far away 
+  // (64-bit address)
+  far_struct_vector:[LeafStruct] (offset64);
+
+  // A big 64-bit size vector of structs that could be very far away 
+  // (64-bit address)
+  big_struct_vector:[LeafStruct] (vector64);
+
+  // A normal 32-bit size vector of tables. Currently 64-bit vectors don't 
+  // support tables as it would require serializing a table (32-bit) before the
+  // vector (64-bit), which is not allowed.
+  //
+  // This demonstrates how you could have many vectors in the buffer, by 
+  // effectively having a vector of 64-bit vectors. The IDL doesn't support
+  // nested vecotrs (e.g.: [[type]] ), so going through a wrapper table allows
+  // this.
+  many_vectors:[WrapperTable];
+
+  // A vector that has force_align to test that the 32/64 bit region of the
+  // builder is respected.
+  forced_aligned_vector:[ubyte] (vector64, force_align:32);
+}
+
+root_type RootTable; 

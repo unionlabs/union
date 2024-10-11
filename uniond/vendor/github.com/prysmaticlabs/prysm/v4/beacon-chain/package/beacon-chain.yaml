@@ -1,0 +1,17 @@
+# Configuration file for Prysm beacon-chain
+
+# datadir: Location of blockchain data
+datadir: /var/lib/prysm/beacon
+
+# http-web3provider: ETH1 API endpoint, eg. http://localhost:8545 for a local geth service on the default port
+http-web3provider: http://localhost:8545
+
+
+# Optional tuning parameters
+# For full list, see https://docs.prylabs.network/docs/prysm-usage/parameters
+
+# p2p-max-peers: The max number of p2p peers to maintain. Default: 45
+# block-batch-limit: The amount of blocks the local peer is bounded to request and respond to in a batch. Default: 64
+# block-batch-limit-burst-factor: The factor by which block batch limit may increase on burst. Default: 10
+# p2p-udp-port: The port used by discv5. Default: 12000
+# p2p-tcp-port: The port used by libP2P. Default: 13000

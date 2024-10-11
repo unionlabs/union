@@ -1,0 +1,671 @@
+# The following collectors are available:
+# - value-first - uses the first character of the value to construct an interval
+# - value-last - uses the last character of the value to construct an interval
+# - suffix - constructs an interval from the '@timestamp' suffix of each key
+# - suffix-point-keys-only - same as "suffix", but only applies to point keys
+# - suffix-range-keys-only - same as "suffix", but only applies to range keys
+# - nil-points-and-ranges - a trivial collector with neither a point nor range collector
+
+# Single collector.
+
+build collectors=(value-first)
+a.SET.1:10
+b.SET.2:20
+c.SET.3:30
+----
+point:    [a#1,1,c#3,1]
+rangedel: [#0,0,#0,0]
+rangekey: [#0,0,#0,0]
+seqnums:  [1,3]
+
+# collectors returns the collectors used when writing the table, keyed by the
+# shortID of the collector.
+collectors
+----
+0: value-first
+
+# table-props returns the table-level properties, keyed by the shortID.
+table-props
+----
+0: [1, 4)
+
+# block-props returns the block-level properties. For each block, the separator
+# is printed, along with the properties for the block, keyed by the shortID.
+block-props
+----
+d#72057594037927935,17:
+  0: [1, 4)
+
+# Multiple collectors.
+
+build collectors=(value-first,value-last)
+a.SET.1:17
+b.SET.2:29
+c.SET.3:38
+----
+point:    [a#1,1,c#3,1]
+rangedel: [#0,0,#0,0]
+rangekey: [#0,0,#0,0]
+seqnums:  [1,3]
+
+collectors
+----
+0: value-first
+1: value-last
+
+table-props
+----
+0: [1, 4)
+1: [7, 10)
+
+block-props
+----
+d#72057594037927935,17:
+  0: [1, 4)
+  1: [7, 10)
+
+# Reduce the block size to a value such that each block has at most two KV
+# pairs.
+
+build block-size=25 collectors=(value-first,value-last)
+a.SET.1:15
+b.SET.2:86
+c.SET.3:72
+d.SET.4:21
+e.SET.5:47
+f.SET.6:54
+g.SET.7:63
+h.SET.8:38
+----
+point:    [a#1,1,h#8,1]
+rangedel: [#0,0,#0,0]
+rangekey: [#0,0,#0,0]
+seqnums:  [1,8]
+
+collectors
+----
+0: value-first
+1: value-last
+
+table-props
+----
+0: [1, 9)
+1: [1, 9)
+
+block-props
+----
+b#2,1:
+  0: [1, 9)
+  1: [5, 7)
+d#4,1:
+  0: [2, 8)
+  1: [1, 3)
+f#6,1:
+  0: [4, 6)
+  1: [4, 8)
+i#72057594037927935,17:
+  0: [3, 7)
+  1: [3, 9)
+
+# Range keys contribute to the table-level property but do not affect point key
+# data blocks.
+
+build collectors=(suffix)
+a@5.SET.1:foo
+b@10.SET.2:bar
+c@15.SET.3:baz
+rangekey: d@10-e@15:{(#4,RANGEKEYSET,@20,foo)}
+rangekey: e@15-f@20:{(#5,RANGEKEYUNSET,@25)}
+rangekey: f@20-z@25:{(#6,RANGEKEYDEL)}
+----
+point:    [a@5#1,1,c@15#3,1]
+rangedel: [#0,0,#0,0]
+rangekey: [d@10#4,21,z@25#72057594037927935,19]
+seqnums:  [1,6]
+
+collectors
+----
+0: suffix
+
+block-props
+----
+d#72057594037927935,17:
+  0: [5, 16)
+
+table-props
+----
+0: [5, 26)
+
+# Same as the above, but only collect point key properties.
+
+build collectors=(suffix-point-keys-only)
+a@5.SET.1:foo
+b@10.SET.2:bar
+c@15.SET.3:baz
+rangekey: d@10-e@15:{(#4,RANGEKEYSET,@20,foo)}
+rangekey: e@15-f@20:{(#5,RANGEKEYUNSET,@25)}
+rangekey: f@20-z@25:{(#6,RANGEKEYDEL)}
+----
+point:    [a@5#1,1,c@15#3,1]
+rangedel: [#0,0,#0,0]
+rangekey: [d@10#4,21,z@25#72057594037927935,19]
+seqnums:  [1,6]
+
+collectors
+----
+0: suffix-point-keys-only
+
+block-props
+----
+d#72057594037927935,17:
+  0: [5, 16)
+
+table-props
+----
+0: [5, 16)
+
+# Same as the above, but only collect range key properties.
+
+build collectors=(suffix-range-keys-only)
+a@5.SET.1:foo
+b@10.SET.2:bar
+c@15.SET.3:baz
+rangekey: d@10-e@15:{(#4,RANGEKEYSET,@20,foo)}
+rangekey: e@15-f@20:{(#5,RANGEKEYUNSET,@25)}
+rangekey: f@20-z@25:{(#6,RANGEKEYDEL)}
+----
+point:    [a@5#1,1,c@15#3,1]
+rangedel: [#0,0,#0,0]
+rangekey: [d@10#4,21,z@25#72057594037927935,19]
+seqnums:  [1,6]
+
+collectors
+----
+0: suffix-range-keys-only
+
+block-props
+----
+d#72057594037927935,17:
+
+table-props
+----
+0: [20, 26)
+
+# Create a table with multiple data blocks and a range key block. Two block
+# property collectors are used, one for range keys and one for point keys, each
+# acting independently.
+
+build block-size=1 collectors=(suffix-point-keys-only,suffix-range-keys-only)
+a@5.SET.1:foo
+b@10.SET.2:bar
+c@15.SET.3:baz
+rangekey: d@10-e@15:{(#4,RANGEKEYSET,@20,foo)}
+rangekey: e@15-f@20:{(#5,RANGEKEYUNSET,@25)}
+rangekey: f@20-z@25:{(#6,RANGEKEYDEL)}
+----
+point:    [a@5#1,1,c@15#3,1]
+rangedel: [#0,0,#0,0]
+rangekey: [d@10#4,21,z@25#72057594037927935,19]
+seqnums:  [1,6]
+
+collectors
+----
+0: suffix-point-keys-only
+1: suffix-range-keys-only
+
+block-props
+----
+b#72057594037927935,17:
+  0: [5, 6)
+c#72057594037927935,17:
+  0: [10, 11)
+d#72057594037927935,17:
+  0: [15, 16)
+
+table-props
+----
+0: [5, 16)
+1: [20, 26)
+
+# Partially matching point key filter.
+
+filter point-filter=(suffix-point-keys-only,10,20)
+----
+points: true, blocks=[1,2]
+ranges: true (no filters provided)
+
+# Non-matching point key filter.
+
+filter point-filter=(suffix-point-keys-only,100,200)
+----
+points: false
+ranges: true (no filters provided)
+
+# Partially matching range key filter.
+
+filter range-filter=(suffix-range-keys-only,10,25)
+----
+points: true (no filters provided)
+ranges: true
+
+# Non-matching range key filter.
+
+filter range-filter=(suffix-range-keys-only,100,200)
+----
+points: true (no filters provided)
+ranges: false
+
+# Matching point and range key filter.
+
+filter point-filter=(suffix-point-keys-only,10,20) range-filter=(suffix-range-keys-only,10,25)
+----
+points: true, blocks=[1,2]
+ranges: true
+
+# Matching point key filter and non-matching range key filter.
+
+filter point-filter=(suffix-point-keys-only,10,20) range-filter=(suffix-range-keys-only,100,200)
+----
+points: true, blocks=[1,2]
+ranges: false
+
+# Non-matching point key filter and matching range key filter.
+
+filter point-filter=(suffix-point-keys-only,100,200) range-filter=(suffix-range-keys-only,10,25)
+----
+points: false
+ranges: true
+
+# Non-matching point and range key filter.
+
+filter point-filter=(suffix-point-keys-only,100,200) range-filter=(suffix-range-keys-only,100,100)
+----
+points: false
+ranges: false
+
+# Providing a nil collector for both points and ranges is a user-error.
+
+build collectors=(nil-points-and-ranges)
+----
+sstable: at least one interval collector must be provided
+
+# Test a small index-block-size and block-size, so every data block has one KV
+# and every index block points to one data block.
+
+build collectors=(suffix-point-keys-only) index-block-size=1 block-size=1
+a@1.SET.1:foo
+b@10.SET.2:bar
+c@15.SET.3:baz
+d@25.SET.4:bax
+e@3.SET.5:box
+f@5.SET.3:mop
+----
+point:    [a@1#1,1,f@5#3,1]
+rangedel: [#0,0,#0,0]
+rangekey: [#0,0,#0,0]
+seqnums:  [1,5]
+
+collectors
+----
+0: suffix-point-keys-only
+
+table-props
+----
+0: [1, 26)
+
+# Because of the tiny index block size, every index block should have the same
+# properties as the single data block contained in the table. Indentation shows
+# the hierarchy.
+
+block-props
+----
+b#72057594037927935,17:
+  0: [1, 2)
+  b#72057594037927935,17:
+    0: [1, 2)
+c#72057594037927935,17:
+  0: [10, 11)
+  c#72057594037927935,17:
+    0: [10, 11)
+d#72057594037927935,17:
+  0: [15, 16)
+  d#72057594037927935,17:
+    0: [15, 16)
+e#72057594037927935,17:
+  0: [25, 26)
+  e#72057594037927935,17:
+    0: [25, 26)
+f#72057594037927935,17:
+  0: [3, 4)
+  f#72057594037927935,17:
+    0: [3, 4)
+g#72057594037927935,17:
+  0: [5, 6)
+  g#72057594037927935,17:
+    0: [5, 6)
+
+# Test the same sstable, but with a larger index block size that fits multiple
+# (3) KV pairs. Each entry in the top-level index should hold the unioned ranges
+# of all the data blocks' properties.
+
+build collectors=(suffix-point-keys-only) index-block-size=64 block-size=1
+a@1.SET.1:foo
+b@10.SET.2:bar
+c@15.SET.3:baz
+d@25.SET.4:bax
+e@3.SET.5:box
+f@5.SET.3:mop
+----
+point:    [a@1#1,1,f@5#3,1]
+rangedel: [#0,0,#0,0]
+rangekey: [#0,0,#0,0]
+seqnums:  [1,5]
+
+collectors
+----
+0: suffix-point-keys-only
+
+block-props
+----
+d#72057594037927935,17:
+  0: [1, 16)
+  b#72057594037927935,17:
+    0: [1, 2)
+  c#72057594037927935,17:
+    0: [10, 11)
+  d#72057594037927935,17:
+    0: [15, 16)
+g#72057594037927935,17:
+  0: [3, 26)
+  e#72057594037927935,17:
+    0: [25, 26)
+  f#72057594037927935,17:
+    0: [3, 4)
+  g#72057594037927935,17:
+    0: [5, 6)
+
+# Regression test for a bug in boundary checking when skipping over irrelevant
+# index blocks in a two-level indexed sstable.
+
+iter lower=a point-key-filter=(suffix-point-keys-only,1,2)
+seek-lt h
+last
+----
+<a@1:1> MaybeFilteredKeys()=true
+<a@1:1> MaybeFilteredKeys()=true
+
+# Same as above, but each index block holds 2 keys. This exercises a variant of
+# the above bug. Specifically, the bounds check performed /within/ skipBackward,
+# instead of within SeekLT and Last.
+
+build collectors=(suffix-point-keys-only) index-block-size=48 block-size=1
+a@1.SET.1:foo
+b@10.SET.2:bar
+c@15.SET.3:baz
+d@25.SET.4:bax
+e@3.SET.5:box
+f@5.SET.3:mop
+----
+point:    [a@1#1,1,f@5#3,1]
+rangedel: [#0,0,#0,0]
+rangekey: [#0,0,#0,0]
+seqnums:  [1,5]
+
+block-props
+----
+c#72057594037927935,17:
+  0: [1, 11)
+  b#72057594037927935,17:
+    0: [1, 2)
+  c#72057594037927935,17:
+    0: [10, 11)
+e#72057594037927935,17:
+  0: [15, 26)
+  d#72057594037927935,17:
+    0: [15, 16)
+  e#72057594037927935,17:
+    0: [25, 26)
+g#72057594037927935,17:
+  0: [3, 6)
+  f#72057594037927935,17:
+    0: [3, 4)
+  g#72057594037927935,17:
+    0: [5, 6)
+
+# Regression test for a bug in boundary checking when skipping over irrelevant
+# index blocks in a two-level indexed sstable.
+
+iter lower=a upper=z point-key-filter=(suffix-point-keys-only,1,2)
+seek-lt h
+----
+<a@1:1> MaybeFilteredKeys()=true
+
+# Test MaybeFilteredKeys().
+
+# Use timestamp range [1,9), which matches a@1, e@3 and f@5 and filters
+# a continuous section of three keys b@10, c@15 and d@25.
+
+iter point-key-filter=(suffix-point-keys-only,1,9)
+first
+next
+next
+next
+seek-ge b
+seek-ge e@3
+----
+<a@1:1> MaybeFilteredKeys()=false
+<e@3:5> MaybeFilteredKeys()=true
+<f@5:3> MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=false
+<e@3:5> MaybeFilteredKeys()=true
+<e@3:5> MaybeFilteredKeys()=false
+
+
+# NB: `seek-ge e` and `seek-ge dog` return MaybeFilteredKeys()=true, despite no
+# filtered keys existing within the range [e,e@3) or [dog,e@3). This is a
+# consequence of the index separator `e`. After seeking the index block, the
+# iterator only knows that the first block MAY contain keys ≤ e. However, it can
+# be skipped regardless, because block properties filters exclude it. In this
+# case, the iterator still returns MaybeFilteredKeys()=true, since keys MAY have
+# been excluded by the filter.
+
+iter point-key-filter=(suffix-point-keys-only,1,9)
+seek-ge e
+seek-ge dog
+----
+<e@3:5> MaybeFilteredKeys()=true
+<e@3:5> MaybeFilteredKeys()=true
+
+iter point-key-filter=(suffix-point-keys-only,1,100)
+first
+next
+next
+next
+next
+next
+next
+seek-lt d
+seek-ge d
+----
+<a@1:1> MaybeFilteredKeys()=false
+<b@10:2> MaybeFilteredKeys()=false
+<c@15:3> MaybeFilteredKeys()=false
+<d@25:4> MaybeFilteredKeys()=false
+<e@3:5> MaybeFilteredKeys()=false
+<f@5:3> MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=false
+<c@15:3> MaybeFilteredKeys()=false
+<d@25:4> MaybeFilteredKeys()=false
+
+# [10,16) intersects {b@10, c@15}.
+
+iter point-key-filter=(suffix-point-keys-only,10,16)
+last
+prev
+prev
+seek-lt a
+seek-lt c
+seek-lt ca
+seek-lt f
+seek-lt e
+seek-lt d
+----
+<c@15:3> MaybeFilteredKeys()=true
+<b@10:2> MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=true
+. MaybeFilteredKeys()=true
+<b@10:2> MaybeFilteredKeys()=false
+<c@15:3> MaybeFilteredKeys()=false
+<c@15:3> MaybeFilteredKeys()=true
+<c@15:3> MaybeFilteredKeys()=true
+<c@15:3> MaybeFilteredKeys()=false
+
+# Test monotonically increasing bounds optimization, with the first seek
+# filtering keys. The subsequent seek must not reuse the current iterator
+# position and improperly returning MaybeFilteredKeys=false when keys were
+# filtered.
+
+iter point-key-filter=(suffix-point-keys-only,10,16)
+set-bounds lower=b upper=ee
+seek-ge d
+set-bounds lower=ee upper=g
+seek-ge ee
+----
+. MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=true
+. MaybeFilteredKeys()=true
+. MaybeFilteredKeys()=true
+
+iter point-key-filter=(suffix-point-keys-only,10,16)
+set-bounds lower=a upper=b
+seek-ge a
+set-bounds lower=b upper=e
+seek-ge b
+seek-ge bb
+----
+. MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=true
+. MaybeFilteredKeys()=true
+<b@10:2> MaybeFilteredKeys()=true
+<c@15:3> MaybeFilteredKeys()=false
+
+# Test monotonically decreasing bounds optimization, with the first seek
+# filtering keys. The subsequent seek must not reuse the current iterator
+# position and improperly returning MaybeFilteredKeys=false when keys were
+# filtered.
+
+iter point-key-filter=(suffix-point-keys-only,10,16)
+set-bounds lower=e upper=f
+seek-lt f
+set-bounds lower=c upper=e
+seek-lt e
+set-bounds lower=a upper=c
+seek-lt c
+seek-lt b
+----
+. MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=true
+. MaybeFilteredKeys()=true
+<c@15:3> MaybeFilteredKeys()=true
+. MaybeFilteredKeys()=true
+<b@10:2> MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=true
+
+# The below case tests try-seek-using-next.
+#
+# The `seek-ge aa` does not reposition the iterator. This case should preserve
+# the existing MaybeFilteredKeys()=true value.
+#
+# The `seek-ge c@16` and seek-ge c@19` must also return MaybeFilteredKeys()=true.
+
+iter point-key-filter=(suffix-point-keys-only,10,16)
+seek-ge a
+seek-ge aa true
+seek-ge bb true
+seek-ge c@16 true
+seek-ge c@19 true
+----
+<b@10:2> MaybeFilteredKeys()=true
+<b@10:2> MaybeFilteredKeys()=true
+<c@15:3> MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=true
+. MaybeFilteredKeys()=true
+
+# Test another case of monotonically increasing bounds optimization, with a
+# different index block structure. The first seek down below should filter keys,
+# and leave the top-level index positioned at the last index block. The
+# subsequent seek must return MaybeFilteredKeys=true when keys were filtered.
+
+build collectors=(suffix-point-keys-only) index-block-size=1 block-size=64
+a@1.SET.1:foo
+b@10.SET.2:bar
+c@15.SET.3:baz
+d@25.SET.4:bax
+e@3.SET.5:box
+f@5.SET.3:mop
+----
+point:    [a@1#1,1,f@5#3,1]
+rangedel: [#0,0,#0,0]
+rangekey: [#0,0,#0,0]
+seqnums:  [1,5]
+
+block-props
+----
+d#72057594037927935,17:
+  0: [1, 16)
+  d#72057594037927935,17:
+    0: [1, 16)
+g#72057594037927935,17:
+  0: [3, 26)
+  g#72057594037927935,17:
+    0: [3, 26)
+
+iter point-key-filter=(suffix-point-keys-only,1,2)
+set-bounds lower=b upper=e
+seek-ge d
+set-bounds lower=e upper=g
+seek-ge ee
+----
+. MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=true
+. MaybeFilteredKeys()=true
+. MaybeFilteredKeys()=true
+
+# Test another case of monotonically increasing bounds optimization, with a new
+# index block structure: This one has only one level. The first seek down below
+# should filter keys, and leave the index positioned at the last index block.
+# The subsequent seek must return MaybeFilteredKeys=true when keys were
+# filtered.
+
+build collectors=(suffix-point-keys-only) block-size=32
+a@1.SET.1:foo
+b@10.SET.2:bar
+c@15.SET.3:baz
+d@25.SET.4:bax
+e@3.SET.5:box
+f@5.SET.3:mop
+----
+point:    [a@1#1,1,f@5#3,1]
+rangedel: [#0,0,#0,0]
+rangekey: [#0,0,#0,0]
+seqnums:  [1,5]
+
+block-props
+----
+c#72057594037927935,17:
+  0: [1, 11)
+e#72057594037927935,17:
+  0: [15, 26)
+g#72057594037927935,17:
+  0: [3, 6)
+
+iter point-key-filter=(suffix-point-keys-only,1,2)
+set-bounds lower=b upper=ee
+seek-ge d
+set-bounds lower=ee upper=g
+seek-ge ee
+----
+. MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=true
+. MaybeFilteredKeys()=true
+. MaybeFilteredKeys()=true

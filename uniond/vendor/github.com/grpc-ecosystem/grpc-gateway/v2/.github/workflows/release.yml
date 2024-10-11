@@ -1,0 +1,60 @@
+on:
+  push:
+    tags:
+      - v2.[0-9]+.[0-9]+
+  # For testing the workflow before pushing a tag
+  # This will run goreleaser with --snapshot and test the
+  # SLSA generator.
+  workflow_dispatch:
+permissions:
+  contents: read
+name: release
+jobs:
+  goreleaser:
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3
+        with:
+          check-latest: true
+      - name: Generate goreleaser args
+        id: args
+        run: |
+          set -euo pipefail
+          args='release --rm-dist'
+          if [[ "$GITHUB_REF" != refs/tags/* ]]; then
+            args+=' --snapshot'
+          fi
+          echo "args=$args" >> $GITHUB_OUTPUT
+      - uses: goreleaser/goreleaser-action@f82d6c1c344bcacabba2c841718984797f664a6b # v4
+        id: run-goreleaser
+        with:
+          args: ${{ steps.args.outputs.args }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate subject
+        id: hash
+        env:
+          ARTIFACTS: "${{ steps.run-goreleaser.outputs.artifacts }}"
+        run: |
+          set -euo pipefail
+
+          checksum_file=$(echo "$ARTIFACTS" | jq -r '.[] | select (.type=="Checksum") | .path')
+          echo "::set-output name=hashes::$(cat $checksum_file | base64 -w0)"
+  provenance:
+    needs: [goreleaser]
+    permissions:
+      actions: read # To read the workflow path.
+      id-token: write # To sign the provenance.
+      contents: write # To add assets to a release.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.4.0
+    with:
+      compile-generator: true # Workaround for https://github.com/slsa-framework/slsa-github-generator/issues/1163
+      base64-subjects: "${{ needs.goreleaser.outputs.hashes }}"
+      upload-assets: ${{ github.event_name == 'push' }} # upload to a new release when pushing via tag

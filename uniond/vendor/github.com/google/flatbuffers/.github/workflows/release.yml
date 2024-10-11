@@ -1,0 +1,105 @@
+name: Release
+permissions: read-all
+
+on:
+  # For manual tests.
+  workflow_dispatch:
+  release:
+    types: [created]
+
+jobs:
+  publish-npm:
+    name: Publish NPM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-pypi:
+    name: Publish PyPi
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./python
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install setuptools wheel twine
+
+      - name: Build
+        run: |
+          python3 setup.py sdist bdist_wheel
+
+      - name: Upload to PyPi
+        run: |
+          python3 -m twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TWINE_TOKEN }}
+
+  publish-nuget:
+    name: Publish NuGet
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ./net/flatbuffers
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build
+        run: |
+          dotnet build Google.FlatBuffers.csproj -c Release
+
+      - name: Pack
+        run: |
+          dotnet pack Google.FlatBuffers.csproj -c Release
+
+      - name: Upload to NuGet
+        run: |
+          dotnet nuget push .\bin\Release\Google.FlatBuffers.*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+
+  publish-maven:
+    name: Publish Maven
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./java
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Maven Central Repository
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+          cache: 'maven'
+          server-id: ossrh
+          server-username: OSSRH_USERNAME
+          server-password: OSSRH_PASSWORD
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE # this needs to be an env var
+
+      - name: Publish Maven
+        run: mvn --batch-mode clean deploy
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
+
+

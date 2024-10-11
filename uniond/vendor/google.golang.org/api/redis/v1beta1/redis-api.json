@@ -1,0 +1,3540 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/cloud-platform": {
+          "description": "See, edit, configure, and delete your Google Cloud data and see the email address for your Google Account."
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://redis.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "Cloud Redis",
+  "description": "Creates and manages Redis instances on the Google Cloud Platform.",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://cloud.google.com/memorystore/docs/redis/",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "redis:v1beta1",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://redis.mtls.googleapis.com/",
+  "name": "redis",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "projects": {
+      "resources": {
+        "locations": {
+          "methods": {
+            "get": {
+              "description": "Gets information about a location.",
+              "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}",
+              "httpMethod": "GET",
+              "id": "redis.projects.locations.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Resource name for the location.",
+                  "location": "path",
+                  "pattern": "^projects/[^/]+/locations/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v1beta1/{+name}",
+              "response": {
+                "$ref": "Location"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            },
+            "list": {
+              "description": "Lists information about the supported locations for this service.",
+              "flatPath": "v1beta1/projects/{projectsId}/locations",
+              "httpMethod": "GET",
+              "id": "redis.projects.locations.list",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "filter": {
+                  "description": "A filter to narrow down results to a preferred subset. The filtering language accepts strings like `\"displayName=tokyo\"`, and is documented in more detail in [AIP-160](https://google.aip.dev/160).",
+                  "location": "query",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "The resource that owns the locations collection, if applicable.",
+                  "location": "path",
+                  "pattern": "^projects/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                },
+                "pageSize": {
+                  "description": "The maximum number of results to return. If not set, the service selects a default.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "A page token received from the `next_page_token` field in the response. Send that page token to receive the subsequent page.",
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "v1beta1/{+name}/locations",
+              "response": {
+                "$ref": "ListLocationsResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            }
+          },
+          "resources": {
+            "clusters": {
+              "methods": {
+                "create": {
+                  "description": "Creates a Redis cluster based on the specified properties. The creation is executed asynchronously and callers may check the returned operation to track its progress. Once the operation is completed the Redis cluster will be fully functional. The completed longrunning.Operation will contain the new cluster object in the response field. The returned operation is automatically deleted after a few hours, so there is no need to call DeleteOperation.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/clusters",
+                  "httpMethod": "POST",
+                  "id": "redis.projects.locations.clusters.create",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "clusterId": {
+                      "description": "Required. The logical name of the Redis cluster in the customer project with the following restrictions: * Must contain only lowercase letters, numbers, and hyphens. * Must start with a letter. * Must be between 1-63 characters. * Must end with a number or a letter. * Must be unique within the customer project / location",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. The resource name of the cluster location using the form: `projects/{project_id}/locations/{location_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "description": "Idempotent request UUID.",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+parent}/clusters",
+                  "request": {
+                    "$ref": "Cluster"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "delete": {
+                  "description": "Deletes a specific Redis cluster. Cluster stops serving and data is deleted.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/clusters/{clustersId}",
+                  "httpMethod": "DELETE",
+                  "id": "redis.projects.locations.clusters.delete",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Redis cluster resource name using the form: `projects/{project_id}/locations/{location_id}/clusters/{cluster_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/clusters/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "description": "Idempotent request UUID.",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}",
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "get": {
+                  "description": "Gets the details of a specific Redis cluster.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/clusters/{clustersId}",
+                  "httpMethod": "GET",
+                  "id": "redis.projects.locations.clusters.get",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Redis cluster resource name using the form: `projects/{project_id}/locations/{location_id}/clusters/{cluster_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/clusters/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}",
+                  "response": {
+                    "$ref": "Cluster"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "getCertificateAuthority": {
+                  "description": "Gets the details of certificate authority information for Redis cluster.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/clusters/{clustersId}/certificateAuthority",
+                  "httpMethod": "GET",
+                  "id": "redis.projects.locations.clusters.getCertificateAuthority",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Redis cluster certificate authority resource name using the form: `projects/{project_id}/locations/{location_id}/clusters/{cluster_id}/certificateAuthority` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/clusters/[^/]+/certificateAuthority$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}",
+                  "response": {
+                    "$ref": "CertificateAuthority"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "list": {
+                  "description": "Lists all Redis clusters owned by a project in either the specified location (region) or all locations. The location should have the following format: * `projects/{project_id}/locations/{location_id}` If `location_id` is specified as `-` (wildcard), then all regions available to the project are queried, and the results are aggregated.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/clusters",
+                  "httpMethod": "GET",
+                  "id": "redis.projects.locations.clusters.list",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "pageSize": {
+                      "description": "The maximum number of items to return. If not specified, a default value of 1000 will be used by the service. Regardless of the page_size value, the response may include a partial list and a caller should only rely on response's `next_page_token` to determine if there are more clusters left to be queried.",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "The `next_page_token` value returned from a previous ListClusters request, if any.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. The resource name of the cluster location using the form: `projects/{project_id}/locations/{location_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+parent}/clusters",
+                  "response": {
+                    "$ref": "ListClustersResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "patch": {
+                  "description": "Updates the metadata and configuration of a specific Redis cluster. Completed longrunning.Operation will contain the new cluster object in the response field. The returned operation is automatically deleted after a few hours, so there is no need to call DeleteOperation.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/clusters/{clustersId}",
+                  "httpMethod": "PATCH",
+                  "id": "redis.projects.locations.clusters.patch",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Identifier. Unique name of the resource in this scope including project and location using the form: `projects/{project_id}/locations/{location_id}/clusters/{cluster_id}`",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/clusters/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "description": "Idempotent request UUID.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "updateMask": {
+                      "description": "Required. Mask of fields to update. At least one path must be supplied in this field. The elements of the repeated paths field may only include these fields from Cluster: * `size_gb` * `replica_count`",
+                      "format": "google-fieldmask",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}",
+                  "request": {
+                    "$ref": "Cluster"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                }
+              }
+            },
+            "instances": {
+              "methods": {
+                "create": {
+                  "description": "Creates a Redis instance based on the specified tier and memory size. By default, the instance is accessible from the project's [default network](https://cloud.google.com/vpc/docs/vpc). The creation is executed asynchronously and callers may check the returned operation to track its progress. Once the operation is completed the Redis instance will be fully functional. The completed longrunning.Operation will contain the new instance object in the response field. The returned operation is automatically deleted after a few hours, so there is no need to call DeleteOperation.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/instances",
+                  "httpMethod": "POST",
+                  "id": "redis.projects.locations.instances.create",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "instanceId": {
+                      "description": "Required. The logical name of the Redis instance in the customer project with the following restrictions: * Must contain only lowercase letters, numbers, and hyphens. * Must start with a letter. * Must be between 1-40 characters. * Must end with a number or a letter. * Must be unique within the customer project / location",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. The resource name of the instance location using the form: `projects/{project_id}/locations/{location_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+parent}/instances",
+                  "request": {
+                    "$ref": "Instance"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "delete": {
+                  "description": "Deletes a specific Redis instance. Instance stops serving and data is deleted.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}",
+                  "httpMethod": "DELETE",
+                  "id": "redis.projects.locations.instances.delete",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Redis instance resource name using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}",
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "export": {
+                  "description": "Export Redis instance data into a Redis RDB format file in Cloud Storage. Redis will continue serving during this operation. The returned operation is automatically deleted after a few hours, so there is no need to call DeleteOperation.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}:export",
+                  "httpMethod": "POST",
+                  "id": "redis.projects.locations.instances.export",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Redis instance resource name using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}:export",
+                  "request": {
+                    "$ref": "ExportInstanceRequest"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "failover": {
+                  "description": "Initiates a failover of the primary node to current replica node for a specific STANDARD tier Cloud Memorystore for Redis instance.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}:failover",
+                  "httpMethod": "POST",
+                  "id": "redis.projects.locations.instances.failover",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Redis instance resource name using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}:failover",
+                  "request": {
+                    "$ref": "FailoverInstanceRequest"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "get": {
+                  "description": "Gets the details of a specific Redis instance.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}",
+                  "httpMethod": "GET",
+                  "id": "redis.projects.locations.instances.get",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Redis instance resource name using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}",
+                  "response": {
+                    "$ref": "Instance"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "getAuthString": {
+                  "description": "Gets the AUTH string for a Redis instance. If AUTH is not enabled for the instance the response will be empty. This information is not included in the details returned to GetInstance.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}/authString",
+                  "httpMethod": "GET",
+                  "id": "redis.projects.locations.instances.getAuthString",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Redis instance resource name using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}/authString",
+                  "response": {
+                    "$ref": "InstanceAuthString"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "import": {
+                  "description": "Import a Redis RDB snapshot file from Cloud Storage into a Redis instance. Redis may stop serving during this operation. Instance state will be IMPORTING for entire operation. When complete, the instance will contain only data from the imported file. The returned operation is automatically deleted after a few hours, so there is no need to call DeleteOperation.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}:import",
+                  "httpMethod": "POST",
+                  "id": "redis.projects.locations.instances.import",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Redis instance resource name using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}:import",
+                  "request": {
+                    "$ref": "ImportInstanceRequest"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "list": {
+                  "description": "Lists all Redis instances owned by a project in either the specified location (region) or all locations. The location should have the following format: * `projects/{project_id}/locations/{location_id}` If `location_id` is specified as `-` (wildcard), then all regions available to the project are queried, and the results are aggregated.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/instances",
+                  "httpMethod": "GET",
+                  "id": "redis.projects.locations.instances.list",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "pageSize": {
+                      "description": "The maximum number of items to return. If not specified, a default value of 1000 will be used by the service. Regardless of the page_size value, the response may include a partial list and a caller should only rely on response's `next_page_token` to determine if there are more instances left to be queried.",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "The `next_page_token` value returned from a previous ListInstances request, if any.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. The resource name of the instance location using the form: `projects/{project_id}/locations/{location_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+parent}/instances",
+                  "response": {
+                    "$ref": "ListInstancesResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "patch": {
+                  "description": "Updates the metadata and configuration of a specific Redis instance. Completed longrunning.Operation will contain the new instance object in the response field. The returned operation is automatically deleted after a few hours, so there is no need to call DeleteOperation.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}",
+                  "httpMethod": "PATCH",
+                  "id": "redis.projects.locations.instances.patch",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Unique name of the resource in this scope including project and location using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` Note: Redis instances are managed and addressed at regional level so location_id here refers to a GCP region; however, users may choose which specific zone (or collection of zones for cross-zone instances) an instance should be provisioned in. Refer to location_id and alternative_location_id fields for more details.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "updateMask": {
+                      "description": "Required. Mask of fields to update. At least one path must be supplied in this field. The elements of the repeated paths field may only include these fields from Instance: * `displayName` * `labels` * `memorySizeGb` * `redisConfig` * `replica_count`",
+                      "format": "google-fieldmask",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}",
+                  "request": {
+                    "$ref": "Instance"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "rescheduleMaintenance": {
+                  "description": "Reschedule maintenance for a given instance in a given project and location.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}:rescheduleMaintenance",
+                  "httpMethod": "POST",
+                  "id": "redis.projects.locations.instances.rescheduleMaintenance",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Redis instance resource name using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}:rescheduleMaintenance",
+                  "request": {
+                    "$ref": "RescheduleMaintenanceRequest"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "upgrade": {
+                  "description": "Upgrades Redis instance to the newer Redis version specified in the request.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}:upgrade",
+                  "httpMethod": "POST",
+                  "id": "redis.projects.locations.instances.upgrade",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Redis instance resource name using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}:upgrade",
+                  "request": {
+                    "$ref": "UpgradeInstanceRequest"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                }
+              }
+            },
+            "operations": {
+              "methods": {
+                "cancel": {
+                  "description": "Starts asynchronous cancellation on a long-running operation. The server makes a best effort to cancel the operation, but success is not guaranteed. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`. Clients can use Operations.GetOperation or other methods to check whether the cancellation succeeded or whether the operation completed despite cancellation. On successful cancellation, the operation is not deleted; instead, it becomes an operation with an Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}:cancel",
+                  "httpMethod": "POST",
+                  "id": "redis.projects.locations.operations.cancel",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "The name of the operation resource to be cancelled.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}:cancel",
+                  "response": {
+                    "$ref": "Empty"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "delete": {
+                  "description": "Deletes a long-running operation. This method indicates that the client is no longer interested in the operation result. It does not cancel the operation. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}",
+                  "httpMethod": "DELETE",
+                  "id": "redis.projects.locations.operations.delete",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "The name of the operation resource to be deleted.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}",
+                  "response": {
+                    "$ref": "Empty"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "get": {
+                  "description": "Gets the latest state of a long-running operation. Clients can use this method to poll the operation result at intervals as recommended by the API service.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}",
+                  "httpMethod": "GET",
+                  "id": "redis.projects.locations.operations.get",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "The name of the operation resource.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}",
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "list": {
+                  "description": "Lists operations that match the specified filter in the request. If the server doesn't support this method, it returns `UNIMPLEMENTED`.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/operations",
+                  "httpMethod": "GET",
+                  "id": "redis.projects.locations.operations.list",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "filter": {
+                      "description": "The standard list filter.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "The name of the operation's parent resource.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "pageSize": {
+                      "description": "The standard list page size.",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "The standard list page token.",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}/operations",
+                  "response": {
+                    "$ref": "ListOperationsResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20240613",
+  "rootUrl": "https://redis.googleapis.com/",
+  "schemas": {
+    "AOFConfig": {
+      "description": "Configuration of the AOF based persistence.",
+      "id": "AOFConfig",
+      "properties": {
+        "appendFsync": {
+          "description": "Optional. fsync configuration.",
+          "enum": [
+            "APPEND_FSYNC_UNSPECIFIED",
+            "NO",
+            "EVERYSEC",
+            "ALWAYS"
+          ],
+          "enumDescriptions": [
+            "Not set. Default: EVERYSEC",
+            "Never fsync. Normally Linux will flush data every 30 seconds with this configuration, but it's up to the kernel's exact tuning.",
+            "fsync every second. Fast enough, and you may lose 1 second of data if there is a disaster",
+            "fsync every time new commands are appended to the AOF. It has the best data loss protection at the cost of performance"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AvailabilityConfiguration": {
+      "description": "Configuration for availability of database instance",
+      "id": "AvailabilityConfiguration",
+      "properties": {
+        "availabilityType": {
+          "description": "Availability type. Potential values: * `ZONAL`: The instance serves data from only one zone. Outages in that zone affect data accessibility. * `REGIONAL`: The instance can serve data from more than one zone in a region (it is highly available).",
+          "enum": [
+            "AVAILABILITY_TYPE_UNSPECIFIED",
+            "ZONAL",
+            "REGIONAL",
+            "MULTI_REGIONAL",
+            "AVAILABILITY_TYPE_OTHER"
+          ],
+          "enumDescriptions": [
+            "",
+            "Zonal available instance.",
+            "Regional available instance.",
+            "Multi regional instance",
+            "For rest of the other category"
+          ],
+          "type": "string"
+        },
+        "crossRegionReplicaConfigured": {
+          "description": "Checks for resources that are configured to have redundancy, and ongoing replication across regions",
+          "type": "boolean"
+        },
+        "externalReplicaConfigured": {
+          "type": "boolean"
+        },
+        "promotableReplicaConfigured": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "BackupConfiguration": {
+      "description": "Configuration for automatic backups",
+      "id": "BackupConfiguration",
+      "properties": {
+        "automatedBackupEnabled": {
+          "description": "Whether customer visible automated backups are enabled on the instance.",
+          "type": "boolean"
+        },
+        "backupRetentionSettings": {
+          "$ref": "RetentionSettings",
+          "description": "Backup retention settings."
+        },
+        "pointInTimeRecoveryEnabled": {
+          "description": "Whether point-in-time recovery is enabled. This is optional field, if the database service does not have this feature or metadata is not available in control plane, this can be omitted.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "BackupRun": {
+      "description": "A backup run.",
+      "id": "BackupRun",
+      "properties": {
+        "endTime": {
+          "description": "The time the backup operation completed. REQUIRED",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "error": {
+          "$ref": "OperationError",
+          "description": "Information about why the backup operation failed. This is only present if the run has the FAILED status. OPTIONAL"
+        },
+        "startTime": {
+          "description": "The time the backup operation started. REQUIRED",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "status": {
+          "description": "The status of this run. REQUIRED",
+          "enum": [
+            "STATUS_UNSPECIFIED",
+            "SUCCESSFUL",
+            "FAILED"
+          ],
+          "enumDescriptions": [
+            "",
+            "The backup was successful.",
+            "The backup was unsuccessful."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CertChain": {
+      "id": "CertChain",
+      "properties": {
+        "certificates": {
+          "description": "The certificates that form the CA chain, from leaf to root order.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "CertificateAuthority": {
+      "description": "Redis cluster certificate authority",
+      "id": "CertificateAuthority",
+      "properties": {
+        "managedServerCa": {
+          "$ref": "ManagedCertificateAuthority"
+        },
+        "name": {
+          "description": "Identifier. Unique name of the resource in this scope including project, location and cluster using the form: `projects/{project}/locations/{location}/clusters/{cluster}/certificateAuthority`",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Cluster": {
+      "description": "A cluster instance.",
+      "id": "Cluster",
+      "properties": {
+        "authorizationMode": {
+          "description": "Optional. The authorization mode of the Redis cluster. If not provided, auth feature is disabled for the cluster.",
+          "enum": [
+            "AUTH_MODE_UNSPECIFIED",
+            "AUTH_MODE_IAM_AUTH",
+            "AUTH_MODE_DISABLED"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "IAM basic authorization mode",
+            "Authorization disabled mode"
+          ],
+          "type": "string"
+        },
+        "createTime": {
+          "description": "Output only. The timestamp associated with the cluster creation request.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "deletionProtectionEnabled": {
+          "description": "Optional. The delete operation will fail when the value is set to true.",
+          "type": "boolean"
+        },
+        "discoveryEndpoints": {
+          "description": "Output only. Endpoints created on each given network, for Redis clients to connect to the cluster. Currently only one discovery endpoint is supported.",
+          "items": {
+            "$ref": "DiscoveryEndpoint"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "name": {
+          "description": "Required. Identifier. Unique name of the resource in this scope including project and location using the form: `projects/{project_id}/locations/{location_id}/clusters/{cluster_id}`",
+          "type": "string"
+        },
+        "nodeType": {
+          "description": "Optional. The type of a redis node in the cluster. NodeType determines the underlying machine-type of a redis node.",
+          "enum": [
+            "NODE_TYPE_UNSPECIFIED",
+            "REDIS_SHARED_CORE_NANO",
+            "REDIS_HIGHMEM_MEDIUM",
+            "REDIS_HIGHMEM_XLARGE",
+            "REDIS_STANDARD_SMALL"
+          ],
+          "enumDescriptions": [
+            "",
+            "Redis shared core nano node_type.",
+            "Redis highmem medium node_type.",
+            "Redis highmem xlarge node_type.",
+            "Redis standard small node_type."
+          ],
+          "type": "string"
+        },
+        "persistenceConfig": {
+          "$ref": "ClusterPersistenceConfig",
+          "description": "Optional. Persistence config (RDB, AOF) for the cluster."
+        },
+        "preciseSizeGb": {
+          "description": "Output only. Precise value of redis memory size in GB for the entire cluster.",
+          "format": "double",
+          "readOnly": true,
+          "type": "number"
+        },
+        "pscConfigs": {
+          "description": "Required. Each PscConfig configures the consumer network where IPs will be designated to the cluster for client access through Private Service Connect Automation. Currently, only one PscConfig is supported.",
+          "items": {
+            "$ref": "PscConfig"
+          },
+          "type": "array"
+        },
+        "pscConnections": {
+          "description": "Output only. PSC connections for discovery of the cluster topology and accessing the cluster.",
+          "items": {
+            "$ref": "PscConnection"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "redisConfigs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. Key/Value pairs of customer overrides for mutable Redis Configs",
+          "type": "object"
+        },
+        "replicaCount": {
+          "description": "Optional. The number of replica nodes per shard.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "shardCount": {
+          "description": "Required. Number of shards for the Redis cluster.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "sizeGb": {
+          "description": "Output only. Redis memory size in GB for the entire cluster rounded up to the next integer.",
+          "format": "int32",
+          "readOnly": true,
+          "type": "integer"
+        },
+        "state": {
+          "description": "Output only. The current state of this cluster. Can be CREATING, READY, UPDATING, DELETING and SUSPENDED",
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "CREATING",
+            "ACTIVE",
+            "UPDATING",
+            "DELETING"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "Redis cluster is being created.",
+            "Redis cluster has been created and is fully usable.",
+            "Redis cluster configuration is being updated.",
+            "Redis cluster is being deleted."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "stateInfo": {
+          "$ref": "StateInfo",
+          "description": "Output only. Additional information about the current state of the cluster.",
+          "readOnly": true
+        },
+        "transitEncryptionMode": {
+          "description": "Optional. The in-transit encryption for the Redis cluster. If not provided, encryption is disabled for the cluster.",
+          "enum": [
+            "TRANSIT_ENCRYPTION_MODE_UNSPECIFIED",
+            "TRANSIT_ENCRYPTION_MODE_DISABLED",
+            "TRANSIT_ENCRYPTION_MODE_SERVER_AUTHENTICATION"
+          ],
+          "enumDescriptions": [
+            "In-transit encryption not set.",
+            "In-transit encryption disabled.",
+            "Use server managed encryption for in-transit encryption."
+          ],
+          "type": "string"
+        },
+        "uid": {
+          "description": "Output only. System assigned, unique identifier for the cluster.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "zoneDistributionConfig": {
+          "$ref": "ZoneDistributionConfig",
+          "description": "Optional. This config will be used to determine how the customer wants us to distribute cluster resources within the region."
+        }
+      },
+      "type": "object"
+    },
+    "ClusterPersistenceConfig": {
+      "description": "Configuration of the persistence functionality.",
+      "id": "ClusterPersistenceConfig",
+      "properties": {
+        "aofConfig": {
+          "$ref": "AOFConfig",
+          "description": "Optional. AOF configuration. This field will be ignored if mode is not AOF."
+        },
+        "mode": {
+          "description": "Optional. The mode of persistence.",
+          "enum": [
+            "PERSISTENCE_MODE_UNSPECIFIED",
+            "DISABLED",
+            "RDB",
+            "AOF"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "Persistence is disabled, and any snapshot data is deleted.",
+            "RDB based persistence is enabled.",
+            "AOF based persistence is enabled."
+          ],
+          "type": "string"
+        },
+        "rdbConfig": {
+          "$ref": "RDBConfig",
+          "description": "Optional. RDB configuration. This field will be ignored if mode is not RDB."
+        }
+      },
+      "type": "object"
+    },
+    "Compliance": {
+      "description": "Contains compliance information about a security standard indicating unmet recommendations.",
+      "id": "Compliance",
+      "properties": {
+        "standard": {
+          "description": "Industry-wide compliance standards or benchmarks, such as CIS, PCI, and OWASP.",
+          "type": "string"
+        },
+        "version": {
+          "description": "Version of the standard or benchmark, for example, 1.1",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CustomMetadataData": {
+      "description": "Any custom metadata associated with the resource. i.e. A spanner instance can have multiple databases with its own unique metadata. Information for these individual databases can be captured in custom metadata data",
+      "id": "CustomMetadataData",
+      "properties": {
+        "databaseMetadata": {
+          "items": {
+            "$ref": "DatabaseMetadata"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "DatabaseMetadata": {
+      "description": "Metadata for individual databases created in an instance. i.e. spanner instance can have multiple databases with unique configuration settings.",
+      "id": "DatabaseMetadata",
+      "properties": {
+        "backupConfiguration": {
+          "$ref": "BackupConfiguration",
+          "description": "Backup configuration for this database"
+        },
+        "backupRun": {
+          "$ref": "BackupRun",
+          "description": "Information about the last backup attempt for this database"
+        },
+        "product": {
+          "$ref": "Product"
+        },
+        "resourceId": {
+          "$ref": "DatabaseResourceId"
+        },
+        "resourceName": {
+          "description": "Required. Database name. Resource name to follow CAIS resource_name format as noted here go/condor-common-datamodel",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DatabaseResourceFeed": {
+      "description": "DatabaseResourceFeed is the top level proto to be used to ingest different database resource level events into Condor platform.",
+      "id": "DatabaseResourceFeed",
+      "properties": {
+        "feedTimestamp": {
+          "description": "Required. Timestamp when feed is generated.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "feedType": {
+          "description": "Required. Type feed to be ingested into condor",
+          "enum": [
+            "FEEDTYPE_UNSPECIFIED",
+            "RESOURCE_METADATA",
+            "OBSERVABILITY_DATA",
+            "SECURITY_FINDING_DATA",
+            "RECOMMENDATION_SIGNAL_DATA"
+          ],
+          "enumDescriptions": [
+            "",
+            "Database resource metadata feed from control plane",
+            "Database resource monitoring data",
+            "Database resource security health signal data",
+            "Database resource recommendation signal data"
+          ],
+          "type": "string"
+        },
+        "observabilityMetricData": {
+          "$ref": "ObservabilityMetricData",
+          "description": "More feed data would be added in subsequent CLs"
+        },
+        "recommendationSignalData": {
+          "$ref": "DatabaseResourceRecommendationSignalData"
+        },
+        "resourceHealthSignalData": {
+          "$ref": "DatabaseResourceHealthSignalData"
+        },
+        "resourceId": {
+          "$ref": "DatabaseResourceId",
+          "deprecated": true,
+          "description": "Primary key associated with the Resource. resource_id is available in individual feed level as well."
+        },
+        "resourceMetadata": {
+          "$ref": "DatabaseResourceMetadata"
+        }
+      },
+      "type": "object"
+    },
+    "DatabaseResourceHealthSignalData": {
+      "description": "Common model for database resource health signal data.",
+      "id": "DatabaseResourceHealthSignalData",
+      "properties": {
+        "additionalMetadata": {
+          "additionalProperties": {
+            "description": "Properties of the object.",
+            "type": "any"
+          },
+          "description": "Any other additional metadata",
+          "type": "object"
+        },
+        "compliance": {
+          "description": "Industry standards associated with this signal; if this signal is an issue, that could be a violation of the associated industry standard(s). For example, AUTO_BACKUP_DISABLED signal is associated with CIS GCP 1.1, CIS GCP 1.2, CIS GCP 1.3, NIST 800-53 and ISO-27001 compliance standards. If a database resource does not have automated backup enable, it will violate these following industry standards.",
+          "items": {
+            "$ref": "Compliance"
+          },
+          "type": "array"
+        },
+        "description": {
+          "description": "Description associated with signal",
+          "type": "string"
+        },
+        "eventTime": {
+          "description": "Required. The last time at which the event described by this signal took place",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "externalUri": {
+          "description": "The external-uri of the signal, using which more information about this signal can be obtained. In GCP, this will take user to SCC page to get more details about signals.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Required. The name of the signal, ex: PUBLIC_SQL_INSTANCE, SQL_LOG_ERROR_VERBOSITY etc.",
+          "type": "string"
+        },
+        "provider": {
+          "description": "Cloud provider name. Ex: GCP/AWS/Azure/OnPrem/SelfManaged",
+          "enum": [
+            "PROVIDER_UNSPECIFIED",
+            "GCP",
+            "AWS",
+            "AZURE",
+            "ONPREM",
+            "SELFMANAGED",
+            "PROVIDER_OTHER"
+          ],
+          "enumDescriptions": [
+            "",
+            "Google cloud platform provider",
+            "Amazon web service",
+            "Azure web service",
+            "On-prem database resources.",
+            "Self-managed database provider. These are resources on a cloud platform, e.g., database resource installed in a GCE VM, but not a managed database service.",
+            "For the rest of the other categories. Other refers to the rest of other database service providers, this could be smaller cloud provider. This needs to be provided when the provider is known, but it is not present in the existing set of enum values."
+          ],
+          "type": "string"
+        },
+        "resourceContainer": {
+          "description": "Closest parent container of this resource. In GCP, 'container' refers to a Cloud Resource Manager project. It must be resource name of a Cloud Resource Manager project with the format of \"provider//\", such as \"projects/123\". For GCP provided resources, number should be project number.",
+          "type": "string"
+        },
+        "resourceName": {
+          "description": "Required. Database resource name associated with the signal. Resource name to follow CAIS resource_name format as noted here go/condor-common-datamodel",
+          "type": "string"
+        },
+        "signalClass": {
+          "description": "Required. The class of the signal, such as if it's a THREAT or VULNERABILITY.",
+          "enum": [
+            "CLASS_UNSPECIFIED",
+            "THREAT",
+            "VULNERABILITY",
+            "MISCONFIGURATION",
+            "OBSERVATION",
+            "ERROR"
+          ],
+          "enumDescriptions": [
+            "Unspecified signal class.",
+            "Describes unwanted or malicious activity.",
+            "Describes a potential weakness in software that increases risk to Confidentiality \u0026 Integrity \u0026 Availability.",
+            "Describes a potential weakness in cloud resource/asset configuration that increases risk.",
+            "Describes a security observation that is for informational purposes.",
+            "Describes an error that prevents some SCC functionality."
+          ],
+          "type": "string"
+        },
+        "signalId": {
+          "description": "Required. Unique identifier for the signal. This is an unique id which would be mainatined by partner to identify a signal.",
+          "type": "string"
+        },
+        "signalType": {
+          "description": "Required. Type of signal, for example, `AVAILABLE_IN_MULTIPLE_ZONES`, `LOGGING_MOST_ERRORS`, etc.",
+          "enum": [
+            "SIGNAL_TYPE_UNSPECIFIED",
+            "SIGNAL_TYPE_NOT_PROTECTED_BY_AUTOMATIC_FAILOVER",
+            "SIGNAL_TYPE_GROUP_NOT_REPLICATING_ACROSS_REGIONS",
+            "SIGNAL_TYPE_NOT_AVAILABLE_IN_MULTIPLE_ZONES",
+            "SIGNAL_TYPE_NOT_AVAILABLE_IN_MULTIPLE_REGIONS",
+            "SIGNAL_TYPE_NO_PROMOTABLE_REPLICA",
+            "SIGNAL_TYPE_NO_AUTOMATED_BACKUP_POLICY",
+            "SIGNAL_TYPE_SHORT_BACKUP_RETENTION",
+            "SIGNAL_TYPE_LAST_BACKUP_FAILED",
+            "SIGNAL_TYPE_LAST_BACKUP_OLD",
+            "SIGNAL_TYPE_VIOLATES_CIS_GCP_FOUNDATION_2_0",
+            "SIGNAL_TYPE_VIOLATES_CIS_GCP_FOUNDATION_1_3",
+            "SIGNAL_TYPE_VIOLATES_CIS_GCP_FOUNDATION_1_2",
+            "SIGNAL_TYPE_VIOLATES_CIS_GCP_FOUNDATION_1_1",
+            "SIGNAL_TYPE_VIOLATES_CIS_GCP_FOUNDATION_1_0",
+            "SIGNAL_TYPE_VIOLATES_CIS_CONTROLS_V8_0",
+            "SIGNAL_TYPE_VIOLATES_NIST_800_53",
+            "SIGNAL_TYPE_VIOLATES_NIST_800_53_R5",
+            "SIGNAL_TYPE_VIOLATES_NIST_CYBERSECURITY_FRAMEWORK_V1_0",
+            "SIGNAL_TYPE_VIOLATES_ISO_27001",
+            "SIGNAL_TYPE_VIOLATES_ISO_27001_V2022",
+            "SIGNAL_TYPE_VIOLATES_PCI_DSS_V3_2_1",
+            "SIGNAL_TYPE_VIOLATES_PCI_DSS_V4_0",
+            "SIGNAL_TYPE_VIOLATES_CLOUD_CONTROLS_MATRIX_V4",
+            "SIGNAL_TYPE_VIOLATES_HIPAA",
+            "SIGNAL_TYPE_VIOLATES_SOC2_V2017",
+            "SIGNAL_TYPE_LOGS_NOT_OPTIMIZED_FOR_TROUBLESHOOTING",
+            "SIGNAL_TYPE_QUERY_DURATIONS_NOT_LOGGED",
+            "SIGNAL_TYPE_VERBOSE_ERROR_LOGGING",
+            "SIGNAL_TYPE_QUERY_LOCK_WAITS_NOT_LOGGED",
+            "SIGNAL_TYPE_LOGGING_MOST_ERRORS",
+            "SIGNAL_TYPE_LOGGING_ONLY_CRITICAL_ERRORS",
+            "SIGNAL_TYPE_MINIMAL_ERROR_LOGGING",
+            "SIGNAL_TYPE_QUERY_STATISTICS_LOGGED",
+            "SIGNAL_TYPE_EXCESSIVE_LOGGING_OF_CLIENT_HOSTNAME",
+            "SIGNAL_TYPE_EXCESSIVE_LOGGING_OF_PARSER_STATISTICS",
+            "SIGNAL_TYPE_EXCESSIVE_LOGGING_OF_PLANNER_STATISTICS",
+            "SIGNAL_TYPE_NOT_LOGGING_ONLY_DDL_STATEMENTS",
+            "SIGNAL_TYPE_LOGGING_QUERY_STATISTICS",
+            "SIGNAL_TYPE_NOT_LOGGING_TEMPORARY_FILES",
+            "SIGNAL_TYPE_CONNECTION_MAX_NOT_CONFIGURED",
+            "SIGNAL_TYPE_USER_OPTIONS_CONFIGURED",
+            "SIGNAL_TYPE_EXPOSED_TO_PUBLIC_ACCESS",
+            "SIGNAL_TYPE_UNENCRYPTED_CONNECTIONS",
+            "SIGNAL_TYPE_NO_ROOT_PASSWORD",
+            "SIGNAL_TYPE_WEAK_ROOT_PASSWORD",
+            "SIGNAL_TYPE_ENCRYPTION_KEY_NOT_CUSTOMER_MANAGED",
+            "SIGNAL_TYPE_SERVER_AUTHENTICATION_NOT_REQUIRED",
+            "SIGNAL_TYPE_EXPOSED_BY_OWNERSHIP_CHAINING",
+            "SIGNAL_TYPE_EXPOSED_TO_EXTERNAL_SCRIPTS",
+            "SIGNAL_TYPE_EXPOSED_TO_LOCAL_DATA_LOADS",
+            "SIGNAL_TYPE_CONNECTION_ATTEMPTS_NOT_LOGGED",
+            "SIGNAL_TYPE_DISCONNECTIONS_NOT_LOGGED",
+            "SIGNAL_TYPE_LOGGING_EXCESSIVE_STATEMENT_INFO",
+            "SIGNAL_TYPE_EXPOSED_TO_REMOTE_ACCESS",
+            "SIGNAL_TYPE_DATABASE_NAMES_EXPOSED",
+            "SIGNAL_TYPE_SENSITIVE_TRACE_INFO_NOT_MASKED",
+            "SIGNAL_TYPE_PUBLIC_IP_ENABLED",
+            "SIGNAL_TYPE_IDLE",
+            "SIGNAL_TYPE_OVERPROVISIONED",
+            "SIGNAL_TYPE_HIGH_NUMBER_OF_OPEN_TABLES",
+            "SIGNAL_TYPE_HIGH_NUMBER_OF_TABLES",
+            "SIGNAL_TYPE_HIGH_TRANSACTION_ID_UTILIZATION",
+            "SIGNAL_TYPE_UNDERPROVISIONED",
+            "SIGNAL_TYPE_OUT_OF_DISK",
+            "SIGNAL_TYPE_SERVER_CERTIFICATE_NEAR_EXPIRY",
+            "SIGNAL_TYPE_DATABASE_AUDITING_DISABLED",
+            "SIGNAL_TYPE_RESTRICT_AUTHORIZED_NETWORKS",
+            "SIGNAL_TYPE_VIOLATE_POLICY_RESTRICT_PUBLIC_IP",
+            "SIGNAL_TYPE_QUOTA_LIMIT",
+            "SIGNAL_TYPE_NO_PASSWORD_POLICY",
+            "SIGNAL_TYPE_CONNECTIONS_PERFORMANCE_IMPACT",
+            "SIGNAL_TYPE_TMP_TABLES_PERFORMANCE_IMPACT",
+            "SIGNAL_TYPE_TRANS_LOGS_PERFORMANCE_IMPACT",
+            "SIGNAL_TYPE_HIGH_JOINS_WITHOUT_INDEXES",
+            "SIGNAL_TYPE_SUPERUSER_WRITING_TO_USER_TABLES",
+            "SIGNAL_TYPE_USER_GRANTED_ALL_PERMISSIONS",
+            "SIGNAL_TYPE_DATA_EXPORT_TO_EXTERNAL_CLOUD_STORAGE_BUCKET",
+            "SIGNAL_TYPE_DATA_EXPORT_TO_PUBLIC_CLOUD_STORAGE_BUCKET"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            false,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "Unspecified.",
+            "Represents if a resource is protected by automatic failover. Checks for resources that are configured to have redundancy within a region that enables automatic failover.",
+            "Represents if a group is replicating across regions. Checks for resources that are configured to have redundancy, and ongoing replication, across regions.",
+            "Represents if the resource is available in multiple zones or not.",
+            "Represents if a resource is available in multiple regions.",
+            "Represents if a resource has a promotable replica.",
+            "Represents if a resource has an automated backup policy.",
+            "Represents if a resources has a short backup retention period.",
+            "Represents if the last backup of a resource failed.",
+            "Represents if the last backup of a resource is older than some threshold value.",
+            "Represents if a resource violates CIS GCP Foundation 2.0.",
+            "Represents if a resource violates CIS GCP Foundation 1.3.",
+            "Represents if a resource violates CIS GCP Foundation 1.2.",
+            "Represents if a resource violates CIS GCP Foundation 1.1.",
+            "Represents if a resource violates CIS GCP Foundation 1.0.",
+            "Represents if a resource violates CIS Controls 8.0.",
+            "Represents if a resource violates NIST 800-53.",
+            "Represents if a resource violates NIST 800-53 R5.",
+            "Represents if a resource violates NIST Cybersecurity Framework 1.0.",
+            "Represents if a resource violates ISO-27001.",
+            "Represents if a resource violates ISO 27001 2022.",
+            "Represents if a resource violates PCI-DSS v3.2.1.",
+            "Represents if a resource violates PCI-DSS v4.0.",
+            "Represents if a resource violates Cloud Controls Matrix v4.0.",
+            "Represents if a resource violates HIPAA.",
+            "Represents if a resource violates SOC2 v2017.",
+            "Represents if log_checkpoints database flag for a Cloud SQL for PostgreSQL instance is not set to on.",
+            "Represents if the log_duration database flag for a Cloud SQL for PostgreSQL instance is not set to on.",
+            "Represents if the log_error_verbosity database flag for a Cloud SQL for PostgreSQL instance is not set to default or stricter (default or terse).",
+            "Represents if the log_lock_waits database flag for a Cloud SQL for PostgreSQL instance is not set to on.",
+            "Represents if the log_min_error_statement database flag for a Cloud SQL for PostgreSQL instance is not set appropriately.",
+            "Represents if the log_min_error_statement database flag for a Cloud SQL for PostgreSQL instance does not have an appropriate severity level.",
+            "Represents if the log_min_messages database flag for a Cloud SQL for PostgreSQL instance is not set to warning or another recommended value.",
+            "Represents if the databaseFlags property of instance metadata for the log_executor_status field is set to on.",
+            "Represents if the log_hostname database flag for a Cloud SQL for PostgreSQL instance is not set to off.",
+            "Represents if the log_parser_stats database flag for a Cloud SQL for PostgreSQL instance is not set to off.",
+            "Represents if the log_planner_stats database flag for a Cloud SQL for PostgreSQL instance is not set to off.",
+            "Represents if the log_statement database flag for a Cloud SQL for PostgreSQL instance is not set to DDL (all data definition statements).",
+            "Represents if the log_statement_stats database flag for a Cloud SQL for PostgreSQL instance is not set to off.",
+            "Represents if the log_temp_files database flag for a Cloud SQL for PostgreSQL instance is not set to \"0\". (NOTE: 0 = ON)",
+            "Represents if the user connections database flag for a Cloud SQL for SQL Server instance is configured.",
+            "Represents if the user options database flag for Cloud SQL SQL Server instance is configured or not.",
+            "Represents if a resource is exposed to public access.",
+            "Represents if a resources requires all incoming connections to use SSL or not.",
+            "Represents if a Cloud SQL database has a password configured for the root account or not.",
+            "Represents if a Cloud SQL database has a weak password configured for the root account.",
+            "Represents if a SQL database instance is not encrypted with customer-managed encryption keys (CMEK).",
+            "Represents if The contained database authentication database flag for a Cloud SQL for SQL Server instance is not set to off.",
+            "Represents if the cross_db_ownership_chaining database flag for a Cloud SQL for SQL Server instance is not set to off.",
+            "Represents if he external scripts enabled database flag for a Cloud SQL for SQL Server instance is not set to off.",
+            "Represents if the local_infile database flag for a Cloud SQL for MySQL instance is not set to off.",
+            "Represents if the log_connections database flag for a Cloud SQL for PostgreSQL instance is not set to on.",
+            "Represents if the log_disconnections database flag for a Cloud SQL for PostgreSQL instance is not set to on.",
+            "Represents if the log_min_duration_statement database flag for a Cloud SQL for PostgreSQL instance is not set to -1.",
+            "Represents if the remote access database flag for a Cloud SQL for SQL Server instance is not set to off.",
+            "Represents if the skip_show_database database flag for a Cloud SQL for MySQL instance is not set to on.",
+            "Represents if the 3625 (trace flag) database flag for a Cloud SQL for SQL Server instance is not set to on.",
+            "Represents if public IP is enabled.",
+            "Represents Idle instance helps to reduce costs.",
+            "Represents instances that are unnecessarily large for given workload.",
+            "Represents high number of concurrently opened tables.",
+            "Represents high table count close to SLA limit.",
+            "Represents high number of unvacuumed transactions",
+            "Represents need for more CPU and/or memory",
+            "Represents out of disk.",
+            "Represents server certificate is near expiry.",
+            "Represents database auditing is disabled.",
+            "Represents not restricted to authorized networks.",
+            "Represents violate org policy restrict public ip.",
+            "Cluster nearing quota limit",
+            "No password policy set on resources",
+            "Performance impact of connections settings",
+            "Performance impact of temporary tables settings",
+            "Performance impact of transaction logs settings",
+            "Performance impact of high joins without indexes",
+            "Detects events where a Cloud SQL superuser (postgres for PostgreSQL servers or root for MySQL users) writes to non-system tables.",
+            "Detects events where a database user or role has been granted all privileges to a database, or to all tables, procedures, or functions in a schema.",
+            "Detects if database instance data exported to a Cloud Storage bucket outside of the organization.",
+            "Detects if database instance data exported to a Cloud Storage bucket that is owned by the organization and is publicly accessible."
+          ],
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "ACTIVE",
+            "RESOLVED",
+            "MUTED"
+          ],
+          "enumDescriptions": [
+            "Unspecified state.",
+            "The signal requires attention and has not been addressed yet.",
+            "The signal has been fixed, triaged as a non-issue or otherwise addressed and is no longer active.",
+            "The signal has been muted."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DatabaseResourceId": {
+      "description": "DatabaseResourceId will serve as primary key for any resource ingestion event.",
+      "id": "DatabaseResourceId",
+      "properties": {
+        "provider": {
+          "description": "Required. Cloud provider name. Ex: GCP/AWS/Azure/OnPrem/SelfManaged",
+          "enum": [
+            "PROVIDER_UNSPECIFIED",
+            "GCP",
+            "AWS",
+            "AZURE",
+            "ONPREM",
+            "SELFMANAGED",
+            "PROVIDER_OTHER"
+          ],
+          "enumDescriptions": [
+            "",
+            "Google cloud platform provider",
+            "Amazon web service",
+            "Azure web service",
+            "On-prem database resources.",
+            "Self-managed database provider. These are resources on a cloud platform, e.g., database resource installed in a GCE VM, but not a managed database service.",
+            "For the rest of the other categories. Other refers to the rest of other database service providers, this could be smaller cloud provider. This needs to be provided when the provider is known, but it is not present in the existing set of enum values."
+          ],
+          "type": "string"
+        },
+        "providerDescription": {
+          "description": "Optional. Needs to be used only when the provider is PROVIDER_OTHER.",
+          "type": "string"
+        },
+        "resourceType": {
+          "description": "Required. The type of resource this ID is identifying. Ex redis.googleapis.com/Instance, redis.googleapis.com/Cluster, alloydb.googleapis.com/Cluster, alloydb.googleapis.com/Instance, spanner.googleapis.com/Instance REQUIRED Please refer go/condor-common-datamodel",
+          "type": "string"
+        },
+        "uniqueId": {
+          "description": "Required. A service-local token that distinguishes this resource from other resources within the same service.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DatabaseResourceMetadata": {
+      "description": "Common model for database resource instance metadata.",
+      "id": "DatabaseResourceMetadata",
+      "properties": {
+        "availabilityConfiguration": {
+          "$ref": "AvailabilityConfiguration",
+          "description": "Availability configuration for this instance"
+        },
+        "backupConfiguration": {
+          "$ref": "BackupConfiguration",
+          "description": "Backup configuration for this instance"
+        },
+        "backupRun": {
+          "$ref": "BackupRun",
+          "description": "Latest backup run information for this instance"
+        },
+        "creationTime": {
+          "description": "The creation time of the resource, i.e. the time when resource is created and recorded in partner service.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "currentState": {
+          "description": "Current state of the instance.",
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "HEALTHY",
+            "UNHEALTHY",
+            "SUSPENDED",
+            "DELETED",
+            "STATE_OTHER"
+          ],
+          "enumDescriptions": [
+            "",
+            "The instance is running.",
+            "Instance being created, updated, deleted or under maintenance",
+            "When instance is suspended",
+            "Instance is deleted.",
+            "For rest of the other category"
+          ],
+          "type": "string"
+        },
+        "customMetadata": {
+          "$ref": "CustomMetadataData",
+          "description": "Any custom metadata associated with the resource"
+        },
+        "entitlements": {
+          "description": "Entitlements associated with the resource",
+          "items": {
+            "$ref": "Entitlement"
+          },
+          "type": "array"
+        },
+        "expectedState": {
+          "description": "The state that the instance is expected to be in. For example, an instance state can transition to UNHEALTHY due to wrong patch update, while the expected state will remain at the HEALTHY.",
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "HEALTHY",
+            "UNHEALTHY",
+            "SUSPENDED",
+            "DELETED",
+            "STATE_OTHER"
+          ],
+          "enumDescriptions": [
+            "",
+            "The instance is running.",
+            "Instance being created, updated, deleted or under maintenance",
+            "When instance is suspended",
+            "Instance is deleted.",
+            "For rest of the other category"
+          ],
+          "type": "string"
+        },
+        "id": {
+          "$ref": "DatabaseResourceId",
+          "description": "Required. Unique identifier for a Database resource"
+        },
+        "instanceType": {
+          "description": "The type of the instance. Specified at creation time.",
+          "enum": [
+            "INSTANCE_TYPE_UNSPECIFIED",
+            "SUB_RESOURCE_TYPE_UNSPECIFIED",
+            "PRIMARY",
+            "SECONDARY",
+            "READ_REPLICA",
+            "OTHER",
+            "SUB_RESOURCE_TYPE_PRIMARY",
+            "SUB_RESOURCE_TYPE_SECONDARY",
+            "SUB_RESOURCE_TYPE_READ_REPLICA",
+            "SUB_RESOURCE_TYPE_OTHER"
+          ],
+          "enumDeprecated": [
+            true,
+            false,
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "",
+            "For rest of the other categories.",
+            "A regular primary database instance.",
+            "A cluster or an instance acting as a secondary.",
+            "An instance acting as a read-replica.",
+            "For rest of the other categories.",
+            "A regular primary database instance.",
+            "A cluster or an instance acting as a secondary.",
+            "An instance acting as a read-replica.",
+            "For rest of the other categories."
+          ],
+          "type": "string"
+        },
+        "location": {
+          "description": "The resource location. REQUIRED",
+          "type": "string"
+        },
+        "machineConfiguration": {
+          "$ref": "MachineConfiguration",
+          "description": "Machine configuration for this resource."
+        },
+        "primaryResourceId": {
+          "$ref": "DatabaseResourceId",
+          "description": "Identifier for this resource's immediate parent/primary resource if the current resource is a replica or derived form of another Database resource. Else it would be NULL. REQUIRED if the immediate parent exists when first time resource is getting ingested, otherwise optional."
+        },
+        "product": {
+          "$ref": "Product",
+          "description": "The product this resource represents."
+        },
+        "resourceContainer": {
+          "description": "Closest parent Cloud Resource Manager container of this resource. It must be resource name of a Cloud Resource Manager project with the format of \"/\", such as \"projects/123\". For GCP provided resources, number should be project number.",
+          "type": "string"
+        },
+        "resourceName": {
+          "description": "Required. Different from DatabaseResourceId.unique_id, a resource name can be reused over time. That is, after a resource named \"ABC\" is deleted, the name \"ABC\" can be used to to create a new resource within the same source. Resource name to follow CAIS resource_name format as noted here go/condor-common-datamodel",
+          "type": "string"
+        },
+        "updationTime": {
+          "description": "The time at which the resource was updated and recorded at partner service.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "userLabelSet": {
+          "$ref": "UserLabels",
+          "description": "User-provided labels associated with the resource"
+        }
+      },
+      "type": "object"
+    },
+    "DatabaseResourceRecommendationSignalData": {
+      "description": "Common model for database resource recommendation signal data.",
+      "id": "DatabaseResourceRecommendationSignalData",
+      "properties": {
+        "additionalMetadata": {
+          "additionalProperties": {
+            "description": "Properties of the object.",
+            "type": "any"
+          },
+          "description": "Optional. Any other additional metadata specific to recommendation",
+          "type": "object"
+        },
+        "lastRefreshTime": {
+          "description": "Required. last time recommendationw as refreshed",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "recommendationState": {
+          "description": "Required. Recommendation state",
+          "enum": [
+            "UNSPECIFIED",
+            "ACTIVE",
+            "CLAIMED",
+            "SUCCEEDED",
+            "FAILED",
+            "DISMISSED"
+          ],
+          "enumDescriptions": [
+            "",
+            "Recommendation is active and can be applied. ACTIVE recommendations can be marked as CLAIMED, SUCCEEDED, or FAILED.",
+            "Recommendation is in claimed state. Recommendations content is immutable and cannot be updated by Google. CLAIMED recommendations can be marked as CLAIMED, SUCCEEDED, or FAILED.",
+            "Recommendation is in succeeded state. Recommendations content is immutable and cannot be updated by Google. SUCCEEDED recommendations can be marked as SUCCEEDED, or FAILED.",
+            "Recommendation is in failed state. Recommendations content is immutable and cannot be updated by Google. FAILED recommendations can be marked as SUCCEEDED, or FAILED.",
+            "Recommendation is in dismissed state. Recommendation content can be updated by Google. DISMISSED recommendations can be marked as ACTIVE."
+          ],
+          "type": "string"
+        },
+        "recommender": {
+          "description": "Required. Name of recommendation. Examples: organizations/1234/locations/us-central1/recommenders/google.cloudsql.instance.PerformanceRecommender/recommendations/9876",
+          "type": "string"
+        },
+        "recommenderId": {
+          "description": "Required. ID of recommender. Examples: \"google.cloudsql.instance.PerformanceRecommender\"",
+          "type": "string"
+        },
+        "recommenderSubtype": {
+          "description": "Required. Contains an identifier for a subtype of recommendations produced for the same recommender. Subtype is a function of content and impact, meaning a new subtype might be added when significant changes to `content` or `primary_impact.category` are introduced. See the Recommenders section to see a list of subtypes for a given Recommender. Examples: For recommender = \"google.cloudsql.instance.PerformanceRecommender\", recommender_subtype can be \"MYSQL_HIGH_NUMBER_OF_OPEN_TABLES_BEST_PRACTICE\"/\"POSTGRES_HIGH_TRANSACTION_ID_UTILIZATION_BEST_PRACTICE\"",
+          "type": "string"
+        },
+        "resourceName": {
+          "description": "Required. Database resource name associated with the signal. Resource name to follow CAIS resource_name format as noted here go/condor-common-datamodel",
+          "type": "string"
+        },
+        "signalType": {
+          "description": "Required. Type of signal, for example, `SIGNAL_TYPE_IDLE`, `SIGNAL_TYPE_HIGH_NUMBER_OF_TABLES`, etc.",
+          "enum": [
+            "SIGNAL_TYPE_UNSPECIFIED",
+            "SIGNAL_TYPE_NOT_PROTECTED_BY_AUTOMATIC_FAILOVER",
+            "SIGNAL_TYPE_GROUP_NOT_REPLICATING_ACROSS_REGIONS",
+            "SIGNAL_TYPE_NOT_AVAILABLE_IN_MULTIPLE_ZONES",
+            "SIGNAL_TYPE_NOT_AVAILABLE_IN_MULTIPLE_REGIONS",
+            "SIGNAL_TYPE_NO_PROMOTABLE_REPLICA",
+            "SIGNAL_TYPE_NO_AUTOMATED_BACKUP_POLICY",
+            "SIGNAL_TYPE_SHORT_BACKUP_RETENTION",
+            "SIGNAL_TYPE_LAST_BACKUP_FAILED",
+            "SIGNAL_TYPE_LAST_BACKUP_OLD",
+            "SIGNAL_TYPE_VIOLATES_CIS_GCP_FOUNDATION_2_0",
+            "SIGNAL_TYPE_VIOLATES_CIS_GCP_FOUNDATION_1_3",
+            "SIGNAL_TYPE_VIOLATES_CIS_GCP_FOUNDATION_1_2",
+            "SIGNAL_TYPE_VIOLATES_CIS_GCP_FOUNDATION_1_1",
+            "SIGNAL_TYPE_VIOLATES_CIS_GCP_FOUNDATION_1_0",
+            "SIGNAL_TYPE_VIOLATES_CIS_CONTROLS_V8_0",
+            "SIGNAL_TYPE_VIOLATES_NIST_800_53",
+            "SIGNAL_TYPE_VIOLATES_NIST_800_53_R5",
+            "SIGNAL_TYPE_VIOLATES_NIST_CYBERSECURITY_FRAMEWORK_V1_0",
+            "SIGNAL_TYPE_VIOLATES_ISO_27001",
+            "SIGNAL_TYPE_VIOLATES_ISO_27001_V2022",
+            "SIGNAL_TYPE_VIOLATES_PCI_DSS_V3_2_1",
+            "SIGNAL_TYPE_VIOLATES_PCI_DSS_V4_0",
+            "SIGNAL_TYPE_VIOLATES_CLOUD_CONTROLS_MATRIX_V4",
+            "SIGNAL_TYPE_VIOLATES_HIPAA",
+            "SIGNAL_TYPE_VIOLATES_SOC2_V2017",
+            "SIGNAL_TYPE_LOGS_NOT_OPTIMIZED_FOR_TROUBLESHOOTING",
+            "SIGNAL_TYPE_QUERY_DURATIONS_NOT_LOGGED",
+            "SIGNAL_TYPE_VERBOSE_ERROR_LOGGING",
+            "SIGNAL_TYPE_QUERY_LOCK_WAITS_NOT_LOGGED",
+            "SIGNAL_TYPE_LOGGING_MOST_ERRORS",
+            "SIGNAL_TYPE_LOGGING_ONLY_CRITICAL_ERRORS",
+            "SIGNAL_TYPE_MINIMAL_ERROR_LOGGING",
+            "SIGNAL_TYPE_QUERY_STATISTICS_LOGGED",
+            "SIGNAL_TYPE_EXCESSIVE_LOGGING_OF_CLIENT_HOSTNAME",
+            "SIGNAL_TYPE_EXCESSIVE_LOGGING_OF_PARSER_STATISTICS",
+            "SIGNAL_TYPE_EXCESSIVE_LOGGING_OF_PLANNER_STATISTICS",
+            "SIGNAL_TYPE_NOT_LOGGING_ONLY_DDL_STATEMENTS",
+            "SIGNAL_TYPE_LOGGING_QUERY_STATISTICS",
+            "SIGNAL_TYPE_NOT_LOGGING_TEMPORARY_FILES",
+            "SIGNAL_TYPE_CONNECTION_MAX_NOT_CONFIGURED",
+            "SIGNAL_TYPE_USER_OPTIONS_CONFIGURED",
+            "SIGNAL_TYPE_EXPOSED_TO_PUBLIC_ACCESS",
+            "SIGNAL_TYPE_UNENCRYPTED_CONNECTIONS",
+            "SIGNAL_TYPE_NO_ROOT_PASSWORD",
+            "SIGNAL_TYPE_WEAK_ROOT_PASSWORD",
+            "SIGNAL_TYPE_ENCRYPTION_KEY_NOT_CUSTOMER_MANAGED",
+            "SIGNAL_TYPE_SERVER_AUTHENTICATION_NOT_REQUIRED",
+            "SIGNAL_TYPE_EXPOSED_BY_OWNERSHIP_CHAINING",
+            "SIGNAL_TYPE_EXPOSED_TO_EXTERNAL_SCRIPTS",
+            "SIGNAL_TYPE_EXPOSED_TO_LOCAL_DATA_LOADS",
+            "SIGNAL_TYPE_CONNECTION_ATTEMPTS_NOT_LOGGED",
+            "SIGNAL_TYPE_DISCONNECTIONS_NOT_LOGGED",
+            "SIGNAL_TYPE_LOGGING_EXCESSIVE_STATEMENT_INFO",
+            "SIGNAL_TYPE_EXPOSED_TO_REMOTE_ACCESS",
+            "SIGNAL_TYPE_DATABASE_NAMES_EXPOSED",
+            "SIGNAL_TYPE_SENSITIVE_TRACE_INFO_NOT_MASKED",
+            "SIGNAL_TYPE_PUBLIC_IP_ENABLED",
+            "SIGNAL_TYPE_IDLE",
+            "SIGNAL_TYPE_OVERPROVISIONED",
+            "SIGNAL_TYPE_HIGH_NUMBER_OF_OPEN_TABLES",
+            "SIGNAL_TYPE_HIGH_NUMBER_OF_TABLES",
+            "SIGNAL_TYPE_HIGH_TRANSACTION_ID_UTILIZATION",
+            "SIGNAL_TYPE_UNDERPROVISIONED",
+            "SIGNAL_TYPE_OUT_OF_DISK",
+            "SIGNAL_TYPE_SERVER_CERTIFICATE_NEAR_EXPIRY",
+            "SIGNAL_TYPE_DATABASE_AUDITING_DISABLED",
+            "SIGNAL_TYPE_RESTRICT_AUTHORIZED_NETWORKS",
+            "SIGNAL_TYPE_VIOLATE_POLICY_RESTRICT_PUBLIC_IP",
+            "SIGNAL_TYPE_QUOTA_LIMIT",
+            "SIGNAL_TYPE_NO_PASSWORD_POLICY",
+            "SIGNAL_TYPE_CONNECTIONS_PERFORMANCE_IMPACT",
+            "SIGNAL_TYPE_TMP_TABLES_PERFORMANCE_IMPACT",
+            "SIGNAL_TYPE_TRANS_LOGS_PERFORMANCE_IMPACT",
+            "SIGNAL_TYPE_HIGH_JOINS_WITHOUT_INDEXES",
+            "SIGNAL_TYPE_SUPERUSER_WRITING_TO_USER_TABLES",
+            "SIGNAL_TYPE_USER_GRANTED_ALL_PERMISSIONS",
+            "SIGNAL_TYPE_DATA_EXPORT_TO_EXTERNAL_CLOUD_STORAGE_BUCKET",
+            "SIGNAL_TYPE_DATA_EXPORT_TO_PUBLIC_CLOUD_STORAGE_BUCKET"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            false,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "Unspecified.",
+            "Represents if a resource is protected by automatic failover. Checks for resources that are configured to have redundancy within a region that enables automatic failover.",
+            "Represents if a group is replicating across regions. Checks for resources that are configured to have redundancy, and ongoing replication, across regions.",
+            "Represents if the resource is available in multiple zones or not.",
+            "Represents if a resource is available in multiple regions.",
+            "Represents if a resource has a promotable replica.",
+            "Represents if a resource has an automated backup policy.",
+            "Represents if a resources has a short backup retention period.",
+            "Represents if the last backup of a resource failed.",
+            "Represents if the last backup of a resource is older than some threshold value.",
+            "Represents if a resource violates CIS GCP Foundation 2.0.",
+            "Represents if a resource violates CIS GCP Foundation 1.3.",
+            "Represents if a resource violates CIS GCP Foundation 1.2.",
+            "Represents if a resource violates CIS GCP Foundation 1.1.",
+            "Represents if a resource violates CIS GCP Foundation 1.0.",
+            "Represents if a resource violates CIS Controls 8.0.",
+            "Represents if a resource violates NIST 800-53.",
+            "Represents if a resource violates NIST 800-53 R5.",
+            "Represents if a resource violates NIST Cybersecurity Framework 1.0.",
+            "Represents if a resource violates ISO-27001.",
+            "Represents if a resource violates ISO 27001 2022.",
+            "Represents if a resource violates PCI-DSS v3.2.1.",
+            "Represents if a resource violates PCI-DSS v4.0.",
+            "Represents if a resource violates Cloud Controls Matrix v4.0.",
+            "Represents if a resource violates HIPAA.",
+            "Represents if a resource violates SOC2 v2017.",
+            "Represents if log_checkpoints database flag for a Cloud SQL for PostgreSQL instance is not set to on.",
+            "Represents if the log_duration database flag for a Cloud SQL for PostgreSQL instance is not set to on.",
+            "Represents if the log_error_verbosity database flag for a Cloud SQL for PostgreSQL instance is not set to default or stricter (default or terse).",
+            "Represents if the log_lock_waits database flag for a Cloud SQL for PostgreSQL instance is not set to on.",
+            "Represents if the log_min_error_statement database flag for a Cloud SQL for PostgreSQL instance is not set appropriately.",
+            "Represents if the log_min_error_statement database flag for a Cloud SQL for PostgreSQL instance does not have an appropriate severity level.",
+            "Represents if the log_min_messages database flag for a Cloud SQL for PostgreSQL instance is not set to warning or another recommended value.",
+            "Represents if the databaseFlags property of instance metadata for the log_executor_status field is set to on.",
+            "Represents if the log_hostname database flag for a Cloud SQL for PostgreSQL instance is not set to off.",
+            "Represents if the log_parser_stats database flag for a Cloud SQL for PostgreSQL instance is not set to off.",
+            "Represents if the log_planner_stats database flag for a Cloud SQL for PostgreSQL instance is not set to off.",
+            "Represents if the log_statement database flag for a Cloud SQL for PostgreSQL instance is not set to DDL (all data definition statements).",
+            "Represents if the log_statement_stats database flag for a Cloud SQL for PostgreSQL instance is not set to off.",
+            "Represents if the log_temp_files database flag for a Cloud SQL for PostgreSQL instance is not set to \"0\". (NOTE: 0 = ON)",
+            "Represents if the user connections database flag for a Cloud SQL for SQL Server instance is configured.",
+            "Represents if the user options database flag for Cloud SQL SQL Server instance is configured or not.",
+            "Represents if a resource is exposed to public access.",
+            "Represents if a resources requires all incoming connections to use SSL or not.",
+            "Represents if a Cloud SQL database has a password configured for the root account or not.",
+            "Represents if a Cloud SQL database has a weak password configured for the root account.",
+            "Represents if a SQL database instance is not encrypted with customer-managed encryption keys (CMEK).",
+            "Represents if The contained database authentication database flag for a Cloud SQL for SQL Server instance is not set to off.",
+            "Represents if the cross_db_ownership_chaining database flag for a Cloud SQL for SQL Server instance is not set to off.",
+            "Represents if he external scripts enabled database flag for a Cloud SQL for SQL Server instance is not set to off.",
+            "Represents if the local_infile database flag for a Cloud SQL for MySQL instance is not set to off.",
+            "Represents if the log_connections database flag for a Cloud SQL for PostgreSQL instance is not set to on.",
+            "Represents if the log_disconnections database flag for a Cloud SQL for PostgreSQL instance is not set to on.",
+            "Represents if the log_min_duration_statement database flag for a Cloud SQL for PostgreSQL instance is not set to -1.",
+            "Represents if the remote access database flag for a Cloud SQL for SQL Server instance is not set to off.",
+            "Represents if the skip_show_database database flag for a Cloud SQL for MySQL instance is not set to on.",
+            "Represents if the 3625 (trace flag) database flag for a Cloud SQL for SQL Server instance is not set to on.",
+            "Represents if public IP is enabled.",
+            "Represents Idle instance helps to reduce costs.",
+            "Represents instances that are unnecessarily large for given workload.",
+            "Represents high number of concurrently opened tables.",
+            "Represents high table count close to SLA limit.",
+            "Represents high number of unvacuumed transactions",
+            "Represents need for more CPU and/or memory",
+            "Represents out of disk.",
+            "Represents server certificate is near expiry.",
+            "Represents database auditing is disabled.",
+            "Represents not restricted to authorized networks.",
+            "Represents violate org policy restrict public ip.",
+            "Cluster nearing quota limit",
+            "No password policy set on resources",
+            "Performance impact of connections settings",
+            "Performance impact of temporary tables settings",
+            "Performance impact of transaction logs settings",
+            "Performance impact of high joins without indexes",
+            "Detects events where a Cloud SQL superuser (postgres for PostgreSQL servers or root for MySQL users) writes to non-system tables.",
+            "Detects events where a database user or role has been granted all privileges to a database, or to all tables, procedures, or functions in a schema.",
+            "Detects if database instance data exported to a Cloud Storage bucket outside of the organization.",
+            "Detects if database instance data exported to a Cloud Storage bucket that is owned by the organization and is publicly accessible."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DiscoveryEndpoint": {
+      "description": "Endpoints on each network, for Redis clients to connect to the cluster.",
+      "id": "DiscoveryEndpoint",
+      "properties": {
+        "address": {
+          "description": "Output only. Address of the exposed Redis endpoint used by clients to connect to the service. The address could be either IP or hostname.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "port": {
+          "description": "Output only. The port number of the exposed Redis endpoint.",
+          "format": "int32",
+          "readOnly": true,
+          "type": "integer"
+        },
+        "pscConfig": {
+          "$ref": "PscConfig",
+          "description": "Output only. Customer configuration for where the endpoint is created and accessed from.",
+          "readOnly": true
+        }
+      },
+      "type": "object"
+    },
+    "Empty": {
+      "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); }",
+      "id": "Empty",
+      "properties": {},
+      "type": "object"
+    },
+    "Entitlement": {
+      "description": "Proto representing the access that a user has to a specific feature/service. NextId: 3.",
+      "id": "Entitlement",
+      "properties": {
+        "entitlementState": {
+          "description": "The current state of user's accessibility to a feature/benefit.",
+          "enum": [
+            "ENTITLEMENT_STATE_UNSPECIFIED",
+            "ENTITLED",
+            "REVOKED"
+          ],
+          "enumDescriptions": [
+            "",
+            "User is entitled to a feature/benefit, but whether it has been successfully provisioned is decided by provisioning state.",
+            "User is entitled to a feature/benefit, but it was requested to be revoked. Whether the revoke has been successful is decided by provisioning state."
+          ],
+          "type": "string"
+        },
+        "type": {
+          "description": "An enum that represents the type of this entitlement.",
+          "enum": [
+            "ENTITLEMENT_TYPE_UNSPECIFIED",
+            "GEMINI"
+          ],
+          "enumDescriptions": [
+            "",
+            "The root entitlement representing Gemini package ownership."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ExportInstanceRequest": {
+      "description": "Request for Export.",
+      "id": "ExportInstanceRequest",
+      "properties": {
+        "outputConfig": {
+          "$ref": "OutputConfig",
+          "description": "Required. Specify data to be exported."
+        }
+      },
+      "type": "object"
+    },
+    "FailoverInstanceRequest": {
+      "description": "Request for Failover.",
+      "id": "FailoverInstanceRequest",
+      "properties": {
+        "dataProtectionMode": {
+          "description": "Optional. Available data protection modes that the user can choose. If it's unspecified, data protection mode will be LIMITED_DATA_LOSS by default.",
+          "enum": [
+            "DATA_PROTECTION_MODE_UNSPECIFIED",
+            "LIMITED_DATA_LOSS",
+            "FORCE_DATA_LOSS"
+          ],
+          "enumDescriptions": [
+            "Defaults to LIMITED_DATA_LOSS if a data protection mode is not specified.",
+            "Instance failover will be protected with data loss control. More specifically, the failover will only be performed if the current replication offset diff between primary and replica is under a certain threshold.",
+            "Instance failover will be performed without data loss control."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GcsDestination": {
+      "description": "The Cloud Storage location for the output content",
+      "id": "GcsDestination",
+      "properties": {
+        "uri": {
+          "description": "Required. Data destination URI (e.g. 'gs://my_bucket/my_object'). Existing files will be overwritten.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GcsSource": {
+      "description": "The Cloud Storage location for the input content",
+      "id": "GcsSource",
+      "properties": {
+        "uri": {
+          "description": "Required. Source data URI. (e.g. 'gs://my_bucket/my_object').",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleCloudCommonOperationMetadata": {
+      "description": "Represents the metadata of the long-running operation.",
+      "id": "GoogleCloudCommonOperationMetadata",
+      "properties": {
+        "apiVersion": {
+          "description": "Output only. API version used to start the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "cancelRequested": {
+          "description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have been cancelled successfully have Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "createTime": {
+          "description": "Output only. The time the operation was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "endTime": {
+          "description": "Output only. The time the operation finished running.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "statusDetail": {
+          "description": "Output only. Human-readable status of the operation, if any.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "target": {
+          "description": "Output only. Server-defined resource path for the target of the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "verb": {
+          "description": "Output only. Name of the verb executed by the operation.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleCloudRedisV1beta1LocationMetadata": {
+      "description": "This location metadata represents additional configuration options for a given location where a Redis instance may be created. All fields are output only. It is returned as content of the `google.cloud.location.Location.metadata` field.",
+      "id": "GoogleCloudRedisV1beta1LocationMetadata",
+      "properties": {
+        "availableZones": {
+          "additionalProperties": {
+            "$ref": "GoogleCloudRedisV1beta1ZoneMetadata"
+          },
+          "description": "Output only. The set of available zones in the location. The map is keyed by the lowercase ID of each zone, as defined by GCE. These keys can be specified in `location_id` or `alternative_location_id` fields when creating a Redis instance.",
+          "readOnly": true,
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleCloudRedisV1beta1ZoneMetadata": {
+      "description": "Defines specific information for a particular zone. Currently empty and reserved for future use only.",
+      "id": "GoogleCloudRedisV1beta1ZoneMetadata",
+      "properties": {},
+      "type": "object"
+    },
+    "ImportInstanceRequest": {
+      "description": "Request for Import.",
+      "id": "ImportInstanceRequest",
+      "properties": {
+        "inputConfig": {
+          "$ref": "InputConfig",
+          "description": "Required. Specify data to be imported."
+        }
+      },
+      "type": "object"
+    },
+    "InputConfig": {
+      "description": "The input content",
+      "id": "InputConfig",
+      "properties": {
+        "gcsSource": {
+          "$ref": "GcsSource",
+          "description": "Google Cloud Storage location where input content is located."
+        }
+      },
+      "type": "object"
+    },
+    "Instance": {
+      "description": "A Memorystore for Redis instance.",
+      "id": "Instance",
+      "properties": {
+        "alternativeLocationId": {
+          "description": "Optional. If specified, at least one node will be provisioned in this zone in addition to the zone specified in location_id. Only applicable to standard tier. If provided, it must be a different zone from the one provided in [location_id]. Additional nodes beyond the first 2 will be placed in zones selected by the service.",
+          "type": "string"
+        },
+        "authEnabled": {
+          "description": "Optional. Indicates whether OSS Redis AUTH is enabled for the instance. If set to \"true\" AUTH is enabled on the instance. Default value is \"false\" meaning AUTH is disabled.",
+          "type": "boolean"
+        },
+        "authorizedNetwork": {
+          "description": "Optional. The full name of the Google Compute Engine [network](https://cloud.google.com/vpc/docs/vpc) to which the instance is connected. If left unspecified, the `default` network will be used.",
+          "type": "string"
+        },
+        "availableMaintenanceVersions": {
+          "description": "Optional. The available maintenance versions that an instance could update to.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "connectMode": {
+          "description": "Optional. The network connect mode of the Redis instance. If not provided, the connect mode defaults to DIRECT_PEERING.",
+          "enum": [
+            "CONNECT_MODE_UNSPECIFIED",
+            "DIRECT_PEERING",
+            "PRIVATE_SERVICE_ACCESS"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "Connect via direct peering to the Memorystore for Redis hosted service.",
+            "Connect your Memorystore for Redis instance using Private Service Access. Private services access provides an IP address range for multiple Google Cloud services, including Memorystore."
+          ],
+          "type": "string"
+        },
+        "createTime": {
+          "description": "Output only. The time the instance was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "currentLocationId": {
+          "description": "Output only. The current zone where the Redis primary node is located. In basic tier, this will always be the same as [location_id]. In standard tier, this can be the zone of any node in the instance.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "customerManagedKey": {
+          "description": "Optional. The KMS key reference that the customer provides when trying to create the instance.",
+          "type": "string"
+        },
+        "displayName": {
+          "description": "An arbitrary and optional user-provided name for the instance.",
+          "type": "string"
+        },
+        "host": {
+          "description": "Output only. Hostname or IP address of the exposed Redis endpoint used by clients to connect to the service.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Resource labels to represent user provided metadata",
+          "type": "object"
+        },
+        "locationId": {
+          "description": "Optional. The zone where the instance will be provisioned. If not provided, the service will choose a zone from the specified region for the instance. For standard tier, additional nodes will be added across multiple zones for protection against zonal failures. If specified, at least one node will be provisioned in this zone.",
+          "type": "string"
+        },
+        "maintenancePolicy": {
+          "$ref": "MaintenancePolicy",
+          "description": "Optional. The maintenance policy for the instance. If not provided, maintenance events can be performed at any time."
+        },
+        "maintenanceSchedule": {
+          "$ref": "MaintenanceSchedule",
+          "description": "Output only. Date and time of upcoming maintenance events which have been scheduled.",
+          "readOnly": true
+        },
+        "maintenanceVersion": {
+          "description": "Optional. The self service update maintenance version. The version is date based such as \"20210712_00_00\".",
+          "type": "string"
+        },
+        "memorySizeGb": {
+          "description": "Required. Redis memory size in GiB.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "name": {
+          "description": "Required. Unique name of the resource in this scope including project and location using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` Note: Redis instances are managed and addressed at regional level so location_id here refers to a GCP region; however, users may choose which specific zone (or collection of zones for cross-zone instances) an instance should be provisioned in. Refer to location_id and alternative_location_id fields for more details.",
+          "type": "string"
+        },
+        "nodes": {
+          "description": "Output only. Info per node.",
+          "items": {
+            "$ref": "NodeInfo"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "persistenceConfig": {
+          "$ref": "PersistenceConfig",
+          "description": "Optional. Persistence configuration parameters"
+        },
+        "persistenceIamIdentity": {
+          "description": "Output only. Cloud IAM identity used by import / export operations to transfer data to/from Cloud Storage. Format is \"serviceAccount:\". The value may change over time for a given instance so should be checked before each import/export operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "port": {
+          "description": "Output only. The port number of the exposed Redis endpoint.",
+          "format": "int32",
+          "readOnly": true,
+          "type": "integer"
+        },
+        "readEndpoint": {
+          "description": "Output only. Hostname or IP address of the exposed readonly Redis endpoint. Standard tier only. Targets all healthy replica nodes in instance. Replication is asynchronous and replica nodes will exhibit some lag behind the primary. Write requests must target 'host'.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "readEndpointPort": {
+          "description": "Output only. The port number of the exposed readonly redis endpoint. Standard tier only. Write requests should target 'port'.",
+          "format": "int32",
+          "readOnly": true,
+          "type": "integer"
+        },
+        "readReplicasMode": {
+          "description": "Optional. Read replicas mode for the instance. Defaults to READ_REPLICAS_DISABLED.",
+          "enum": [
+            "READ_REPLICAS_MODE_UNSPECIFIED",
+            "READ_REPLICAS_DISABLED",
+            "READ_REPLICAS_ENABLED"
+          ],
+          "enumDescriptions": [
+            "If not set, Memorystore Redis backend will default to READ_REPLICAS_DISABLED.",
+            "If disabled, read endpoint will not be provided and the instance cannot scale up or down the number of replicas.",
+            "If enabled, read endpoint will be provided and the instance can scale up and down the number of replicas. Not valid for basic tier."
+          ],
+          "type": "string"
+        },
+        "redisConfigs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. Redis configuration parameters, according to http://redis.io/topics/config. Currently, the only supported parameters are: Redis version 3.2 and newer: * maxmemory-policy * notify-keyspace-events Redis version 4.0 and newer: * activedefrag * lfu-decay-time * lfu-log-factor * maxmemory-gb Redis version 5.0 and newer: * stream-node-max-bytes * stream-node-max-entries",
+          "type": "object"
+        },
+        "redisVersion": {
+          "description": "Optional. The version of Redis software. If not provided, latest supported version will be used. Currently, the supported values are: * `REDIS_3_2` for Redis 3.2 compatibility * `REDIS_4_0` for Redis 4.0 compatibility (default) * `REDIS_5_0` for Redis 5.0 compatibility * `REDIS_6_X` for Redis 6.x compatibility * `REDIS_7_0` for Redis 7.0 compatibility",
+          "type": "string"
+        },
+        "replicaCount": {
+          "description": "Optional. The number of replica nodes. The valid range for the Standard Tier with read replicas enabled is [1-5] and defaults to 2. If read replicas are not enabled for a Standard Tier instance, the only valid value is 1 and the default is 1. The valid value for basic tier is 0 and the default is also 0.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "reservedIpRange": {
+          "description": "Optional. For DIRECT_PEERING mode, the CIDR range of internal addresses that are reserved for this instance. Range must be unique and non-overlapping with existing subnets in an authorized network. For PRIVATE_SERVICE_ACCESS mode, the name of one allocated IP address ranges associated with this private service access connection. If not provided, the service will choose an unused /29 block, for example, 10.0.0.0/29 or 192.168.0.0/29. For READ_REPLICAS_ENABLED the default block size is /28.",
+          "type": "string"
+        },
+        "satisfiesPzi": {
+          "description": "Optional. Output only. Reserved for future use.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "satisfiesPzs": {
+          "description": "Optional. Output only. Reserved for future use.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "secondaryIpRange": {
+          "description": "Optional. Additional IP range for node placement. Required when enabling read replicas on an existing instance. For DIRECT_PEERING mode value must be a CIDR range of size /28, or \"auto\". For PRIVATE_SERVICE_ACCESS mode value must be the name of an allocated address range associated with the private service access connection, or \"auto\".",
+          "type": "string"
+        },
+        "serverCaCerts": {
+          "description": "Output only. List of server CA certificates for the instance.",
+          "items": {
+            "$ref": "TlsCertificate"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "state": {
+          "description": "Output only. The current state of this instance.",
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "CREATING",
+            "READY",
+            "UPDATING",
+            "DELETING",
+            "REPAIRING",
+            "MAINTENANCE",
+            "IMPORTING",
+            "FAILING_OVER"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "Redis instance is being created.",
+            "Redis instance has been created and is fully usable.",
+            "Redis instance configuration is being updated. Certain kinds of updates may cause the instance to become unusable while the update is in progress.",
+            "Redis instance is being deleted.",
+            "Redis instance is being repaired and may be unusable.",
+            "Maintenance is being performed on this Redis instance.",
+            "Redis instance is importing data (availability may be affected).",
+            "Redis instance is failing over (availability may be affected)."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "statusMessage": {
+          "description": "Output only. Additional information about the current status of this instance, if available.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "suspensionReasons": {
+          "description": "Optional. reasons that causes instance in \"SUSPENDED\" state.",
+          "items": {
+            "enum": [
+              "SUSPENSION_REASON_UNSPECIFIED",
+              "CUSTOMER_MANAGED_KEY_ISSUE"
+            ],
+            "enumDescriptions": [
+              "Not set.",
+              "Something wrong with the CMEK key provided by customer."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "tier": {
+          "description": "Required. The service tier of the instance.",
+          "enum": [
+            "TIER_UNSPECIFIED",
+            "BASIC",
+            "STANDARD_HA"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "BASIC tier: standalone instance",
+            "STANDARD_HA tier: highly available primary/replica instances"
+          ],
+          "type": "string"
+        },
+        "transitEncryptionMode": {
+          "description": "Optional. The TLS mode of the Redis instance. If not provided, TLS is disabled for the instance.",
+          "enum": [
+            "TRANSIT_ENCRYPTION_MODE_UNSPECIFIED",
+            "SERVER_AUTHENTICATION",
+            "DISABLED"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "Client to Server traffic encryption enabled with server authentication.",
+            "TLS is disabled for the instance."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "InstanceAuthString": {
+      "description": "Instance AUTH string details.",
+      "id": "InstanceAuthString",
+      "properties": {
+        "authString": {
+          "description": "AUTH string set on the instance.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListClustersResponse": {
+      "description": "Response for ListClusters.",
+      "id": "ListClustersResponse",
+      "properties": {
+        "clusters": {
+          "description": "A list of Redis clusters in the project in the specified location, or across all locations. If the `location_id` in the parent field of the request is \"-\", all regions available to the project are queried, and the results aggregated. If in such an aggregated query a location is unavailable, a placeholder Redis entry is included in the response with the `name` field set to a value of the form `projects/{project_id}/locations/{location_id}/clusters/`- and the `status` field set to ERROR and `status_message` field set to \"location not available for ListClusters\".",
+          "items": {
+            "$ref": "Cluster"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "Token to retrieve the next page of results, or empty if there are no more results in the list.",
+          "type": "string"
+        },
+        "unreachable": {
+          "description": "Locations that could not be reached.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ListInstancesResponse": {
+      "description": "Response for ListInstances.",
+      "id": "ListInstancesResponse",
+      "properties": {
+        "instances": {
+          "description": "A list of Redis instances in the project in the specified location, or across all locations. If the `location_id` in the parent field of the request is \"-\", all regions available to the project are queried, and the results aggregated. If in such an aggregated query a location is unavailable, a placeholder Redis entry is included in the response with the `name` field set to a value of the form `projects/{project_id}/locations/{location_id}/instances/`- and the `status` field set to ERROR and `status_message` field set to \"location not available for ListInstances\".",
+          "items": {
+            "$ref": "Instance"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "Token to retrieve the next page of results, or empty if there are no more results in the list.",
+          "type": "string"
+        },
+        "unreachable": {
+          "description": "Locations that could not be reached.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ListLocationsResponse": {
+      "description": "The response message for Locations.ListLocations.",
+      "id": "ListLocationsResponse",
+      "properties": {
+        "locations": {
+          "description": "A list of locations that matches the specified filter in the request.",
+          "items": {
+            "$ref": "Location"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "The standard List next-page token.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListOperationsResponse": {
+      "description": "The response message for Operations.ListOperations.",
+      "id": "ListOperationsResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "The standard List next-page token.",
+          "type": "string"
+        },
+        "operations": {
+          "description": "A list of operations that matches the specified filter in the request.",
+          "items": {
+            "$ref": "Operation"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Location": {
+      "description": "A resource that represents a Google Cloud location.",
+      "id": "Location",
+      "properties": {
+        "displayName": {
+          "description": "The friendly name for this location, typically a nearby city name. For example, \"Tokyo\".",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Cross-service attributes for the location. For example {\"cloud.googleapis.com/region\": \"us-east1\"}",
+          "type": "object"
+        },
+        "locationId": {
+          "description": "Resource ID for the region. For example: \"us-east1\".",
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "Output only. The set of available zones in the location. The map is keyed by the lowercase ID of each zone, as defined by Compute Engine. These keys can be specified in `location_id` or `alternative_location_id` fields when creating a Redis instance.",
+          "type": "object"
+        },
+        "name": {
+          "description": "Full resource name for the region. For example: \"projects/example-project/locations/us-east1\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "MachineConfiguration": {
+      "description": "MachineConfiguration describes the configuration of a machine specific to Database Resource.",
+      "id": "MachineConfiguration",
+      "properties": {
+        "cpuCount": {
+          "description": "The number of CPUs. TODO(b/342344482, b/342346271) add proto validations again after bug fix.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "memorySizeInBytes": {
+          "description": "Memory size in bytes. TODO(b/342344482, b/342346271) add proto validations again after bug fix.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "MaintenancePolicy": {
+      "description": "Maintenance policy for an instance.",
+      "id": "MaintenancePolicy",
+      "properties": {
+        "createTime": {
+          "description": "Output only. The time when the policy was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "description": {
+          "description": "Optional. Description of what this policy is for. Create/Update methods return INVALID_ARGUMENT if the length is greater than 512.",
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "Output only. The time when the policy was last updated.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "weeklyMaintenanceWindow": {
+          "description": "Optional. Maintenance window that is applied to resources covered by this policy. Minimum 1. For the current version, the maximum number of weekly_window is expected to be one.",
+          "items": {
+            "$ref": "WeeklyMaintenanceWindow"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "MaintenanceSchedule": {
+      "description": "Upcoming maintenance schedule. If no maintenance is scheduled, fields are not populated.",
+      "id": "MaintenanceSchedule",
+      "properties": {
+        "canReschedule": {
+          "deprecated": true,
+          "description": "If the scheduled maintenance can be rescheduled, default is true.",
+          "type": "boolean"
+        },
+        "endTime": {
+          "description": "Output only. The end time of any upcoming scheduled maintenance for this instance.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "scheduleDeadlineTime": {
+          "description": "Output only. The deadline that the maintenance schedule start time can not go beyond, including reschedule.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "startTime": {
+          "description": "Output only. The start time of any upcoming scheduled maintenance for this instance.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ManagedCertificateAuthority": {
+      "id": "ManagedCertificateAuthority",
+      "properties": {
+        "caCerts": {
+          "description": "The PEM encoded CA certificate chains for redis managed server authentication",
+          "items": {
+            "$ref": "CertChain"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "NodeInfo": {
+      "description": "Node specific properties.",
+      "id": "NodeInfo",
+      "properties": {
+        "id": {
+          "description": "Output only. Node identifying string. e.g. 'node-0', 'node-1'",
+          "readOnly": true,
+          "type": "string"
+        },
+        "zone": {
+          "description": "Output only. Location of the node.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ObservabilityMetricData": {
+      "id": "ObservabilityMetricData",
+      "properties": {
+        "aggregationType": {
+          "description": "Required. Type of aggregation performed on the metric.",
+          "enum": [
+            "AGGREGATION_TYPE_UNSPECIFIED",
+            "PEAK",
+            "P99",
+            "P95",
+            "CURRENT"
+          ],
+          "enumDescriptions": [
+            "Unspecified aggregation type.",
+            "PEAK aggregation type.",
+            "P99 aggregation type.",
+            "P95 aggregation type.",
+            "current aggregation type."
+          ],
+          "type": "string"
+        },
+        "metricType": {
+          "description": "Required. Type of metric like CPU, Memory, etc.",
+          "enum": [
+            "METRIC_TYPE_UNSPECIFIED",
+            "CPU_UTILIZATION",
+            "MEMORY_UTILIZATION",
+            "NETWORK_CONNECTIONS",
+            "STORAGE_UTILIZATION",
+            "STORAGE_USED_BYTES"
+          ],
+          "enumDescriptions": [
+            "Unspecified metric type.",
+            "CPU utilization for a resource. The value is a fraction between 0.0 and 1.0 (may momentarily exceed 1.0 in some cases).",
+            "Memory utilization for a resource. The value is a fraction between 0.0 and 1.0 (may momentarily exceed 1.0 in some cases).",
+            "Number of network connections for a resource.",
+            "Storage utilization for a resource. The value is a fraction between 0.0 and 1.0 (may momentarily exceed 1.0 in some cases).",
+            "Sotrage used by a resource."
+          ],
+          "type": "string"
+        },
+        "observationTime": {
+          "description": "Required. The time the metric value was observed.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "resourceName": {
+          "description": "Required. Database resource name associated with the signal. Resource name to follow CAIS resource_name format as noted here go/condor-common-datamodel",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "TypedValue",
+          "description": "Required. Value of the metric type."
+        }
+      },
+      "type": "object"
+    },
+    "Operation": {
+      "description": "This resource represents a long-running operation that is the result of a network API call.",
+      "id": "Operation",
+      "properties": {
+        "done": {
+          "description": "If the value is `false`, it means the operation is still in progress. If `true`, the operation is completed, and either `error` or `response` is available.",
+          "type": "boolean"
+        },
+        "error": {
+          "$ref": "Status",
+          "description": "The error result of the operation in case of failure or cancellation."
+        },
+        "metadata": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "{ `createTime`: The time the operation was created. `endTime`: The time the operation finished running. `target`: Server-defined resource path for the target of the operation. `verb`: Name of the verb executed by the operation. `statusDetail`: Human-readable status of the operation, if any. `cancelRequested`: Identifies whether the user has requested cancellation of the operation. Operations that have successfully been cancelled have Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`. `apiVersion`: API version used to start the operation. }",
+          "type": "object"
+        },
+        "name": {
+          "description": "The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.",
+          "type": "string"
+        },
+        "response": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "OperationError": {
+      "description": "An error that occurred during a backup creation operation.",
+      "id": "OperationError",
+      "properties": {
+        "code": {
+          "description": "Identifies the specific error that occurred. REQUIRED",
+          "type": "string"
+        },
+        "errorType": {
+          "enum": [
+            "OPERATION_ERROR_TYPE_UNSPECIFIED",
+            "KMS_KEY_ERROR",
+            "DATABASE_ERROR",
+            "STOCKOUT_ERROR",
+            "CANCELLATION_ERROR",
+            "SQLSERVER_ERROR",
+            "INTERNAL_ERROR"
+          ],
+          "enumDescriptions": [
+            "UNSPECIFIED means product type is not known or available.",
+            "key destroyed, expired, not found, unreachable or permission denied.",
+            "Database is not accessible",
+            "The zone or region does not have sufficient resources to handle the request at the moment",
+            "User initiated cancellation",
+            "SQL server specific error",
+            "Any other internal error."
+          ],
+          "type": "string"
+        },
+        "message": {
+          "description": "Additional information about the error encountered. REQUIRED",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "OperationMetadata": {
+      "description": "Pre-defined metadata fields.",
+      "id": "OperationMetadata",
+      "properties": {
+        "apiVersion": {
+          "description": "Output only. API version used to start the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "createTime": {
+          "description": "Output only. The time the operation was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "endTime": {
+          "description": "Output only. The time the operation finished running.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "requestedCancellation": {
+          "description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have successfully been cancelled have Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "statusMessage": {
+          "description": "Output only. Human-readable status of the operation, if any.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "target": {
+          "description": "Output only. Server-defined resource path for the target of the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "verb": {
+          "description": "Output only. Name of the verb executed by the operation.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "OutputConfig": {
+      "description": "The output content",
+      "id": "OutputConfig",
+      "properties": {
+        "gcsDestination": {
+          "$ref": "GcsDestination",
+          "description": "Google Cloud Storage destination for output content."
+        }
+      },
+      "type": "object"
+    },
+    "PersistenceConfig": {
+      "description": "Configuration of the persistence functionality.",
+      "id": "PersistenceConfig",
+      "properties": {
+        "persistenceMode": {
+          "description": "Optional. Controls whether Persistence features are enabled. If not provided, the existing value will be used.",
+          "enum": [
+            "PERSISTENCE_MODE_UNSPECIFIED",
+            "DISABLED",
+            "RDB"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "Persistence is disabled for the instance, and any existing snapshots are deleted.",
+            "RDB based Persistence is enabled."
+          ],
+          "type": "string"
+        },
+        "rdbNextSnapshotTime": {
+          "description": "Output only. The next time that a snapshot attempt is scheduled to occur.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "rdbSnapshotPeriod": {
+          "description": "Optional. Period between RDB snapshots. Snapshots will be attempted every period starting from the provided snapshot start time. For example, a start time of 01/01/2033 06:45 and SIX_HOURS snapshot period will do nothing until 01/01/2033, and then trigger snapshots every day at 06:45, 12:45, 18:45, and 00:45 the next day, and so on. If not provided, TWENTY_FOUR_HOURS will be used as default.",
+          "enum": [
+            "SNAPSHOT_PERIOD_UNSPECIFIED",
+            "ONE_HOUR",
+            "SIX_HOURS",
+            "TWELVE_HOURS",
+            "TWENTY_FOUR_HOURS"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "Snapshot every 1 hour.",
+            "Snapshot every 6 hours.",
+            "Snapshot every 12 hours.",
+            "Snapshot every 24 hours."
+          ],
+          "type": "string"
+        },
+        "rdbSnapshotStartTime": {
+          "description": "Optional. Date and time that the first snapshot was/will be attempted, and to which future snapshots will be aligned. If not provided, the current time will be used.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Product": {
+      "description": "Product specification for Condor resources.",
+      "id": "Product",
+      "properties": {
+        "engine": {
+          "description": "The specific engine that the underlying database is running.",
+          "enum": [
+            "ENGINE_UNSPECIFIED",
+            "ENGINE_MYSQL",
+            "MYSQL",
+            "ENGINE_POSTGRES",
+            "POSTGRES",
+            "ENGINE_SQL_SERVER",
+            "SQL_SERVER",
+            "ENGINE_NATIVE",
+            "NATIVE",
+            "ENGINE_CLOUD_SPANNER_WITH_POSTGRES_DIALECT",
+            "ENGINE_CLOUD_SPANNER_WITH_GOOGLESQL_DIALECT",
+            "ENGINE_MEMORYSTORE_FOR_REDIS",
+            "ENGINE_MEMORYSTORE_FOR_REDIS_CLUSTER",
+            "ENGINE_OTHER"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            true,
+            false,
+            true,
+            false,
+            true,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "UNSPECIFIED means engine type is not known or available.",
+            "MySQL binary running as an engine in the database instance.",
+            "MySQL binary running as engine in database instance.",
+            "Postgres binary running as engine in database instance.",
+            "Postgres binary running as engine in database instance.",
+            "SQLServer binary running as engine in database instance.",
+            "SQLServer binary running as engine in database instance.",
+            "Native database binary running as engine in instance.",
+            "Native database binary running as engine in instance.",
+            "Cloud Spanner with PostgreSQL dialect.",
+            "Cloud Spanner with Google SQL dialect.",
+            "Memorystore with Redis dialect.",
+            "Memorystore with Redis cluster dialect.",
+            "Other refers to rest of other database engine. This is to be when engine is known, but it is not present in this enum."
+          ],
+          "type": "string"
+        },
+        "type": {
+          "description": "Type of specific database product. It could be CloudSQL, AlloyDB etc..",
+          "enum": [
+            "PRODUCT_TYPE_UNSPECIFIED",
+            "PRODUCT_TYPE_CLOUD_SQL",
+            "CLOUD_SQL",
+            "PRODUCT_TYPE_ALLOYDB",
+            "ALLOYDB",
+            "PRODUCT_TYPE_SPANNER",
+            "PRODUCT_TYPE_ON_PREM",
+            "ON_PREM",
+            "PRODUCT_TYPE_MEMORYSTORE",
+            "PRODUCT_TYPE_BIGTABLE",
+            "PRODUCT_TYPE_OTHER"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            true,
+            false,
+            true,
+            false,
+            false,
+            true,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "UNSPECIFIED means product type is not known or available.",
+            "Cloud SQL product area in GCP",
+            "Cloud SQL product area in GCP",
+            "AlloyDB product area in GCP",
+            "AlloyDB product area in GCP",
+            "Spanner product area in GCP",
+            "On premises database product.",
+            "On premises database product.",
+            "Memorystore product area in GCP",
+            "Bigtable product area in GCP",
+            "Other refers to rest of other product type. This is to be when product type is known, but it is not present in this enum."
+          ],
+          "type": "string"
+        },
+        "version": {
+          "description": "Version of the underlying database engine. Example values: For MySQL, it could be \"8.0\", \"5.7\" etc.. For Postgres, it could be \"14\", \"15\" etc..",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PscConfig": {
+      "id": "PscConfig",
+      "properties": {
+        "network": {
+          "description": "Required. The network where the IP address of the discovery endpoint will be reserved, in the form of projects/{network_project}/global/networks/{network_id}.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PscConnection": {
+      "description": "Details of consumer resources in a PSC connection.",
+      "id": "PscConnection",
+      "properties": {
+        "address": {
+          "description": "Output only. The IP allocated on the consumer network for the PSC forwarding rule.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "forwardingRule": {
+          "description": "Output only. The URI of the consumer side forwarding rule. Example: projects/{projectNumOrId}/regions/us-east1/forwardingRules/{resourceId}.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "network": {
+          "description": "The consumer network where the IP address resides, in the form of projects/{project_id}/global/networks/{network_id}.",
+          "type": "string"
+        },
+        "projectId": {
+          "description": "Output only. The consumer project_id where the forwarding rule is created from.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "pscConnectionId": {
+          "description": "Output only. The PSC connection id of the forwarding rule connected to the service attachment.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "RDBConfig": {
+      "description": "Configuration of the RDB based persistence.",
+      "id": "RDBConfig",
+      "properties": {
+        "rdbSnapshotPeriod": {
+          "description": "Optional. Period between RDB snapshots.",
+          "enum": [
+            "SNAPSHOT_PERIOD_UNSPECIFIED",
+            "ONE_HOUR",
+            "SIX_HOURS",
+            "TWELVE_HOURS",
+            "TWENTY_FOUR_HOURS"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "One hour.",
+            "Six hours.",
+            "Twelve hours.",
+            "Twenty four hours."
+          ],
+          "type": "string"
+        },
+        "rdbSnapshotStartTime": {
+          "description": "Optional. The time that the first snapshot was/will be attempted, and to which future snapshots will be aligned. If not provided, the current time will be used.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ReconciliationOperationMetadata": {
+      "description": "Operation metadata returned by the CLH during resource state reconciliation.",
+      "id": "ReconciliationOperationMetadata",
+      "properties": {
+        "deleteResource": {
+          "deprecated": true,
+          "description": "DEPRECATED. Use exclusive_action instead.",
+          "type": "boolean"
+        },
+        "exclusiveAction": {
+          "description": "Excluisive action returned by the CLH.",
+          "enum": [
+            "UNKNOWN_REPAIR_ACTION",
+            "DELETE",
+            "RETRY"
+          ],
+          "enumDeprecated": [
+            false,
+            true,
+            false
+          ],
+          "enumDescriptions": [
+            "Unknown repair action.",
+            "The resource has to be deleted. When using this bit, the CLH should fail the operation. DEPRECATED. Instead use DELETE_RESOURCE OperationSignal in SideChannel.",
+            "This resource could not be repaired but the repair should be tried again at a later time. This can happen if there is a dependency that needs to be resolved first- e.g. if a parent resource must be repaired before a child resource."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "RescheduleMaintenanceRequest": {
+      "description": "Request for RescheduleMaintenance.",
+      "id": "RescheduleMaintenanceRequest",
+      "properties": {
+        "rescheduleType": {
+          "description": "Required. If reschedule type is SPECIFIC_TIME, must set up schedule_time as well.",
+          "enum": [
+            "RESCHEDULE_TYPE_UNSPECIFIED",
+            "IMMEDIATE",
+            "NEXT_AVAILABLE_WINDOW",
+            "SPECIFIC_TIME"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "If the user wants to schedule the maintenance to happen now.",
+            "If the user wants to use the existing maintenance policy to find the next available window.",
+            "If the user wants to reschedule the maintenance to a specific time."
+          ],
+          "type": "string"
+        },
+        "scheduleTime": {
+          "description": "Optional. Timestamp when the maintenance shall be rescheduled to if reschedule_type=SPECIFIC_TIME, in RFC 3339 format, for example `2012-11-15T16:19:00.094Z`.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "RetentionSettings": {
+      "id": "RetentionSettings",
+      "properties": {
+        "quantityBasedRetention": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "retentionUnit": {
+          "description": "The unit that 'retained_backups' represents.",
+          "enum": [
+            "RETENTION_UNIT_UNSPECIFIED",
+            "COUNT",
+            "TIME",
+            "RETENTION_UNIT_OTHER"
+          ],
+          "enumDescriptions": [
+            "Backup retention unit is unspecified, will be treated as COUNT.",
+            "Retention will be by count, eg. \"retain the most recent 7 backups\".",
+            "Retention will be by Time, eg. \"retain the last 7 days backups\".",
+            "For rest of the other category"
+          ],
+          "type": "string"
+        },
+        "timeBasedRetention": {
+          "format": "google-duration",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "StateInfo": {
+      "description": "Represents additional information about the state of the cluster.",
+      "id": "StateInfo",
+      "properties": {
+        "updateInfo": {
+          "$ref": "UpdateInfo",
+          "description": "Describes ongoing update on the cluster when cluster state is UPDATING."
+        }
+      },
+      "type": "object"
+    },
+    "Status": {
+      "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+      "id": "Status",
+      "properties": {
+        "code": {
+          "description": "The status code, which should be an enum value of google.rpc.Code.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "details": {
+          "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+          "items": {
+            "additionalProperties": {
+              "description": "Properties of the object. Contains field @type with type URL.",
+              "type": "any"
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "message": {
+          "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TimeOfDay": {
+      "description": "Represents a time of day. The date and time zone are either not significant or are specified elsewhere. An API may choose to allow leap seconds. Related types are google.type.Date and `google.protobuf.Timestamp`.",
+      "id": "TimeOfDay",
+      "properties": {
+        "hours": {
+          "description": "Hours of day in 24 hour format. Should be from 0 to 23. An API may choose to allow the value \"24:00:00\" for scenarios like business closing time.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "minutes": {
+          "description": "Minutes of hour of day. Must be from 0 to 59.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "nanos": {
+          "description": "Fractions of seconds in nanoseconds. Must be from 0 to 999,999,999.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "seconds": {
+          "description": "Seconds of minutes of the time. Must normally be from 0 to 59. An API may allow the value 60 if it allows leap-seconds.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "TlsCertificate": {
+      "description": "TlsCertificate Resource",
+      "id": "TlsCertificate",
+      "properties": {
+        "cert": {
+          "description": "PEM representation.",
+          "type": "string"
+        },
+        "createTime": {
+          "description": "Output only. The time when the certificate was created in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2020-05-18T00:00:00.094Z`.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "expireTime": {
+          "description": "Output only. The time when the certificate expires in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2020-05-18T00:00:00.094Z`.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "serialNumber": {
+          "description": "Serial number, as extracted from the certificate.",
+          "type": "string"
+        },
+        "sha1Fingerprint": {
+          "description": "Sha1 Fingerprint of the certificate.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TypedValue": {
+      "description": "TypedValue represents the value of a metric type. It can either be a double, an int64, a string or a bool.",
+      "id": "TypedValue",
+      "properties": {
+        "boolValue": {
+          "description": "For boolean value",
+          "type": "boolean"
+        },
+        "doubleValue": {
+          "description": "For double value",
+          "format": "double",
+          "type": "number"
+        },
+        "int64Value": {
+          "description": "For integer value",
+          "format": "int64",
+          "type": "string"
+        },
+        "stringValue": {
+          "description": "For string value",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "UpdateInfo": {
+      "description": "Represents information about an updating cluster.",
+      "id": "UpdateInfo",
+      "properties": {
+        "targetReplicaCount": {
+          "description": "Target number of replica nodes per shard.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "targetShardCount": {
+          "description": "Target number of shards for redis cluster",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "UpgradeInstanceRequest": {
+      "description": "Request for UpgradeInstance.",
+      "id": "UpgradeInstanceRequest",
+      "properties": {
+        "redisVersion": {
+          "description": "Required. Specifies the target version of Redis software to upgrade to.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "UserLabels": {
+      "description": "Message type for storing user labels. User labels are used to tag App Engine resources, allowing users to search for resources matching a set of labels and to aggregate usage data by labels.",
+      "id": "UserLabels",
+      "properties": {
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "WeeklyMaintenanceWindow": {
+      "description": "Time window in which disruptive maintenance updates occur. Non-disruptive updates can occur inside or outside this window.",
+      "id": "WeeklyMaintenanceWindow",
+      "properties": {
+        "day": {
+          "description": "Required. The day of week that maintenance updates occur.",
+          "enum": [
+            "DAY_OF_WEEK_UNSPECIFIED",
+            "MONDAY",
+            "TUESDAY",
+            "WEDNESDAY",
+            "THURSDAY",
+            "FRIDAY",
+            "SATURDAY",
+            "SUNDAY"
+          ],
+          "enumDescriptions": [
+            "The day of the week is unspecified.",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday"
+          ],
+          "type": "string"
+        },
+        "duration": {
+          "description": "Output only. Duration of the maintenance window. The current window is fixed at 1 hour.",
+          "format": "google-duration",
+          "readOnly": true,
+          "type": "string"
+        },
+        "startTime": {
+          "$ref": "TimeOfDay",
+          "description": "Required. Start time of the window in UTC time."
+        }
+      },
+      "type": "object"
+    },
+    "ZoneDistributionConfig": {
+      "description": "Zone distribution config for allocation of cluster resources.",
+      "id": "ZoneDistributionConfig",
+      "properties": {
+        "mode": {
+          "description": "Optional. The mode of zone distribution. Defaults to MULTI_ZONE, when not specified.",
+          "enum": [
+            "ZONE_DISTRIBUTION_MODE_UNSPECIFIED",
+            "MULTI_ZONE",
+            "SINGLE_ZONE"
+          ],
+          "enumDescriptions": [
+            "Not Set. Default: MULTI_ZONE",
+            "Distribute all resources across 3 zones picked at random, within the region.",
+            "Distribute all resources in a single zone. The zone field must be specified, when this mode is selected."
+          ],
+          "type": "string"
+        },
+        "zone": {
+          "description": "Optional. When SINGLE ZONE distribution is selected, zone field would be used to allocate all resources in that zone. This is not applicable to MULTI_ZONE, and would be ignored for MULTI_ZONE clusters.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Google Cloud Memorystore for Redis API",
+  "version": "v1beta1",
+  "version_module": true
+}

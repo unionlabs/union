@@ -1,0 +1,9 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["mock_stream.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/io/logs/mock",
+    visibility = ["//visibility:public"],
+    deps = ["//async/event:go_default_library"],
+)

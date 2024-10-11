@@ -1,0 +1,44 @@
+syntax = "proto3";
+package tendermint.types;
+
+import "gogoproto/gogo.proto";
+import "tendermint/types/types.proto";
+import "google/protobuf/timestamp.proto";
+
+message CanonicalBlockID {
+  bytes                  hash            = 1;
+  CanonicalPartSetHeader part_set_header = 2 [(gogoproto.nullable) = false];
+}
+
+message CanonicalPartSetHeader {
+  uint32 total = 1;
+  bytes  hash  = 2;
+}
+
+message CanonicalProposal {
+  SignedMsgType             type      = 1;  // type alias for byte
+  sfixed64                  height    = 2;  // canonicalization requires fixed size encoding here
+  sfixed64                  round     = 3;  // canonicalization requires fixed size encoding here
+  int64                     pol_round = 4 [(gogoproto.customname) = "POLRound"];
+  CanonicalBlockID          block_id  = 5 [(gogoproto.customname) = "BlockID"];
+  google.protobuf.Timestamp timestamp = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  string                    chain_id  = 7 [(gogoproto.customname) = "ChainID"];
+}
+
+message CanonicalVote {
+  SignedMsgType             type      = 1;  // type alias for byte
+  sfixed64                  height    = 2;  // canonicalization requires fixed size encoding here
+  sfixed64                  round     = 3;  // canonicalization requires fixed size encoding here
+  CanonicalBlockID          block_id  = 4 [(gogoproto.customname) = "BlockID"];
+  google.protobuf.Timestamp timestamp = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  string                    chain_id  = 6 [(gogoproto.customname) = "ChainID"];
+}
+
+// CanonicalVoteExtension provides us a way to serialize a vote extension from
+// a particular validator such that we can sign over those serialized bytes.
+message CanonicalVoteExtension {
+  bytes    extension = 1;
+  sfixed64 height    = 2;
+  sfixed64 round     = 3;
+  string   chain_id  = 4;
+}

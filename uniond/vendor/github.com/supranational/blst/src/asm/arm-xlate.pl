@@ -15,6 +15,7 @@ use strict;
 # ios[32|64]	global symbols' decorations, PIC tweaks, etc.
 # win[32|64]	Visual Studio armasm-specific directives
 # coff[32|64]	e.g. clang --target=arm-windows ...
+# cheri64	L64P128 platform
 #
 my $flavour = shift;
    $flavour = "linux" if (!$flavour or $flavour eq "void");
@@ -34,7 +35,7 @@ my $fpu  = sub { } if ($flavour !~ /linux/);       # omit .fpu
 
 my $rodata = sub {
     SWITCH: for ($flavour) {
-	/linux/		&& return ".section\t.rodata";
+	/linux|cheri/	&& return ".section\t.rodata";
 	/ios/		&& return ".section\t__TEXT,__const";
 	/coff/		&& return ".section\t.rdata,\"dr\"";
 	/win/		&& return "\tAREA\t|.rdata|,DATA,READONLY,ALIGN=8";
@@ -44,7 +45,7 @@ my $rodata = sub {
 
 my $hidden = sub {
     if ($flavour =~ /ios/)	{ ".private_extern\t".join(',',@_); }
-} if ($flavour !~ /linux/);
+} if ($flavour !~ /linux|cheri/);
 
 my $comm = sub {
     my @args = split(/,\s*/,shift);
@@ -131,19 +132,19 @@ my $type = sub {
 			      };
     }
     return $ret;
-} if ($flavour !~ /linux/);
+} if ($flavour !~ /linux|cheri/);
 
 my $size = sub {
     if ($in_proc && $flavour =~ /win/) {
 	$in_proc = undef;
 	return "\tENDP";
     }
-} if ($flavour !~ /linux/);
+} if ($flavour !~ /linux|cheri/);
 
 my $inst = sub {
     if ($flavour =~ /win/)	{ "\tDCDU\t".join(',',@_); }
     else			{ ".long\t".join(',',@_);  }
-} if ($flavour !~ /linux/);
+} if ($flavour !~ /linux|cheri/);
 
 my $asciz = sub {
     my $line = join(",",@_);
@@ -258,6 +259,70 @@ my $csetm = sub {
 # ... then conditional branch instructions are also broken, but
 # maintaining all the variants is tedious, so I kludge-fix it
 # elsewhere...
+
+################################################################
+# CHERI-specific synthetic instructions
+my $alignd = sub {
+    my ($args,$comment) = split(m|\s*//|,shift);
+    $args =~ s/\b(?:x([0-9]+)|(sp))\b/c$1$2/g;
+    my @regs = split(m|,\s*|,$args);
+
+    "\talignd\t".join(',',@regs);
+};
+
+my $scvalue = sub {
+    my ($args,$comment) = split(m|\s*//|,shift);
+    $args =~ s/\b(?:x([0-9]+)|(sp))\b/c$1$2/g;
+    my @regs = split(m|,\s*|,$args);
+    @regs[2] =~ s/\bc([0-9])\b/x$1/;
+
+    "\tscvalue\t".join(',',@regs);
+};
+
+my $cadd = sub {
+    my ($args,$comment) = split(m|\s*//|,shift);
+    if ($flavour =~ /cheri/) {
+	$args =~ s/\b(?:x([0-9]+)|(sp))\b/c$1$2/g;
+    } else {
+	$args =~ s/\bc([0-9]+)\b/x$1/g;
+    }
+    my @regs = split(m|,\s*|,$args);
+    @regs[2] =~ s/c([0-9])/x$1/;
+
+    "\tadd\t".join(',',@regs);
+};
+
+my $csub = sub {
+    my ($args,$comment) = split(m|\s*//|,shift);
+    if ($flavour =~ /cheri/) {
+	$args =~ s/\b(?:x([0-9]+)|(sp))\b/c$1$2/g;
+    } else {
+	$args =~ s/\bc([0-9]+)\b/x$1/g;
+    }
+    my @regs = split(m|,\s*|,$args);
+    @regs[2] =~ s/c([0-9])/x$1/;
+
+    "\tsub\t".join(',',@regs);
+};
+
+my $cmov = sub {
+    my $args = shift;
+    if ($flavour =~ /cheri/) {
+	$args =~ s/\b(?:x([0-9]+)|(sp))\b/c$1$2/g;
+    } else {
+	$args =~ s/\bc([0-9]+)\b/x$1/g;
+    }
+
+    "\tmov\t".$args;
+};
+
+my $adr = sub {
+    my $args = shift;
+    $args =~ s/\bx([0-9]+)\b/c$1/g;
+
+    "\tadr\t".$args;
+} if ($flavour =~ /cheri/);
+
 ################################################################
 my $adrp = sub {
     my ($args,$comment) = split(m|\s*//|,shift);
@@ -265,13 +330,13 @@ my $adrp = sub {
 } if ($flavour =~ /ios64/);
 
 my $paciasp = sub {
-    ($flavour =~ /linux/) ? "\t.inst\t0xd503233f"
-                          : &$inst(0xd503233f);
+    ($flavour =~ /linux|cheri/) ? "\t.inst\t0xd503233f"
+                                : &$inst(0xd503233f);
 };
 
 my $autiasp = sub {
-    ($flavour =~ /linux/) ? "\t.inst\t0xd50323bf"
-                          : &$inst(0xd50323bf);
+    ($flavour =~ /linux|cheri/) ? "\t.inst\t0xd50323bf"
+                                : &$inst(0xd50323bf);
 };
 
 sub range {
@@ -303,6 +368,13 @@ sub expand_line {
 
     $line =~ s/\b(\w+)/$GLOBALS{$1} or $1/ge;
 
+    if ($flavour =~ /cheri/) {
+	$line =~ s/\[\s*(?:x([0-9]+)|(sp))\s*(,?.*)\]/[c$1$2$3]/;
+    } else {
+	$line =~ s/\bc([0-9]+)\b/x$1/g;
+	$line =~ s/\bcsp\b/sp/g;
+    }
+
     if ($flavour =~ /win/) {
 	# adjust alignment hints, "[rN,:32]" -> "[rN@32]"
 	$line =~ s/(\[\s*(?:r[0-9]+|sp))\s*,?\s*:([0-9]+\s*\])/$1\@$2/;
@@ -324,7 +396,25 @@ sub expand_line {
     return $line;
 }
 
+if ($flavour =~ /win(32|64)/) {
+    print<<___;
+ GBLA __SIZEOF_POINTER__
+__SIZEOF_POINTER__ SETA $1/8
+___
+}
+
 while(my $line=<>) {
+
+    if ($flavour =~ /win/) {
+	if ($line =~ m/^#\s*(ifdef|ifndef|else|endif)\b(.*)/) {
+	    my ($op, $arg) = ($1, $2);
+	    $op = "if :def:"		if ($op eq "ifdef");
+	    $op = "if :lnot::def:"	if ($op eq "ifndef");
+	    print " ".$op.$arg."\n";
+	    next;
+	}
+	$line =~ s|//.*||;
+    }
 
     # fix up assembler-specific commentary delimiter
     $line =~ s/@(?=[\s@])/\;/g if ($flavour =~ /win|coff/);

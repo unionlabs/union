@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"math"
 	"sync"
 
 	"github.com/CosmWasm/wasmvm/v2/types"
@@ -53,39 +54,71 @@ func endCall(callID uint64) {
 	}
 }
 
-// storeIterator will add this to the end of the frame for the given ID and return a reference to it.
-// We start counting with 1, so the 0 value is flagged as an error. This means we must
-// remember to do idx-1 when retrieving
+// storeIterator will add this to the end of the frame for the given call ID and return
+// an iterator ID to reference it.
+//
+// We assign iterator IDs starting with 1 for historic reasons. This could be changed to 0
+// I guess.
 func storeIterator(callID uint64, it types.Iterator, frameLenLimit int) (uint64, error) {
 	iteratorFramesMutex.Lock()
 	defer iteratorFramesMutex.Unlock()
 
-	old_frame_len := len(iteratorFrames[callID])
-	if old_frame_len >= frameLenLimit {
+	new_index := len(iteratorFrames[callID])
+	if new_index >= frameLenLimit {
 		return 0, fmt.Errorf("Reached iterator limit (%d)", frameLenLimit)
 	}
 
-	// store at array position `old_frame_len`
+	// store at array position `new_index`
 	iteratorFrames[callID] = append(iteratorFrames[callID], it)
-	new_index := old_frame_len + 1
 
-	return uint64(new_index), nil
+	iterator_id, ok := indexToIteratorID(new_index)
+	if !ok {
+		// This error case is not expected to happen since the above code ensures the
+		// index is in the range [0, frameLenLimit-1]
+		return 0, fmt.Errorf("could not convert index to iterator ID")
+	}
+	return iterator_id, nil
 }
 
-// retrieveIterator will recover an iterator based on index. This ensures it will not be garbage collected.
-// We start counting with 1, in storeIterator so the 0 value is flagged as an error. This means we must
-// remember to do idx-1 when retrieving
-func retrieveIterator(callID uint64, index uint64) types.Iterator {
+// retrieveIterator will recover an iterator based on its ID.
+func retrieveIterator(callID uint64, iteratorID uint64) types.Iterator {
+	indexInFrame, ok := iteratorIdToIndex(iteratorID)
+	if !ok {
+		return nil
+	}
+
 	iteratorFramesMutex.Lock()
 	defer iteratorFramesMutex.Unlock()
 	myFrame := iteratorFrames[callID]
 	if myFrame == nil {
 		return nil
 	}
-	posInFrame := int(index) - 1
-	if posInFrame < 0 || posInFrame >= len(myFrame) {
+	if indexInFrame >= len(myFrame) {
 		// index out of range
 		return nil
 	}
-	return myFrame[posInFrame]
+	return myFrame[indexInFrame]
+}
+
+// iteratorIdToIndex converts an iterator ID to an index in the frame.
+// The second value marks if the conversion succeeded.
+func iteratorIdToIndex(id uint64) (int, bool) {
+	if id < 1 || id > math.MaxInt32 {
+		// If success is false, the int value is undefined. We use an arbitrary constant for potential debugging purposes.
+		return 777777777, false
+	}
+
+	// Int conversion safe because value is in signed 32bit integer range
+	return int(id) - 1, true
+}
+
+// indexToIteratorID converts an index in the frame to an iterator ID.
+// The second value marks if the conversion succeeded.
+func indexToIteratorID(index int) (uint64, bool) {
+	if index < 0 || index > math.MaxInt32 {
+		// If success is false, the return value is undefined. We use an arbitrary constant for potential debugging purposes.
+		return 888888888, false
+	}
+
+	return uint64(index) + 1, true
 }

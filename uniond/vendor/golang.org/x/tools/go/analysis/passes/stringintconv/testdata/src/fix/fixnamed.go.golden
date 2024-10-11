@@ -1,0 +1,19 @@
+-- Format the number as a decimal --
+package fix
+
+import "fmt"
+
+type mystring string
+
+func _(x int16) mystring {
+	return mystring(fmt.Sprint(x)) // want `conversion from int16 to mystring \(string\)...`
+}
+
+-- Convert a single rune to a string --
+package fix
+
+type mystring string
+
+func _(x int16) mystring {
+	return mystring(rune(x)) // want `conversion from int16 to mystring \(string\)...`
+}

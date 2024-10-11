@@ -1,0 +1,143 @@
+#lang ivy1.7
+# ---
+# layout: page
+# title: Proof of Classic Safety
+# ---
+
+include tendermint
+include abstract_tendermint
+
+# Here we prove the first accountability property: if two well-behaved nodes
+# disagree, then there are two quorums Q1 and Q2 such that all members of the
+# intersection of Q1 and Q2 have violated the accountability properties.
+
+# The proof is done in two steps: first we prove the abstract specification
+# satisfies the property, and then we show by refinement that this property
+# also holds in the concrete specification.
+
+# To see what is checked in the refinement proof, use `ivy_show isolate=accountable_safety_1 accountable_safety_1.ivy`
+# To see what is checked in the abstract correctness proof, use `ivy_show isolate=abstract_accountable_safety_1 accountable_safety_1.ivy`
+# To check the whole proof, use `ivy_check accountable_safety_1.ivy`.
+
+
+# Proof of the accountability property in the abstract specification
+# ==================================================================
+
+# We prove with tactics (see `lemma_1` and `lemma_2`) that, if some basic
+# invariants hold (see `invs` below), then the accountability property holds.
+
+isolate abstract_accountable_safety = {
+
+    instantiate abstract_tendermint
+
+# The main property
+# -----------------
+
+# If there is disagreement, then there is evidence that a third of the nodes
+# have violated the protocol:
+    invariant [accountability] agreement | accountability_violation
+    proof {
+        apply lemma_1.thm # this reduces to goal to three subgoals: p1, p2, and p3 (see their definition below)
+        proof [p1] {
+            assume invs.inv1
+        }
+        proof [p2] {
+            assume invs.inv2
+        }
+        proof [p3] {
+            assume invs.inv3
+        }
+    }
+
+# The invariants
+# --------------
+
+    isolate invs = {
+
+        # well-behaved nodes observe their own actions faithfully:
+        invariant [inv1] well_behaved(N) -> (observed_precommitted(N,R,V) = precommitted(N,R,V))
+        # if a value is precommitted by a well-behaved node, then a quorum is observed to prevote it:
+        invariant [inv2] (exists N . well_behaved(N) & precommitted(N,R,V)) & V ~= value.nil  -> exists Q . nset.is_quorum(Q) & forall N2 . nset.member(N2,Q) -> observed_prevoted(N2,R,V)
+        # if a value is decided by a well-behaved node, then a quorum is observed to precommit it:
+        invariant [inv3] (exists N . well_behaved(N) & decided(N,R,V)) -> 0 <= R & V ~= value.nil & exists Q . nset.is_quorum(Q) & forall N2 . nset.member(N2,Q) -> observed_precommitted(N2,R,V)
+        private {
+            invariant (precommitted(N,R,V) | prevoted(N,R,V)) -> 0 <= R
+            invariant R < 0 -> left_round(N,R)
+        }
+
+    } with this, nset, round, accountable_bft.max_2f_byzantine
+
+# The theorems proved with tactics
+# --------------------------------
+
+# Using complete induction on rounds, we prove that, assuming that the
+# invariants inv1, inv2, and inv3 hold, the accountability property holds.
+
+# For technical reasons, we separate the proof in two steps
+    isolate lemma_1 = {
+
+        specification {
+            theorem [thm] {
+                property [p1] forall N,R,V . well_behaved(N) -> (observed_precommitted(N,R,V) = precommitted(N,R,V))
+                property [p2] forall R,V . (exists N . well_behaved(N) & precommitted(N,R,V)) & V ~= value.nil  -> exists Q . nset.is_quorum(Q) & forall N2 . nset.member(N2,Q) -> observed_prevoted(N2,R,V)
+                property [p3] forall R,V. (exists N . well_behaved(N) & decided(N,R,V)) -> 0 <= R & V ~= value.nil & exists Q . nset.is_quorum(Q) & forall N2 . nset.member(N2,Q) -> observed_precommitted(N2,R,V)
+                #-------------------------------------------------------------------------------------------------------------------------------------------
+                property agreement | accountability_violation
+            }
+            proof {
+                assume inductive_property # the theorem follows from what we prove by induction below
+            }
+        }
+
+        implementation {
+            # complete induction is not built-in, so we introduce it with an axiom. Note that this only holds for a type where 0 is the smallest element
+            axiom [complete_induction] {
+                relation p(X:round)
+                { # base case
+                    property p(0)
+                }
+                { # inductive step: show that if the property is true for all X lower or equal to x and y=x+1, then the property is true of y
+                    individual a:round
+                    individual b:round
+                    property (forall X. 0 <= X & X <= a -> p(X)) & round.succ(a,b) -> p(b)
+                }
+                #--------------------------
+                property forall X . 0 <= X -> p(X)
+            }
+
+            # The main lemma: if inv1 and inv2 below hold and a quorum is observed to
+            # precommit V1 at R1 and another quorum is observed to precommit V2~=V1 at
+            # R2>=R1, then the intersection of two quorums (i.e. f+1 nodes) is observed to
+            # violate the protocol. We prove this by complete induction on R2.
+            theorem [inductive_property] {
+                property [p1] forall N,R,V . well_behaved(N) -> (observed_precommitted(N,R,V) = precommitted(N,R,V))
+                property [p2] forall R,V . (exists N . well_behaved(N) & precommitted(N,R,V)) -> V = value.nil | exists Q . nset.is_quorum(Q) & forall N2 . nset.member(N2,Q) -> observed_prevoted(N2,R,V)
+                #-----------------------------------------------------------------------------------------------------------------------
+                property forall R2. 0 <= R2  -> ((exists V2,Q1,R1,V1,Q1 . V1 ~= value.nil & V2 ~= value.nil & V1 ~= V2 & 0 <= R1 & R1 <= R2 & nset.is_quorum(Q1) & (forall N . nset.member(N,Q1) -> observed_precommitted(N,R1,V1)) & (exists Q2 . nset.is_quorum(Q2) & forall N . nset.member(N,Q2) -> observed_prevoted(N,R2,V2))) -> accountability_violation)
+            }
+            proof {
+                apply complete_induction # the two subgoals (base case and inductive case) are then discharged automatically
+                # NOTE: this can take a long time depending on the SMT random seed (to try a different seed, use `ivy_check seed=$RANDOM`
+            }
+        }
+    } with this, round, nset, accountable_bft.max_2f_byzantine, defs.observed_equivocation_def, defs.observed_unlawful_prevote_def, defs.accountability_violation_def, defs.agreement_def
+
+} with round
+
+# The final proof
+# ===============
+
+isolate accountable_safety_1 = {
+
+# First we instantiate the concrete protocol:
+    instantiate tendermint(abstract_accountable_safety)
+
+# We then define what we mean by agreement
+    relation agreement
+    definition [agreement_def] agreement = forall N1,N2. well_behaved(N1) & well_behaved(N2) & server.decision(N1) ~= value.nil & server.decision(N2) ~= value.nil -> server.decision(N1) = server.decision(N2)
+
+    invariant abstract_accountable_safety.agreement -> agreement
+
+    invariant [accountability] agreement | abstract_accountable_safety.accountability_violation
+
+} with value, round, proposers, shim, abstract_accountable_safety, abstract_accountable_safety.defs.agreement_def, accountable_safety_1.agreement_def

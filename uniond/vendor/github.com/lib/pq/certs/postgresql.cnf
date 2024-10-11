@@ -1,0 +1,10 @@
+[req]
+distinguished_name = req_distinguished_name
+prompt             = no
+
+[req_distinguished_name]
+C   = US
+ST  = Nevada
+L   = Las Vegas
+O   = github.com/lib/pq
+CN  = pqgosslcert

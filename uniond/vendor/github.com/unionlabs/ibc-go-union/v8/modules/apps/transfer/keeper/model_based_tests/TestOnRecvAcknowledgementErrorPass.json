@@ -1,0 +1,159 @@
+[
+  {
+    "packet": {
+      "sourceChannel": "channel-0",
+      "sourcePort": "transfer",
+      "destChannel": "channel-1",
+      "destPort": "transfer",
+      "data": {
+        "sender": "",
+        "receiver": "a1",
+        "amount": "1",
+        "denom": [
+          "",
+          "",
+          "channel-0",
+          "ethereum-hub",
+          "btc"
+        ]
+      }
+    },
+    "handler": "OnRecvPacket",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a1"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "channel-0",
+          "ethereum-hub",
+          "btc"
+        ],
+        "amount": 1
+      }
+    ],
+    "error": false
+  },
+  {
+    "packet": {
+      "sourceChannel": "channel-1",
+      "sourcePort": "transfer",
+      "destChannel": "channel-0",
+      "destPort": "transfer",
+      "data": {
+        "sender": "a1",
+        "receiver": "a2",
+        "amount": "1",
+        "denom": [
+          "transfer",
+          "channel-1",
+          "channel-0",
+          "ethereum-hub",
+          "btc"
+        ]
+      }
+    },
+    "handler": "OnRecvAcknowledgementError",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a1"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "channel-0",
+          "ethereum-hub",
+          "btc"
+        ],
+        "amount": 1
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a1"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "channel-0",
+          "ethereum-hub",
+          "btc"
+        ],
+        "amount": 2
+      }
+    ],
+    "error": false
+  }
+]

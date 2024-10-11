@@ -1,0 +1,2 @@
+- `[consensus]` `Handshaker.Handshake` now requires `context.Context` ([\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[node]` `NewNode` now requires `context.Context` as the first parameter ([\#857](https://github.com/cometbft/cometbft/pull/857))

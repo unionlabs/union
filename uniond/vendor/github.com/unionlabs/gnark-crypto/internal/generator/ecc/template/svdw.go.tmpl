@@ -1,0 +1,91 @@
+{{define "svdw"}}
+)
+{{$TowerDegree := .Field.Degree}}
+{{$CoordType := .Point.CoordType}}
+{{$CurveName := .Point.PointName}}
+{{$CurveTitle := toTitle $CurveName}}
+{{$AffineType := print $CurveTitle "Affine"}}
+{{$IsG1 := eq $CurveTitle "G1"}}
+{{$CurveIndex := "2"}}
+{{$B := "bTwistCurveCoeff"}}
+{{if $IsG1}}{{$CurveIndex = "1"}}{{$B = "bCurveCoeff"}}{{end}}
+
+
+// MapToCurve{{$CurveIndex}} implements the Shallue and van de Woestijne method, applicable to any elliptic curve in Weierstrass form
+// No cofactor clearing or isogeny
+// https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-16.html#straightline-svdw
+func MapToCurve{{$CurveIndex}}(u *{{$CoordType}}) {{$AffineType}} {
+    var tv1, tv2, tv3, tv4 {{$CoordType}}
+    var x1, x2, x3, gx1, gx2, gx, x, y {{$CoordType}}
+    var one {{$CoordType}}
+    var gx1NotSquare, gx1SquareOrGx2Not int
+
+    //constants
+    //c1 = g(Z)
+    //c2 = -Z / 2
+    //c3 = sqrt(-g(Z) * (3 * Z² + 4 * A))     # sgn0(c3) MUST equal 0
+    //c4 = -4 * g(Z) / (3 * Z² + 4 * A)
+
+    Z  := {{$CoordType}}{{asElement (index $.PrecomputedParams 0)}}
+    c1 := {{$CoordType}}{{asElement (index $.PrecomputedParams 1)}}
+    c2 := {{$CoordType}}{{asElement (index $.PrecomputedParams 2)}}
+    c3 := {{$CoordType}}{{asElement (index $.PrecomputedParams 3)}}
+    c4 := {{$CoordType}}{{asElement (index $.PrecomputedParams 4)}}
+
+    one.SetOne()
+
+    tv1.Square(u)      //    1.  tv1 = u²
+    tv1.Mul(&tv1, &c1)  //    2.  tv1 = tv1 * c1
+    tv2.Add(&one, &tv1) //    3.  tv2 = 1 + tv1
+    tv1.Sub(&one, &tv1) //    4.  tv1 = 1 - tv1
+    tv3.Mul(&tv1, &tv2) //    5.  tv3 = tv1 * tv2
+
+    tv3.Inverse(&tv3)   //    6.  tv3 = inv0(tv3)
+    tv4.Mul(u, &tv1)   //    7.  tv4 = u * tv1
+    tv4.Mul(&tv4, &tv3) //    8.  tv4 = tv4 * tv3
+    tv4.Mul(&tv4, &c3)  //    9.  tv4 = tv4 * c3
+    x1.Sub(&c2, &tv4)   //    10.  x1 = c2 - tv4
+
+    gx1.Square(&x1) //    11. gx1 = x1²
+    //12. gx1 = gx1 + A     All curves in gnark-crypto have A=0 (j-invariant=0). It is crucial to include this step if the curve has nonzero A coefficient.
+    gx1.Mul(&gx1, &x1)                 //    13. gx1 = gx1 * x1
+    gx1.Add(&gx1, &{{$B}})   //    14. gx1 = gx1 + B
+    gx1NotSquare = gx1.Legendre() >> 1 //    15.  e1 = is_square(gx1)
+    // gx1NotSquare = 0 if gx1 is a square, -1 otherwise
+
+    x2.Add(&c2, &tv4) //    16.  x2 = c2 + tv4
+    gx2.Square(&x2)   //    17. gx2 = x2²
+    //    18. gx2 = gx2 + A     See line 12
+    gx2.Mul(&gx2, &x2)               //    19. gx2 = gx2 * x2
+    gx2.Add(&gx2, &{{$B}}) //    20. gx2 = gx2 + B
+
+    {
+        gx2NotSquare := gx2.Legendre() >> 1              // gx2Square = 0 if gx2 is a square, -1 otherwise
+        gx1SquareOrGx2Not = gx2NotSquare | ^gx1NotSquare //    21.  e2 = is_square(gx2) AND NOT e1   # Avoid short-circuit logic ops
+    }
+
+    x3.Square(&tv2)   //    22.  x3 = tv2²
+    x3.Mul(&x3, &tv3) //    23.  x3 = x3 * tv3
+    x3.Square(&x3)    //    24.  x3 = x3²
+    x3.Mul(&x3, &c4)  //    25.  x3 = x3 * c4
+
+    x3.Add(&x3, &Z)                  //    26.  x3 = x3 + Z
+    x.Select(gx1NotSquare, &x1, &x3) //    27.   x = CMOV(x3, x1, e1)   # x = x1 if gx1 is square, else x = x3
+    // Select x1 iff gx1 is square iff gx1NotSquare = 0
+    x.Select(gx1SquareOrGx2Not, &x2, &x) //    28.   x = CMOV(x, x2, e2)    # x = x2 if gx2 is square and gx1 is not
+    // Select x2 iff gx2 is square and gx1 is not, iff gx1SquareOrGx2Not = 0
+    gx.Square(&x) //    29.  gx = x²
+    //    30.  gx = gx + A
+
+    gx.Mul(&gx, &x)                //    31.  gx = gx * x
+    gx.Add(&gx, &{{$B}}) //    32.  gx = gx + B
+
+    y.Sqrt(&gx)                              //    33.   y = sqrt(gx)
+    signsNotEqual := {{$CurveName}}Sgn0(u) ^ {{$CurveName}}Sgn0(&y) //    34.  e3 = sgn0(u) == sgn0(y)
+
+    tv1.Neg(&y)
+    y.Select(int(signsNotEqual), &y, &tv1) //    35.   y = CMOV(-y, y, e3)       # Select correct sign of y
+    return {{$AffineType}}{x, y}
+}
+
+{{end}}

@@ -1,0 +1,178 @@
+#lang ivy1.7
+# ---
+# layout: page
+# title: Abstract specification of Tendermint in Ivy
+# ---
+
+# Here we define an abstract version of the Tendermint specification. We use
+# two main forms of abstraction: a) We abstract over how information is
+# transmitted (there is no network). b) We abstract functions using relations.
+# For example, we abstract over a node's current round, instead only tracking
+# with a relation which rounds the node has left. We do something similar for
+# the `lockedRound` variable. This is in order to avoid using a function from
+# node to round, and it allows us to emit verification conditions that are
+# efficiently solvable by Z3.
+
+# This specification also defines the observations that are used to adjudicate
+# misbehavior. Well-behaved nodes faithfully observe every message that they
+# use to take a step, while Byzantine nodes can fake observations about
+# themselves (including withholding observations). Misbehavior is defined using
+# the collection of all observations made (in reality, those observations must
+# be collected first, but we do not model this process).
+
+include domain_model
+
+module abstract_tendermint = {
+
+# Protocol state
+# ##############
+
+    relation left_round(N:node, R:round)
+    relation prevoted(N:node, R:round, V:value)
+    relation precommitted(N:node, R:round, V:value)
+    relation decided(N:node, R:round, V:value)
+    relation locked(N:node, R:round, V:value)
+
+# Accountability relations
+# ########################
+
+    relation observed_prevoted(N:node, R:round, V:value)
+    relation observed_precommitted(N:node, R:round, V:value)
+
+# relations that are defined in terms of the previous two:
+    relation observed_equivocation(N:node)
+    relation observed_unlawful_prevote(N:node)
+    relation agreement
+    relation accountability_violation
+
+    object defs = { # we hide those definitions and use them only when needed
+        private {
+            definition [observed_equivocation_def] observed_equivocation(N) = exists V1,V2,R .
+                V1 ~= V2 & (observed_precommitted(N,R,V1) & observed_precommitted(N,R,V2) | observed_prevoted(N,R,V1) & observed_prevoted(N,R,V2))
+
+            definition [observed_unlawful_prevote_def] observed_unlawful_prevote(N) = exists V1,V2,R1,R2 .
+                V1 ~= value.nil & V2 ~= value.nil & V1 ~= V2 & R1 < R2 & observed_precommitted(N,R1,V1) & observed_prevoted(N,R2,V2)
+                & forall Q,R . R1 <= R & R < R2 & nset.is_quorum(Q) -> exists N2 . nset.member(N2,Q) & ~observed_prevoted(N2,R,V2)
+
+            definition [agreement_def] agreement = forall N1,N2,R1,R2,V1,V2 . well_behaved(N1) & well_behaved(N2) & decided(N1,R1,V1) & decided(N2,R2,V2) -> V1 = V2
+
+            definition [accountability_violation_def] accountability_violation = exists Q1,Q2 . nset.is_quorum(Q1) & nset.is_quorum(Q2) & (forall N . nset.member(N,Q1) & nset.member(N,Q2) -> observed_equivocation(N) | observed_unlawful_prevote(N))
+        }
+    }
+
+# Protocol transitions
+# ####################
+
+    after init {
+        left_round(N,R) := R < 0;
+        prevoted(N,R,V) := false;
+        precommitted(N,R,V) := false;
+        decided(N,R,V) := false;
+        locked(N,R,V) := false;
+
+        observed_prevoted(N,R,V) := false;
+        observed_precommitted(N,R,V) := false;
+    }
+
+# Actions are named after the corresponding line numbers in the Tendermint
+# arXiv paper.
+
+    action l_11(n:node, r:round) = { # start round r
+        require ~left_round(n,r);
+        left_round(n,R) := R < r;
+    }
+
+    action l_22(n:node, rp:round, v:value) = {
+        require ~left_round(n,rp);
+        require ~prevoted(n,rp,V) & ~precommitted(n,rp,V);
+        require (forall R,V . locked(n,R,V) -> V = v) | v = value.nil;
+        prevoted(n, rp, v) := true;
+        left_round(n, R) := R < rp; # leave all lower rounds.
+
+        observed_prevoted(n, rp, v) := observed_prevoted(n, rp, v) | well_behaved(n); # the node observes itself
+    }
+
+    action l_28(n:node, rp:round, v:value, vr:round, q:nset) = {
+        require ~left_round(n,rp) & ~prevoted(n,rp,V);
+        require ~prevoted(n,rp,V) & ~precommitted(n,rp,V);
+        require vr < rp;
+        require nset.is_quorum(q) & (forall N . nset.member(N,q) -> (prevoted(N,vr,v) | ~well_behaved(N)));
+        var proposal:value;
+        if value.valid(v) & ((forall R0,V0 . locked(n,R0,V0) -> R0 <= vr) | (forall R,V . locked(n,R,V) -> V = v)) {
+            proposal := v;
+        }
+        else {
+            proposal := value.nil;
+        };
+        prevoted(n, rp, proposal) := true;
+        left_round(n, R) := R < rp; # leave all lower rounds
+
+        observed_prevoted(N, vr, v) := observed_prevoted(N, vr, v) | (well_behaved(n) & nset.member(N,q)); # the node observes the prevotes of quorum q
+        observed_prevoted(n, rp, proposal) := observed_prevoted(n, rp, proposal) | well_behaved(n); # the node observes itself
+    }
+
+    action l_36(n:node, rp:round, v:value, q:nset) = {
+        require v ~= value.nil;
+        require ~left_round(n,rp);
+        require exists V . prevoted(n,rp,V);
+        require ~precommitted(n,rp,V);
+        require nset.is_quorum(q) & (forall N . nset.member(N,q) -> (prevoted(N,rp,v) | ~well_behaved(N)));
+        precommitted(n, rp, v) := true;
+        left_round(n, R) := R < rp; # leave all lower rounds
+        locked(n,R,V) := R <= rp & V = v;
+
+        observed_prevoted(N, rp, v) := observed_prevoted(N, rp, v) | (well_behaved(n) & nset.member(N,q)); # the node observes the prevotes of quorum q
+        observed_precommitted(n, rp, v) := observed_precommitted(n, rp, v) | well_behaved(n); # the node observes itself
+    }
+
+    action l_44(n:node, rp:round, q:nset) = {
+        require ~left_round(n,rp);
+        require ~precommitted(n,rp,V);
+        require nset.is_quorum(q) & (forall N .nset.member(N,q) -> (prevoted(N,rp,value.nil) | ~well_behaved(N)));
+        precommitted(n, rp, value.nil) := true;
+        left_round(n, R) := R < rp; # leave all lower rounds
+
+        observed_prevoted(N, rp, value.nil) := observed_prevoted(N, rp, value.nil) | (well_behaved(n) & nset.member(N,q)); # the node observes the prevotes of quorum q
+        observed_precommitted(n, rp, value.nil) := observed_precommitted(n, rp, value.nil) | well_behaved(n); # the node observes itself
+    }
+
+    action l_57(n:node, rp:round) = {
+        require ~left_round(n,rp);
+        require ~prevoted(n,rp,V);
+        prevoted(n, rp, value.nil) := true;
+        left_round(n, R) := R < rp; # leave all lower rounds
+
+        observed_prevoted(n, rp, value.nil) := observed_prevoted(n, rp, value.nil) | well_behaved(n); # the node observes itself
+    }
+
+    action l_61(n:node, rp:round) = {
+        require ~left_round(n,rp);
+        require ~precommitted(n,rp,V);
+        precommitted(n, rp, value.nil) := true;
+        left_round(n, R) := R < rp; # leave all lower rounds
+
+        observed_precommitted(n, rp, value.nil) := observed_precommitted(n, rp, value.nil) | well_behaved(n); # the node observes itself
+    }
+
+    action decide(n:node, r:round, v:value, q:nset) = {
+        require v ~= value.nil;
+        require nset.is_quorum(q) & (forall N . nset.member(N, q) -> (precommitted(N, r, v) | ~well_behaved(N)));
+        decided(n, r, v) := true;
+
+        observed_precommitted(N, r, v) := observed_precommitted(N, r, v) | (well_behaved(n) & nset.member(N,q)); # the node observes the precommits of quorum q
+
+    }
+
+    action misbehave = {
+# Byzantine nodes can claim they observed whatever they want about themselves,
+# but they cannot remove observations. Note that we use assume because we don't
+# want those to be checked; we just want them to be true (that's the model of
+# Byzantine behavior).
+        observed_prevoted(N,R,V) := *;
+        assume (old observed_prevoted(N,R,V)) -> observed_prevoted(N,R,V);
+        assume well_behaved(N) -> old observed_prevoted(N,R,V) = observed_prevoted(N,R,V);
+        observed_precommitted(N,R,V) := *;
+        assume (old observed_precommitted(N,R,V)) -> observed_precommitted(N,R,V);
+        assume well_behaved(N) -> old observed_precommitted(N,R,V) = observed_precommitted(N,R,V);
+    }
+}

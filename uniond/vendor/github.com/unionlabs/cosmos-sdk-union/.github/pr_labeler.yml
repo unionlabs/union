@@ -1,0 +1,104 @@
+"C:CLI":
+  - client/**/*
+  - x/*/client/**/*
+"C:Confix":
+  - tools/confix/**/*
+"C:Cosmovisor":
+  - tools/cosmovisor/**/*
+"C:Hubl":
+  - tools/hubl/**/*
+"C:Keys":
+  - client/keys/**/*
+"C:Simulations":
+  - types/simulation/**/*
+  - x/simulation/**/*
+  - x/*/simulation/**/*
+  - simsx/**/*
+"C:Store":
+  - store/**/*
+"C:collections":
+  - collections/**/*
+"C:core/testing":
+  - core/testing/**/*
+"C:log":
+  - log/*
+"C:orm":
+  - orm/**/*
+"C:schema":
+  - schema/**/*
+"C:indexer/postgres":
+  - indexer/postgres/**/*
+"C:x/accounts":
+  - x/accounts/**/*
+"C:x/accounts/base":
+  - x/accounts/defaults/base/**/*
+"C:x/accounts/multisig":
+  - x/accounts/defaults/multisig/**/*
+"C:x/accounts/lockup":
+  - x/accounts/defaults/lockup/**/*
+"C:x/auth":
+  - x/auth/**/*
+"C:x/authz":
+  - x/authz/**/*
+"C:x/bank":
+  - x/bank/**/*
+"C:x/circuit":
+  - x/circuit/**/*
+"C:x/consensus":
+  - x/consensus/**/*
+"C:x/crisis":
+  - x/crisis/**/*
+"C:x/distribution":
+  - x/distribution/**/*
+"C:x/evidence":
+  - x/evidence/**/*
+"C:x/feegrant":
+  - x/feegrant/**/*
+"C:x/genutil":
+  - x/genutil/**/*
+"C:x/gov":
+  - x/gov/**/*
+"C:x/group":
+  - x/group/**/*
+"C:x/mint":
+  - x/mint/**/*
+"C:x/nft":
+  - x/nft/**/*
+"C:x/params":
+  - x/params/**/*
+"C:x/protocolpool":
+  - x/protocolpool/**/*
+"C:x/slashing":
+  - x/slashing/**/*
+"C:x/staking":
+  - x/staking/**/*
+"C:x/tx":
+  - x/tx/**/*
+"C:x/upgrade":
+  - x/upgrade/**/*
+"C:x/epochs":
+  - x/epochs/**/*
+"C:x/validate":
+  - x/validate/**/*
+"C:server/v2":
+  - server/v2/**/*
+"C:server/v2 stf":
+  - server/v2/stf/**/*
+"C:server/v2 appmanager":
+  - server/v2/appmanager/**/*
+"C:server/v2 cometbft":
+  - server/v2/cometbft/**/*
+"C:server/v2 api":
+  - server/v2/api/**/*
+"Type: ADR":
+  - docs/architecture/**/*
+"Type: Build":
+  - Makefile
+  - Dockerfile
+  - docker-compose.yml
+  - scripts/*
+"Type: CI":
+  - .github/**
+  - buf.yaml
+  - .mergify.yml
+  - .golangci.yml

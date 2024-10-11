@@ -1,0 +1,15 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["priority_queue.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/container/queue",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["priority_queue_test.go"],
+    embed = [":go_default_library"],
+    deps = ["//testing/require:go_default_library"],
+)

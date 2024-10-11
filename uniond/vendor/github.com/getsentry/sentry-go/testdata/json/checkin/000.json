@@ -1,0 +1,8 @@
+{
+  "check_in_id": "c2f0ce1334c74564bf6631f6161173f5",
+  "monitor_slug": "my-monitor",
+  "status": "ok",
+  "duration": 10,
+  "release": "1.0.0",
+  "environment": "dev"
+}

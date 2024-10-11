@@ -1,0 +1,14 @@
+unquote blah/withsep
+unquote expect
+txtar-c blah
+stderr 'txtar-c: blah.withsep: ignoring file with txtar marker in'
+cmp stdout expect
+
+-- blah/withsep --
+>-- separator --
+>foo
+-- blah/nosep --
+bar
+-- expect --
+>-- nosep --
+>bar

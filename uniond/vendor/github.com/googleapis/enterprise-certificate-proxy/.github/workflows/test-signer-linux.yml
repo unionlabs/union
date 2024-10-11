@@ -1,0 +1,45 @@
+name: Build and Test Signer Linux
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Bootstrap SoftHSM Credentials
+      run: ./scripts/softhsm_setup.sh
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.19
+
+    - name: Build
+      working-directory: ./internal/signer/linux
+      run: go build -v ./...
+
+    - name: Test
+      working-directory: ./internal/signer/linux
+      run: go test -v ./... -testSlot=$(pkcs11-tool --list-slots --module "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so" | grep -Eo "0x[A-Fa-f0-9]+" | head -n 1)
+
+    - name: Lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        working-directory: ./internal/signer/linux
+        args: -E gofmt --max-same-issues 0
+
+    - name: Create Binaries
+      run: ./build/scripts/linux_amd64.sh
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: linux_amd64
+        path: ./build/bin/linux_amd64/*

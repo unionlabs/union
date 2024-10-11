@@ -1,0 +1,25 @@
+name: Build and Test C-Shared Library
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.18
+
+    - name: Build
+      run: go build -buildmode=c-shared -v -o signer.so ./cshared/...
+
+    - name: Test
+      run: go test -v ./cshared/...

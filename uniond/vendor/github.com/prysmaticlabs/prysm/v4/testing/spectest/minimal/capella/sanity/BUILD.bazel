@@ -1,0 +1,19 @@
+load("@prysm//tools/go:def.bzl", "go_test")
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = [
+        "blocks_test.go",
+        "slots_test.go",
+    ],
+    data = [
+        "@consensus_spec_tests_minimal//:test_data",
+    ],
+    eth_network = "minimal",
+    tags = [
+        "minimal",
+        "spectest",
+    ],
+    deps = ["//testing/spectest/shared/capella/sanity:go_default_library"],
+)

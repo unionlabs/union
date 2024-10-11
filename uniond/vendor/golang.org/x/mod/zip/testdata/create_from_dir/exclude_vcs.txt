@@ -1,0 +1,11 @@
+path=example.com/m
+version=v1.0.0
+hash=h1:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=
+-- .bzr/exclude --
+exclude
+-- .git/exclude --
+exclude
+-- .hg/exclude --
+exclude
+-- .svn/exclude --
+exclude

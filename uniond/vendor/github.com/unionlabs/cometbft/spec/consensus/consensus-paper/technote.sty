@@ -1,0 +1,118 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{technote}[2007/11/09]
+\typeout{Template for quick notes with some useful definitions}
+
+\RequirePackage{ifthen}
+\RequirePackage{calc}
+\RequirePackage{amsmath,amssymb,amsthm}
+\RequirePackage{epsfig}
+\RequirePackage{algorithm}
+\RequirePackage[noend]{algorithmicplus}
+
+\newboolean{technote@noedit}
+\setboolean{technote@noedit}{false}
+\DeclareOption{noedit}{\setboolean{technote@noedit}{true}}
+
+\newcounter{technote@lang}
+\setcounter{technote@lang}{0}
+\DeclareOption{german}{\setcounter{technote@lang}{1}}
+\DeclareOption{french}{\setcounter{technote@lang}{2}}
+
+\DeclareOption{fullpage}{
+\oddsidemargin  -10mm % Margin on odd side pages (default=0mm)
+\evensidemargin -10mm % Margin on even side pages (default=0mm)
+\topmargin      -10mm % Top margin space (default=16mm)
+\headheight       \baselineskip % Height of headers (default=0mm)
+\headsep          \baselineskip % Separation spc btw header and text (d=0mm)
+\footskip        30pt % Separation spc btw text and footer (d=30pt)
+\textheight     230mm % Total text height (default=200mm)
+\textwidth      180mm % Total text width (default=160mm)
+}
+
+\renewcommand{\algorithmiccomment}[1]{\hfill/* #1 */}
+\renewcommand{\algorithmiclnosize}{\scriptsize}
+
+\newboolean{technote@truenumbers}
+\setboolean{technote@truenumbers}{false}
+\DeclareOption{truenumbers}{\setboolean{technote@truenumbers}{true}}
+
+\ProcessOptions
+
+\newcommand{\N}{\ifthenelse{\boolean{technote@truenumbers}}%
+  {\mbox{\rm I\hspace{-.5em}N}}%
+  {\mathbb{N}}}
+
+\newcommand{\R}{\ifthenelse{\boolean{technote@truenumbers}}%
+  {\mbox{\rm I\hspace{-.2em}R}}%
+  {\mathbb{R}}}
+
+\newcommand{\Z}{\mathbb{Z}}
+
+\newcommand{\set}[1]{\left\{#1\right\}}
+\newcommand{\mathsc}[1]{\mbox{\sc #1}}
+\newcommand{\li}[1]{\langle#1\rangle}
+\newcommand{\st}{\;s.t.\;}
+\newcommand{\Real}{\R}
+\newcommand{\Natural}{\N}
+\newcommand{\Integer}{\Z}
+
+% edit commands
+\newcommand{\newedit}[2]{
+  \newcommand{#1}[2][default]{%
+    \ifthenelse{\boolean{technote@noedit}}{}{
+      \par\vspace{2mm}
+      \noindent
+      \begin{tabular}{|l|}\hline
+        \parbox{\linewidth-\tabcolsep*2}{{\bf #2:}\hfill\ifthenelse{\equal{##1}{default}}{}{##1}}\\\hline
+        \parbox{\linewidth-\tabcolsep*2}{\rule{0pt}{5mm}##2\rule[-2mm]{0pt}{2mm}}\\\hline
+      \end{tabular}
+      \par\vspace{2mm}
+    }
+  }
+}
+
+\newedit{\note}{Note}
+\newedit{\comment}{Comment}
+\newedit{\question}{Question}
+\newedit{\content}{Content}
+\newedit{\problem}{Problem}
+
+\newcommand{\mnote}[1]{\marginpar{\scriptsize\it
+            \begin{minipage}[t]{0.8 in}
+              \raggedright #1
+            \end{minipage}}}
+
+\newcommand{\Insert}[1]{\underline{#1}\marginpar{$|$}}
+
+\newcommand{\Delete}[1]{\marginpar{$|$}
+}
+
+% lemma, theorem, etc.
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+
+\gdef\op|{\,|\;}
+\gdef\op:{\,:\;}
+\newcommand{\assign}{\leftarrow}
+\newcommand{\inc}[1]{#1 \assign #1 + 1}
+\newcommand{\isdef}{:=}
+
+\newcommand{\ident}[1]{\mathit{#1}}
+\def\newident#1{\expandafter\def\csname #1\endcsname{\ident{#1}}}
+
+\newcommand{\eg}{{\it e.g.}}
+\newcommand{\ie}{{\it i.e.}}
+\newcommand{\apriori}{{\it apriori}}
+\newcommand{\etal}{{\it et al.}}
+
+\newcommand\ps@technote{%
+  \renewcommand\@oddhead{\theheader}%
+  \let\@evenhead\@oddhead
+  \renewcommand\@evenfoot
+    {\hfil\normalfont\textrm{\thepage}\hfil}%
+  \let\@oddfoot\@evenfoot
+}

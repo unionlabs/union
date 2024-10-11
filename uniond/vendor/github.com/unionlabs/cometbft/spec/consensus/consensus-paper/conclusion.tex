@@ -1,0 +1,16 @@
+\section{Conclusion} \label{sec:conclusion}
+
+We have proposed a new Byzantine-fault tolerant consensus algorithm that is the
+core of the Tendermint BFT SMR platform. The algorithm is designed for the wide
+area network with high number of mutually distrusted nodes that communicate
+over gossip based peer-to-peer network. It has only a single mode of execution
+and the communication pattern is very similar to the "normal" case of the
+state-of-the art PBFT algorithm. The algorithm ensures termination with a novel
+mechanism that takes advantage of the gossip based communication between nodes.
+The proposed algorithm and the proofs are simple and elegant, and we believe
+that this makes it easier to understand and implement correctly.   
+
+\section*{Acknowledgment}
+
+We would like to thank Anton Kaliaev, Ismail Khoffi and Dahlia Malkhi for comments on an earlier version of the paper. We also want to thank Marko Vukolic, Ming Chuan Lin, Maria Potop-Butucaru, Sara Tucci, Antonella Del Pozzo and Yackolley Amoussou-Guenou for pointing out the liveness issues
+in the previous version of the algorithm. Finally, we want to thank the Tendermint team members and all project contributors for making Tendermint such a great platform.  

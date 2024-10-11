@@ -1,0 +1,12 @@
+// This file is used by markdownlint-cli2 to configure the linting process
+// in conjunction with .markdownlint.jsonc.
+{
+  "ignores": [
+    "docs/node_modules/**",
+    ".github",
+    "**/CHANGELOG.md",
+    "vendor/**",
+    "e2e/vendor/**",
+    "modules/capability/vendor/**"
+  ]
+}

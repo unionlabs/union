@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package ibc.applications.interchain_accounts.host.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types";
+
+import "google/api/annotations.proto";
+import "ibc/applications/interchain_accounts/host/v1/host.proto";
+
+// Query provides defines the gRPC querier service.
+service Query {
+  // Params queries all parameters of the ICA host submodule.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/ibc/apps/interchain_accounts/host/v1/params";
+  }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1;
+}

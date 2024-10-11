@@ -1,0 +1,26 @@
+---
+name: Tests AMD64
+permissions: read-all
+on: [push, pull_request]
+jobs:
+  test-linux-amd64:
+    uses: ./.github/workflows/tests-template.yml
+  test-linux-amd64-race:
+    uses: ./.github/workflows/tests-template.yml
+    with:
+      runs-on: ubuntu-latest-8-cores
+      targets: "['linux-unit-test-4-cpu-race']"
+
+  coverage:
+    needs:
+      - test-linux-amd64
+      - test-linux-amd64-race
+    runs-on: ubuntu-latest-8-cores
+    steps:
+      - uses: actions/checkout@v4
+      - id: goversion
+        run: echo "goversion=$(cat .go-version)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ steps.goversion.outputs.goversion }}
+      - run: make coverage

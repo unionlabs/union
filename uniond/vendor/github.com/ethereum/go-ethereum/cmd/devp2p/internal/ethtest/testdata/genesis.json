@@ -1,0 +1,27 @@
+{
+    "config": {
+        "chainId": 19763,
+        "homesteadBlock": 0,
+        "eip150Block": 0,
+        "eip155Block": 0,
+        "eip158Block": 0,
+        "byzantiumBlock": 0,
+        "terminalTotalDifficultyPassed": true,
+        "ethash": {}
+    },
+    "nonce": "0xdeadbeefdeadbeef",
+    "timestamp": "0x0",
+    "extraData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "gasLimit": "0x80000000",
+    "difficulty": "0x20000",
+    "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "coinbase": "0x0000000000000000000000000000000000000000",
+    "alloc": {
+        "71562b71999873db5b286df957af199ec94617f7": {
+            "balance": "0xffffffffffffffffffffffffff"
+        }
+    },
+    "number": "0x0",
+    "gasUsed": "0x0",
+    "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+}

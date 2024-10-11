@@ -66,7 +66,7 @@ func newCCResolverWrapper(cc *ClientConn) *ccResolverWrapper {
 // any newly created ccResolverWrapper, except that close may be called instead.
 func (ccr *ccResolverWrapper) start() error {
 	errCh := make(chan error)
-	ccr.serializer.Schedule(func(ctx context.Context) {
+	ccr.serializer.TrySchedule(func(ctx context.Context) {
 		if ctx.Err() != nil {
 			return
 		}
@@ -85,7 +85,7 @@ func (ccr *ccResolverWrapper) start() error {
 }
 
 func (ccr *ccResolverWrapper) resolveNow(o resolver.ResolveNowOptions) {
-	ccr.serializer.Schedule(func(ctx context.Context) {
+	ccr.serializer.TrySchedule(func(ctx context.Context) {
 		if ctx.Err() != nil || ccr.resolver == nil {
 			return
 		}
@@ -102,7 +102,7 @@ func (ccr *ccResolverWrapper) close() {
 	ccr.closed = true
 	ccr.mu.Unlock()
 
-	ccr.serializer.Schedule(func(context.Context) {
+	ccr.serializer.TrySchedule(func(context.Context) {
 		if ccr.resolver == nil {
 			return
 		}
@@ -171,12 +171,15 @@ func (ccr *ccResolverWrapper) NewAddress(addrs []resolver.Address) {
 // ParseServiceConfig is called by resolver implementations to parse a JSON
 // representation of the service config.
 func (ccr *ccResolverWrapper) ParseServiceConfig(scJSON string) *serviceconfig.ParseResult {
-	return parseServiceConfig(scJSON)
+	return parseServiceConfig(scJSON, ccr.cc.dopts.maxCallAttempts)
 }
 
 // addChannelzTraceEvent adds a channelz trace event containing the new
 // state received from resolver implementations.
 func (ccr *ccResolverWrapper) addChannelzTraceEvent(s resolver.State) {
+	if !logger.V(0) && !channelz.IsOn() {
+		return
+	}
 	var updates []string
 	var oldSC, newSC *ServiceConfig
 	var oldOK, newOK bool

@@ -1,0 +1,36 @@
+name: Capability Module
+# This workflow runs when a PR is opened that targets code that is part of the capability module.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/capability.yml'
+      - 'modules/capability/**'
+      - 'proto/capability/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-arch: ['amd64', 'arm', 'arm64']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - name: Build capability-module
+        run: |
+          cd modules/capability
+          GOARCH=${{ matrix.go-arch }} go build ./...
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - name: Go Test
+        run: |
+          cd modules/capability
+          go test -v -mod=readonly ./...

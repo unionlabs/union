@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("I am ecome Death, the destroyer of worlds!*m/1'")

@@ -1,0 +1,566 @@
+define
+0:
+  000700:[b#7008,SET-e#7009,SET]
+  000701:[c#7018,SET-f#7019,SET]
+  000702:[f#7028,SET-g#7029,SET]
+  000703:[x#7038,SET-y#7039,SET]
+  000704:[n#7048,SET-p#7049,SET]
+  000705:[p#7058,SET-p#7059,SET]
+  000706:[p#7068,SET-u#7069,SET]
+  000707:[r#7078,SET-s#7079,SET]
+1:
+  000710:[a#7140,SET-d#inf,RANGEDEL]
+  000711:[d#7108,SET-g#7109,SET]
+  000712:[g#7118,SET-j#7119,SET]
+  000713:[n#7128,SET-p#7129,SET]
+  000714:[p#7148,SET-p#7149,SET]
+  000715:[p#7138,SET-u#7139,SET]
+----
+0.3:
+  000704:[n#7048,SET-p#7049,SET]
+0.2:
+  000700:[b#7008,SET-e#7009,SET]
+  000705:[p#7058,SET-p#7059,SET]
+0.1:
+  000701:[c#7018,SET-f#7019,SET]
+  000706:[p#7068,SET-u#7069,SET]
+0.0:
+  000702:[f#7028,SET-g#7029,SET]
+  000707:[r#7078,SET-s#7079,SET]
+  000703:[x#7038,SET-y#7039,SET]
+1:
+  000710:[a#7140,SET-d#inf,RANGEDEL]
+  000711:[d#7108,SET-g#7109,SET]
+  000712:[g#7118,SET-j#7119,SET]
+  000713:[n#7128,SET-p#7129,SET]
+  000714:[p#7148,SET-p#7149,SET]
+  000715:[p#7138,SET-u#7139,SET]
+
+# Level 0
+
+overlaps level=0 start=a end=a exclusive-end=false
+----
+0 files:
+
+overlaps level=0 start=a end=b exclusive-end=false
+----
+3 files:
+000700:[b#7008,SET-e#7009,SET]
+000701:[c#7018,SET-f#7019,SET]
+000702:[f#7028,SET-g#7029,SET]
+
+overlaps level=0 start=a end=d exclusive-end=false
+----
+3 files:
+000700:[b#7008,SET-e#7009,SET]
+000701:[c#7018,SET-f#7019,SET]
+000702:[f#7028,SET-g#7029,SET]
+
+overlaps level=0 start=a end=e exclusive-end=false
+----
+3 files:
+000700:[b#7008,SET-e#7009,SET]
+000701:[c#7018,SET-f#7019,SET]
+000702:[f#7028,SET-g#7029,SET]
+
+overlaps level=0 start=a end=g exclusive-end=false
+----
+3 files:
+000700:[b#7008,SET-e#7009,SET]
+000701:[c#7018,SET-f#7019,SET]
+000702:[f#7028,SET-g#7029,SET]
+
+overlaps level=0 start=a end=z exclusive-end=false
+----
+8 files:
+000700:[b#7008,SET-e#7009,SET]
+000701:[c#7018,SET-f#7019,SET]
+000702:[f#7028,SET-g#7029,SET]
+000703:[x#7038,SET-y#7039,SET]
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=c end=e exclusive-end=false
+----
+3 files:
+000700:[b#7008,SET-e#7009,SET]
+000701:[c#7018,SET-f#7019,SET]
+000702:[f#7028,SET-g#7029,SET]
+
+overlaps level=0 start=d end=d exclusive-end=false
+----
+3 files:
+000700:[b#7008,SET-e#7009,SET]
+000701:[c#7018,SET-f#7019,SET]
+000702:[f#7028,SET-g#7029,SET]
+
+# The below case relies on exclusive-end changing to false after picking some file.
+
+overlaps level=0 start=b end=f exclusive-end=true
+----
+3 files:
+000700:[b#7008,SET-e#7009,SET]
+000701:[c#7018,SET-f#7019,SET]
+000702:[f#7028,SET-g#7029,SET]
+
+overlaps level=0 start=g end=n exclusive-end=false
+----
+7 files:
+000700:[b#7008,SET-e#7009,SET]
+000701:[c#7018,SET-f#7019,SET]
+000702:[f#7028,SET-g#7029,SET]
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=h end=i exclusive-end=false
+----
+0 files:
+
+overlaps level=0 start=h end=o exclusive-end=false
+----
+4 files:
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=h end=u exclusive-end=false
+----
+4 files:
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=k end=l exclusive-end=false
+----
+0 files:
+
+overlaps level=0 start=k end=o exclusive-end=false
+----
+4 files:
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=k end=p exclusive-end=false
+----
+4 files:
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=n end=o exclusive-end=false
+----
+4 files:
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=n end=z exclusive-end=false
+----
+5 files:
+000703:[x#7038,SET-y#7039,SET]
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=o end=z exclusive-end=false
+----
+5 files:
+000703:[x#7038,SET-y#7039,SET]
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=p end=z exclusive-end=false
+----
+5 files:
+000703:[x#7038,SET-y#7039,SET]
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=q end=z exclusive-end=false
+----
+5 files:
+000703:[x#7038,SET-y#7039,SET]
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=r end=s exclusive-end=false
+----
+4 files:
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=r end=z exclusive-end=false
+----
+5 files:
+000703:[x#7038,SET-y#7039,SET]
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=s end=z exclusive-end=false
+----
+5 files:
+000703:[x#7038,SET-y#7039,SET]
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=u end=z exclusive-end=false
+----
+5 files:
+000703:[x#7038,SET-y#7039,SET]
+000704:[n#7048,SET-p#7049,SET]
+000705:[p#7058,SET-p#7059,SET]
+000706:[p#7068,SET-u#7069,SET]
+000707:[r#7078,SET-s#7079,SET]
+
+overlaps level=0 start=y end=z exclusive-end=false
+----
+1 files:
+000703:[x#7038,SET-y#7039,SET]
+
+overlaps level=0 start=z end=z exclusive-end=false
+----
+0 files:
+
+# Level 1
+
+overlaps level=1 start=a end=a exclusive-end=false
+----
+1 files:
+000710:[a#7140,SET-d#inf,RANGEDEL]
+
+overlaps level=1 start=a end=b exclusive-end=false
+----
+1 files:
+000710:[a#7140,SET-d#inf,RANGEDEL]
+
+overlaps level=1 start=a end=d exclusive-end=false
+----
+2 files:
+000710:[a#7140,SET-d#inf,RANGEDEL]
+000711:[d#7108,SET-g#7109,SET]
+
+overlaps level=1 start=a end=e exclusive-end=false
+----
+2 files:
+000710:[a#7140,SET-d#inf,RANGEDEL]
+000711:[d#7108,SET-g#7109,SET]
+
+overlaps level=1 start=a end=g exclusive-end=false
+----
+3 files:
+000710:[a#7140,SET-d#inf,RANGEDEL]
+000711:[d#7108,SET-g#7109,SET]
+000712:[g#7118,SET-j#7119,SET]
+
+overlaps level=1 start=a end=g exclusive-end=true
+----
+2 files:
+000710:[a#7140,SET-d#inf,RANGEDEL]
+000711:[d#7108,SET-g#7109,SET]
+
+overlaps level=1 start=a end=z exclusive-end=false
+----
+6 files:
+000710:[a#7140,SET-d#inf,RANGEDEL]
+000711:[d#7108,SET-g#7109,SET]
+000712:[g#7118,SET-j#7119,SET]
+000713:[n#7128,SET-p#7129,SET]
+000714:[p#7148,SET-p#7149,SET]
+000715:[p#7138,SET-u#7139,SET]
+
+overlaps level=1 start=a end=z exclusive-end=true
+----
+6 files:
+000710:[a#7140,SET-d#inf,RANGEDEL]
+000711:[d#7108,SET-g#7109,SET]
+000712:[g#7118,SET-j#7119,SET]
+000713:[n#7128,SET-p#7129,SET]
+000714:[p#7148,SET-p#7149,SET]
+000715:[p#7138,SET-u#7139,SET]
+
+overlaps level=1 start=c end=e exclusive-end=false
+----
+2 files:
+000710:[a#7140,SET-d#inf,RANGEDEL]
+000711:[d#7108,SET-g#7109,SET]
+
+overlaps level=1 start=d end=d exclusive-end=false
+----
+1 files:
+000711:[d#7108,SET-g#7109,SET]
+
+overlaps level=1 start=g end=n exclusive-end=false
+----
+3 files:
+000711:[d#7108,SET-g#7109,SET]
+000712:[g#7118,SET-j#7119,SET]
+000713:[n#7128,SET-p#7129,SET]
+
+overlaps level=1 start=h end=i exclusive-end=false
+----
+1 files:
+000712:[g#7118,SET-j#7119,SET]
+
+overlaps level=1 start=h end=n exclusive-end=true
+----
+1 files:
+000712:[g#7118,SET-j#7119,SET]
+
+overlaps level=1 start=h end=n exclusive-end=false
+----
+2 files:
+000712:[g#7118,SET-j#7119,SET]
+000713:[n#7128,SET-p#7129,SET]
+
+overlaps level=1 start=h end=o exclusive-end=false
+----
+2 files:
+000712:[g#7118,SET-j#7119,SET]
+000713:[n#7128,SET-p#7129,SET]
+
+overlaps level=1 start=h end=u exclusive-end=false
+----
+4 files:
+000712:[g#7118,SET-j#7119,SET]
+000713:[n#7128,SET-p#7129,SET]
+000714:[p#7148,SET-p#7149,SET]
+000715:[p#7138,SET-u#7139,SET]
+
+overlaps level=1 start=k end=l exclusive-end=false
+----
+0 files:
+
+overlaps level=1 start=k end=o exclusive-end=false
+----
+1 files:
+000713:[n#7128,SET-p#7129,SET]
+
+overlaps level=1 start=k end=p exclusive-end=false
+----
+3 files:
+000713:[n#7128,SET-p#7129,SET]
+000714:[p#7148,SET-p#7149,SET]
+000715:[p#7138,SET-u#7139,SET]
+
+overlaps level=1 start=k end=p exclusive-end=true
+----
+1 files:
+000713:[n#7128,SET-p#7129,SET]
+
+overlaps level=1 start=n end=o exclusive-end=false
+----
+1 files:
+000713:[n#7128,SET-p#7129,SET]
+
+overlaps level=1 start=n end=z exclusive-end=false
+----
+3 files:
+000713:[n#7128,SET-p#7129,SET]
+000714:[p#7148,SET-p#7149,SET]
+000715:[p#7138,SET-u#7139,SET]
+
+overlaps level=1 start=o end=z exclusive-end=false
+----
+3 files:
+000713:[n#7128,SET-p#7129,SET]
+000714:[p#7148,SET-p#7149,SET]
+000715:[p#7138,SET-u#7139,SET]
+
+overlaps level=1 start=p end=z exclusive-end=false
+----
+3 files:
+000713:[n#7128,SET-p#7129,SET]
+000714:[p#7148,SET-p#7149,SET]
+000715:[p#7138,SET-u#7139,SET]
+
+overlaps level=1 start=q end=z exclusive-end=false
+----
+1 files:
+000715:[p#7138,SET-u#7139,SET]
+
+overlaps level=1 start=r end=s exclusive-end=false
+----
+1 files:
+000715:[p#7138,SET-u#7139,SET]
+
+overlaps level=1 start=r end=z exclusive-end=false
+----
+1 files:
+000715:[p#7138,SET-u#7139,SET]
+
+overlaps level=1 start=s end=z exclusive-end=false
+----
+1 files:
+000715:[p#7138,SET-u#7139,SET]
+
+overlaps level=1 start=u end=z exclusive-end=false
+----
+1 files:
+000715:[p#7138,SET-u#7139,SET]
+
+overlaps level=1 start=y end=z exclusive-end=false
+----
+0 files:
+
+overlaps level=1 start=z end=z exclusive-end=false
+----
+0 files:
+
+# Level 2 is empty.
+
+overlaps level=2 start=a end=z exclusive-end=false
+----
+0 files:
+
+# Test a scenario where an originally exclusive-end must be promoted to
+# inclusive during the iterative expansion of L0 overlaps.
+#
+# 000003 with the f largest bound must be included.
+
+define
+0:
+  000001:[a#1,SET-d#2,SET]
+  000002:[c#3,SET-f#4,SET]
+  000003:[f#5,SET-f#5,SET]
+----
+0.2:
+  000001:[a#1,SET-d#2,SET]
+0.1:
+  000002:[c#3,SET-f#4,SET]
+0.0:
+  000003:[f#5,SET-f#5,SET]
+
+overlaps level=0 start=a end=b exclusive-end=true
+----
+3 files:
+000001:[a#1,SET-d#2,SET]
+000002:[c#3,SET-f#4,SET]
+000003:[f#5,SET-f#5,SET]
+
+# The below is a verbatim reproduction of the case detected by the
+# metamorphic tests in pebble#1459: The above case is already a
+# simplified version of the same condition. The verbatim reproduction is
+# included for completeness.
+
+define
+0.4:
+  000987:[aiinjp@20#4667,SET-fcklu@5#inf,RANGEDEL]
+  000988:[fcklu@5#4668,MERGE-glpw@1#inf,RANGEDEL]
+  000989:[glpw@1#4662,RANGEDEL-mlgxnog@19#inf,RANGEDEL]
+  000990:[mlgxnog@19#4662,RANGEDEL-nwnmqtyvjt@5#inf,RANGEDEL]
+  000991:[nwnmqtyvjt@5#4662,RANGEDEL-wmkrrxp@6#inf,RANGEDEL]
+0.3:
+  000978:[dygfdczcax@15#4609,DEL-vtocgpw@18#4609,DEL]
+  000992:[wmkrrxp@6#4657,MERGE-yyquzcd@21#4624,SET]
+  000993:[zslykqao@12#4636,SINGLEDEL-zzqwavxgrec@12#4627,DEL]
+0.2:
+  000981:[fhcykuix@5#4601,MERGE-kiati@10#4595,MERGE]
+  000977:[mgksrvk@15#4598,DEL-mgksrvk@15#4598,DEL]
+  000982:[nirnrarzktp@12#4600,MERGE-zaowx@3#4602,SET]
+  000828:[zzqwavxgrec@12#4092,SINGLEDEL-zzqwavxgrec@12#4092,SINGLEDEL]
+0.1:
+  000980:[dusu@10#4603,SET-duyeldgvnll@21#4605,SET]
+  000973:[ewqqtp@15#4591,RANGEDEL-zaygjmy@1#inf,RANGEDEL]
+  000605:[zzqwavxgrec@12#2894,SET-zzqwavxgrec@12#2894,SET]
+0.0:
+  000910:[abddymplk@20#4370,MERGE-abddymplk@20#4370,MERGE]
+  000939:[abvukibeofb@13#4439,SET-abvukibeofb@13#4439,SET]
+  000975:[ajoqjxr@16#4578,MERGE-zjyqka@1#4544,DEL]
+  000983:[znnoar@20#4604,SINGLEDEL-znnoar@20#4604,SINGLEDEL]
+  000535:[zzqwavxgrec@12#2657,SINGLEDEL-zzqwavxgrec@12#2526,SET]
+5:
+  000971:[acutc@6#4227,SET-zzhra@12#inf,RANGEDEL]
+6:
+  000806:[gourk@18#0,SET-zzhra@2#0,SET]
+----
+0.4:
+  000987:[aiinjp@20#4667,SET-fcklu@5#inf,RANGEDEL]
+  000988:[fcklu@5#4668,MERGE-glpw@1#inf,RANGEDEL]
+  000989:[glpw@1#4662,RANGEDEL-mlgxnog@19#inf,RANGEDEL]
+  000990:[mlgxnog@19#4662,RANGEDEL-nwnmqtyvjt@5#inf,RANGEDEL]
+  000991:[nwnmqtyvjt@5#4662,RANGEDEL-wmkrrxp@6#inf,RANGEDEL]
+0.3:
+  000978:[dygfdczcax@15#4609,DEL-vtocgpw@18#4609,DEL]
+  000992:[wmkrrxp@6#4657,MERGE-yyquzcd@21#4624,SET]
+  000993:[zslykqao@12#4636,SINGLEDEL-zzqwavxgrec@12#4627,DEL]
+0.2:
+  000981:[fhcykuix@5#4601,MERGE-kiati@10#4595,MERGE]
+  000977:[mgksrvk@15#4598,DEL-mgksrvk@15#4598,DEL]
+  000982:[nirnrarzktp@12#4600,MERGE-zaowx@3#4602,SET]
+  000828:[zzqwavxgrec@12#4092,SINGLEDEL-zzqwavxgrec@12#4092,SINGLEDEL]
+0.1:
+  000980:[dusu@10#4603,SET-duyeldgvnll@21#4605,SET]
+  000973:[ewqqtp@15#4591,RANGEDEL-zaygjmy@1#inf,RANGEDEL]
+  000605:[zzqwavxgrec@12#2894,SET-zzqwavxgrec@12#2894,SET]
+0.0:
+  000910:[abddymplk@20#4370,MERGE-abddymplk@20#4370,MERGE]
+  000939:[abvukibeofb@13#4439,SET-abvukibeofb@13#4439,SET]
+  000975:[ajoqjxr@16#4578,MERGE-zjyqka@1#4544,DEL]
+  000983:[znnoar@20#4604,SINGLEDEL-znnoar@20#4604,SINGLEDEL]
+  000535:[zzqwavxgrec@12#2657,SINGLEDEL-zzqwavxgrec@12#2526,SET]
+5:
+  000971:[acutc@6#4227,SET-zzhra@12#inf,RANGEDEL]
+6:
+  000806:[gourk@18#0,SET-zzhra@2#0,SET]
+
+overlaps level=0 start=heacptnep@12 end=kiicbzwtpe@16 exclusive-end=false
+----
+13 files:
+000973:[ewqqtp@15#4591,RANGEDEL-zaygjmy@1#inf,RANGEDEL]
+000975:[ajoqjxr@16#4578,MERGE-zjyqka@1#4544,DEL]
+000977:[mgksrvk@15#4598,DEL-mgksrvk@15#4598,DEL]
+000978:[dygfdczcax@15#4609,DEL-vtocgpw@18#4609,DEL]
+000980:[dusu@10#4603,SET-duyeldgvnll@21#4605,SET]
+000981:[fhcykuix@5#4601,MERGE-kiati@10#4595,MERGE]
+000982:[nirnrarzktp@12#4600,MERGE-zaowx@3#4602,SET]
+000987:[aiinjp@20#4667,SET-fcklu@5#inf,RANGEDEL]
+000988:[fcklu@5#4668,MERGE-glpw@1#inf,RANGEDEL]
+000989:[glpw@1#4662,RANGEDEL-mlgxnog@19#inf,RANGEDEL]
+000990:[mlgxnog@19#4662,RANGEDEL-nwnmqtyvjt@5#inf,RANGEDEL]
+000991:[nwnmqtyvjt@5#4662,RANGEDEL-wmkrrxp@6#inf,RANGEDEL]
+000992:[wmkrrxp@6#4657,MERGE-yyquzcd@21#4624,SET]
+
+overlaps level=0 start=acutc@6 end=zzhra@12 exclusive-end=true
+----
+18 files:
+000535:[zzqwavxgrec@12#2657,SINGLEDEL-zzqwavxgrec@12#2526,SET]
+000605:[zzqwavxgrec@12#2894,SET-zzqwavxgrec@12#2894,SET]
+000828:[zzqwavxgrec@12#4092,SINGLEDEL-zzqwavxgrec@12#4092,SINGLEDEL]
+000973:[ewqqtp@15#4591,RANGEDEL-zaygjmy@1#inf,RANGEDEL]
+000975:[ajoqjxr@16#4578,MERGE-zjyqka@1#4544,DEL]
+000977:[mgksrvk@15#4598,DEL-mgksrvk@15#4598,DEL]
+000978:[dygfdczcax@15#4609,DEL-vtocgpw@18#4609,DEL]
+000980:[dusu@10#4603,SET-duyeldgvnll@21#4605,SET]
+000981:[fhcykuix@5#4601,MERGE-kiati@10#4595,MERGE]
+000982:[nirnrarzktp@12#4600,MERGE-zaowx@3#4602,SET]
+000983:[znnoar@20#4604,SINGLEDEL-znnoar@20#4604,SINGLEDEL]
+000987:[aiinjp@20#4667,SET-fcklu@5#inf,RANGEDEL]
+000988:[fcklu@5#4668,MERGE-glpw@1#inf,RANGEDEL]
+000989:[glpw@1#4662,RANGEDEL-mlgxnog@19#inf,RANGEDEL]
+000990:[mlgxnog@19#4662,RANGEDEL-nwnmqtyvjt@5#inf,RANGEDEL]
+000991:[nwnmqtyvjt@5#4662,RANGEDEL-wmkrrxp@6#inf,RANGEDEL]
+000992:[wmkrrxp@6#4657,MERGE-yyquzcd@21#4624,SET]
+000993:[zslykqao@12#4636,SINGLEDEL-zzqwavxgrec@12#4627,DEL]

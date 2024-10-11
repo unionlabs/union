@@ -1,0 +1,8 @@
+namespace v1;
+
+table RootTable {
+  a:float;
+  b:[uint8];
+}
+
+root_type RootTable;

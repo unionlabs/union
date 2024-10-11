@@ -1,0 +1,28 @@
+define
+L0
+  c.SET.11:foo
+L1
+  c.SET.0:foo
+  d.SET.0:foo
+----
+0.0:
+  000004:[c#11,SET-c#11,SET] seqnums:[11-11] points:[c#11,SET-c#11,SET]
+1:
+  000005:[c#0,SET-d#0,SET] seqnums:[0-0] points:[c#0,SET-d#0,SET]
+
+mark-for-compaction file=000005
+----
+marked L1.000005
+
+mark-for-compaction file=000004
+----
+marked L0.000004
+
+maybe-compact
+----
+[JOB 100] compacted(rewrite) L1 [000005] (670B) Score=0.00 + L1 [] (0B) Score=0.00 -> L1 [000006] (670B), in 1.0s (2.0s total), output rate 670B/s
+[JOB 100] compacted(rewrite) L0 [000004] (665B) Score=0.00 + L0 [] (0B) Score=0.00 -> L0 [000007] (665B), in 1.0s (2.0s total), output rate 665B/s
+0.0:
+  000007:[c#11,SET-c#11,SET] seqnums:[11-11] points:[c#11,SET-c#11,SET]
+1:
+  000006:[c#0,SET-d#0,SET] seqnums:[0-0] points:[c#0,SET-d#0,SET]

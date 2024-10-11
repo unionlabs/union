@@ -62,8 +62,8 @@ $framesz="16*$SZ+3*8";
 
 $code=<<___;
 .comm	__blst_platform_cap,4
-.text
 
+.section	.rodata
 .align	64
 .type	$TABLE,\@object
 $TABLE:
@@ -88,6 +88,7 @@ $TABLE:
 	.long	0x03020100,0x0b0a0908,0xffffffff,0xffffffff
 	.long	0xffffffff,0xffffffff,0x03020100,0x0b0a0908
 	.asciz	"SHA256 block transform for x86_64, CRYPTOGAMS by \@dot-asm"
+.text
 ___
 
 ######################################################################
@@ -127,6 +128,9 @@ $code.=<<___ if ($win64);
 ___
 $code.=<<___;
 .cfi_end_prologue
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	lea		K256+0x80(%rip),$Tbl
 	movdqu		($ctx),$ABEF		# DCBA
 	movdqu		16($ctx),$CDGH		# HGFE
@@ -344,8 +348,10 @@ ${func}:
 .cfi_push	%rbp
 	mov	%rsp,%rbp
 .cfi_def_cfa_register	%rbp
+#ifndef	__SGX_LVI_HARDENING__
 	testl	\$2,__blst_platform_cap(%rip)
 	jnz	.L${func}\$2
+#endif
 	push	%rbx
 .cfi_push	%rbx
 	push	%r12
@@ -375,6 +381,9 @@ $code.=<<___;
 .cfi_end_prologue
 
 	lea	-16*$SZ(%rsp),%rsp
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	$SZ*0($ctx),$A
 	and	\$-64,%rsp		# align stack
 	mov	$SZ*1($ctx),$B
@@ -643,6 +652,9 @@ $code.=<<___;
 	mov	$a1,$A
 	mov	$_inp,$inp
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	add	$SZ*0($ctx),$A
 	add	$SZ*1($ctx),$B
 	add	$SZ*2($ctx),$C
@@ -703,6 +715,9 @@ $code.=<<___;
 .type	${pre}sha256_emit,\@abi-omnipotent
 .align	16
 ${pre}sha256_emit:
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	0($inp), %r8
 	mov	8($inp), %r9
 	mov	16($inp), %r10
@@ -731,6 +746,9 @@ ${pre}sha256_emit:
 .type	${pre}sha256_bcopy,\@abi-omnipotent
 .align	16
 ${pre}sha256_bcopy:
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	sub	$inp, $out
 .Loop_bcopy:
 	movzb	($inp), %eax
@@ -746,6 +764,9 @@ ${pre}sha256_bcopy:
 .type	${pre}sha256_hcopy,\@abi-omnipotent
 .align	16
 ${pre}sha256_hcopy:
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	0($inp), %r8
 	mov	8($inp), %r9
 	mov	16($inp), %r10

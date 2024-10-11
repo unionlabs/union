@@ -6,6 +6,7 @@ import (
 )
 
 func TestMillerLoopN(t *testing.T) {
+    t.Parallel()
     const npoints = 97
     scalars := make([]byte, npoints*8)
     _, err := rand.Read(scalars)

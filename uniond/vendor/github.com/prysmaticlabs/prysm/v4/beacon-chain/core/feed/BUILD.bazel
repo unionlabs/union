@@ -1,0 +1,11 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["event.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/core/feed",
+    visibility = [
+        "//beacon-chain:__subpackages__",
+        "//testing/slasher/simulator:__subpackages__",
+    ],
+)

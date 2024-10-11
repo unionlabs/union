@@ -108,6 +108,21 @@ You can later deserialize the result as follows:
 The `ReadFrom` function attempts to read the data into the existing
 BitSet instance, to minimize memory allocations.
 
+
+*Performance tip*: 
+When reading and writing to a file or a network connection, you may get better performance by 
+wrapping your streams with `bufio` instances.
+
+E.g., 
+```Go
+	f, err := os.Create("myfile")
+	w := bufio.NewWriter(f)
+```
+```Go
+	f, err := os.Open("myfile")
+	r := bufio.NewReader(f)
+```
+
 ## Memory Usage
 
 The memory usage of a bitset using `N` bits is at least `N/8` bytes. The number of bits in a bitset is at least as large as one plus the greatest bit index you have accessed. Thus it is possible to run out of memory while using a bitset. If you have lots of bits, you might prefer compressed bitsets, like the [Roaring bitmaps](http://roaringbitmap.org) and its [Go implementation](https://github.com/RoaringBitmap/roaring).

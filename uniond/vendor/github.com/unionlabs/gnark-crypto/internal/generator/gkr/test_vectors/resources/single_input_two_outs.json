@@ -1,0 +1,14 @@
+[
+  {
+    "gate": null,
+    "inputs": []
+  },
+  {
+    "gate": "mul",
+    "inputs": [0, 0]
+  },
+  {
+    "gate": "identity",
+    "inputs": [0]
+  }
+]

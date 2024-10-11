@@ -1,0 +1,12 @@
+version: v1
+plugins:
+  - plugin: grpc-gateway
+    out: .
+    opt:
+      - paths=source_relative
+      - grpc_api_configuration=examples/internal/proto/examplepb/unannotated_echo_service.yaml
+  - plugin: openapiv2
+    out: .
+    opt:
+      - grpc_api_configuration=examples/internal/proto/examplepb/unannotated_echo_service.yaml
+      - openapi_configuration=examples/internal/proto/examplepb/unannotated_echo_service.swagger.yaml

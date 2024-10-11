@@ -1,0 +1,311 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Merging Services",
+    "description": "This is an example of merging two proto files.",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/example/a/1": {
+      "post": {
+        "summary": "ServiceA.MethodOne receives InMessageA and returns OutMessageA",
+        "description": "Here is the detail explanation about ServiceA.MethodOne.",
+        "operationId": "ServiceA_MethodOne",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbOutMessageA"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbInMessageA"
+            }
+          }
+        ],
+        "tags": [
+          "ServiceA"
+        ]
+      }
+    },
+    "/v1/example/a/2": {
+      "post": {
+        "summary": "ServiceA.MethodTwo receives OutMessageA and returns InMessageA",
+        "description": "Here is the detail explanation about ServiceA.MethodTwo.",
+        "operationId": "ServiceA_MethodTwo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbInMessageA"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbOutMessageA"
+            }
+          }
+        ],
+        "tags": [
+          "ServiceA"
+        ]
+      }
+    },
+    "/v1/example/b/1": {
+      "post": {
+        "summary": "ServiceB.MethodOne receives InMessageB and returns OutMessageB",
+        "description": "Here is the detail explanation about ServiceB.MethodOne.",
+        "operationId": "ServiceB_MethodOne",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbOutMessageB"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbInMessageB"
+            }
+          }
+        ],
+        "tags": [
+          "ServiceB"
+        ]
+      }
+    },
+    "/v1/example/b/2": {
+      "post": {
+        "summary": "ServiceB.MethodTwo receives OutMessageB and returns InMessageB",
+        "description": "Here is the detail explanation about ServiceB.MethodTwo.",
+        "operationId": "ServiceB_MethodTwo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbInMessageB"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbOutMessageB"
+            }
+          }
+        ],
+        "tags": [
+          "ServiceB"
+        ]
+      }
+    },
+    "/v1/example/c/1": {
+      "post": {
+        "summary": "ServiceC.MethodOne receives InMessageA and returns OutMessageC",
+        "description": "Here is the detail explanation about ServiceC.MethodOne.",
+        "operationId": "ServiceC_MethodOne",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbOutMessageC"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbInMessageA"
+            }
+          }
+        ],
+        "tags": [
+          "ServiceC"
+        ]
+      }
+    },
+    "/v1/example/c/2": {
+      "post": {
+        "summary": "ServiceC.MethodTwo receives OutMessageA and returns InMessageA",
+        "description": "Here is the detail explanation about ServiceC.MethodTwo.",
+        "operationId": "ServiceC_MethodTwo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbInMessageA"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbOutMessageA"
+            }
+          }
+        ],
+        "tags": [
+          "ServiceC"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "examplepbInMessageA": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Here is the explanation about InMessageA.values"
+        }
+      },
+      "description": "InMessageA represents a message to ServiceA and ServiceC."
+    },
+    "examplepbInMessageB": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "title": "Here is the explanation about InMessageB.values"
+        }
+      },
+      "description": "InMessageB represents a message to ServiceB."
+    },
+    "examplepbOutMessageA": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "title": "Here is the explanation about OutMessageA.value"
+        }
+      },
+      "description": "OutMessageA represents a message returned from ServiceA."
+    },
+    "examplepbOutMessageB": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Here is the explanation about OutMessageB.value"
+        }
+      },
+      "description": "OutMessageB represents a message returned from ServiceB."
+    },
+    "examplepbOutMessageC": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "title": "Here is the explanation about OutMessageC.value"
+        }
+      },
+      "description": "OutMessageC represents a message returned from ServiceC."
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

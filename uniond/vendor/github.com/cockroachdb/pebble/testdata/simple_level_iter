@@ -1,0 +1,77 @@
+build 1
+set b b
+set c c
+----
+
+
+iter files=(1)
+first
+next
+next
+----
+b:b
+c:c
+.
+
+build 2
+set d d
+set f f
+----
+
+iter files=(1, 2)
+first
+next
+next
+next
+----
+b:b
+c:c
+d:d
+f:f
+
+# Test seeks within files.
+
+iter files=(1, 2)
+seek-ge bb
+next
+next
+next
+----
+c:c
+d:d
+f:f
+.
+
+iter files=(1, 2)
+seek-ge a
+next
+next
+next
+----
+b:b
+c:c
+d:d
+f:f
+
+iter files=(1, 2)
+seek-ge d
+next
+next
+----
+d:d
+f:f
+.
+
+iter files=(1, 2)
+seek-ge f
+next
+----
+f:f
+.
+
+iter files=(1, 2)
+seek-ge ff
+next
+----
+.
+.

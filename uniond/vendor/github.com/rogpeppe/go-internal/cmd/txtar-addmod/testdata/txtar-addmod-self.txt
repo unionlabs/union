@@ -1,0 +1,9 @@
+mkdir $WORK/out
+txtar-addmod $WORK/out github.com/gobin-testrepos/simple-main
+! stdout .+
+! stderr .+
+exists $WORK/out/github.com_gobin-testrepos_simple-main_v1.0.0.txtar
+! grep foobar $WORK/out/github.com_gobin-testrepos_simple-main_v1.0.0.txtar
+
+txtar-addmod -all $WORK/out github.com/gobin-testrepos/simple-main
+grep '-- foobar --' $WORK/out/github.com_gobin-testrepos_simple-main_v1.0.0.txtar

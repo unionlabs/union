@@ -1,0 +1,15 @@
+syntax = "proto3";
+package cometbft.services.version.v1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/services/version/v1";
+
+// GetVersionRequest is the request for the ABCI version.
+message GetVersionRequest {}
+
+// GetVersionResponse contains the ABCI application version info.
+message GetVersionResponse {
+  string node  = 1;  // The semantic version of the node software.
+  string abci  = 2;  // The version of ABCI used by the node.
+  uint64 p2p   = 3;  // The version of the P2P protocol.
+  uint64 block = 4;  // The version of the block protocol.
+}

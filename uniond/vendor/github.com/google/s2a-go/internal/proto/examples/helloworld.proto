@@ -1,0 +1,44 @@
+// Copyright 2021 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package s2a.examples;
+
+option go_package = "github.com/google/s2a/internal/proto/examples/helloworld_go_proto";
+
+// The greeting service definition.
+service Greeter {
+  // A unary RPC.
+  rpc SayHello(HelloRequest) returns (HelloReply) {}
+
+  // A client-side streaming RPC.
+  rpc SayHelloManyRequests(stream HelloRequest) returns (HelloReply) {}
+
+  // A server-side streaming RPC.
+  rpc SayHelloManyReplies(HelloRequest) returns (stream HelloReply) {}
+
+  // A bidirectional streaming RPC.
+  rpc SayHelloConversation(stream HelloRequest) returns (stream HelloReply) {}
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+  string message = 1;
+}

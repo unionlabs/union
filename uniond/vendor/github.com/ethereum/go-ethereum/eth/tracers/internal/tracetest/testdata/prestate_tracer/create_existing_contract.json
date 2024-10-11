@@ -1,0 +1,85 @@
+{
+  "genesis": {
+    "difficulty": "6217248151198",
+    "extraData": "0xd783010103844765746887676f312e342e32856c696e7578",
+    "gasLimit": "3141592",
+    "hash": "0xe8bff55fe3e61936ef321cf3afaeb1ba2f7234e1e89535fa8ae39963caebe9c3",
+    "miner": "0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5",
+    "mixHash": "0x03da00d5a15a064e5ebddf53cd0aaeb9a8aff0f40c0fb031a74f463d11ec83b8",
+    "nonce": "0x6575fe08c4167044",
+    "number": "243825",
+    "stateRoot": "0x47182fe2e6e740b8a76f82fe5c527d6ad548f805274f21792cf4047235b24fbf",
+    "timestamp": "1442424328",
+    "totalDifficulty": "1035061827427752845",
+    "alloc": {
+      "0x082d4cdf07f386ffa9258f52a5c49db4ac321ec6": {
+        "balance": "0xc820f93200f4000",
+        "nonce": "0x5E",
+        "code": "0x"
+      },
+      "0x332b656504f4eabb44c8617a42af37461a34e9dc": {
+        "balance": "0x11faea4f35e5af80000",
+        "code": "0x"
+      },
+      "0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5": {
+        "balance": "0xbf681825be002ac452",
+        "nonce": "0x70FA",
+        "code": "0x"
+      },
+      "0x82effbaaaf28614e55b2ba440fb198e0e5789b0f": {
+        "balance": "0xb3d0ac5cb94df6f6b0",
+        "nonce": "0x1",
+        "code": "0x"
+      }
+    },
+    "config": {
+      "chainId": 1,
+      "homesteadBlock": 1150000,
+      "daoForkBlock": 1920000,
+      "daoForkSupport": true,
+      "eip150Block": 2463000,
+      "eip150Hash": "0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0",
+      "eip155Block": 2675000,
+      "eip158Block": 2675000,
+      "byzantiumBlock": 4370000,
+      "constantinopleBlock": 7280000,
+      "petersburgBlock": 7280000,
+      "istanbulBlock": 9069000,
+      "muirGlacierBlock": 9200000,
+      "berlinBlock": 12244000,
+      "londonBlock": 12965000,
+      "arrowGlacierBlock": 13773000,
+      "grayGlacierBlock": 15050000,
+      "terminalTotalDifficultyPassed": true,
+      "ethash": {}
+    }
+  },
+  "context": {
+    "number": "243826",
+    "difficulty": "6214212385501",
+    "timestamp": "1442424353",
+    "gasLimit": "3141592",
+    "miner": "0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5"
+  },
+  "input": "0xf8e85e850ba43b7400830f42408080b89660606040527382effbaaaf28614e55b2ba440fb198e0e5789b0f600060006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908302179055505b600060009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16ff5b600a80608c6000396000f30060606040526008565b001ca0340b21661e5bb85a46319a15f33a362e5c0f02faa7cdbf9c5808b2134da968eaa0226e6788f8c20e211d436ab7f6298ef32fa4c23a509eeeaac0880d115c17bc3f",
+  "result": {
+    "0x082d4cdf07f386ffa9258f52a5c49db4ac321ec6": {
+      "balance": "0xc820f93200f4000",
+      "nonce": 94
+    },
+    "0x332b656504f4eabb44c8617a42af37461a34e9dc": {
+      "balance": "0x11faea4f35e5af80000",
+      "storage": {
+        "0x0000000000000000000000000000000000000000000000000000000000000000": "0x0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    "0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5": {
+      "balance": "0xbf681825be002ac452",
+      "nonce": 28922
+    },
+    "0x82effbaaaf28614e55b2ba440fb198e0e5789b0f": {
+      "balance": "0xb3d0ac5cb94df6f6b0",
+      "nonce": 1
+    }
+  }
+}

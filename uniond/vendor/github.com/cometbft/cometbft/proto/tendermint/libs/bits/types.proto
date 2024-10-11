@@ -1,9 +1,0 @@
-syntax = "proto3";
-package tendermint.libs.bits;
-
-option go_package = "github.com/cometbft/cometbft/proto/tendermint/libs/bits";
-
-message BitArray {
-  int64           bits  = 1;
-  repeated uint64 elems = 2;
-}

@@ -1,0 +1,38 @@
+mod=example.com/errors
+version=v0.2.0
+base=v0.1.0
+release=v0.2.0
+success=false
+proxyVersions=example.com/errors@v0.1.0
+-- want --
+# example.com/errors/added
+## errors in release version:
+added/added.go:3:15: undefined: Missing
+
+## compatible changes
+package added
+
+# example.com/errors/broken
+## errors in release version:
+broken/broken.go:3:15: undefined: Missing
+
+## incompatible changes
+X: value changed from 12 to unknown
+
+# example.com/errors/deleted
+## errors in base version:
+deleted/deleted.go:3:15: undefined: Missing
+
+## incompatible changes
+package removed
+
+# example.com/errors/fixed
+## errors in base version:
+fixed/fixed.go:3:15: undefined: Missing
+
+## incompatible changes
+X: value changed from unknown to 12
+
+# summary
+v0.2.0 is not a valid semantic version for this release.
+Errors were found in one or more packages.

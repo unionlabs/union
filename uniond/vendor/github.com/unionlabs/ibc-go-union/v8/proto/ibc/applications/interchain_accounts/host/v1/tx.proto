@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package ibc.applications.interchain_accounts.host.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos/msg/v1/msg.proto";
+import "ibc/applications/interchain_accounts/host/v1/host.proto";
+
+// Msg defines the 27-interchain-accounts/host Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // UpdateParams defines a rpc handler for MsgUpdateParams.
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // ModuleQuerySafe defines a rpc handler for MsgModuleQuerySafe.
+  rpc ModuleQuerySafe(MsgModuleQuerySafe) returns (MsgModuleQuerySafeResponse);
+}
+
+// MsgUpdateParams defines the payload for Msg/UpdateParams
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // signer address
+  string signer = 1;
+
+  // params defines the 27-interchain-accounts/host parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+// MsgUpdateParamsResponse defines the response for Msg/UpdateParams
+message MsgUpdateParamsResponse {}
+
+// MsgModuleQuerySafe defines the payload for Msg/ModuleQuerySafe
+message MsgModuleQuerySafe {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // signer address
+  string signer = 1;
+
+  // requests defines the module safe queries to execute.
+  repeated QueryRequest requests = 2;
+}
+
+// MsgModuleQuerySafeResponse defines the response for Msg/ModuleQuerySafe
+message MsgModuleQuerySafeResponse {
+  // height at which the responses were queried
+  uint64 height = 1;
+
+  // protobuf encoded responses for each query
+  repeated bytes responses = 2;
+}

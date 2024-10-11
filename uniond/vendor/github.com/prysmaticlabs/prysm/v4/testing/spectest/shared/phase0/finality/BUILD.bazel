@@ -1,0 +1,23 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = ["runner.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/testing/spectest/shared/phase0/finality",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/core/helpers:go_default_library",
+        "//beacon-chain/core/transition:go_default_library",
+        "//beacon-chain/state:go_default_library",
+        "//beacon-chain/state/state-native:go_default_library",
+        "//consensus-types/blocks:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/spectest/utils:go_default_library",
+        "//testing/util:go_default_library",
+        "@com_github_golang_snappy//:go_default_library",
+        "@in_gopkg_d4l3k_messagediff_v1//:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
+    ],
+)

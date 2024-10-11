@@ -1,0 +1,19 @@
+name: Bug report
+description: Report a bug
+labels: [bug]
+body:
+- type: textarea
+  attributes:
+    label: What did you do?
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: What did you expect?
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: What happened instead?
+  validations:
+    required: true

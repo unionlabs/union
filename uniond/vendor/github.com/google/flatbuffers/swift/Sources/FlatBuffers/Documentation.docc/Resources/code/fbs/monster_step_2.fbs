@@ -1,0 +1,1 @@
+enum Color:byte { red, green, blue }

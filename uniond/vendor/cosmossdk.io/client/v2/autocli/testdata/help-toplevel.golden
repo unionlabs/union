@@ -1,0 +1,17 @@
+Querying commands for the test module
+
+Usage:
+  test [flags]
+  test [command]
+
+Available Commands:
+  completion     Generate the autocompletion script for the specified shell
+  deprecatedecho Querying commands for the testpb.Query service
+  echo           echo echos the value provided by the user
+  help           Help about any command
+  skipecho       Querying commands for the testpb.Query service
+
+Flags:
+  -h, --help   help for test
+
+Use "test [command] --help" for more information about a command.

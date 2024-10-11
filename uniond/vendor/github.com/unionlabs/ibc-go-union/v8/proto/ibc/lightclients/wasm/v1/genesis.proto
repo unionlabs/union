@@ -1,0 +1,20 @@
+
+syntax = "proto3";
+package ibc.lightclients.wasm.v1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types";
+
+// GenesisState defines 08-wasm's keeper genesis state
+message GenesisState {
+  // uploaded light client wasm contracts
+  repeated Contract contracts = 1 [(gogoproto.nullable) = false];
+}
+
+// Contract stores contract code
+message Contract {
+  option (gogoproto.goproto_getters) = false;
+  // contract byte code
+  bytes code_bytes = 1;
+}

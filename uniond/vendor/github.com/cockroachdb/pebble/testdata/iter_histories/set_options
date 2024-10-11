@@ -1,0 +1,56 @@
+# Ensure bounds and key-types provided through SetOptions are respected.
+
+reset
+----
+
+batch commit
+set a a
+set b b
+set c c
+set d d
+set f f
+range-key-set a   ap  @6 foo
+range-key-set ap  c   @5 bar
+range-key-set cat zoo @3 bax
+----
+committed 8 keys
+
+combined-iter lower=b upper=e
+first
+next
+next
+next
+next
+set-options lower=a upper=cat key-types=both
+first
+next
+next
+next
+set-options lower=a upper=cat key-types=point
+first
+next
+next
+next
+----
+b: (b, [b-c) @5=bar UPDATED)
+c: (c, . UPDATED)
+cat: (., [cat-e) @3=bax UPDATED)
+d: (d, [cat-e) @3=bax)
+.
+.
+a: (a, [a-ap) @6=foo UPDATED)
+ap: (., [ap-c) @5=bar UPDATED)
+b: (b, [ap-c) @5=bar)
+c: (c, . UPDATED)
+.
+a: (a, .)
+b: (b, .)
+c: (c, .)
+.
+
+flush
+----
+
+metrics
+----
+Metrics.Keys.RangeKeySetsCount = 3

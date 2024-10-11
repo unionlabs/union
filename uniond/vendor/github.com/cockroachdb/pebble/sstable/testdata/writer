@@ -1,0 +1,370 @@
+build
+a.SET.1:a
+----
+point:    [a#1,1-a#1,1]
+seqnums:  [1-1]
+
+scan
+----
+a#1,1:a
+
+scan-range-del
+----
+
+scan-range-key
+----
+
+build props=(deletions,deleted)
+a.SET.1:a
+b.DEL.2:
+c.MERGE.3:c
+d.RANGEDEL.4:e
+f.SET.5:f
+g.DEL.6:
+h.MERGE.7:h
+i.RANGEDEL.8:j
+rangekey: j-k:{(#9,RANGEKEYDEL)}
+rangekey: k-l:{(#10,RANGEKEYUNSET,@t5)}
+rangekey: l-m:{(#11,RANGEKEYSET,@t10,foo)}
+----
+point:    [a#1,1-h#7,2]
+rangedel: [d#4,15-j#72057594037927935,15]
+rangekey: [j#9,19-m#72057594037927935,21]
+seqnums:  [1-11]
+props "deletions":
+  rocksdb.num.range-deletions: 2
+props "deleted":
+  rocksdb.deleted.keys: 4
+
+
+build props=(deletions,deleted)
+a.SET.1:a
+b.DEL.2:
+c.MERGE.3:c
+d.SINGLEDEL.4:
+e.SINGLEDEL.5:
+f.SET.6:f
+g.DEL.7:
+h.SINGLEDEL.8:
+rangekey: j-k:{(#9,RANGEKEYDEL)}
+rangekey: k-l:{(#10,RANGEKEYUNSET,@t5)}
+rangekey: l-m:{(#11,RANGEKEYSET,@t10,foo)}
+----
+point:    [a#1,1-h#8,7]
+rangekey: [j#9,19-m#72057594037927935,21]
+seqnums:  [1-11]
+props "deletions":
+  rocksdb.num.range-deletions: 0
+props "deleted":
+  rocksdb.deleted.keys: 5
+
+
+build
+a.SET.1:a
+b.DEL.2:
+c.MERGE.3:c
+d.RANGEDEL.4:e
+f.SET.5:f
+g.DEL.6:
+h.MERGE.7:h
+i.RANGEDEL.8:j
+----
+point:    [a#1,1-h#7,2]
+rangedel: [d#4,15-j#72057594037927935,15]
+seqnums:  [1-8]
+
+scan
+----
+a#1,1:a
+b#2,0:
+c#3,2:c
+f#5,1:f
+g#6,0:
+h#7,2:h
+
+scan-range-del
+----
+d-e:{(#4,RANGEDEL)}
+i-j:{(#8,RANGEDEL)}
+
+# 3: a-----------m
+# 2:      f------------s
+# 1:          j---------------z
+
+build
+a.RANGEDEL.3:m
+f.RANGEDEL.2:s
+j.RANGEDEL.1:z
+----
+rangedel: [a#3,15-z#72057594037927935,15]
+seqnums:  [1-3]
+
+scan
+----
+
+scan-range-del
+----
+a-f:{(#3,RANGEDEL)}
+f-j:{(#3,RANGEDEL) (#2,RANGEDEL)}
+j-m:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+m-s:{(#2,RANGEDEL) (#1,RANGEDEL)}
+s-z:{(#1,RANGEDEL)}
+
+scan-range-key
+----
+
+# The range tombstone upper bound is exclusive, so a point operation
+# on that same key will be the actual boundary.
+
+build
+a.RANGEDEL.3:b
+b.SET.4:c
+----
+point:    [b#4,1-b#4,1]
+rangedel: [a#3,15-b#72057594037927935,15]
+seqnums:  [3-4]
+
+build
+a.RANGEDEL.3:b
+b.SET.2:c
+----
+point:    [b#2,1-b#2,1]
+rangedel: [a#3,15-b#72057594037927935,15]
+seqnums:  [2-3]
+
+build
+a.RANGEDEL.3:c
+b.SET.2:c
+----
+point:    [b#2,1-b#2,1]
+rangedel: [a#3,15-c#72057594037927935,15]
+seqnums:  [2-3]
+
+# Keys must be added in order.
+
+build
+a.SET.1:b
+a.SET.2:c
+----
+pebble: keys must be added in strictly increasing order: a#1,SET, a#2,SET
+
+build
+b.SET.1:a
+a.SET.2:b
+----
+pebble: keys must be added in strictly increasing order: b#1,SET, a#2,SET
+
+build
+b.RANGEDEL.1:c
+a.RANGEDEL.2:b
+----
+pebble: keys must be added in order: b > a
+
+build-raw
+.RANGEDEL.1:b
+----
+rangedel: [#1,15-b#72057594037927935,15]
+seqnums:  [1-1]
+
+build-raw
+a.RANGEDEL.1:c
+a.RANGEDEL.2:c
+----
+pebble: keys must be added in strictly increasing order: a#1,RANGEDEL, a#2,RANGEDEL
+
+build-raw
+a.RANGEDEL.1:c
+b.RANGEDEL.2:d
+----
+pebble: overlapping tombstones must be fragmented: a-c:{(#1,RANGEDEL)} vs b-d:{(#2,RANGEDEL)}
+
+build-raw
+a.RANGEDEL.2:c
+a.RANGEDEL.1:d
+----
+pebble: overlapping tombstones must be fragmented: a-c:{(#2,RANGEDEL)} vs a-d:{(#1,RANGEDEL)}
+
+build-raw
+a.RANGEDEL.1:c
+c.RANGEDEL.2:d
+----
+rangedel: [a#1,15-d#72057594037927935,15]
+seqnums:  [1-2]
+
+build-raw
+rangekey: a-b:{(#1,RANGEKEYSET,@t10,foo)}
+rangekey: a-b:{(#2,RANGEKEYSET,@t10,foo)}
+----
+rangekey: [a#2,21-b#72057594037927935,21]
+seqnums:  [1-2]
+
+build-raw
+rangekey: b-c:{(#2,RANGEKEYSET,@t10,foo)}
+rangekey: a-b:{(#1,RANGEKEYSET,@t10,foo)}
+----
+pebble: spans must be added in order: b > a
+
+build-raw
+a.RANGEKEYDEL.1:c
+b.RANGEKEYDEL.2:d
+----
+pebble: overlapping range keys must be fragmented: a#1,RANGEKEYDEL, b#2,RANGEKEYDEL
+
+build-raw
+a.RANGEKEYDEL.2:c
+a.RANGEKEYDEL.1:d
+----
+pebble: overlapping range keys must be fragmented: a#2,RANGEKEYDEL, a#1,RANGEKEYDEL
+
+build-raw
+rangekey: a-c:{(#1,RANGEKEYSET,@t10,foo)}
+rangekey: c-d:{(#2,RANGEKEYSET,@t10,foo)}
+----
+rangekey: [a#1,21-d#72057594037927935,21]
+seqnums:  [1-2]
+
+# Range keys may have perfectly aligned spans (including sequence numbers),
+# though the key kinds must be ordered (descending).
+
+build-raw
+a.RANGEKEYDEL.1:b
+a.RANGEKEYDEL.1:b
+----
+pebble: range keys starts must be added in increasing order: a#1,RANGEKEYDEL, a#1,RANGEKEYDEL
+
+build-raw
+rangekey: a-b:{(#1,RANGEKEYSET,@t10,foo) (#1,RANGEKEYUNSET,@t10) (#1,RANGEKEYDEL)}
+----
+rangekey: [a#1,21-b#72057594037927935,19]
+seqnums:  [1-1]
+
+# The range-del-v1 format supports unfragmented and unsorted range
+# tombstones.
+
+build-raw range-del-v1
+a.RANGEDEL.1:c
+a.RANGEDEL.2:c
+----
+rangedel: [a#2,15-c#72057594037927935,15]
+seqnums:  [1-2]
+
+scan-range-del
+----
+a-c:{(#2,RANGEDEL) (#1,RANGEDEL)}
+
+build-raw range-del-v1
+a.RANGEDEL.1:c
+b.RANGEDEL.2:d
+----
+rangedel: [a#1,15-d#72057594037927935,15]
+seqnums:  [1-2]
+
+scan-range-del
+----
+a-b:{(#1,RANGEDEL)}
+b-c:{(#2,RANGEDEL) (#1,RANGEDEL)}
+c-d:{(#2,RANGEDEL)}
+
+build-raw range-del-v1
+a.RANGEDEL.2:c
+a.RANGEDEL.1:d
+----
+rangedel: [a#2,15-d#72057594037927935,15]
+seqnums:  [1-2]
+
+scan-range-del
+----
+a-c:{(#2,RANGEDEL) (#1,RANGEDEL)}
+c-d:{(#1,RANGEDEL)}
+
+# This matches an early test case, except we're passing overlapping
+# range tombstones to the sstable writer and requiring them to be
+# fragmented at read time.
+
+build-raw range-del-v1
+j.RANGEDEL.1:z
+f.RANGEDEL.2:s
+a.RANGEDEL.3:m
+----
+rangedel: [a#3,15-z#72057594037927935,15]
+seqnums:  [1-3]
+
+scan-range-del
+----
+a-f:{(#3,RANGEDEL)}
+f-j:{(#3,RANGEDEL) (#2,RANGEDEL)}
+j-m:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+m-s:{(#2,RANGEDEL) (#1,RANGEDEL)}
+s-z:{(#1,RANGEDEL)}
+
+# Setting a very small index-block-size results in a two-level index.
+
+build block-size=1 index-block-size=1
+a.SET.1:a
+b.SET.1:b
+c.SET.1:c
+----
+point:    [a#1,1-c#1,1]
+seqnums:  [1-1]
+
+layout
+----
+         0  data (21)
+        26  data (21)
+        52  data (21)
+        78  index (22)
+       105  index (22)
+       132  index (22)
+       159  top-index (50)
+       214  properties (580)
+       799  meta-index (33)
+       837  footer (53)
+       890  EOF
+
+scan
+----
+a#1,1:a
+b#1,1:b
+c#1,1:c
+
+# Enabling leveldb format disables the creation of a two-level index
+# (the input data here mirrors the test case above).
+
+build leveldb block-size=1 index-block-size=1
+a.SET.1:a
+b.SET.1:b
+c.SET.1:c
+----
+point:    [a#1,1-c#1,1]
+seqnums:  [1-1]
+
+layout
+----
+         0  data (21)
+        26  data (21)
+        52  data (21)
+        78  index (47)
+       130  properties (678)
+       813  meta-index (33)
+       851  leveldb-footer (48)
+       899  EOF
+
+# Range keys, if present, are shown in the layout.
+
+build
+rangekey: a-b:{(#3,RANGEKEYSET,@t3,foo)}
+rangekey: b-c:{(#2,RANGEKEYSET,@t2,bar)}
+rangekey: c-d:{(#1,RANGEKEYSET,@t1,baz)}
+----
+rangekey: [a#3,21-d#72057594037927935,21]
+seqnums:  [1-3]
+
+layout
+----
+         0  data (8)
+        13  index (21)
+        39  range-key (82)
+       126  properties (628)
+       759  meta-index (57)
+       821  footer (53)
+       874  EOF

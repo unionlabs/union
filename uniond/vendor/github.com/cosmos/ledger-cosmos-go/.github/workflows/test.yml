@@ -1,0 +1,24 @@
+name: Test
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.18' 
+      - name: test & coverage report creation
+        run: |
+          go test common.go -mod=readonly -timeout 5m -short -race -coverprofile=coverage.txt -covermode=atomic
+          go test common.go -mod=readonly -timeout 5m
+      - uses: codecov/codecov-action@v3.1.1
+        with:
+          file: ./coverage.txt
+          fail_ci_if_error: true

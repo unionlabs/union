@@ -6,6 +6,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+#![allow(unexpected_cfgs)]
 
 extern crate alloc;
 
@@ -13,7 +14,7 @@ use alloc::boxed::Box;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::any::Any;
-use core::mem::MaybeUninit;
+use core::mem::{transmute, MaybeUninit};
 use core::ptr;
 use zeroize::Zeroize;
 
@@ -23,6 +24,7 @@ use std::sync::{atomic::*, mpsc::channel, Arc};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+#[cfg(feature = "std")]
 trait ThreadPoolExt {
     fn joined_execute<'any, F>(&self, job: F)
     where
@@ -32,18 +34,16 @@ trait ThreadPoolExt {
 #[cfg(all(not(feature = "no-threads"), feature = "std"))]
 mod mt {
     use super::*;
-    use core::mem::transmute;
     use std::sync::{Mutex, Once};
     use threadpool::ThreadPool;
 
     pub fn da_pool() -> ThreadPool {
         static INIT: Once = Once::new();
-        static mut POOL: *const Mutex<ThreadPool> =
-            0 as *const Mutex<ThreadPool>;
+        static mut POOL: *const Mutex<ThreadPool> = ptr::null();
 
         INIT.call_once(|| {
             let pool = Mutex::new(ThreadPool::default());
-            unsafe { POOL = transmute(Box::new(pool)) };
+            unsafe { POOL = transmute::<Box<_>, *const _>(Box::new(pool)) };
         });
         unsafe { (*POOL).lock().unwrap().clone() }
     }
@@ -364,6 +364,7 @@ impl Pairing {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn mul_n_aggregate(
         &mut self,
         pk: &dyn Any,
@@ -774,6 +775,7 @@ macro_rules! sig_variant_impl {
             }
         }
 
+        #[repr(transparent)]
         #[derive(Default, Debug, Clone, Copy)]
         pub struct PublicKey {
             point: $pk_aff,
@@ -898,6 +900,7 @@ macro_rules! sig_variant_impl {
             }
         }
 
+        #[repr(transparent)]
         #[derive(Debug, Clone, Copy)]
         pub struct AggregatePublicKey {
             point: $pk,
@@ -945,6 +948,21 @@ macro_rules! sig_variant_impl {
                     }
                 }
                 Ok(agg_pk)
+            }
+
+            pub fn aggregate_with_randomness(
+                pks: &[PublicKey],
+                randomness: &[u8],
+                nbits: usize,
+                pks_groupcheck: bool,
+            ) -> Result<Self, BLST_ERROR> {
+                if pks.len() == 0 {
+                    return Err(BLST_ERROR::BLST_AGGR_TYPE_MISMATCH);
+                }
+                if pks_groupcheck {
+                    pks.validate()?;
+                }
+                Ok(pks.mult(randomness, nbits))
             }
 
             pub fn aggregate_serialized(
@@ -999,6 +1017,7 @@ macro_rules! sig_variant_impl {
             }
         }
 
+        #[repr(transparent)]
         #[derive(Debug, Clone, Copy)]
         pub struct Signature {
             point: $sig_aff,
@@ -1033,44 +1052,6 @@ macro_rules! sig_variant_impl {
                 Ok(sig)
             }
 
-            #[cfg(not(feature = "std"))]
-            pub fn verify(
-                &self,
-                sig_groupcheck: bool,
-                msg: &[u8],
-                dst: &[u8],
-                aug: &[u8],
-                pk: &PublicKey,
-                pk_validate: bool,
-            ) -> BLST_ERROR {
-                if sig_groupcheck {
-                    match self.validate(false) {
-                        Err(err) => return err,
-                        _ => (),
-                    }
-                }
-                if pk_validate {
-                    match pk.validate() {
-                        Err(err) => return err,
-                        _ => (),
-                    }
-                }
-                unsafe {
-                    $verify(
-                        &pk.point,
-                        &self.point,
-                        $hash_or_encode,
-                        msg.as_ptr(),
-                        msg.len(),
-                        dst.as_ptr(),
-                        dst.len(),
-                        aug.as_ptr(),
-                        aug.len(),
-                    )
-                }
-            }
-
-            #[cfg(feature = "std")]
             pub fn verify(
                 &self,
                 sig_groupcheck: bool,
@@ -1088,6 +1069,57 @@ macro_rules! sig_variant_impl {
                     &[pk],
                     pk_validate,
                 )
+            }
+
+            #[cfg(not(feature = "std"))]
+            pub fn aggregate_verify(
+                &self,
+                sig_groupcheck: bool,
+                msgs: &[&[u8]],
+                dst: &[u8],
+                pks: &[&PublicKey],
+                pks_validate: bool,
+            ) -> BLST_ERROR {
+                let n_elems = pks.len();
+                if n_elems == 0 || msgs.len() != n_elems {
+                    return BLST_ERROR::BLST_VERIFY_FAIL;
+                }
+
+                let mut pairing = Pairing::new($hash_or_encode, dst);
+
+                let err = pairing.aggregate(
+                    &pks[0].point,
+                    pks_validate,
+                    &self.point,
+                    sig_groupcheck,
+                    &msgs[0],
+                    &[],
+                );
+                if err != BLST_ERROR::BLST_SUCCESS {
+                    return err;
+                }
+
+                for i in 1..n_elems {
+                    let err = pairing.aggregate(
+                        &pks[i].point,
+                        pks_validate,
+                        &unsafe { ptr::null::<$sig_aff>().as_ref() },
+                        false,
+                        &msgs[i],
+                        &[],
+                    );
+                    if err != BLST_ERROR::BLST_SUCCESS {
+                        return err;
+                    }
+                }
+
+                pairing.commit();
+
+                if pairing.finalverify(None) {
+                    BLST_ERROR::BLST_SUCCESS
+                } else {
+                    BLST_ERROR::BLST_VERIFY_FAIL
+                }
             }
 
             #[cfg(feature = "std")]
@@ -1173,7 +1205,6 @@ macro_rules! sig_variant_impl {
 
             // pks are assumed to be verified for proof of possession,
             // which implies that they are already group-checked
-            #[cfg(feature = "std")]
             pub fn fast_aggregate_verify(
                 &self,
                 sig_groupcheck: bool,
@@ -1195,7 +1226,6 @@ macro_rules! sig_variant_impl {
                 )
             }
 
-            #[cfg(feature = "std")]
             pub fn fast_aggregate_verify_pre_aggregated(
                 &self,
                 sig_groupcheck: bool,
@@ -1208,6 +1238,7 @@ macro_rules! sig_variant_impl {
 
             // https://ethresear.ch/t/fast-verification-of-multiple-bls-signatures/5407
             #[cfg(feature = "std")]
+            #[allow(clippy::too_many_arguments)]
             pub fn verify_multiple_aggregate_signatures(
                 msgs: &[&[u8]],
                 dst: &[u8],
@@ -1279,6 +1310,56 @@ macro_rules! sig_variant_impl {
                 }
 
                 if valid.load(Ordering::Relaxed) && acc.finalverify(None) {
+                    BLST_ERROR::BLST_SUCCESS
+                } else {
+                    BLST_ERROR::BLST_VERIFY_FAIL
+                }
+            }
+
+            #[cfg(not(feature = "std"))]
+            #[allow(clippy::too_many_arguments)]
+            pub fn verify_multiple_aggregate_signatures(
+                msgs: &[&[u8]],
+                dst: &[u8],
+                pks: &[&PublicKey],
+                pks_validate: bool,
+                sigs: &[&Signature],
+                sigs_groupcheck: bool,
+                rands: &[blst_scalar],
+                rand_bits: usize,
+            ) -> BLST_ERROR {
+                let n_elems = pks.len();
+                if n_elems == 0
+                    || msgs.len() != n_elems
+                    || sigs.len() != n_elems
+                    || rands.len() != n_elems
+                {
+                    return BLST_ERROR::BLST_VERIFY_FAIL;
+                }
+
+                // TODO - check msg uniqueness?
+
+                let mut pairing = Pairing::new($hash_or_encode, dst);
+
+                for i in 0..n_elems {
+                    let err = pairing.mul_n_aggregate(
+                        &pks[i].point,
+                        pks_validate,
+                        &sigs[i].point,
+                        sigs_groupcheck,
+                        &rands[i].b,
+                        rand_bits,
+                        msgs[i],
+                        &[],
+                    );
+                    if err != BLST_ERROR::BLST_SUCCESS {
+                        return err;
+                    }
+                }
+
+                pairing.commit();
+
+                if pairing.finalverify(None) {
                     BLST_ERROR::BLST_SUCCESS
                 } else {
                     BLST_ERROR::BLST_VERIFY_FAIL
@@ -1387,6 +1468,7 @@ macro_rules! sig_variant_impl {
             }
         }
 
+        #[repr(transparent)]
         #[derive(Debug, Clone, Copy)]
         pub struct AggregateSignature {
             point: $sig,
@@ -1446,6 +1528,21 @@ macro_rules! sig_variant_impl {
                     }
                 }
                 Ok(agg_sig)
+            }
+
+            pub fn aggregate_with_randomness(
+                sigs: &[Signature],
+                randomness: &[u8],
+                nbits: usize,
+                sigs_groupcheck: bool,
+            ) -> Result<Self, BLST_ERROR> {
+                if sigs.len() == 0 {
+                    return Err(BLST_ERROR::BLST_AGGR_TYPE_MISMATCH);
+                }
+                if sigs_groupcheck {
+                    sigs.validate()?;
+                }
+                Ok(sigs.mult(randomness, nbits))
             }
 
             pub fn aggregate_serialized(
@@ -1512,6 +1609,50 @@ macro_rules! sig_variant_impl {
             }
         }
 
+        impl MultiPoint for [PublicKey] {
+            type Output = AggregatePublicKey;
+
+            fn mult(&self, scalars: &[u8], nbits: usize) -> Self::Output {
+                Self::Output {
+                    point: unsafe { transmute::<&[_], &[$pk_aff]>(self) }
+                        .mult(scalars, nbits),
+                }
+            }
+
+            fn add(&self) -> Self::Output {
+                Self::Output {
+                    point: unsafe { transmute::<&[_], &[$pk_aff]>(self) }
+                        .add(),
+                }
+            }
+
+            fn validate(&self) -> Result<(), BLST_ERROR> {
+                unsafe { transmute::<&[_], &[$pk_aff]>(self) }.validate()
+            }
+        }
+
+        impl MultiPoint for [Signature] {
+            type Output = AggregateSignature;
+
+            fn mult(&self, scalars: &[u8], nbits: usize) -> Self::Output {
+                Self::Output {
+                    point: unsafe { transmute::<&[_], &[$sig_aff]>(self) }
+                        .mult(scalars, nbits),
+                }
+            }
+
+            fn add(&self) -> Self::Output {
+                Self::Output {
+                    point: unsafe { transmute::<&[_], &[$sig_aff]>(self) }
+                        .add(),
+                }
+            }
+
+            fn validate(&self) -> Result<(), BLST_ERROR> {
+                unsafe { transmute::<&[_], &[$sig_aff]>(self) }.validate()
+            }
+        }
+
         #[cfg(test)]
         mod tests {
             use super::*;
@@ -1553,7 +1694,6 @@ macro_rules! sig_variant_impl {
             }
 
             #[test]
-            #[cfg(feature = "std")]
             fn test_aggregate() {
                 let num_msgs = 10;
                 let dst = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
@@ -1626,7 +1766,6 @@ macro_rules! sig_variant_impl {
             }
 
             #[test]
-            #[cfg(feature = "std")]
             fn test_multiple_agg_sigs() {
                 let dst = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
                 let num_pks_per_sig = 10;
@@ -1876,6 +2015,78 @@ macro_rules! sig_variant_impl {
                     assert_eq!(sk_des.sign(b"asdf", b"qwer", b"zxcv"), sig);
                 }
             }
+
+            #[test]
+            fn test_multi_point() {
+                let dst = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
+                let num_pks = 13;
+
+                let seed = [0u8; 32];
+                let mut rng = ChaCha20Rng::from_seed(seed);
+
+                // Create public keys
+                let sks: Vec<_> =
+                    (0..num_pks).map(|_| gen_random_key(&mut rng)).collect();
+
+                let pks =
+                    sks.iter().map(|sk| sk.sk_to_pk()).collect::<Vec<_>>();
+                let pks_refs: Vec<&PublicKey> =
+                    pks.iter().map(|pk| pk).collect();
+
+                // Create random message for pks to all sign
+                let msg_len = (rng.next_u64() & 0x3F) + 1;
+                let mut msg = vec![0u8; msg_len as usize];
+                rng.fill_bytes(&mut msg);
+
+                // Generate signature for each key pair
+                let sigs = sks
+                    .iter()
+                    .map(|sk| sk.sign(&msg, dst, &[]))
+                    .collect::<Vec<Signature>>();
+                let sigs_refs: Vec<&Signature> =
+                    sigs.iter().map(|s| s).collect();
+
+                // create random values
+                let mut rands: Vec<u8> = Vec::with_capacity(8 * num_pks);
+                for _ in 0..num_pks {
+                    let mut r = rng.next_u64();
+                    while r == 0 {
+                        // Reject zero as it is used for multiplication.
+                        r = rng.next_u64();
+                    }
+                    rands.extend_from_slice(&r.to_le_bytes());
+                }
+
+                // Sanity test each current single signature
+                let errs = sigs
+                    .iter()
+                    .zip(pks.iter())
+                    .map(|(s, pk)| (s.verify(true, &msg, dst, &[], pk, true)))
+                    .collect::<Vec<BLST_ERROR>>();
+                assert_eq!(errs, vec![BLST_ERROR::BLST_SUCCESS; num_pks]);
+
+                // sanity test aggregated signature
+                let agg_pk = AggregatePublicKey::aggregate(&pks_refs, false)
+                    .unwrap()
+                    .to_public_key();
+                let agg_sig = AggregateSignature::aggregate(&sigs_refs, false)
+                    .unwrap()
+                    .to_signature();
+                let err = agg_sig.verify(true, &msg, dst, &[], &agg_pk, true);
+                assert_eq!(err, BLST_ERROR::BLST_SUCCESS);
+
+                // test multi-point aggregation using add
+                let agg_pk = pks.add().to_public_key();
+                let agg_sig = sigs.add().to_signature();
+                let err = agg_sig.verify(true, &msg, dst, &[], &agg_pk, true);
+                assert_eq!(err, BLST_ERROR::BLST_SUCCESS);
+
+                // test multi-point aggregation using mult
+                let agg_pk = pks.mult(&rands, 64).to_public_key();
+                let agg_sig = sigs.mult(&rands, 64).to_signature();
+                let err = agg_sig.verify(true, &msg, dst, &[], &agg_pk, true);
+                assert_eq!(err, BLST_ERROR::BLST_SUCCESS);
+            }
         }
     };
 }
@@ -1968,6 +2179,16 @@ pub mod min_sig {
     );
 }
 
+pub trait MultiPoint {
+    type Output;
+
+    fn mult(&self, scalars: &[u8], nbits: usize) -> Self::Output;
+    fn add(&self) -> Self::Output;
+    fn validate(&self) -> Result<(), BLST_ERROR> {
+        Err(BLST_ERROR::BLST_POINT_NOT_IN_GROUP)
+    }
+}
+
 #[cfg(feature = "std")]
 include!("pippenger.rs");
 
@@ -2024,5 +2245,37 @@ mod fp12_test {
             naive,
             blst_fp12::miller_loop_n(qs.as_slice(), ps.as_slice())
         );
+    }
+}
+
+#[cfg(test)]
+mod sk_test {
+    use super::*;
+    use rand::{RngCore, SeedableRng};
+    use rand_chacha::ChaCha20Rng;
+
+    #[test]
+    fn inverse() {
+        let mut bytes = [0u8; 64];
+        ChaCha20Rng::from_entropy().fill_bytes(bytes.as_mut());
+
+        let mut sk = blst_scalar::default();
+        let mut p1 = blst_p1::default();
+        let mut p2 = blst_p2::default();
+
+        unsafe {
+            blst_scalar_from_be_bytes(&mut sk, bytes.as_ptr(), bytes.len());
+
+            blst_p1_mult(&mut p1, blst_p1_generator(), sk.b.as_ptr(), 255);
+            blst_sk_inverse(&mut sk, &sk);
+            blst_p1_mult(&mut p1, &p1, sk.b.as_ptr(), 255);
+
+            blst_p2_mult(&mut p2, blst_p2_generator(), sk.b.as_ptr(), 255);
+            blst_sk_inverse(&mut sk, &sk);
+            blst_p2_mult(&mut p2, &p2, sk.b.as_ptr(), 255);
+        }
+
+        assert_eq!(p1, unsafe { *blst_p1_generator() });
+        assert_eq!(p2, unsafe { *blst_p2_generator() });
     }
 }

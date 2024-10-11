@@ -1,0 +1,140 @@
+find
+----
+accepts 2 arg(s), received 0
+
+find
+non-existent
+key
+----
+stat non-existent: file does not exist
+
+find
+testdata/find-db
+aaa
+----
+000002.log
+    aaa#1,SET [31]
+000004.log
+    aaa#8,DEL []
+000005.sst [aaa#1,SET-ccc#5,MERGE]
+    (flushed to L0, moved to L6)
+    aaa#1,SET [31]
+000008.sst [aaa#0,SET-ccc#0,MERGE]
+    (compacted L0 [...] + L6 [000005])
+    aaa#0,SET [31]
+000010.sst [aaa#8,DEL-eee#inf,RANGEDEL]
+    (flushed to L0)
+    aaa#8,DEL []
+000011.sst [aaa#8,DEL-eee#inf,RANGEDEL]
+    (compacted L0 [000010] + L6 [000008 ...])
+    aaa#8,DEL []
+    aaa#0,SET [31]
+
+find
+testdata/find-db
+bbb
+--key=%x
+--value=pretty:test-comparer
+----
+000002.log
+    626262#2,SET test value formatter: 2
+000004.log
+    626262-656565#10,RANGEDEL
+000005.sst [616161#1,SET-636363#5,MERGE]
+    (flushed to L0, moved to L6)
+    626262#2,SET test value formatter: 2
+000006.sst [626262#6,SET-636363#6,SET]
+    (ingested to L0)
+    626262#6,SET test value formatter: 22
+000008.sst [616161#0,SET-636363#0,MERGE]
+    (compacted L0 [000006] + L6 [000005])
+    626262#6,SET test value formatter: 22
+    626262#0,SET test value formatter: 2
+000010.sst [616161#8,DEL-656565#inf,RANGEDEL]
+    (flushed to L0)
+    626262-656565#10,RANGEDEL
+000011.sst [616161#8,DEL-656565#inf,RANGEDEL]
+    (compacted L0 [000010] + L6 [000008 ...])
+    626262-656565#10,RANGEDEL
+    626262#6,SET test value formatter: 22
+    626262#0,SET test value formatter: 2
+
+find
+testdata/find-db
+hex:636363
+--value=null
+----
+000002.log
+    ccc#3,MERGE
+    ccc#4,MERGE
+    ccc#5,MERGE
+000004.log
+    ccc#9,SINGLEDEL
+    bbb-eee#10,RANGEDEL
+000005.sst [aaa#1,SET-ccc#5,MERGE]
+    (flushed to L0, moved to L6)
+    ccc#5,MERGE
+000006.sst [bbb#6,SET-ccc#6,SET]
+    (ingested to L0)
+    ccc#6,SET
+000008.sst [aaa#0,SET-ccc#0,MERGE]
+    (compacted L0 [000006] + L6 [000005])
+    ccc#6,SET
+    ccc#0,MERGE
+000010.sst [aaa#8,DEL-eee#inf,RANGEDEL]
+    (flushed to L0)
+    bbb-eee#10,RANGEDEL
+000011.sst [aaa#8,DEL-eee#inf,RANGEDEL]
+    (compacted L0 [000010] + L6 [000008 ...])
+    bbb-eee#10,RANGEDEL
+    ccc#6,SET
+    ccc#0,MERGE
+
+find
+testdata/find-db
+ddd
+-v
+----
+find-db
+    1 manifest
+    3 logs
+    6 sstables
+find-db/MANIFEST-000001
+   10 edits
+find-db/archive/000002.log
+find-db/archive/000004.log
+find-db/000009.log
+find-db/archive/000005.sst
+find-db/archive/000006.sst: global seqnum: 6
+find-db/archive/000007.sst: global seqnum: 7
+find-db/archive/000008.sst
+find-db/archive/000010.sst
+find-db/archive/000011.sst
+000004.log
+    bbb-eee#10,RANGEDEL
+000007.sst [ddd#7,SET-ddd#7,SET]
+    (ingested to L6)
+    ddd#7,SET [3333]
+000010.sst [aaa#8,DEL-eee#inf,RANGEDEL]
+    (flushed to L0)
+    bbb-eee#10,RANGEDEL
+000011.sst [aaa#8,DEL-eee#inf,RANGEDEL]
+    (compacted L0 [000010] + L6 [000007 ...])
+    bbb-eee#10,RANGEDEL
+    ddd#7,SET [3333]
+
+find
+testdata/find-db
+eee
+----
+000004.log
+    bbb-eee#10,RANGEDEL
+
+find
+testdata/find-mixed
+hex:636363
+--value=null
+----
+000002.sst
+    test formatter: ccc#0,SET
+Unable to decode sstable find-mixed/000001.sst, pebble/table: invalid table (file size is too small)

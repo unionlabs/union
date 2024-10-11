@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package tendermint.services.pruning.v1;
+
+message SetBlockRetainHeightRequest {
+  uint64 height = 1;
+}
+
+message SetBlockRetainHeightResponse {}
+
+message GetBlockRetainHeightRequest {}
+
+message GetBlockRetainHeightResponse {
+  // The retain height set by the application.
+  uint64 app_retain_height = 1;
+
+  // The retain height set via the pruning service (e.g. by the data
+  // companion) specifically for blocks.
+  uint64 pruning_service_retain_height = 2;
+}
+
+message SetBlockResultsRetainHeightRequest {
+  uint64 height = 1;
+}
+
+message SetBlockResultsRetainHeightResponse {}
+
+message GetBlockResultsRetainHeightRequest {}
+
+message GetBlockResultsRetainHeightResponse {
+  // The retain height set by the pruning service (e.g. by the data
+  // companion) specifically for block results.
+  uint64 pruning_service_retain_height = 1;
+}
+
+message SetTxIndexerRetainHeightRequest {
+  uint64 height = 1;
+}
+
+message SetTxIndexerRetainHeightResponse {}
+
+message GetTxIndexerRetainHeightRequest {}
+
+message GetTxIndexerRetainHeightResponse {
+  uint64 height = 1;
+}
+
+message SetBlockIndexerRetainHeightRequest {
+  uint64 height = 1;
+}
+
+message SetBlockIndexerRetainHeightResponse {}
+
+message GetBlockIndexerRetainHeightRequest {}
+
+message GetBlockIndexerRetainHeightResponse {
+  uint64 height = 1;
+}

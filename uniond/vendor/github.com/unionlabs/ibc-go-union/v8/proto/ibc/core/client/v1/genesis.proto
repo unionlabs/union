@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package ibc.core.client.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/core/02-client/types";
+
+import "ibc/core/client/v1/client.proto";
+import "gogoproto/gogo.proto";
+
+// GenesisState defines the ibc client submodule's genesis state.
+message GenesisState {
+  // client states with their corresponding identifiers
+  repeated IdentifiedClientState clients = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "IdentifiedClientStates"];
+  // consensus states from each client
+  repeated ClientConsensusStates clients_consensus = 2
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "ClientsConsensusStates"];
+  // metadata from each client
+  repeated IdentifiedGenesisMetadata clients_metadata = 3 [(gogoproto.nullable) = false];
+  Params                             params           = 4 [(gogoproto.nullable) = false];
+  // Deprecated: create_localhost has been deprecated.
+  // The localhost client is automatically created at genesis.
+  bool create_localhost = 5 [deprecated = true];
+  // the sequence for the next generated client identifier
+  uint64 next_client_sequence = 6;
+}
+
+// GenesisMetadata defines the genesis type for metadata that clients may return
+// with ExportMetadata
+message GenesisMetadata {
+  option (gogoproto.goproto_getters) = false;
+
+  // store key of metadata without clientID-prefix
+  bytes key = 1;
+  // metadata value
+  bytes value = 2;
+}
+
+// IdentifiedGenesisMetadata has the client metadata with the corresponding
+// client id.
+message IdentifiedGenesisMetadata {
+  string                   client_id       = 1;
+  repeated GenesisMetadata client_metadata = 2 [(gogoproto.nullable) = false];
+}

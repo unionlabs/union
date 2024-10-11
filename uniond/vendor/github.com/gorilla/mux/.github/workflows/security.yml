@@ -1,0 +1,37 @@
+name: Security
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  scan:
+    strategy:
+      matrix:
+        go: ['1.20','1.21']
+      fail-fast: true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Go ${{ matrix.go }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go }}
+          cache: false
+
+      - name: Run GoSec
+        uses: securego/gosec@master
+        with:
+          args: -exclude-dir examples ./...
+
+      - name: Run GoVulnCheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: ${{ matrix.go }}
+          go-package: ./...

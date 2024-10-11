@@ -1,0 +1,97 @@
+# Configuration for Auto Labeler during pull request
+#
+# See https://github.com/actions/labeler for file format
+# and https://github.com/google/flatbuffers/labels for a list of valid labels
+#
+# See .github/workflows/label.yml for Github Action workflow script
+
+c#:
+  - '**/*.cs'
+  - net/**/*
+  - tests/FlatBuffers.Test/**/*
+  - tests/FlatBuffers.Benchmarks/**/*
+  - src/idl_gen_csharp.cpp
+
+swift:
+  - '**/*.swift'
+  - swift/**/*
+  - tests/swift/**
+  - src/idl_gen_swift.cpp
+
+nim:
+  - '**/*.nim'
+  - nim/**/*
+  - src/idl_gen_nim.cpp
+  - src/bfbs_gen_nim.cpp
+
+javascript:
+  - '**/*.js'
+  - src/idl_gen_ts.cpp
+
+typescript:
+  - '**/*.ts'
+  - src/idl_gen_ts.cpp
+  - grpc/flatbuffers-js-grpc/**/*.ts
+
+golang:
+  - '**/*.go'
+  - src/idl_gen_go.cpp
+
+python:
+  - '**/*.py'
+  - src/idl_gen_python.cpp
+
+java:
+  - '**/*.java'
+  - src/idl_gen_java.cpp
+
+kotlin:
+  - '**/*.kt'
+  - src/idl_gen_kotlin.cpp
+  - src/idl_gen_kotlin_kmp.cpp
+
+lua:
+  - '**/*.lua'
+  - lua/**/*
+  - src/bfbs_gen_lua.cpp
+
+lobster:
+  - '**/*.lobster'
+  - src/idl_gen_lobster.cpp
+
+php:
+  - '**/*.php'
+  - src/idl_gen_php.cpp
+
+rust:
+  - '**/*.rs'
+  - rust/**/*
+  - src/idl_gen_rust.cpp
+
+dart:
+  - '**/*.dart'
+  - src/idl_gen_dart.cpp
+
+c++:
+  - '**/*.cc'
+  - '**/*.cpp'
+  - '**/*.h'
+
+json:
+  - '**/*.json'
+  - src/idl_gen_json_schema.cpp
+
+codegen:
+  - src/**/*
+
+documentation:
+  - docs/**/*
+  - '**/*.md'
+
+CI:
+  - '.github/**/*'
+  - '.bazelci/**/*'
+
+grpc:
+  - grpc/**/*
+  - src/idl_gen_grpc.cpp

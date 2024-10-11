@@ -1,0 +1,6 @@
+assign_issues_by:
+- labels:
+  - 'api: logging'
+  - 'api: clouderrorreporting'
+  to:
+  - googleapis/api-logging

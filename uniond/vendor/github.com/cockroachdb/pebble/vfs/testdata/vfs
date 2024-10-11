@@ -1,0 +1,188 @@
+define
+link a b
+create a
+link a b
+link a b
+link c d
+remove b
+link-or-copy a b
+remove b
+----
+link: a -> b [file does not exist]
+create: a [<nil>]
+close: a [<nil>]
+link: a -> b [<nil>]
+link: a -> b [file already exists]
+link: c -> d [file does not exist]
+remove: b [<nil>]
+link: a -> b [<nil>]
+remove: b [<nil>]
+
+define linkErr=ErrExist
+create a
+link a b
+link-or-copy a b
+----
+create: a [<nil>]
+close: a [<nil>]
+link: a -> b [file already exists]
+link: a -> b [file already exists]
+
+define linkErr=ErrNotExist
+create a
+link a b
+link-or-copy a b
+----
+create: a [<nil>]
+close: a [<nil>]
+link: a -> b [file does not exist]
+link: a -> b [file does not exist]
+
+define linkErr=ErrPermission
+create a
+link a b
+link-or-copy a b
+----
+create: a [<nil>]
+close: a [<nil>]
+link: a -> b [permission denied]
+link: a -> b [permission denied]
+
+define linkErr=random
+create a
+link a b
+link-or-copy a b
+----
+create: a [<nil>]
+close: a [<nil>]
+link: a -> b [random]
+link: a -> b [random]
+open: a [<nil>]
+create: b [<nil>]
+sync: b [<nil>]
+close: b [<nil>]
+close: a [<nil>]
+
+define
+mkdir d
+create d/a
+mkdir  d/b
+create d/b/c
+----
+mkdir: d [<nil>]
+create: d/a [<nil>]
+close: a [<nil>]
+mkdir: d/b [<nil>]
+create: d/b/c [<nil>]
+close: c [<nil>]
+
+# NB: This clone does not specify a destination FS, so the clone target will be
+# the same FS. This results in the use of link.
+
+define
+clone d e link
+----
+open: d [<nil>]
+mkdir: e [<nil>]
+open: d/a [<nil>]
+link: d/a -> e/a [random]
+open: d/a [<nil>]
+create: e/a [<nil>]
+sync: a [<nil>]
+close: a [<nil>]
+close: d/a [<nil>]
+close: d/a [<nil>]
+open: d/b [<nil>]
+mkdir: e/b [<nil>]
+open: d/b/c [<nil>]
+link: d/b/c -> e/b/c [random]
+open: d/b/c [<nil>]
+create: e/b/c [<nil>]
+sync: c [<nil>]
+close: c [<nil>]
+close: d/b/c [<nil>]
+close: d/b/c [<nil>]
+close: d/b [<nil>]
+close: d [<nil>]
+
+define
+list e
+----
+a
+b
+
+define
+list e/b
+----
+c
+
+define
+list /
+remove e
+remove-all e
+remove-all e
+remove-all e/a/b/c
+list /
+----
+a
+b
+d
+e
+remove: e [file already exists]
+remove-all: e [<nil>]
+remove-all: e [<nil>]
+remove-all: e/a/b/c [<nil>]
+a
+b
+d
+
+define
+reuseForWrite a b
+reuseForWrite x y
+----
+reuseForWrite: a -> b [<nil>]
+reuseForWrite: x -> y [file does not exist]
+
+# NB: This clone target specified a different FS. This results in no use of
+# link, despite link being provided.
+
+define
+clone d f mem link
+----
+open: d [<nil>]
+mkdir: f [<nil>]
+open: d/a [<nil>]
+create: f/a [<nil>]
+close: a [<nil>]
+close: d/a [<nil>]
+open: d/b [<nil>]
+mkdir: f/b [<nil>]
+open: d/b/c [<nil>]
+create: f/b/c [<nil>]
+close: c [<nil>]
+close: d/b/c [<nil>]
+close: d/b [<nil>]
+close: d [<nil>]
+
+# NB: This clone does not specify link, so all files are copied. It does specify
+# sync, so all files and directories are synced.
+
+define
+clone d g sync
+----
+open: d [<nil>]
+mkdir: g [<nil>]
+open: d/a [<nil>]
+create: g/a [<nil>]
+sync: a [<nil>]
+close: a [<nil>]
+close: d/a [<nil>]
+open: d/b [<nil>]
+mkdir: g/b [<nil>]
+open: d/b/c [<nil>]
+create: g/b/c [<nil>]
+sync: c [<nil>]
+close: c [<nil>]
+close: d/b/c [<nil>]
+close: d/b [<nil>]
+close: d [<nil>]

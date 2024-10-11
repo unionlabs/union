@@ -5,7 +5,6 @@
 #include "textflag.h"
 
 // func matchLen(a []byte, b []byte) int
-// Requires: BMI
 TEXT ·matchLen(SB), NOSPLIT, $0-56
 	MOVQ a_base+0(FP), AX
 	MOVQ b_base+24(FP), CX
@@ -17,17 +16,16 @@ TEXT ·matchLen(SB), NOSPLIT, $0-56
 	JB   matchlen_match4_standalone
 
 matchlen_loopback_standalone:
-	MOVQ  (AX)(SI*1), BX
-	XORQ  (CX)(SI*1), BX
-	TESTQ BX, BX
-	JZ    matchlen_loop_standalone
+	MOVQ (AX)(SI*1), BX
+	XORQ (CX)(SI*1), BX
+	JZ   matchlen_loop_standalone
 
 #ifdef GOAMD64_v3
 	TZCNTQ BX, BX
 #else
 	BSFQ BX, BX
 #endif
-	SARQ $0x03, BX
+	SHRL $0x03, BX
 	LEAL (SI)(BX*1), SI
 	JMP  gen_match_len_end
 

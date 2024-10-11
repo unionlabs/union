@@ -1,0 +1,917 @@
+{
+  "version": "2.0",
+  "service": "<p>Amazon Web Services Control Tower offers application programming interface (API) operations that support programmatic interaction with these types of resources:</p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/controls.html\"> <i>controls</i> </a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/lz-api-launch.html\"> <i>landing zones</i> </a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/types-of-baselines.html\"> <i>baselines</i> </a> </p> </li> </ul> <p>For more information about these types of resources, see the <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/what-is-control-tower.html\"> <i>Amazon Web Services Control Tower User Guide</i> </a>.</p> <p> <b>About control APIs</b> </p> <p>These interfaces allow you to apply the Amazon Web Services library of pre-defined <i>controls</i> to your organizational units, programmatically. In Amazon Web Services Control Tower, the terms \"control\" and \"guardrail\" are synonyms.</p> <p>To call these APIs, you'll need to know:</p> <ul> <li> <p>the <code>controlIdentifier</code> for the control--or guardrail--you are targeting.</p> </li> <li> <p>the ARN associated with the target organizational unit (OU), which we call the <code>targetIdentifier</code>.</p> </li> <li> <p>the ARN associated with a resource that you wish to tag or untag.</p> </li> </ul> <p> <b>To get the <code>controlIdentifier</code> for your Amazon Web Services Control Tower control:</b> </p> <p>The <code>controlIdentifier</code> is an ARN that is specified for each control. You can view the <code>controlIdentifier</code> in the console on the <b>Control details</b> page, as well as in the documentation.</p> <p>The <code>controlIdentifier</code> is unique in each Amazon Web Services Region for each control. You can find the <code>controlIdentifier</code> for each Region and control in the <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-metadata-tables.html\">Tables of control metadata</a> or the <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-region-tables.html\">Control availability by Region tables</a> in the <i>Amazon Web Services Control Tower User Guide.</i> </p> <p>A quick-reference list of control identifers for the Amazon Web Services Control Tower legacy <i>Strongly recommended</i> and <i>Elective</i> controls is given in <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-identifiers.html.html\">Resource identifiers for APIs and controls</a> in the <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-identifiers.html\">Controls reference guide section</a> of the <i>Amazon Web Services Control Tower User Guide</i>. Remember that <i>Mandatory</i> controls cannot be added or removed.</p> <note> <p> <b>ARN format:</b> <code>arn:aws:controltower:{REGION}::control/{CONTROL_NAME}</code> </p> <p> <b>Example:</b> </p> <p> <code>arn:aws:controltower:us-west-2::control/AWS-GR_AUTOSCALING_LAUNCH_CONFIG_PUBLIC_IP_DISABLED</code> </p> </note> <p> <b>To get the <code>targetIdentifier</code>:</b> </p> <p>The <code>targetIdentifier</code> is the ARN for an OU.</p> <p>In the Amazon Web Services Organizations console, you can find the ARN for the OU on the <b>Organizational unit details</b> page associated with that OU.</p> <note> <p> <b>OU ARN format:</b> </p> <p> <code>arn:${Partition}:organizations::${MasterAccountId}:ou/o-${OrganizationId}/ou-${OrganizationalUnitId}</code> </p> </note> <p> <b> About landing zone APIs</b> </p> <p>You can configure and launch an Amazon Web Services Control Tower landing zone with APIs. For an introduction and steps, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-apis.html\">Getting started with Amazon Web Services Control Tower using APIs</a>.</p> <p>For an overview of landing zone API operations, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/2023-all.html#landing-zone-apis\"> Amazon Web Services Control Tower supports landing zone APIs</a>. The individual API operations for landing zones are detailed in this document, the <a href=\"https://docs.aws.amazon.com/controltower/latest/APIReference/API_Operations.html\">API reference manual</a>, in the \"Actions\" section.</p> <p> <b>About baseline APIs</b> </p> <p>You can apply the <code>AWSControlTowerBaseline</code> baseline to an organizational unit (OU) as a way to register the OU with Amazon Web Services Control Tower, programmatically. For a general overview of this capability, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/2024-all.html#baseline-apis\">Amazon Web Services Control Tower supports APIs for OU registration and configuration with baselines</a>.</p> <p>You can call the baseline API operations to view the baselines that Amazon Web Services Control Tower enables for your landing zone, on your behalf, when setting up the landing zone. These baselines are read-only baselines.</p> <p>The individual API operations for baselines are detailed in this document, the <a href=\"https://docs.aws.amazon.com/controltower/latest/APIReference/API_Operations.html\">API reference manual</a>, in the \"Actions\" section. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/baseline-api-examples.html\">Baseline API input and output examples with CLI</a>.</p> <p class=\"title\"> <b>Details and examples</b> </p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-api-examples-short.html\">Control API input and output examples with CLI</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/baseline-api-examples.html\">Baseline API input and output examples with CLI</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/enable-controls.html\">Enable controls with CloudFormation</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/lz-apis-cfn-setup.html\">Launch a landing zone with CloudFormation</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-metadata-tables.html\">Control metadata tables (large page)</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-region-tables.html\">Control availability by Region tables (large page)</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-identifiers.html\">List of identifiers for legacy controls</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/controls.html\">Controls reference guide</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/controls-reference.html\">Controls library groupings</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/creating-resources-with-cloudformation.html\">Creating Amazon Web Services Control Tower resources with Amazon Web Services CloudFormation</a> </p> </li> </ul> <p>To view the open source resource repository on GitHub, see <a href=\"https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-controltower\">aws-cloudformation/aws-cloudformation-resource-providers-controltower</a> </p> <p> <b>Recording API Requests</b> </p> <p>Amazon Web Services Control Tower supports Amazon Web Services CloudTrail, a service that records Amazon Web Services API calls for your Amazon Web Services account and delivers log files to an Amazon S3 bucket. By using information collected by CloudTrail, you can determine which requests the Amazon Web Services Control Tower service received, who made the request and when, and so on. For more about Amazon Web Services Control Tower and its support for CloudTrail, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/logging-using-cloudtrail.html\">Logging Amazon Web Services Control Tower Actions with Amazon Web Services CloudTrail</a> in the Amazon Web Services Control Tower User Guide. To learn more about CloudTrail, including how to turn it on and find your log files, see the Amazon Web Services CloudTrail User Guide.</p>",
+  "operations": {
+    "CreateLandingZone": "<p>Creates a new landing zone. This API call starts an asynchronous operation that creates and configures a landing zone, based on the parameters specified in the manifest JSON file.</p>",
+    "DeleteLandingZone": "<p>Decommissions a landing zone. This API call starts an asynchronous operation that deletes Amazon Web Services Control Tower resources deployed in accounts managed by Amazon Web Services Control Tower.</p>",
+    "DisableBaseline": "<p>Disable an <code>EnabledBaseline</code> resource on the specified Target. This API starts an asynchronous operation to remove all resources deployed as part of the baseline enablement. The resource will vary depending on the enabled baseline. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/baseline-api-examples.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "DisableControl": "<p>This API call turns off a control. It starts an asynchronous operation that deletes AWS resources on the specified organizational unit and the accounts it contains. The resources will vary according to the control that you specify. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-api-examples-short.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "EnableBaseline": "<p>Enable (apply) a <code>Baseline</code> to a Target. This API starts an asynchronous operation to deploy resources specified by the <code>Baseline</code> to the specified Target. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/baseline-api-examples.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "EnableControl": "<p>This API call activates a control. It starts an asynchronous operation that creates Amazon Web Services resources on the specified organizational unit and the accounts it contains. The resources created will vary according to the control that you specify. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-api-examples-short.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "GetBaseline": "<p>Retrieve details about an existing <code>Baseline</code> resource by specifying its identifier. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/baseline-api-examples.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "GetBaselineOperation": "<p>Returns the details of an asynchronous baseline operation, as initiated by any of these APIs: <code>EnableBaseline</code>, <code>DisableBaseline</code>, <code>UpdateEnabledBaseline</code>, <code>ResetEnabledBaseline</code>. A status message is displayed in case of operation failure. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/baseline-api-examples.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "GetControlOperation": "<p>Returns the status of a particular <code>EnableControl</code> or <code>DisableControl</code> operation. Displays a message in case of error. Details for an operation are available for 90 days. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-api-examples-short.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "GetEnabledBaseline": "<p>Retrieve details of an <code>EnabledBaseline</code> resource by specifying its identifier.</p>",
+    "GetEnabledControl": "<p>Retrieves details about an enabled control. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-api-examples-short.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "GetLandingZone": "<p>Returns details about the landing zone. Displays a message in case of error.</p>",
+    "GetLandingZoneOperation": "<p>Returns the status of the specified landing zone operation. Details for an operation are available for 90 days.</p>",
+    "ListBaselines": "<p>Returns a summary list of all available baselines. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/baseline-api-examples.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "ListControlOperations": "<p>Provides a list of operations in progress or queued.</p>",
+    "ListEnabledBaselines": "<p>Returns a list of summaries describing <code>EnabledBaseline</code> resources. You can filter the list by the corresponding <code>Baseline</code> or <code>Target</code> of the <code>EnabledBaseline</code> resources. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/baseline-api-examples.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "ListEnabledControls": "<p>Lists the controls enabled by Amazon Web Services Control Tower on the specified organizational unit and the accounts it contains. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-api-examples-short.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "ListLandingZones": "<p>Returns the landing zone ARN for the landing zone deployed in your managed account. This API also creates an ARN for existing accounts that do not yet have a landing zone ARN. </p> <p>Returns one landing zone ARN.</p>",
+    "ListTagsForResource": "<p>Returns a list of tags associated with the resource. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-api-examples-short.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "ResetEnabledBaseline": "<p>Re-enables an <code>EnabledBaseline</code> resource. For example, this API can re-apply the existing <code>Baseline</code> after a new member account is moved to the target OU. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/baseline-api-examples.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "ResetLandingZone": "<p>This API call resets a landing zone. It starts an asynchronous operation that resets the landing zone to the parameters specified in its original configuration.</p>",
+    "TagResource": "<p>Applies tags to a resource. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-api-examples-short.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "UntagResource": "<p>Removes tags from a resource. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-api-examples-short.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "UpdateEnabledBaseline": "<p>Updates an <code>EnabledBaseline</code> resource's applied parameters or version. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/baseline-api-examples.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a>.</p>",
+    "UpdateEnabledControl": "<p> Updates the configuration of an already enabled control.</p> <p>If the enabled control shows an <code>EnablementStatus</code> of SUCCEEDED, supply parameters that are different from the currently configured parameters. Otherwise, Amazon Web Services Control Tower will not accept the request.</p> <p>If the enabled control shows an <code>EnablementStatus</code> of FAILED, Amazon Web Services Control Tower will update the control to match any valid parameters that you supply.</p> <p>If the <code>DriftSummary</code> status for the control shows as DRIFTED, you cannot call this API. Instead, you can update the control by calling <code>DisableControl</code> and again calling <code>EnableControl</code>, or you can run an extending governance operation. For usage examples, see <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/control-api-examples-short.html\"> <i>the Amazon Web Services Control Tower User Guide</i> </a> </p>",
+    "UpdateLandingZone": "<p>This API call updates the landing zone. It starts an asynchronous operation that updates the landing zone based on the new landing zone version, or on the changed parameters specified in the updated manifest file. </p>"
+  },
+  "shapes": {
+    "AccessDeniedException": {
+      "base": "<p>You do not have sufficient access to perform this action.</p>",
+      "refs": {
+      }
+    },
+    "Arn": {
+      "base": null,
+      "refs": {
+        "ControlOperation$enabledControlIdentifier": "<p>The <code>controlIdentifier</code> of the enabled control.</p>",
+        "ControlOperationSummary$enabledControlIdentifier": "<p>The <code>controlIdentifier</code> of an enabled control.</p>",
+        "CreateLandingZoneOutput$arn": "<p>The ARN of the landing zone resource.</p>",
+        "DisableBaselineInput$enabledBaselineIdentifier": "<p>Identifier of the <code>EnabledBaseline</code> resource to be deactivated, in ARN format.</p>",
+        "EnableBaselineInput$baselineIdentifier": "<p>The ARN of the baseline to be enabled.</p>",
+        "EnableBaselineInput$targetIdentifier": "<p>The ARN of the target on which the baseline will be enabled. Only OUs are supported as targets.</p>",
+        "EnableBaselineOutput$arn": "<p>The ARN of the <code>EnabledBaseline</code> resource.</p>",
+        "EnableControlOutput$arn": "<p>The ARN of the <code>EnabledControl</code> resource.</p>",
+        "EnabledBaselineBaselineIdentifiers$member": null,
+        "EnabledBaselineDetails$arn": "<p>The ARN of the <code>EnabledBaseline</code> resource.</p>",
+        "EnabledBaselineSummary$arn": "<p>The ARN of the <code>EnabledBaseline</code> resource</p>",
+        "EnabledBaselineTargetIdentifiers$member": null,
+        "EnabledControlDetails$arn": "<p>The ARN of the enabled control.</p>",
+        "EnabledControlIdentifiers$member": null,
+        "EnabledControlSummary$arn": "<p>The ARN of the enabled control.</p>",
+        "GetEnabledBaselineInput$enabledBaselineIdentifier": "<p>Identifier of the <code>EnabledBaseline</code> resource to be retrieved, in ARN format.</p>",
+        "GetEnabledControlInput$enabledControlIdentifier": "<p>The <code>controlIdentifier</code> of the enabled control.</p>",
+        "LandingZoneDetail$arn": "<p>The ARN of the landing zone.</p>",
+        "LandingZoneSummary$arn": "<p>The ARN of the landing zone.</p>",
+        "ListTagsForResourceInput$resourceArn": "<p> The ARN of the resource.</p>",
+        "ResetEnabledBaselineInput$enabledBaselineIdentifier": "<p>Specifies the ID of the <code>EnabledBaseline</code> resource to be re-enabled, in ARN format.</p>",
+        "TagResourceInput$resourceArn": "<p>The ARN of the resource to be tagged.</p>",
+        "UntagResourceInput$resourceArn": "<p>The ARN of the resource.</p>",
+        "UpdateEnabledBaselineInput$enabledBaselineIdentifier": "<p>Specifies the <code>EnabledBaseline</code> resource to be updated.</p>",
+        "UpdateEnabledControlInput$enabledControlIdentifier": "<p> The ARN of the enabled control that will be updated. </p>"
+      }
+    },
+    "BaselineArn": {
+      "base": null,
+      "refs": {
+        "GetBaselineInput$baselineIdentifier": "<p>The ARN of the <code>Baseline</code> resource to be retrieved.</p>",
+        "GetBaselineOutput$arn": "<p>The baseline ARN.</p>"
+      }
+    },
+    "BaselineOperation": {
+      "base": "<p>An object of shape <code>BaselineOperation</code>, returning details about the specified <code>Baseline</code> operation ID.</p>",
+      "refs": {
+        "GetBaselineOperationOutput$baselineOperation": "<p>A <code>baselineOperation</code> object that shows information about the specified operation ID.</p>"
+      }
+    },
+    "BaselineOperationStatus": {
+      "base": null,
+      "refs": {
+        "BaselineOperation$status": "<p>An enumerated type (<code>enum</code>) with possible values of <code>SUCCEEDED</code>, <code>FAILED</code>, or <code>IN_PROGRESS</code>.</p>"
+      }
+    },
+    "BaselineOperationType": {
+      "base": null,
+      "refs": {
+        "BaselineOperation$operationType": "<p>An enumerated type (<code>enum</code>) with possible values of <code>ENABLE_BASELINE</code>, <code>DISABLE_BASELINE</code>, <code>UPDATE_ENABLED_BASELINE</code>, or <code>RESET_ENABLED_BASELINE</code>.</p>"
+      }
+    },
+    "BaselineSummary": {
+      "base": "<p>Returns a summary of information about a <code>Baseline</code> object.</p>",
+      "refs": {
+        "Baselines$member": null
+      }
+    },
+    "BaselineVersion": {
+      "base": null,
+      "refs": {
+        "EnableBaselineInput$baselineVersion": "<p>The specific version to be enabled of the specified baseline.</p>",
+        "UpdateEnabledBaselineInput$baselineVersion": "<p>Specifies the new <code>Baseline</code> version, to which the <code>EnabledBaseline</code> should be updated.</p>"
+      }
+    },
+    "Baselines": {
+      "base": null,
+      "refs": {
+        "ListBaselinesOutput$baselines": "<p>A list of <code>Baseline</code> object details.</p>"
+      }
+    },
+    "ConflictException": {
+      "base": "<p>Updating or deleting the resource can cause an inconsistent state.</p>",
+      "refs": {
+      }
+    },
+    "ControlIdentifier": {
+      "base": null,
+      "refs": {
+        "ControlIdentifiers$member": null,
+        "ControlOperation$controlIdentifier": "<p>The <code>controlIdentifier</code> of the control for the operation.</p>",
+        "ControlOperationSummary$controlIdentifier": "<p>The <code>controlIdentifier</code> of a control.</p>",
+        "DisableControlInput$controlIdentifier": "<p>The ARN of the control. Only <b>Strongly recommended</b> and <b>Elective</b> controls are permitted, with the exception of the <b>Region deny</b> control. For information on how to find the <code>controlIdentifier</code>, see <a href=\"https://docs.aws.amazon.com/controltower/latest/APIReference/Welcome.html\">the overview page</a>.</p>",
+        "EnableControlInput$controlIdentifier": "<p>The ARN of the control. Only <b>Strongly recommended</b> and <b>Elective</b> controls are permitted, with the exception of the <b>Region deny</b> control. For information on how to find the <code>controlIdentifier</code>, see <a href=\"https://docs.aws.amazon.com/controltower/latest/APIReference/Welcome.html\">the overview page</a>.</p>",
+        "EnabledControlDetails$controlIdentifier": "<p>The control identifier of the enabled control. For information on how to find the <code>controlIdentifier</code>, see <a href=\"https://docs.aws.amazon.com/controltower/latest/APIReference/Welcome.html\">the overview page</a>.</p>",
+        "EnabledControlSummary$controlIdentifier": "<p>The <code>controlIdentifier</code> of the enabled control.</p>"
+      }
+    },
+    "ControlIdentifiers": {
+      "base": null,
+      "refs": {
+        "ControlOperationFilter$controlIdentifiers": "<p>The set of <code>controlIdentifier</code> returned by the filter.</p>",
+        "EnabledControlFilter$controlIdentifiers": "<p>The set of <code>controlIdentifier</code> returned by the filter. </p>"
+      }
+    },
+    "ControlOperation": {
+      "base": "<p>An operation performed by the control.</p>",
+      "refs": {
+        "GetControlOperationOutput$controlOperation": "<p>An operation performed by the control.</p>"
+      }
+    },
+    "ControlOperationFilter": {
+      "base": "<p>A filter object that lets you call <code>ListCOntrolOperations</code> with a specific filter.</p>",
+      "refs": {
+        "ListControlOperationsInput$filter": "<p>An input filter for the <code>ListControlOperations</code> API that lets you select the types of control operations to view.</p>"
+      }
+    },
+    "ControlOperationStatus": {
+      "base": null,
+      "refs": {
+        "ControlOperation$status": "<p>One of <code>IN_PROGRESS</code>, <code>SUCEEDED</code>, or <code>FAILED</code>.</p>",
+        "ControlOperationStatuses$member": null,
+        "ControlOperationSummary$status": "<p>The status of the specified control operation.</p>"
+      }
+    },
+    "ControlOperationStatuses": {
+      "base": null,
+      "refs": {
+        "ControlOperationFilter$statuses": "<p>Lists the status of control operations.</p>"
+      }
+    },
+    "ControlOperationSummary": {
+      "base": "<p>A summary of information about the specified control operation.</p>",
+      "refs": {
+        "ControlOperations$member": null
+      }
+    },
+    "ControlOperationType": {
+      "base": null,
+      "refs": {
+        "ControlOperation$operationType": "<p>One of <code>ENABLE_CONTROL</code> or <code>DISABLE_CONTROL</code>.</p>",
+        "ControlOperationSummary$operationType": "<p>The type of operation.</p>",
+        "ControlOperationTypes$member": null
+      }
+    },
+    "ControlOperationTypes": {
+      "base": null,
+      "refs": {
+        "ControlOperationFilter$controlOperationTypes": "<p>The set of <code>ControlOperation</code> objects returned by the filter.</p>"
+      }
+    },
+    "ControlOperations": {
+      "base": null,
+      "refs": {
+        "ListControlOperationsOutput$controlOperations": "<p>Returns a list of output from control operations. PLACEHOLDER </p>"
+      }
+    },
+    "CreateLandingZoneInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateLandingZoneOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteLandingZoneInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteLandingZoneOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisableBaselineInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisableBaselineOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisableControlInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisableControlOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Document": {
+      "base": null,
+      "refs": {
+        "EnabledControlParameter$value": "<p>The value of a key/value pair.</p>",
+        "EnabledControlParameterSummary$value": "<p>The value of a key/value pair.</p>"
+      }
+    },
+    "DriftStatus": {
+      "base": null,
+      "refs": {
+        "DriftStatusSummary$driftStatus": "<p> The drift status of the enabled control.</p> <p>Valid values:</p> <ul> <li> <p> <code>DRIFTED</code>: The <code>enabledControl</code> deployed in this configuration doesn’t match the configuration that Amazon Web Services Control Tower expected. </p> </li> <li> <p> <code>IN_SYNC</code>: The <code>enabledControl</code> deployed in this configuration matches the configuration that Amazon Web Services Control Tower expected.</p> </li> <li> <p> <code>NOT_CHECKING</code>: Amazon Web Services Control Tower does not check drift for this enabled control. Drift is not supported for the control type.</p> </li> <li> <p> <code>UNKNOWN</code>: Amazon Web Services Control Tower is not able to check the drift status for the enabled control. </p> </li> </ul>",
+        "DriftStatuses$member": null
+      }
+    },
+    "DriftStatusSummary": {
+      "base": "<p>The drift summary of the enabled control.</p> <p>Amazon Web Services Control Tower expects the enabled control configuration to include all supported and governed Regions. If the enabled control differs from the expected configuration, it is defined to be in a state of drift. You can repair this drift by resetting the enabled control.</p>",
+      "refs": {
+        "EnabledControlDetails$driftStatusSummary": "<p>The drift status of the enabled control.</p>",
+        "EnabledControlSummary$driftStatusSummary": "<p>The drift status of the enabled control.</p>"
+      }
+    },
+    "DriftStatuses": {
+      "base": null,
+      "refs": {
+        "EnabledControlFilter$driftStatuses": "<p>A list of <code>DriftStatus</code> items.</p>"
+      }
+    },
+    "EnableBaselineInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "EnableBaselineOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "EnableControlInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "EnableControlOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "EnabledBaselineBaselineIdentifiers": {
+      "base": null,
+      "refs": {
+        "EnabledBaselineFilter$baselineIdentifiers": "<p>Identifiers for the <code>Baseline</code> objects returned as part of the filter operation.</p>"
+      }
+    },
+    "EnabledBaselineDetails": {
+      "base": "<p>Details of the <code>EnabledBaseline</code> resource.</p>",
+      "refs": {
+        "GetEnabledBaselineOutput$enabledBaselineDetails": "<p>Details of the <code>EnabledBaseline</code> resource.</p>"
+      }
+    },
+    "EnabledBaselineFilter": {
+      "base": "<p>A filter applied on the <code>ListEnabledBaseline</code> operation. Allowed filters are <code>baselineIdentifiers</code> and <code>targetIdentifiers</code>. The filter can be applied for either, or both.</p>",
+      "refs": {
+        "ListEnabledBaselinesInput$filter": "<p>A filter applied on the <code>ListEnabledBaseline</code> operation. Allowed filters are <code>baselineIdentifiers</code> and <code>targetIdentifiers</code>. The filter can be applied for either, or both.</p>"
+      }
+    },
+    "EnabledBaselineParameter": {
+      "base": "<p>A key-value parameter to an <code>EnabledBaseline</code> resource.</p>",
+      "refs": {
+        "EnabledBaselineParameters$member": null
+      }
+    },
+    "EnabledBaselineParameterDocument": {
+      "base": null,
+      "refs": {
+        "EnabledBaselineParameter$value": "<p>A low-level <code>Document</code> object of any type (for example, a Java Object).</p>",
+        "EnabledBaselineParameterSummary$value": "<p>A low-level document object of any type (for example, a Java Object).</p>"
+      }
+    },
+    "EnabledBaselineParameterSummaries": {
+      "base": null,
+      "refs": {
+        "EnabledBaselineDetails$parameters": "<p>Shows the parameters that are applied when enabling this <code>Baseline</code>.</p>"
+      }
+    },
+    "EnabledBaselineParameterSummary": {
+      "base": "<p>Summary of an applied parameter to an <code>EnabledBaseline</code> resource. </p>",
+      "refs": {
+        "EnabledBaselineParameterSummaries$member": null
+      }
+    },
+    "EnabledBaselineParameters": {
+      "base": null,
+      "refs": {
+        "EnableBaselineInput$parameters": "<p>A list of <code>key-value</code> objects that specify enablement parameters, where <code>key</code> is a string and <code>value</code> is a document of any type.</p>",
+        "UpdateEnabledBaselineInput$parameters": "<p>Parameters to apply when making an update.</p>"
+      }
+    },
+    "EnabledBaselineSummary": {
+      "base": "<p>Returns a summary of information about an <code>EnabledBaseline</code> object.</p>",
+      "refs": {
+        "EnabledBaselines$member": null
+      }
+    },
+    "EnabledBaselineTargetIdentifiers": {
+      "base": null,
+      "refs": {
+        "EnabledBaselineFilter$targetIdentifiers": "<p>Identifiers for the targets of the <code>Baseline</code> filter operation.</p>"
+      }
+    },
+    "EnabledBaselines": {
+      "base": null,
+      "refs": {
+        "ListEnabledBaselinesOutput$enabledBaselines": "<p>Retuens a list of summaries of <code>EnabledBaseline</code> resources.</p>"
+      }
+    },
+    "EnabledControlDetails": {
+      "base": "<p>Information about the enabled control.</p>",
+      "refs": {
+        "GetEnabledControlOutput$enabledControlDetails": "<p>Information about the enabled control.</p>"
+      }
+    },
+    "EnabledControlFilter": {
+      "base": "<p>A structure that returns a set of control identifiers, the control status for each control in the set, and the drift status for each control in the set.</p>",
+      "refs": {
+        "ListEnabledControlsInput$filter": "<p>An input filter for the <code>ListCEnabledControls</code> API that lets you select the types of control operations to view.</p>"
+      }
+    },
+    "EnabledControlIdentifiers": {
+      "base": null,
+      "refs": {
+        "ControlOperationFilter$enabledControlIdentifiers": "<p>The set <code>controlIdentifier</code> of enabled controls selected by the filter.</p>"
+      }
+    },
+    "EnabledControlParameter": {
+      "base": "<p>A key/value pair, where <code>Key</code> is of type <code>String</code> and <code>Value</code> is of type <code>Document</code>.</p>",
+      "refs": {
+        "EnabledControlParameters$member": null
+      }
+    },
+    "EnabledControlParameterSummaries": {
+      "base": null,
+      "refs": {
+        "EnabledControlDetails$parameters": "<p>Array of <code>EnabledControlParameter</code> objects.</p>"
+      }
+    },
+    "EnabledControlParameterSummary": {
+      "base": "<p>Returns a summary of information about the parameters of an enabled control.</p>",
+      "refs": {
+        "EnabledControlParameterSummaries$member": null
+      }
+    },
+    "EnabledControlParameters": {
+      "base": null,
+      "refs": {
+        "EnableControlInput$parameters": "<p>A list of input parameter values, which are specified to configure the control when you enable it.</p>",
+        "UpdateEnabledControlInput$parameters": "<p>A key/value pair, where <code>Key</code> is of type <code>String</code> and <code>Value</code> is of type <code>Document</code>.</p>"
+      }
+    },
+    "EnabledControlSummary": {
+      "base": "<p>Returns a summary of information about an enabled control.</p>",
+      "refs": {
+        "EnabledControls$member": null
+      }
+    },
+    "EnabledControls": {
+      "base": null,
+      "refs": {
+        "ListEnabledControlsOutput$enabledControls": "<p>Lists the controls enabled by Amazon Web Services Control Tower on the specified organizational unit and the accounts it contains.</p>"
+      }
+    },
+    "EnablementStatus": {
+      "base": null,
+      "refs": {
+        "EnablementStatusSummary$status": "<p> The deployment status of the enabled control.</p> <p>Valid values:</p> <ul> <li> <p> <code>SUCCEEDED</code>: The <code>enabledControl</code> configuration was deployed successfully.</p> </li> <li> <p> <code>UNDER_CHANGE</code>: The <code>enabledControl</code> configuration is changing. </p> </li> <li> <p> <code>FAILED</code>: The <code>enabledControl</code> configuration failed to deploy.</p> </li> </ul>",
+        "EnablementStatuses$member": null
+      }
+    },
+    "EnablementStatusSummary": {
+      "base": "<p>The deployment summary of the enabled control.</p>",
+      "refs": {
+        "EnabledBaselineDetails$statusSummary": null,
+        "EnabledBaselineSummary$statusSummary": null,
+        "EnabledControlDetails$statusSummary": "<p>The deployment summary of the enabled control.</p>",
+        "EnabledControlSummary$statusSummary": "<p>A short description of the status of the enabled control.</p>"
+      }
+    },
+    "EnablementStatuses": {
+      "base": null,
+      "refs": {
+        "EnabledControlFilter$statuses": "<p>A list of <code>EnablementStatus</code> items.</p>"
+      }
+    },
+    "GetBaselineInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetBaselineOperationInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetBaselineOperationOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetBaselineOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetControlOperationInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetControlOperationOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetEnabledBaselineInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetEnabledBaselineOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetEnabledControlInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetEnabledControlOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetLandingZoneInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetLandingZoneOperationInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetLandingZoneOperationOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetLandingZoneOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Integer": {
+      "base": null,
+      "refs": {
+        "ThrottlingException$retryAfterSeconds": "<p>The number of seconds the caller should wait before retrying.</p>"
+      }
+    },
+    "InternalServerException": {
+      "base": "<p>An unexpected error occurred during processing of a request.</p>",
+      "refs": {
+      }
+    },
+    "LandingZoneDetail": {
+      "base": "<p>Information about the landing zone.</p>",
+      "refs": {
+        "GetLandingZoneOutput$landingZone": "<p>Information about the landing zone.</p>"
+      }
+    },
+    "LandingZoneDriftStatus": {
+      "base": null,
+      "refs": {
+        "LandingZoneDriftStatusSummary$status": "<p>The drift status of the landing zone. </p> <p>Valid values:</p> <ul> <li> <p> <code>DRIFTED</code>: The landing zone deployed in this configuration does not match the configuration that Amazon Web Services Control Tower expected. </p> </li> <li> <p> <code>IN_SYNC</code>: The landing zone deployed in this configuration matches the configuration that Amazon Web Services Control Tower expected. </p> </li> </ul>"
+      }
+    },
+    "LandingZoneDriftStatusSummary": {
+      "base": "<p>The drift status summary of the landing zone. </p> <p>If the landing zone differs from the expected configuration, it is defined to be in a state of drift. You can repair this drift by resetting the landing zone.</p>",
+      "refs": {
+        "LandingZoneDetail$driftStatus": "<p>The drift status of the landing zone.</p>"
+      }
+    },
+    "LandingZoneOperationDetail": {
+      "base": "<p>Information about a landing zone operation.</p>",
+      "refs": {
+        "GetLandingZoneOperationOutput$operationDetails": "<p>Details about a landing zone operation.</p>"
+      }
+    },
+    "LandingZoneOperationStatus": {
+      "base": null,
+      "refs": {
+        "LandingZoneOperationDetail$status": "<p>Valid values:</p> <ul> <li> <p> <code>SUCCEEDED</code>: The landing zone operation succeeded. </p> </li> <li> <p> <code>IN_PROGRESS</code>: The landing zone operation is in progress. </p> </li> <li> <p> <code>FAILED</code>: The landing zone operation failed. </p> </li> </ul>"
+      }
+    },
+    "LandingZoneOperationType": {
+      "base": null,
+      "refs": {
+        "LandingZoneOperationDetail$operationType": "<p>The landing zone operation type. </p> <p>Valid values:</p> <ul> <li> <p> <code>DELETE</code>: The <code>DeleteLandingZone</code> operation. </p> </li> <li> <p> <code>CREATE</code>: The <code>CreateLandingZone</code> operation. </p> </li> <li> <p> <code>UPDATE</code>: The <code>UpdateLandingZone</code> operation. </p> </li> <li> <p> <code>RESET</code>: The <code>ResetLandingZone</code> operation. </p> </li> </ul>"
+      }
+    },
+    "LandingZoneStatus": {
+      "base": null,
+      "refs": {
+        "LandingZoneDetail$status": "<p>The landing zone deployment status. One of <code>ACTIVE</code>, <code>PROCESSING</code>, <code>FAILED</code>.</p>"
+      }
+    },
+    "LandingZoneSummary": {
+      "base": "<p>Returns a summary of information about a landing zone.</p>",
+      "refs": {
+        "ListLandingZonesOutputLandingZonesList$member": null
+      }
+    },
+    "LandingZoneVersion": {
+      "base": null,
+      "refs": {
+        "CreateLandingZoneInput$version": "<p>The landing zone version, for example, 3.0.</p>",
+        "LandingZoneDetail$latestAvailableVersion": "<p>The latest available version of the landing zone.</p>",
+        "LandingZoneDetail$version": "<p>The landing zone's current deployed version.</p>",
+        "UpdateLandingZoneInput$version": "<p>The landing zone version, for example, 3.2.</p>"
+      }
+    },
+    "ListBaselinesInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListBaselinesMaxResults": {
+      "base": null,
+      "refs": {
+        "ListBaselinesInput$maxResults": "<p>The maximum number of results to be shown.</p>"
+      }
+    },
+    "ListBaselinesOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListControlOperationsInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListControlOperationsMaxResults": {
+      "base": null,
+      "refs": {
+        "ListControlOperationsInput$maxResults": "<p>The maximum number of results to be shown.</p>"
+      }
+    },
+    "ListControlOperationsNextToken": {
+      "base": null,
+      "refs": {
+        "ListControlOperationsInput$nextToken": "<p>A pagination token.</p>",
+        "ListControlOperationsOutput$nextToken": "<p>A pagination token.</p>"
+      }
+    },
+    "ListControlOperationsOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListEnabledBaselinesInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListEnabledBaselinesMaxResults": {
+      "base": null,
+      "refs": {
+        "ListEnabledBaselinesInput$maxResults": "<p>The maximum number of results to be shown.</p>"
+      }
+    },
+    "ListEnabledBaselinesNextToken": {
+      "base": null,
+      "refs": {
+        "ListEnabledBaselinesInput$nextToken": "<p>A pagination token.</p>",
+        "ListEnabledBaselinesOutput$nextToken": "<p>A pagination token.</p>"
+      }
+    },
+    "ListEnabledBaselinesOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListEnabledControlsInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListEnabledControlsOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListLandingZonesInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListLandingZonesMaxResults": {
+      "base": null,
+      "refs": {
+        "ListLandingZonesInput$maxResults": "<p>The maximum number of returned landing zone ARNs, which is one.</p>"
+      }
+    },
+    "ListLandingZonesOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListLandingZonesOutputLandingZonesList": {
+      "base": null,
+      "refs": {
+        "ListLandingZonesOutput$landingZones": "<p>The ARN of the landing zone.</p>"
+      }
+    },
+    "ListTagsForResourceInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTagsForResourceOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Manifest": {
+      "base": null,
+      "refs": {
+        "CreateLandingZoneInput$manifest": "<p>The manifest JSON file is a text file that describes your Amazon Web Services resources. For examples, review <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/lz-api-launch\">Launch your landing zone</a>. </p>",
+        "LandingZoneDetail$manifest": "<p>The landing zone manifest JSON text file that specifies the landing zone configurations. </p>",
+        "UpdateLandingZoneInput$manifest": "<p>The manifest JSON file is a text file that describes your Amazon Web Services resources. For examples, review <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/lz-api-launch\">Launch your landing zone</a>. </p>"
+      }
+    },
+    "MaxResults": {
+      "base": null,
+      "refs": {
+        "ListEnabledControlsInput$maxResults": "<p>How many results to return per API call.</p>"
+      }
+    },
+    "OperationIdentifier": {
+      "base": null,
+      "refs": {
+        "BaselineOperation$operationIdentifier": "<p>The identifier of the specified operation.</p>",
+        "ControlOperation$operationIdentifier": "<p>The identifier of the specified operation.</p>",
+        "ControlOperationSummary$operationIdentifier": "<p>The unique identifier of a control operation.</p>",
+        "CreateLandingZoneOutput$operationIdentifier": "<p>A unique identifier assigned to a <code>CreateLandingZone</code> operation. You can use this identifier as an input of <code>GetLandingZoneOperation</code> to check the operation's status.</p>",
+        "DeleteLandingZoneOutput$operationIdentifier": "<p>&gt;A unique identifier assigned to a <code>DeleteLandingZone</code> operation. You can use this identifier as an input parameter of <code>GetLandingZoneOperation</code> to check the operation's status.</p>",
+        "DisableBaselineOutput$operationIdentifier": "<p>The ID (in UUID format) of the asynchronous <code>DisableBaseline</code> operation. This <code>operationIdentifier</code> is used to track status through calls to the <code>GetBaselineOperation</code> API.</p>",
+        "DisableControlOutput$operationIdentifier": "<p>The ID of the asynchronous operation, which is used to track status. The operation is available for 90 days.</p>",
+        "EnableBaselineOutput$operationIdentifier": "<p>The ID (in UUID format) of the asynchronous <code>EnableBaseline</code> operation. This <code>operationIdentifier</code> is used to track status through calls to the <code>GetBaselineOperation</code> API.</p>",
+        "EnableControlOutput$operationIdentifier": "<p>The ID of the asynchronous operation, which is used to track status. The operation is available for 90 days.</p>",
+        "EnablementStatusSummary$lastOperationIdentifier": "<p>The last operation identifier for the enabled control.</p>",
+        "GetBaselineOperationInput$operationIdentifier": "<p>The operation ID returned from mutating asynchronous APIs (Enable, Disable, Update, Reset).</p>",
+        "GetControlOperationInput$operationIdentifier": "<p>The ID of the asynchronous operation, which is used to track status. The operation is available for 90 days.</p>",
+        "GetLandingZoneOperationInput$operationIdentifier": "<p>A unique identifier assigned to a landing zone operation.</p>",
+        "ResetEnabledBaselineOutput$operationIdentifier": "<p>The ID (in UUID format) of the asynchronous <code>ResetEnabledBaseline</code> operation. This <code>operationIdentifier</code> is used to track status through calls to the <code>GetBaselineOperation</code> API.</p>",
+        "ResetLandingZoneOutput$operationIdentifier": "<p>A unique identifier assigned to a <code>ResetLandingZone</code> operation. You can use this identifier as an input parameter of <code>GetLandingZoneOperation</code> to check the operation's status.</p>",
+        "UpdateEnabledBaselineOutput$operationIdentifier": "<p>The ID (in UUID format) of the asynchronous <code>UpdateEnabledBaseline</code> operation. This <code>operationIdentifier</code> is used to track status through calls to the <code>GetBaselineOperation</code> API.</p>",
+        "UpdateEnabledControlOutput$operationIdentifier": "<p> The operation identifier for this <code>UpdateEnabledControl</code> operation. </p>",
+        "UpdateLandingZoneOutput$operationIdentifier": "<p>A unique identifier assigned to a <code>UpdateLandingZone</code> operation. You can use this identifier as an input of <code>GetLandingZoneOperation</code> to check the operation's status.</p>"
+      }
+    },
+    "Region": {
+      "base": "<p>An Amazon Web Services Region in which Amazon Web Services Control Tower expects to find the control deployed. </p> <p>The expected Regions are based on the Regions that are governed by the landing zone. In certain cases, a control is not actually enabled in the Region as expected, such as during drift, or <a href=\"https://docs.aws.amazon.com/controltower/latest/userguide/region-how.html#mixed-governance\">mixed governance</a>.</p>",
+      "refs": {
+        "TargetRegions$member": null
+      }
+    },
+    "RegionName": {
+      "base": null,
+      "refs": {
+        "Region$name": "<p>The Amazon Web Services Region name.</p>"
+      }
+    },
+    "ResetEnabledBaselineInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ResetEnabledBaselineOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ResetLandingZoneInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ResetLandingZoneOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ResourceNotFoundException": {
+      "base": "<p>The request references a resource that does not exist.</p>",
+      "refs": {
+      }
+    },
+    "ServiceQuotaExceededException": {
+      "base": "<p>The request would cause a service quota to be exceeded. The limit is 10 concurrent operations.</p>",
+      "refs": {
+      }
+    },
+    "String": {
+      "base": null,
+      "refs": {
+        "AccessDeniedException$message": null,
+        "BaselineOperation$statusMessage": "<p>A status message that gives more information about the operation's status, if applicable.</p>",
+        "BaselineSummary$arn": "<p>The full ARN of a Baseline.</p>",
+        "BaselineSummary$description": "<p>A summary description of a Baseline.</p>",
+        "BaselineSummary$name": "<p>The human-readable name of a Baseline.</p>",
+        "ConflictException$message": null,
+        "ControlOperation$statusMessage": "<p>If the operation result is <code>FAILED</code>, this string contains a message explaining why the operation failed.</p>",
+        "ControlOperationSummary$statusMessage": "<p>A speficic message displayed as part of the control status.</p>",
+        "DeleteLandingZoneInput$landingZoneIdentifier": "<p>The unique identifier of the landing zone.</p>",
+        "EnabledBaselineDetails$baselineIdentifier": "<p>The specific <code>Baseline</code> enabled as part of the <code>EnabledBaseline</code> resource.</p>",
+        "EnabledBaselineDetails$baselineVersion": "<p>The enabled version of the <code>Baseline</code>.</p>",
+        "EnabledBaselineDetails$targetIdentifier": "<p>The target on which to enable the <code>Baseline</code>.</p>",
+        "EnabledBaselineParameter$key": "<p>A string denoting the parameter key.</p>",
+        "EnabledBaselineParameterSummary$key": "<p>A string denoting the parameter key.</p>",
+        "EnabledBaselineSummary$baselineIdentifier": "<p>The specific baseline that is enabled as part of the <code>EnabledBaseline</code> resource.</p>",
+        "EnabledBaselineSummary$baselineVersion": "<p>The enabled version of the baseline.</p>",
+        "EnabledBaselineSummary$targetIdentifier": "<p>The target upon which the baseline is enabled.</p>",
+        "EnabledControlParameter$key": "<p>The key of a key/value pair.</p>",
+        "EnabledControlParameterSummary$key": "<p>The key of a key/value pair.</p>",
+        "GetBaselineOutput$description": "<p>A description of the baseline.</p>",
+        "GetBaselineOutput$name": "<p>A user-friendly name for the baseline.</p>",
+        "GetLandingZoneInput$landingZoneIdentifier": "<p>The unique identifier of the landing zone.</p>",
+        "InternalServerException$message": null,
+        "LandingZoneOperationDetail$statusMessage": "<p>If the operation result is FAILED, this string contains a message explaining why the operation failed.</p>",
+        "ListBaselinesInput$nextToken": "<p>A pagination token.</p>",
+        "ListBaselinesOutput$nextToken": "<p>A pagination token.</p>",
+        "ListEnabledControlsInput$nextToken": "<p>The token to continue the list from a previous API call with the same parameters.</p>",
+        "ListEnabledControlsOutput$nextToken": "<p>Retrieves the next page of results. If the string is empty, the response is the end of the results.</p>",
+        "ListLandingZonesInput$nextToken": "<p>The token to continue the list from a previous API call with the same parameters.</p>",
+        "ListLandingZonesOutput$nextToken": "<p>Retrieves the next page of results. If the string is empty, the response is the end of the results.</p>",
+        "ResetLandingZoneInput$landingZoneIdentifier": "<p>The unique identifier of the landing zone.</p>",
+        "ResourceNotFoundException$message": null,
+        "ServiceQuotaExceededException$message": null,
+        "ThrottlingException$message": null,
+        "ThrottlingException$quotaCode": "<p>The ID of the service quota that was exceeded.</p>",
+        "ThrottlingException$serviceCode": "<p>The ID of the service that is associated with the error.</p>",
+        "UpdateLandingZoneInput$landingZoneIdentifier": "<p>The unique identifier of the landing zone.</p>",
+        "ValidationException$message": null
+      }
+    },
+    "SyntheticTimestamp_date_time": {
+      "base": null,
+      "refs": {
+        "ControlOperation$endTime": "<p>The time that the operation finished.</p>",
+        "ControlOperation$startTime": "<p>The time that the operation began.</p>",
+        "ControlOperationSummary$endTime": "<p>The time at which the control operation was completed.</p>",
+        "ControlOperationSummary$startTime": "<p>The time at which a control operation began.</p>"
+      }
+    },
+    "TagKey": {
+      "base": null,
+      "refs": {
+        "TagKeys$member": null,
+        "TagMap$key": null
+      }
+    },
+    "TagKeys": {
+      "base": null,
+      "refs": {
+        "UntagResourceInput$tagKeys": "<p>Tag keys to be removed from the resource.</p>"
+      }
+    },
+    "TagMap": {
+      "base": null,
+      "refs": {
+        "CreateLandingZoneInput$tags": "<p>Tags to be applied to the landing zone. </p>",
+        "EnableBaselineInput$tags": "<p>Tags associated with input to <code>EnableBaseline</code>.</p>",
+        "EnableControlInput$tags": "<p>Tags to be applied to the <code>EnabledControl</code> resource.</p>",
+        "ListTagsForResourceOutput$tags": "<p>A list of tags, as <code>key:value</code> strings.</p>",
+        "TagResourceInput$tags": "<p>Tags to be applied to the resource.</p>"
+      }
+    },
+    "TagResourceInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "TagResourceOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "TagValue": {
+      "base": null,
+      "refs": {
+        "TagMap$value": null
+      }
+    },
+    "TargetIdentifier": {
+      "base": null,
+      "refs": {
+        "ControlOperation$targetIdentifier": "<p>The target upon which the control operation is working.</p>",
+        "ControlOperationSummary$targetIdentifier": "<p>The unique identifier of the target of a control operation.</p>",
+        "DisableControlInput$targetIdentifier": "<p>The ARN of the organizational unit. For information on how to find the <code>targetIdentifier</code>, see <a href=\"https://docs.aws.amazon.com/controltower/latest/APIReference/Welcome.html\">the overview page</a>.</p>",
+        "EnableControlInput$targetIdentifier": "<p>The ARN of the organizational unit. For information on how to find the <code>targetIdentifier</code>, see <a href=\"https://docs.aws.amazon.com/controltower/latest/APIReference/Welcome.html\">the overview page</a>.</p>",
+        "EnabledControlDetails$targetIdentifier": "<p>The ARN of the organizational unit. For information on how to find the <code>targetIdentifier</code>, see <a href=\"https://docs.aws.amazon.com/controltower/latest/APIReference/Welcome.html\">the overview page</a>.</p>",
+        "EnabledControlSummary$targetIdentifier": "<p>The ARN of the organizational unit.</p>",
+        "ListEnabledControlsInput$targetIdentifier": "<p>The ARN of the organizational unit. For information on how to find the <code>targetIdentifier</code>, see <a href=\"https://docs.aws.amazon.com/controltower/latest/APIReference/Welcome.html\">the overview page</a>.</p>",
+        "TargetIdentifiers$member": null
+      }
+    },
+    "TargetIdentifiers": {
+      "base": null,
+      "refs": {
+        "ControlOperationFilter$targetIdentifiers": "<p>The set of <code>targetIdentifier</code> objects returned by the filter.</p>"
+      }
+    },
+    "TargetRegions": {
+      "base": null,
+      "refs": {
+        "EnabledControlDetails$targetRegions": "<p>Target Amazon Web Services Regions for the enabled control.</p>"
+      }
+    },
+    "ThrottlingException": {
+      "base": "<p>The request was denied due to request throttling.</p>",
+      "refs": {
+      }
+    },
+    "Timestamp": {
+      "base": null,
+      "refs": {
+        "BaselineOperation$endTime": "<p>The end time of the operation (if applicable), in ISO 8601 format.</p>",
+        "BaselineOperation$startTime": "<p>The start time of the operation, in ISO 8601 format.</p>",
+        "LandingZoneOperationDetail$endTime": "<p>The landing zone operation end time.</p>",
+        "LandingZoneOperationDetail$startTime": "<p>The landing zone operation start time.</p>"
+      }
+    },
+    "UntagResourceInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UntagResourceOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateEnabledBaselineInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateEnabledBaselineOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateEnabledControlInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateEnabledControlOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateLandingZoneInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateLandingZoneOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ValidationException": {
+      "base": "<p>The input does not satisfy the constraints specified by an Amazon Web Services service.</p>",
+      "refs": {
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "chain-a": [
+    "release-v7.3.x",
+    "release-v7.2.x",
+    "release-v6.2.x",
+    "release-v6.1.x"
+  ],
+  "chain-b": [
+    "release-v7.3.x",
+    "release-v7.2.x",
+    "release-v6.2.x",
+    "release-v6.1.x"
+  ],
+  "entrypoint": [
+    "TestInterchainAccountsTestSuite"
+  ],
+  "test": [
+    "TestMsgSendTx_SuccessfulTransfer",
+    "TestMsgSendTx_FailedTransfer_InsufficientFunds",
+    "TestMsgSendTx_SuccessfulTransfer_AfterReopeningICA",
+    "TestControllerEnabledParam",
+    "TestHostEnabledParam"
+  ],
+  "relayer-type": [
+    "hermes"
+  ]
+}

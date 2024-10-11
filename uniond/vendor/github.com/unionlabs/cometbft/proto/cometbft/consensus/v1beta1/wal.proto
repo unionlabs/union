@@ -1,0 +1,48 @@
+syntax = "proto3";
+package cometbft.consensus.v1beta1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/consensus/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "cometbft/consensus/v1beta1/types.proto";
+import "cometbft/types/v1beta1/events.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+// MsgInfo are msgs from the reactor which may update the state
+message MsgInfo {
+  Message msg     = 1 [(gogoproto.nullable) = false];
+  string  peer_id = 2 [(gogoproto.customname) = "PeerID"];
+}
+
+// TimeoutInfo internally generated messages which may update the state
+message TimeoutInfo {
+  google.protobuf.Duration duration = 1
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+  int64  height = 2;
+  int32  round  = 3;
+  uint32 step   = 4;
+}
+
+// EndHeight marks the end of the given height inside WAL.
+// @internal used by scripts/wal2json util.
+message EndHeight {
+  int64 height = 1;
+}
+
+// WALMessage describes a consensus WAL (Write Ahead Log) entry.
+message WALMessage {
+  // Sum of all possible messages.
+  oneof sum {
+    cometbft.types.v1beta1.EventDataRoundState event_data_round_state = 1;
+    MsgInfo                                    msg_info               = 2;
+    TimeoutInfo                                timeout_info           = 3;
+    EndHeight                                  end_height             = 4;
+  }
+}
+
+// TimedWALMessage wraps WALMessage and adds Time for debugging purposes.
+message TimedWALMessage {
+  google.protobuf.Timestamp time = 1 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  WALMessage                msg  = 2;
+}

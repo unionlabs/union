@@ -1,0 +1,230 @@
+{
+  "version": "2.0",
+  "service": "<p>This reference provides descriptions of the AWS Application Cost Profiler API.</p> <p>The AWS Application Cost Profiler API provides programmatic access to view, create, update, and delete application cost report definitions, as well as to import your usage data into the Application Cost Profiler service.</p> <p>For more information about using this service, see the <a href=\"https://docs.aws.amazon.com/application-cost-profiler/latest/userguide/introduction.html\">AWS Application Cost Profiler User Guide</a>.</p>",
+  "operations": {
+    "DeleteReportDefinition": "<p>Deletes the specified report definition in AWS Application Cost Profiler. This stops the report from being generated.</p>",
+    "GetReportDefinition": "<p>Retrieves the definition of a report already configured in AWS Application Cost Profiler.</p>",
+    "ImportApplicationUsage": "<p>Ingests application usage data from Amazon Simple Storage Service (Amazon S3).</p> <p>The data must already exist in the S3 location. As part of the action, AWS Application Cost Profiler copies the object from your S3 bucket to an S3 bucket owned by Amazon for processing asynchronously.</p>",
+    "ListReportDefinitions": "<p>Retrieves a list of all reports and their configurations for your AWS account.</p> <p>The maximum number of reports is one.</p>",
+    "PutReportDefinition": "<p>Creates the report definition for a report in Application Cost Profiler.</p>",
+    "UpdateReportDefinition": "<p>Updates existing report in AWS Application Cost Profiler.</p>"
+  },
+  "shapes": {
+    "AccessDeniedException": {
+      "base": "<p>You do not have permission to perform this action.</p>",
+      "refs": {
+      }
+    },
+    "DeleteReportDefinitionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteReportDefinitionResult": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ErrorMessage": {
+      "base": null,
+      "refs": {
+        "AccessDeniedException$message": null,
+        "InternalServerException$message": null,
+        "ServiceQuotaExceededException$message": null,
+        "ThrottlingException$message": null,
+        "ValidationException$message": null
+      }
+    },
+    "Format": {
+      "base": null,
+      "refs": {
+        "GetReportDefinitionResult$format": "<p>Format of the generated report.</p>",
+        "PutReportDefinitionRequest$format": "<p>Required. The format to use for the generated report.</p>",
+        "ReportDefinition$format": "<p>The format used for the generated reports.</p>",
+        "UpdateReportDefinitionRequest$format": "<p>Required. The format to use for the generated report.</p>"
+      }
+    },
+    "GetReportDefinitionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetReportDefinitionResult": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ImportApplicationUsageRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ImportApplicationUsageResult": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ImportId": {
+      "base": null,
+      "refs": {
+        "ImportApplicationUsageResult$importId": "<p>ID of the import request.</p>"
+      }
+    },
+    "Integer": {
+      "base": null,
+      "refs": {
+        "ListReportDefinitionsRequest$maxResults": "<p>The maximum number of results to return.</p>"
+      }
+    },
+    "InternalServerException": {
+      "base": "<p>An internal server error occurred. Retry your request.</p>",
+      "refs": {
+      }
+    },
+    "ListReportDefinitionsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListReportDefinitionsResult": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "PutReportDefinitionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "PutReportDefinitionResult": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ReportDefinition": {
+      "base": "<p>The configuration of a report in AWS Application Cost Profiler.</p>",
+      "refs": {
+        "ReportDefinitionList$member": null
+      }
+    },
+    "ReportDefinitionList": {
+      "base": null,
+      "refs": {
+        "ListReportDefinitionsResult$reportDefinitions": "<p>The retrieved reports.</p>"
+      }
+    },
+    "ReportDescription": {
+      "base": null,
+      "refs": {
+        "GetReportDefinitionResult$reportDescription": "<p>Description of the report.</p>",
+        "PutReportDefinitionRequest$reportDescription": "<p>Required. Description of the report.</p>",
+        "ReportDefinition$reportDescription": "<p>Description of the report</p>",
+        "UpdateReportDefinitionRequest$reportDescription": "<p>Required. Description of the report.</p>"
+      }
+    },
+    "ReportFrequency": {
+      "base": null,
+      "refs": {
+        "GetReportDefinitionResult$reportFrequency": "<p>Cadence used to generate the report.</p>",
+        "PutReportDefinitionRequest$reportFrequency": "<p>Required. The cadence to generate the report.</p>",
+        "ReportDefinition$reportFrequency": "<p>The cadence at which the report is generated.</p>",
+        "UpdateReportDefinitionRequest$reportFrequency": "<p>Required. The cadence to generate the report.</p>"
+      }
+    },
+    "ReportId": {
+      "base": null,
+      "refs": {
+        "DeleteReportDefinitionRequest$reportId": "<p>Required. ID of the report to delete.</p>",
+        "DeleteReportDefinitionResult$reportId": "<p>ID of the report that was deleted.</p>",
+        "GetReportDefinitionRequest$reportId": "<p>ID of the report to retrieve.</p>",
+        "GetReportDefinitionResult$reportId": "<p>ID of the report retrieved.</p>",
+        "PutReportDefinitionRequest$reportId": "<p>Required. ID of the report. You can choose any valid string matching the pattern for the ID.</p>",
+        "PutReportDefinitionResult$reportId": "<p>ID of the report.</p>",
+        "ReportDefinition$reportId": "<p>The ID of the report.</p>",
+        "UpdateReportDefinitionRequest$reportId": "<p>Required. ID of the report to update.</p>",
+        "UpdateReportDefinitionResult$reportId": "<p>ID of the report.</p>"
+      }
+    },
+    "S3Bucket": {
+      "base": null,
+      "refs": {
+        "S3Location$bucket": "<p>Name of the S3 bucket.</p>",
+        "SourceS3Location$bucket": "<p>Name of the bucket.</p>"
+      }
+    },
+    "S3BucketRegion": {
+      "base": null,
+      "refs": {
+        "SourceS3Location$region": "<p>Region of the bucket. Only required for Regions that are disabled by default. For more infomration about Regions that are disabled by default, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/rande-manage.html#rande-manage-enable\"> Enabling a Region</a> in the <i>AWS General Reference guide</i>.</p>"
+      }
+    },
+    "S3Key": {
+      "base": null,
+      "refs": {
+        "SourceS3Location$key": "<p>Key of the object.</p>"
+      }
+    },
+    "S3Location": {
+      "base": "<p>Represents the Amazon Simple Storage Service (Amazon S3) location where AWS Application Cost Profiler reports are generated and then written to.</p>",
+      "refs": {
+        "GetReportDefinitionResult$destinationS3Location": "<p>Amazon Simple Storage Service (Amazon S3) location where the report is uploaded.</p>",
+        "PutReportDefinitionRequest$destinationS3Location": "<p>Required. Amazon Simple Storage Service (Amazon S3) location where Application Cost Profiler uploads the report.</p>",
+        "ReportDefinition$destinationS3Location": "<p>The location in Amazon Simple Storage Service (Amazon S3) the reports should be saved to.</p>",
+        "UpdateReportDefinitionRequest$destinationS3Location": "<p>Required. Amazon Simple Storage Service (Amazon S3) location where Application Cost Profiler uploads the report.</p>"
+      }
+    },
+    "S3Prefix": {
+      "base": null,
+      "refs": {
+        "S3Location$prefix": "<p>Prefix for the location to write to.</p>"
+      }
+    },
+    "ServiceQuotaExceededException": {
+      "base": "<p>Your request exceeds one or more of the service quotas.</p>",
+      "refs": {
+      }
+    },
+    "SourceS3Location": {
+      "base": "<p>Represents the Amazon Simple Storage Service (Amazon S3) location where usage data is read from.</p>",
+      "refs": {
+        "ImportApplicationUsageRequest$sourceS3Location": "<p>Amazon S3 location to import application usage data from.</p>"
+      }
+    },
+    "ThrottlingException": {
+      "base": "<p>The calls to AWS Application Cost Profiler API are throttled. The request was denied.</p>",
+      "refs": {
+      }
+    },
+    "Timestamp": {
+      "base": null,
+      "refs": {
+        "GetReportDefinitionResult$createdAt": "<p>Timestamp (milliseconds) when this report definition was created.</p>",
+        "GetReportDefinitionResult$lastUpdated": "<p>Timestamp (milliseconds) when this report definition was last updated.</p>",
+        "ReportDefinition$createdAt": "<p>Timestamp (milliseconds) when this report definition was created.</p>",
+        "ReportDefinition$lastUpdatedAt": "<p>Timestamp (milliseconds) when this report definition was last updated.</p>"
+      }
+    },
+    "Token": {
+      "base": null,
+      "refs": {
+        "ListReportDefinitionsRequest$nextToken": "<p>The token value from a previous call to access the next page of results.</p>",
+        "ListReportDefinitionsResult$nextToken": "<p>The value of the next token, if it exists. Null if there are no more results.</p>"
+      }
+    },
+    "UpdateReportDefinitionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateReportDefinitionResult": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ValidationException": {
+      "base": "<p>The input fails to satisfy the constraints for the API.</p>",
+      "refs": {
+      }
+    }
+  }
+}

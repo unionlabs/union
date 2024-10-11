@@ -1,0 +1,31 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "clock.go",
+        "synchronizer.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/startup",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//consensus-types/primitives:go_default_library",
+        "//time/slots:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "clock_test.go",
+        "synchronizer_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//testing/require:go_default_library",
+    ],
+)

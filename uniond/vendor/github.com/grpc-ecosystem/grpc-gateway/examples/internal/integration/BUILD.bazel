@@ -1,0 +1,31 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "client_test.go",
+        "fieldmask_test.go",
+        "integration_test.go",
+        "main_test.go",
+        "proto_error_test.go",
+    ],
+    deps = [
+        "//examples/internal/clients/abe:go_default_library",
+        "//examples/internal/clients/echo:go_default_library",
+        "//examples/internal/clients/unannotatedecho:go_default_library",
+        "//examples/internal/gateway:go_default_library",
+        "//examples/internal/proto/examplepb:go_default_library",
+        "//examples/internal/proto/pathenum:go_default_library",
+        "//examples/internal/proto/sub:go_default_library",
+        "//examples/internal/server:go_default_library",
+        "//runtime:go_default_library",
+        "@com_github_golang_glog//:go_default_library",
+        "@com_github_golang_protobuf//descriptor:go_default_library_gen",
+        "@com_github_golang_protobuf//jsonpb:go_default_library_gen",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@go_googleapis//google/rpc:status_go_proto",
+        "@io_bazel_rules_go//proto/wkt:empty_go_proto",
+        "@io_bazel_rules_go//proto/wkt:field_mask_go_proto",
+        "@org_golang_google_grpc//codes:go_default_library",
+    ],
+)

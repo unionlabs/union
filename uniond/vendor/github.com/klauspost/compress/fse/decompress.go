@@ -15,7 +15,7 @@ const (
 // It is possible, but by no way guaranteed that corrupt data will
 // return an error.
 // It is up to the caller to verify integrity of the returned data.
-// Use a predefined Scrach to set maximum acceptable output size.
+// Use a predefined Scratch to set maximum acceptable output size.
 func Decompress(b []byte, s *Scratch) ([]byte, error) {
 	s, err := s.prepare(b)
 	if err != nil {

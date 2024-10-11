@@ -1,0 +1,14 @@
+@Tutorials(name: "Starting with FlatBuffers") {
+    @Intro(title: "Starting with FlatBuffers") {
+      FlatBuffers is an efficient cross platform serialization library for C++,
+      C#, C, Go, Java, Kotlin, JavaScript, Lobster, Lua, TypeScript, PHP, Python, Rust and Swift.
+      It was originally created at Google for game development and other performance-critical applications.
+    }
+    @Chapter(name: "Generating your code") {
+        Start by generating your first FlatBuffers objects.
+        @Image(source: tutorial_cover_image_1.png, alt: "A code structure for a base struct in flatbuffers")
+        @TutorialReference(tutorial: "doc:creating_flatbuffer_schema")
+        @TutorialReference(tutorial: "doc:create_your_first_buffer")
+        @TutorialReference(tutorial: "doc:reading_bytebuffer")
+    }
+}

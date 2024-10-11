@@ -1,0 +1,19 @@
+mod=example.com/first
+base=none
+release=v0.0.0
+success=false
+
+# TODO(golang.org/issue/36087): go list doesn't report positions in correct
+# place for scanner errors.
+skip=packages.Load gives error with extra "-: " prefix
+-- want --
+example.com/first
+-----------------
+errors in new version:
+	p.go:1:9: illegal character U+003F '?'
+-- go.mod --
+module example.com/first
+
+go 1.12
+-- p.go --
+package ?

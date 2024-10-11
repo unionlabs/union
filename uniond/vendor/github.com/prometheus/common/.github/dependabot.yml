@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: monthly
+  - package-ecosystem: "gomod"
+    directory: "/sigv4"
+    schedule:
+      interval: monthly

@@ -1,0 +1,3622 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/content": {
+          "description": "Manage your product listings and accounts for Google Shopping"
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://merchantapi.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "Merchant",
+  "description": "Programmatically manage your Merchant Center Accounts.",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://developers.devsite.corp.google.com/merchant/api",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "merchantapi:accounts_v1beta",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://merchantapi.mtls.googleapis.com/",
+  "name": "merchantapi",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "accounts": {
+      "methods": {
+        "createAndConfigure": {
+          "description": "Creates a standalone Merchant Center account with additional configuration. Adds the user that makes the request as an admin for the new account.",
+          "flatPath": "accounts/v1beta/accounts:createAndConfigure",
+          "httpMethod": "POST",
+          "id": "merchantapi.accounts.createAndConfigure",
+          "parameterOrder": [],
+          "parameters": {},
+          "path": "accounts/v1beta/accounts:createAndConfigure",
+          "request": {
+            "$ref": "CreateAndConfigureAccountRequest"
+          },
+          "response": {
+            "$ref": "Account"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "delete": {
+          "description": "Deletes the specified account regardless of its type: standalone, MCA or sub-account. Deleting an MCA leads to the deletion of all of its sub-accounts. Executing this method requires admin access.",
+          "flatPath": "accounts/v1beta/accounts/{accountsId}",
+          "httpMethod": "DELETE",
+          "id": "merchantapi.accounts.delete",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "name": {
+              "description": "Required. The name of the account to delete. Format: `accounts/{account}`",
+              "location": "path",
+              "pattern": "^accounts/[^/]+$",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+name}",
+          "response": {
+            "$ref": "Empty"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "get": {
+          "description": "Retrieves an account from your Merchant Center account. After inserting, updating, or deleting an account, it may take several minutes before changes take effect.",
+          "flatPath": "accounts/v1beta/accounts/{accountsId}",
+          "httpMethod": "GET",
+          "id": "merchantapi.accounts.get",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "name": {
+              "description": "Required. The name of the account to retrieve. Format: `accounts/{account}`",
+              "location": "path",
+              "pattern": "^accounts/[^/]+$",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+name}",
+          "response": {
+            "$ref": "Account"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "getBusinessIdentity": {
+          "description": "Retrieves the business identity of an account.",
+          "flatPath": "accounts/v1beta/accounts/{accountsId}/businessIdentity",
+          "httpMethod": "GET",
+          "id": "merchantapi.accounts.getBusinessIdentity",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "name": {
+              "description": "Required. The resource name of the business identity. Format: `accounts/{account}/businessIdentity`",
+              "location": "path",
+              "pattern": "^accounts/[^/]+/businessIdentity$",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+name}",
+          "response": {
+            "$ref": "BusinessIdentity"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "getBusinessInfo": {
+          "description": "Retrieves the business info of an account.",
+          "flatPath": "accounts/v1beta/accounts/{accountsId}/businessInfo",
+          "httpMethod": "GET",
+          "id": "merchantapi.accounts.getBusinessInfo",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "name": {
+              "description": "Required. The resource name of the business info. Format: `accounts/{account}/businessInfo`",
+              "location": "path",
+              "pattern": "^accounts/[^/]+/businessInfo$",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+name}",
+          "response": {
+            "$ref": "BusinessInfo"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "getHomepage": {
+          "description": "Retrieves a store's homepage.",
+          "flatPath": "accounts/v1beta/accounts/{accountsId}/homepage",
+          "httpMethod": "GET",
+          "id": "merchantapi.accounts.getHomepage",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "name": {
+              "description": "Required. The name of the homepage to retrieve. Format: `accounts/{account}/homepage`",
+              "location": "path",
+              "pattern": "^accounts/[^/]+/homepage$",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+name}",
+          "response": {
+            "$ref": "Homepage"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "getShippingSettings": {
+          "description": "Retrieve shipping setting information.",
+          "flatPath": "accounts/v1beta/accounts/{accountsId}/shippingSettings",
+          "httpMethod": "GET",
+          "id": "merchantapi.accounts.getShippingSettings",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "name": {
+              "description": "Required. The name of the shipping setting to retrieve. Format: `accounts/{account}/shippingsetting`",
+              "location": "path",
+              "pattern": "^accounts/[^/]+/shippingSettings$",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+name}",
+          "response": {
+            "$ref": "ShippingSettings"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "list": {
+          "description": "Lists accounts accessible to the calling user and matching the constraints of the request such as page size or filters. This is not just listing the sub-accounts of an MCA, but all accounts the calling user has access to including other MCAs, linked accounts, standalone accounts and so on.",
+          "flatPath": "accounts/v1beta/accounts",
+          "httpMethod": "GET",
+          "id": "merchantapi.accounts.list",
+          "parameterOrder": [],
+          "parameters": {
+            "filter": {
+              "description": "Optional. Returns only accounts that match the [filter](/merchant/api/guides/accounts/filter). For more details, see the [filter syntax reference](/merchant/api/guides/accounts/filter-syntax).",
+              "location": "query",
+              "type": "string"
+            },
+            "pageSize": {
+              "description": "Optional. The maximum number of accounts to return. The service may return fewer than this value. If unspecified, at most 250 accounts are returned. The maximum value is 500; values above 500 are coerced to 500.",
+              "format": "int32",
+              "location": "query",
+              "type": "integer"
+            },
+            "pageToken": {
+              "description": "Optional. A page token, received from a previous `ListAccounts` call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to `ListAccounts` must match the call that provided the page token.",
+              "location": "query",
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/accounts",
+          "response": {
+            "$ref": "ListAccountsResponse"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "listSubaccounts": {
+          "description": "List all sub-accounts for a given multi client account. This is a convenience wrapper for the more powerful `ListAccounts` method. This method will produce the same results as calling `ListsAccounts` with the following filter: `relationship(providerId={parent} AND service(type=\"ACCOUNT_AGGREGATION\"))`",
+          "flatPath": "accounts/v1beta/accounts/{accountsId}:listSubaccounts",
+          "httpMethod": "GET",
+          "id": "merchantapi.accounts.listSubaccounts",
+          "parameterOrder": [
+            "provider"
+          ],
+          "parameters": {
+            "pageSize": {
+              "description": "Optional. The maximum number of accounts to return. The service may return fewer than this value. If unspecified, at most 250 accounts are returned. The maximum value is 500; values above 500 are coerced to 500.",
+              "format": "int32",
+              "location": "query",
+              "type": "integer"
+            },
+            "pageToken": {
+              "description": "Optional. A page token, received from a previous `ListAccounts` call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to `ListAccounts` must match the call that provided the page token.",
+              "location": "query",
+              "type": "string"
+            },
+            "provider": {
+              "description": "Required. The parent account. Format: `accounts/{account}`",
+              "location": "path",
+              "pattern": "^accounts/[^/]+$",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+provider}:listSubaccounts",
+          "response": {
+            "$ref": "ListSubAccountsResponse"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "patch": {
+          "description": "Updates an account regardless of its type: standalone, MCA or sub-account. Executing this method requires admin access.",
+          "flatPath": "accounts/v1beta/accounts/{accountsId}",
+          "httpMethod": "PATCH",
+          "id": "merchantapi.accounts.patch",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "name": {
+              "description": "Identifier. The resource name of the account. Format: `accounts/{account}`",
+              "location": "path",
+              "pattern": "^accounts/[^/]+$",
+              "required": true,
+              "type": "string"
+            },
+            "updateMask": {
+              "description": "Required. List of fields being updated.",
+              "format": "google-fieldmask",
+              "location": "query",
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+name}",
+          "request": {
+            "$ref": "Account"
+          },
+          "response": {
+            "$ref": "Account"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "updateBusinessIdentity": {
+          "description": "Updates the business identity of an account. Executing this method requires admin access.",
+          "flatPath": "accounts/v1beta/accounts/{accountsId}/businessIdentity",
+          "httpMethod": "PATCH",
+          "id": "merchantapi.accounts.updateBusinessIdentity",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "name": {
+              "description": "Identifier. The resource name of the business identity. Format: `accounts/{account}/businessIdentity`",
+              "location": "path",
+              "pattern": "^accounts/[^/]+/businessIdentity$",
+              "required": true,
+              "type": "string"
+            },
+            "updateMask": {
+              "description": "Required. List of fields being updated.",
+              "format": "google-fieldmask",
+              "location": "query",
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+name}",
+          "request": {
+            "$ref": "BusinessIdentity"
+          },
+          "response": {
+            "$ref": "BusinessIdentity"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "updateBusinessInfo": {
+          "description": "Updates the business info of an account. Executing this method requires admin access.",
+          "flatPath": "accounts/v1beta/accounts/{accountsId}/businessInfo",
+          "httpMethod": "PATCH",
+          "id": "merchantapi.accounts.updateBusinessInfo",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "name": {
+              "description": "Identifier. The resource name of the business info. Format: `accounts/{account}/businessInfo`",
+              "location": "path",
+              "pattern": "^accounts/[^/]+/businessInfo$",
+              "required": true,
+              "type": "string"
+            },
+            "updateMask": {
+              "description": "Required. List of fields being updated.",
+              "format": "google-fieldmask",
+              "location": "query",
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+name}",
+          "request": {
+            "$ref": "BusinessInfo"
+          },
+          "response": {
+            "$ref": "BusinessInfo"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "updateHomepage": {
+          "description": "Updates a store's homepage. Executing this method requires admin access.",
+          "flatPath": "accounts/v1beta/accounts/{accountsId}/homepage",
+          "httpMethod": "PATCH",
+          "id": "merchantapi.accounts.updateHomepage",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "name": {
+              "description": "Identifier. The resource name of the store's homepage. Format: `accounts/{account}/homepage`",
+              "location": "path",
+              "pattern": "^accounts/[^/]+/homepage$",
+              "required": true,
+              "type": "string"
+            },
+            "updateMask": {
+              "description": "Required. List of fields being updated.",
+              "format": "google-fieldmask",
+              "location": "query",
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+name}",
+          "request": {
+            "$ref": "Homepage"
+          },
+          "response": {
+            "$ref": "Homepage"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        }
+      },
+      "resources": {
+        "accounttax": {
+          "methods": {
+            "get": {
+              "description": "Returns the tax rules that match the conditions of GetAccountTaxRequest",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/accounttax/{accounttaxId}",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.accounttax.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name from which tax settings will be retrieved",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/accounttax/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "response": {
+                "$ref": "AccountTax"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "list": {
+              "description": "Lists the tax settings of the sub-accounts only in your Merchant Center account. This method can only be called on a multi-client account, otherwise it'll return an error.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/accounttax",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.accounttax.list",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "pageSize": {
+                  "description": "The maximum number of tax settings to return in the response, used for paging.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "The token returned by the previous request.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "parent": {
+                  "description": "Required. The parent, which owns this collection of account tax. Format: accounts/{account}",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+parent}/accounttax",
+              "response": {
+                "$ref": "ListAccountTaxResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "patch": {
+              "description": "Updates the tax settings of the account.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/accounttax/{accounttaxId}",
+              "httpMethod": "PATCH",
+              "id": "merchantapi.accounts.accounttax.patch",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Identifier. The name of the tax setting. Format: \"{account_tax.name=accounts/{account}}\"",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/accounttax/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                },
+                "updateMask": {
+                  "description": "The list of fields to be updated",
+                  "format": "google-fieldmask",
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "request": {
+                "$ref": "AccountTax"
+              },
+              "response": {
+                "$ref": "AccountTax"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            }
+          }
+        },
+        "homepage": {
+          "methods": {
+            "claim": {
+              "description": "Claims a store's homepage. Executing this method requires admin access. If the homepage is already claimed, this will recheck the verification (unless the merchant is exempted from claiming, which also exempts from verification) and return a successful response. If ownership can no longer be verified, it will return an error, but it won't clear the claim. In case of failure, a canonical error message will be returned: * PERMISSION_DENIED: user doesn't have the necessary permissions on this MC account; * FAILED_PRECONDITION: - The account is not a Merchant Center account; - MC account doesn't have a homepage; - claiming failed (in this case the error message will contain more details).",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/homepage:claim",
+              "httpMethod": "POST",
+              "id": "merchantapi.accounts.homepage.claim",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the homepage to claim. Format: `accounts/{account}/homepage`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/homepage$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}:claim",
+              "request": {
+                "$ref": "ClaimHomepageRequest"
+              },
+              "response": {
+                "$ref": "Homepage"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "unclaim": {
+              "description": "Unclaims a store's homepage. Executing this method requires admin access.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/homepage:unclaim",
+              "httpMethod": "POST",
+              "id": "merchantapi.accounts.homepage.unclaim",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the homepage to unclaim. Format: `accounts/{account}/homepage`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/homepage$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}:unclaim",
+              "request": {
+                "$ref": "UnclaimHomepageRequest"
+              },
+              "response": {
+                "$ref": "Homepage"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            }
+          }
+        },
+        "issues": {
+          "methods": {
+            "list": {
+              "description": "Lists all account issues of a Merchant Center account.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/issues",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.issues.list",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "languageCode": {
+                  "description": "Optional. The issues in the response will have human-readable fields in the given language. The format is [BCP-47](https://tools.ietf.org/html/bcp47), such as `en-US` or `sr-Latn`. If not value is provided, `en-US` will be used.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "pageSize": {
+                  "description": "Optional. The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 50 users will be returned. The maximum value is 100; values above 100 will be coerced to 100",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "Optional. A page token, received from a previous `ListAccountIssues` call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to `ListAccountIssues` must match the call that provided the page token.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "parent": {
+                  "description": "Required. The parent, which owns this collection of issues. Format: `accounts/{account}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                },
+                "timeZone.id": {
+                  "description": "IANA Time Zone Database time zone, e.g. \"America/New_York\".",
+                  "location": "query",
+                  "type": "string"
+                },
+                "timeZone.version": {
+                  "description": "Optional. IANA Time Zone Database version number, e.g. \"2019a\".",
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+parent}/issues",
+              "response": {
+                "$ref": "ListAccountIssuesResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            }
+          }
+        },
+        "onlineReturnPolicies": {
+          "methods": {
+            "get": {
+              "description": "Gets an existing return policy.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/onlineReturnPolicies/{onlineReturnPoliciesId}",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.onlineReturnPolicies.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the return policy to retrieve. Format: `accounts/{account}/onlineReturnPolicies/{return_policy}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/onlineReturnPolicies/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "response": {
+                "$ref": "OnlineReturnPolicy"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "list": {
+              "description": "Lists all existing return policies.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/onlineReturnPolicies",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.onlineReturnPolicies.list",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "pageSize": {
+                  "description": "Optional. The maximum number of `OnlineReturnPolicy` resources to return. The service returns fewer than this value if the number of return policies for the given merchant is less that than the `pageSize`. The default value is 10. The maximum value is 100; If a value higher than the maximum is specified, then the `pageSize` will default to the maximum",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "Optional. A page token, received from a previous `ListOnlineReturnPolicies` call. Provide the page token to retrieve the subsequent page. When paginating, all other parameters provided to `ListOnlineReturnPolicies` must match the call that provided the page token. The token returned as nextPageToken in the response to the previous request.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "parent": {
+                  "description": "Required. The merchant account for which to list return policies. Format: `accounts/{account}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+parent}/onlineReturnPolicies",
+              "response": {
+                "$ref": "ListOnlineReturnPoliciesResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            }
+          }
+        },
+        "programs": {
+          "methods": {
+            "disable": {
+              "description": "Disable participation in the specified program for the account. Executing this method requires admin access.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/programs/{programsId}:disable",
+              "httpMethod": "POST",
+              "id": "merchantapi.accounts.programs.disable",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the program for which to disable participation for the given account. Format: `accounts/{account}/programs/{program}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/programs/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}:disable",
+              "request": {
+                "$ref": "DisableProgramRequest"
+              },
+              "response": {
+                "$ref": "Program"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "enable": {
+              "description": "Enable participation in the specified program for the account. Executing this method requires admin access.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/programs/{programsId}:enable",
+              "httpMethod": "POST",
+              "id": "merchantapi.accounts.programs.enable",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the program for which to enable participation for the given account. Format: `accounts/{account}/programs/{program}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/programs/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}:enable",
+              "request": {
+                "$ref": "EnableProgramRequest"
+              },
+              "response": {
+                "$ref": "Program"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "get": {
+              "description": "Retrieves the specified program for the account.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/programs/{programsId}",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.programs.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the program to retrieve. Format: `accounts/{account}/programs/{program}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/programs/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "response": {
+                "$ref": "Program"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "list": {
+              "description": "Retrieves all programs for the account.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/programs",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.programs.list",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "pageSize": {
+                  "description": "Optional. The maximum number of programs to return in a single response. If unspecified (or 0), a default size of 1000 is used. The maximum value is 1000; values above 1000 will be coerced to 1000.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "Optional. A continuation token, received from a previous `ListPrograms` call. Provide this to retrieve the next page.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "parent": {
+                  "description": "Required. The name of the account for which to retrieve all programs. Format: `accounts/{account}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+parent}/programs",
+              "response": {
+                "$ref": "ListProgramsResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            }
+          }
+        },
+        "regions": {
+          "methods": {
+            "create": {
+              "description": "Creates a region definition in your Merchant Center account. Executing this method requires admin access.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/regions",
+              "httpMethod": "POST",
+              "id": "merchantapi.accounts.regions.create",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "parent": {
+                  "description": "Required. The account to create a region for. Format: `accounts/{account}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                },
+                "regionId": {
+                  "description": "Required. The identifier for the region, unique over all regions of the same account.",
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+parent}/regions",
+              "request": {
+                "$ref": "Region"
+              },
+              "response": {
+                "$ref": "Region"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "delete": {
+              "description": "Deletes a region definition from your Merchant Center account. Executing this method requires admin access.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/regions/{regionsId}",
+              "httpMethod": "DELETE",
+              "id": "merchantapi.accounts.regions.delete",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the region to delete. Format: `accounts/{account}/regions/{region}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/regions/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "response": {
+                "$ref": "Empty"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "get": {
+              "description": "Retrieves a region defined in your Merchant Center account.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/regions/{regionsId}",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.regions.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the region to retrieve. Format: `accounts/{account}/regions/{region}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/regions/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "response": {
+                "$ref": "Region"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "list": {
+              "description": "Lists the regions in your Merchant Center account.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/regions",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.regions.list",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "pageSize": {
+                  "description": "Optional. The maximum number of regions to return. The service may return fewer than this value. If unspecified, at most 50 regions will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "Optional. A page token, received from a previous `ListRegions` call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to `ListRegions` must match the call that provided the page token.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "parent": {
+                  "description": "Required. The account to list regions for. Format: `accounts/{account}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+parent}/regions",
+              "response": {
+                "$ref": "ListRegionsResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "patch": {
+              "description": "Updates a region definition in your Merchant Center account. Executing this method requires admin access.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/regions/{regionsId}",
+              "httpMethod": "PATCH",
+              "id": "merchantapi.accounts.regions.patch",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Identifier. The resource name of the region. Format: `accounts/{account}/regions/{region}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/regions/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                },
+                "updateMask": {
+                  "description": "Optional. The comma-separated field mask indicating the fields to update. Example: `\"displayName,postalCodeArea.regionCode\"`.",
+                  "format": "google-fieldmask",
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "request": {
+                "$ref": "Region"
+              },
+              "response": {
+                "$ref": "Region"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            }
+          }
+        },
+        "shippingSettings": {
+          "methods": {
+            "insert": {
+              "description": "Replace the shipping setting of a merchant with the request shipping setting. Executing this method requires admin access.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/shippingSettings:insert",
+              "httpMethod": "POST",
+              "id": "merchantapi.accounts.shippingSettings.insert",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "parent": {
+                  "description": "Required. The account where this product will be inserted. Format: accounts/{account}",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+parent}/shippingSettings:insert",
+              "request": {
+                "$ref": "ShippingSettings"
+              },
+              "response": {
+                "$ref": "ShippingSettings"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            }
+          }
+        },
+        "termsOfServiceAgreementStates": {
+          "methods": {
+            "get": {
+              "description": "Returns the state of a terms of service agreement.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/termsOfServiceAgreementStates/{termsOfServiceAgreementStatesId}",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.termsOfServiceAgreementStates.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The resource name of the terms of service version. Format: `accounts/{account}/termsOfServiceAgreementState/{identifier}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/termsOfServiceAgreementStates/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "response": {
+                "$ref": "TermsOfServiceAgreementState"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "retrieveForApplication": {
+              "description": "Retrieves the state of the agreement for the application terms of service.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/termsOfServiceAgreementStates:retrieveForApplication",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.termsOfServiceAgreementStates.retrieveForApplication",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "parent": {
+                  "description": "Required. The account for which to get a TermsOfServiceAgreementState Format: `accounts/{account}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+parent}/termsOfServiceAgreementStates:retrieveForApplication",
+              "response": {
+                "$ref": "TermsOfServiceAgreementState"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            }
+          }
+        },
+        "users": {
+          "methods": {
+            "create": {
+              "description": "Creates a Merchant Center account user. Executing this method requires admin access.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/users",
+              "httpMethod": "POST",
+              "id": "merchantapi.accounts.users.create",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "parent": {
+                  "description": "Required. The resource name of the account for which a user will be created. Format: `accounts/{account}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                },
+                "userId": {
+                  "description": "Required. The email address of the user (for example, `john.doe@gmail.com`).",
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+parent}/users",
+              "request": {
+                "$ref": "User"
+              },
+              "response": {
+                "$ref": "User"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "delete": {
+              "description": "Deletes a Merchant Center account user. Executing this method requires admin access.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/users/{usersId}",
+              "httpMethod": "DELETE",
+              "id": "merchantapi.accounts.users.delete",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the user to delete. Format: `accounts/{account}/users/{email}` It is also possible to delete the user corresponding to the caller by using `me` rather than an email address as in `accounts/{account}/users/me`.",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/users/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "response": {
+                "$ref": "Empty"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "get": {
+              "description": "Retrieves a Merchant Center account user.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/users/{usersId}",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.users.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the user to retrieve. Format: `accounts/{account}/users/{email}` It is also possible to retrieve the user corresponding to the caller by using `me` rather than an email address as in `accounts/{account}/users/me`.",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/users/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "response": {
+                "$ref": "User"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "getEmailPreferences": {
+              "description": "Returns the email preferences for a Merchant Center account user. Use the name=accounts/*/users/me/emailPreferences alias to get preferences for the authenticated user.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/users/{usersId}/emailPreferences",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.users.getEmailPreferences",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the `EmailPreferences` resource. Format: `accounts/{account}/users/{email}/emailPreferences`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/users/[^/]+/emailPreferences$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "response": {
+                "$ref": "EmailPreferences"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "list": {
+              "description": "Lists all users of a Merchant Center account.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/users",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.users.list",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "pageSize": {
+                  "description": "Optional. The maximum number of users to return. The service may return fewer than this value. If unspecified, at most 50 users will be returned. The maximum value is 100; values above 100 will be coerced to 100",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "Optional. A page token, received from a previous `ListUsers` call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to `ListUsers` must match the call that provided the page token.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "parent": {
+                  "description": "Required. The parent, which owns this collection of users. Format: `accounts/{account}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+parent}/users",
+              "response": {
+                "$ref": "ListUsersResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "patch": {
+              "description": "Updates a Merchant Center account user. Executing this method requires admin access.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/users/{usersId}",
+              "httpMethod": "PATCH",
+              "id": "merchantapi.accounts.users.patch",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Identifier. The resource name of the user. Format: `accounts/{account}/user/{email}` Use `me` to refer to your own email address, for example `accounts/{account}/users/me`.",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/users/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                },
+                "updateMask": {
+                  "description": "Required. List of fields being updated.",
+                  "format": "google-fieldmask",
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "request": {
+                "$ref": "User"
+              },
+              "response": {
+                "$ref": "User"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "updateEmailPreferences": {
+              "description": "Updates the email preferences for a Merchant Center account user. MCA users should specify the MCA account rather than a sub-account of the MCA. Preferences which are not explicitly selected in the update mask will not be updated. It is invalid for updates to specify an UNCONFIRMED opt-in status value. Use the name=accounts/*/users/me/emailPreferences alias to update preferences for the authenticated user.",
+              "flatPath": "accounts/v1beta/accounts/{accountsId}/users/{usersId}/emailPreferences",
+              "httpMethod": "PATCH",
+              "id": "merchantapi.accounts.users.updateEmailPreferences",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Identifier. The name of the EmailPreferences. The endpoint is only supported for the authenticated user.",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/users/[^/]+/emailPreferences$",
+                  "required": true,
+                  "type": "string"
+                },
+                "updateMask": {
+                  "description": "Required. List of fields being updated.",
+                  "format": "google-fieldmask",
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "accounts/v1beta/{+name}",
+              "request": {
+                "$ref": "EmailPreferences"
+              },
+              "response": {
+                "$ref": "EmailPreferences"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "termsOfService": {
+      "methods": {
+        "accept": {
+          "description": "Accepts a `TermsOfService`. Executing this method requires admin access.",
+          "flatPath": "accounts/v1beta/termsOfService/{termsOfServiceId}:accept",
+          "httpMethod": "GET",
+          "id": "merchantapi.termsOfService.accept",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "account": {
+              "description": "Required. The account for which to accept the ToS.",
+              "location": "query",
+              "type": "string"
+            },
+            "name": {
+              "description": "Required. The resource name of the terms of service version. Format: `termsOfService/{version}`",
+              "location": "path",
+              "pattern": "^termsOfService/[^/]+$",
+              "required": true,
+              "type": "string"
+            },
+            "regionCode": {
+              "description": "Required. Region code as defined by [CLDR](https://cldr.unicode.org/). This is either a country when the ToS applies specifically to that country or 001 when it applies globally.",
+              "location": "query",
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+name}:accept",
+          "response": {
+            "$ref": "Empty"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "get": {
+          "description": "Retrieves the `TermsOfService` associated with the provided version.",
+          "flatPath": "accounts/v1beta/termsOfService/{termsOfServiceId}",
+          "httpMethod": "GET",
+          "id": "merchantapi.termsOfService.get",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "name": {
+              "description": "Required. The resource name of the terms of service version. Format: `termsOfService/{version}`",
+              "location": "path",
+              "pattern": "^termsOfService/[^/]+$",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/{+name}",
+          "response": {
+            "$ref": "TermsOfService"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        },
+        "retrieveLatest": {
+          "description": "Retrieves the latest version of the `TermsOfService` for a given `kind` and `region_code`.",
+          "flatPath": "accounts/v1beta/termsOfService:retrieveLatest",
+          "httpMethod": "GET",
+          "id": "merchantapi.termsOfService.retrieveLatest",
+          "parameterOrder": [],
+          "parameters": {
+            "kind": {
+              "description": "The Kind this terms of service version applies to.",
+              "enum": [
+                "TERMS_OF_SERVICE_KIND_UNSPECIFIED",
+                "MERCHANT_CENTER"
+              ],
+              "enumDescriptions": [
+                "Default value. This value is unused.",
+                "Merchant Center application."
+              ],
+              "location": "query",
+              "type": "string"
+            },
+            "regionCode": {
+              "description": "Region code as defined by [CLDR](https://cldr.unicode.org/). This is either a country when the ToS applies specifically to that country or 001 when it applies globally.",
+              "location": "query",
+              "type": "string"
+            }
+          },
+          "path": "accounts/v1beta/termsOfService:retrieveLatest",
+          "response": {
+            "$ref": "TermsOfService"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/content"
+          ]
+        }
+      }
+    }
+  },
+  "revision": "20240613",
+  "rootUrl": "https://merchantapi.googleapis.com/",
+  "schemas": {
+    "AcceptTermsOfService": {
+      "description": "Reference to a Terms of Service resource.",
+      "id": "AcceptTermsOfService",
+      "properties": {
+        "name": {
+          "description": "Required. The resource name of the terms of service version.",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "Required. Region code as defined by [CLDR](https://cldr.unicode.org/). This is either a country when the ToS applies specifically to that country or `001` when it applies globally.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Accepted": {
+      "description": "Describes the accepted terms of service.",
+      "id": "Accepted",
+      "properties": {
+        "acceptedBy": {
+          "description": "The account where the acceptance was recorded. This can be the account itself or, in the case of subaccounts, the MCA account.",
+          "type": "string"
+        },
+        "termsOfService": {
+          "description": "The accepted [termsOfService](google.shopping.merchant.accounts.v1main.TermsOfService).",
+          "type": "string"
+        },
+        "validUntil": {
+          "$ref": "Date",
+          "description": "When set, it states that the accepted [TermsOfService](google.shopping.merchant.accounts.v1main.TermsOfService) is only valid until the end of this date (in UTC). A new one must be accepted before then. The information of the required [TermsOfService](google.shopping.merchant.accounts.v1main.TermsOfService) is found in the [Required](Required) message."
+        }
+      },
+      "type": "object"
+    },
+    "Account": {
+      "description": "An account.",
+      "id": "Account",
+      "properties": {
+        "accountId": {
+          "description": "Output only. The ID of the account.",
+          "format": "int64",
+          "readOnly": true,
+          "type": "string"
+        },
+        "accountName": {
+          "description": "Required. A human-readable name of the account. See [store name](https://support.google.com/merchants/answer/160556) and [business name](https://support.google.com/merchants/answer/12159159) for more information.",
+          "type": "string"
+        },
+        "adultContent": {
+          "description": "Whether this account contains adult content.",
+          "type": "boolean"
+        },
+        "languageCode": {
+          "description": "Required. The account's [BCP-47 language code](https://tools.ietf.org/html/bcp47), such as `en-US` or `sr-Latn`.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Identifier. The resource name of the account. Format: `accounts/{account}`",
+          "type": "string"
+        },
+        "testAccount": {
+          "description": "Output only. Whether this is a test account.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "timeZone": {
+          "$ref": "TimeZone",
+          "description": "Required. The time zone of the account. On writes, `time_zone` sets both the `reporting_time_zone` and the `display_time_zone`. For reads, `time_zone` always returns the `display_time_zone`. If `display_time_zone` doesn't exist for your account, `time_zone` is empty."
+        }
+      },
+      "type": "object"
+    },
+    "AccountIssue": {
+      "description": "An [`AccountIssue`](https://support.google.com/merchants/answer/12153802?sjid=17798438912526418908-EU#account).",
+      "id": "AccountIssue",
+      "properties": {
+        "detail": {
+          "description": "Further localized details about the issue.",
+          "type": "string"
+        },
+        "documentationUri": {
+          "description": "Link to Merchant Center Help Center providing further information about the issue and how to fix it.",
+          "type": "string"
+        },
+        "impactedDestinations": {
+          "description": "The impact this issue has on various destinations.",
+          "items": {
+            "$ref": "ImpactedDestination"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "Identifier. The resource name of the account issue. Format: `accounts/{account}/issues/{id}`",
+          "type": "string"
+        },
+        "severity": {
+          "description": "The overall severity of the issue.",
+          "enum": [
+            "SEVERITY_UNSPECIFIED",
+            "CRITICAL",
+            "ERROR",
+            "SUGGESTION"
+          ],
+          "enumDescriptions": [
+            "The severity is unknown.",
+            "The issue causes offers to not serve.",
+            "The issue might affect offers (in the future) or might be an indicator of issues with offers.",
+            "The issue is a suggestion for improvement."
+          ],
+          "type": "string"
+        },
+        "title": {
+          "description": "The localized title of the issue.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AccountTax": {
+      "description": "The tax settings of a merchant account. All methods require the admin role.",
+      "id": "AccountTax",
+      "properties": {
+        "account": {
+          "description": "Output only. The ID of the account to which these account tax settings belong.",
+          "format": "int64",
+          "readOnly": true,
+          "type": "string"
+        },
+        "name": {
+          "description": "Identifier. The name of the tax setting. Format: \"{account_tax.name=accounts/{account}}\"",
+          "type": "string"
+        },
+        "taxRules": {
+          "description": "Tax rules. \"Define the tax rules in each region. No tax will be presented if a region has no rule.\"",
+          "items": {
+            "$ref": "TaxRule"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "AddAccountService": {
+      "description": "Additional instructions to add account services during creation of the account.",
+      "id": "AddAccountService",
+      "properties": {
+        "accountAggregation": {
+          "$ref": "Empty",
+          "description": "The provider is an aggregator for the account."
+        },
+        "provider": {
+          "description": "Optional. The provider of the service. Format: `accounts/{account}`",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Address": {
+      "description": "Shipping address of the warehouse.",
+      "id": "Address",
+      "properties": {
+        "administrativeArea": {
+          "description": "Required. Top-level administrative subdivision of the country. For example, a state like California (\"CA\") or a province like Quebec (\"QC\").",
+          "type": "string"
+        },
+        "city": {
+          "description": "Required. City, town or commune. May also include dependent localities or sublocalities (For example neighborhoods or suburbs).",
+          "type": "string"
+        },
+        "postalCode": {
+          "description": "Required. Postal code or ZIP (For example \"94043\").",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "Required. [CLDR country code](http://www.unicode.org/repos/cldr/tags/latest/common/main/en.xml) (For example \"US\").",
+          "type": "string"
+        },
+        "streetAddress": {
+          "description": "Street-level part of the address. For example: `111w 31st Street`.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BusinessDayConfig": {
+      "description": "Business days of the warehouse.",
+      "id": "BusinessDayConfig",
+      "properties": {
+        "businessDays": {
+          "description": "Required. Regular business days. May not be empty.",
+          "items": {
+            "enum": [
+              "WEEKDAY_UNSPECIFIED",
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY",
+              "SUNDAY"
+            ],
+            "enumDescriptions": [
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "BusinessIdentity": {
+      "description": "Collection of information related to the [identity of a business](https://support.google.com/merchants/answer/12564247).",
+      "id": "BusinessIdentity",
+      "properties": {
+        "blackOwned": {
+          "$ref": "IdentityAttribute",
+          "description": "Optional. Specifies whether the business identifies itself as being black-owned. This optional field will only be available for merchants with a business country set to `US`. It is also not applicable for marketplaces or marketplace sellers."
+        },
+        "latinoOwned": {
+          "$ref": "IdentityAttribute",
+          "description": "Optional. Specifies whether the business identifies itself as being latino-owned. This optional field will only be available for merchants with a business country set to `US`. It is also not applicable for marketplaces or marketplace sellers."
+        },
+        "name": {
+          "description": "Identifier. The resource name of the business identity. Format: `accounts/{account}/businessIdentity`",
+          "type": "string"
+        },
+        "promotionsConsent": {
+          "description": "Optional. Whether the identity attributes may be used for promotions.",
+          "enum": [
+            "PROMOTIONS_CONSENT_UNSPECIFIED",
+            "PROMOTIONS_CONSENT_GIVEN",
+            "PROMOTIONS_CONSENT_DENIED"
+          ],
+          "enumDescriptions": [
+            "Default value indicating that no selection was made.",
+            "Indicates that the account consented to having their business identity used for promotions.",
+            "Indicates that the account did not consent to having their business identity used for promotions."
+          ],
+          "type": "string"
+        },
+        "smallBusiness": {
+          "$ref": "IdentityAttribute",
+          "description": "Optional. Specifies whether the business identifies itself as a small business. This optional field will only be available for merchants with a business country set to `US`. It is also not applicable for marketplaces."
+        },
+        "veteranOwned": {
+          "$ref": "IdentityAttribute",
+          "description": "Optional. Specifies whether the business identifies itself as being veteran-owned. This optional field will only be available for merchants with a business country set to `US`. It is also not applicable for marketplaces or marketplace sellers."
+        },
+        "womenOwned": {
+          "$ref": "IdentityAttribute",
+          "description": "Optional. Specifies whether the business identifies itself as being women-owned. This optional field will only be available for merchants with a business country set to `US`. It is also not applicable for marketplaces or marketplace sellers."
+        }
+      },
+      "type": "object"
+    },
+    "BusinessInfo": {
+      "description": "Collection of information related to a business.",
+      "id": "BusinessInfo",
+      "properties": {
+        "address": {
+          "$ref": "PostalAddress",
+          "description": "Optional. The address of the business."
+        },
+        "customerService": {
+          "$ref": "CustomerService",
+          "description": "Optional. The customer service of the business."
+        },
+        "name": {
+          "description": "Identifier. The resource name of the business info. Format: `accounts/{account}/businessInfo`",
+          "type": "string"
+        },
+        "phone": {
+          "$ref": "PhoneNumber",
+          "description": "Output only. The phone number of the business.",
+          "readOnly": true
+        },
+        "phoneVerificationState": {
+          "description": "Output only. The phone verification state of the business.",
+          "enum": [
+            "PHONE_VERIFICATION_STATE_UNSPECIFIED",
+            "PHONE_VERIFICATION_STATE_VERIFIED",
+            "PHONE_VERIFICATION_STATE_UNVERIFIED"
+          ],
+          "enumDescriptions": [
+            "Default value. This value is unused.",
+            "The phone is verified.",
+            "The phone is unverified"
+          ],
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CarrierRate": {
+      "description": "A list of carrier rates that can be referred to by `main_table` or `single_value`.",
+      "id": "CarrierRate",
+      "properties": {
+        "carrier": {
+          "description": "Required. Carrier service, such as `\"UPS\"` or `\"Fedex\"`.",
+          "type": "string"
+        },
+        "carrierService": {
+          "description": "Required. Carrier service, such as `\"ground\"` or `\"2 days\"`.",
+          "type": "string"
+        },
+        "flatAdjustment": {
+          "$ref": "Price",
+          "description": "Optional. Additive shipping rate modifier. Can be negative. For example `{ \"amount_micros\": 1, \"currency_code\" : \"USD\" }` adds $1 to the rate, `{ \"amount_micros\": -3, \"currency_code\" : \"USD\" }` removes $3 from the rate."
+        },
+        "name": {
+          "description": "Required. Name of the carrier rate. Must be unique per rate group.",
+          "type": "string"
+        },
+        "originPostalCode": {
+          "description": "Required. Shipping origin for this carrier rate.",
+          "type": "string"
+        },
+        "percentageAdjustment": {
+          "description": "Optional. Multiplicative shipping rate modifier as a number in decimal notation. Can be negative. For example `\"5.4\"` increases the rate by 5.4%, `\"-3\"` decreases the rate by 3%.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ClaimHomepageRequest": {
+      "description": "Request message for the `ClaimHomepage` method.",
+      "id": "ClaimHomepageRequest",
+      "properties": {},
+      "type": "object"
+    },
+    "CreateAndConfigureAccountRequest": {
+      "description": "Request message for the `CreateAndConfigureAccount` method.",
+      "id": "CreateAndConfigureAccountRequest",
+      "properties": {
+        "acceptTermsOfService": {
+          "$ref": "AcceptTermsOfService",
+          "description": "Optional. The Terms of Service (ToS) to be accepted immediately upon account creation."
+        },
+        "account": {
+          "$ref": "Account",
+          "description": "Required. The account to be created."
+        },
+        "service": {
+          "description": "Optional. If specified, an account service between the account to be created and the provider account is initialized as part of the creation.",
+          "items": {
+            "$ref": "AddAccountService"
+          },
+          "type": "array"
+        },
+        "users": {
+          "description": "Optional. Users to be added to the account.",
+          "items": {
+            "$ref": "CreateUserRequest"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "CreateUserRequest": {
+      "description": "Request message for the `CreateUser` method.",
+      "id": "CreateUserRequest",
+      "properties": {
+        "parent": {
+          "description": "Required. The resource name of the account for which a user will be created. Format: `accounts/{account}`",
+          "type": "string"
+        },
+        "user": {
+          "$ref": "User",
+          "description": "Required. The user to create."
+        },
+        "userId": {
+          "description": "Required. The email address of the user (for example, `john.doe@gmail.com`).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CustomerService": {
+      "description": "Customer service information.",
+      "id": "CustomerService",
+      "properties": {
+        "email": {
+          "description": "Optional. The email address where customer service may be reached.",
+          "type": "string"
+        },
+        "phone": {
+          "$ref": "PhoneNumber",
+          "description": "Optional. The phone number where customer service may be called."
+        },
+        "uri": {
+          "description": "Optional. The URI where customer service may be found.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CutoffConfig": {
+      "description": "Configs related to local delivery ends for the day.",
+      "id": "CutoffConfig",
+      "properties": {
+        "localCutoffTime": {
+          "$ref": "LocalCutoffTime",
+          "description": "Time that local delivery ends for the day."
+        },
+        "noDeliveryPostCutoff": {
+          "description": "Merchants can opt-out of showing n+1 day local delivery when they have a shipping service configured to n day local delivery. For example, if the shipping service defines same-day delivery, and it's past the cut-off, setting this field to `true` results in the calculated shipping service rate returning `NO_DELIVERY_POST_CUTOFF`. In the same example, setting this field to `false` results in the calculated shipping time being one day. This is only for local delivery.",
+          "type": "boolean"
+        },
+        "storeCloseOffsetHours": {
+          "description": "Only valid with local delivery fulfillment. Represents cutoff time as the number of hours before store closing. Mutually exclusive with `local_cutoff_time`.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CutoffTime": {
+      "description": "Business days cutoff time definition.",
+      "id": "CutoffTime",
+      "properties": {
+        "hour": {
+          "description": "Required. Hour of the cutoff time until which an order has to be placed to be processed in the same day.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "minute": {
+          "description": "Required. Minute of the cutoff time until which an order has to be placed to be processed in the same day.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "timeZone": {
+          "description": "Required. [Timezone identifier](https://developers.google.com/adwords/api/docs/appendix/codes-formats#timezone-ids) For example \"Europe/Zurich\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Date": {
+      "description": "Represents a whole or partial calendar date, such as a birthday. The time of day and time zone are either specified elsewhere or are insignificant. The date is relative to the Gregorian Calendar. This can represent one of the following: * A full date, with non-zero year, month, and day values. * A month and day, with a zero year (for example, an anniversary). * A year on its own, with a zero month and a zero day. * A year and month, with a zero day (for example, a credit card expiration date). Related types: * google.type.TimeOfDay * google.type.DateTime * google.protobuf.Timestamp",
+      "id": "Date",
+      "properties": {
+        "day": {
+          "description": "Day of a month. Must be from 1 to 31 and valid for the year and month, or 0 to specify a year by itself or a year and month where the day isn't significant.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "month": {
+          "description": "Month of a year. Must be from 1 to 12, or 0 to specify a year without a month and day.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "year": {
+          "description": "Year of the date. Must be from 1 to 9999, or 0 to specify a date without a year.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "DeliveryTime": {
+      "description": "Time spent in various aspects from order to the delivery of the product.",
+      "id": "DeliveryTime",
+      "properties": {
+        "cutoffTime": {
+          "$ref": "CutoffTime",
+          "description": "Business days cutoff time definition. If not configured the cutoff time will be defaulted to 8AM PST."
+        },
+        "handlingBusinessDayConfig": {
+          "$ref": "BusinessDayConfig",
+          "description": "The business days during which orders can be handled. If not provided, Monday to Friday business days will be assumed."
+        },
+        "maxHandlingDays": {
+          "description": "Maximum number of business days spent before an order is shipped. 0 means same day shipped, 1 means next day shipped. Must be greater than or equal to `min_handling_days`.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "maxTransitDays": {
+          "description": "Maximum number of business days that is spent in transit. 0 means same day delivery, 1 means next day delivery. Must be greater than or equal to `min_transit_days`.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "minHandlingDays": {
+          "description": "Minimum number of business days spent before an order is shipped. 0 means same day shipped, 1 means next day shipped.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "minTransitDays": {
+          "description": "Minimum number of business days that is spent in transit. 0 means same day delivery, 1 means next day delivery. Either `min_transit_days`, `max_transit_days` or `transit_time_table` must be set, but not both.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "transitBusinessDayConfig": {
+          "$ref": "BusinessDayConfig",
+          "description": "The business days during which orders can be in-transit. If not provided, Monday to Friday business days will be assumed."
+        },
+        "transitTimeTable": {
+          "$ref": "TransitTable",
+          "description": "Transit time table, number of business days spent in transit based on row and column dimensions. Either `min_transit_days`, `max_transit_days` or `transit_time_table` can be set, but not both."
+        },
+        "warehouseBasedDeliveryTimes": {
+          "description": "Optional. Indicates that the delivery time should be calculated per warehouse (shipping origin location) based on the settings of the selected carrier. When set, no other transit time related field in delivery time should be set.",
+          "items": {
+            "$ref": "WarehouseBasedDeliveryTime"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "DisableProgramRequest": {
+      "description": "Request message for the DisableProgram method.",
+      "id": "DisableProgramRequest",
+      "properties": {},
+      "type": "object"
+    },
+    "Distance": {
+      "description": "Maximum delivery radius. This is only required for the local delivery shipment type.",
+      "id": "Distance",
+      "properties": {
+        "unit": {
+          "description": "Unit can differ based on country, it is parameterized to include miles and kilometers.",
+          "enum": [
+            "UNIT_UNSPECIFIED",
+            "MILES",
+            "KILOMETERS"
+          ],
+          "enumDescriptions": [
+            "Unit unspecified",
+            "Unit in miles",
+            "Unit in kilometers"
+          ],
+          "type": "string"
+        },
+        "value": {
+          "description": "Integer value of distance.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "EmailPreferences": {
+      "description": "The categories of notifications the user opted into / opted out of. The email preferences do not include mandatory announcements as users can't opt out of them.",
+      "id": "EmailPreferences",
+      "properties": {
+        "name": {
+          "description": "Identifier. The name of the EmailPreferences. The endpoint is only supported for the authenticated user.",
+          "type": "string"
+        },
+        "newsAndTips": {
+          "description": "Optional. Updates on new features, tips and best practices.",
+          "enum": [
+            "OPT_IN_STATE_UNSPECIFIED",
+            "OPTED_OUT",
+            "OPTED_IN",
+            "UNCONFIRMED"
+          ],
+          "enumDescriptions": [
+            "Opt-in status is not specified.",
+            "User has opted out of receiving this type of email.",
+            "User has opted in to receiving this type of email.",
+            "User has opted in to receiving this type of email and the confirmation email has been sent, but user has not yet confirmed the opt in (applies only to certain countries)."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Empty": {
+      "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); }",
+      "id": "Empty",
+      "properties": {},
+      "type": "object"
+    },
+    "EnableProgramRequest": {
+      "description": "Request message for the EnableProgram method.",
+      "id": "EnableProgramRequest",
+      "properties": {},
+      "type": "object"
+    },
+    "GeoTargetArea": {
+      "description": "A list of geotargets that defines the region area.",
+      "id": "GeoTargetArea",
+      "properties": {
+        "geotargetCriteriaIds": {
+          "description": "Required. A non-empty list of [location IDs](https://developers.google.com/adwords/api/docs/appendix/geotargeting). They must all be of the same location type (for example, state).",
+          "items": {
+            "format": "int64",
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Headers": {
+      "description": "A non-empty list of row or column headers for a table. Exactly one of `prices`, `weights`, `num_items`, `postal_code_group_names`, or `location` must be set.",
+      "id": "Headers",
+      "properties": {
+        "locations": {
+          "description": "Required. A list of location ID sets. Must be non-empty. Can only be set if all other fields are not set.",
+          "items": {
+            "$ref": "LocationIdSet"
+          },
+          "type": "array"
+        },
+        "numberOfItems": {
+          "description": "Required. A list of inclusive number of items upper bounds. The last value can be `\"infinity\"`. For example `[\"10\", \"50\", \"infinity\"]` represents the headers \"\u003c= 10 items\", \"\u003c= 50 items\", and \"\u003e 50 items\". Must be non-empty. Can only be set if all other fields are not set.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "postalCodeGroupNames": {
+          "description": "Required. A list of postal group names. The last value can be `\"all other locations\"`. Example: `[\"zone 1\", \"zone 2\", \"all other locations\"]`. The referred postal code groups must match the delivery country of the service. Must be non-empty. Can only be set if all other fields are not set.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "prices": {
+          "description": "Required. A list of inclusive order price upper bounds. The last price's value can be infinity by setting price amount_micros = -1. For example `[{\"amount_micros\": 10000000, \"currency_code\": \"USD\"}, {\"amount_micros\": 500000000, \"currency_code\": \"USD\"}, {\"amount_micros\": -1, \"currency_code\": \"USD\"}]` represents the headers \"\u003c= $10\", \"\u003c= $500\", and \"\u003e $500\". All prices within a service must have the same currency. Must be non-empty. Must be positive except -1. Can only be set if all other fields are not set.",
+          "items": {
+            "$ref": "Price"
+          },
+          "type": "array"
+        },
+        "weights": {
+          "description": "Required. A list of inclusive order weight upper bounds. The last weight's value can be infinity by setting price amount_micros = -1. For example `[{\"amount_micros\": 10000000, \"unit\": \"kg\"}, {\"amount_micros\": 50000000, \"unit\": \"kg\"}, {\"amount_micros\": -1, \"unit\": \"kg\"}]` represents the headers \"\u003c= 10kg\", \"\u003c= 50kg\", and \"\u003e 50kg\". All weights within a service must have the same unit. Must be non-empty. Must be positive except -1. Can only be set if all other fields are not set.",
+          "items": {
+            "$ref": "Weight"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Homepage": {
+      "description": "A store's homepage.",
+      "id": "Homepage",
+      "properties": {
+        "claimed": {
+          "description": "Output only. Whether the homepage is claimed. See https://support.google.com/merchants/answer/176793.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "name": {
+          "description": "Identifier. The resource name of the store's homepage. Format: `accounts/{account}/homepage`",
+          "type": "string"
+        },
+        "uri": {
+          "description": "Required. The URI (typically a URL) of the store's homepage.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "IdentityAttribute": {
+      "description": "All information related to an identity attribute.",
+      "id": "IdentityAttribute",
+      "properties": {
+        "identityDeclaration": {
+          "description": "Required. The declaration of identity for this attribute.",
+          "enum": [
+            "IDENTITY_DECLARATION_UNSPECIFIED",
+            "SELF_IDENTIFIES_AS",
+            "DOES_NOT_SELF_IDENTIFY_AS"
+          ],
+          "enumDescriptions": [
+            "Default value indicating that no selection was made.",
+            "Indicates that the account identifies with the attribute.",
+            "Indicates that the account does not identify with the attribute."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Impact": {
+      "description": "The impact of the issue on a region.",
+      "id": "Impact",
+      "properties": {
+        "regionCode": {
+          "description": "The [CLDR region code](https://cldr.unicode.org/) where this issue applies.",
+          "type": "string"
+        },
+        "severity": {
+          "description": "The severity of the issue on the destination and region.",
+          "enum": [
+            "SEVERITY_UNSPECIFIED",
+            "CRITICAL",
+            "ERROR",
+            "SUGGESTION"
+          ],
+          "enumDescriptions": [
+            "The severity is unknown.",
+            "The issue causes offers to not serve.",
+            "The issue might affect offers (in the future) or might be an indicator of issues with offers.",
+            "The issue is a suggestion for improvement."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ImpactedDestination": {
+      "description": "The impact of the issue on a destination.",
+      "id": "ImpactedDestination",
+      "properties": {
+        "impacts": {
+          "description": "The (negative) impact for various regions on the given destination.",
+          "items": {
+            "$ref": "Impact"
+          },
+          "type": "array"
+        },
+        "reportingContext": {
+          "description": "The impacted reporting context.",
+          "enum": [
+            "REPORTING_CONTEXT_ENUM_UNSPECIFIED",
+            "SHOPPING_ADS",
+            "DISCOVERY_ADS",
+            "DEMAND_GEN_ADS",
+            "DEMAND_GEN_ADS_DISCOVER_SURFACE",
+            "VIDEO_ADS",
+            "DISPLAY_ADS",
+            "LOCAL_INVENTORY_ADS",
+            "VEHICLE_INVENTORY_ADS",
+            "FREE_LISTINGS",
+            "FREE_LOCAL_LISTINGS",
+            "FREE_LOCAL_VEHICLE_LISTINGS",
+            "YOUTUBE_SHOPPING",
+            "CLOUD_RETAIL",
+            "LOCAL_CLOUD_RETAIL"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "[Shopping ads](https://support.google.com/merchants/answer/6149970).",
+            "Deprecated: Use `DEMAND_GEN_ADS` instead. [Discovery and Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads on Discover surface](https://support.google.com/merchants/answer/13389785).",
+            "[Video ads](https://support.google.com/google-ads/answer/6340491).",
+            "[Display ads](https://support.google.com/merchants/answer/6069387).",
+            "[Local inventory ads](https://support.google.com/merchants/answer/3271956).",
+            "[Vehicle inventory ads](https://support.google.com/merchants/answer/11544533).",
+            "[Free product listings](https://support.google.com/merchants/answer/9199328).",
+            "[Free local product listings](https://support.google.com/merchants/answer/9825611).",
+            "[Free local vehicle listings](https://support.google.com/merchants/answer/11544533).",
+            "[YouTube Shopping](https://support.google.com/merchants/answer/13478370).",
+            "[Cloud retail](https://cloud.google.com/solutions/retail).",
+            "[Local cloud retail](https://cloud.google.com/solutions/retail)."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Interval": {
+      "description": "Represents a time interval, encoded as a Timestamp start (inclusive) and a Timestamp end (exclusive). The start must be less than or equal to the end. When the start equals the end, the interval is empty (matches no time). When both start and end are unspecified, the interval matches any time.",
+      "id": "Interval",
+      "properties": {
+        "endTime": {
+          "description": "Optional. Exclusive end of the interval. If specified, a Timestamp matching this interval will have to be before the end.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "startTime": {
+          "description": "Optional. Inclusive start of the interval. If specified, a Timestamp matching this interval will have to be the same or after the start.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListAccountIssuesResponse": {
+      "description": "Response message for the `ListAccountIssues` method.",
+      "id": "ListAccountIssuesResponse",
+      "properties": {
+        "accountIssues": {
+          "description": "The issues from the specified account.",
+          "items": {
+            "$ref": "AccountIssue"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListAccountTaxResponse": {
+      "description": "Response to account tax list request This method can only be called on a multi-client account, otherwise it'll return an error.",
+      "id": "ListAccountTaxResponse",
+      "properties": {
+        "accountTaxes": {
+          "description": "Page of accounttax settings",
+          "items": {
+            "$ref": "AccountTax"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "The token for the retrieval of the next page of account tax settings.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListAccountsResponse": {
+      "description": "Response message for the `ListAccounts` method.",
+      "id": "ListAccountsResponse",
+      "properties": {
+        "accounts": {
+          "description": "The accounts matching the `ListAccountsRequest`.",
+          "items": {
+            "$ref": "Account"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListOnlineReturnPoliciesResponse": {
+      "description": "Response message for the `ListOnlineReturnPolicies` method.",
+      "id": "ListOnlineReturnPoliciesResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token, which can be sent as `pageToken` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        },
+        "onlineReturnPolicies": {
+          "description": "The retrieved return policies.",
+          "items": {
+            "$ref": "OnlineReturnPolicy"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ListProgramsResponse": {
+      "description": "Response message for the ListPrograms method.",
+      "id": "ListProgramsResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token that can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        },
+        "programs": {
+          "description": "The programs for the given account.",
+          "items": {
+            "$ref": "Program"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ListRegionsResponse": {
+      "description": "Response message for the `ListRegions` method.",
+      "id": "ListRegionsResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        },
+        "regions": {
+          "description": "The regions from the specified merchant.",
+          "items": {
+            "$ref": "Region"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ListSubAccountsResponse": {
+      "description": "Response message for the `ListSubAccounts` method.",
+      "id": "ListSubAccountsResponse",
+      "properties": {
+        "accounts": {
+          "description": "The accounts for which the given parent account is an aggregator.",
+          "items": {
+            "$ref": "Account"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListUsersResponse": {
+      "description": "Response message for the `ListUsers` method.",
+      "id": "ListUsersResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        },
+        "users": {
+          "description": "The users from the specified account.",
+          "items": {
+            "$ref": "User"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "LocalCutoffTime": {
+      "description": "Time that local delivery ends for the day.",
+      "id": "LocalCutoffTime",
+      "properties": {
+        "hour": {
+          "description": "Hour local delivery orders must be placed by to process the same day.",
+          "format": "int64",
+          "type": "string"
+        },
+        "minute": {
+          "description": "Minute local delivery orders must be placed by to process the same day.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "LocationIdSet": {
+      "description": "A list of location ID sets. Must be non-empty. Can only be set if all other fields are not set.",
+      "id": "LocationIdSet",
+      "properties": {
+        "locationIds": {
+          "description": "Required. A non-empty list of [location IDs](https://developers.google.com/adwords/api/docs/appendix/geotargeting). They must all be of the same location type (For example, state).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "LoyaltyProgram": {
+      "description": "[Loyalty program](https://support.google.com/merchants/answer/12922446) provided by a merchant.",
+      "id": "LoyaltyProgram",
+      "properties": {
+        "loyaltyProgramTiers": {
+          "description": "Optional. Loyalty program tier of this shipping service.",
+          "items": {
+            "$ref": "LoyaltyProgramTiers"
+          },
+          "type": "array"
+        },
+        "programLabel": {
+          "description": "This is the loyalty program label set in your loyalty program settings in Merchant Center. This sub-attribute allows Google to map your loyalty program to eligible offers.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "LoyaltyProgramTiers": {
+      "description": "Subset of a merchants loyalty program.",
+      "id": "LoyaltyProgramTiers",
+      "properties": {
+        "tierLabel": {
+          "description": "The tier label [tier_label] sub-attribute differentiates offer level benefits between each tier. This value is also set in your program settings in Merchant Center, and is required for data source changes even if your loyalty program only has 1 tier.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "MinimumOrderValueTable": {
+      "description": "Table of per store minimum order values for the pickup fulfillment type.",
+      "id": "MinimumOrderValueTable",
+      "properties": {
+        "storeCodeSetWithMovs": {
+          "description": "Required. A list of store code sets sharing the same minimum order value (MOV). At least two sets are required and the last one must be empty, which signifies 'MOV for all other stores'. Each store code can only appear once across all the sets. All prices within a service must have the same currency.",
+          "items": {
+            "$ref": "StoreCodeSetWithMov"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "OnlineReturnPolicy": {
+      "description": "[Online return policy](https://support.google.com/merchants/answer/10220642) object. This is currently used to represent return policies for ads and free listings programs.",
+      "id": "OnlineReturnPolicy",
+      "properties": {
+        "acceptDefectiveOnly": {
+          "description": "This field specifies if merchant only accepts defective products for returns, and this field is required.",
+          "type": "boolean"
+        },
+        "acceptExchange": {
+          "description": "This field specifies if merchant allows customers to exchange products, this field is required.",
+          "type": "boolean"
+        },
+        "countries": {
+          "description": "The countries of sale where the return policy applies. The values must be a valid 2 letter ISO 3166 code.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "itemConditions": {
+          "description": "The item conditions accepted for returns must not be empty unless the type of return policy is 'noReturns'.",
+          "items": {
+            "enum": [
+              "ITEM_CONDITION_UNSPECIFIED",
+              "NEW",
+              "USED"
+            ],
+            "enumDescriptions": [
+              "Default value. This value is unused.",
+              "New.",
+              "Used."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "label": {
+          "description": "This field represents the unique user-defined label of the return policy. It is important to note that the same label cannot be used in different return policies for the same country. Unless a product specifies a specific label attribute, policies will be automatically labeled as 'default'. To assign a custom return policy to certain product groups, follow the instructions provided in the [Return policy label] (https://support.google.com/merchants/answer/9445425). The label can contain up to 50 characters.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Identifier. The name of the `OnlineReturnPolicy` resource. Format: `accounts/{account}/onlineReturnPolicies/{return_policy}`",
+          "type": "string"
+        },
+        "policy": {
+          "$ref": "Policy",
+          "description": "The return policy."
+        },
+        "processRefundDays": {
+          "description": "The field specifies the number of days it takes for merchants to process refunds, field is optional.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "restockingFee": {
+          "$ref": "RestockingFee",
+          "description": "The restocking fee that applies to all return reason categories. This would be treated as a free restocking fee if the value is not set."
+        },
+        "returnMethods": {
+          "description": "The return methods of how customers can return an item. This value is required to not be empty unless the type of return policy is noReturns.",
+          "items": {
+            "enum": [
+              "RETURN_METHOD_UNSPECIFIED",
+              "BY_MAIL",
+              "IN_STORE",
+              "AT_A_KIOSK"
+            ],
+            "enumDescriptions": [
+              "Default value. This value is unused.",
+              "Return by mail.",
+              "Return in store.",
+              "Return at a kiosk."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "returnPolicyId": {
+          "description": "Output only. Return policy ID generated by Google.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "returnPolicyUri": {
+          "description": "The return policy uri. This can used by Google to do a sanity check for the policy. It must be a valid URL.",
+          "type": "string"
+        },
+        "returnShippingFee": {
+          "$ref": "ReturnShippingFee",
+          "description": "The return shipping fee. Should be set only when customer need to download and print the return label."
+        }
+      },
+      "type": "object"
+    },
+    "PhoneNumber": {
+      "description": "An object representing a phone number, suitable as an API wire format. This representation: - should not be used for locale-specific formatting of a phone number, such as \"+1 (650) 253-0000 ext. 123\" - is not designed for efficient storage - may not be suitable for dialing - specialized libraries (see references) should be used to parse the number for that purpose To do something meaningful with this number, such as format it for various use-cases, convert it to an `i18n.phonenumbers.PhoneNumber` object first. For instance, in Java this would be: com.google.type.PhoneNumber wireProto = com.google.type.PhoneNumber.newBuilder().build(); com.google.i18n.phonenumbers.Phonenumber.PhoneNumber phoneNumber = PhoneNumberUtil.getInstance().parse(wireProto.getE164Number(), \"ZZ\"); if (!wireProto.getExtension().isEmpty()) { phoneNumber.setExtension(wireProto.getExtension()); } Reference(s): - https://github.com/google/libphonenumber",
+      "id": "PhoneNumber",
+      "properties": {
+        "e164Number": {
+          "description": "The phone number, represented as a leading plus sign ('+'), followed by a phone number that uses a relaxed ITU E.164 format consisting of the country calling code (1 to 3 digits) and the subscriber number, with no additional spaces or formatting, e.g.: - correct: \"+15552220123\" - incorrect: \"+1 (555) 222-01234 x123\". The ITU E.164 format limits the latter to 12 digits, but in practice not all countries respect that, so we relax that restriction here. National-only numbers are not allowed. References: - https://www.itu.int/rec/T-REC-E.164-201011-I - https://en.wikipedia.org/wiki/E.164. - https://en.wikipedia.org/wiki/List_of_country_calling_codes",
+          "type": "string"
+        },
+        "extension": {
+          "description": "The phone number's extension. The extension is not standardized in ITU recommendations, except for being defined as a series of numbers with a maximum length of 40 digits. Other than digits, some other dialing characters such as ',' (indicating a wait) or '#' may be stored here. Note that no regions currently use extensions with short codes, so this field is normally only set in conjunction with an E.164 number. It is held separately from the E.164 number to allow for short code extensions in the future.",
+          "type": "string"
+        },
+        "shortCode": {
+          "$ref": "ShortCode",
+          "description": "A short code. Reference(s): - https://en.wikipedia.org/wiki/Short_code"
+        }
+      },
+      "type": "object"
+    },
+    "Policy": {
+      "description": "The available policies.",
+      "id": "Policy",
+      "properties": {
+        "days": {
+          "description": "The number of days items can be returned after delivery, where one day is defined as 24 hours after the delivery timestamp. Required for `NUMBER_OF_DAYS_AFTER_DELIVERY` returns.",
+          "format": "int64",
+          "type": "string"
+        },
+        "type": {
+          "description": "Policy type.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "NUMBER_OF_DAYS_AFTER_DELIVERY",
+            "NO_RETURNS",
+            "LIFETIME_RETURNS"
+          ],
+          "enumDescriptions": [
+            "Default value. This value is unused.",
+            "The number of days within which a return is valid after delivery.",
+            "No returns.",
+            "Life time returns."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PostalAddress": {
+      "description": "Represents a postal address, e.g. for postal delivery or payments addresses. Given a postal address, a postal service can deliver items to a premise, P.O. Box or similar. It is not intended to model geographical locations (roads, towns, mountains). In typical usage an address would be created via user input or from importing existing data, depending on the type of process. Advice on address input / editing: - Use an internationalization-ready address widget such as https://github.com/google/libaddressinput) - Users should not be presented with UI elements for input or editing of fields outside countries where that field is used. For more guidance on how to use this schema, please see: https://support.google.com/business/answer/6397478",
+      "id": "PostalAddress",
+      "properties": {
+        "addressLines": {
+          "description": "Unstructured address lines describing the lower levels of an address. Because values in address_lines do not have type information and may sometimes contain multiple values in a single field (e.g. \"Austin, TX\"), it is important that the line order is clear. The order of address lines should be \"envelope order\" for the country/region of the address. In places where this can vary (e.g. Japan), address_language is used to make it explicit (e.g. \"ja\" for large-to-small ordering and \"ja-Latn\" or \"en\" for small-to-large). This way, the most specific line of an address can be selected based on the language. The minimum permitted structural representation of an address consists of a region_code with all remaining information placed in the address_lines. It would be possible to format such an address very approximately without geocoding, but no semantic reasoning could be made about any of the address components until it was at least partially resolved. Creating an address only containing a region_code and address_lines, and then geocoding is the recommended way to handle completely unstructured addresses (as opposed to guessing which parts of the address should be localities or administrative areas).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "administrativeArea": {
+          "description": "Optional. Highest administrative subdivision which is used for postal addresses of a country or region. For example, this can be a state, a province, an oblast, or a prefecture. Specifically, for Spain this is the province and not the autonomous community (e.g. \"Barcelona\" and not \"Catalonia\"). Many countries don't use an administrative area in postal addresses. E.g. in Switzerland this should be left unpopulated.",
+          "type": "string"
+        },
+        "languageCode": {
+          "description": "Optional. BCP-47 language code of the contents of this address (if known). This is often the UI language of the input form or is expected to match one of the languages used in the address' country/region, or their transliterated equivalents. This can affect formatting in certain countries, but is not critical to the correctness of the data and will never affect any validation or other non-formatting related operations. If this value is not known, it should be omitted (rather than specifying a possibly incorrect default). Examples: \"zh-Hant\", \"ja\", \"ja-Latn\", \"en\".",
+          "type": "string"
+        },
+        "locality": {
+          "description": "Optional. Generally refers to the city/town portion of the address. Examples: US city, IT comune, UK post town. In regions of the world where localities are not well defined or do not fit into this structure well, leave locality empty and use address_lines.",
+          "type": "string"
+        },
+        "organization": {
+          "description": "Optional. The name of the organization at the address.",
+          "type": "string"
+        },
+        "postalCode": {
+          "description": "Optional. Postal code of the address. Not all countries use or require postal codes to be present, but where they are used, they may trigger additional validation with other parts of the address (e.g. state/zip validation in the U.S.A.).",
+          "type": "string"
+        },
+        "recipients": {
+          "description": "Optional. The recipient at the address. This field may, under certain circumstances, contain multiline information. For example, it might contain \"care of\" information.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "regionCode": {
+          "description": "Required. CLDR region code of the country/region of the address. This is never inferred and it is up to the user to ensure the value is correct. See https://cldr.unicode.org/ and https://www.unicode.org/cldr/charts/30/supplemental/territory_information.html for details. Example: \"CH\" for Switzerland.",
+          "type": "string"
+        },
+        "revision": {
+          "description": "The schema revision of the `PostalAddress`. This must be set to 0, which is the latest revision. All new revisions **must** be backward compatible with old revisions.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "sortingCode": {
+          "description": "Optional. Additional, country-specific, sorting code. This is not used in most regions. Where it is used, the value is either a string like \"CEDEX\", optionally followed by a number (e.g. \"CEDEX 7\"), or just a number alone, representing the \"sector code\" (Jamaica), \"delivery area indicator\" (Malawi) or \"post office indicator\" (e.g. Côte d'Ivoire).",
+          "type": "string"
+        },
+        "sublocality": {
+          "description": "Optional. Sublocality of the address. For example, this can be neighborhoods, boroughs, districts.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PostalCodeArea": {
+      "description": "A list of postal codes that defines the region area. Note: All regions defined using postal codes are accessible through the account's `ShippingSettings.postalCodeGroups` resource.",
+      "id": "PostalCodeArea",
+      "properties": {
+        "postalCodes": {
+          "description": "Required. A range of postal codes.",
+          "items": {
+            "$ref": "PostalCodeRange"
+          },
+          "type": "array"
+        },
+        "regionCode": {
+          "description": "Required. [CLDR territory code](http://www.unicode.org/repos/cldr/tags/latest/common/main/en.xml) or the country the postal code group applies to.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PostalCodeRange": {
+      "description": "A range of postal codes that defines the region area.",
+      "id": "PostalCodeRange",
+      "properties": {
+        "begin": {
+          "description": "Required. A postal code or a pattern of the form prefix* denoting the inclusive lower bound of the range defining the area. Examples values: `94108`, `9410*`, `9*`.",
+          "type": "string"
+        },
+        "end": {
+          "description": "Optional. A postal code or a pattern of the form `prefix*` denoting the inclusive upper bound of the range defining the area. It must have the same length as postalCodeRangeBegin: if postalCodeRangeBegin is a postal code then postalCodeRangeEnd must be a postal code too; if postalCodeRangeBegin is a pattern then postalCodeRangeEnd must be a pattern with the same prefix length. Optional: if not set, then the area is defined as being all the postal codes matching postalCodeRangeBegin.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Price": {
+      "description": "The price represented as a number and currency.",
+      "id": "Price",
+      "properties": {
+        "amountMicros": {
+          "description": "The price represented as a number in micros (1 million micros is an equivalent to one's currency standard unit, for example, 1 USD = 1000000 micros).",
+          "format": "int64",
+          "type": "string"
+        },
+        "currencyCode": {
+          "description": "The currency of the price using three-letter acronyms according to [ISO 4217](http://en.wikipedia.org/wiki/ISO_4217).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductChange": {
+      "description": "The change that happened to the product including old value, new value, country code as the region code and reporting context.",
+      "id": "ProductChange",
+      "properties": {
+        "newValue": {
+          "description": "The new value of the changed resource or attribute.",
+          "type": "string"
+        },
+        "oldValue": {
+          "description": "The old value of the changed resource or attribute.",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "Countries that have the change (if applicable)",
+          "type": "string"
+        },
+        "reportingContext": {
+          "description": "Reporting contexts that have the change (if applicable)",
+          "enum": [
+            "REPORTING_CONTEXT_ENUM_UNSPECIFIED",
+            "SHOPPING_ADS",
+            "DISCOVERY_ADS",
+            "DEMAND_GEN_ADS",
+            "DEMAND_GEN_ADS_DISCOVER_SURFACE",
+            "VIDEO_ADS",
+            "DISPLAY_ADS",
+            "LOCAL_INVENTORY_ADS",
+            "VEHICLE_INVENTORY_ADS",
+            "FREE_LISTINGS",
+            "FREE_LOCAL_LISTINGS",
+            "FREE_LOCAL_VEHICLE_LISTINGS",
+            "YOUTUBE_SHOPPING",
+            "CLOUD_RETAIL",
+            "LOCAL_CLOUD_RETAIL"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "[Shopping ads](https://support.google.com/merchants/answer/6149970).",
+            "Deprecated: Use `DEMAND_GEN_ADS` instead. [Discovery and Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads on Discover surface](https://support.google.com/merchants/answer/13389785).",
+            "[Video ads](https://support.google.com/google-ads/answer/6340491).",
+            "[Display ads](https://support.google.com/merchants/answer/6069387).",
+            "[Local inventory ads](https://support.google.com/merchants/answer/3271956).",
+            "[Vehicle inventory ads](https://support.google.com/merchants/answer/11544533).",
+            "[Free product listings](https://support.google.com/merchants/answer/9199328).",
+            "[Free local product listings](https://support.google.com/merchants/answer/9825611).",
+            "[Free local vehicle listings](https://support.google.com/merchants/answer/11544533).",
+            "[YouTube Shopping](https://support.google.com/merchants/answer/13478370).",
+            "[Cloud retail](https://cloud.google.com/solutions/retail).",
+            "[Local cloud retail](https://cloud.google.com/solutions/retail)."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductStatusChangeMessage": {
+      "description": "The message that the merchant will receive to notify about product status change event",
+      "id": "ProductStatusChangeMessage",
+      "properties": {
+        "account": {
+          "description": "The target account that owns the entity that changed. Format : `accounts/{merchant_id}`",
+          "type": "string"
+        },
+        "attribute": {
+          "description": "The attribute in the resource that changed, in this case it will be always `Status`.",
+          "enum": [
+            "ATTRIBUTE_UNSPECIFIED",
+            "STATUS"
+          ],
+          "enumDescriptions": [
+            "Unspecified attribute",
+            "Status of the changed entity"
+          ],
+          "type": "string"
+        },
+        "changes": {
+          "description": "A message to describe the change that happened to the product",
+          "items": {
+            "$ref": "ProductChange"
+          },
+          "type": "array"
+        },
+        "managingAccount": {
+          "description": "The account that manages the merchant's account. can be the same as merchant id if it is standalone account. Format : `accounts/{service_provider_id}`",
+          "type": "string"
+        },
+        "resource": {
+          "description": "The product name. Format: `{product.name=accounts/{account}/products/{product}}`",
+          "type": "string"
+        },
+        "resourceId": {
+          "description": "The product id.",
+          "type": "string"
+        },
+        "resourceType": {
+          "description": "The resource that changed, in this case it will always be `Product`.",
+          "enum": [
+            "RESOURCE_UNSPECIFIED",
+            "PRODUCT"
+          ],
+          "enumDescriptions": [
+            "Unspecified resource",
+            "Resource type : product"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Program": {
+      "description": "Defines participation in a given program for the specified account. Programs provide a mechanism for adding functionality to merchant accounts. A typical example of this is the [Free product listings](https://support.google.com/merchants/topic/9240261?ref_topic=7257954,7259405,\u0026sjid=796648681813264022-EU) program, which enables products from a merchant's store to be shown across Google for free.",
+      "id": "Program",
+      "properties": {
+        "activeRegionCodes": {
+          "description": "Output only. The regions in which the account is actively participating in the program. Active regions are defined as those where all program requirements affecting the regions have been met. Region codes are defined by [CLDR](https://cldr.unicode.org/). This is either a country where the program applies specifically to that country or `001` when the program applies globally.",
+          "items": {
+            "type": "string"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "documentationUri": {
+          "description": "Output only. The URL of a Merchant Center help page describing the program.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "name": {
+          "description": "Identifier. The resource name of the program. Format: `accounts/{account}/programs/{program}`",
+          "type": "string"
+        },
+        "state": {
+          "description": "Output only. The participation state of the account in the program.",
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "NOT_ELIGIBLE",
+            "ELIGIBLE",
+            "ENABLED"
+          ],
+          "enumDescriptions": [
+            "Default value. This value is unused.",
+            "The account is not eligible to participate in the program.",
+            "The account is eligible to participate in the program.",
+            "The program is enabled for the account."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "unmetRequirements": {
+          "description": "Output only. The requirements that the account has not yet satisfied that are affecting participation in the program.",
+          "items": {
+            "$ref": "Requirement"
+          },
+          "readOnly": true,
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "RateGroup": {
+      "description": "Shipping rate group definitions. Only the last one is allowed to have an empty `applicable_shipping_labels`, which means \"everything else\". The other `applicable_shipping_labels` must not overlap.",
+      "id": "RateGroup",
+      "properties": {
+        "applicableShippingLabels": {
+          "description": "Required. A list of [shipping labels](https://support.google.com/merchants/answer/6324504) defining the products to which this rate group applies to. This is a disjunction: only one of the labels has to match for the rate group to apply. May only be empty for the last rate group of a service.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "carrierRates": {
+          "description": "Optional. A list of carrier rates that can be referred to by `main_table` or `single_value`.",
+          "items": {
+            "$ref": "CarrierRate"
+          },
+          "type": "array"
+        },
+        "mainTable": {
+          "$ref": "Table",
+          "description": "A table defining the rate group, when `single_value` is not expressive enough. Can only be set if `single_value` is not set."
+        },
+        "name": {
+          "description": "Optional. Name of the rate group. If set has to be unique within shipping service.",
+          "type": "string"
+        },
+        "singleValue": {
+          "$ref": "Value",
+          "description": "The value of the rate group (For example flat rate $10). Can only be set if `main_table` and `subtables` are not set."
+        },
+        "subtables": {
+          "description": "Optional. A list of subtables referred to by `main_table`. Can only be set if `main_table` is set.",
+          "items": {
+            "$ref": "Table"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Region": {
+      "description": "Represents a geographic region that you can use as a target with both the `RegionalInventory` and `ShippingSettings` services. You can define regions as collections of either postal codes or, in some countries, using predefined geotargets. For more information, see [Set up regions ](https://support.google.com/merchants/answer/7410946#zippy=%2Ccreate-a-new-region) for more information.",
+      "id": "Region",
+      "properties": {
+        "displayName": {
+          "description": "Optional. The display name of the region.",
+          "type": "string"
+        },
+        "geotargetArea": {
+          "$ref": "GeoTargetArea",
+          "description": "Optional. A list of geotargets that defines the region area."
+        },
+        "name": {
+          "description": "Identifier. The resource name of the region. Format: `accounts/{account}/regions/{region}`",
+          "type": "string"
+        },
+        "postalCodeArea": {
+          "$ref": "PostalCodeArea",
+          "description": "Optional. A list of postal codes that defines the region area."
+        },
+        "regionalInventoryEligible": {
+          "description": "Output only. Indicates if the region is eligible for use in the Regional Inventory configuration.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "shippingEligible": {
+          "description": "Output only. Indicates if the region is eligible for use in the Shipping Services configuration.",
+          "readOnly": true,
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "Required": {
+      "description": "Describes the terms of service which are required to be accepted.",
+      "id": "Required",
+      "properties": {
+        "termsOfService": {
+          "description": "The [termsOfService](google.shopping.merchant.accounts.v1main.TermsOfService) that need to be accepted.",
+          "type": "string"
+        },
+        "tosFileUri": {
+          "description": "Full URL to the terms of service file. This field is the same as [TermsOfService.file_uri](TermsOfService.file_uri), it is added here for convenience only.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Requirement": {
+      "description": "Defines a requirement specified for participation in the program.",
+      "id": "Requirement",
+      "properties": {
+        "affectedRegionCodes": {
+          "description": "Output only. The regions that are currently affected by this requirement not being met. Region codes are defined by [CLDR](https://cldr.unicode.org/). This is either a country where the program applies specifically to that country or `001` when the program applies globally.",
+          "items": {
+            "type": "string"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "documentationUri": {
+          "description": "Output only. The URL of a help page describing the requirement.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "title": {
+          "description": "Output only. Name of the requirement.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "RestockingFee": {
+      "description": "The restocking fee. This can be a flat fee or a micro percent.",
+      "id": "RestockingFee",
+      "properties": {
+        "fixedFee": {
+          "$ref": "Price",
+          "description": "Fixed restocking fee."
+        },
+        "microPercent": {
+          "description": "Percent of total price in micros. 15,000,000 means 15% of the total price would be charged.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "ReturnShippingFee": {
+      "description": "The return shipping fee. This can either be a fixed fee or a boolean to indicate that the customer pays the actual shipping cost.",
+      "id": "ReturnShippingFee",
+      "properties": {
+        "fixedFee": {
+          "$ref": "Price",
+          "description": "Fixed return shipping fee amount. This value is only applicable when type is `FIXED`. We will treat the return shipping fee as free if type is `FIXED` and this value is not set."
+        },
+        "type": {
+          "description": "Type of return shipping fee.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "FIXED",
+            "CUSTOMER_PAYING_ACTUAL_FEE"
+          ],
+          "enumDescriptions": [
+            "Default value. This value is unused.",
+            "The return shipping fee is a fixed value.",
+            "Customers will pay the actual return shipping fee."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Row": {
+      "description": "Include a list of cells.",
+      "id": "Row",
+      "properties": {
+        "cells": {
+          "description": "Required. The list of cells that constitute the row. Must have the same length as `columnHeaders` for two-dimensional tables, a length of 1 for one-dimensional tables.",
+          "items": {
+            "$ref": "Value"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Service": {
+      "description": "Shipping service.",
+      "id": "Service",
+      "properties": {
+        "active": {
+          "description": "Required. A boolean exposing the active status of the shipping service.",
+          "type": "boolean"
+        },
+        "currencyCode": {
+          "description": "The CLDR code of the currency to which this service applies. Must match that of the prices in rate groups.",
+          "type": "string"
+        },
+        "deliveryCountries": {
+          "description": "Required. The CLDR territory code of the countries to which the service applies.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "deliveryTime": {
+          "$ref": "DeliveryTime",
+          "description": "Required. Time spent in various aspects from order to the delivery of the product."
+        },
+        "loyaltyPrograms": {
+          "description": "Optional. Loyalty programs that this shipping service is limited to.",
+          "items": {
+            "$ref": "LoyaltyProgram"
+          },
+          "type": "array"
+        },
+        "minimumOrderValue": {
+          "$ref": "Price",
+          "description": "Minimum order value for this service. If set, indicates that customers will have to spend at least this amount. All prices within a service must have the same currency. Cannot be set together with minimum_order_value_table."
+        },
+        "minimumOrderValueTable": {
+          "$ref": "MinimumOrderValueTable",
+          "description": "Table of per store minimum order values for the pickup fulfillment type. Cannot be set together with minimum_order_value."
+        },
+        "rateGroups": {
+          "description": "Optional. Shipping rate group definitions. Only the last one is allowed to have an empty `applicable_shipping_labels`, which means \"everything else\". The other `applicable_shipping_labels` must not overlap.",
+          "items": {
+            "$ref": "RateGroup"
+          },
+          "type": "array"
+        },
+        "serviceName": {
+          "description": "Required. Free-form name of the service. Must be unique within target account.",
+          "type": "string"
+        },
+        "shipmentType": {
+          "description": "Type of locations this service ships orders to.",
+          "enum": [
+            "SHIPMENT_TYPE_UNSPECIFIED",
+            "DELIVERY",
+            "LOCAL_DELIVERY",
+            "COLLECTION_POINT"
+          ],
+          "enumDescriptions": [
+            "This service did not specify shipment type.",
+            "This service ships orders to an address chosen by the customer.",
+            "This service ships orders to an address chosen by the customer. The order is shipped from a local store near by.",
+            "This service ships orders to an address chosen by the customer. The order is shipped from a collection point."
+          ],
+          "type": "string"
+        },
+        "storeConfig": {
+          "$ref": "StoreConfig",
+          "description": "A list of stores your products are delivered from. This is only valid for the local delivery shipment type."
+        }
+      },
+      "type": "object"
+    },
+    "ShippingSettings": {
+      "description": "The merchant account's [shipping setting]((https://support.google.com/merchants/answer/6069284).",
+      "id": "ShippingSettings",
+      "properties": {
+        "etag": {
+          "description": "Required. This field is used for avoid async issue. Make sure shipping setting data didn't change between get call and insert call. The user should do following steps： 1. Set etag field as empty string for initial shipping setting creation. 2. After initial creation, call get method to obtain an etag and current shipping setting data before call insert. 3. Modify to wanted shipping setting information. 4. Call insert method with the wanted shipping setting information with the etag obtained from step 2. 5. If shipping setting data changed between step 2 and step 4. Insert request will fail because the etag changes every time the shipping setting data changes. User should repeate step 2-4 with the new etag.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Identifier. The resource name of the shipping setting. Format: `accounts/{account}/shippingSetting`",
+          "type": "string"
+        },
+        "services": {
+          "description": "Optional. The target account's list of services.",
+          "items": {
+            "$ref": "Service"
+          },
+          "type": "array"
+        },
+        "warehouses": {
+          "description": "Optional. A list of warehouses which can be referred to in `services`.",
+          "items": {
+            "$ref": "Warehouse"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ShortCode": {
+      "description": "An object representing a short code, which is a phone number that is typically much shorter than regular phone numbers and can be used to address messages in MMS and SMS systems, as well as for abbreviated dialing (e.g. \"Text 611 to see how many minutes you have remaining on your plan.\"). Short codes are restricted to a region and are not internationally dialable, which means the same short code can exist in different regions, with different usage and pricing, even if those regions share the same country calling code (e.g. US and CA).",
+      "id": "ShortCode",
+      "properties": {
+        "number": {
+          "description": "Required. The short code digits, without a leading plus ('+') or country calling code, e.g. \"611\".",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "Required. The BCP-47 region code of the location where calls to this short code can be made, such as \"US\" and \"BB\". Reference(s): - http://www.unicode.org/reports/tr35/#unicode_region_subtag",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "StoreCodeSetWithMov": {
+      "description": "A list of store code sets sharing the same minimum order value. At least two sets are required and the last one must be empty, which signifies 'MOV for all other stores'. Each store code can only appear once across all the sets. All prices within a service must have the same currency.",
+      "id": "StoreCodeSetWithMov",
+      "properties": {
+        "storeCodes": {
+          "description": "Optional. A list of unique store codes or empty for the catch all.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "value": {
+          "$ref": "Price",
+          "description": "The minimum order value for the given stores."
+        }
+      },
+      "type": "object"
+    },
+    "StoreConfig": {
+      "description": "A list of stores your products are delivered from. This is only valid for the local delivery shipment type.",
+      "id": "StoreConfig",
+      "properties": {
+        "cutoffConfig": {
+          "$ref": "CutoffConfig",
+          "description": "Configs related to local delivery ends for the day."
+        },
+        "serviceRadius": {
+          "$ref": "Distance",
+          "description": "Maximum delivery radius. This is only required for the local delivery shipment type."
+        },
+        "storeCodes": {
+          "description": "Optional. A list of store codes that provide local delivery. If empty, then `all_stores` must be true.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "storeServiceType": {
+          "description": "Indicates whether all stores, or selected stores, listed by this merchant provide local delivery.",
+          "enum": [
+            "STORE_SERVICE_TYPE_UNSPECIFIED",
+            "ALL_STORES",
+            "SELECTED_STORES"
+          ],
+          "enumDescriptions": [
+            "Did not specify store service type.",
+            "Indicates whether all stores, current and future, listed by this merchant provide local delivery.",
+            "Indicates that only the stores listed in `store_codes` are eligible for local delivery."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Table": {
+      "description": "A table defining the rate group, when `single_value` is not expressive enough.",
+      "id": "Table",
+      "properties": {
+        "columnHeaders": {
+          "$ref": "Headers",
+          "description": "Headers of the table's columns. Optional: if not set then the table has only one dimension."
+        },
+        "name": {
+          "description": "Name of the table. Required for subtables, ignored for the main table.",
+          "type": "string"
+        },
+        "rowHeaders": {
+          "$ref": "Headers",
+          "description": "Required. Headers of the table's rows."
+        },
+        "rows": {
+          "description": "Required. The list of rows that constitute the table. Must have the same length as `row_headers`.",
+          "items": {
+            "$ref": "Row"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "TaxPostalCodeRange": {
+      "description": "A range of postal codes that defines the area.",
+      "id": "TaxPostalCodeRange",
+      "properties": {
+        "end": {
+          "description": "The end of the postal code range. Will be the same as start if not specified.",
+          "type": "string"
+        },
+        "start": {
+          "description": "Required. The start of the postal code range, which is also the smallest in the range.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TaxRule": {
+      "description": "Primary type convension percent micro : 100% = 1 000 000 and 1% = 10 000 cannot be negative. Information about tax nexus and related parameters applicable to orders delivered to the area covered by a single tax admin. Nexus is created when a merchant is doing business in an area administered by tax admin (only US states are supported for nexus configuration). If merchant has nexus in a US state, merchant needs to pay tax to all tax authorities associated with the shipping destination. Next Id : 8",
+      "id": "TaxRule",
+      "properties": {
+        "effectiveTimePeriod": {
+          "$ref": "Interval",
+          "description": "Required. Time period when this rule is effective. If the duration is missing from effective_time listed, then it is open ended to the future. The start of this time period is inclusive, and the end is exclusive."
+        },
+        "locationId": {
+          "description": "The admin_id or criteria_id of the region in which this rule is applicable.",
+          "format": "int64",
+          "type": "string"
+        },
+        "postCodeRange": {
+          "$ref": "TaxPostalCodeRange",
+          "description": "The range of postal codes in which this rule is applicable."
+        },
+        "regionCode": {
+          "description": "Region code in which this rule is applicable",
+          "type": "string"
+        },
+        "selfSpecifiedRateMicros": {
+          "description": "A fixed rate specified in micros, where 100% = 1_000_000. Suitable for origin-based states.",
+          "format": "int64",
+          "type": "string"
+        },
+        "shippingTaxed": {
+          "description": "If set, shipping charge is taxed (at the same rate as product) when delivering to this admin's area. Can only be set on US states without category.",
+          "type": "boolean"
+        },
+        "useGoogleRate": {
+          "description": "Rate that depends on delivery location: if merchant has a nexus in corresponding US state, rates from authorities with jurisdiction over delivery area are added up.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "TermsOfService": {
+      "description": "A `TermsOfService`.",
+      "id": "TermsOfService",
+      "properties": {
+        "external": {
+          "description": "Whether this terms of service version is external. External terms of service versions can only be agreed through external processes and not directly by the merchant through UI or API.",
+          "type": "boolean"
+        },
+        "fileUri": {
+          "description": "URI for terms of service file that needs to be displayed to signing users.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "The Kind this terms of service version applies to.",
+          "enum": [
+            "TERMS_OF_SERVICE_KIND_UNSPECIFIED",
+            "MERCHANT_CENTER"
+          ],
+          "enumDescriptions": [
+            "Default value. This value is unused.",
+            "Merchant Center application."
+          ],
+          "type": "string"
+        },
+        "name": {
+          "description": "Identifier. The resource name of the terms of service version. Format: `termsOfService/{version}`",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "Region code as defined by [CLDR](https://cldr.unicode.org/). This is either a country where the ToS applies specifically to that country or `001` when the same `TermsOfService` can be signed in any country. However note that when signing a ToS that applies globally we still expect that a specific country is provided (this should be merchant business country or program country of participation).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TermsOfServiceAgreementState": {
+      "description": "This resource represents the agreement state for a given account and terms of service kind. The state is as follows: * If the merchant has accepted a terms of service: [accepted](TermsOfServiceAggrementState.accepted) will be populated, otherwise it will be empty * If the merchant must sign a terms of service: [required](TermsOfServiceAggrementState.required) will be populated, otherwise it will be empty. Note that both [required](TermsOfServiceAggrementState.required) and [accepted](TermsOfServiceAggrementState.accepted) can be present. In this case the `accepted` terms of services will have an expiration date set in the [valid_until](Accepted.valid_until) field. The `required` terms of services need to be accepted before `valid_until` in order for the account to continue having a valid agreement. When accepting new terms of services we expect 3Ps to display the text associated with the given terms of service agreement (the url to the file containing the text is added in the Required message below as [tos_file_uri](Accepted.tos_file_uri). The actual acceptance of the terms of service is done by calling accept on the [TermsOfService](TermsOfService) resource.",
+      "id": "TermsOfServiceAgreementState",
+      "properties": {
+        "accepted": {
+          "$ref": "Accepted",
+          "description": "The accepted terms of service of this kind and for the associated region_code"
+        },
+        "name": {
+          "description": "Identifier. The resource name of the terms of service version. Format: `accounts/{account}/termsOfServiceAgreementState/{identifier}`",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "Region code as defined by https://cldr.unicode.org/. This is the country the current state applies to.",
+          "type": "string"
+        },
+        "required": {
+          "$ref": "Required",
+          "description": "The required terms of service"
+        },
+        "termsOfServiceKind": {
+          "description": "Terms of Service kind associated with the particular version.",
+          "enum": [
+            "TERMS_OF_SERVICE_KIND_UNSPECIFIED",
+            "MERCHANT_CENTER"
+          ],
+          "enumDescriptions": [
+            "Default value. This value is unused.",
+            "Merchant Center application."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TimeZone": {
+      "description": "Represents a time zone from the [IANA Time Zone Database](https://www.iana.org/time-zones).",
+      "id": "TimeZone",
+      "properties": {
+        "id": {
+          "description": "IANA Time Zone Database time zone, e.g. \"America/New_York\".",
+          "type": "string"
+        },
+        "version": {
+          "description": "Optional. IANA Time Zone Database version number, e.g. \"2019a\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TransitTable": {
+      "description": "Transit time table, number of business days spent in transit based on row and column dimensions. Either `min_transit_days`, `max_transit_days` or `transit_time_table` can be set, but not both.",
+      "id": "TransitTable",
+      "properties": {
+        "postalCodeGroupNames": {
+          "description": "Required. A list of region names Region.name . The last value can be `\"all other locations\"`. Example: `[\"zone 1\", \"zone 2\", \"all other locations\"]`. The referred postal code groups must match the delivery country of the service.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "rows": {
+          "description": "Required. If there's only one dimension set of `postal_code_group_names` or `transit_time_labels`, there are multiple rows each with one value for that dimension. If there are two dimensions, each row corresponds to a `postal_code_group_names`, and columns (values) to a `transit_time_labels`.",
+          "items": {
+            "$ref": "TransitTimeRow"
+          },
+          "type": "array"
+        },
+        "transitTimeLabels": {
+          "description": "Required. A list of transit time labels. The last value can be `\"all other labels\"`. Example: `[\"food\", \"electronics\", \"all other labels\"]`.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "TransitTimeRow": {
+      "description": "If there's only one dimension set of `postal_code_group_names` or `transit_time_labels`, there are multiple rows each with one value for that dimension. If there are two dimensions, each row corresponds to a `postal_code_group_names`, and columns (values) to a `transit_time_labels`.",
+      "id": "TransitTimeRow",
+      "properties": {
+        "values": {
+          "description": "Required. Transit time range (min-max) in business days.",
+          "items": {
+            "$ref": "TransitTimeValue"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "TransitTimeValue": {
+      "description": "Transit time range (min-max) in business days.",
+      "id": "TransitTimeValue",
+      "properties": {
+        "maxTransitDays": {
+          "description": "Must be greater than or equal to `min_transit_days`.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "minTransitDays": {
+          "description": "Minimum transit time range in business days. 0 means same day delivery, 1 means next day delivery.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "UnclaimHomepageRequest": {
+      "description": "Request message for the `UnclaimHomepage` method.",
+      "id": "UnclaimHomepageRequest",
+      "properties": {},
+      "type": "object"
+    },
+    "User": {
+      "description": "A [user](https://support.google.com/merchants/answer/12160472).",
+      "id": "User",
+      "properties": {
+        "accessRights": {
+          "description": "Optional. The [access rights](https://support.google.com/merchants/answer/12160472?sjid=6789834943175119429-EU#accesstypes) the user has.",
+          "items": {
+            "enum": [
+              "ACCESS_RIGHT_UNSPECIFIED",
+              "STANDARD",
+              "ADMIN",
+              "PERFORMANCE_REPORTING"
+            ],
+            "enumDescriptions": [
+              "Default value. This value is unused.",
+              "Standard access rights.",
+              "Admin access rights.",
+              "Users with this right have access to performance and insights."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "Identifier. The resource name of the user. Format: `accounts/{account}/user/{email}` Use `me` to refer to your own email address, for example `accounts/{account}/users/me`.",
+          "type": "string"
+        },
+        "state": {
+          "description": "Output only. The state of the user.",
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "PENDING",
+            "VERIFIED"
+          ],
+          "enumDescriptions": [
+            "Default value. This value is unused.",
+            "The user is pending confirmation. In this state, the user first needs to accept the invitation before performing other actions.",
+            "The user is verified."
+          ],
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Value": {
+      "description": "The single value of a rate group or the value of a rate group table's cell. Exactly one of `no_shipping`, `flat_rate`, `price_percentage`, `carrier_rateName`, `subtable_name` must be set.",
+      "id": "Value",
+      "properties": {
+        "carrierRate": {
+          "description": "The name of a carrier rate referring to a carrier rate defined in the same rate group. Can only be set if all other fields are not set.",
+          "type": "string"
+        },
+        "flatRate": {
+          "$ref": "Price",
+          "description": "A flat rate. Can only be set if all other fields are not set."
+        },
+        "noShipping": {
+          "description": "If true, then the product can't be shipped. Must be true when set, can only be set if all other fields are not set.",
+          "type": "boolean"
+        },
+        "pricePercentage": {
+          "description": "A percentage of the price represented as a number in decimal notation (For example, `\"5.4\"`). Can only be set if all other fields are not set.",
+          "type": "string"
+        },
+        "subtable": {
+          "description": "The name of a subtable. Can only be set in table cells (For example, not for single values), and only if all other fields are not set.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Warehouse": {
+      "description": "A fulfillment warehouse, which stores and handles inventory. Next tag: 7",
+      "id": "Warehouse",
+      "properties": {
+        "businessDayConfig": {
+          "$ref": "BusinessDayConfig",
+          "description": "Business days of the warehouse. If not set, will be Monday to Friday by default."
+        },
+        "cutoffTime": {
+          "$ref": "WarehouseCutoffTime",
+          "description": "Required. The latest time of day that an order can be accepted and begin processing. Later orders will be processed in the next day. The time is based on the warehouse postal code."
+        },
+        "handlingDays": {
+          "description": "Required. The number of days it takes for this warehouse to pack up and ship an item. This is on the warehouse level, but can be overridden on the offer level based on the attributes of an item.",
+          "format": "int64",
+          "type": "string"
+        },
+        "name": {
+          "description": "Required. The name of the warehouse. Must be unique within account.",
+          "type": "string"
+        },
+        "shippingAddress": {
+          "$ref": "Address",
+          "description": "Required. Shipping address of the warehouse."
+        }
+      },
+      "type": "object"
+    },
+    "WarehouseBasedDeliveryTime": {
+      "description": "Indicates that the delivery time should be calculated per warehouse (shipping origin location) based on the settings of the selected carrier. When set, no other transit time related field in `delivery_time` should be set.",
+      "id": "WarehouseBasedDeliveryTime",
+      "properties": {
+        "carrier": {
+          "description": "Required. Carrier, such as `\"UPS\"` or `\"Fedex\"`.",
+          "type": "string"
+        },
+        "carrierService": {
+          "description": "Required. Carrier service, such as `\"ground\"` or `\"2 days\"`. The name of the service must be in the eddSupportedServices list.",
+          "type": "string"
+        },
+        "warehouse": {
+          "description": "Required. Warehouse name. This should match warehouse",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "WarehouseCutoffTime": {
+      "description": "The latest time of day that an order can be accepted and begin processing. Later orders will be processed in the next day. The time is based on the warehouse postal code.",
+      "id": "WarehouseCutoffTime",
+      "properties": {
+        "hour": {
+          "description": "Required. Hour of the cutoff time until which an order has to be placed to be processed in the same day by the warehouse. Hour is based on the timezone of warehouse.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "minute": {
+          "description": "Required. Minute of the cutoff time until which an order has to be placed to be processed in the same day by the warehouse. Minute is based on the timezone of warehouse.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "Weight": {
+      "description": "The weight represented as the value in string and the unit.",
+      "id": "Weight",
+      "properties": {
+        "amountMicros": {
+          "description": "Required. The weight represented as a number in micros (1 million micros is an equivalent to one's currency standard unit, for example, 1 kg = 1000000 micros). This field can also be set as infinity by setting to -1. This field only support -1 and positive value.",
+          "format": "int64",
+          "type": "string"
+        },
+        "unit": {
+          "description": "Required. The weight unit. Acceptable values are: kg and lb",
+          "enum": [
+            "WEIGHT_UNIT_UNSPECIFIED",
+            "POUND",
+            "KILOGRAM"
+          ],
+          "enumDescriptions": [
+            "unit unspecified",
+            "lb unit.",
+            "kg unit."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Merchant API",
+  "version": "accounts_v1beta",
+  "version_module": true
+}

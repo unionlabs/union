@@ -1,0 +1,19 @@
+{
+  "cert_configs": {
+    "macos_keychain": {
+      "issuer": "Google Endpoint Verification"
+    },
+    "windows_store": {
+      "issuer": "enterprise_v1_corp_client",
+      "store": "MY",
+      "provider": "current_user"
+    },
+    "pkcs11": {
+      "slot": "0x1739427",
+      "label": "gecc",
+      "user_pin": "0000",
+      "module": "pkcs11_module.so"
+    }
+  }
+}
+

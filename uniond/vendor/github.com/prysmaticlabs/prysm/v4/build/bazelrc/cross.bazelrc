@@ -1,0 +1,73 @@
+# multi-arch cross-compiling toolchain configs
+-----------------------------------------------
+
+build:cross --crosstool_top=@prysm_toolchains//:multiarch_toolchain
+build:cross --extra_execution_platforms=@//tools/cross-toolchain/configs/config:platform
+build:cross --extra_toolchains=@prysm_toolchains//:cc-toolchain-multiarch
+build:cross --host_crosstool_top=@prysm_toolchains//:hostonly_toolchain
+build:cross --platforms=@//tools/cross-toolchain/configs/config:platform
+
+# linux_amd64 config for cross compiler toolchain, not strictly necessary since host/exec env is amd64
+build:linux_amd64 --platforms=@io_bazel_rules_go//go/toolchain:linux_amd64_cgo
+
+# osx_amd64 config for cross compiler toolchain
+build:osx_amd64 --config=cross
+build:osx_amd64 --platforms=@io_bazel_rules_go//go/toolchain:darwin_amd64_cgo
+build:osx_amd64 --compiler=osxcross
+
+# osx_arm64 config for cross compiler toolchain
+build:osx_arm64 --config=cross
+build:osx_arm64 --platforms=@io_bazel_rules_go//go/toolchain:darwin_arm64_cgo
+build:osx_arm64 --compiler=osxcross
+build:osx_arm64 --cpu=aarch64
+
+# windows
+build:windows_amd64 --config=cross
+build:windows_amd64 --platforms=@io_bazel_rules_go//go/toolchain:windows_amd64_cgo
+build:windows_amd64 --compiler=mingw-w64
+
+# linux_arm64 config for cross compiler toolchain
+build:linux_arm64 --config=cross
+build:linux_arm64 --platforms=@io_bazel_rules_go//go/toolchain:linux_arm64_cgo
+build:linux_arm64 --copt=-funsafe-math-optimizations
+build:linux_arm64 --copt=-ftree-vectorize
+build:linux_arm64 --copt=-fomit-frame-pointer
+build:linux_arm64 --cpu=aarch64
+build:linux_arm64 --compiler=clang
+build:linux_arm64 --copt=-march=armv8-a
+
+
+# Docker Sandbox Configs
+#-----------------------
+# Note all docker sandbox configs must run from a linux x86_64 host
+build:docker-sandbox --unconditional_warning="⚠️  Docker sandbox is extremely slow! Consider a remote executor, if possible. See tools/cross-toolchain/README.md#Caveats ⚠️"
+build:docker-sandbox --spawn_strategy=docker --strategy=Javac=docker --genrule_strategy=docker
+build:docker-sandbox --define=EXECUTOR=remote
+build:docker-sandbox --experimental_docker_verbose
+build:docker-sandbox --experimental_enable_docker_sandbox
+
+# Remote with docker sandbox fallback
+build:remote --spawn_strategy=remote,docker,linux-sandbox --strategy=Javac=remote,docker,linux-sandbox --genrule_strategy=remote,docker,linux-sandbox
+build:remote --define=EXECUTOR=remote
+build:remote --experimental_docker_verbose
+build:remote --experimental_enable_docker_sandbox
+
+# windows_amd64 docker sandbox build config
+build:windows_amd64_docker --config=docker-sandbox --config=windows_amd64
+build:windows_amd64_docker_debug --config=windows_amd64_docker --config=debug
+
+# osx_amd64 docker sandbox build config
+build:osx_amd64_docker --config=docker-sandbox --config=osx_amd64
+build:osx_amd64_docker_debug --config=osx_amd64_docker --config=debug
+
+# osx_arm64 docker sandbox build config
+build:osx_arm64_docker --config=docker-sandbox --config=osx_arm64
+build:osx_arm64_docker_debug --config=osx_arm64_docker --config=debug
+
+# linux_arm64 docker sandbox build config
+build:linux_arm64_docker --config=docker-sandbox --config=linux_arm64
+build:linux_arm64_docker_debug --config=linux_arm64_docker --config=debug
+
+# linux_amd64 docker sandbox build config
+build:linux_amd64_docker --config=docker-sandbox --config=linux_amd64
+build:linux_amd64_docker_debug --config=linux_amd64_docker --config=debug

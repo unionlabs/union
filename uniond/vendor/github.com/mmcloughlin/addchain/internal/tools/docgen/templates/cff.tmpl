@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use addchain in your work, a citation would be appreciated using the following metadata."
+title: "{{ .Meta.Title }}"
+authors:
+  - family-names: "McLoughlin"
+    given-names: "Michael Ben"
+    orcid: "https://orcid.org/0000-0003-2347-6258"
+version: "{{ .Meta.ReleaseVersion }}"
+date-released: "{{ .Meta.ReleaseDate }}"
+license: BSD-3-Clause
+repository-code: {{ .Meta.RepositoryURL }}
+doi: "{{ .Meta.DOI }}"
+identifiers:
+  - type: doi
+    value: "{{ .Meta.ConceptDOI }}"
+    description: "The concept DOI of the work."
+  - type: doi
+    value: "{{ .Meta.DOI }}"
+    description: "The versioned DOI for version {{ .Meta.ReleaseVersion }} of the work."

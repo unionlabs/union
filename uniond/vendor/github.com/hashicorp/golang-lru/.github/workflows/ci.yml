@@ -1,0 +1,32 @@
+name: build
+
+on:
+  push:
+    branches:
+    tags:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: set up go 1.19
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.19
+        id: go
+
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: build and test
+        run: |
+          go test -timeout=60s -race
+          go build -race
+
+      - name: install golangci-lint
+        run: curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $GITHUB_WORKSPACE v1.50.1
+
+      - name: run golangci-lint
+        run: $GITHUB_WORKSPACE/golangci-lint run --out-format=github-actions

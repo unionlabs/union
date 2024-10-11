@@ -1,0 +1,11 @@
+module abc
+
+retract v1.2.3
+
+retract [v1.2.3, v1.2.4]
+
+retract (
+	v1.2.3
+
+	[v1.2.3, v1.2.4]
+)

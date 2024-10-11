@@ -1,0 +1,51 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+# gazelle:resolve go github.com/supranational/blst/bindings/go @com_github_supranational_blst//:go_default_library
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = [
+        "aggregate_test.go",
+        "aggregate_verify_test.go",
+        "batch_verify_test.go",
+        "deserialization_G1_test.go",
+        "deserialization_G2_test.go",
+        "fast_aggregate_verify_test.go",
+        "hash_to_G2_test.go",
+        "sign_test.go",
+        "verify_test.go",
+    ],
+    data = glob(["*.yaml"]) + [
+        "@bls_spec_tests//:test_data",
+    ],
+    embed = [":go_default_library"],
+    shard_count = 4,
+    tags = ["spectest"],
+    deps = [
+        "//crypto/bls:go_default_library",
+        "//crypto/bls/common:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//testing/bls/utils:go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_ghodss_yaml//:go_default_library",
+        "@com_github_supranational_blst//:go_default_library",
+    ],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "aggregate_test.yaml.go",
+        "aggregate_verify_test.yaml.go",
+        "batch_verify_test.yaml.go",
+        "deserialization_G1_test.yaml.go",
+        "deserialization_G2_test.yaml.go",
+        "fast_aggregate_verify_test.yaml.go",
+        "hash_to_G2_test.yaml.go",
+        "sign_test.yaml.go",
+        "verify_test.yaml.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/testing/bls",
+    visibility = ["//visibility:public"],
+)

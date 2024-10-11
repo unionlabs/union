@@ -1,21 +1,23 @@
+//go:build windows
 // +build windows
 
 package wincred
 
 import (
 	"reflect"
+	"syscall"
 	"unsafe"
 
-	syscall "golang.org/x/sys/windows"
+	"golang.org/x/sys/windows"
 )
 
 var (
-	modadvapi32            = syscall.NewLazyDLL("advapi32.dll")
-	procCredRead      proc = modadvapi32.NewProc("CredReadW")
+	modadvapi32            = windows.NewLazySystemDLL("advapi32.dll")
+	procCredRead           = modadvapi32.NewProc("CredReadW")
 	procCredWrite     proc = modadvapi32.NewProc("CredWriteW")
 	procCredDelete    proc = modadvapi32.NewProc("CredDeleteW")
 	procCredFree      proc = modadvapi32.NewProc("CredFree")
-	procCredEnumerate proc = modadvapi32.NewProc("CredEnumerateW")
+	procCredEnumerate      = modadvapi32.NewProc("CredEnumerateW")
 )
 
 // Interface for syscall.Proc: helps testing
@@ -29,7 +31,7 @@ type sysCREDENTIAL struct {
 	Type               uint32
 	TargetName         *uint16
 	Comment            *uint16
-	LastWritten        syscall.Filetime
+	LastWritten        windows.Filetime
 	CredentialBlobSize uint32
 	CredentialBlob     uintptr
 	Persist            uint32
@@ -59,15 +61,17 @@ const (
 	sysCRED_TYPE_DOMAIN_EXTENDED         sysCRED_TYPE = 0x6
 
 	// https://docs.microsoft.com/en-us/windows/desktop/Debug/system-error-codes
-	sysERROR_NOT_FOUND         = syscall.Errno(1168)
-	sysERROR_INVALID_PARAMETER = syscall.Errno(87)
+	sysERROR_NOT_FOUND         = windows.Errno(1168)
+	sysERROR_INVALID_PARAMETER = windows.Errno(87)
+	sysERROR_BAD_USERNAME      = windows.Errno(2202)
 )
 
 // https://docs.microsoft.com/en-us/windows/desktop/api/wincred/nf-wincred-credreadw
 func sysCredRead(targetName string, typ sysCRED_TYPE) (*Credential, error) {
 	var pcred *sysCREDENTIAL
-	targetNamePtr, _ := syscall.UTF16PtrFromString(targetName)
-	ret, _, err := procCredRead.Call(
+	targetNamePtr, _ := windows.UTF16PtrFromString(targetName)
+	ret, _, err := syscall.SyscallN(
+		procCredRead.Addr(),
 		uintptr(unsafe.Pointer(targetNamePtr)),
 		uintptr(typ),
 		0,
@@ -98,7 +102,7 @@ func sysCredWrite(cred *Credential, typ sysCRED_TYPE) error {
 
 // https://docs.microsoft.com/en-us/windows/desktop/api/wincred/nf-wincred-creddeletew
 func sysCredDelete(cred *Credential, typ sysCRED_TYPE) error {
-	targetNamePtr, _ := syscall.UTF16PtrFromString(cred.TargetName)
+	targetNamePtr, _ := windows.UTF16PtrFromString(cred.TargetName)
 	ret, _, err := procCredDelete.Call(
 		uintptr(unsafe.Pointer(targetNamePtr)),
 		uintptr(typ),
@@ -117,9 +121,10 @@ func sysCredEnumerate(filter string, all bool) ([]*Credential, error) {
 	var pcreds uintptr
 	var filterPtr *uint16
 	if !all {
-		filterPtr, _ = syscall.UTF16PtrFromString(filter)
+		filterPtr, _ = windows.UTF16PtrFromString(filter)
 	}
-	ret, _, err := procCredEnumerate.Call(
+	ret, _, err := syscall.SyscallN(
+		procCredEnumerate.Addr(),
 		uintptr(unsafe.Pointer(filterPtr)),
 		0,
 		uintptr(unsafe.Pointer(&count)),

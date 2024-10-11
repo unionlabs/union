@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package cosmos.orm.query.v1alpha1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/any.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+
+option go_package = "cosmossdk.io/api/app/cosmos/orm/query/v1alpha1";
+
+// Query is a generic gRPC service for querying ORM data.
+service Query {
+
+  // Get queries an ORM table against an unique index.
+  rpc Get(GetRequest) returns (GetResponse);
+
+  // List queries an ORM table against an index.
+  rpc List(ListRequest) returns (ListResponse);
+}
+
+// GetRequest is the Query/Get request type.
+message GetRequest {
+  // message_name is the fully-qualified message name of the ORM table being queried.
+  string message_name = 1;
+
+  // index is the index fields expression used in orm definitions. If it
+  // is empty, the table's primary key is assumed. If it is non-empty, it must
+  // refer to an unique index.
+  string index = 2;
+
+  // values are the values of the fields corresponding to the requested index.
+  // There must be as many values provided as there are fields in the index and
+  // these values must correspond to the index field types.
+  repeated IndexValue values = 3;
+}
+
+// GetResponse is the Query/Get response type.
+message GetResponse {
+
+  // result is the result of the get query. If no value is found, the gRPC
+  // status code NOT_FOUND will be returned.
+  google.protobuf.Any result = 1;
+}
+
+// ListRequest is the Query/List request type.
+message ListRequest {
+  // message_name is the fully-qualified message name of the ORM table being queried.
+  string message_name = 1;
+
+  // index is the index fields expression used in orm definitions. If it
+  // is empty, the table's primary key is assumed.
+  string index = 2;
+
+  // query is the query expression corresponding to the provided index. If
+  // neither prefix nor range is specified, the query will list all the fields
+  // in the index.
+  oneof query {
+
+    // prefix defines a prefix query.
+    Prefix prefix = 3;
+
+    // range defines a range query.
+    Range range = 4;
+  }
+
+  // pagination is the pagination request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 5;
+
+  // Prefix specifies the arguments to a prefix query.
+  message Prefix {
+    // values specifies the index values for the prefix query.
+    // It is valid to special a partial prefix with fewer values than
+    // the number of fields in the index.
+    repeated IndexValue values = 1;
+  }
+
+  // Range specifies the arguments to a range query.
+  message Range {
+    // start specifies the starting index values for the range query.
+    // It is valid to provide fewer values than the number of fields in the
+    // index.
+    repeated IndexValue start = 1;
+
+    // end specifies the inclusive ending index values for the range query.
+    // It is valid to provide fewer values than the number of fields in the
+    // index.
+    repeated IndexValue end = 2;
+  }
+}
+
+// ListResponse is the Query/List response type.
+message ListResponse {
+
+  // results are the results of the query.
+  repeated google.protobuf.Any results = 1;
+
+  // pagination is the pagination response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 5;
+}
+
+// IndexValue represents the value of a field in an ORM index expression.
+message IndexValue {
+
+  // value specifies the index value
+  oneof value {
+    // uint specifies a value for an uint32, fixed32, uint64, or fixed64
+    // index field.
+    uint64 uint = 1;
+
+    // int64 specifies a value for an int32, sfixed32, int64, or sfixed64
+    // index field.
+    int64 int = 2;
+
+    // str specifies a value for a string index field.
+    string str = 3;
+
+    // bytes specifies a value for a bytes index field.
+    bytes bytes = 4;
+
+    // enum specifies a value for an enum index field.
+    string enum = 5;
+
+    // bool specifies a value for a bool index field.
+    bool bool = 6;
+
+    // timestamp specifies a value for a timestamp index field.
+    google.protobuf.Timestamp timestamp = 7;
+
+    // duration specifies a value for a duration index field.
+    google.protobuf.Duration duration = 8;
+  }
+}

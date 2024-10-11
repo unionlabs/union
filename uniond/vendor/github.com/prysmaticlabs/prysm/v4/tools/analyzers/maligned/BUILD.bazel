@@ -1,0 +1,16 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "analyzer.go",
+        "maligned.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/tools/analyzers/maligned",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@org_golang_x_tools//go/analysis:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/inspect:go_default_library",
+        "@org_golang_x_tools//go/ast/inspector:go_default_library",
+    ],
+)

@@ -1,0 +1,10 @@
+// comment
+use x // eol
+
+// mid comment
+
+// comment 2
+// comment 2 line 2
+use y // eoy
+
+// comment 3

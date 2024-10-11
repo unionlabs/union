@@ -1,0 +1,106 @@
+-- go.mod --
+module example.com
+go 1.18
+
+-- iface.go --
+package main
+
+import (
+	"example.com/subpkg"
+)
+
+func use(interface{})
+
+// Test of interface calls.
+
+func main() {
+	use(subpkg.A(0))
+	use(new(subpkg.B))
+	use(subpkg.B2(0))
+
+	var i interface {
+		F()
+	}
+
+	// assign an interface type with a function return interface value
+	i = subpkg.NewInterfaceF()
+
+	i.F()
+}
+
+func dead() {
+	use(subpkg.D(0))
+}
+
+// WANT:
+//
+// edge (*example.com/subpkg.A).F --static method call--> (example.com/subpkg.A).F
+// edge (*example.com/subpkg.B2).F --static method call--> (example.com/subpkg.B2).F
+// edge (*example.com/subpkg.C).F --static method call--> (example.com/subpkg.C).F
+// edge init --static function call--> example.com/subpkg.init
+// edge main --dynamic method call--> (*example.com/subpkg.A).F
+// edge main --dynamic method call--> (*example.com/subpkg.B).F
+// edge main --dynamic method call--> (*example.com/subpkg.B2).F
+// edge main --dynamic method call--> (*example.com/subpkg.C).F
+// edge main --dynamic method call--> (example.com/subpkg.A).F
+// edge main --dynamic method call--> (example.com/subpkg.B2).F
+// edge main --dynamic method call--> (example.com/subpkg.C).F
+// edge main --static function call--> example.com/subpkg.NewInterfaceF
+// edge main --static function call--> use
+//
+// reachable (*example.com/subpkg.A).F
+// reachable (*example.com/subpkg.B).F
+// reachable (*example.com/subpkg.B2).F
+// reachable (*example.com/subpkg.C).F
+// reachable (example.com/subpkg.A).F
+// !reachable (example.com/subpkg.B).F
+// reachable (example.com/subpkg.B2).F
+// reachable (example.com/subpkg.C).F
+// reachable example.com/subpkg.NewInterfaceF
+// reachable example.com/subpkg.init
+// !reachable (*example.com/subpkg.D).F
+// !reachable (example.com/subpkg.D).F
+// reachable init
+// reachable main
+// reachable use
+//
+// rtype *example.com/subpkg.A
+// rtype *example.com/subpkg.B
+// rtype *example.com/subpkg.B2
+// rtype *example.com/subpkg.C
+// rtype example.com/subpkg.B
+// rtype example.com/subpkg.A
+// rtype example.com/subpkg.B2
+// rtype example.com/subpkg.C
+// !rtype example.com/subpkg.D
+
+-- subpkg/impl.go --
+package subpkg
+
+type InterfaceF interface {
+	F()
+}
+
+type A byte // instantiated but not a reflect type
+
+func (A) F() {} // reachable: exported method of reflect type
+
+type B int // a reflect type
+
+func (*B) F() {} // reachable: exported method of reflect type
+
+type B2 int // a reflect type, and *B2 also
+
+func (B2) F() {} // reachable: exported method of reflect type
+
+type C string
+
+func (C) F() {} // reachable: exported by NewInterfaceF
+
+func NewInterfaceF() InterfaceF {
+	return C("")
+}
+
+type D uint // instantiated only in dead code
+
+func (*D) F() {} // unreachable

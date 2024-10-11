@@ -42,6 +42,9 @@ add_mod_256:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -100,6 +103,9 @@ mul_by_3_mod_256:
 .cfi_end_prologue
 
 	mov	$b_org,$n_ptr
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -146,7 +152,7 @@ __lshift_mod_256:
 	cmovc	@acc[6], @acc[2]
 	cmovc	@acc[7], @acc[3]
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=@acc[4]
 .size	__lshift_mod_256,.-__lshift_mod_256
 
 ########################################################################
@@ -164,6 +170,9 @@ lshift_mod_256:
 .cfi_push	%r12
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -207,6 +216,9 @@ rshift_mod_256:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[7]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -282,6 +294,9 @@ cneg_mod_256:
 .cfi_push	%r12
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[8]	# load a[0:3]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -346,6 +361,9 @@ sub_mod_256:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -393,6 +411,9 @@ sub_mod_256:
 .align	32
 check_mod_256:
 .cfi_startproc
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($r_ptr), %rax
 	mov	8*1($r_ptr), @acc[1]
 	mov	8*2($r_ptr), @acc[2]
@@ -433,6 +454,9 @@ add_n_check_mod_256:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -495,6 +519,9 @@ sub_n_check_mod_256:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]

@@ -1,0 +1,6 @@
+module github.com/shurcooL/httpfs@v0.0.0-20171119174359-809beceb2371
+
+-- .mod --
+module github.com/shurcooL/httpfs
+-- .info --
+{"Version":"v0.0.0-20171119174359-809beceb2371","Time":"2017-11-19T17:43:59Z"}

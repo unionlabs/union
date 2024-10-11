@@ -1,0 +1,253 @@
+{
+  "version": "2.0",
+  "service": "<p>SageMaker Edge Manager dataplane service for communicating with active agents.</p>",
+  "operations": {
+    "GetDeployments": "<p>Use to get the active deployments from a device.</p>",
+    "GetDeviceRegistration": "<p>Use to check if a device is registered with SageMaker Edge Manager.</p>",
+    "SendHeartbeat": "<p>Use to get the current status of devices registered on SageMaker Edge Manager.</p>"
+  },
+  "shapes": {
+    "CacheTTLSeconds": {
+      "base": null,
+      "refs": {
+        "GetDeviceRegistrationResult$CacheTTL": "<p>The amount of time, in seconds, that the registration status is stored on the device’s cache before it is refreshed.</p>"
+      }
+    },
+    "Checksum": {
+      "base": "<p>Information about the checksum of a model deployed on a device.</p>",
+      "refs": {
+        "Definition$Checksum": "<p>The checksum information of the model.</p>"
+      }
+    },
+    "ChecksumString": {
+      "base": null,
+      "refs": {
+        "Checksum$Sum": "<p>The checksum of the model.</p>"
+      }
+    },
+    "ChecksumType": {
+      "base": null,
+      "refs": {
+        "Checksum$Type": "<p>The type of the checksum.</p>"
+      }
+    },
+    "Definition": {
+      "base": "<p/>",
+      "refs": {
+        "Definitions$member": null
+      }
+    },
+    "Definitions": {
+      "base": null,
+      "refs": {
+        "EdgeDeployment$Definitions": "<p>Returns a list of Definition objects.</p>"
+      }
+    },
+    "DeploymentModel": {
+      "base": "<p/>",
+      "refs": {
+        "DeploymentModels$member": null
+      }
+    },
+    "DeploymentModels": {
+      "base": null,
+      "refs": {
+        "DeploymentResult$DeploymentModels": "<p>Returns a list of models deployed on the agent.</p>"
+      }
+    },
+    "DeploymentResult": {
+      "base": "<p>Information about the result of a deployment on an edge device that is registered with SageMaker Edge Manager.</p>",
+      "refs": {
+        "SendHeartbeatRequest$DeploymentResult": "<p>Returns the result of a deployment on the device.</p>"
+      }
+    },
+    "DeploymentStatus": {
+      "base": null,
+      "refs": {
+        "DeploymentModel$Status": "<p>Returns the deployment status of the model.</p>"
+      }
+    },
+    "DeploymentType": {
+      "base": null,
+      "refs": {
+        "EdgeDeployment$Type": "<p>The type of the deployment.</p>"
+      }
+    },
+    "DeviceFleetName": {
+      "base": null,
+      "refs": {
+        "GetDeploymentsRequest$DeviceFleetName": "<p>The name of the fleet that the device belongs to.</p>",
+        "GetDeviceRegistrationRequest$DeviceFleetName": "<p>The name of the fleet that the device belongs to.</p>",
+        "SendHeartbeatRequest$DeviceFleetName": "<p>The name of the fleet that the device belongs to.</p>"
+      }
+    },
+    "DeviceName": {
+      "base": null,
+      "refs": {
+        "GetDeploymentsRequest$DeviceName": "<p>The unique name of the device you want to get the configuration of active deployments from.</p>",
+        "GetDeviceRegistrationRequest$DeviceName": "<p>The unique name of the device you want to get the registration status from.</p>",
+        "SendHeartbeatRequest$DeviceName": "<p>The unique name of the device.</p>"
+      }
+    },
+    "DeviceRegistration": {
+      "base": null,
+      "refs": {
+        "GetDeviceRegistrationResult$DeviceRegistration": "<p>Describes if the device is currently registered with SageMaker Edge Manager.</p>"
+      }
+    },
+    "Dimension": {
+      "base": null,
+      "refs": {
+        "EdgeMetric$Dimension": "<p>The dimension of metrics published.</p>"
+      }
+    },
+    "EdgeDeployment": {
+      "base": "<p>Information about a deployment on an edge device that is registered with SageMaker Edge Manager.</p>",
+      "refs": {
+        "EdgeDeployments$member": null
+      }
+    },
+    "EdgeDeployments": {
+      "base": null,
+      "refs": {
+        "GetDeploymentsResult$Deployments": "<p>Returns a list of the configurations of the active deployments on the device.</p>"
+      }
+    },
+    "EdgeMetric": {
+      "base": "<p>Information required for edge device metrics.</p>",
+      "refs": {
+        "EdgeMetrics$member": null
+      }
+    },
+    "EdgeMetrics": {
+      "base": null,
+      "refs": {
+        "Model$ModelMetrics": "<p>Information required for model metrics.</p>",
+        "SendHeartbeatRequest$AgentMetrics": "<p>For internal use. Returns a list of SageMaker Edge Manager agent operating metrics.</p>"
+      }
+    },
+    "EntityName": {
+      "base": null,
+      "refs": {
+        "Definition$ModelHandle": "<p>The unique model handle.</p>",
+        "DeploymentModel$ModelHandle": "<p>The unique handle of the model.</p>",
+        "DeploymentResult$DeploymentName": "<p>The name and unique ID of the deployment.</p>",
+        "DeploymentResult$DeploymentStatus": "<p>Returns the bucket error code.</p>",
+        "EdgeDeployment$DeploymentName": "<p>The name and unique ID of the deployment.</p>"
+      }
+    },
+    "ErrorMessage": {
+      "base": null,
+      "refs": {
+        "InternalServiceException$Message": null
+      }
+    },
+    "FailureHandlingPolicy": {
+      "base": null,
+      "refs": {
+        "EdgeDeployment$FailureHandlingPolicy": "<p>Determines whether to rollback to previous configuration if deployment fails.</p>"
+      }
+    },
+    "GetDeploymentsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetDeploymentsResult": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetDeviceRegistrationRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetDeviceRegistrationResult": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "InternalServiceException": {
+      "base": "<p>An internal failure occurred. Try your request again. If the problem persists, contact Amazon Web Services customer support.</p>",
+      "refs": {
+      }
+    },
+    "Metric": {
+      "base": null,
+      "refs": {
+        "EdgeMetric$MetricName": "<p>Returns the name of the metric.</p>"
+      }
+    },
+    "Model": {
+      "base": "<p>Information about a model deployed on an edge device that is registered with SageMaker Edge Manager.</p>",
+      "refs": {
+        "Models$member": null
+      }
+    },
+    "ModelName": {
+      "base": null,
+      "refs": {
+        "DeploymentModel$ModelName": "<p>The name of the model.</p>",
+        "Model$ModelName": "<p>The name of the model.</p>"
+      }
+    },
+    "ModelState": {
+      "base": null,
+      "refs": {
+        "Definition$State": "<p>The desired state of the model.</p>",
+        "DeploymentModel$DesiredState": "<p>The desired state of the model.</p>",
+        "DeploymentModel$State": "<p>Returns the current state of the model.</p>"
+      }
+    },
+    "Models": {
+      "base": null,
+      "refs": {
+        "SendHeartbeatRequest$Models": "<p>Returns a list of models deployed on the the device.</p>"
+      }
+    },
+    "S3Uri": {
+      "base": null,
+      "refs": {
+        "Definition$S3Url": "<p>The absolute S3 location of the model.</p>"
+      }
+    },
+    "SendHeartbeatRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "String": {
+      "base": null,
+      "refs": {
+        "DeploymentModel$StatusReason": "<p>Returns the error message for the deployment status result.</p>",
+        "DeploymentModel$RollbackFailureReason": "<p>Returns the error message if there is a rollback.</p>",
+        "DeploymentResult$DeploymentStatusMessage": "<p>Returns the detailed error message.</p>"
+      }
+    },
+    "Timestamp": {
+      "base": null,
+      "refs": {
+        "DeploymentResult$DeploymentStartTime": "<p>The timestamp of when the deployment was started on the agent.</p>",
+        "DeploymentResult$DeploymentEndTime": "<p>The timestamp of when the deployment was ended, and the agent got the deployment results.</p>",
+        "EdgeMetric$Timestamp": "<p>Timestamp of when the metric was requested.</p>",
+        "Model$LatestSampleTime": "<p>The timestamp of the last data sample taken.</p>",
+        "Model$LatestInference": "<p>The timestamp of the last inference that was made.</p>"
+      }
+    },
+    "Value": {
+      "base": null,
+      "refs": {
+        "EdgeMetric$Value": "<p>Returns the value of the metric.</p>"
+      }
+    },
+    "Version": {
+      "base": null,
+      "refs": {
+        "DeploymentModel$ModelVersion": "<p>The version of the model.</p>",
+        "Model$ModelVersion": "<p>The version of the model.</p>",
+        "SendHeartbeatRequest$AgentVersion": "<p>Returns the version of the agent.</p>"
+      }
+    }
+  }
+}

@@ -1,0 +1,103 @@
+# This testnet is run by CI, and attempts to cover a broad range of
+# functionality with a single network.
+
+ipv6 = true
+initial_height = 1000
+vote_extensions_update_height = 1004
+vote_extensions_enable_height = 1007
+pbts_update_height = 1006
+pbts_enable_height = 1009
+evidence = 5
+initial_state = { initial01 = "a", initial02 = "b", initial03 = "c" }
+prepare_proposal_delay = "100ms"
+process_proposal_delay = "100ms"
+check_tx_delay = "0ms"
+# The most common case (e.g. Cosmos SDK-based chains).
+abci_protocol = "builtin"
+prometheus = true
+peer_gossip_intraloop_sleep_duration = "50ms"
+abci_tests_enabled = true
+
+[validators]
+validator01 = 100
+
+[validator_update.0]
+validator01 = 10
+validator02 = 20
+validator03 = 30
+validator04 = 40
+
+[validator_update.1010]
+validator05 = 50
+
+# validator03 gets killed and validator05 has lots of perturbations, so weight them low.
+[validator_update.1020]
+validator01 = 100
+validator02 = 100
+validator03 = 50
+validator04 = 100
+validator05 = 50
+
+[node.seed01]
+mode = "seed"
+perturb = ["restart"]
+
+[node.validator01]
+seeds = ["seed01"]
+snapshot_interval = 5
+perturb = ["disconnect"]
+clock_skew = "20s"
+
+[node.validator02]
+seeds = ["seed01"]
+database = "pebbledb"
+privval_protocol = "tcp"
+persist_interval = 0
+perturb = ["restart"]
+
+[node.validator03]
+seeds = ["seed01"]
+database = "badgerdb"
+privval_protocol = "unix"
+persist_interval = 3
+retain_blocks = 20
+enable_companion_pruning = true
+perturb = ["kill"]
+key_type = "secp256k1"
+
+[node.validator04]
+persistent_peers = ["validator01"]
+database = "rocksdb"
+perturb = ["pause"]
+
+[node.validator05]
+start_at = 1005 # Becomes part of the validator set at 1010
+persistent_peers = ["validator01", "full01"]
+database = "rocksdb"
+privval_protocol = "tcp"
+perturb = ["kill", "pause", "disconnect", "restart"]
+
+[node.full01]
+start_at = 1010
+mode = "full"
+persistent_peers = ["validator01", "validator02", "validator03", "validator04", "validator05"]
+retain_blocks = 20
+enable_companion_pruning = true
+perturb = ["restart"]
+
+[node.full02]
+start_at = 1015
+mode = "full"
+state_sync = true
+seeds = ["seed01"]
+perturb = ["restart"]
+
+[node.light01]
+mode= "light"
+start_at= 1005
+persistent_peers = ["validator01", "validator02", "validator03"]
+
+[node.light02]
+mode= "light"
+start_at= 1015
+persistent_peers = ["validator04", "full01", "validator05"]

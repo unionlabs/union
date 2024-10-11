@@ -1,0 +1,5 @@
+env XXX='hello)'
+grep ^${XXX@R}$ file.txt
+
+-- file.txt --
+hello)

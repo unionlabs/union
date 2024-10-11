@@ -1,0 +1,34 @@
+name: go-test
+on:
+  push:
+    tags:
+      - v*
+    branches-ignore:
+      - 'doc-*'
+      - 'doc/*'
+  pull_request:
+    branches:
+      - main
+      - master
+      - release
+jobs:
+  go-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ^1.17
+      - uses: actions/checkout@v2
+      - name: go-test
+        run: |
+          go test -v -count=1 \
+                  -covermode=count \
+                  -coverpkg=github.com/tunabay/go-bitarray \
+                  -coverprofile=cover.out \
+                  ./...
+          go tool cover -func=cover.out
+          go tool cover -html=cover.out -o go-test-coverage.html
+      - uses: actions/upload-artifact@v2
+        with:
+          path: go-test-coverage.html
+          retention-days: 3

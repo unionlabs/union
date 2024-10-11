@@ -1,0 +1,11 @@
+[!linux] [!darwin] skip
+[darwin] skip # https://go.dev/issue/61779
+
+ttyin secretwords.txt
+terminalprompt
+ttyout 'magic words'
+! stderr .
+! stdout .
+
+-- secretwords.txt --
+SQUEAMISHOSSIFRAGE

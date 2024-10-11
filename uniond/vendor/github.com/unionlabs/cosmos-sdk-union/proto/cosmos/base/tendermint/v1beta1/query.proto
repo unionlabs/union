@@ -1,0 +1,209 @@
+syntax = "proto3";
+package cosmos.base.tendermint.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "google/api/annotations.proto";
+import "cometbft/p2p/v1/types.proto";
+import "cometbft/types/v1/types.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/base/tendermint/v1beta1/types.proto";
+import "cosmos_proto/cosmos.proto";
+import "cometbft/types/v1/block.proto";
+import "cometbft/crypto/v1/proof.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/client/grpc/cmtservice";
+
+// Service defines the gRPC querier service for tendermint queries.
+service Service {
+  // GetNodeInfo queries the current node info.
+  rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {
+    option (google.api.http).get = "/cosmos/base/tendermint/v1beta1/node_info";
+  }
+
+  // GetSyncing queries node syncing.
+  rpc GetSyncing(GetSyncingRequest) returns (GetSyncingResponse) {
+    option (google.api.http).get = "/cosmos/base/tendermint/v1beta1/syncing";
+  }
+
+  // GetLatestBlock returns the latest block.
+  rpc GetLatestBlock(GetLatestBlockRequest) returns (GetLatestBlockResponse) {
+    option (google.api.http).get = "/cosmos/base/tendermint/v1beta1/blocks/latest";
+  }
+
+  // GetBlockByHeight queries block for given height.
+  rpc GetBlockByHeight(GetBlockByHeightRequest) returns (GetBlockByHeightResponse) {
+    option (google.api.http).get = "/cosmos/base/tendermint/v1beta1/blocks/{height}";
+  }
+
+  // GetLatestValidatorSet queries latest validator-set.
+  rpc GetLatestValidatorSet(GetLatestValidatorSetRequest) returns (GetLatestValidatorSetResponse) {
+    option (google.api.http).get = "/cosmos/base/tendermint/v1beta1/validatorsets/latest";
+  }
+
+  // GetValidatorSetByHeight queries validator-set at a given height.
+  rpc GetValidatorSetByHeight(GetValidatorSetByHeightRequest) returns (GetValidatorSetByHeightResponse) {
+    option (google.api.http).get = "/cosmos/base/tendermint/v1beta1/validatorsets/{height}";
+  }
+
+  // ABCIQuery defines a query handler that supports ABCI queries directly to the
+  // application, bypassing Tendermint completely. The ABCI query must contain
+  // a valid and supported path, including app, custom, p2p, and store.
+  rpc ABCIQuery(ABCIQueryRequest) returns (ABCIQueryResponse) {
+    option (google.api.http).get          = "/cosmos/base/tendermint/v1beta1/abci_query";
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
+  }
+}
+
+// GetValidatorSetByHeightRequest is the request type for the Query/GetValidatorSetByHeight RPC method.
+message GetValidatorSetByHeightRequest {
+  int64 height = 1;
+  // pagination defines an pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// GetValidatorSetByHeightResponse is the response type for the Query/GetValidatorSetByHeight RPC method.
+message GetValidatorSetByHeightResponse {
+  int64              block_height = 1;
+  repeated Validator validators   = 2;
+  // pagination defines an pagination for the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 3;
+}
+
+// GetLatestValidatorSetRequest is the request type for the Query/GetValidatorSetByHeight RPC method.
+message GetLatestValidatorSetRequest {
+  // pagination defines an pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// GetLatestValidatorSetResponse is the response type for the Query/GetValidatorSetByHeight RPC method.
+message GetLatestValidatorSetResponse {
+  int64              block_height = 1;
+  repeated Validator validators   = 2;
+  // pagination defines an pagination for the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 3;
+}
+
+// Validator is the type for the validator-set.
+message Validator {
+  string              address           = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  google.protobuf.Any pub_key           = 2;
+  int64               voting_power      = 3;
+  int64               proposer_priority = 4;
+}
+
+// GetBlockByHeightRequest is the request type for the Query/GetBlockByHeight RPC method.
+message GetBlockByHeightRequest {
+  int64 height = 1;
+}
+
+// GetBlockByHeightResponse is the response type for the Query/GetBlockByHeight RPC method.
+message GetBlockByHeightResponse {
+  .cometbft.types.v1.BlockID block_id = 1;
+
+  // Deprecated: please use `sdk_block` instead
+  .cometbft.types.v1.Block block = 2;
+
+  Block sdk_block = 3 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+}
+
+// GetLatestBlockRequest is the request type for the Query/GetLatestBlock RPC method.
+message GetLatestBlockRequest {}
+
+// GetLatestBlockResponse is the response type for the Query/GetLatestBlock RPC method.
+message GetLatestBlockResponse {
+  .cometbft.types.v1.BlockID block_id = 1;
+
+  // Deprecated: please use `sdk_block` instead
+  .cometbft.types.v1.Block block = 2;
+
+  Block sdk_block = 3 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+}
+
+// GetSyncingRequest is the request type for the Query/GetSyncing RPC method.
+message GetSyncingRequest {}
+
+// GetSyncingResponse is the response type for the Query/GetSyncing RPC method.
+message GetSyncingResponse {
+  bool syncing = 1;
+}
+
+// GetNodeInfoRequest is the request type for the Query/GetNodeInfo RPC method.
+message GetNodeInfoRequest {}
+
+// GetNodeInfoResponse is the response type for the Query/GetNodeInfo RPC method.
+message GetNodeInfoResponse {
+  .cometbft.p2p.v1.DefaultNodeInfo default_node_info   = 1;
+  VersionInfo                      application_version = 2;
+}
+
+// VersionInfo is the type for the GetNodeInfoResponse message.
+message VersionInfo {
+  string          name               = 1;
+  string          app_name           = 2;
+  string          version            = 3;
+  string          git_commit         = 4;
+  string          build_tags         = 5;
+  string          go_version         = 6;
+  repeated Module build_deps         = 7;
+  string          cosmos_sdk_version = 8 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.43"];
+}
+
+// Module is the type for VersionInfo
+message Module {
+  // module path
+  string path = 1;
+  // module version
+  string version = 2;
+  // checksum
+  string sum = 3;
+}
+
+// ABCIQueryRequest defines the request structure for the ABCIQuery gRPC query.
+message ABCIQueryRequest {
+  bytes  data   = 1;
+  string path   = 2;
+  int64  height = 3;
+  bool   prove  = 4;
+}
+
+// ABCIQueryResponse defines the response structure for the ABCIQuery gRPC query.
+//
+// Note: This type is a duplicate of the ResponseQuery proto type defined in
+// Tendermint.
+message ABCIQueryResponse {
+  uint32 code = 1;
+  // Deprecated: use "value" instead
+  reserved 2;
+  string log   = 3; // nondeterministic
+  string info  = 4; // nondeterministic
+  int64  index = 5;
+  bytes  key   = 6;
+  bytes  value = 7;
+  // deprecated in favor of comet proof type
+  reserved 8;
+  int64                        height    = 9;
+  string                       codespace = 10;
+  .cometbft.crypto.v1.ProofOps proof_ops = 11;
+}
+
+// ProofOp defines an operation used for calculating Merkle root. The data could
+// be arbitrary format, providing necessary data for example neighbouring node
+// hash.
+//
+// Note: This type is a duplicate of the ProofOp proto type defined in Tendermint.
+message ProofOp {
+  option deprecated = true;
+  string type       = 1;
+  bytes  key        = 2;
+  bytes  data       = 3;
+}
+
+// ProofOps is Merkle proof defined by the list of ProofOps.
+//
+// Note: This type is a duplicate of the ProofOps proto type defined in Tendermint.
+message ProofOps {
+  option           deprecated = true;
+  repeated ProofOp ops        = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}

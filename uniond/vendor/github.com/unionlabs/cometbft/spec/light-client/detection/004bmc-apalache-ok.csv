@@ -1,0 +1,10 @@
+no;filename;tool;timeout;init;inv;next;args
+1;LCD_MC3_3_faulty.tla;apalache;1h;;CommonHeightOnEvidenceInv;;--length=10
+2;LCD_MC3_3_faulty.tla;apalache;1h;;AccuracyInv;;--length=10
+3;LCD_MC3_3_faulty.tla;apalache;1h;;PrecisionInvLocal;;--length=10
+4;LCD_MC3_4_faulty.tla;apalache;1h;;CommonHeightOnEvidenceInv;;--length=10
+5;LCD_MC3_4_faulty.tla;apalache;1h;;AccuracyInv;;--length=10
+6;LCD_MC3_4_faulty.tla;apalache;1h;;PrecisionInvLocal;;--length=10
+7;LCD_MC4_4_faulty.tla;apalache;1h;;CommonHeightOnEvidenceInv;;--length=10
+8;LCD_MC4_4_faulty.tla;apalache;1h;;AccuracyInv;;--length=10
+9;LCD_MC4_4_faulty.tla;apalache;1h;;PrecisionInvLocal;;--length=10

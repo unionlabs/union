@@ -1,0 +1,87 @@
+open p1 1
+----
+<local fs> mkdir-all: p1 0755
+<local fs> open-dir: p1
+<local fs> open-dir: p1
+<local fs> create: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> create: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> close: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+
+create 1 shared 1 2000000
+----
+<remote> create object "61a6-1-000001.sst"
+<remote> close writer for "61a6-1-000001.sst" after 2000000 bytes
+<remote> create object "61a6-1-000001.sst.ref.1.000001"
+<remote> close writer for "61a6-1-000001.sst.ref.1.000001" after 0 bytes
+
+# We should be seeing larger and larger reads. But the last read should be
+# capped to the object size.
+read 1
+0 1000
+1000 15000
+16000 30000
+46000 10000
+56000 50000
+106000 30000
+150000 20000
+180000 10000
+210000 30000
+300000 10000
+500000 1000
+800000 1000
+1500000 10000
+----
+<remote> size of object "61a6-1-000001.sst.ref.1.000001": 0
+<remote> create reader for object "61a6-1-000001.sst": 2000000 bytes
+size: 2000000
+<remote> read object "61a6-1-000001.sst" at 0 (length 1000)
+0 1000: ok (salt 1)
+<remote> read object "61a6-1-000001.sst" at 1000 (length 15000)
+1000 15000: ok (salt 1)
+<remote> read object "61a6-1-000001.sst" at 16000 (length 65536)
+16000 30000: ok (salt 1)
+46000 10000: ok (salt 1)
+<remote> read object "61a6-1-000001.sst" at 81536 (length 105536)
+56000 50000: ok (salt 1)
+106000 30000: ok (salt 1)
+150000 20000: ok (salt 1)
+<remote> read object "61a6-1-000001.sst" at 187072 (length 255072)
+180000 10000: ok (salt 1)
+210000 30000: ok (salt 1)
+300000 10000: ok (salt 1)
+<remote> read object "61a6-1-000001.sst" at 500000 (length 524288)
+500000 1000: ok (salt 1)
+800000 1000: ok (salt 1)
+<remote> read object "61a6-1-000001.sst" at 1500000 (length 500000)
+1500000 10000: ok (salt 1)
+<remote> close reader for "61a6-1-000001.sst"
+
+# When reading for a compaction, we should be doing large reads from the start.
+read 1 for-compaction
+0 1000
+1000 15000
+16000 30000
+46000 10000
+56000 50000
+106000 30000
+150000 20000
+180000 10000
+210000 30000
+----
+<remote> size of object "61a6-1-000001.sst.ref.1.000001": 0
+<remote> create reader for object "61a6-1-000001.sst": 2000000 bytes
+size: 2000000
+<remote> read object "61a6-1-000001.sst" at 0 (length 1048576)
+0 1000: ok (salt 1)
+1000 15000: ok (salt 1)
+16000 30000: ok (salt 1)
+46000 10000: ok (salt 1)
+56000 50000: ok (salt 1)
+106000 30000: ok (salt 1)
+150000 20000: ok (salt 1)
+180000 10000: ok (salt 1)
+210000 30000: ok (salt 1)
+<remote> close reader for "61a6-1-000001.sst"

@@ -183,13 +183,13 @@ func (a *Array) Uint64(i uint64) *Array {
 
 // Float32 appends f as a float32 to the array.
 func (a *Array) Float32(f float32) *Array {
-	a.buf = enc.AppendFloat32(enc.AppendArrayDelim(a.buf), f)
+	a.buf = enc.AppendFloat32(enc.AppendArrayDelim(a.buf), f, FloatingPointPrecision)
 	return a
 }
 
 // Float64 appends f as a float64 to the array.
 func (a *Array) Float64(f float64) *Array {
-	a.buf = enc.AppendFloat64(enc.AppendArrayDelim(a.buf), f)
+	a.buf = enc.AppendFloat64(enc.AppendArrayDelim(a.buf), f, FloatingPointPrecision)
 	return a
 }
 
@@ -201,7 +201,7 @@ func (a *Array) Time(t time.Time) *Array {
 
 // Dur appends d to the array.
 func (a *Array) Dur(d time.Duration) *Array {
-	a.buf = enc.AppendDuration(enc.AppendArrayDelim(a.buf), d, DurationFieldUnit, DurationFieldInteger)
+	a.buf = enc.AppendDuration(enc.AppendArrayDelim(a.buf), d, DurationFieldUnit, DurationFieldInteger, FloatingPointPrecision)
 	return a
 }
 

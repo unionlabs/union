@@ -1,0 +1,26 @@
+-- go.mod --
+module testdata
+go 1.18
+
+-- a/a.go --
+package a
+
+import "testdata/b"
+
+func A() {
+	var x b.B
+	x.F()
+}
+
+-- b/b.go --
+package b
+
+import "testdata/c"
+
+type B struct { c.C }
+
+-- c/c.go --
+package c
+
+type C int
+func (C) F() {}

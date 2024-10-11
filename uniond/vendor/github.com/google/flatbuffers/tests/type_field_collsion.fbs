@@ -1,0 +1,8 @@
+namespace type_field_collsion;
+
+// This table tests collsions of identifiers.
+table Collision {
+  collision : int;
+}
+
+root_type Collision;

@@ -1,0 +1,257 @@
+{{define "gkrTestVectors"}}
+
+{{$GkrPackagePrefix := select .OutsideGkrPackage "" "gkr."}}
+{{$CheckOutputCorrectness := not .OutsideGkrPackage}}
+
+{{$Circuit          := print $GkrPackagePrefix "Circuit"}}
+{{$Gate             := print $GkrPackagePrefix "Gate"}}
+{{$Proof            := print $GkrPackagePrefix "Proof"}}
+{{$WireAssignment   := print $GkrPackagePrefix "WireAssignment"}}
+{{$Wire             := print $GkrPackagePrefix "Wire"}}
+{{$CircuitLayer     := print $GkrPackagePrefix "CircuitLayer"}}
+
+type WireInfo struct {
+	Gate   string `json:"gate"`
+	Inputs []int  `json:"inputs"`
+}
+
+type CircuitInfo []WireInfo
+
+var circuitCache = make(map[string]{{$Circuit}})
+
+func getCircuit(path string) ({{$Circuit}}, error) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	if circuit, ok := circuitCache[path]; ok {
+		return circuit, nil
+	}
+	var bytes []byte
+	if bytes, err = os.ReadFile(path); err == nil {
+		var circuitInfo CircuitInfo
+		if err = json.Unmarshal(bytes, &circuitInfo); err == nil {
+			circuit := circuitInfo.toCircuit()
+			circuitCache[path] = circuit
+			return circuit, nil
+		} else {
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+}
+
+func (c CircuitInfo) toCircuit() (circuit {{$Circuit}}) {
+	circuit = make({{$Circuit}}, len(c))
+	for i := range c {
+		circuit[i].Gate = Gates[c[i].Gate]
+		circuit[i].Inputs = make([]*{{$Wire}}, len(c[i].Inputs))
+		for k, inputCoord := range c[i].Inputs {
+			input := &circuit[inputCoord]
+			circuit[i].Inputs[k] = input
+		}
+	}
+	return
+}
+
+func init() {
+	Gates["mimc"] = mimcCipherGate{} //TODO: Add ark
+	Gates["select-input-3"] = _select(2)
+}
+
+type mimcCipherGate struct {
+	ark {{.ElementType}}
+}
+
+func (m mimcCipherGate) Evaluate(input ...{{.ElementType}}) (res {{.ElementType}}) {
+	var sum {{.ElementType}}
+
+	sum.
+		Add(&input[0], &input[1]).
+		Add(&sum, &m.ark)
+
+	res.Square(&sum)    // sum^2
+	res.Mul(&res, &sum) // sum^3
+	res.Square(&res)    //sum^6
+	res.Mul(&res, &sum) //sum^7
+
+	return
+}
+
+func (m mimcCipherGate) Degree() int {
+	return 7
+}
+
+type PrintableProof []PrintableSumcheckProof
+
+type PrintableSumcheckProof struct {
+	FinalEvalProof  interface{}     `json:"finalEvalProof"`
+	PartialSumPolys [][]interface{} `json:"partialSumPolys"`
+}
+
+func unmarshalProof(printable PrintableProof) ({{$Proof}}, error) {
+	proof := make({{$Proof}}, len(printable))
+	for i := range printable {
+		finalEvalProof := []{{.ElementType}}(nil)
+
+		if printable[i].FinalEvalProof != nil {
+			finalEvalSlice := reflect.ValueOf(printable[i].FinalEvalProof)
+			finalEvalProof = make([]{{.ElementType}}, finalEvalSlice.Len())
+			for k := range finalEvalProof {
+				if _, err := {{ setElement "finalEvalProof[k]" "finalEvalSlice.Index(k).Interface()" .ElementType}}; err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		proof[i] = sumcheck.Proof{
+			PartialSumPolys: make([]polynomial.Polynomial, len(printable[i].PartialSumPolys)),
+			FinalEvalProof:  finalEvalProof,
+		}
+		for k := range printable[i].PartialSumPolys {
+			var err error
+			if proof[i].PartialSumPolys[k], err = test_vector_utils.SliceToElementSlice(printable[i].PartialSumPolys[k]); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return proof, nil
+}
+
+type TestCase struct {
+	Circuit         {{$Circuit}}
+	Hash            hash.Hash
+	Proof           {{$Proof}}
+	FullAssignment  {{$WireAssignment}}
+	InOutAssignment {{$WireAssignment}}
+	{{if .RetainTestCaseRawInfo}}Info TestCaseInfo{{end}}
+}
+
+type TestCaseInfo struct {
+	Hash    test_vector_utils.HashDescription `json:"hash"`
+	Circuit string                            `json:"circuit"`
+	Input   [][]interface{}                   `json:"input"`
+	Output  [][]interface{}                   `json:"output"`
+	Proof   PrintableProof                    `json:"proof"`
+}
+
+var testCases = make(map[string]*TestCase)
+
+func newTestCase(path string) (*TestCase, error) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	dir := filepath.Dir(path)
+
+	tCase, ok := testCases[path]
+	if !ok {
+		var bytes []byte
+		if bytes, err = os.ReadFile(path); err == nil {
+			var info TestCaseInfo
+			err = json.Unmarshal(bytes, &info)
+			if err != nil {
+				return nil, err
+			}
+
+			var circuit {{$Circuit}}
+			if circuit, err = getCircuit(filepath.Join(dir, info.Circuit)); err != nil {
+				return nil, err
+			}
+			var _hash hash.Hash
+			if _hash, err = test_vector_utils.HashFromDescription(info.Hash); err != nil {
+				return nil, err
+			}
+			var proof {{$Proof}}
+			if proof, err = unmarshalProof(info.Proof); err != nil {
+				return nil, err
+			}
+
+			fullAssignment := make({{$WireAssignment}})
+			inOutAssignment := make({{$WireAssignment}})
+
+			sorted := {{select .OutsideGkrPackage "t" "gkr.T"}}opologicalSort(circuit)
+
+			inI, outI := 0, 0
+			for _, w := range sorted {
+				var assignmentRaw []interface{}
+				if w.IsInput() {
+					if inI == len(info.Input) {
+						return nil, fmt.Errorf("fewer input in vector than in circuit")
+					}
+					assignmentRaw = info.Input[inI]
+					inI++
+				} else if w.IsOutput() {
+					if outI == len(info.Output) {
+						return nil, fmt.Errorf("fewer output in vector than in circuit")
+					}
+					assignmentRaw = info.Output[outI]
+					outI++
+				}
+				if assignmentRaw != nil {
+					var wireAssignment []{{.ElementType}}
+					if wireAssignment, err = test_vector_utils.SliceToElementSlice(assignmentRaw); err != nil {
+					return nil, err
+					}
+
+					fullAssignment[w] = wireAssignment
+					inOutAssignment[w] = wireAssignment
+				}
+			}
+
+			fullAssignment.Complete(circuit)
+
+			{{if not $CheckOutputCorrectness}}
+				info.Output = make([][]interface{}, 0, outI)
+			{{end}}
+
+			for _, w := range sorted {
+				if w.IsOutput() {
+				{{if $CheckOutputCorrectness}}
+					if err = test_vector_utils.SliceEquals(inOutAssignment[w], fullAssignment[w]); err != nil {
+						return nil, fmt.Errorf("assignment mismatch: %v", err)
+					}
+				{{else}}
+					info.Output = append(info.Output, test_vector_utils.ElementSliceToInterfaceSlice(inOutAssignment[w]))
+				{{end}}
+				}
+			}
+
+			tCase = &TestCase{
+				FullAssignment:  fullAssignment,
+				InOutAssignment: inOutAssignment,
+				Proof:           proof,
+				Hash:            _hash,
+				Circuit:         circuit,
+				{{if .RetainTestCaseRawInfo }}Info: info,{{end}}
+			}
+
+			testCases[path] = tCase
+		} else {
+			return nil, err
+		}
+	}
+
+	return tCase, nil
+}
+
+type _select int
+
+func (g _select) Evaluate(in ...{{.ElementType}}) {{.ElementType}} {
+	return in[g]
+}
+
+func (g _select) Degree() int {
+	return 1
+}
+
+{{end}}
+
+{{- define "setElement element value elementType"}}
+{{- if eq .elementType "fr.Element"}} test_vector_utils.SetElement(&{{.element}}, {{.value}})
+{{- else if eq .elementType "small_rational.SmallRational"}} {{.element}}.SetInterface({{.value}})
+{{- else}}
+{{print "\"UNEXPECTED TYPE" .elementType "\""}}
+{{- end}}
+{{- end}}

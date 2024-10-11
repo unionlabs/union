@@ -1,0 +1,117 @@
+body {
+    margin: 10;
+    background-color: #fff;
+    font: 10pt -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;
+}
+
+.divider {
+    border-top: 1px solid #eee;
+}
+
+.columns {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.rows {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+}
+
+.center {
+    margin: auto;
+    width: 90%;
+    min-width: 400px;
+    max-width: 1200px;
+}
+
+.section {
+    flex: 100%;
+    margin-top: 10px;
+    overflow: auto;
+}
+
+.title {
+    font-size: 24pt;
+    font-weight: bold;
+}
+
+.subtitle {
+    font-size: 12pt;
+    font-weight: bold;
+}
+
+.updated {
+    font-size: 9pt;
+    text-align: right;
+}
+
+div.annotation {
+    display: none;
+}
+
+.code {
+    font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
+}
+
+.overview {
+    max-width: 800px;
+}
+
+.controls {
+    margin: 5px;
+}
+
+a {
+    text-decoration: none;
+}
+
+.selected {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+path.line1 {
+    fill: none;
+    stroke-width: 1.5px;
+}
+
+path.line2 {
+    fill: none;
+    stroke-width: 1.5px;
+}
+
+svg.chart {
+    flex: 50%;
+    height: 200px;
+}
+
+.write-throughput {
+    flex: 50%;
+    height: 300px;
+}
+
+.write-throughput-detail {
+    flex: 50%;
+    height: 300px;
+}
+
+text.hover {
+    font-size: 8pt;
+    font-weight: bold;
+    filter: url(#textBackground);
+}
+
+@media only screen and (max-width: 900px) {
+    .columns {
+        flex-direction: column;
+    }
+
+    svg.chart {
+        width: 100%;
+        flex: auto;
+    }
+}

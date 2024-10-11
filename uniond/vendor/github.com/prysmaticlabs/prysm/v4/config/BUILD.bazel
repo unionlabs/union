@@ -1,0 +1,13 @@
+config_setting(
+    name = "mainnet",
+    flag_values = {
+        "//proto:network": "mainnet",
+    },
+)
+
+config_setting(
+    name = "minimal",
+    flag_values = {
+        "//proto:network": "minimal",
+    },
+)

@@ -1,0 +1,11 @@
+packs:
+  - crypto-com/cosmos-sdk-codeql
+queries:
+  - uses: security-and-quality
+  - uses: security-experimental
+  - uses: security-extended
+paths-ignore:
+  - api
+  - '**/*_test.go'
+  - '**/*.pulsar.go'
+  - '**/*.pb.gp'

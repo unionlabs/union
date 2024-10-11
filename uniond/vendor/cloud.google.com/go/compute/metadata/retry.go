@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	syscallRetryable = func(err error) bool { return false }
+	syscallRetryable = func(error) bool { return false }
 )
 
 // defaultBackoff is basically equivalent to gax.Backoff without the need for

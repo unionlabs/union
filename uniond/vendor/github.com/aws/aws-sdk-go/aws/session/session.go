@@ -37,7 +37,7 @@ const (
 
 // ErrSharedConfigSourceCollision will be returned if a section contains both
 // source_profile and credential_source
-var ErrSharedConfigSourceCollision = awserr.New(ErrCodeSharedConfig, "only one credential type may be specified per profile: source profile, credential source, credential process, web identity token, or sso", nil)
+var ErrSharedConfigSourceCollision = awserr.New(ErrCodeSharedConfig, "only one credential type may be specified per profile: source profile, credential source, credential process, web identity token", nil)
 
 // ErrSharedConfigECSContainerEnvVarEmpty will be returned if the environment
 // variables are empty and Environment was set as the credential source
@@ -174,7 +174,6 @@ const (
 
 // Options provides the means to control how a Session is created and what
 // configuration values will be loaded.
-//
 type Options struct {
 	// Provides config values for the SDK to use when creating service clients
 	// and making API requests to services. Any value set in with this field
@@ -224,7 +223,7 @@ type Options struct {
 	// from stdin for the MFA token code.
 	//
 	// This field is only used if the shared configuration is enabled, and
-	// the config enables assume role wit MFA via the mfa_serial field.
+	// the config enables assume role with MFA via the mfa_serial field.
 	AssumeRoleTokenProvider func() (string, error)
 
 	// When the SDK's shared config is configured to assume a role this option
@@ -322,24 +321,24 @@ type Options struct {
 // credentials file. Enabling the Shared Config will also allow the Session
 // to be built with retrieving credentials with AssumeRole set in the config.
 //
-//     // Equivalent to session.New
-//     sess := session.Must(session.NewSessionWithOptions(session.Options{}))
+//	// Equivalent to session.New
+//	sess := session.Must(session.NewSessionWithOptions(session.Options{}))
 //
-//     // Specify profile to load for the session's config
-//     sess := session.Must(session.NewSessionWithOptions(session.Options{
-//          Profile: "profile_name",
-//     }))
+//	// Specify profile to load for the session's config
+//	sess := session.Must(session.NewSessionWithOptions(session.Options{
+//	     Profile: "profile_name",
+//	}))
 //
-//     // Specify profile for config and region for requests
-//     sess := session.Must(session.NewSessionWithOptions(session.Options{
-//          Config: aws.Config{Region: aws.String("us-east-1")},
-//          Profile: "profile_name",
-//     }))
+//	// Specify profile for config and region for requests
+//	sess := session.Must(session.NewSessionWithOptions(session.Options{
+//	     Config: aws.Config{Region: aws.String("us-east-1")},
+//	     Profile: "profile_name",
+//	}))
 //
-//     // Force enable Shared Config support
-//     sess := session.Must(session.NewSessionWithOptions(session.Options{
-//         SharedConfigState: session.SharedConfigEnable,
-//     }))
+//	// Force enable Shared Config support
+//	sess := session.Must(session.NewSessionWithOptions(session.Options{
+//	    SharedConfigState: session.SharedConfigEnable,
+//	}))
 func NewSessionWithOptions(opts Options) (*Session, error) {
 	var envCfg envConfig
 	var err error
@@ -375,7 +374,7 @@ func NewSessionWithOptions(opts Options) (*Session, error) {
 // This helper is intended to be used in variable initialization to load the
 // Session and configuration at startup. Such as:
 //
-//     var sess = session.Must(session.NewSession())
+//	var sess = session.Must(session.NewSession())
 func Must(sess *Session, err error) *Session {
 	if err != nil {
 		panic(err)
@@ -780,14 +779,12 @@ func mergeConfigSrcs(cfg, userCfg *aws.Config,
 		cfg.EndpointResolver = wrapEC2IMDSEndpoint(cfg.EndpointResolver, ec2IMDSEndpoint, endpointMode)
 	}
 
-	// Configure credentials if not already set by the user when creating the
-	// Session.
-	if cfg.Credentials == credentials.AnonymousCredentials && userCfg.Credentials == nil {
-		creds, err := resolveCredentials(cfg, envCfg, sharedCfg, handlers, sessOpts)
-		if err != nil {
-			return err
-		}
-		cfg.Credentials = creds
+	cfg.EC2MetadataEnableFallback = userCfg.EC2MetadataEnableFallback
+	if cfg.EC2MetadataEnableFallback == nil && envCfg.EC2IMDSv1Disabled != nil {
+		cfg.EC2MetadataEnableFallback = aws.Bool(!*envCfg.EC2IMDSv1Disabled)
+	}
+	if cfg.EC2MetadataEnableFallback == nil && sharedCfg.EC2IMDSv1Disabled != nil {
+		cfg.EC2MetadataEnableFallback = aws.Bool(!*sharedCfg.EC2IMDSv1Disabled)
 	}
 
 	cfg.S3UseARNRegion = userCfg.S3UseARNRegion
@@ -810,6 +807,17 @@ func mergeConfigSrcs(cfg, userCfg *aws.Config,
 			cfg.UseFIPSEndpoint = v
 			break
 		}
+	}
+
+	// Configure credentials if not already set by the user when creating the Session.
+	// Credentials are resolved last such that all _resolved_ config values are propagated to credential providers.
+	// ticket: P83606045
+	if cfg.Credentials == credentials.AnonymousCredentials && userCfg.Credentials == nil {
+		creds, err := resolveCredentials(cfg, envCfg, sharedCfg, handlers, sessOpts)
+		if err != nil {
+			return err
+		}
+		cfg.Credentials = creds
 	}
 
 	return nil
@@ -845,8 +853,8 @@ func initHandlers(s *Session) {
 // and handlers. If any additional configs are provided they will be merged
 // on top of the Session's copied config.
 //
-//     // Create a copy of the current Session, configured for the us-west-2 region.
-//     sess.Copy(&aws.Config{Region: aws.String("us-west-2")})
+//	// Create a copy of the current Session, configured for the us-west-2 region.
+//	sess.Copy(&aws.Config{Region: aws.String("us-west-2")})
 func (s *Session) Copy(cfgs ...*aws.Config) *Session {
 	newSession := &Session{
 		Config:   s.Config.Copy(cfgs...),

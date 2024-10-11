@@ -1,0 +1,35 @@
+> check_tx "abc"
+-> code: 2
+
+> check_tx "def=567"
+-> code: OK
+
+> finalize_block "def=567"
+-> code: OK
+-> code: OK
+-> data.hex: 0x0200000000000000
+
+> commit 
+-> code: OK
+
+> finalize_block "hello=world"
+-> code: OK
+-> code: OK
+-> data.hex: 0x0400000000000000
+
+> commit 
+-> code: OK
+
+> finalize_block "first=second"
+-> code: OK
+-> code: OK
+-> data.hex: 0x0600000000000000
+
+> commit 
+-> code: OK
+
+> info 
+-> code: OK
+-> data: {"size":3}
+-> data.hex: 0x7B2273697A65223A337D
+

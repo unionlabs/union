@@ -1,0 +1,4 @@
+package template
+
+func before() int { return 0 }
+func after() int  { println(); return 0 }

@@ -1,0 +1,49 @@
+{
+    "extends": [
+        "config:base",
+        "helpers:pinGitHubActionDigests"
+    ],
+    "baseBranches": [
+        "main"
+    ],
+    "postUpdateOptions": [
+        "gomodTidy"
+    ],
+    "packageRules": [
+        {
+            "updateTypes": [
+                "minor",
+                "patch",
+                "pin",
+                "digest"
+            ],
+            "automerge": true
+        },
+        {
+            "baseBranchList": [
+                "main"
+            ],
+            "packageNames": [
+                "github.com/golang/protobuf",
+                "google.golang.org/protobuf"
+            ],
+            "groupName": "golang/protobuf"
+        },
+        {
+            "packagePatterns": [
+                "jekyll.*",
+                "github-pages"
+            ],
+            "enabled": false
+        },
+        {
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchPackageNames": [
+                "slsa-framework/slsa-github-generator"
+            ],
+            "pinDigests": false
+        }
+    ]
+}

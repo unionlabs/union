@@ -1,0 +1,8 @@
+FROM rustlang/rust:nightly-stretch-slim as base
+WORKDIR /code
+ADD . .
+RUN cp flatc_debian_stretch flatc
+WORKDIR /code/tests
+RUN rustc --version
+RUN export RUST_NIGHTLY=1
+RUN ./RustTest.sh

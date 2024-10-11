@@ -1,0 +1,12 @@
+-- go.mod --
+module example.com/cycledep/v2
+
+go 1.12
+
+require example.com/cycle/v2 v2.0.0
+-- b.go --
+package b
+-- c/c.go --
+package c
+
+import _ "example.com/cycle/v2"

@@ -1,0 +1,17 @@
+{
+  "default": true,
+  "MD003": { "style": "atx" }, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md003---heading-style
+  "MD004": { "style": "dash" }, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md004---unordered-list-style
+  "MD007": { "indent": 4 }, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md007---unordered-list-indentation
+  "MD009": false, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md009---trailing-spaces
+  "MD010": false, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md010---hard-tabs
+  "MD013": false, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md013---line-length
+  "MD024": false, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md024---multiple-headings-with-the-same-content
+  "MD025": false, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md025---multiple-top-level-headings-in-the-same-document
+  "MD029": false, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md029---ordered-list-item-prefix
+  "MD033": false, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md033---inline-html
+  "MD036": false, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md036---emphasis-used-instead-of-a-heading
+  "MD041": false, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md041---first-line-in-a-file-should-be-a-top-level-heading
+  "MD049": { "style": "asterisk" }, // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md049---emphasis-style-should-be-consistent
+  "MD050": { "style": "asterisk" } // https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md050---strong-style-should-be-consistent
+}

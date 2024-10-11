@@ -1,0 +1,27 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["helpers.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/gateway",
+    visibility = ["//beacon-chain:__subpackages__"],
+    deps = [
+        "//api:go_default_library",
+        "//api/gateway:go_default_library",
+        "//cmd/beacon-chain/flags:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_grpc_ecosystem_grpc_gateway_v2//runtime:go_default_library",
+        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["helpers_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//api/gateway:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+    ],
+)

@@ -1,0 +1,274 @@
+reset
+----
+
+populate keylen=2 timestamps=(1,3,5)
+----
+wrote 2106 keys
+
+batch commit
+range-key-set a d @1 foo
+range-key-set d f @1 foo
+range-key-set f g @2 bar
+----
+committed 3 keys
+
+combined-iter
+seek-ge ba@4
+next
+next
+prev
+prev
+seek-ge ba@1
+seek-ge ca@1
+seek-ge a
+prev
+next
+prev
+seek-ge a
+seek-ge dog
+seek-ge foo
+seek-ge f
+prev
+next
+seek-lt f@1
+----
+ba@4: (., [a-f) @1=foo UPDATED)
+ba@3: (ba@3, [a-f) @1=foo)
+ba@1: (ba@1, [a-f) @1=foo)
+ba@3: (ba@3, [a-f) @1=foo)
+ba@5: (ba@5, [a-f) @1=foo)
+ba@1: (ba@1, [a-f) @1=foo)
+ca@1: (ca@1, [a-f) @1=foo)
+a: (., [a-f) @1=foo)
+.
+a: (., [a-f) @1=foo UPDATED)
+.
+a: (., [a-f) @1=foo UPDATED)
+dog: (., [a-f) @1=foo)
+foo: (., [f-g) @2=bar UPDATED)
+f: (., [f-g) @2=bar)
+ez@1: (ez@1, [a-f) @1=foo UPDATED)
+f: (., [f-g) @2=bar UPDATED)
+f@3: (f@3, [f-g) @2=bar)
+
+combined-iter
+seek-prefix-ge ba@9
+seek-prefix-ge ba@5
+seek-prefix-ge ba@3
+next
+seek-prefix-ge da@5
+next
+next
+next
+seek-prefix-ge da@5
+----
+ba@9: (., [ba-"ba\x00") @1=foo UPDATED)
+ba@5: (ba@5, [ba-"ba\x00") @1=foo)
+ba@3: (ba@3, [ba-"ba\x00") @1=foo)
+ba@1: (ba@1, [ba-"ba\x00") @1=foo)
+da@5: (da@5, [da-"da\x00") @1=foo UPDATED)
+da@3: (da@3, [da-"da\x00") @1=foo)
+da@1: (da@1, [da-"da\x00") @1=foo)
+.
+da@5: (da@5, [da-"da\x00") @1=foo UPDATED)
+
+# Regression test for #1947 — Test a no-op call to SetBounds. Even if the
+# underlying iterator doesn't need to be invalidated because the bounds didn't
+# change, a subsequent Seek that finds the same range key must still report
+# RangeKeyChanged() -> true.
+
+reset
+----
+
+batch commit
+range-key-set a d @1 foo
+----
+committed 1 keys
+
+combined-iter lower=a upper=z
+last
+set-bounds lower=a upper=z
+last
+set-bounds lower=a upper=z
+first
+set-bounds lower=a upper=z
+seek-ge a
+set-bounds lower=a upper=z
+seek-lt z
+set-bounds lower=a upper=z
+seek-prefix-ge a
+set-bounds lower=a upper=z
+seek-prefix-ge a
+----
+a: (., [a-d) @1=foo UPDATED)
+.
+a: (., [a-d) @1=foo UPDATED)
+.
+a: (., [a-d) @1=foo UPDATED)
+.
+a: (., [a-d) @1=foo UPDATED)
+.
+a: (., [a-d) @1=foo UPDATED)
+.
+a: (., [a-"a\x00") @1=foo UPDATED)
+.
+a: (., [a-"a\x00") @1=foo UPDATED)
+
+combined-iter lower=a upper=z
+last
+set-options lower=a upper=z
+last
+set-options lower=a upper=z
+first
+set-options lower=a upper=z
+seek-ge a
+set-options lower=a upper=z
+seek-lt z
+set-options lower=a upper=z
+seek-prefix-ge a
+set-options lower=a upper=z
+seek-prefix-ge a
+----
+a: (., [a-d) @1=foo UPDATED)
+.
+a: (., [a-d) @1=foo UPDATED)
+.
+a: (., [a-d) @1=foo UPDATED)
+.
+a: (., [a-d) @1=foo UPDATED)
+.
+a: (., [a-d) @1=foo UPDATED)
+.
+a: (., [a-"a\x00") @1=foo UPDATED)
+.
+a: (., [a-"a\x00") @1=foo UPDATED)
+
+# Regression test for #1950 — Test a no-op call to SeekGE/SeekLT after a
+# SetBounds/SetOptions noop. The SetBounds/SetOptions noop made the iterator
+# appear to be invalidated, but the internal iterator state was preserved.
+# However, if the previous iterator state had a range key, this range key must
+# be considered changed for the purpose of calculating RangeKeyChanged().
+
+combined-iter lower=a upper=z
+seek-lt z
+set-bounds lower=a upper=z
+seek-lt y
+seek-ge 1
+set-bounds lower=a upper=z
+seek-ge a
+----
+a: (., [a-d) @1=foo UPDATED)
+.
+a: (., [a-d) @1=foo UPDATED)
+a: (., [a-d) @1=foo)
+.
+a: (., [a-d) @1=foo UPDATED)
+
+combined-iter lower=a upper=z
+seek-lt z
+set-options lower=a upper=z
+seek-lt y
+seek-ge 1
+set-options lower=a upper=z
+seek-ge a
+----
+a: (., [a-d) @1=foo UPDATED)
+.
+a: (., [a-d) @1=foo UPDATED)
+a: (., [a-d) @1=foo)
+.
+a: (., [a-d) @1=foo UPDATED)
+
+
+# Similar to the above regression, test that a no-op correctly returns
+# RangeKeyChanged()=false if there's no intervening SetOptions/SetBounds call.
+
+combined-iter lower=a upper=z
+seek-lt z
+seek-lt y
+set-bounds lower=a upper=z
+seek-ge 1
+seek-ge a
+----
+a: (., [a-d) @1=foo UPDATED)
+a: (., [a-d) @1=foo)
+.
+a: (., [a-d) @1=foo UPDATED)
+a: (., [a-d) @1=foo)
+
+combined-iter lower=a upper=z
+seek-lt z
+seek-lt y
+set-options lower=a upper=z
+seek-ge 1
+seek-ge a
+----
+a: (., [a-d) @1=foo UPDATED)
+a: (., [a-d) @1=foo)
+.
+a: (., [a-d) @1=foo UPDATED)
+a: (., [a-d) @1=foo)
+
+# Regression test for #1980. An iterator with RangeKeyChanged()=true that is
+# then reconfigured to iterate over point keys should always return
+# RangeKeyChanged()=false.
+
+reset
+----
+
+batch commit
+range-key-set a b @1 foo
+set c c
+----
+committed 2 keys
+
+combined-iter
+seek-ge a
+set-options key-types=point
+seek-ge c
+----
+a: (., [a-b) @1=foo UPDATED)
+.
+c: (c, .)
+
+combined-iter
+seek-ge a
+set-options key-types=point
+seek-prefix-ge c
+----
+a: (., [a-b) @1=foo UPDATED)
+.
+c: (c, .)
+
+combined-iter
+seek-ge a
+set-options key-types=point
+seek-lt cat
+----
+a: (., [a-b) @1=foo UPDATED)
+.
+c: (c, .)
+
+combined-iter
+seek-ge a
+set-options key-types=point
+last
+----
+a: (., [a-b) @1=foo UPDATED)
+.
+c: (c, .)
+
+batch commit
+range-key-del a b
+range-key-set d e @1 foo
+----
+committed 2 keys
+
+combined-iter
+seek-ge d
+set-options key-types=point
+first
+----
+d: (., [d-e) @1=foo UPDATED)
+.
+c: (c, .)

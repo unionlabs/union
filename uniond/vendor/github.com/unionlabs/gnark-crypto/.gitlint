@@ -1,0 +1,11 @@
+[general]
+
+contrib=contrib-title-conventional-commits
+ignore=B6
+
+# This is a contrib rule - a community contributed rule. These are disabled by default.
+# You need to explicitly enable them one-by-one by adding them to the "contrib" option
+# under [general] section above.
+# [contrib-title-conventional-commits]
+# Specify allowed commit types. For details see: https://www.conventionalcommits.org/
+# types = bugfix,user-story,epic

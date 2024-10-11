@@ -1,0 +1,41 @@
+name: Test
+
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+      - "**.png"
+      - "**.ipynb"
+      - "**.xcf"
+      - "LICENSE"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "**.png"
+      - "**.ipynb"
+      - "**.xcf"
+      - "LICENSE"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ["1.13", "1.14", "1.15"]
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-
+      - name: Test
+        run: |
+          go test -race ./...

@@ -1,0 +1,28 @@
+name: "Dependency Review"
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          check-latest: true
+      - name: "Dependency Review"
+        uses: actions/dependency-review-action@v4
+        with:
+          base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
+          head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          fail-on-severity: high # otherwise we fail on ourselves due to https://github.com/advisories/GHSA-qfc5-6r3j-jj22, https://github.com/advisories/GHSA-w44m-8mv2-v78h TODO(@julienrbrt) submit a PR to the action to ignore packages
+      - name: "Dependency audit"
+        run: ./scripts/dep-assert.sh
+      - name: "Go vulnerability check"
+        run: make vulncheck

@@ -1,0 +1,72 @@
+[
+  {
+    "proto": [],
+    "metadata":{},
+    "text": "zero"
+  },
+  {
+    "proto": [
+      { "amount": "1", "denom": "ucosm" }
+    ],
+    "metadata":{
+      "ucosm": {"display": "COSM", "base": "ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+      "ustake": {"display": "STAKE", "base": "ustake",  "denom_units": [{"denom": "STAKE", "exponent": 6}, {"denom": "ustake", "exponent": 0}]}
+    },
+    "text":  "0.000001 COSM"
+  },
+  {
+    "proto": [
+      { "amount": "1", "denom": "ucosm" },
+      { "amount": "3", "denom": "ustake" }
+    ],
+    "metadata":{
+      "ucosm": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+      "ustake": {"display": "STAKE", "base":"ustake", "denom_units": [{"denom": "STAKE", "exponent": 6}, {"denom": "ustake", "exponent": 0}]}
+    },
+    "text":  "0.000001 COSM, 0.000003 STAKE"
+  },
+  {
+    "proto": [
+      { "amount": "3", "denom": "ustake" },
+      { "amount": "1", "denom": "ucosm" }
+    ],
+    "metadata": {
+      "ucosm": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+      "ustake": {"display": "STAKE", "base":"ustake", "denom_units": [{"denom": "STAKE", "exponent": 6}, {"denom": "ustake", "exponent": 0}]}
+    },
+    "text": "0.000001 COSM, 0.000003 STAKE"
+  },
+  {
+    "proto": [
+      { "amount": "1", "denom": "uaa" },
+      { "amount": "2", "denom": "ubb" },
+      { "amount": "3", "denom": "uatom" }
+    ],
+    "metadata": {
+      "uaa": {"display": "AA", "base":"uaa", "denom_units": [{"denom": "AA", "exponent": 6}, {"denom": "uaa", "exponent": 0}]},
+      "ubb": {"display": "BB", "base":"ubb", "denom_units": [{"denom": "BB", "exponent": 6}, {"denom": "ubb", "exponent": 0}]},
+      "uatom": {"display": "atom", "base":"uatom", "denom_units": [{"denom": "atom", "exponent": 6}, {"denom": "uatom", "exponent": 0}]}
+    },
+    "text": "0.000001 AA, 0.000002 BB, 0.000003 atom"
+  },
+  {
+    "proto": [
+      { "amount": "4", "denom": "uxc1" },
+      { "amount": "3", "denom": "uxc" },
+      { "amount": "2", "denom": "uxb" },
+      { "amount": "1", "denom": "uxa" }
+    ],
+    "metadata": {
+      "uxa": {"display": "xA", "base":"uxa", "denom_units": [{"denom": "xA", "exponent": 6}, {"denom": "uxa", "exponent": 0}]},
+      "uxb": {"display": "xB", "base":"uxb", "denom_units": [{"denom": "xB", "exponent": 6}, {"denom": "uxb", "exponent": 0}]},
+      "uxc": {"display": "xC", "base":"uxc", "denom_units": [{"denom": "xC", "exponent": 6}, {"denom": "uxc", "exponent": 0}]},
+      "uxc1": {"display": "xC1", "base":"uxc1", "denom_units": [{"denom": "xC1", "exponent": 6}, {"denom": "uxc1", "exponent": 0}]}
+    },
+    "text": "0.000001 xA, 0.000002 xB, 0.000003 xC, 0.000004 xC1"
+  },
+  {"text": "0.000001AA, 0.000002 BB, 0.000003 atom", "error": true},
+  {"text": "0.000001 AA, 0.000002  BB, 0.000003 atom", "error": true},
+  {"text": "0.000001 AA, 0.000002 BB,  0.000003 atom", "error": true},
+  {"text": " 0.000001 AA, 0.000002 BB,  0.000003 atom", "error": true},
+  {"text": "0.000001 AA, 0.000002 BB,  0.000003 atom ", "error": true}
+]

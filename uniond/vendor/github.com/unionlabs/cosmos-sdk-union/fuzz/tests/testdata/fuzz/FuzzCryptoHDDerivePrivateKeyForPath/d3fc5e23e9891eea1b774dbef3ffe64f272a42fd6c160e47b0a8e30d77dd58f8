@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("de\xc1*1/8/11/4/0")

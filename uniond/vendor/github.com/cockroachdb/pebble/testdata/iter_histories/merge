@@ -1,0 +1,37 @@
+# Test semantics of reading merge keys through the database and through a batch,
+# both with an iterator and with Get.
+
+reset merger=appender
+----
+
+batch name=bar
+merge k bar
+----
+wrote 1 keys to batch "bar"
+
+batch commit
+merge k foo
+----
+committed 1 keys
+
+combined-iter
+seek-ge k
+----
+k: (foo, .)
+
+get
+k
+----
+k: foo
+
+combined-iter reader=bar
+seek-ge k
+seek-prefix-ge k
+----
+k: (foobar, .)
+k: (foobar, .)
+
+get reader=bar
+k
+----
+k: foobar

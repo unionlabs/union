@@ -1,0 +1,13 @@
+mod=example.com/sub/nest/v2
+dir=nest/v2
+base=v2.0.0
+vcs=git
+-- want --
+# summary
+Suggested version: v2.0.1 (with tag nest/v2.0.1)
+-- nest/v2/go.mod --
+module example.com/sub/nest/v2
+
+go 1.12
+-- nest/v2/nest.go --
+package nest

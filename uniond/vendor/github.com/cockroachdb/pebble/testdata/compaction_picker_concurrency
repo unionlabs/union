@@ -1,0 +1,172 @@
+# Test a file L1.000203 that would be a candidate for a move compaction into
+# L2, except that it's bordered by two files participating in the same
+# compaction. This is possible if 000203 created by a L0->L1 compaction that
+# completed after the compaction of 000201 and 000202 began.
+#
+# The in-progress compaction of 000201 and 000202  will write an output table
+# to L2 that would conflict with 000203 if 000203 was moved into L2.
+#
+# NB: The L0 files are used to increase the permitted compaction concurrency.
+define
+L0
+  000301:a.SET.31-a.SET.31
+  000302:a.SET.32-a.SET.32
+  000303:a.SET.33-a.SET.33
+  000304:a.SET.34-a.SET.34
+  000305:a.SET.35-a.SET.35
+L1
+  000201:a.SET.21-b.SET.22
+  000203:k.SET.25-n.SET.26 size=512000000
+  000202:x.SET.23-z.SET.24
+L2
+  000101:a.SET.11-f.SET.12
+L3
+  000010:a.SET.1-z.SET.2
+compactions
+  L1 000201 000202 -> L2 000101
+----
+0.4:
+  000305:[a#35,SET-a#35,SET]
+0.3:
+  000304:[a#34,SET-a#34,SET]
+0.2:
+  000303:[a#33,SET-a#33,SET]
+0.1:
+  000302:[a#32,SET-a#32,SET]
+0.0:
+  000301:[a#31,SET-a#31,SET]
+1:
+  000201:[a#21,SET-b#22,SET]
+  000203:[k#25,SET-n#26,SET]
+  000202:[x#23,SET-z#24,SET]
+2:
+  000101:[a#11,SET-f#12,SET]
+3:
+  000010:[a#1,SET-z#2,SET]
+compactions
+  L1 000201 000202 -> L2 000101
+
+pick-auto l0_compaction_threshold=10
+----
+nil
+
+# Test that lowering L0CompactionConcurrency opens up more compaction slots.
+
+define
+L0
+  000301:a.SET.31-a.SET.31
+  000302:a.SET.32-a.SET.32
+  000303:a.SET.33-a.SET.33
+  000304:a.SET.34-a.SET.34
+  000305:a.SET.35-a.SET.35
+L1
+  000201:a.SET.21-b.SET.22
+  000203:k.SET.25-n.SET.26
+  000202:x.SET.23-z.SET.24
+L2
+  000101:a.SET.11-f.SET.12
+L3
+  000010:a.SET.1-z.SET.2
+compactions
+  L1 000202 -> L2 000101
+----
+0.4:
+  000305:[a#35,SET-a#35,SET]
+0.3:
+  000304:[a#34,SET-a#34,SET]
+0.2:
+  000303:[a#33,SET-a#33,SET]
+0.1:
+  000302:[a#32,SET-a#32,SET]
+0.0:
+  000301:[a#31,SET-a#31,SET]
+1:
+  000201:[a#21,SET-b#22,SET]
+  000203:[k#25,SET-n#26,SET]
+  000202:[x#23,SET-z#24,SET]
+2:
+  000101:[a#11,SET-f#12,SET]
+3:
+  000010:[a#1,SET-z#2,SET]
+compactions
+  L1 000202 -> L2 000101
+
+pick-auto l0_compaction_concurrency=10
+----
+nil
+
+pick-auto l0_compaction_concurrency=5
+----
+L0 -> L1
+L0: 000301,000302,000303,000304,000305
+L1: 000201
+grandparents: 000101
+
+pick-auto l0_compaction_concurrency=1
+----
+L0 -> L1
+L0: 000301,000302,000303,000304,000305
+L1: 000201
+grandparents: 000101
+
+# Test that lowering CompactionDebtConcurrency opens up more concurrent
+# compaction slots.
+
+# Test that lowering L0CompactionConcurrency opens up more compaction slots.
+
+define
+L0
+  000301:a.SET.31-a.SET.31 size=64000
+  000302:a.SET.32-a.SET.32 size=64000
+  000303:a.SET.33-a.SET.33 size=64000
+  000304:a.SET.34-a.SET.34 size=64000
+  000305:a.SET.35-a.SET.35 size=64000
+L1
+  000201:a.SET.21-b.SET.22 size=640000
+  000203:k.SET.25-n.SET.26 size=640000
+  000202:x.SET.23-z.SET.24 size=640000
+L2
+  000101:a.SET.11-f.SET.12 size=6400000
+L3
+  000010:a.SET.1-z.SET.2
+compactions
+  L1 000202 -> L2 000101
+----
+0.4:
+  000305:[a#35,SET-a#35,SET]
+0.3:
+  000304:[a#34,SET-a#34,SET]
+0.2:
+  000303:[a#33,SET-a#33,SET]
+0.1:
+  000302:[a#32,SET-a#32,SET]
+0.0:
+  000301:[a#31,SET-a#31,SET]
+1:
+  000201:[a#21,SET-b#22,SET]
+  000203:[k#25,SET-n#26,SET]
+  000202:[x#23,SET-z#24,SET]
+2:
+  000101:[a#11,SET-f#12,SET]
+3:
+  000010:[a#1,SET-z#2,SET]
+compactions
+  L1 000202 -> L2 000101
+
+pick-auto l0_compaction_concurrency=10 compaction_debt_concurrency=5120000
+----
+nil
+
+pick-auto l0_compaction_concurrency=10 compaction_debt_concurrency=512000
+----
+L0 -> L1
+L0: 000301,000302,000303,000304,000305
+L1: 000201
+grandparents: 000101
+
+pick-auto l0_compaction_concurrency=5 compaction_debt_concurrency=5120000
+----
+L0 -> L1
+L0: 000301,000302,000303,000304,000305
+L1: 000201
+grandparents: 000101

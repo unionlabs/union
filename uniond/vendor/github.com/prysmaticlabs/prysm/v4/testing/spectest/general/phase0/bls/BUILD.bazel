@@ -1,0 +1,42 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = [
+        "aggregate_test.yaml.go",
+        "aggregate_verify_test.yaml.go",
+        "doc.go",
+        "fast_aggregate_verify_test.yaml.go",
+        "sign_test.yaml.go",
+        "verify_test.yaml.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/testing/spectest/general/phase0/bls",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = [
+        "aggregate_test.go",
+        "aggregate_verify_test.go",
+        "fast_aggregate_verify_test.go",
+        "sign_test.go",
+        "verify_test.go",
+    ],
+    data = [
+        "@consensus_spec_tests_general//:test_data",
+    ],
+    embed = [":go_default_library"],
+    tags = ["spectest"],
+    deps = [
+        "//crypto/bls:go_default_library",
+        "//crypto/bls/common:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/spectest/utils:go_default_library",
+        "//testing/util:go_default_library",
+        "@com_github_ghodss_yaml//:go_default_library",
+    ],
+)

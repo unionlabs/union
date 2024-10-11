@@ -1,0 +1,833 @@
+run
+nofmt inner inner2ndline
+opaque
+----
+&errbase.opaqueLeaf{
+    msg:     "inner\ninner2ndline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errbase.opaqueLeaf{
+    msg:     "inner\ninner2ndline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+== Error()
+inner
+inner2ndline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+inner
+(1) inner
+  | inner2ndline
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹inner›
+‹inner2ndline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹inner›
+(1) ‹inner›
+  | ‹inner2ndline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+×
+(1) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *errbase.opaqueLeaf
+-- report composition:
+*fmttests.errNoFmt
+== Extra "error types"
+github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*fmttests.errNoFmt"
+Title: "×"
+(NO STACKTRACE)
+
+run
+nofmt inner inner2ndline
+opaque
+fmt outer outer2ndline
+----
+&fmttests.werrFmt{
+    cause: &errbase.opaqueLeaf{
+        msg:     "inner\ninner2ndline",
+        details: errorspb.EncodedErrorDetails{
+            OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+            ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+            ReportablePayload: nil,
+            FullDetails:       (*types.Any)(nil),
+        },
+    },
+    msg: "outer\nouter2ndline",
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&fmttests.werrFmt{
+    cause: &errbase.opaqueLeaf{
+        msg:     "inner\ninner2ndline",
+        details: errorspb.EncodedErrorDetails{
+            OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+            ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+            ReportablePayload: nil,
+            FullDetails:       (*types.Any)(nil),
+        },
+    },
+    msg: "outer\nouter2ndline",
+}
+== Error()
+outer
+outer2ndline: inner
+inner2ndline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+outer: inner
+(1) outer
+  | outer2ndline
+  | -- this is outer
+  | outer2ndline's
+  | multi-line wrapper payload
+Wraps: (2) inner
+  | inner2ndline
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *fmttests.werrFmt (2) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹outer›
+‹outer2ndline›: ‹inner›
+‹inner2ndline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹outer›: ‹inner›
+(1) ‹outer›
+‹  | outer2ndline›
+‹  | -- this is outer›
+‹  | outer2ndline's›
+‹  | multi-line wrapper payload›
+Wraps: (2) ‹inner›
+  | ‹inner2ndline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *fmttests.werrFmt (2) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+×: ×
+(1) ×
+×
+×
+×
+×
+Wraps: (2) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *fmttests.werrFmt (2) *errbase.opaqueLeaf
+-- report composition:
+*fmttests.errNoFmt
+*fmttests.werrFmt
+== Extra "error types"
+github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt (*::)
+github.com/cockroachdb/errors/fmttests/*fmttests.werrFmt (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*fmttests.errNoFmt"
+Title: "×: ×"
+(NO STACKTRACE)
+
+run
+nofmt inner inner2ndline
+nofmt outer outer2ndline
+opaque
+----
+&errbase.opaqueWrapper{
+    cause: &errbase.opaqueLeaf{
+        msg:     "inner\ninner2ndline",
+        details: errorspb.EncodedErrorDetails{
+            OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+            ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+            ReportablePayload: nil,
+            FullDetails:       (*types.Any)(nil),
+        },
+    },
+    prefix:  "outer\nouter2ndline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+    messageType: 0,
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errbase.opaqueWrapper{
+    cause: &errbase.opaqueLeaf{
+        msg:     "inner\ninner2ndline",
+        details: errorspb.EncodedErrorDetails{
+            OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+            ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+            ReportablePayload: nil,
+            FullDetails:       (*types.Any)(nil),
+        },
+    },
+    prefix:  "outer\nouter2ndline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+    messageType: 0,
+}
+== Error()
+outer
+outer2ndline: inner
+inner2ndline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+outer: inner
+(1) outer
+  | outer2ndline
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (2) inner
+  | inner2ndline
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *errbase.opaqueWrapper (2) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹outer›
+‹outer2ndline›: ‹inner›
+‹inner2ndline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹outer›: ‹inner›
+(1) ‹outer›
+  | ‹outer2ndline›
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (2) ‹inner›
+  | ‹inner2ndline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *errbase.opaqueWrapper (2) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+×: ×
+(1) ×
+  | ×
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (2) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *errbase.opaqueWrapper (2) *errbase.opaqueLeaf
+-- report composition:
+*fmttests.errNoFmt
+*fmttests.werrNoFmt
+== Extra "error types"
+github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt (*::)
+github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*fmttests.errNoFmt"
+Title: "×: ×"
+(NO STACKTRACE)
+
+run
+nofmt inner inner2ndline
+nofmt middle middle2ndline
+opaque
+fmt outer outer2ndline
+----
+&fmttests.werrFmt{
+    cause: &errbase.opaqueWrapper{
+        cause: &errbase.opaqueLeaf{
+            msg:     "inner\ninner2ndline",
+            details: errorspb.EncodedErrorDetails{
+                OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+                ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+                ReportablePayload: nil,
+                FullDetails:       (*types.Any)(nil),
+            },
+        },
+        prefix:  "middle\nmiddle2ndline",
+        details: errorspb.EncodedErrorDetails{
+            OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt",
+            ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt", Extension:""},
+            ReportablePayload: nil,
+            FullDetails:       (*types.Any)(nil),
+        },
+        messageType: 0,
+    },
+    msg: "outer\nouter2ndline",
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&fmttests.werrFmt{
+    cause: &errbase.opaqueWrapper{
+        cause: &errbase.opaqueLeaf{
+            msg:     "inner\ninner2ndline",
+            details: errorspb.EncodedErrorDetails{
+                OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+                ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+                ReportablePayload: nil,
+                FullDetails:       (*types.Any)(nil),
+            },
+        },
+        prefix:  "middle\nmiddle2ndline",
+        details: errorspb.EncodedErrorDetails{
+            OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt",
+            ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt", Extension:""},
+            ReportablePayload: nil,
+            FullDetails:       (*types.Any)(nil),
+        },
+        messageType: 0,
+    },
+    msg: "outer\nouter2ndline",
+}
+== Error()
+outer
+outer2ndline: middle
+middle2ndline: inner
+inner2ndline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+outer: middle: inner
+(1) outer
+  | outer2ndline
+  | -- this is outer
+  | outer2ndline's
+  | multi-line wrapper payload
+Wraps: (2) middle
+  | middle2ndline
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (3) inner
+  | inner2ndline
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *fmttests.werrFmt (2) *errbase.opaqueWrapper (3) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹outer›
+‹outer2ndline›: ‹middle›
+‹middle2ndline›: ‹inner›
+‹inner2ndline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹outer›: ‹middle›: ‹inner›
+(1) ‹outer›
+‹  | outer2ndline›
+‹  | -- this is outer›
+‹  | outer2ndline's›
+‹  | multi-line wrapper payload›
+Wraps: (2) ‹middle›
+  | ‹middle2ndline›
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (3) ‹inner›
+  | ‹inner2ndline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *fmttests.werrFmt (2) *errbase.opaqueWrapper (3) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+×: ×: ×
+(1) ×
+×
+×
+×
+×
+Wraps: (2) ×
+  | ×
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (3) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *fmttests.werrFmt (2) *errbase.opaqueWrapper (3) *errbase.opaqueLeaf
+-- report composition:
+*fmttests.errNoFmt
+*fmttests.werrNoFmt
+*fmttests.werrFmt
+== Extra "error types"
+github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt (*::)
+github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt (*::)
+github.com/cockroachdb/errors/fmttests/*fmttests.werrFmt (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*fmttests.errNoFmt"
+Title: "×: ×: ×"
+(NO STACKTRACE)
+
+run
+nofmt inner inner2ndline
+nofmt middle middle2ndline
+nofmt outer outer2ndline
+opaque
+----
+&errbase.opaqueWrapper{
+    cause: &errbase.opaqueWrapper{
+        cause: &errbase.opaqueLeaf{
+            msg:     "inner\ninner2ndline",
+            details: errorspb.EncodedErrorDetails{
+                OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+                ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+                ReportablePayload: nil,
+                FullDetails:       (*types.Any)(nil),
+            },
+        },
+        prefix:  "middle\nmiddle2ndline",
+        details: errorspb.EncodedErrorDetails{
+            OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt",
+            ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt", Extension:""},
+            ReportablePayload: nil,
+            FullDetails:       (*types.Any)(nil),
+        },
+        messageType: 0,
+    },
+    prefix:  "outer\nouter2ndline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+    messageType: 0,
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errbase.opaqueWrapper{
+    cause: &errbase.opaqueWrapper{
+        cause: &errbase.opaqueLeaf{
+            msg:     "inner\ninner2ndline",
+            details: errorspb.EncodedErrorDetails{
+                OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+                ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+                ReportablePayload: nil,
+                FullDetails:       (*types.Any)(nil),
+            },
+        },
+        prefix:  "middle\nmiddle2ndline",
+        details: errorspb.EncodedErrorDetails{
+            OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt",
+            ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt", Extension:""},
+            ReportablePayload: nil,
+            FullDetails:       (*types.Any)(nil),
+        },
+        messageType: 0,
+    },
+    prefix:  "outer\nouter2ndline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+    messageType: 0,
+}
+== Error()
+outer
+outer2ndline: middle
+middle2ndline: inner
+inner2ndline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+outer: middle: inner
+(1) outer
+  | outer2ndline
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (2) middle
+  | middle2ndline
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (3) inner
+  | inner2ndline
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *errbase.opaqueWrapper (2) *errbase.opaqueWrapper (3) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹outer›
+‹outer2ndline›: ‹middle›
+‹middle2ndline›: ‹inner›
+‹inner2ndline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹outer›: ‹middle›: ‹inner›
+(1) ‹outer›
+  | ‹outer2ndline›
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (2) ‹middle›
+  | ‹middle2ndline›
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (3) ‹inner›
+  | ‹inner2ndline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *errbase.opaqueWrapper (2) *errbase.opaqueWrapper (3) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+×: ×: ×
+(1) ×
+  | ×
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (2) ×
+  | ×
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (3) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *errbase.opaqueWrapper (2) *errbase.opaqueWrapper (3) *errbase.opaqueLeaf
+-- report composition:
+*fmttests.errNoFmt
+*fmttests.werrNoFmt
+*fmttests.werrNoFmt
+== Extra "error types"
+github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt (*::)
+github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt (*::)
+github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*fmttests.errNoFmt"
+Title: "×: ×: ×"
+(NO STACKTRACE)
+
+run
+nofmt inner inner2ndline
+nofmt middle middle2ndline
+nofmt outer outer2ndline
+opaque
+fmt extern extern2ndline
+----
+&fmttests.werrFmt{
+    cause: &errbase.opaqueWrapper{
+        cause: &errbase.opaqueWrapper{
+            cause: &errbase.opaqueLeaf{
+                msg:     "inner\ninner2ndline",
+                details: errorspb.EncodedErrorDetails{
+                    OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+                    ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+                    ReportablePayload: nil,
+                    FullDetails:       (*types.Any)(nil),
+                },
+            },
+            prefix:  "middle\nmiddle2ndline",
+            details: errorspb.EncodedErrorDetails{
+                OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt",
+                ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt", Extension:""},
+                ReportablePayload: nil,
+                FullDetails:       (*types.Any)(nil),
+            },
+            messageType: 0,
+        },
+        prefix:  "outer\nouter2ndline",
+        details: errorspb.EncodedErrorDetails{
+            OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt",
+            ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt", Extension:""},
+            ReportablePayload: nil,
+            FullDetails:       (*types.Any)(nil),
+        },
+        messageType: 0,
+    },
+    msg: "extern\nextern2ndline",
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&fmttests.werrFmt{
+    cause: &errbase.opaqueWrapper{
+        cause: &errbase.opaqueWrapper{
+            cause: &errbase.opaqueLeaf{
+                msg:     "inner\ninner2ndline",
+                details: errorspb.EncodedErrorDetails{
+                    OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+                    ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+                    ReportablePayload: nil,
+                    FullDetails:       (*types.Any)(nil),
+                },
+            },
+            prefix:  "middle\nmiddle2ndline",
+            details: errorspb.EncodedErrorDetails{
+                OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt",
+                ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt", Extension:""},
+                ReportablePayload: nil,
+                FullDetails:       (*types.Any)(nil),
+            },
+            messageType: 0,
+        },
+        prefix:  "outer\nouter2ndline",
+        details: errorspb.EncodedErrorDetails{
+            OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt",
+            ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt", Extension:""},
+            ReportablePayload: nil,
+            FullDetails:       (*types.Any)(nil),
+        },
+        messageType: 0,
+    },
+    msg: "extern\nextern2ndline",
+}
+== Error()
+extern
+extern2ndline: outer
+outer2ndline: middle
+middle2ndline: inner
+inner2ndline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+extern: outer: middle: inner
+(1) extern
+  | extern2ndline
+  | -- this is extern
+  | extern2ndline's
+  | multi-line wrapper payload
+Wraps: (2) outer
+  | outer2ndline
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (3) middle
+  | middle2ndline
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (4) inner
+  | inner2ndline
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *fmttests.werrFmt (2) *errbase.opaqueWrapper (3) *errbase.opaqueWrapper (4) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹extern›
+‹extern2ndline›: ‹outer›
+‹outer2ndline›: ‹middle›
+‹middle2ndline›: ‹inner›
+‹inner2ndline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹extern›: ‹outer›: ‹middle›: ‹inner›
+(1) ‹extern›
+‹  | extern2ndline›
+‹  | -- this is extern›
+‹  | extern2ndline's›
+‹  | multi-line wrapper payload›
+Wraps: (2) ‹outer›
+  | ‹outer2ndline›
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (3) ‹middle›
+  | ‹middle2ndline›
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (4) ‹inner›
+  | ‹inner2ndline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *fmttests.werrFmt (2) *errbase.opaqueWrapper (3) *errbase.opaqueWrapper (4) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+×: ×: ×: ×
+(1) ×
+×
+×
+×
+×
+Wraps: (2) ×
+  | ×
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (3) ×
+  | ×
+  |
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt
+Wraps: (4) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *fmttests.werrFmt (2) *errbase.opaqueWrapper (3) *errbase.opaqueWrapper (4) *errbase.opaqueLeaf
+-- report composition:
+*fmttests.errNoFmt
+*fmttests.werrNoFmt
+*fmttests.werrNoFmt
+*fmttests.werrFmt
+== Extra "error types"
+github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt (*::)
+github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt (*::)
+github.com/cockroachdb/errors/fmttests/*fmttests.werrNoFmt (*::)
+github.com/cockroachdb/errors/fmttests/*fmttests.werrFmt (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*fmttests.errNoFmt"
+Title: "×: ×: ×: ×"
+(NO STACKTRACE)

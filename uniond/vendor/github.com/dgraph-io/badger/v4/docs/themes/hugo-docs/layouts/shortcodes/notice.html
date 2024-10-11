@@ -1,0 +1,5 @@
+{{ $type := .Get 0}}
+
+<div class="notices {{ $type }}" {{ if len .Params | eq 2 }} id="{{ .Get 1 }}" {{ end }}>
+  <span class="type">{{ humanize $type }}</span> {{ .Inner | markdownify }}
+</div>

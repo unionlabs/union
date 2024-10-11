@@ -1,0 +1,374 @@
+{
+  "version": "2.0",
+  "service": "<p>With License Manager, you can create user-based subscriptions to utilize licensed software with a per user subscription fee on Amazon EC2 instances.</p>",
+  "operations": {
+    "AssociateUser": "<p>Associates the user to an EC2 instance to utilize user-based subscriptions.</p> <note> <p>Your estimated bill for charges on the number of users and related costs will take 48 hours to appear for billing periods that haven't closed (marked as <b>Pending</b> billing status) in Amazon Web Services Billing. For more information, see <a href=\"https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/invoice.html\">Viewing your monthly charges</a> in the <i>Amazon Web Services Billing User Guide</i>.</p> </note>",
+    "DeregisterIdentityProvider": "<p>Deregisters the identity provider from providing user-based subscriptions.</p>",
+    "DisassociateUser": "<p>Disassociates the user from an EC2 instance providing user-based subscriptions.</p>",
+    "ListIdentityProviders": "<p>Lists the identity providers for user-based subscriptions.</p>",
+    "ListInstances": "<p>Lists the EC2 instances providing user-based subscriptions.</p>",
+    "ListProductSubscriptions": "<p>Lists the user-based subscription products available from an identity provider.</p>",
+    "ListUserAssociations": "<p>Lists user associations for an identity provider.</p>",
+    "RegisterIdentityProvider": "<p>Registers an identity provider for user-based subscriptions.</p>",
+    "StartProductSubscription": "<p>Starts a product subscription for a user with the specified identity provider.</p> <note> <p>Your estimated bill for charges on the number of users and related costs will take 48 hours to appear for billing periods that haven't closed (marked as <b>Pending</b> billing status) in Amazon Web Services Billing. For more information, see <a href=\"https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/invoice.html\">Viewing your monthly charges</a> in the <i>Amazon Web Services Billing User Guide</i>.</p> </note>",
+    "StopProductSubscription": "<p>Stops a product subscription for a user with the specified identity provider.</p>",
+    "UpdateIdentityProviderSettings": "<p>Updates additional product configuration settings for the registered identity provider.</p>"
+  },
+  "shapes": {
+    "AccessDeniedException": {
+      "base": "<p>You don't have sufficient access to perform this action.</p>",
+      "refs": {
+      }
+    },
+    "ActiveDirectoryIdentityProvider": {
+      "base": "<p>Details about an Active Directory identity provider.</p>",
+      "refs": {
+        "IdentityProvider$ActiveDirectoryIdentityProvider": "<p>An object that details an Active Directory identity provider.</p>"
+      }
+    },
+    "AssociateUserRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateUserResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BoxInteger": {
+      "base": null,
+      "refs": {
+        "ListIdentityProvidersRequest$MaxResults": "<p>Maximum number of results to return in a single call.</p>",
+        "ListInstancesRequest$MaxResults": "<p>Maximum number of results to return in a single call.</p>",
+        "ListProductSubscriptionsRequest$MaxResults": "<p>Maximum number of results to return in a single call.</p>",
+        "ListUserAssociationsRequest$MaxResults": "<p>Maximum number of results to return in a single call.</p>"
+      }
+    },
+    "ConflictException": {
+      "base": "<p>The request couldn't be completed because it conflicted with the current state of the resource.</p>",
+      "refs": {
+      }
+    },
+    "DeregisterIdentityProviderRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeregisterIdentityProviderResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateUserRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateUserResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Filter": {
+      "base": "<p>A filter name and value pair that is used to return more specific results from a describe operation. Filters can be used to match a set of resources by specific criteria, such as tags, attributes, or IDs.</p>",
+      "refs": {
+        "FilterList$member": null
+      }
+    },
+    "FilterList": {
+      "base": null,
+      "refs": {
+        "ListInstancesRequest$Filters": "<p>An array of structures that you can use to filter the results to those that match one or more sets of key-value pairs that you specify.</p>",
+        "ListProductSubscriptionsRequest$Filters": "<p>An array of structures that you can use to filter the results to those that match one or more sets of key-value pairs that you specify.</p>",
+        "ListUserAssociationsRequest$Filters": "<p>An array of structures that you can use to filter the results to those that match one or more sets of key-value pairs that you specify.</p>"
+      }
+    },
+    "IdentityProvider": {
+      "base": "<p>Details about an identity provider.</p>",
+      "refs": {
+        "AssociateUserRequest$IdentityProvider": "<p>The identity provider of the user.</p>",
+        "DeregisterIdentityProviderRequest$IdentityProvider": "<p>An object that specifies details for the identity provider.</p>",
+        "DisassociateUserRequest$IdentityProvider": "<p>An object that specifies details for the identity provider.</p>",
+        "IdentityProviderSummary$IdentityProvider": "<p>An object that specifies details for the identity provider.</p>",
+        "InstanceUserSummary$IdentityProvider": "<p>An object that specifies details for the identity provider.</p>",
+        "ListProductSubscriptionsRequest$IdentityProvider": "<p>An object that specifies details for the identity provider.</p>",
+        "ListUserAssociationsRequest$IdentityProvider": "<p>An object that specifies details for the identity provider.</p>",
+        "ProductUserSummary$IdentityProvider": "<p>An object that specifies details for the identity provider.</p>",
+        "RegisterIdentityProviderRequest$IdentityProvider": "<p>An object that specifies details for the identity provider.</p>",
+        "StartProductSubscriptionRequest$IdentityProvider": "<p>An object that specifies details for the identity provider.</p>",
+        "StopProductSubscriptionRequest$IdentityProvider": "<p>An object that specifies details for the identity provider.</p>",
+        "UpdateIdentityProviderSettingsRequest$IdentityProvider": null
+      }
+    },
+    "IdentityProviderSummary": {
+      "base": "<p>Describes an identity provider.</p>",
+      "refs": {
+        "DeregisterIdentityProviderResponse$IdentityProviderSummary": "<p>Metadata that describes the results of an identity provider operation.</p>",
+        "IdentityProviderSummaryList$member": null,
+        "RegisterIdentityProviderResponse$IdentityProviderSummary": "<p>Metadata that describes the results of an identity provider operation.</p>",
+        "UpdateIdentityProviderSettingsResponse$IdentityProviderSummary": null
+      }
+    },
+    "IdentityProviderSummaryList": {
+      "base": null,
+      "refs": {
+        "ListIdentityProvidersResponse$IdentityProviderSummaries": "<p>Metadata that describes the list identity providers operation.</p>"
+      }
+    },
+    "InstanceSummary": {
+      "base": "<p>Describes an EC2 instance providing user-based subscriptions.</p>",
+      "refs": {
+        "InstanceSummaryList$member": null
+      }
+    },
+    "InstanceSummaryList": {
+      "base": null,
+      "refs": {
+        "ListInstancesResponse$InstanceSummaries": "<p>Metadata that describes the list instances operation.</p>"
+      }
+    },
+    "InstanceUserSummary": {
+      "base": "<p>Describes users of an EC2 instance providing user-based subscriptions.</p>",
+      "refs": {
+        "AssociateUserResponse$InstanceUserSummary": "<p>Metadata that describes the associate user operation.</p>",
+        "DisassociateUserResponse$InstanceUserSummary": "<p>Metadata that describes the associate user operation.</p>",
+        "InstanceUserSummaryList$member": null
+      }
+    },
+    "InstanceUserSummaryList": {
+      "base": null,
+      "refs": {
+        "ListUserAssociationsResponse$InstanceUserSummaries": "<p>Metadata that describes the list user association operation.</p>"
+      }
+    },
+    "InternalServerException": {
+      "base": "<p>An exception occurred with the service.</p>",
+      "refs": {
+      }
+    },
+    "ListIdentityProvidersRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListIdentityProvidersResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListInstancesRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListInstancesResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListProductSubscriptionsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListProductSubscriptionsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListUserAssociationsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListUserAssociationsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ProductUserSummary": {
+      "base": "<p>The summary of the user-based subscription products for a user.</p>",
+      "refs": {
+        "ProductUserSummaryList$member": null,
+        "StartProductSubscriptionResponse$ProductUserSummary": "<p>Metadata that describes the start product subscription operation.</p>",
+        "StopProductSubscriptionResponse$ProductUserSummary": "<p>Metadata that describes the start product subscription operation.</p>"
+      }
+    },
+    "ProductUserSummaryList": {
+      "base": null,
+      "refs": {
+        "ListProductSubscriptionsResponse$ProductUserSummaries": "<p>Metadata that describes the list product subscriptions operation.</p>"
+      }
+    },
+    "RegisterIdentityProviderRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "RegisterIdentityProviderResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ResourceNotFoundException": {
+      "base": "<p>The resource couldn't be found.</p>",
+      "refs": {
+      }
+    },
+    "SecurityGroup": {
+      "base": null,
+      "refs": {
+        "Settings$SecurityGroupId": "<p>A security group ID that allows inbound TCP port 1688 communication between resources in your VPC and the VPC endpoint for activation servers.</p>",
+        "UpdateSettings$SecurityGroupId": "<p>A security group ID that allows inbound TCP port 1688 communication between resources in your VPC and the VPC endpoints for activation servers.</p>"
+      }
+    },
+    "ServiceQuotaExceededException": {
+      "base": "<p>The request failed because a service quota is exceeded.</p>",
+      "refs": {
+      }
+    },
+    "Settings": {
+      "base": "<p>The registered identity provider’s product related configuration settings such as the subnets to provision VPC endpoints, and the security group ID that is associated with the VPC endpoints. The security group should permit inbound TCP port 1688 communication from resources in the VPC.</p>",
+      "refs": {
+        "IdentityProviderSummary$Settings": "<p>An object that details the registered identity provider’s product related configuration settings such as the subnets to provision VPC endpoints.</p>",
+        "RegisterIdentityProviderRequest$Settings": "<p>The registered identity provider’s product related configuration settings such as the subnets to provision VPC endpoints.</p>"
+      }
+    },
+    "SettingsSubnetsList": {
+      "base": null,
+      "refs": {
+        "Settings$Subnets": "<p>The subnets defined for the registered identity provider.</p>"
+      }
+    },
+    "StartProductSubscriptionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StartProductSubscriptionResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StopProductSubscriptionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StopProductSubscriptionResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "String": {
+      "base": null,
+      "refs": {
+        "AccessDeniedException$message": null,
+        "ActiveDirectoryIdentityProvider$DirectoryId": "<p>The directory ID for an Active Directory identity provider.</p>",
+        "AssociateUserRequest$Domain": "<p>The domain name of the user.</p>",
+        "AssociateUserRequest$InstanceId": "<p>The ID of the EC2 instance, which provides user-based subscriptions.</p>",
+        "AssociateUserRequest$Username": "<p>The user name from the identity provider for the user.</p>",
+        "ConflictException$message": null,
+        "DeregisterIdentityProviderRequest$Product": "<p>The name of the user-based subscription product.</p>",
+        "DisassociateUserRequest$Domain": "<p>The domain name of the user.</p>",
+        "DisassociateUserRequest$InstanceId": "<p>The ID of the EC2 instance, which provides user-based subscriptions.</p>",
+        "DisassociateUserRequest$Username": "<p>The user name from the identity provider for the user.</p>",
+        "Filter$Attribute": "<p>The name of an attribute to use as a filter.</p>",
+        "Filter$Operation": "<p>The type of search (For example, eq, geq, leq)</p>",
+        "Filter$Value": "<p>Value of the filter.</p>",
+        "IdentityProviderSummary$FailureMessage": "<p>The failure message associated with an identity provider.</p>",
+        "IdentityProviderSummary$Product": "<p>The name of the user-based subscription product.</p>",
+        "IdentityProviderSummary$Status": "<p>The status of an identity provider.</p>",
+        "InstanceSummary$InstanceId": "<p>The ID of the EC2 instance, which provides user-based subscriptions.</p>",
+        "InstanceSummary$LastStatusCheckDate": "<p>The date of the last status check.</p>",
+        "InstanceSummary$Status": "<p>The status of an EC2 instance resource.</p>",
+        "InstanceSummary$StatusMessage": "<p>The status message for an EC2 instance.</p>",
+        "InstanceUserSummary$AssociationDate": "<p>The date a user was associated with an EC2 instance.</p>",
+        "InstanceUserSummary$DisassociationDate": "<p>The date a user was disassociated from an EC2 instance.</p>",
+        "InstanceUserSummary$Domain": "<p>The domain name of the user.</p>",
+        "InstanceUserSummary$InstanceId": "<p>The ID of the EC2 instance, which provides user-based subscriptions.</p>",
+        "InstanceUserSummary$Status": "<p>The status of a user associated with an EC2 instance.</p>",
+        "InstanceUserSummary$StatusMessage": "<p>The status message for users of an EC2 instance.</p>",
+        "InstanceUserSummary$Username": "<p>The user name from the identity provider for the user.</p>",
+        "InternalServerException$message": null,
+        "ListIdentityProvidersRequest$NextToken": "<p>Token for the next set of results.</p>",
+        "ListIdentityProvidersResponse$NextToken": "<p>Token for the next set of results.</p>",
+        "ListInstancesRequest$NextToken": "<p>Token for the next set of results.</p>",
+        "ListInstancesResponse$NextToken": "<p>Token for the next set of results.</p>",
+        "ListProductSubscriptionsRequest$NextToken": "<p>Token for the next set of results.</p>",
+        "ListProductSubscriptionsRequest$Product": "<p>The name of the user-based subscription product.</p>",
+        "ListProductSubscriptionsResponse$NextToken": "<p>Token for the next set of results.</p>",
+        "ListUserAssociationsRequest$InstanceId": "<p>The ID of the EC2 instance, which provides user-based subscriptions.</p>",
+        "ListUserAssociationsRequest$NextToken": "<p>Token for the next set of results.</p>",
+        "ListUserAssociationsResponse$NextToken": "<p>Token for the next set of results.</p>",
+        "ProductUserSummary$Domain": "<p>The domain name of the user.</p>",
+        "ProductUserSummary$Product": "<p>The name of the user-based subscription product.</p>",
+        "ProductUserSummary$Status": "<p>The status of a product for a user.</p>",
+        "ProductUserSummary$StatusMessage": "<p>The status message for a product for a user.</p>",
+        "ProductUserSummary$SubscriptionEndDate": "<p>The end date of a subscription.</p>",
+        "ProductUserSummary$SubscriptionStartDate": "<p>The start date of a subscription.</p>",
+        "ProductUserSummary$Username": "<p>The user name from the identity provider of the user.</p>",
+        "RegisterIdentityProviderRequest$Product": "<p>The name of the user-based subscription product.</p>",
+        "ResourceNotFoundException$message": null,
+        "ServiceQuotaExceededException$message": null,
+        "StartProductSubscriptionRequest$Domain": "<p>The domain name of the user.</p>",
+        "StartProductSubscriptionRequest$Product": "<p>The name of the user-based subscription product.</p>",
+        "StartProductSubscriptionRequest$Username": "<p>The user name from the identity provider of the user.</p>",
+        "StopProductSubscriptionRequest$Domain": "<p>The domain name of the user.</p>",
+        "StopProductSubscriptionRequest$Product": "<p>The name of the user-based subscription product.</p>",
+        "StopProductSubscriptionRequest$Username": "<p>The user name from the identity provider for the user.</p>",
+        "StringList$member": null,
+        "ThrottlingException$message": null,
+        "UpdateIdentityProviderSettingsRequest$Product": "<p>The name of the user-based subscription product.</p>",
+        "ValidationException$message": null
+      }
+    },
+    "StringList": {
+      "base": null,
+      "refs": {
+        "InstanceSummary$Products": "<p>A list of provided user-based subscription products.</p>"
+      }
+    },
+    "Subnet": {
+      "base": null,
+      "refs": {
+        "SettingsSubnetsList$member": null,
+        "Subnets$member": null
+      }
+    },
+    "Subnets": {
+      "base": null,
+      "refs": {
+        "UpdateSettings$AddSubnets": "<p>The ID of one or more subnets in which License Manager will create a VPC endpoint for products that require connectivity to activation servers.</p>",
+        "UpdateSettings$RemoveSubnets": "<p>The ID of one or more subnets to remove.</p>"
+      }
+    },
+    "ThrottlingException": {
+      "base": "<p>The request was denied because of request throttling. Retry the request.</p>",
+      "refs": {
+      }
+    },
+    "UpdateIdentityProviderSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateIdentityProviderSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateSettings": {
+      "base": "<p>Updates the registered identity provider’s product related configuration settings such as the subnets to provision VPC endpoints.</p>",
+      "refs": {
+        "UpdateIdentityProviderSettingsRequest$UpdateSettings": "<p>Updates the registered identity provider’s product related configuration settings. You can update any combination of settings in a single operation such as the:</p> <ul> <li> <p>Subnets which you want to add to provision VPC endpoints.</p> </li> <li> <p>Subnets which you want to remove the VPC endpoints from.</p> </li> <li> <p>Security group ID which permits traffic to the VPC endpoints.</p> </li> </ul>"
+      }
+    },
+    "ValidationException": {
+      "base": "<p>A parameter is not valid.</p>",
+      "refs": {
+      }
+    }
+  }
+}

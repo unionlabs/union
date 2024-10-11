@@ -246,6 +246,7 @@ $code.=<<___;
 .size	$func,.-$func
 
 #ifndef __BLST_PORTABLE__
+.section	.rodata
 .align	64
 .type	$TABLE,\@object
 $TABLE:

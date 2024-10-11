@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package ibc.applications.transfer.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types";
+
+import "ibc/applications/transfer/v1/transfer.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+
+// GenesisState defines the ibc-transfer genesis state
+message GenesisState {
+  string              port_id      = 1;
+  repeated DenomTrace denom_traces = 2 [(gogoproto.castrepeated) = "Traces", (gogoproto.nullable) = false];
+  Params              params       = 3 [(gogoproto.nullable) = false];
+  // total_escrowed contains the total amount of tokens escrowed
+  // by the transfer module
+  repeated cosmos.base.v1beta1.Coin total_escrowed = 4
+      [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins", (gogoproto.nullable) = false];
+}

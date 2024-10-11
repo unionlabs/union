@@ -1,0 +1,1543 @@
+# 1 memtable.
+
+define
+mem
+  a.SET.10:b
+  a.SET.12:c
+  a.SET.14:d
+  b.MERGE.10:b
+  b.MERGE.12:c
+  b.MERGE.14:d
+  b.RANGEDEL.15:c
+  b.MERGE.16:e
+  c.SET.10:b
+  c.SET.12:c
+  c.SET.14:d
+----
+mem: 1
+
+get seq=11
+a
+b
+c
+----
+a:b
+b:b
+c:b
+
+get seq=13
+a
+b
+c
+----
+a:c
+b:bc
+c:c
+
+get seq=15
+a
+b
+c
+----
+a:d
+b:bcd
+c:d
+
+get seq=16
+a
+b
+c
+----
+a:d
+b: pebble: not found
+c:d
+
+get seq=17
+a
+b
+c
+----
+a:d
+b:e
+c:d
+
+get seq=15
+a
+b
+c
+----
+a:d
+b:bcd
+c:d
+
+iter seq=15
+first
+next
+next
+next
+seek-ge a
+seek-ge b
+seek-ge c
+seek-ge d
+last
+prev
+prev
+prev
+seek-lt a
+seek-lt b
+seek-lt c
+seek-lt d
+----
+a: (d, .)
+b: (bcd, .)
+c: (d, .)
+.
+a: (d, .)
+b: (bcd, .)
+c: (d, .)
+.
+c: (d, .)
+b: (bcd, .)
+a: (d, .)
+.
+.
+a: (d, .)
+b: (bcd, .)
+c: (d, .)
+
+iter seq=16
+first
+next
+next
+seek-ge a
+seek-ge b
+seek-ge c
+seek-ge d
+last
+prev
+prev
+seek-lt a
+seek-lt b
+seek-lt c
+seek-lt d
+----
+a: (d, .)
+c: (d, .)
+.
+a: (d, .)
+c: (d, .)
+c: (d, .)
+.
+c: (d, .)
+a: (d, .)
+.
+.
+a: (d, .)
+a: (d, .)
+c: (d, .)
+
+# Multiple memtables.
+
+define
+mem
+  a.SET.10:b
+  b.MERGE.10:b
+  c.SET.10:b
+mem
+  a.SET.12:c
+  b.MERGE.12:c
+  c.SET.12:c
+mem
+  a.SET.14:d
+  b.MERGE.14:d
+  c.SET.14:d
+mem
+  b.RANGEDEL.15:c
+mem
+  b.MERGE.16:e
+----
+mem: 5
+
+get seq=11
+a
+b
+c
+----
+a:b
+b:b
+c:b
+
+get seq=13
+a
+b
+c
+----
+a:c
+b:bc
+c:c
+
+get seq=15
+a
+b
+c
+----
+a:d
+b:bcd
+c:d
+
+get seq=16
+a
+b
+c
+----
+a:d
+b: pebble: not found
+c:d
+
+get seq=17
+a
+b
+c
+----
+a:d
+b:e
+c:d
+
+get seq=15
+a
+b
+c
+----
+a:d
+b:bcd
+c:d
+
+iter seq=15
+first
+next
+next
+next
+seek-ge a
+seek-ge b
+seek-ge c
+seek-ge d
+last
+prev
+prev
+prev
+seek-lt a
+seek-lt b
+seek-lt c
+seek-lt d
+----
+a: (d, .)
+b: (bcd, .)
+c: (d, .)
+.
+a: (d, .)
+b: (bcd, .)
+c: (d, .)
+.
+c: (d, .)
+b: (bcd, .)
+a: (d, .)
+.
+.
+a: (d, .)
+b: (bcd, .)
+c: (d, .)
+
+iter seq=16
+first
+next
+next
+seek-ge a
+seek-ge b
+seek-ge c
+seek-ge d
+last
+prev
+prev
+seek-lt a
+seek-lt b
+seek-lt c
+seek-lt d
+----
+a: (d, .)
+c: (d, .)
+.
+a: (d, .)
+c: (d, .)
+c: (d, .)
+.
+c: (d, .)
+a: (d, .)
+.
+.
+a: (d, .)
+a: (d, .)
+c: (d, .)
+
+# Overlapping range deletions in the same memtable.
+
+define
+mem
+  a.SET.10:1
+  a.SET.12:2
+  a.SET.14:3
+  a.SET.16:4
+  b.SET.10:1
+  b.SET.12:2
+  b.SET.14:3
+  b.SET.16:4
+  c.SET.10:1
+  c.SET.12:2
+  c.SET.14:3
+  c.SET.16:4
+  d.SET.10:1
+  d.SET.12:2
+  d.SET.14:3
+  d.SET.16:4
+  a.RANGEDEL.11:b
+  b.RANGEDEL.13:c
+  b.RANGEDEL.11:c
+  c.RANGEDEL.15:d
+  c.RANGEDEL.13:d
+  c.RANGEDEL.11:d
+----
+mem: 1
+
+get seq=11
+a
+b
+c
+d
+----
+a:1
+b:1
+c:1
+d:1
+
+get seq=12
+a
+b
+c
+d
+----
+a: pebble: not found
+b: pebble: not found
+c: pebble: not found
+d:1
+
+get seq=14
+a
+b
+c
+d
+----
+a:2
+b: pebble: not found
+c: pebble: not found
+d:2
+
+get seq=16
+a
+b
+c
+d
+----
+a:3
+b:3
+c: pebble: not found
+d:3
+
+get seq=18
+a
+b
+c
+d
+----
+a:4
+b:4
+c:4
+d:4
+
+iter seq=11
+first
+next
+next
+next
+next
+last
+prev
+prev
+prev
+prev
+----
+a: (1, .)
+b: (1, .)
+c: (1, .)
+d: (1, .)
+.
+d: (1, .)
+c: (1, .)
+b: (1, .)
+a: (1, .)
+.
+
+iter seq=12
+first
+next
+last
+prev
+----
+d: (1, .)
+.
+d: (1, .)
+.
+
+iter seq=14
+first
+next
+next
+last
+prev
+prev
+----
+a: (2, .)
+d: (2, .)
+.
+d: (2, .)
+a: (2, .)
+.
+
+iter seq=16
+first
+next
+next
+next
+last
+prev
+prev
+prev
+----
+a: (3, .)
+b: (3, .)
+d: (3, .)
+.
+d: (3, .)
+b: (3, .)
+a: (3, .)
+.
+
+iter seq=18
+first
+next
+next
+next
+next
+last
+prev
+prev
+prev
+prev
+----
+a: (4, .)
+b: (4, .)
+c: (4, .)
+d: (4, .)
+.
+d: (4, .)
+c: (4, .)
+b: (4, .)
+a: (4, .)
+.
+
+# Overlapping range deletions in different memtables. Note that the
+# range tombstones are not fragmented in this case.
+
+define
+mem
+  a.SET.10:1
+  b.SET.10:1
+  c.SET.10:1
+  d.SET.10:1
+mem
+  a.SET.12:2
+  b.SET.12:2
+  c.SET.12:2
+  d.SET.12:2
+  a.RANGEDEL.11:d
+mem
+  a.SET.14:3
+  b.SET.14:3
+  c.SET.14:3
+  d.SET.14:3
+  b.RANGEDEL.13:d
+mem
+  a.SET.16:4
+  b.SET.16:4
+  c.SET.16:4
+  d.SET.16:4
+  c.RANGEDEL.13:d
+----
+mem: 4
+
+get seq=11
+a
+b
+c
+d
+----
+a:1
+b:1
+c:1
+d:1
+
+get seq=12
+a
+b
+c
+d
+----
+a: pebble: not found
+b: pebble: not found
+c: pebble: not found
+d:1
+
+get seq=14
+a
+b
+c
+d
+----
+a:2
+b: pebble: not found
+c: pebble: not found
+d:2
+
+get seq=16
+a
+b
+c
+d
+----
+a:3
+b:3
+c: pebble: not found
+d:3
+
+get seq=18
+a
+b
+c
+d
+----
+a:4
+b:4
+c:4
+d:4
+
+iter seq=11
+first
+next
+next
+next
+next
+last
+prev
+prev
+prev
+prev
+----
+a: (1, .)
+b: (1, .)
+c: (1, .)
+d: (1, .)
+.
+d: (1, .)
+c: (1, .)
+b: (1, .)
+a: (1, .)
+.
+
+iter seq=12
+first
+next
+last
+prev
+----
+d: (1, .)
+.
+d: (1, .)
+.
+
+iter seq=14
+first
+next
+next
+last
+prev
+prev
+----
+a: (2, .)
+d: (2, .)
+.
+d: (2, .)
+a: (2, .)
+.
+
+iter seq=16
+first
+next
+next
+next
+last
+prev
+prev
+prev
+----
+a: (3, .)
+b: (3, .)
+d: (3, .)
+.
+d: (3, .)
+b: (3, .)
+a: (3, .)
+.
+
+iter seq=18
+first
+next
+next
+next
+next
+last
+prev
+prev
+prev
+prev
+----
+a: (4, .)
+b: (4, .)
+c: (4, .)
+d: (4, .)
+.
+d: (4, .)
+c: (4, .)
+b: (4, .)
+a: (4, .)
+.
+
+# User-key that spans tables in a level.
+
+define
+L1
+  a.SET.12:3
+L1
+  a.SET.11:2
+L1
+  a.SET.10:1
+----
+mem: 1
+1:
+  000004:[a#12,SET-a#12,SET]
+  000005:[a#11,SET-a#11,SET]
+  000006:[a#10,SET-a#10,SET]
+
+get seq=10
+a
+----
+a: pebble: not found
+
+get seq=11
+a
+----
+a:1
+
+get seq=12
+a
+----
+a:2
+
+get seq=13
+a
+----
+a:3
+
+iter seq=11
+first
+seek-ge a
+seek-ge b
+last
+seek-lt a
+seek-lt b
+----
+a: (1, .)
+a: (1, .)
+.
+a: (1, .)
+.
+a: (1, .)
+
+iter seq=12
+first
+seek-ge a
+seek-ge b
+last
+seek-lt a
+seek-lt b
+----
+a: (2, .)
+a: (2, .)
+.
+a: (2, .)
+.
+a: (2, .)
+
+iter seq=13
+first
+seek-ge a
+seek-ge b
+last
+seek-lt a
+seek-lt b
+----
+a: (3, .)
+a: (3, .)
+.
+a: (3, .)
+.
+a: (3, .)
+
+define
+L1
+  a.MERGE.12:3
+L1
+  a.MERGE.11:2
+L1
+  a.MERGE.10:1
+----
+mem: 1
+1:
+  000004:[a#12,MERGE-a#12,MERGE]
+  000005:[a#11,MERGE-a#11,MERGE]
+  000006:[a#10,MERGE-a#10,MERGE]
+
+get seq=10
+a
+----
+a: pebble: not found
+
+get seq=11
+a
+----
+a:1
+
+get seq=12
+a
+----
+a:12
+
+get seq=13
+a
+----
+a:123
+
+iter seq=11
+first
+seek-ge a
+seek-ge b
+last
+seek-lt a
+seek-lt b
+----
+a: (1, .)
+a: (1, .)
+.
+a: (1, .)
+.
+a: (1, .)
+
+iter seq=12
+first
+seek-ge a
+seek-ge b
+last
+seek-lt a
+seek-lt b
+----
+a: (12, .)
+a: (12, .)
+.
+a: (12, .)
+.
+a: (12, .)
+
+iter seq=13
+first
+seek-ge a
+seek-ge b
+last
+seek-lt a
+seek-lt b
+----
+a: (123, .)
+a: (123, .)
+.
+a: (123, .)
+.
+a: (123, .)
+
+# User-key spread across multiple levels.
+
+define
+mem
+  a.MERGE.13:4
+L1
+  a.MERGE.12:3
+L2
+  a.MERGE.11:2
+L3
+  a.MERGE.10:1
+----
+mem: 1
+1:
+  000004:[a#12,MERGE-a#12,MERGE]
+2:
+  000005:[a#11,MERGE-a#11,MERGE]
+3:
+  000006:[a#10,MERGE-a#10,MERGE]
+
+get seq=10
+a
+----
+a: pebble: not found
+
+get seq=11
+a
+----
+a:1
+
+get seq=12
+a
+----
+a:12
+
+get seq=13
+a
+----
+a:123
+
+get seq=14
+a
+----
+a:1234
+
+iter seq=11
+first
+seek-ge a
+seek-ge b
+last
+seek-lt a
+seek-lt b
+----
+a: (1, .)
+a: (1, .)
+.
+a: (1, .)
+.
+a: (1, .)
+
+iter seq=12
+first
+seek-ge a
+seek-ge b
+last
+seek-lt a
+seek-lt b
+----
+a: (12, .)
+a: (12, .)
+.
+a: (12, .)
+.
+a: (12, .)
+
+iter seq=13
+first
+seek-ge a
+seek-ge b
+last
+seek-lt a
+seek-lt b
+----
+a: (123, .)
+a: (123, .)
+.
+a: (123, .)
+.
+a: (123, .)
+
+iter seq=14
+first
+seek-ge a
+seek-ge b
+last
+seek-lt a
+seek-lt b
+----
+a: (1234, .)
+a: (1234, .)
+.
+a: (1234, .)
+.
+a: (1234, .)
+
+# Range deletions on multiple levels.
+define
+L0
+  a.SET.13:4
+  b.SET.13:4
+  d.SET.13:4
+  c.RANGEDEL.13:d
+L1
+  a.SET.12:3
+  d.SET.12:3
+  b.RANGEDEL.12:d
+L2
+  d.SET.11:2
+  a.RANGEDEL.11:d
+L3
+  a.SET.10:1
+  b.SET.10:1
+  c.SET.10:1
+  d.SET.10:1
+----
+mem: 1
+0.0:
+  000004:[a#13,SET-d#13,SET]
+1:
+  000005:[a#12,SET-d#12,SET]
+2:
+  000006:[a#11,RANGEDEL-d#11,SET]
+3:
+  000007:[a#10,SET-d#10,SET]
+
+get seq=11
+a
+b
+c
+d
+----
+a:1
+b:1
+c:1
+d:1
+
+get seq=12
+a
+b
+c
+d
+----
+a: pebble: not found
+b: pebble: not found
+c: pebble: not found
+d:2
+
+get seq=13
+a
+b
+c
+d
+----
+a:3
+b: pebble: not found
+c: pebble: not found
+d:3
+
+get seq=14
+a
+b
+c
+d
+----
+a:4
+b:4
+c: pebble: not found
+d:4
+
+iter seq=11
+first
+next
+next
+next
+last
+prev
+prev
+prev
+----
+a: (1, .)
+b: (1, .)
+c: (1, .)
+d: (1, .)
+d: (1, .)
+c: (1, .)
+b: (1, .)
+a: (1, .)
+
+iter seq=12
+first
+last
+----
+d: (2, .)
+d: (2, .)
+
+iter seq=13
+first
+next
+last
+prev
+----
+a: (3, .)
+d: (3, .)
+d: (3, .)
+a: (3, .)
+
+iter seq=14
+first
+next
+next
+last
+prev
+prev
+----
+a: (4, .)
+b: (4, .)
+d: (4, .)
+d: (4, .)
+b: (4, .)
+a: (4, .)
+
+# Range deletions spanning tables within a level.
+
+define
+mem
+  a.SET.12:3
+  b.SET.12:3
+  c.SET.12:3
+  d.SET.12:3
+L1
+  a.RANGEDEL.11:b
+L1
+  b.RANGEDEL.11:c
+L1
+  c.RANGEDEL.11:d
+L2
+  a.SET.10:1
+  b.SET.10:1
+  c.SET.10:1
+  d.SET.10:1
+----
+mem: 1
+1:
+  000004:[a#11,RANGEDEL-b#inf,RANGEDEL]
+  000005:[b#11,RANGEDEL-c#inf,RANGEDEL]
+  000006:[c#11,RANGEDEL-d#inf,RANGEDEL]
+2:
+  000007:[a#10,SET-d#10,SET]
+
+get seq=11
+a
+b
+c
+d
+----
+a:1
+b:1
+c:1
+d:1
+
+get seq=12
+a
+b
+c
+d
+----
+a: pebble: not found
+b: pebble: not found
+c: pebble: not found
+d:1
+
+get seq=13
+a
+b
+c
+d
+----
+a:3
+b:3
+c:3
+d:3
+
+iter seq=11
+first
+next
+next
+next
+last
+prev
+prev
+prev
+----
+a: (1, .)
+b: (1, .)
+c: (1, .)
+d: (1, .)
+d: (1, .)
+c: (1, .)
+b: (1, .)
+a: (1, .)
+
+iter seq=12
+first
+last
+----
+d: (1, .)
+d: (1, .)
+
+iter seq=13
+first
+next
+next
+next
+last
+prev
+prev
+prev
+----
+a: (3, .)
+b: (3, .)
+c: (3, .)
+d: (3, .)
+d: (3, .)
+c: (3, .)
+b: (3, .)
+a: (3, .)
+
+# Invalid LSM structure (range deletion at newer level covers newer
+# write at an older level). This LSM structure is not generated
+# naturally, but tested here to show the level-by-level nature of Get.
+
+define
+L1
+  a.RANGEDEL.10:b
+L2
+  a.SET.11:2
+----
+mem: 1
+1:
+  000004:[a#10,RANGEDEL-b#inf,RANGEDEL]
+2:
+  000005:[a#11,SET-a#11,SET]
+
+get seq=12
+a
+----
+a: pebble: not found
+
+# A range tombstone straddles two SSTs. One is compacted to a lower level. Its
+# keys that are newer than the range tombstone should not disappear.
+#
+# Uses a snapshot to prevent range tombstone from being elided when it gets
+# compacted to the bottommost level.
+
+define target-file-sizes=(100, 1) snapshots=(1)
+L0
+  a.RANGEDEL.10:e
+L0
+  a.SET.11:v
+L0
+  c.SET.12:v
+----
+mem: 1
+0.1:
+  000005:[a#11,SET-a#11,SET]
+  000006:[c#12,SET-c#12,SET]
+0.0:
+  000004:[a#10,RANGEDEL-e#inf,RANGEDEL]
+
+compact a-e
+----
+1:
+  000007:[a#11,SET-c#inf,RANGEDEL]
+  000008:[c#12,SET-e#inf,RANGEDEL]
+
+compact d-e
+----
+1:
+  000007:[a#11,SET-c#inf,RANGEDEL]
+2:
+  000008:[c#12,SET-e#inf,RANGEDEL]
+
+iter seq=13
+seek-ge b
+next
+----
+c: (v, .)
+.
+
+# Reverse the above test: compact the left file containing the split range
+# tombstone downwards, and iterate from right to left.
+
+define target-file-sizes=(100, 1) snapshots=(1)
+L0
+  a.RANGEDEL.10:e
+L0
+  a.SET.11:v
+L0
+  c.SET.12:v
+----
+mem: 1
+0.1:
+  000005:[a#11,SET-a#11,SET]
+  000006:[c#12,SET-c#12,SET]
+0.0:
+  000004:[a#10,RANGEDEL-e#inf,RANGEDEL]
+
+compact a-e
+----
+1:
+  000007:[a#11,SET-c#inf,RANGEDEL]
+  000008:[c#12,SET-e#inf,RANGEDEL]
+
+compact a-b
+----
+1:
+  000008:[c#12,SET-e#inf,RANGEDEL]
+2:
+  000007:[a#11,SET-c#inf,RANGEDEL]
+
+iter seq=13
+seek-lt d
+prev
+prev
+----
+c: (v, .)
+a: (v, .)
+.
+
+# A range tombstone straddles two sstables. One is compacted two
+# levels lower. The other is compacted one level lower. The one that
+# is compacted one level lower should not see its boundaries expand
+# causing it to delete more keys. A snapshot is used to prevent range
+# tombstone from being elided when it gets compacted to the bottommost
+# level.
+
+define target-file-sizes=(100, 1) snapshots=(1)
+L0
+  a.RANGEDEL.10:e
+L0
+  a.SET.11:v
+L0
+  c.SET.12:v
+L2
+  d.SET.0:v
+----
+mem: 1
+0.1:
+  000005:[a#11,SET-a#11,SET]
+  000006:[c#12,SET-c#12,SET]
+0.0:
+  000004:[a#10,RANGEDEL-e#inf,RANGEDEL]
+2:
+  000007:[d#0,SET-d#0,SET]
+
+compact a-b
+----
+1:
+  000008:[a#11,SET-c#inf,RANGEDEL]
+  000009:[c#12,SET-d#inf,RANGEDEL]
+  000010:[d#10,RANGEDEL-e#inf,RANGEDEL]
+2:
+  000007:[d#0,SET-d#0,SET]
+
+compact d-e
+----
+1:
+  000008:[a#11,SET-c#inf,RANGEDEL]
+  000009:[c#12,SET-d#inf,RANGEDEL]
+3:
+  000011:[d#10,RANGEDEL-e#inf,RANGEDEL]
+
+get seq=13
+c
+----
+c:v
+
+compact a-b L1
+----
+1:
+  000009:[c#12,SET-d#inf,RANGEDEL]
+2:
+  000008:[a#11,SET-c#inf,RANGEDEL]
+3:
+  000011:[d#10,RANGEDEL-e#inf,RANGEDEL]
+
+get seq=13
+c
+----
+c:v
+
+# A slight variation on the scenario above where a range tombstone is
+# expanded past the boundaries of its "atomic compaction unit".
+
+define target-file-sizes=(100, 1) snapshots=(1)
+L0
+  a.RANGEDEL.10:e
+L0
+  a.SET.11:v
+L0
+  c.SET.12:v
+L0
+  f.SET.13:v
+L2
+  d.SET.0:v
+----
+mem: 1
+0.1:
+  000005:[a#11,SET-a#11,SET]
+  000006:[c#12,SET-c#12,SET]
+0.0:
+  000004:[a#10,RANGEDEL-e#inf,RANGEDEL]
+  000007:[f#13,SET-f#13,SET]
+2:
+  000008:[d#0,SET-d#0,SET]
+
+compact a-b
+----
+0.0:
+  000007:[f#13,SET-f#13,SET]
+1:
+  000009:[a#11,SET-c#inf,RANGEDEL]
+  000010:[c#12,SET-d#inf,RANGEDEL]
+  000011:[d#10,RANGEDEL-e#inf,RANGEDEL]
+2:
+  000008:[d#0,SET-d#0,SET]
+
+compact d-e
+----
+0.0:
+  000007:[f#13,SET-f#13,SET]
+1:
+  000009:[a#11,SET-c#inf,RANGEDEL]
+  000010:[c#12,SET-d#inf,RANGEDEL]
+3:
+  000012:[d#10,RANGEDEL-e#inf,RANGEDEL]
+
+get seq=13
+c
+----
+c:v
+
+compact f-f L0
+----
+1:
+  000009:[a#11,SET-c#inf,RANGEDEL]
+  000010:[c#12,SET-d#inf,RANGEDEL]
+  000007:[f#13,SET-f#13,SET]
+3:
+  000012:[d#10,RANGEDEL-e#inf,RANGEDEL]
+
+compact a-f L1
+----
+2:
+  000013:[a#11,SET-c#inf,RANGEDEL]
+  000014:[c#12,SET-d#inf,RANGEDEL]
+  000015:[f#13,SET-f#13,SET]
+3:
+  000012:[d#10,RANGEDEL-e#inf,RANGEDEL]
+
+get seq=13
+c
+----
+c:v
+
+define
+L0
+  a.RANGEDEL.12:f
+L0
+  a.RANGEDEL.13:c
+  c.RANGEDEL.13:f
+L1
+  b.RANGEDEL.11:e
+L2
+  c.RANGEDEL.10:d
+----
+mem: 1
+0.1:
+  000005:[a#13,RANGEDEL-f#inf,RANGEDEL]
+0.0:
+  000004:[a#12,RANGEDEL-f#inf,RANGEDEL]
+1:
+  000006:[b#11,RANGEDEL-e#inf,RANGEDEL]
+2:
+  000007:[c#10,RANGEDEL-d#inf,RANGEDEL]
+
+wait-pending-table-stats
+000007
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+wait-pending-table-stats
+000006
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 836
+
+wait-pending-table-stats
+000004
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 1672
+
+wait-pending-table-stats
+000005
+----
+num-entries: 2
+num-deletions: 2
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 1672
+
+
+# Range deletions with varying overlap.
+define
+L0
+  a.SET.13:4
+  b.SET.13:4
+  d.SET.13:4
+  c.RANGEDEL.13:d
+L1
+  a.SET.12:3
+  d.SET.12:3
+  b.RANGEDEL.12:d
+L2
+  d.SET.11:2
+  a.RANGEDEL.11:d
+L3
+  a.SET.10:1
+  b.SET.10:1
+  c.SET.10:1
+  d.SET.10:1
+----
+mem: 1
+0.0:
+  000004:[a#13,SET-d#13,SET]
+1:
+  000005:[a#12,SET-d#12,SET]
+2:
+  000006:[a#11,RANGEDEL-d#11,SET]
+3:
+  000007:[a#10,SET-d#10,SET]
+
+wait-pending-table-stats
+000007
+----
+num-entries: 4
+num-deletions: 0
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+wait-pending-table-stats
+000006
+----
+num-entries: 2
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 42
+
+wait-pending-table-stats
+000005
+----
+num-entries: 3
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 68
+
+wait-pending-table-stats
+000004
+----
+num-entries: 4
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 100
+
+# Multiple Range deletions in a table.
+define
+L0
+  a.RANGEDEL.15:d
+  e.RANGEDEL.15:z
+L0
+  a.RANGEDEL.14:d
+L0
+  e.RANGEDEL.13:z
+L1
+  a.SET.11:1
+  b.SET.11:1
+  c.SET.11:1
+L2
+  x.SET.10:2
+----
+mem: 1
+0.1:
+  000004:[a#15,RANGEDEL-z#inf,RANGEDEL]
+0.0:
+  000005:[a#14,RANGEDEL-d#inf,RANGEDEL]
+  000006:[e#13,RANGEDEL-z#inf,RANGEDEL]
+1:
+  000007:[a#11,SET-c#11,SET]
+2:
+  000008:[x#10,SET-x#10,SET]
+
+wait-pending-table-stats
+000005
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 782
+
+wait-pending-table-stats
+000006
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 771
+
+wait-pending-table-stats
+000004
+----
+num-entries: 2
+num-deletions: 2
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 1553

@@ -1,0 +1,22 @@
+native_include "native_type_test_impl.h";
+
+namespace Geometry;
+
+struct Vector3D (native_type:"Native::Vector3D") {
+  x:float;
+  y:float;
+  z:float;
+}
+
+struct Vector3DAlt (native_type:"Native::Vector3D", native_type_pack_name:"Vector3DAlt") {
+  a:float;
+  b:float;
+  c:float;
+}
+
+table ApplicationData {
+  vectors:[Vector3D];
+  vectors_alt:[Vector3DAlt];
+}
+
+root_type ApplicationData;

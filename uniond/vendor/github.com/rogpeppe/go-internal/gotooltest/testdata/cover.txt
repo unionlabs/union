@@ -1,0 +1,78 @@
+unquote scripts/exec.txt
+
+# The module uses testscript itself.
+# Use the checked out module, based on where the test binary ran.
+go mod edit -replace=github.com/rogpeppe/go-internal=${GOINTERNAL_MODULE}
+go mod tidy
+
+# First, a 'go test' run without coverage.
+go test -vet=off
+stdout 'PASS'
+! stdout 'coverage'
+
+# Then, a 'go test' run with -coverprofile.
+# The total coverage after merging profiles should end up being 100%.
+# Marking all printlns as covered requires all edge cases to work well.
+go test -vet=off -coverprofile=cover.out -v
+stdout 'PASS'
+stdout 'coverage: 100\.0%'
+! stdout 'malformed coverage' # written by "go test" if cover.out is invalid
+exists cover.out
+
+-- go.mod --
+module test
+
+go 1.15
+-- foo.go --
+package foo
+
+import "os"
+
+func foo1() int {
+	switch os.Args[1] {
+	case "1":
+		println("first path")
+	case "2":
+		println("second path")
+	default:
+		println("third path")
+	}
+	return 1
+}
+-- foo_test.go --
+package foo
+
+import (
+	"os"
+	"testing"
+
+	"github.com/rogpeppe/go-internal/gotooltest"
+	"github.com/rogpeppe/go-internal/testscript"
+)
+
+func TestMain(m *testing.M) {
+	os.Exit(testscript.RunMain(m, map[string] func() int{
+		"foo": foo1,
+	}))
+}
+
+func TestFoo(t *testing.T) {
+	p := testscript.Params{
+		Dir: "scripts",
+	}
+	if err := gotooltest.Setup(&p); err != nil {
+		t.Fatal(err)
+	}
+	testscript.Run(t, p)
+}
+-- scripts/exec.txt --
+># Note that foo always fails, to prevent "go build" from doing anything.
+>
+># Running the command directly; trigger the first path.
+>! foo 1
+>
+># Running the command via exec; trigger the second path.
+>! exec foo 2
+>
+># Running the command indirectly, via toolexec; trigger the third path.
+>! go build -a -toolexec=foo runtime

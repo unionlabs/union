@@ -1,0 +1,39 @@
+t=2023-10-20T12:56:08+0200 lvl=info msg=big.Int 111,222,333,444,555,678,999=111,222,333,444,555,678,999
+t=2023-10-20T12:56:08+0200 lvl=info msg=-big.Int -111,222,333,444,555,678,999=-111,222,333,444,555,678,999
+t=2023-10-20T12:56:08+0200 lvl=info msg=big.Int  11,122,233,344,455,567,899,900=11,122,233,344,455,567,899,900
+t=2023-10-20T12:56:08+0200 lvl=info msg=-big.Int -11,122,233,344,455,567,899,900=-11,122,233,344,455,567,899,900
+t=2023-10-20T12:56:08+0200 lvl=info msg=uint256  111,222,333,444,555,678,999=111,222,333,444,555,678,999
+t=2023-10-20T12:56:08+0200 lvl=info msg=uint256  11,122,233,344,455,567,899,900=11,122,233,344,455,567,899,900
+t=2023-10-20T12:56:08+0200 lvl=info msg=int64    1,000,000=1,000,000
+t=2023-10-20T12:56:08+0200 lvl=info msg=int64    -1,000,000=-1,000,000
+t=2023-10-20T12:56:08+0200 lvl=info msg=int64    9,223,372,036,854,775,807=9,223,372,036,854,775,807
+t=2023-10-20T12:56:08+0200 lvl=info msg=int64    -9,223,372,036,854,775,808=-9,223,372,036,854,775,808
+t=2023-10-20T12:56:08+0200 lvl=info msg=uint64   1,000,000=1,000,000
+t=2023-10-20T12:56:08+0200 lvl=info msg=uint64   18,446,744,073,709,551,615=18,446,744,073,709,551,615
+t=2023-10-20T12:56:08+0200 lvl=info msg="Special chars in value" key="special \r\n\t chars"
+t=2023-10-20T12:56:08+0200 lvl=info msg="Special chars in key"   "special \n\t chars"=value
+t=2023-10-20T12:56:08+0200 lvl=info msg=nospace                  nospace=nospace
+t=2023-10-20T12:56:08+0200 lvl=info msg="with space"             "with nospace"="with nospace"
+t=2023-10-20T12:56:08+0200 lvl=info msg="Bash escapes in value"  key="\x1b[1G\x1b[K\x1b[1A"
+t=2023-10-20T12:56:08+0200 lvl=info msg="Bash escapes in key"    "\x1b[1G\x1b[K\x1b[1A"=value
+t=2023-10-20T12:56:08+0200 lvl=info msg="Bash escapes in message  \x1b[1G\x1b[K\x1b[1A end" key=value
+t=2023-10-20T12:56:08+0200 lvl=info msg="\x1b[35mColored\x1b[0m[" "\x1b[35mColored\x1b[0m["="\x1b[35mColored\x1b[0m["
+t=2023-10-20T12:56:08+0200 lvl=info msg="Custom Stringer value"   2562047h47m16.854s=2562047h47m16.854s
+t=2023-10-20T12:56:08+0200 lvl=info msg="Lazy evaluation of value" key="lazy value"
+t=2023-10-20T12:56:08+0200 lvl=info msg="A message with wonky 💩 characters"
+t=2023-10-20T12:56:08+0200 lvl=info msg="A multiline message \nINFO [10-18|14:11:31.106] with wonky characters 💩"
+t=2023-10-20T12:56:08+0200 lvl=info msg="A multiline message \nLALA [ZZZZZZZZZZZZZZZZZZ] Actually part of message above"
+t=2023-10-20T12:56:08+0200 lvl=info msg=boolean                             true=true false=false
+t=2023-10-20T12:56:08+0200 lvl=info msg="repeated-key 1"                    foo=alpha foo=beta
+t=2023-10-20T12:56:08+0200 lvl=info msg="repeated-key 2"                    xx=short xx=longer
+t=2023-10-20T12:56:08+0200 lvl=info msg="log at level info"
+t=2023-10-20T12:56:08+0200 lvl=warn msg="log at level warn"
+t=2023-10-20T12:56:08+0200 lvl=eror msg="log at level error"
+t=2023-10-20T12:56:08+0200 lvl=info msg=test                                bar=short a="aligned left"
+t=2023-10-20T12:56:08+0200 lvl=info msg=test                                bar="a long message" a=1
+t=2023-10-20T12:56:08+0200 lvl=info msg=test                                bar=short            a="aligned right"
+t=2023-10-20T12:56:08+0200 lvl=info msg="The following logs should align so that the key-fields make 5 columns"
+t=2023-10-20T12:56:08+0200 lvl=info msg="Inserted known block"              number=1012 hash=0x0000000000000000000000000000000000000000000000000000000000001234 txs=200 gas=1,123,123 other=first
+t=2023-10-20T12:56:08+0200 lvl=info msg="Inserted new block"                number=1    hash=0x0000000000000000000000000000000000000000000000000000000000001235 txs=2   gas=1123      other=second
+t=2023-10-20T12:56:08+0200 lvl=info msg="Inserted known block"              number=99   hash=0x0000000000000000000000000000000000000000000000000000000000012322 txs=10  gas=1         other=third
+t=2023-10-20T12:56:08+0200 lvl=warn msg="Inserted known block"              number=1012 hash=0x0000000000000000000000000000000000000000000000000000000000001234 txs=200 gas=99        other=fourth

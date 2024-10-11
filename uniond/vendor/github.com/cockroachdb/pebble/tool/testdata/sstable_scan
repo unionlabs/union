@@ -1,0 +1,402 @@
+sstable scan
+--start=arm
+--end=aside
+../sstable/testdata/h.sst
+----
+h.sst
+arm#0,SET [32]
+armed#0,SET [32]
+armour#0,SET [31]
+arms#0,SET [32]
+arrant#0,SET [31]
+art#0,SET [36]
+artery#0,SET [31]
+article#0,SET [31]
+articles#0,SET [31]
+as#0,SET [3536]
+
+sstable scan
+--end=abused
+../sstable/testdata/h.sst
+----
+h.sst
+a-a#0,RANGEDEL
+a#0,SET [3937]
+aboard#0,SET [32]
+about#0,SET [32]
+above#0,SET [31]
+abroad#0,SET [31]
+absurd#0,SET [31]
+
+sstable scan
+--start=you
+../sstable/testdata/h.sst
+----
+h.sst
+you#0,SET [313130]
+young#0,SET [36]
+your#0,SET [3439]
+yourself#0,SET [37]
+youth#0,SET [35]
+
+sstable scan
+--key=%x
+--value=null
+--start=you
+../sstable/testdata/h.sst
+----
+h.sst
+796f75#0,SET
+796f756e67#0,SET
+796f7572#0,SET
+796f757273656c66#0,SET
+796f757468#0,SET
+
+sstable scan
+--key=%q
+--value=null
+--start=hex:796f75
+--end=raw:yourself
+../sstable/testdata/h.sst
+----
+h.sst
+"you"#0,SET
+"young"#0,SET
+"your"#0,SET
+
+sstable scan
+--key=null
+--value=[%x]
+--start=hex:796f75
+--end=raw:yourself
+../sstable/testdata/h.sst
+----
+h.sst
+[313130]
+[36]
+[3439]
+
+sstable scan
+--key=pretty
+--value=[%x]
+--start=hex:796f75
+--end=raw:yourself
+../sstable/testdata/h.sst
+----
+h.sst
+you#0,SET [313130]
+young#0,SET [36]
+your#0,SET [3439]
+
+sstable scan
+--key=pretty
+--value=[%x]
+--start=hex:796f75
+--end=raw:yourself
+../sstable/testdata/h.sst
+----
+h.sst
+you#0,SET [313130]
+young#0,SET [36]
+your#0,SET [3439]
+
+sstable scan
+--key=pretty
+--value=pretty
+--start=hex:796f75
+--end=raw:yourself
+../sstable/testdata/h.sst
+----
+h.sst
+you#0,SET 110
+young#0,SET 6
+your#0,SET 49
+
+sstable scan
+--key=pretty:test-comparer
+--value=pretty:test-comparer
+--start=hex:796f75
+--end=raw:yourself
+../sstable/testdata/h.sst
+----
+h.sst
+test formatter: you#0,SET test value formatter: 110
+test formatter: young#0,SET test value formatter: 6
+test formatter: your#0,SET test value formatter: 49
+
+# Start and end scan keys lie within range tombstones.
+sstable scan
+--start=beards
+--end=carrying
+../sstable/testdata/h.sst
+----
+h.sst
+beard-bearers#0,RANGEDEL
+bearers#0,SET [31]
+bears#0,SET [31]
+beast#0,SET [32]
+beating#0,SET [31]
+beauty#0,SET [31]
+beaver#0,SET [31]
+beckons#0,SET [32]
+bed#0,SET [34]
+been#0,SET [34]
+beetles#0,SET [31]
+befitted#0,SET [31]
+before#0,SET [36]
+beg#0,SET [31]
+beguile#0,SET [31]
+behold#0,SET [31]
+behoves#0,SET [31]
+being#0,SET [34]
+belief#0,SET [31]
+believe#0,SET [36]
+bell#0,SET [31]
+bend#0,SET [32]
+beneath#0,SET [35]
+benefit#0,SET [31]
+bernardo#0,SET [3330]
+beseech#0,SET [32]
+besmirch#0,SET [31]
+best#0,SET [35]
+beteem#0,SET [31]
+bethought#0,SET [31]
+better#0,SET [32]
+between#0,SET [32]
+beware#0,SET [32]
+beyond#0,SET [31]
+bid#0,SET [32]
+bird#0,SET [32]
+birth#0,SET [33]
+bites#0,SET [31]
+bitter#0,SET [31]
+black#0,SET [31]
+blast#0,SET [31]
+blastments#0,SET [31]
+blasts#0,SET [31]
+blazes#0,SET [31]
+blazon#0,SET [31]
+blessing#0,SET [33]
+blood#0,SET [37]
+blossoms#0,SET [31]
+blows#0,SET [31]
+bodes#0,SET [31]
+body#0,SET [35]
+bonds#0,SET [31]
+bones#0,SET [31]
+book#0,SET [31]
+books#0,SET [31]
+born#0,SET [32]
+borrower#0,SET [31]
+borrowing#0,SET [31]
+bosom#0,SET [31]
+both#0,SET [33]
+bound#0,SET [32]
+bounteous#0,SET [31]
+bow#0,SET [31]
+boy#0,SET [32]
+brain#0,SET [32]
+bray#0,SET [31]
+brazen#0,SET [31]
+breach#0,SET [31]
+break#0,SET [33]
+breaking#0,SET [31]
+breath#0,SET [31]
+breathing#0,SET [31]
+brief#0,SET [31]
+bring#0,SET [31]
+brokers#0,SET [31]
+brother#0,SET [36]
+brow#0,SET [31]
+bruit#0,SET [31]
+bulk#0,SET [31]
+buried#0,SET [31]
+burns#0,SET [32]
+burnt#0,SET [31]
+burst#0,SET [32]
+business#0,SET [34]
+but#0,SET [3538]
+buttons#0,SET [31]
+buy#0,SET [31]
+by#0,SET [3331]
+call#0,SET [34]
+calumnious#0,SET [31]
+came#0,SET [32]
+can#0,SET [35]
+canker#0,SET [31]
+cannon#0,SET [32]
+cannot#0,SET [33]
+canon#0,SET [31]
+canonized#0,SET [31]
+canst#0,SET [32]
+cap#0,SET [31]
+carefully#0,SET [31]
+carriage-carve#0,RANGEDEL
+carriage#0,SET [31]
+
+# Start scan key lies on range tombstone end key.
+sstable scan
+--start=bearers
+--end=bears
+../sstable/testdata/h.sst
+----
+h.sst
+bearers#0,SET [31]
+
+# End scan key lies on range tombstone start key.
+sstable scan
+--start=bear
+--end=beard
+../sstable/testdata/h.sst
+----
+h.sst
+bear#0,SET [35]
+
+# Count that only includes point records.
+sstable scan
+--start=armed
+--count=3
+../sstable/testdata/h.sst
+----
+h.sst
+armed#0,SET [32]
+armour#0,SET [31]
+arms#0,SET [32]
+
+# Count that includes point records and range tombstones.
+sstable scan
+--start=beards
+--count=2
+../sstable/testdata/h.sst
+----
+h.sst
+beard-bearers#0,RANGEDEL
+bearers#0,SET [31]
+
+sstable scan
+testdata/out-of-order.sst
+----
+out-of-order.sst
+a#0,SET []
+c#0,SET []
+b#0,SET []
+    WARNING: OUT OF ORDER KEYS!
+
+sstable scan
+--filter=arms
+../sstable/testdata/h.sst
+----
+h.sst: arms#0,SET [32]
+
+sstable scan
+--filter=bear
+../sstable/testdata/h.sst
+----
+h.sst: bear#0,SET [35]
+h.sst: beard-bearers#0,RANGEDEL
+h.sst: beard#0,SET [31]
+h.sst: bearers#0,SET [31]
+h.sst: bears#0,SET [31]
+
+sstable scan
+--filter=beards
+../sstable/testdata/h.sst
+----
+h.sst: beard-bearers#0,RANGEDEL
+
+sstable scan
+--filter=beard
+../sstable/testdata/
+----
+testdata/h.block-bloom.no-compression.sst: beard-bearers#0,RANGEDEL
+testdata/h.block-bloom.no-compression.sst: beard#0,SET [31]
+testdata/h.ldb: beard-bearers#0,RANGEDEL
+testdata/h.ldb: beard#0,SET [31]
+testdata/h.no-compression.sst: beard-bearers#0,RANGEDEL
+testdata/h.no-compression.sst: beard#0,SET [31]
+testdata/h.no-compression.two_level_index.sst: beard-bearers#0,RANGEDEL
+testdata/h.no-compression.two_level_index.sst: beard#0,SET [31]
+testdata/h.sst: beard-bearers#0,RANGEDEL
+testdata/h.sst: beard#0,SET [31]
+testdata/h.table-bloom.no-compression.prefix_extractor.no_whole_key_filter.sst: beard-bearers#0,RANGEDEL
+testdata/h.table-bloom.no-compression.prefix_extractor.no_whole_key_filter.sst: beard#0,SET [31]
+testdata/h.table-bloom.no-compression.sst: beard-bearers#0,RANGEDEL
+testdata/h.table-bloom.no-compression.sst: beard#0,SET [31]
+testdata/h.table-bloom.sst: beard-bearers#0,RANGEDEL
+testdata/h.table-bloom.sst: beard#0,SET [31]
+testdata/h.zstd-compression.sst: beard-bearers#0,RANGEDEL
+testdata/h.zstd-compression.sst: beard#0,SET [31]
+
+sstable scan
+--filter=beard
+--start=boar
+../sstable/testdata/h.sst
+----
+
+sstable scan
+./testdata/mixed/000005.sst
+----
+000005.sst
+a@1#1,SET []
+b@1#2,SET []
+c@1#3,SET []
+d@1#4,SET []
+e@1#5,SET []
+f@1#6,SET []
+g@1#7,SET []
+h@1#8,SET []
+i@1#9,SET []
+j@1#10,SET []
+k@1#11,SET []
+l@1#12,SET []
+m@1#13,SET []
+n@1#14,SET []
+o@1#15,SET []
+p@1#16,SET []
+q@1#17,SET []
+r@1#18,SET []
+s@1#19,SET []
+t@1#20,SET []
+u@1#21,SET []
+v@1#22,SET []
+w@1#23,SET []
+x@1#24,SET []
+y@1#25,SET []
+z@1#26,SET []
+[a-b):
+  #29,RANGEKEYDEL
+[b-z):
+  #28,RANGEKEYUNSET: @2
+  #27,RANGEKEYSET: @1 []
+
+sstable scan
+--start=b
+--end=e
+./testdata/mixed/000005.sst
+----
+000005.sst
+b@1#2,SET []
+c@1#3,SET []
+d@1#4,SET []
+[b-z):
+  #28,RANGEKEYUNSET: @2
+  #27,RANGEKEYSET: @1 []
+
+sstable scan
+--filter=a
+./testdata/mixed/000005.sst
+----
+000005.sst: a@1#1,SET []
+000005.sst: [a-b):
+  #29,RANGEKEYDEL
+
+sstable scan
+--filter=b
+--start=b
+--end=d
+./testdata/mixed/000005.sst
+----
+000005.sst: b@1#2,SET []
+000005.sst: [b-z):
+  #28,RANGEKEYUNSET: @2
+  #27,RANGEKEYSET: @1 []

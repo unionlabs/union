@@ -1,0 +1,37 @@
+name: Mark stale issues and pull requests
+permissions:
+  issues: write
+  pull-requests: write
+
+on:
+  # For manual tests.
+  workflow_dispatch:
+  schedule:
+    - cron: "30 20 * * *"
+
+jobs:
+  stale:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/stale@v7.0.0
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        operations-per-run: 500
+        exempt-all-milestones: true
+        remove-stale-when-updated: true
+      
+        stale-issue-message: 'This issue is stale because it has been open 6 months with no activity. Please comment or label `not-stale`, or this will be closed in 14 days.'
+        close-issue-message: 'This issue was automatically closed due to no activity for 6 months plus the 14 day notice period.'
+        days-before-issue-stale: 182 # 6 months
+        days-before-issue-close: 14 # 2 weeks
+        exempt-issue-labels: not-stale
+        
+        stale-pr-message: 'This pull request is stale because it has been open 6 months with no activity. Please comment or label `not-stale`, or this will be closed in 14 days.'
+        close-pr-message: 'This pull request was automatically closed due to no activity for 6 months plus the 14 day notice period.'
+        days-before-pr-stale: 182 # 6 months
+        days-before-pr-close: 14 # 2 week
+        exempt-pr-labels: not-stale
+        exempt-draft-pr: false
+

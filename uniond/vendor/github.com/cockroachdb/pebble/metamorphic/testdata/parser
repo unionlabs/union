@@ -1,0 +1,40 @@
+parse
+foo
+----
+1:1: unable to parse objectID: "foo"
+
+parse
+"foo"
+----
+1:1: unexpected token: STRING "\"foo\""
+
+parse
+db.bar()
+----
+1:1: unknown op db.bar
+
+parse
+db.Apply()
+----
+1:10: unexpected token: ")"
+
+parse
+db.Apply(hello)
+----
+1:10: unable to parse objectID: "hello"
+
+parse
+db.NewBatch()
+----
+1:1: assignment expected for db.NewBatch
+
+parse
+batch0 = db.Apply()
+----
+1:10: cannot use db.Apply in assignment
+
+parse
+batch0 = db.NewBatch()
+batch0.First()
+----
+2:1: batch0.First: First is not a method on batch0

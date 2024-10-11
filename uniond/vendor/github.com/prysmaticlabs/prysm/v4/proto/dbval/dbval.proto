@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package ethereum.eth.dbval;
+
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/dbval;dbval";
+
+// BackfillStatus is a value used to keep track of the progress of the process of backfilling blocks leading up to
+// the origin block used to checkpoint sync a node. There is only one BackfillStatus value in the database.
+message BackfillStatus {
+    // low_slot is the slot of the last block that backfill will attempt to download and import.
+    // This is determined by MIN_EPOCHS_FOR_BLOCK_REQUESTS, or by a user-specified override.
+    uint64 low_slot = 1;
+    // low_root is the root of the last block that backfill will attempt to download and import.
+    bytes low_root = 2;
+    // low_parent_root is the parent_root of the block at low_root. This enables the backfill service to check
+    // that a block is the direct ancestor of the block for low_root without an additional db lookup.
+    bytes low_parent_root = 3;
+    // origin_slot is the slot of the origin block, which is the block used to initiate a checkpoint sync.
+    // Backfill uses the origin block as the reference point to determine canonical ancestors.
+    uint64 origin_slot = 4;
+    // origin_root is the root of the origin block.
+    bytes origin_root = 6;
+}

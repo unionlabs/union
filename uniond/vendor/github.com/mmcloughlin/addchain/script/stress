@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+set -exuo pipefail
+
+# Parse options.
+output_cover_profile="/dev/null"
+while getopts "c:" opt; do
+    case "${opt}" in
+        c) output_cover_profile="${OPTARG}" ;;
+    esac
+done
+
+# Packages with stress test mode.
+pkgs=(
+    "alg"
+    "alg/contfrac"
+    "alg/dict"
+    "alg/ensemble"
+    "alg/heuristic"
+    "acc"
+)
+
+# Test each package individually. This is required since custom test arguments
+# do not work when calling "go test" on multiple packages.
+cover_profiles=()
+for pkg in "${pkgs[@]}"; do
+    pushd "${pkg}"
+    cover_profile=$(mktemp)
+    go test -stress -timeout=0 -coverprofile="${cover_profile}" -covermode=set
+    cover_profiles+=("${cover_profile}")
+    popd
+done
+
+# Merge profiles.
+covertool merge --output "${output_cover_profile}" "${cover_profiles[@]}"
+
+# Clean up.
+rm -rf "${cover_profiles[@]}"

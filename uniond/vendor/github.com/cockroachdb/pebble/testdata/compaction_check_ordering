@@ -1,0 +1,161 @@
+check-ordering
+L0
+  a.SET.1-b.SET.2
+----
+OK
+
+check-ordering
+L0
+  a.SET.1-b.SET.2
+  c.SET.3-d.SET.4
+----
+OK
+
+check-ordering
+L0
+  c.SET.3-d.SET.4
+  a.SET.1-b.SET.2
+----
+L0 files 000001 and 000002 are not properly ordered: <#3-#4> vs <#1-#2>
+
+# Seqnum overlaps are allowed in L0 as long as no key ranges overlap.
+check-ordering
+L0
+  c.SET.3-d.SET.4
+  a.SET.1-b.SET.5
+----
+OK
+
+check-ordering
+L0
+  a.SET.3-d.SET.3
+  a.SET.1-b.SET.2
+----
+L0 files 000001 and 000002 are not properly ordered: <#3-#3> vs <#1-#2>
+
+check-ordering
+L0
+  a.SET.2-d.SET.4
+  a.SET.3-b.SET.3
+----
+L0 files 000001 and 000002 are not properly ordered: <#2-#4> vs <#3-#3>
+
+check-ordering
+L0
+  a.SET.3-d.SET.3
+  a.SET.3-b.SET.3
+----
+OK
+
+check-ordering
+L1
+  a.SET.1-b.SET.2
+----
+OK
+
+check-ordering
+L1
+  b.SET.1-a.SET.2
+----
+L1 : file 000001 has inconsistent bounds: b#1,SET vs a#2,SET
+
+check-ordering
+L1
+  a.SET.1-b.SET.2
+  c.SET.3-d.SET.4
+----
+OK
+
+check-ordering
+L1
+  a.SET.1-b.SET.2
+  d.SET.3-c.SET.4
+----
+L1 : file 000002 has inconsistent bounds: d#3,SET vs c#4,SET
+
+check-ordering
+L1
+  a.SET.1-b.SET.2
+  b.SET.1-d.SET.4
+----
+OK
+
+check-ordering
+L1
+  a.SET.1-b.SET.2
+  b.SET.2-d.SET.4
+----
+L1 files 000001 and 000002 have overlapping ranges: [a#1,SET-b#2,SET] vs [b#2,SET-d#4,SET]
+
+check-ordering
+L1
+  a.SET.1-c.SET.2
+  b.SET.3-d.SET.4
+----
+L1 files 000001 and 000002 have overlapping ranges: [a#1,SET-c#2,SET] vs [b#3,SET-d#4,SET]
+
+check-ordering
+L1
+  a.SET.1-c.SET.2
+L2
+  b.SET.3-d.SET.4
+----
+OK
+
+check-ordering
+L1
+  a.SET.1-c.SET.2
+L2
+  b.SET.3-d.SET.4
+  c.SET.5-e.SET.6
+----
+L2 files 000002 and 000003 have overlapping ranges: [b#3,SET-d#4,SET] vs [c#5,SET-e#6,SET]
+
+# Single sublevel, ordering is fine.
+check-ordering
+L0.0
+  a.SET.1-b.SET.2
+  b.SET.1-d.SET.5
+----
+L0.0 files 000001 and 000002 have overlapping ranges: [a#1,SET-b#2,SET] vs [b#1,SET-d#5,SET]
+
+# Single sublevel, ordering is incorrect.
+check-ordering
+L0.0
+  a.SET.1-b.SET.2
+  b.SET.2-d.SET.4
+----
+L0.0 files 000001 and 000002 have overlapping ranges: [a#1,SET-b#2,SET] vs [b#2,SET-d#4,SET]
+
+# Two sublevels, but ordering is fine.
+check-ordering
+L0.0
+  a.SET.1-b.SET.2
+  c.SET.3-d.SET.4
+L0.1
+  a.SET.5-b.SET.6
+  c.SET.6-d.SET.8
+----
+OK
+
+# Two sublevels, but first ordering is broken
+check-ordering
+L0.0
+  a.SET.1-b.SET.2
+  b.SET.3-d.SET.4
+L0.1
+  a.SET.5-b.SET.6
+  c.SET.6-d.SET.8
+----
+L0.0 files 000001 and 000002 have overlapping ranges: [a#1,SET-b#2,SET] vs [b#3,SET-d#4,SET]
+
+# Two sublevels, but second ordering is broken
+check-ordering
+L0.0
+  a.SET.1-b.SET.2
+  b.SET.1-d.SET.4
+L0.1
+  a.SET.5-b.SET.6
+  b.SET.7-d.SET.8
+----
+L0.0 files 000001 and 000002 have overlapping ranges: [a#1,SET-b#2,SET] vs [b#1,SET-d#4,SET]

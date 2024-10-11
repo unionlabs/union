@@ -1,0 +1,92 @@
+---
+name: apidiff
+on:
+  pull_request:
+
+jobs:
+  scan_changes:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: main
+    - name: Get main commit
+      id: main
+      run: echo "hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '1.20.1'
+    - name: Get changed directories
+      id: changed_dirs
+      # Ignore changes to the internal and root directories.
+      run: |
+        dirs=$(go run ./internal/actions/cmd/changefinder -q)
+        if [ -z "$dirs" ]
+        then
+          echo "skip=1" >> $GITHUB_OUTPUT
+          echo "No changes worth diffing!"
+        else
+          for d in $dirs; do list=${list},\"${d}\"; done
+          echo "changed={\"changed\":[${list#,}]}" >> $GITHUB_OUTPUT
+          echo "skip=" >> $GITHUB_OUTPUT
+        fi
+    outputs:
+      changed_dirs: ${{ steps.changed_dirs.outputs.changed }}
+      skip: ${{ steps.changed_dirs.outputs.skip }}
+  apidiff:
+    needs: scan_changes
+    runs-on: ubuntu-latest
+    if: "!needs.scan_changes.outputs.skip && !contains(github.event.pull_request.labels.*.name, 'breaking change allowed')"
+    continue-on-error: true
+    strategy:
+      matrix: ${{ fromJson(needs.scan_changes.outputs.changed_dirs) }}
+    steps:
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '1.20.1'
+    - name: Install latest apidiff
+      run: go install golang.org/x/exp/cmd/apidiff@latest
+    - uses: actions/checkout@v4
+      with:
+        ref: main
+    - name: Create baseline
+      id: baseline
+      run: |
+        export CHANGED=${{ matrix.changed }}
+        echo pkg="${CHANGED//\//_}_pkg.main" >> $GITHUB_OUTPUT
+    - name: Create Go package baseline
+      run: cd ${{ matrix.changed }} && apidiff -m -w ${{ steps.baseline.outputs.pkg }} .
+    - name: Upload baseline package data
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.baseline.outputs.pkg }}
+        path: ${{ matrix.changed }}/${{ steps.baseline.outputs.pkg }}
+        retention-days: 1
+    - uses: actions/checkout@v4
+    - name: Download baseline package data
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ steps.baseline.outputs.pkg }}
+        path: ${{ matrix.changed }}
+    - name: Compare regenerated code to baseline
+      # Only ignore Go interface additions when the PR is from OwlBot as it is
+      # likely a new method added to the gRPC client stub interface, which is
+      # non-breaking.
+      run: |
+        cd ${{ matrix.changed }} && apidiff -m -incompatible ${{ steps.baseline.outputs.pkg }} . > diff.txt
+        if [[ ${{ github.event.pull_request.head.ref }} == owl-bot-copy ]]; then
+          sed -i '/: added/d' ./diff.txt
+        fi
+        cat diff.txt && ! [ -s diff.txt ]
+    - name: Add breaking change label
+      if: ${{ failure() && !github.event.pull_request.head.repo.fork }}
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.addLabels({
+            issue_number: ${{ github.event.number }},
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            labels: ['breaking change']
+          })

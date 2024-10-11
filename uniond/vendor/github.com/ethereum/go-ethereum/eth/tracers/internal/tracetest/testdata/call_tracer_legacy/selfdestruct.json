@@ -1,0 +1,73 @@
+{
+  "context": {
+    "difficulty": "3502894804",
+    "gasLimit": "4722976",
+    "miner": "0x1585936b53834b021f68cc13eeefdec2efc8e724",
+    "number": "2289806",
+    "timestamp": "1513601314"
+  },
+  "genesis": {
+    "alloc": {
+      "0x0024f658a46fbb89d8ac105e98d7ac7cbbaf27c5": {
+        "balance": "0x0",
+        "code": "0x",
+        "nonce": "22",
+        "storage": {}
+      },
+      "0x3b873a919aa0512d5a0f09e6dcceaa4a6727fafe": {
+        "balance": "0x4d87094125a369d9bd5",
+        "code": "0x61deadff",
+        "nonce": "1",
+        "storage": {}
+      },
+      "0xb436ba50d378d4bbc8660d312a13df6af6e89dfb": {
+        "balance": "0x1780d77678137ac1b775",
+        "code": "0x",
+        "nonce": "29072",
+        "storage": {}
+      }
+    },
+    "config": {
+      "byzantiumBlock": 1700000,
+      "chainId": 3,
+      "daoForkSupport": true,
+      "eip150Block": 0,
+      "eip150Hash": "0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d",
+      "eip155Block": 10,
+      "eip158Block": 10,
+      "ethash": {},
+      "homesteadBlock": 0
+    },
+    "difficulty": "3509749784",
+    "extraData": "0x4554482e45544846414e532e4f52472d4641313738394444",
+    "gasLimit": "4727564",
+    "hash": "0x609948ac3bd3c00b7736b933248891d6c901ee28f066241bddb28f4e00a9f440",
+    "miner": "0xbbf5029fd710d227630c8b7d338051b8e76d50b3",
+    "mixHash": "0xb131e4507c93c7377de00e7c271bf409ec7492767142ff0f45c882f8068c2ada",
+    "nonce": "0x4eb12e19c16d43da",
+    "number": "2289805",
+    "stateRoot": "0xc7f10f352bff82fac3c2999d3085093d12652e19c7fd32591de49dc5d91b4f1f",
+    "timestamp": "1513601261",
+    "totalDifficulty": "7143276353481064"
+  },
+  "input": "0xf88b8271908506fc23ac0083015f90943b873a919aa0512d5a0f09e6dcceaa4a6727fafe80a463e4bff40000000000000000000000000024f658a46fbb89d8ac105e98d7ac7cbbaf27c52aa0bdce0b59e8761854e857fe64015f06dd08a4fbb7624f6094893a79a72e6ad6bea01d9dde033cff7bb235a3163f348a6d7ab8d6b52bc0963a95b91612e40ca766a4",
+  "result": {
+    "calls": [
+      {
+        "from": "0x3b873a919aa0512d5a0f09e6dcceaa4a6727fafe",
+        "input": "0x",
+        "to": "0x000000000000000000000000000000000000dEaD",
+        "type": "SELFDESTRUCT",
+        "value": "0x4d87094125a369d9bd5"
+      }
+    ],
+    "from": "0xb436ba50d378d4bbc8660d312a13df6af6e89dfb",
+    "gas": "0x15f90",
+    "gasUsed": "0x6fcb",
+    "input": "0x63e4bff40000000000000000000000000024f658a46fbb89d8ac105e98d7ac7cbbaf27c5",
+    "output": "0x",
+    "to": "0x3b873a919aa0512d5a0f09e6dcceaa4a6727fafe",
+    "type": "CALL",
+    "value": "0x0"
+  }
+}

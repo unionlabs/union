@@ -1,0 +1,46 @@
+{
+    "breadcrumbs": [
+        {
+            "data": {
+                "data_key": "data_val"
+            }
+        }
+    ],
+    "contexts": {
+        "context_key": {
+            "context_key": "context_val"
+        }
+    },
+    "environment": "production",
+    "event_id": "0123456789abcdef",
+    "extra": {
+        "extra_key": "extra_val"
+    },
+    "fingerprint": [
+        "abcd"
+    ],
+    "level": "error",
+    "message": "event message",
+    "platform": "myplatform",
+    "release": "myrelease",
+    "sdk": {
+        "name": "sentry.go",
+        "version": "0.0.1",
+        "integrations": [
+            "gin",
+            "iris"
+        ],
+        "packages": [
+            {
+                "name": "sentry-go",
+                "version": "0.0.1"
+            }
+        ]
+    },
+    "server_name": "myhost",
+    "transaction": "mytransaction",
+    "user": {
+        "id": "foo"
+    },
+    "timestamp": "1970-01-01T00:00:05Z"
+}

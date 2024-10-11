@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" class="js csstransforms3d">
+
+<head>
+  <meta charset="utf-8"> {{ partial "meta.html" . }}
+  <title>{{ .Title }}</title>
+  <link href='{{ relURL "/css/nucleus.css"}}' rel="stylesheet">
+  <link href='{{ relURL "/css/font-awesome.min.css"}}' rel="stylesheet">
+  <link href='{{ relURL "/css/hybrid.css"}}' rel="stylesheet">
+  <link href='{{ relURL "/css/featherlight.min.css"}}' rel="stylesheet">
+  <link href='{{ relURL "/css/perfect-scrollbar.min.css"}}' rel="stylesheet">
+  <link href='{{ relURL "/css/theme.css"}}' rel="stylesheet">
+  <link href='{{ relURL "/css/hugo-theme.css"}}' rel="stylesheet">
+  <style type="text/css">
+    :root #header + #content > #left > #rlblock_left {
+      display: none !important;
+    }
+
+    p,
+    li,
+    ul {
+      text-align: center
+    }
+
+    ul {
+      list-style-type: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <body class="" data-url="/">
+
+    <section id="body" style="margin-left:0px;">
+      <div id="overlay"></div>
+      <div id="chapter">
+        <div id="body-inner">
+          <h1>Error </h1>
+          <p>
+          </p>
+          <p>Woops. Looks like this page doesn't exist.</p>
+          <p></p>
+          <p><a href='{{relURL "/"}}'>Go to homepage</a></p>
+          <p><img src='{{ relURL  "/images/gopher-404.jpg"}}' style="width:50%"></img></p>
+        </div>
+      </div>
+
+    </section>
+  </body>
+
+</html>

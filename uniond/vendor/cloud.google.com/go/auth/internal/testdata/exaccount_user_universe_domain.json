@@ -1,0 +1,12 @@
+{
+    "type": "external_account_authorized_user",
+    "audience": "//iam.googleapis.com/locations/global/workforcePools/$POOL_ID/providers/$PROVIDER_ID",
+    "client_id": "abc123.apps.googleusercontent.com",
+    "client_secret": "shh",
+    "refresh_token": "refreshing",
+    "token_url": "https://sts.googleapis.com/v1/oauthtoken",
+    "token_info_url": "https://sts.googleapis.com/v1/info",
+    "revoke_url": "https://sts.googleapis.com/v1/revoke",
+    "quota_project_id": "fake_project2",
+    "universe_domain": "example.com"
+}

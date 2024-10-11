@@ -1,0 +1,6 @@
+version: v1
+plugins:
+  - name: openapiv2
+    out: .
+    opt:
+      - visibility_restriction_selectors=PREVIEW

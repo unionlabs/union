@@ -1,0 +1,10 @@
+-- go.mod --
+module example.com/generics
+
+go 1.18
+-- a/a.go --
+package a
+
+type Foo[V any] interface {
+    Value() V
+}

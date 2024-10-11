@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "gomod"
+    directory: "/examples/middleware"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "gomod"
+    directory: "/tutorial/whatsup"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

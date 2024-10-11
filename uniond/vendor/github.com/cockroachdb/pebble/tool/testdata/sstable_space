@@ -1,0 +1,68 @@
+sstable space
+----
+requires at least 1 arg(s), only received 0
+
+# first key in first data block
+
+sstable space --start=a --end=a
+../sstable/testdata/h.sst
+----
+h.sst: 1099
+
+# first data block through last key in first data block
+
+sstable space --start=a --end=beteem
+../sstable/testdata/h.sst
+----
+h.sst: 1099
+
+# last key in first data block through first key in second data block
+
+sstable space --start=beteem --end=bethought
+../sstable/testdata/h.sst
+----
+h.sst: 2161
+
+# last key in first data block through last key in last data block
+
+sstable space --start=beteem --end=youth
+../sstable/testdata/h.sst
+----
+h.sst: 13913
+
+# second last key in last data block through last key in last data block
+
+sstable space --start=yourself --end=youth
+../sstable/testdata/h.sst
+----
+h.sst: 161
+
+# Two-level index: first key in first data block
+
+sstable space --start=a --end=a
+../sstable/testdata/h.no-compression.two_level_index.sst
+----
+h.no-compression.two_level_index.sst: 2046
+
+# Two-level index: last key in last data block
+
+sstable space --start=youth --end=youth
+../sstable/testdata/h.no-compression.two_level_index.sst
+----
+h.no-compression.two_level_index.sst: 254
+
+# Two-level index: last key in first top-level index partition and first key
+# in second top-level index partition
+
+sstable space --start=headshake --end=health
+../sstable/testdata/h.no-compression.two_level_index.sst
+----
+h.no-compression.two_level_index.sst: 4084
+
+# Two-level index: last key in first top-level index partition through last
+# key in last data block.
+
+sstable space --start=headshake --end=youth
+../sstable/testdata/h.no-compression.two_level_index.sst
+----
+h.no-compression.two_level_index.sst: 18619

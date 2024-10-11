@@ -1,4 +1,4 @@
-// Copyright (c) 2020 The Decred developers
+// Copyright (c) 2020-2023 The Decred developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
@@ -32,11 +32,11 @@ key without actually revealing it.
 
 # Errors
 
-Errors returned by this package are of type ecdsa.Error and fully support the
-standard library errors.Is and errors.As functions.  This allows the caller to
-programmatically determine the specific error by examining the ErrorKind field
-of the type asserted ecdsa.Error while still providing rich error messages with
-contextual information.  See ErrorKind in the package documentation for a full
-list.
+The errors returned by this package are of type ecdsa.Error and fully support
+the standard library errors.Is and errors.As functions.  This allows the caller
+to programmatically determine the specific error by examining the ErrorKind
+field of the type asserted ecdsa.Error while still providing rich error messages
+with contextual information.  See ErrorKind in the package documentation for a
+full list.
 */
 package ecdsa

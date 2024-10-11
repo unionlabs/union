@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"net/url"
 	"os"
@@ -34,8 +35,11 @@ import (
 	"google.golang.org/api/option/internaloption"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protowire"
+	"google.golang.org/protobuf/proto"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
@@ -112,6 +116,8 @@ type grpcStorageClient struct {
 func newGRPCStorageClient(ctx context.Context, opts ...storageOption) (storageClient, error) {
 	s := initSettings(opts...)
 	s.clientOption = append(defaultGRPCOptions(), s.clientOption...)
+	// Disable all gax-level retries in favor of retry logic in the veneer client.
+	s.gax = append(s.gax, gax.WithRetry(nil))
 
 	config := newStorageConfig(s.clientOption...)
 	if config.readAPIWasSet {
@@ -361,6 +367,9 @@ func (c *grpcStorageClient) UpdateBucket(ctx context.Context, bucket string, uat
 	if uattrs.Autoclass != nil {
 		fieldMask.Paths = append(fieldMask.Paths, "autoclass")
 	}
+	if uattrs.SoftDeletePolicy != nil {
+		fieldMask.Paths = append(fieldMask.Paths, "soft_delete_policy")
+	}
 
 	for label := range uattrs.setLabels {
 		fieldMask.Paths = append(fieldMask.Paths, fmt.Sprintf("labels.%s", label))
@@ -372,6 +381,13 @@ func (c *grpcStorageClient) UpdateBucket(ctx context.Context, bucket string, uat
 	}
 
 	req.UpdateMask = fieldMask
+
+	if len(fieldMask.Paths) < 1 {
+		// Nothing to update. Send a get request for current attrs instead. This
+		// maintains consistency with JSON bucket updates.
+		opts = append(opts, idempotent(true))
+		return c.GetBucket(ctx, bucket, conds, opts...)
+	}
 
 	var battrs *BucketAttrs
 	err := run(ctx, func(ctx context.Context) error {
@@ -415,11 +431,17 @@ func (c *grpcStorageClient) ListObjects(ctx context.Context, bucket string, q *Q
 		IncludeTrailingDelimiter: it.query.IncludeTrailingDelimiter,
 		MatchGlob:                it.query.MatchGlob,
 		ReadMask:                 q.toFieldMask(), // a nil Query still results in a "*" FieldMask
+		SoftDeleted:              it.query.SoftDeleted,
 	}
 	if s.userProject != "" {
 		ctx = setUserProjectMetadata(ctx, s.userProject)
 	}
 	fetch := func(pageSize int, pageToken string) (token string, err error) {
+		// IncludeFoldersAsPrefixes is not supported for gRPC
+		// TODO: remove this when support is added in the proto.
+		if it.query.IncludeFoldersAsPrefixes {
+			return "", status.Errorf(codes.Unimplemented, "storage: IncludeFoldersAsPrefixes is not supported in gRPC")
+		}
 		var objects []*storagepb.Object
 		var gitr *gapic.ObjectIterator
 		err = run(it.ctx, func(ctx context.Context) error {
@@ -479,22 +501,25 @@ func (c *grpcStorageClient) DeleteObject(ctx context.Context, bucket, object str
 	return err
 }
 
-func (c *grpcStorageClient) GetObject(ctx context.Context, bucket, object string, gen int64, encryptionKey []byte, conds *Conditions, opts ...storageOption) (*ObjectAttrs, error) {
+func (c *grpcStorageClient) GetObject(ctx context.Context, params *getObjectParams, opts ...storageOption) (*ObjectAttrs, error) {
 	s := callSettings(c.settings, opts...)
 	req := &storagepb.GetObjectRequest{
-		Bucket: bucketResourceName(globalProjectAlias, bucket),
-		Object: object,
+		Bucket: bucketResourceName(globalProjectAlias, params.bucket),
+		Object: params.object,
 		// ProjectionFull by default.
 		ReadMask: &fieldmaskpb.FieldMask{Paths: []string{"*"}},
 	}
-	if err := applyCondsProto("grpcStorageClient.GetObject", gen, conds, req); err != nil {
+	if err := applyCondsProto("grpcStorageClient.GetObject", params.gen, params.conds, req); err != nil {
 		return nil, err
 	}
 	if s.userProject != "" {
 		ctx = setUserProjectMetadata(ctx, s.userProject)
 	}
-	if encryptionKey != nil {
-		req.CommonObjectRequestParams = toProtoCommonObjectRequestParams(encryptionKey)
+	if params.encryptionKey != nil {
+		req.CommonObjectRequestParams = toProtoCommonObjectRequestParams(params.encryptionKey)
+	}
+	if params.softDeleted {
+		req.SoftDeleted = &params.softDeleted
 	}
 
 	var attrs *ObjectAttrs
@@ -584,6 +609,17 @@ func (c *grpcStorageClient) UpdateObject(ctx context.Context, params *updateObje
 
 	req.UpdateMask = fieldMask
 
+	if len(fieldMask.Paths) < 1 {
+		// Nothing to update. To maintain consistency with JSON, we must still
+		// update the object because metageneration and other fields are
+		// updated even on an empty update.
+		// gRPC will fail if the fieldmask is empty, so instead we add an
+		// output-only field to the update mask. Output-only fields are (and must
+		// be - see AIP 161) ignored, but allow us to send an empty update because
+		// any mask that is valid for read (as this one is) must be valid for write.
+		fieldMask.Paths = append(fieldMask.Paths, "create_time")
+	}
+
 	var attrs *ObjectAttrs
 	err := run(ctx, func(ctx context.Context) error {
 		res, err := c.raw.UpdateObject(ctx, req, s.gax...)
@@ -594,6 +630,32 @@ func (c *grpcStorageClient) UpdateObject(ctx context.Context, params *updateObje
 		return nil, ErrObjectNotExist
 	}
 
+	return attrs, err
+}
+
+func (c *grpcStorageClient) RestoreObject(ctx context.Context, params *restoreObjectParams, opts ...storageOption) (*ObjectAttrs, error) {
+	s := callSettings(c.settings, opts...)
+	req := &storagepb.RestoreObjectRequest{
+		Bucket:        bucketResourceName(globalProjectAlias, params.bucket),
+		Object:        params.object,
+		CopySourceAcl: &params.copySourceACL,
+	}
+	if err := applyCondsProto("grpcStorageClient.RestoreObject", params.gen, params.conds, req); err != nil {
+		return nil, err
+	}
+	if s.userProject != "" {
+		ctx = setUserProjectMetadata(ctx, s.userProject)
+	}
+
+	var attrs *ObjectAttrs
+	err := run(ctx, func(ctx context.Context) error {
+		res, err := c.raw.RestoreObject(ctx, req, s.gax...)
+		attrs = newObjectFromProto(res)
+		return err
+	}, s.retry, s.idempotent)
+	if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
+		return nil, ErrObjectNotExist
+	}
 	return attrs, err
 }
 
@@ -726,7 +788,7 @@ func (c *grpcStorageClient) UpdateBucketACL(ctx context.Context, bucket string, 
 func (c *grpcStorageClient) DeleteObjectACL(ctx context.Context, bucket, object string, entity ACLEntity, opts ...storageOption) error {
 	// There is no separate API for PATCH in gRPC.
 	// Make a GET call first to retrieve ObjectAttrs.
-	attrs, err := c.GetObject(ctx, bucket, object, defaultGen, nil, nil, opts...)
+	attrs, err := c.GetObject(ctx, &getObjectParams{bucket, object, defaultGen, nil, nil, false}, opts...)
 	if err != nil {
 		return err
 	}
@@ -759,7 +821,7 @@ func (c *grpcStorageClient) DeleteObjectACL(ctx context.Context, bucket, object 
 // ListObjectACLs retrieves object ACL entries. By default, it operates on the latest generation of this object.
 // Selecting a specific generation of this object is not currently supported by the client.
 func (c *grpcStorageClient) ListObjectACLs(ctx context.Context, bucket, object string, opts ...storageOption) ([]ACLRule, error) {
-	o, err := c.GetObject(ctx, bucket, object, defaultGen, nil, nil, opts...)
+	o, err := c.GetObject(ctx, &getObjectParams{bucket, object, defaultGen, nil, nil, false}, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -769,7 +831,7 @@ func (c *grpcStorageClient) ListObjectACLs(ctx context.Context, bucket, object s
 func (c *grpcStorageClient) UpdateObjectACL(ctx context.Context, bucket, object string, entity ACLEntity, role ACLRole, opts ...storageOption) error {
 	// There is no separate API for PATCH in gRPC.
 	// Make a GET call first to retrieve ObjectAttrs.
-	attrs, err := c.GetObject(ctx, bucket, object, defaultGen, nil, nil, opts...)
+	attrs, err := c.GetObject(ctx, &getObjectParams{bucket, object, defaultGen, nil, nil, false}, opts...)
 	if err != nil {
 		return err
 	}
@@ -897,11 +959,49 @@ func (c *grpcStorageClient) RewriteObject(ctx context.Context, req *rewriteObjec
 	return r, nil
 }
 
+// bytesCodec is a grpc codec which permits receiving messages as either
+// protobuf messages, or as raw []bytes.
+type bytesCodec struct {
+	encoding.Codec
+}
+
+func (bytesCodec) Marshal(v any) ([]byte, error) {
+	vv, ok := v.(proto.Message)
+	if !ok {
+		return nil, fmt.Errorf("failed to marshal, message is %T, want proto.Message", v)
+	}
+	return proto.Marshal(vv)
+}
+
+func (bytesCodec) Unmarshal(data []byte, v any) error {
+	switch v := v.(type) {
+	case *[]byte:
+		// If gRPC could recycle the data []byte after unmarshaling (through
+		// buffer pools), we would need to make a copy here.
+		*v = data
+		return nil
+	case proto.Message:
+		return proto.Unmarshal(data, v)
+	default:
+		return fmt.Errorf("can not unmarshal type %T", v)
+	}
+}
+
+func (bytesCodec) Name() string {
+	// If this isn't "", then gRPC sets the content-subtype of the call to this
+	// value and we get errors.
+	return ""
+}
+
 func (c *grpcStorageClient) NewRangeReader(ctx context.Context, params *newRangeReaderParams, opts ...storageOption) (r *Reader, err error) {
 	ctx = trace.StartSpan(ctx, "cloud.google.com/go/storage.grpcStorageClient.NewRangeReader")
 	defer func() { trace.EndSpan(ctx, err) }()
 
 	s := callSettings(c.settings, opts...)
+
+	s.gax = append(s.gax, gax.WithGRPCOptions(
+		grpc.ForceCodec(bytesCodec{}),
+	))
 
 	if s.userProject != "" {
 		ctx = setUserProjectMetadata(ctx, s.userProject)
@@ -917,6 +1017,8 @@ func (c *grpcStorageClient) NewRangeReader(ctx context.Context, params *newRange
 	if params.gen >= 0 {
 		req.Generation = params.gen
 	}
+
+	var databuf []byte
 
 	// Define a function that initiates a Read with offset and length, assuming
 	// we have already read seen bytes.
@@ -952,12 +1054,23 @@ func (c *grpcStorageClient) NewRangeReader(ctx context.Context, params *newRange
 				return err
 			}
 
-			msg, err = stream.Recv()
+			// Receive the message into databuf as a wire-encoded message so we can
+			// use a custom decoder to avoid an extra copy at the protobuf layer.
+			err := stream.RecvMsg(&databuf)
 			// These types of errors show up on the Recv call, rather than the
 			// initialization of the stream via ReadObject above.
 			if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
 				return ErrObjectNotExist
 			}
+			if err != nil {
+				return err
+			}
+			// Use a custom decoder that uses protobuf unmarshalling for all
+			// fields except the checksummed data.
+			// Subsequent receives in Read calls will skip all protobuf
+			// unmarshalling and directly read the content from the gRPC []byte
+			// response, since only the first call will contain other fields.
+			msg, err = readFullObjectResponse(databuf)
 
 			return err
 		}, s.retry, s.idempotent)
@@ -983,6 +1096,16 @@ func (c *grpcStorageClient) NewRangeReader(ctx context.Context, params *newRange
 	// This is the size of the entire object, even if only a range was requested.
 	size := obj.GetSize()
 
+	// Only support checksums when reading an entire object, not a range.
+	var (
+		wantCRC  uint32
+		checkCRC bool
+	)
+	if checksums := msg.GetObjectChecksums(); checksums != nil && checksums.Crc32C != nil && params.offset == 0 && params.length < 0 {
+		wantCRC = checksums.GetCrc32C()
+		checkCRC = true
+	}
+
 	r = &Reader{
 		Attrs: ReaderObjectAttrs{
 			Size:            size,
@@ -1003,7 +1126,11 @@ func (c *grpcStorageClient) NewRangeReader(ctx context.Context, params *newRange
 			leftovers: msg.GetChecksummedData().GetContent(),
 			settings:  s,
 			zeroRange: params.length == 0,
+			databuf:   databuf,
+			wantCRC:   wantCRC,
+			checkCRC:  checkCRC,
 		},
+		checkCRC: checkCRC,
 	}
 
 	cr := msg.GetContentRange()
@@ -1019,12 +1146,6 @@ func (c *grpcStorageClient) NewRangeReader(ctx context.Context, params *newRange
 	if params.length == 0 {
 		r.remain = 0
 		r.reader.Close()
-	}
-
-	// Only support checksums when reading an entire object, not a range.
-	if checksums := msg.GetObjectChecksums(); checksums != nil && checksums.Crc32C != nil && params.offset == 0 && params.length < 0 {
-		r.wantCRC = checksums.GetCrc32C()
-		r.checkCRC = true
 	}
 
 	return r, nil
@@ -1401,14 +1522,37 @@ type gRPCReader struct {
 	stream     storagepb.Storage_ReadObjectClient
 	reopen     func(seen int64) (*readStreamResponse, context.CancelFunc, error)
 	leftovers  []byte
+	databuf    []byte
 	cancel     context.CancelFunc
 	settings   *settings
+	checkCRC   bool   // should we check the CRC?
+	wantCRC    uint32 // the CRC32c value the server sent in the header
+	gotCRC     uint32 // running crc
+}
+
+// Update the running CRC with the data in the slice, if CRC checking was enabled.
+func (r *gRPCReader) updateCRC(b []byte) {
+	if r.checkCRC {
+		r.gotCRC = crc32.Update(r.gotCRC, crc32cTable, b)
+	}
+}
+
+// Checks whether the CRC matches at the conclusion of a read, if CRC checking was enabled.
+func (r *gRPCReader) runCRCCheck() error {
+	if r.checkCRC && r.gotCRC != r.wantCRC {
+		return fmt.Errorf("storage: bad CRC on read: got %d, want %d", r.gotCRC, r.wantCRC)
+	}
+	return nil
 }
 
 // Read reads bytes into the user's buffer from an open gRPC stream.
 func (r *gRPCReader) Read(p []byte) (int, error) {
-	// The entire object has been read by this reader, return EOF.
+	// The entire object has been read by this reader, check the checksum if
+	// necessary and return EOF.
 	if r.size == r.seen || r.zeroRange {
+		if err := r.runCRCCheck(); err != nil {
+			return 0, err
+		}
 		return 0, io.EOF
 	}
 
@@ -1417,7 +1561,7 @@ func (r *gRPCReader) Read(p []byte) (int, error) {
 	// using the same reader. One encounters an error and the stream is closed
 	// and then reopened while the other routine attempts to read from it.
 	if r.stream == nil {
-		return 0, fmt.Errorf("reader has been closed")
+		return 0, fmt.Errorf("storage: reader has been closed")
 	}
 
 	var n int
@@ -1426,12 +1570,13 @@ func (r *gRPCReader) Read(p []byte) (int, error) {
 	if len(r.leftovers) > 0 {
 		n = copy(p, r.leftovers)
 		r.seen += int64(n)
+		r.updateCRC(p[:n])
 		r.leftovers = r.leftovers[n:]
 		return n, nil
 	}
 
 	// Attempt to Recv the next message on the stream.
-	msg, err := r.recv()
+	content, err := r.recv()
 	if err != nil {
 		return 0, err
 	}
@@ -1443,7 +1588,6 @@ func (r *gRPCReader) Read(p []byte) (int, error) {
 	// present in the response here.
 	// TODO: Figure out if we need to support decompressive transcoding
 	// https://cloud.google.com/storage/docs/transcoding.
-	content := msg.GetChecksummedData().GetContent()
 	n = copy(p[n:], content)
 	leftover := len(content) - n
 	if leftover > 0 {
@@ -1452,8 +1596,76 @@ func (r *gRPCReader) Read(p []byte) (int, error) {
 		r.leftovers = content[n:]
 	}
 	r.seen += int64(n)
+	r.updateCRC(p[:n])
 
 	return n, nil
+}
+
+// WriteTo writes all the data requested by the Reader into w, implementing
+// io.WriterTo.
+func (r *gRPCReader) WriteTo(w io.Writer) (int64, error) {
+	// The entire object has been read by this reader, check the checksum if
+	// necessary and return nil.
+	if r.size == r.seen || r.zeroRange {
+		if err := r.runCRCCheck(); err != nil {
+			return 0, err
+		}
+		return 0, nil
+	}
+
+	// No stream to read from, either never initialized or Close was called.
+	// Note: There is a potential concurrency issue if multiple routines are
+	// using the same reader. One encounters an error and the stream is closed
+	// and then reopened while the other routine attempts to read from it.
+	if r.stream == nil {
+		return 0, fmt.Errorf("storage: reader has been closed")
+	}
+
+	// Track bytes written during before call.
+	var alreadySeen = r.seen
+
+	// Write any leftovers to the stream. There will be some leftovers from the
+	// original NewRangeReader call.
+	if len(r.leftovers) > 0 {
+		// Write() will write the entire leftovers slice unless there is an error.
+		written, err := w.Write(r.leftovers)
+		r.seen += int64(written)
+		r.updateCRC(r.leftovers)
+		r.leftovers = nil
+		if err != nil {
+			return r.seen - alreadySeen, err
+		}
+	}
+
+	// Loop and receive additional messages until the entire data is written.
+	for {
+		// Attempt to receive the next message on the stream.
+		// Will terminate with io.EOF once data has all come through.
+		// recv() handles stream reopening and retry logic so no need for retries here.
+		msg, err := r.recv()
+		if err != nil {
+			if err == io.EOF {
+				// We are done; check the checksum if necessary and return.
+				err = r.runCRCCheck()
+			}
+			return r.seen - alreadySeen, err
+		}
+
+		// TODO: Determine if we need to capture incremental CRC32C for this
+		// chunk. The Object CRC32C checksum is captured when directed to read
+		// the entire Object. If directed to read a range, we may need to
+		// calculate the range's checksum for verification if the checksum is
+		// present in the response here.
+		// TODO: Figure out if we need to support decompressive transcoding
+		// https://cloud.google.com/storage/docs/transcoding.
+		written, err := w.Write(msg)
+		r.seen += int64(written)
+		r.updateCRC(msg)
+		if err != nil {
+			return r.seen - alreadySeen, err
+		}
+	}
+
 }
 
 // Close cancels the read stream's context in order for it to be closed and
@@ -1466,9 +1678,10 @@ func (r *gRPCReader) Close() error {
 	return nil
 }
 
-// recv attempts to Recv the next message on the stream. In the event
-// that a retryable error is encountered, the stream will be closed, reopened,
-// and Recv again. This will attempt to Recv until one of the following is true:
+// recv attempts to Recv the next message on the stream and extract the object
+// data that it contains. In the event that a retryable error is encountered,
+// the stream will be closed, reopened, and RecvMsg again.
+// This will attempt to Recv until one of the following is true:
 //
 // * Recv is successful
 // * A non-retryable error is encountered
@@ -1476,8 +1689,9 @@ func (r *gRPCReader) Close() error {
 //
 // The last error received is the one that is returned, which could be from
 // an attempt to reopen the stream.
-func (r *gRPCReader) recv() (*storagepb.ReadObjectResponse, error) {
-	msg, err := r.stream.Recv()
+func (r *gRPCReader) recv() ([]byte, error) {
+	err := r.stream.RecvMsg(&r.databuf)
+
 	var shouldRetry = ShouldRetry
 	if r.settings.retry != nil && r.settings.retry.shouldRetry != nil {
 		shouldRetry = r.settings.retry.shouldRetry
@@ -1487,10 +1701,195 @@ func (r *gRPCReader) recv() (*storagepb.ReadObjectResponse, error) {
 		// reopen the stream, but will backoff if further attempts are necessary.
 		// Reopening the stream Recvs the first message, so if retrying is
 		// successful, the next logical chunk will be returned.
-		msg, err = r.reopenStream()
+		msg, err := r.reopenStream()
+		return msg.GetChecksummedData().GetContent(), err
 	}
 
-	return msg, err
+	if err != nil {
+		return nil, err
+	}
+
+	return readObjectResponseContent(r.databuf)
+}
+
+// ReadObjectResponse field and subfield numbers.
+const (
+	checksummedDataField        = protowire.Number(1)
+	checksummedDataContentField = protowire.Number(1)
+	checksummedDataCRC32CField  = protowire.Number(2)
+	objectChecksumsField        = protowire.Number(2)
+	contentRangeField           = protowire.Number(3)
+	metadataField               = protowire.Number(4)
+)
+
+// readObjectResponseContent returns the checksummed_data.content field of a
+// ReadObjectResponse message, or an error if the message is invalid.
+// This can be used on recvs of objects after the first recv, since only the
+// first message will contain non-data fields.
+func readObjectResponseContent(b []byte) ([]byte, error) {
+	checksummedData, err := readProtoBytes(b, checksummedDataField)
+	if err != nil {
+		return b, fmt.Errorf("invalid ReadObjectResponse.ChecksummedData: %v", err)
+	}
+	content, err := readProtoBytes(checksummedData, checksummedDataContentField)
+	if err != nil {
+		return content, fmt.Errorf("invalid ReadObjectResponse.ChecksummedData.Content: %v", err)
+	}
+
+	return content, nil
+}
+
+// readFullObjectResponse returns the ReadObjectResponse that is encoded in the
+// wire-encoded message buffer b, or an error if the message is invalid.
+// This must be used on the first recv of an object as it may contain all fields
+// of ReadObjectResponse, and we use or pass on those fields to the user.
+// This function is essentially identical to proto.Unmarshal, except it aliases
+// the data in the input []byte. If the proto library adds a feature to
+// Unmarshal that does that, this function can be dropped.
+func readFullObjectResponse(b []byte) (*storagepb.ReadObjectResponse, error) {
+	msg := &storagepb.ReadObjectResponse{}
+
+	// Loop over the entire message, extracting fields as we go. This does not
+	// handle field concatenation, in which the contents of a single field
+	// are split across multiple protobuf tags.
+	off := 0
+	for off < len(b) {
+		// Consume the next tag. This will tell us which field is next in the
+		// buffer, its type, and how much space it takes up.
+		fieldNum, fieldType, fieldLength := protowire.ConsumeTag(b[off:])
+		if fieldLength < 0 {
+			return nil, protowire.ParseError(fieldLength)
+		}
+		off += fieldLength
+
+		// Unmarshal the field according to its type. Only fields that are not
+		// nil will be present.
+		switch {
+		case fieldNum == checksummedDataField && fieldType == protowire.BytesType:
+			// The ChecksummedData field was found. Initialize the struct.
+			msg.ChecksummedData = &storagepb.ChecksummedData{}
+
+			// Get the bytes corresponding to the checksummed data.
+			fieldContent, n := protowire.ConsumeBytes(b[off:])
+			if n < 0 {
+				return nil, fmt.Errorf("invalid ReadObjectResponse.ChecksummedData: %v", protowire.ParseError(n))
+			}
+			off += n
+
+			// Get the nested fields. We need to do this manually as it contains
+			// the object content bytes.
+			contentOff := 0
+			for contentOff < len(fieldContent) {
+				gotNum, gotTyp, n := protowire.ConsumeTag(fieldContent[contentOff:])
+				if n < 0 {
+					return nil, protowire.ParseError(n)
+				}
+				contentOff += n
+
+				switch {
+				case gotNum == checksummedDataContentField && gotTyp == protowire.BytesType:
+					// Get the content bytes.
+					bytes, n := protowire.ConsumeBytes(fieldContent[contentOff:])
+					if n < 0 {
+						return nil, fmt.Errorf("invalid ReadObjectResponse.ChecksummedData.Content: %v", protowire.ParseError(n))
+					}
+					msg.ChecksummedData.Content = bytes
+					contentOff += n
+				case gotNum == checksummedDataCRC32CField && gotTyp == protowire.Fixed32Type:
+					v, n := protowire.ConsumeFixed32(fieldContent[contentOff:])
+					if n < 0 {
+						return nil, fmt.Errorf("invalid ReadObjectResponse.ChecksummedData.Crc32C: %v", protowire.ParseError(n))
+					}
+					msg.ChecksummedData.Crc32C = &v
+					contentOff += n
+				default:
+					n = protowire.ConsumeFieldValue(gotNum, gotTyp, fieldContent[contentOff:])
+					if n < 0 {
+						return nil, protowire.ParseError(n)
+					}
+					contentOff += n
+				}
+			}
+		case fieldNum == objectChecksumsField && fieldType == protowire.BytesType:
+			// The field was found. Initialize the struct.
+			msg.ObjectChecksums = &storagepb.ObjectChecksums{}
+
+			// Get the bytes corresponding to the checksums.
+			bytes, n := protowire.ConsumeBytes(b[off:])
+			if n < 0 {
+				return nil, fmt.Errorf("invalid ReadObjectResponse.ObjectChecksums: %v", protowire.ParseError(n))
+			}
+			off += n
+
+			// Unmarshal.
+			if err := proto.Unmarshal(bytes, msg.ObjectChecksums); err != nil {
+				return nil, err
+			}
+		case fieldNum == contentRangeField && fieldType == protowire.BytesType:
+			msg.ContentRange = &storagepb.ContentRange{}
+
+			bytes, n := protowire.ConsumeBytes(b[off:])
+			if n < 0 {
+				return nil, fmt.Errorf("invalid ReadObjectResponse.ContentRange: %v", protowire.ParseError(n))
+			}
+			off += n
+
+			if err := proto.Unmarshal(bytes, msg.ContentRange); err != nil {
+				return nil, err
+			}
+		case fieldNum == metadataField && fieldType == protowire.BytesType:
+			msg.Metadata = &storagepb.Object{}
+
+			bytes, n := protowire.ConsumeBytes(b[off:])
+			if n < 0 {
+				return nil, fmt.Errorf("invalid ReadObjectResponse.Metadata: %v", protowire.ParseError(n))
+			}
+			off += n
+
+			if err := proto.Unmarshal(bytes, msg.Metadata); err != nil {
+				return nil, err
+			}
+		default:
+			fieldLength = protowire.ConsumeFieldValue(fieldNum, fieldType, b[off:])
+			if fieldLength < 0 {
+				return nil, fmt.Errorf("default: %v", protowire.ParseError(fieldLength))
+			}
+			off += fieldLength
+		}
+	}
+
+	return msg, nil
+}
+
+// readProtoBytes returns the contents of the protobuf field with number num
+// and type bytes from a wire-encoded message. If the field cannot be found,
+// the returned slice will be nil and no error will be returned.
+//
+// It does not handle field concatenation, in which the contents of a single field
+// are split across multiple protobuf tags. Encoded data containing split fields
+// of this form is technically permissable, but uncommon.
+func readProtoBytes(b []byte, num protowire.Number) ([]byte, error) {
+	off := 0
+	for off < len(b) {
+		gotNum, gotTyp, n := protowire.ConsumeTag(b[off:])
+		if n < 0 {
+			return nil, protowire.ParseError(n)
+		}
+		off += n
+		if gotNum == num && gotTyp == protowire.BytesType {
+			b, n := protowire.ConsumeBytes(b[off:])
+			if n < 0 {
+				return nil, protowire.ParseError(n)
+			}
+			return b, nil
+		}
+		n = protowire.ConsumeFieldValue(gotNum, gotTyp, b[off:])
+		if n < 0 {
+			return nil, protowire.ParseError(n)
+		}
+		off += n
+	}
+	return nil, nil
 }
 
 // reopenStream "closes" the existing stream and attempts to reopen a stream and
@@ -1524,16 +1923,17 @@ func newGRPCWriter(c *grpcStorageClient, params *openWriterParams, r io.Reader) 
 	}
 
 	return &gRPCWriter{
-		buf:           make([]byte, size),
-		c:             c,
-		ctx:           params.ctx,
-		reader:        r,
-		bucket:        params.bucket,
-		attrs:         params.attrs,
-		conds:         params.conds,
-		encryptionKey: params.encryptionKey,
-		sendCRC32C:    params.sendCRC32C,
-		chunkSize:     params.chunkSize,
+		buf:                   make([]byte, size),
+		c:                     c,
+		ctx:                   params.ctx,
+		reader:                r,
+		bucket:                params.bucket,
+		attrs:                 params.attrs,
+		conds:                 params.conds,
+		encryptionKey:         params.encryptionKey,
+		sendCRC32C:            params.sendCRC32C,
+		chunkSize:             params.chunkSize,
+		forceEmptyContentType: params.forceEmptyContentType,
 	}
 }
 
@@ -1552,8 +1952,9 @@ type gRPCWriter struct {
 	encryptionKey []byte
 	settings      *settings
 
-	sendCRC32C bool
-	chunkSize  int
+	sendCRC32C            bool
+	chunkSize             int
+	forceEmptyContentType bool
 
 	// The gRPC client-stream used for sending buffers.
 	stream storagepb.Storage_BidiWriteObjectClient
@@ -1623,6 +2024,7 @@ func (w *gRPCWriter) uploadBuffer(recvd int, start int64, doneReading bool) (*st
 
 	// Send a request with as many bytes as possible.
 	// Loop until all bytes are sent.
+sendBytes: // label this loop so that we can use a continue statement from a nested block
 	for {
 		bytesNotYetSent := recvd - sent
 		remainingDataFitsInSingleReq := bytesNotYetSent <= maxPerMessageWriteSize
@@ -1700,10 +2102,6 @@ func (w *gRPCWriter) uploadBuffer(recvd int, start int64, doneReading bool) (*st
 			// we retry.
 			w.stream = nil
 
-			// Drop the stream reference as a new one will need to be created if
-			// we can retry the upload
-			w.stream = nil
-
 			// Retriable errors mean we should start over and attempt to
 			// resend the entire buffer via a new stream.
 			// If not retriable, falling through will return the error received.
@@ -1717,7 +2115,7 @@ func (w *gRPCWriter) uploadBuffer(recvd int, start int64, doneReading bool) (*st
 
 				// Continue sending requests, opening a new stream and resending
 				// any bytes not yet persisted as per QueryWriteStatus
-				continue
+				continue sendBytes
 			}
 		}
 		if err != nil {
@@ -1732,7 +2130,7 @@ func (w *gRPCWriter) uploadBuffer(recvd int, start int64, doneReading bool) (*st
 		// Not done sending data, do not attempt to commit it yet, loop around
 		// and send more data.
 		if recvd-sent > 0 {
-			continue
+			continue sendBytes
 		}
 
 		// The buffer has been uploaded and there is still more data to be
@@ -1763,7 +2161,7 @@ func (w *gRPCWriter) uploadBuffer(recvd int, start int64, doneReading bool) (*st
 				// Drop the stream reference as a new one will need to be created.
 				w.stream = nil
 
-				continue
+				continue sendBytes
 			}
 			if err != nil {
 				return nil, 0, err
@@ -1773,7 +2171,7 @@ func (w *gRPCWriter) uploadBuffer(recvd int, start int64, doneReading bool) (*st
 				// Retry if not all bytes were persisted.
 				writeOffset = resp.GetPersistedSize()
 				sent = int(writeOffset) - int(start)
-				continue
+				continue sendBytes
 			}
 		} else {
 			// If the object is done uploading, close the send stream to signal
@@ -1793,6 +2191,15 @@ func (w *gRPCWriter) uploadBuffer(recvd int, start int64, doneReading bool) (*st
 			var obj *storagepb.Object
 			for obj == nil {
 				resp, err := w.stream.Recv()
+				if shouldRetry(err) {
+					writeOffset, err = w.determineOffset(start)
+					if err != nil {
+						return nil, 0, err
+					}
+					sent = int(writeOffset) - int(start)
+					w.stream = nil
+					continue sendBytes
+				}
 				if err != nil {
 					return nil, 0, err
 				}
@@ -1852,9 +2259,9 @@ func (w *gRPCWriter) writeObjectSpec() (*storagepb.WriteObjectSpec, error) {
 // read copies the data in the reader to the given buffer and reports how much
 // data was read into the buffer and if there is no more data to read (EOF).
 // Furthermore, if the attrs.ContentType is unset, the first bytes of content
-// will be sniffed for a matching content type.
+// will be sniffed for a matching content type unless forceEmptyContentType is enabled.
 func (w *gRPCWriter) read() (int, bool, error) {
-	if w.attrs.ContentType == "" {
+	if w.attrs.ContentType == "" && !w.forceEmptyContentType {
 		w.reader, w.attrs.ContentType = gax.DetermineContentType(w.reader)
 	}
 	// Set n to -1 to start the Read loop.

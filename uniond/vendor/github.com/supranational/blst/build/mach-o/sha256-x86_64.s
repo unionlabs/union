@@ -1,6 +1,6 @@
 .comm	___blst_platform_cap,4
-.text	
 
+.section	__TEXT,__const
 .p2align	6
 
 K256:
@@ -25,6 +25,7 @@ K256:
 .long	0x03020100,0x0b0a0908,0xffffffff,0xffffffff
 .long	0xffffffff,0xffffffff,0x03020100,0x0b0a0908
 .byte	83,72,65,50,53,54,32,98,108,111,99,107,32,116,114,97,110,115,102,111,114,109,32,102,111,114,32,120,56,54,95,54,52,44,32,67,82,89,80,84,79,71,65,77,83,32,98,121,32,64,100,111,116,45,97,115,109,0
+.text	
 .globl	_blst_sha256_block_data_order_shaext
 .private_extern	_blst_sha256_block_data_order_shaext
 
@@ -41,6 +42,9 @@ _blst_sha256_block_data_order_shaext:
 .cfi_def_cfa_register	%rbp
 L$blst_sha256_block_data_order$2:
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	leaq	K256+128(%rip),%rcx
 	movdqu	(%rdi),%xmm1
 	movdqu	16(%rdi),%xmm2
@@ -247,7 +251,15 @@ L$oop_shaext:
 .cfi_adjust_cfa_offset	-8
 .cfi_restore	%rbp
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 .globl	_blst_sha256_block_data_order
@@ -264,8 +276,10 @@ _blst_sha256_block_data_order:
 .cfi_offset	%rbp,-16
 	movq	%rsp,%rbp
 .cfi_def_cfa_register	%rbp
+#ifndef	__SGX_LVI_HARDENING__
 	testl	$2,___blst_platform_cap(%rip)
 	jnz	L$blst_sha256_block_data_order$2
+#endif
 	pushq	%rbx
 .cfi_offset	%rbx,-24
 	pushq	%r12
@@ -286,6 +300,9 @@ _blst_sha256_block_data_order:
 
 
 	leaq	-64(%rsp),%rsp
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movl	0(%rdi),%eax
 	andq	$-64,%rsp
 	movl	4(%rdi),%ebx
@@ -1330,6 +1347,9 @@ L$ssse3_00_47:
 	movl	%r14d,%eax
 	movq	-56(%rbp),%rsi
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	addl	0(%rdi),%eax
 	addl	4(%rdi),%ebx
 	addl	8(%rdi),%ecx
@@ -1372,7 +1392,15 @@ L$ssse3_00_47:
 .cfi_restore	%r14
 .cfi_restore	%r15
 .cfi_restore	%rbx
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 .globl	_blst_sha256_emit
@@ -1383,6 +1411,9 @@ _blst_sha256_emit:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -1403,7 +1434,15 @@ _blst_sha256_emit:
 	shrq	$32,%r11
 	movl	%r10d,16(%rdi)
 	movl	%r11d,24(%rdi)
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 
 
@@ -1415,6 +1454,9 @@ _blst_sha256_bcopy:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	subq	%rsi,%rdi
 L$oop_bcopy:
 	movzbl	(%rsi),%eax
@@ -1422,7 +1464,15 @@ L$oop_bcopy:
 	movb	%al,-1(%rdi,%rsi,1)
 	decq	%rdx
 	jnz	L$oop_bcopy
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 
 
@@ -1434,6 +1484,9 @@ _blst_sha256_hcopy:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -1442,6 +1495,14 @@ _blst_sha256_hcopy:
 	movq	%r9,8(%rdi)
 	movq	%r10,16(%rdi)
 	movq	%r11,24(%rdi)
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 

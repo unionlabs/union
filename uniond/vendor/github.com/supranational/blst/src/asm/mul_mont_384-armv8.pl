@@ -34,23 +34,23 @@ $code.=<<___;
 .align	5
 add_mod_384x384:
 	paciasp
-	stp	x29,x30,[sp,#-64]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
+	stp	c29,c30,[csp,#-8*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
 
 	ldp	@mod[0],@mod[1],[$n_ptr]
 	ldp	@mod[2],@mod[3],[$n_ptr,#16]
 	ldp	@mod[4],@mod[5],[$n_ptr,#32]
 
 	bl	__add_mod_384x384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldr	x29,[sp],#64
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#8*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	add_mod_384x384,.-add_mod_384x384
@@ -115,23 +115,23 @@ __add_mod_384x384:
 .align	5
 sub_mod_384x384:
 	paciasp
-	stp	x29,x30,[sp,#-64]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
+	stp	c29,c30,[csp,#-8*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
 
 	ldp	@mod[0],@mod[1],[$n_ptr]
 	ldp	@mod[2],@mod[3],[$n_ptr,#16]
 	ldp	@mod[4],@mod[5],[$n_ptr,#32]
 
 	bl	__sub_mod_384x384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldr	x29,[sp],#64
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#8*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	sub_mod_384x384,.-sub_mod_384x384
@@ -269,78 +269,78 @@ __sub_mod_384:
 .align	5
 mul_mont_384x:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
-	sub	sp,sp,#288		// space for 3 768-bit vectors
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
+	sub	csp,csp,#288		// space for 3 768-bit vectors
 
-	mov	@tmp[0],$r_ptr		// save r_ptr
-	mov	@tmp[1],$a_ptr		// save b_ptr
-	mov	@tmp[2],$b_ptr		// save b_ptr
+	cmov	@tmp[0],$r_ptr		// save r_ptr
+	cmov	@tmp[1],$a_ptr		// save b_ptr
+	cmov	@tmp[2],$b_ptr		// save b_ptr
 
-	sub	$r_ptr,sp,#0		// mul_384(t0, a->re, b->re)
+	cadd	$r_ptr,sp,#0		// mul_384(t0, a->re, b->re)
 	bl	__mul_384
 
-	add	$a_ptr,$a_ptr,#48	// mul_384(t1, a->im, b->im)
-	add	$b_ptr,$b_ptr,#48
-	add	$r_ptr,sp,#96
+	cadd	$a_ptr,$a_ptr,#48	// mul_384(t1, a->im, b->im)
+	cadd	$b_ptr,$b_ptr,#48
+	cadd	$r_ptr,sp,#96
 	bl	__mul_384
 
 	ldp	@mod[0],@mod[1],[$n_ptr]
 	ldp	@mod[2],@mod[3],[$n_ptr,#16]
 	ldp	@mod[4],@mod[5],[$n_ptr,#32]
 
-	sub	$b_ptr,$a_ptr,#48
-	add	$r_ptr,sp,#240
+	csub	$b_ptr,$a_ptr,#48
+	cadd	$r_ptr,sp,#240
 	bl	__add_mod_384
 
-	add	$a_ptr,@tmp[2],#0
-	add	$b_ptr,@tmp[2],#48
-	add	$r_ptr,sp,#192		// t2
+	cadd	$a_ptr,@tmp[2],#0
+	cadd	$b_ptr,@tmp[2],#48
+	cadd	$r_ptr,sp,#192		// t2
 	bl	__add_mod_384
 
-	add	$a_ptr,$r_ptr,#0
-	add	$b_ptr,$r_ptr,#48
+	cadd	$a_ptr,$r_ptr,#0
+	cadd	$b_ptr,$r_ptr,#48
 	bl	__mul_384		// mul_384(t2, a->re+a->im, b->re+b->im)
 
 	ldp	@mod[0],@mod[1],[$n_ptr]
 	ldp	@mod[2],@mod[3],[$n_ptr,#16]
 	ldp	@mod[4],@mod[5],[$n_ptr,#32]
 
-	mov	$a_ptr,$r_ptr
-	add	$b_ptr,sp,#0
+	cmov	$a_ptr,$r_ptr
+	cadd	$b_ptr,sp,#0
 	bl	__sub_mod_384x384
 
-	add	$b_ptr,sp,#96
+	cadd	$b_ptr,sp,#96
 	bl	__sub_mod_384x384	// t2 = t2-t0-t1
 
-	add	$a_ptr,sp,#0
-	add	$b_ptr,sp,#96
-	add	$r_ptr,sp,#0
+	cadd	$a_ptr,sp,#0
+	cadd	$b_ptr,sp,#96
+	cadd	$r_ptr,sp,#0
 	bl	__sub_mod_384x384	// t0 = t0-t1
 
-	add	$a_ptr,sp,#0		// ret->re = redc(t0)
-	add	$r_ptr,@tmp[0],#0
+	cadd	$a_ptr,sp,#0		// ret->re = redc(t0)
+	cadd	$r_ptr,@tmp[0],#0
 	bl	__mul_by_1_mont_384
 	bl	__redc_tail_mont_384
 
-	add	$a_ptr,sp,#192		// ret->im = redc(t2)
-	add	$r_ptr,$r_ptr,#48
+	cadd	$a_ptr,sp,#192		// ret->im = redc(t2)
+	cadd	$r_ptr,$r_ptr,#48
 	bl	__mul_by_1_mont_384
 	bl	__redc_tail_mont_384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
-	add	sp,sp,#288
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	add	csp,csp,#288
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	mul_mont_384x,.-mul_mont_384x
@@ -351,26 +351,26 @@ mul_mont_384x:
 .align	5
 sqr_mont_384x:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
-	stp	$n_ptr,$r_ptr,[sp,#96]	// __mul_mont_384 wants them there
-	sub	sp,sp,#96		// space for 2 384-bit vectors
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
+	stp	c3,c0,[csp,#12*__SIZEOF_POINTER__]	// __mul_mont_384 wants them there
+	sub	csp,csp,#96		// space for 2 384-bit vectors
 	mov	$n0,$n_ptr		// adjust for missing b_ptr
 
 	ldp	@mod[0],@mod[1],[$b_ptr]
 	ldp	@mod[2],@mod[3],[$b_ptr,#16]
 	ldp	@mod[4],@mod[5],[$b_ptr,#32]
 
-	add	$b_ptr,$a_ptr,#48
-	add	$r_ptr,sp,#0
+	cadd	$b_ptr,$a_ptr,#48
+	cadd	$r_ptr,sp,#0
 	bl	__add_mod_384		// t0 = a->re + a->im
 
-	add	$r_ptr,sp,#48
+	cadd	$r_ptr,sp,#48
 	bl	__sub_mod_384		// t1 = a->re - a->im
 
 	ldp	@a[0],@a[1],[$a_ptr]
@@ -411,21 +411,21 @@ sqr_mont_384x:
 	stp	@acc[2],@acc[3],[$b_ptr,#64]
 	stp	@acc[4],@acc[5],[$b_ptr,#80]
 
-	add	$b_ptr,sp,#48
+	cadd	$b_ptr,sp,#48
 	bl	__mul_mont_384		// mul_mont_384(ret->re, t0, t1)
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
 	stp	@a[0],@a[1],[$b_ptr]
 	stp	@a[2],@a[3],[$b_ptr,#16]
 	stp	@a[4],@a[5],[$b_ptr,#32]
 
-	add	sp,sp,#96
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	add	csp,csp,#96
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	sqr_mont_384x,.-sqr_mont_384x
@@ -436,14 +436,14 @@ sqr_mont_384x:
 .align	5
 mul_mont_384:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
-	stp	$n0,$r_ptr,[sp,#96]	// __mul_mont_384 wants them there
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
+	stp	c4,c0,[csp,#12*__SIZEOF_POINTER__]	// __mul_mont_384 wants them there
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldr	$bi,        [$b_ptr]
@@ -455,18 +455,18 @@ mul_mont_384:
 	ldp	@mod[4],@mod[5],[$n_ptr,#32]
 
 	bl	__mul_mont_384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
 	stp	@a[0],@a[1],[$b_ptr]
 	stp	@a[2],@a[3],[$b_ptr,#16]
 	stp	@a[4],@a[5],[$b_ptr,#32]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	mul_mont_384,.-mul_mont_384
@@ -534,7 +534,7 @@ $code.=<<___;
 	 adcs	@acc[5],@acc[6],@tmp[5]
 	mul	@tmp[5],@a[5],$bi
 	 adc	@acc[6],$n0,xzr
-	ldr	$n0,[x29,#96]
+	ldr	$n0,[x29,#12*__SIZEOF_POINTER__]
 
 	adds	@acc[0],@acc[0],@tmp[0]
 	 umulh	@tmp[0],@a[0],$bi
@@ -581,7 +581,7 @@ $code.=<<___;
 	adcs	@acc[5],@acc[5],@tmp[5]
 	 umulh	@tmp[5],@mod[5],$n0
 	adcs	@acc[6],@acc[6],xzr
-	 ldp	$n0,$b_ptr,[x29,#96]	// pull r_ptr
+	 ldp	c4,c2,[c29,#12*__SIZEOF_POINTER__]	// pull r_ptr
 	adc	$bi,$bi,xzr
 
 	 adds	@acc[0],@acc[1],@tmp[0]
@@ -615,18 +615,18 @@ $code.=<<___;
 .align	5
 sqr_mont_384:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
-	sub	sp,sp,#96		// space for 768-bit vector
-	mov	$n0,$n_ptr		// adjust for missing b_ptr
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
+	sub	csp,csp,#96		// space for 768-bit vector
+	cmov	$n0,$n_ptr		// adjust for missing b_ptr
 
-	mov	$n_ptr,$r_ptr		// save r_ptr
-	mov	$r_ptr,sp
+	cmov	$n_ptr,$r_ptr		// save r_ptr
+	cmov	$r_ptr,sp
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldp	@a[2],@a[3],[$a_ptr,#16]
@@ -638,19 +638,19 @@ sqr_mont_384:
 	ldp	@mod[2],@mod[3],[$b_ptr,#16]
 	ldp	@mod[4],@mod[5],[$b_ptr,#32]
 
-	mov	$a_ptr,sp
-	mov	$r_ptr,$n_ptr		// restore r_ptr
+	cmov	$a_ptr,sp
+	cmov	$r_ptr,$n_ptr		// restore r_ptr
 	bl	__mul_by_1_mont_384
 	bl	__redc_tail_mont_384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
-	add	sp,sp,#96
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	add	csp,csp,#96
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	sqr_mont_384,.-sqr_mont_384
@@ -661,21 +661,21 @@ sqr_mont_384:
 .align	5
 sqr_n_mul_mont_383:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
-	stp	$n0,$r_ptr,[sp,#96]	// __mul_mont_384 wants them there
-	sub	sp,sp,#96		// space for 768-bit vector
-	mov	$bi,x5			// save b_ptr
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
+	stp	c4,c0,[csp,#12*__SIZEOF_POINTER__]	// __mul_mont_384 wants them there
+	sub	csp,csp,#96		// space for 768-bit vector
+	cmov	$bi,x5			// save b_ptr
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldp	@a[2],@a[3],[$a_ptr,#16]
 	ldp	@a[4],@a[5],[$a_ptr,#32]
-	mov	$r_ptr,sp
+	cmov	$r_ptr,sp
 .Loop_sqr_383:
 	bl	__sqr_384
 	sub	$b_ptr,$b_ptr,#1	// counter
@@ -684,7 +684,7 @@ sqr_n_mul_mont_383:
 	ldp	@mod[2],@mod[3],[$n_ptr,#16]
 	ldp	@mod[4],@mod[5],[$n_ptr,#32]
 
-	mov	$a_ptr,sp
+	cmov	$a_ptr,sp
 	bl	__mul_by_1_mont_384
 
 	ldp	@acc[0],@acc[1],[$a_ptr,#48]
@@ -700,22 +700,22 @@ sqr_n_mul_mont_383:
 
 	cbnz	$b_ptr,.Loop_sqr_383
 
-	mov	$b_ptr,$bi
+	cmov	$b_ptr,$bi
 	ldr	$bi,[$bi]
 	bl	__mul_mont_384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
 	stp	@a[0],@a[1],[$b_ptr]
 	stp	@a[2],@a[3],[$b_ptr,#16]
 	stp	@a[4],@a[5],[$b_ptr,#32]
 
-	add	sp,sp,#96
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	add	csp,csp,#96
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	sqr_n_mul_mont_383,.-sqr_n_mul_mont_383
@@ -846,27 +846,27 @@ $code.=<<___;
 .align	5
 sqr_384:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldp	@a[2],@a[3],[$a_ptr,#16]
 	ldp	@a[4],@a[5],[$a_ptr,#32]
 
 	bl	__sqr_384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	sqr_384,.-sqr_384
@@ -877,13 +877,13 @@ sqr_384:
 .align	5
 redc_mont_384:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
 	mov	$n0,$n_ptr		// adjust for missing b_ptr
 
 	ldp	@mod[0],@mod[1],[$b_ptr]
@@ -892,14 +892,14 @@ redc_mont_384:
 
 	bl	__mul_by_1_mont_384
 	bl	__redc_tail_mont_384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	redc_mont_384,.-redc_mont_384
@@ -910,13 +910,13 @@ redc_mont_384:
 .align	5
 from_mont_384:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
 	mov	$n0,$n_ptr		// adjust for missing b_ptr
 
 	ldp	@mod[0],@mod[1],[$b_ptr]
@@ -924,7 +924,7 @@ from_mont_384:
 	ldp	@mod[4],@mod[5],[$b_ptr,#32]
 
 	bl	__mul_by_1_mont_384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
 	subs	@acc[0],@a[0],@mod[0]
 	sbcs	@acc[1],@a[1],@mod[1]
@@ -944,12 +944,12 @@ from_mont_384:
 	stp	@a[2],@a[3],[$r_ptr,#16]
 	stp	@a[4],@a[5],[$r_ptr,#32]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	from_mont_384,.-from_mont_384
@@ -1067,23 +1067,23 @@ __redc_tail_mont_384:
 .align	5
 mul_384:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
 
 	bl	__mul_384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	mul_384,.-mul_384
@@ -1193,21 +1193,21 @@ $code.=<<___;
 .align	5
 mul_382x:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
-	sub	sp,sp,#96		// space for two 384-bit vectors
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
+	sub	csp,csp,#96		// space for two 384-bit vectors
 
 	ldp	@a[0],@a[1],[$a_ptr]
-	mov	@tmp[0],$r_ptr		// save r_ptr
+	cmov	@tmp[0],$r_ptr		// save r_ptr
 	ldp	@acc[0],@acc[1],[$a_ptr,#48]
-	mov	@tmp[1],$a_ptr		// save a_ptr
+	cmov	@tmp[1],$a_ptr		// save a_ptr
 	ldp	@a[2],@a[3],[$a_ptr,#16]
-	mov	@tmp[2],$b_ptr		// save b_ptr
+	cmov	@tmp[2],$b_ptr		// save b_ptr
 	ldp	@acc[2],@acc[3],[$a_ptr,#64]
 	ldp	@a[4],@a[5],[$a_ptr,#32]
 	adds	@mod[0],$a[0],@acc[0]	// t0 = a->re + a->im
@@ -1239,41 +1239,41 @@ mul_382x:
 
 	bl	__mul_384		// mul_384(ret->re, a->re, b->re)
 
-	add	$a_ptr,sp,#0		// mul_384(ret->im, t0, t1)
-	add	$b_ptr,sp,#48
-	add	$r_ptr,@tmp[0],#96
+	cadd	$a_ptr,sp,#0		// mul_384(ret->im, t0, t1)
+	cadd	$b_ptr,sp,#48
+	cadd	$r_ptr,@tmp[0],#96
 	bl	__mul_384
 
-	add	$a_ptr,@tmp[1],#48	// mul_384(tx, a->im, b->im)
-	add	$b_ptr,@tmp[2],#48
-	add	$r_ptr,sp,#0
+	cadd	$a_ptr,@tmp[1],#48	// mul_384(tx, a->im, b->im)
+	cadd	$b_ptr,@tmp[2],#48
+	cadd	$r_ptr,sp,#0
 	bl	__mul_384
 
 	ldp	@mod[0],@mod[1],[$n_ptr]
 	ldp	@mod[2],@mod[3],[$n_ptr,#16]
 	ldp	@mod[4],@mod[5],[$n_ptr,#32]
 
-	add	$a_ptr,@tmp[0],#96	// ret->im -= tx
-	add	$b_ptr,sp,#0
-	add	$r_ptr,@tmp[0],#96
+	cadd	$a_ptr,@tmp[0],#96	// ret->im -= tx
+	cadd	$b_ptr,sp,#0
+	cadd	$r_ptr,@tmp[0],#96
 	bl	__sub_mod_384x384
 
-	add	$b_ptr,@tmp[0],#0	// ret->im -= ret->re
+	cadd	$b_ptr,@tmp[0],#0	// ret->im -= ret->re
 	bl	__sub_mod_384x384
 
-	add	$a_ptr,@tmp[0],#0	// ret->re -= tx
-	add	$b_ptr,sp,#0
-	add	$r_ptr,@tmp[0],#0
+	cadd	$a_ptr,@tmp[0],#0	// ret->re -= tx
+	cadd	$b_ptr,sp,#0
+	cadd	$r_ptr,@tmp[0],#0
 	bl	__sub_mod_384x384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
-	add	sp,sp,#96
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	add	csp,csp,#96
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	mul_382x,.-mul_382x
@@ -1284,13 +1284,13 @@ mul_382x:
 .align	5
 sqr_382x:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
 
 	ldp	@a[0],@a[1],[$a_ptr]
 	ldp	@acc[0],@acc[1],[$a_ptr,#48]
@@ -1335,16 +1335,16 @@ sqr_382x:
 	stp	@a[2],@a[3],[$r_ptr,#64]
 	stp	@a[4],@a[5],[$r_ptr,#80]
 
-	mov	$n0,$a_ptr		// save a_ptr
-	add	$a_ptr,$r_ptr,#0	// mul_384(ret->re, t0, t1)
-	add	$b_ptr,$r_ptr,#48
+	cmov	$n0,$a_ptr		// save a_ptr
+	cadd	$a_ptr,$r_ptr,#0	// mul_384(ret->re, t0, t1)
+	cadd	$b_ptr,$r_ptr,#48
 	bl	__mul_384
 
-	add	$a_ptr,$n0,#0		// mul_384(ret->im, a->re, a->im)
-	add	$b_ptr,$n0,#48
-	add	$r_ptr,$r_ptr,#96
+	cadd	$a_ptr,$n0,#0		// mul_384(ret->im, a->re, a->im)
+	cadd	$b_ptr,$n0,#48
+	cadd	$r_ptr,$r_ptr,#96
 	bl	__mul_384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
 	ldp	@a[0],@a[1],[$r_ptr]
 	ldp	@a[2],@a[3],[$r_ptr,#16]
@@ -1368,12 +1368,12 @@ sqr_382x:
 	stp	@acc[2],@acc[3],[$r_ptr,#64]
 	stp	@acc[4],@acc[5],[$r_ptr,#80]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	sqr_382x,.-sqr_382x
@@ -1384,15 +1384,15 @@ sqr_382x:
 .align	5
 sqr_mont_382x:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
-	stp	$n_ptr,$r_ptr,[sp,#96]	// __mul_mont_384 wants them there
-	sub	sp,sp,#112		// space for two 384-bit vectors + word
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
+	stp	c3,c0,[csp,#12*__SIZEOF_POINTER__]	// __mul_mont_384 wants them there
+	sub	csp,csp,#112		// space for two 384-bit vectors + word
 	mov	$n0,$n_ptr		// adjust for missing b_ptr
 
 	ldp	@a[0],@a[1],[$a_ptr]
@@ -1430,7 +1430,7 @@ sqr_mont_382x:
 	ldp	@mod[2],@mod[3],[$b_ptr,#16]
 	ldp	@mod[4],@mod[5],[$b_ptr,#32]
 
-	add	$b_ptr,$a_ptr,#48
+	cadd	$b_ptr,$a_ptr,#48
 	bl	__mul_mont_383_nonred	// mul_mont_384(ret->im, a->re, a->im)
 
 	adds	@acc[0],@a[0],@a[0]	// add with itself
@@ -1449,9 +1449,9 @@ sqr_mont_382x:
 	ldp	@a[2],@a[3],[sp,#16]
 	ldp	@a[4],@a[5],[sp,#32]
 
-	add	$b_ptr,sp,#48
+	cadd	$b_ptr,sp,#48
 	bl	__mul_mont_383_nonred	// mul_mont_384(ret->im, t0, t1)
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
 	ldr	@acc[6],[sp,#96]	// account for sign from a->re - a->im
 	ldp	@acc[0],@acc[1],[sp]
@@ -1491,13 +1491,13 @@ sqr_mont_382x:
 	stp	@a[2],@a[3],[$b_ptr,#16]
 	stp	@a[4],@a[5],[$b_ptr,#32]
 
-	add	sp,sp,#112
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	add	csp,csp,#112
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	sqr_mont_382x,.-sqr_mont_382x
@@ -1550,7 +1550,7 @@ $code.=<<___;
 	 umulh	@tmp[5],@mod[5],$n0
 	adc	@acc[6],@acc[6],xzr
 
-	ldr	$n0,[x29,#96]
+	ldr	$n0,[x29,#12*__SIZEOF_POINTER__]
 	 adds	@acc[0],@acc[1],@tmp[0]
 	mul	@tmp[0],@a[0],$bi
 	 adcs	@acc[1],@acc[2],@tmp[1]
@@ -1608,7 +1608,7 @@ $code.=<<___;
 	adcs	@acc[5],@acc[5],@tmp[5]
 	 umulh	@tmp[5],@mod[5],$n0
 	adc	@acc[6],@acc[6],xzr
-	 ldp	$n0,$b_ptr,[x29,#96]		// pull r_ptr
+	 ldp	c4,c2,[c29,#12*__SIZEOF_POINTER__]		// pull r_ptr
 
 	 adds	@a[0],@acc[1],@tmp[0]
 	 adcs	@a[1],@acc[2],@tmp[1]
@@ -1626,22 +1626,22 @@ $code.=<<___;
 .align	5
 sgn0_pty_mont_384:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
 
 	mov	$n0,$b_ptr
 	ldp	@mod[0],@mod[1],[$a_ptr]
 	ldp	@mod[2],@mod[3],[$a_ptr,#16]
 	ldp	@mod[4],@mod[5],[$a_ptr,#32]
-	mov	$a_ptr,$r_ptr
+	cmov	$a_ptr,$r_ptr
 
 	bl	__mul_by_1_mont_384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
 	and	$r_ptr,@a[0],#1
 	adds	@a[0],@a[0],@a[0]
@@ -1664,12 +1664,12 @@ sgn0_pty_mont_384:
 	and	$bi,$bi,#2
 	orr	$r_ptr,$r_ptr,$bi
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	sgn0_pty_mont_384,.-sgn0_pty_mont_384
@@ -1680,22 +1680,22 @@ sgn0_pty_mont_384:
 .align	5
 sgn0_pty_mont_384x:
 	paciasp
-	stp	x29,x30,[sp,#-128]!
-	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
-	stp	x25,x26,[sp,#64]
-	stp	x27,x28,[sp,#80]
+	stp	c29,c30,[csp,#-16*__SIZEOF_POINTER__]!
+	add	c29,csp,#0
+	stp	c19,c20,[csp,#2*__SIZEOF_POINTER__]
+	stp	c21,c22,[csp,#4*__SIZEOF_POINTER__]
+	stp	c23,c24,[csp,#6*__SIZEOF_POINTER__]
+	stp	c25,c26,[csp,#8*__SIZEOF_POINTER__]
+	stp	c27,c28,[csp,#10*__SIZEOF_POINTER__]
 
 	mov	$n0,$b_ptr
 	ldp	@mod[0],@mod[1],[$a_ptr]
 	ldp	@mod[2],@mod[3],[$a_ptr,#16]
 	ldp	@mod[4],@mod[5],[$a_ptr,#32]
-	mov	$a_ptr,$r_ptr
+	cmov	$a_ptr,$r_ptr
 
 	bl	__mul_by_1_mont_384
-	add	$a_ptr,$a_ptr,#48
+	cadd	$a_ptr,$a_ptr,#48
 
 	and	$b_ptr,@a[0],#1
 	 orr	$n_ptr,@a[0],@a[1]
@@ -1724,7 +1724,7 @@ sgn0_pty_mont_384x:
 	orr	$b_ptr,$b_ptr,$bi
 
 	bl	__mul_by_1_mont_384
-	ldr	x30,[x29,#8]
+	ldr	c30,[c29,#__SIZEOF_POINTER__]
 
 	and	$r_ptr,@a[0],#1
 	 orr	$a_ptr,@a[0],@a[1]
@@ -1762,12 +1762,12 @@ sgn0_pty_mont_384x:
 	and	$a_ptr,$a_ptr,#2
 	orr	$r_ptr,$a_ptr,$n_ptr		// pack sign and parity
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldp	x25,x26,[x29,#64]
-	ldp	x27,x28,[x29,#80]
-	ldr	x29,[sp],#128
+	ldp	c19,c20,[c29,#2*__SIZEOF_POINTER__]
+	ldp	c21,c22,[c29,#4*__SIZEOF_POINTER__]
+	ldp	c23,c24,[c29,#6*__SIZEOF_POINTER__]
+	ldp	c25,c26,[c29,#8*__SIZEOF_POINTER__]
+	ldp	c27,c28,[c29,#10*__SIZEOF_POINTER__]
+	ldr	c29,[csp],#16*__SIZEOF_POINTER__
 	autiasp
 	ret
 .size	sgn0_pty_mont_384x,.-sgn0_pty_mont_384x

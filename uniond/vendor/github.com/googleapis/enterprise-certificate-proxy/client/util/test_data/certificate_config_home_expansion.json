@@ -1,0 +1,5 @@
+{
+    "libs": {
+      "ecp": "$HOME/ecp/signer"
+    }
+}

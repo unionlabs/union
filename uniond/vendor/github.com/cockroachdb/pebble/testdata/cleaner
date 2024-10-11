@@ -1,0 +1,243 @@
+# Test archive cleaner.
+open db archive
+----
+mkdir-all: db 0755
+mkdir-all: db_wal 0755
+open-dir: db
+open-dir: db_wal
+lock: db/LOCK
+open-dir: db
+open-dir: db
+open: db/CURRENT
+create: db/MANIFEST-000001
+sync: db/MANIFEST-000001
+remove: db/temporary.000001.dbtmp
+create: db/temporary.000001.dbtmp
+sync: db/temporary.000001.dbtmp
+close: db/temporary.000001.dbtmp
+rename: db/temporary.000001.dbtmp -> db/CURRENT
+sync: db
+open-dir: db
+sync: db/MANIFEST-000001
+create: db_wal/000002.log
+sync: db_wal
+create: db/temporary.000003.dbtmp
+sync: db/temporary.000003.dbtmp
+close: db/temporary.000003.dbtmp
+rename: db/temporary.000003.dbtmp -> db/OPTIONS-000003
+sync: db
+
+batch db
+set a 1
+set b 2
+set c 3
+----
+sync-data: db_wal/000002.log
+
+flush db
+----
+sync-data: db_wal/000002.log
+close: db_wal/000002.log
+create: db_wal/000004.log
+sync: db_wal
+create: db/000005.sst
+sync-data: db/000005.sst
+close: db/000005.sst
+sync: db
+sync: db/MANIFEST-000001
+mkdir-all: db_wal/archive 0755
+rename: db_wal/000002.log -> db_wal/archive/000002.log
+
+batch db
+set d 4
+----
+sync-data: db_wal/000004.log
+
+compact db
+----
+sync-data: db_wal/000004.log
+close: db_wal/000004.log
+create: db_wal/000006.log
+sync: db_wal
+create: db/000007.sst
+sync-data: db/000007.sst
+close: db/000007.sst
+sync: db
+sync: db/MANIFEST-000001
+mkdir-all: db_wal/archive 0755
+rename: db_wal/000004.log -> db_wal/archive/000004.log
+open: db/000005.sst (options: *vfs.randomReadsOption)
+read-at(744, 53): db/000005.sst
+read-at(707, 37): db/000005.sst
+read-at(79, 628): db/000005.sst
+read-at(52, 27): db/000005.sst
+open: db/000005.sst (options: *vfs.sequentialReadsOption)
+close: db/000005.sst
+open: db/000007.sst (options: *vfs.randomReadsOption)
+read-at(718, 53): db/000007.sst
+read-at(681, 37): db/000007.sst
+read-at(53, 628): db/000007.sst
+read-at(26, 27): db/000007.sst
+open: db/000007.sst (options: *vfs.sequentialReadsOption)
+close: db/000007.sst
+open: db/000005.sst (options: *vfs.sequentialReadsOption)
+read-at(0, 52): db/000005.sst
+create: db/000008.sst
+close: db/000005.sst
+open: db/000007.sst (options: *vfs.sequentialReadsOption)
+read-at(0, 26): db/000007.sst
+close: db/000007.sst
+sync-data: db/000008.sst
+close: db/000008.sst
+sync: db
+sync: db/MANIFEST-000001
+close: db/000005.sst
+close: db/000007.sst
+mkdir-all: db/archive 0755
+rename: db/000005.sst -> db/archive/000005.sst
+mkdir-all: db/archive 0755
+rename: db/000007.sst -> db/archive/000007.sst
+
+list db
+----
+000008.sst
+CURRENT
+LOCK
+MANIFEST-000001
+OPTIONS-000003
+archive
+
+list db_wal
+----
+000006.log
+archive
+
+list db/archive
+----
+000005.sst
+000007.sst
+
+list db_wal/archive
+----
+000002.log
+000004.log
+
+# Test cleanup of extra sstables on open.
+open db1
+----
+mkdir-all: db1 0755
+mkdir-all: db1_wal 0755
+open-dir: db1
+open-dir: db1_wal
+lock: db1/LOCK
+open-dir: db1
+open-dir: db1
+open: db1/CURRENT
+create: db1/MANIFEST-000001
+sync: db1/MANIFEST-000001
+remove: db1/temporary.000001.dbtmp
+create: db1/temporary.000001.dbtmp
+sync: db1/temporary.000001.dbtmp
+close: db1/temporary.000001.dbtmp
+rename: db1/temporary.000001.dbtmp -> db1/CURRENT
+sync: db1
+open-dir: db1
+sync: db1/MANIFEST-000001
+create: db1_wal/000002.log
+sync: db1_wal
+create: db1/temporary.000003.dbtmp
+sync: db1/temporary.000003.dbtmp
+close: db1/temporary.000003.dbtmp
+rename: db1/temporary.000003.dbtmp -> db1/OPTIONS-000003
+sync: db1
+
+batch db1
+set a 1
+set b 2
+set c 3
+----
+sync-data: db1_wal/000002.log
+
+flush db1
+----
+sync-data: db1_wal/000002.log
+close: db1_wal/000002.log
+create: db1_wal/000004.log
+sync: db1_wal
+create: db1/000005.sst
+sync-data: db1/000005.sst
+close: db1/000005.sst
+sync: db1
+sync: db1/MANIFEST-000001
+
+close db1
+----
+close: db1
+sync-data: db1_wal/000004.log
+close: db1_wal/000004.log
+close: db1/MANIFEST-000001
+close: db1
+close: db1
+close: db1_wal
+close: db1
+
+create-bogus-file db1/000123.sst
+----
+create: db1/000123.sst
+sync: db1/000123.sst
+close: db1/000123.sst
+
+create-bogus-file db1/000456.sst
+----
+create: db1/000456.sst
+sync: db1/000456.sst
+close: db1/000456.sst
+
+open db1
+----
+mkdir-all: db1 0755
+mkdir-all: db1_wal 0755
+open-dir: db1
+open-dir: db1_wal
+lock: db1/LOCK
+open-dir: db1
+open-dir: db1
+open: db1/CURRENT
+read-at(0, 16): db1/CURRENT
+close: db1/CURRENT
+open: db1/MANIFEST-000001
+close: db1/MANIFEST-000001
+open-dir: db1
+open: db1/OPTIONS-000003
+close: db1/OPTIONS-000003
+open: db1_wal/000004.log
+close: db1_wal/000004.log
+create: db1/MANIFEST-000458
+sync: db1/MANIFEST-000458
+remove: db1/temporary.000458.dbtmp
+create: db1/temporary.000458.dbtmp
+sync: db1/temporary.000458.dbtmp
+close: db1/temporary.000458.dbtmp
+rename: db1/temporary.000458.dbtmp -> db1/CURRENT
+sync: db1
+create: db1_wal/000457.log
+sync: db1_wal
+create: db1/temporary.000459.dbtmp
+sync: db1/temporary.000459.dbtmp
+close: db1/temporary.000459.dbtmp
+rename: db1/temporary.000459.dbtmp -> db1/OPTIONS-000459
+sync: db1
+remove: db1_wal/000002.log
+remove: db1_wal/000004.log
+remove: db1/000123.sst
+remove: db1/000456.sst
+remove: db1/OPTIONS-000003
+
+list db1
+----
+000005.sst
+CURRENT
+LOCK
+MANIFEST-000001
+MANIFEST-000458
+OPTIONS-000459

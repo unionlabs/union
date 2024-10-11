@@ -1,0 +1,49 @@
+on:
+  push:
+  pull_request:
+    types: [synchronize]
+name: Test
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: [1.17.x, 1.18.x]
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Fmt
+        if: matrix.platform != 'windows-latest' # :(
+        run: "diff <(gofmt -d .) <(printf '')"
+        shell: bash
+      - name: Vet
+        run: go vet ./...
+      - name: Staticcheck
+        uses: dominikh/staticcheck-action@v1
+        with:
+          install-go: false
+          cache-key: ${{ matrix.go-version }}
+      - name: Test
+        run: go test -race ./...
+      - name: Test coverage
+        run: go test -coverprofile="cover.out" ./... # quotes needed for powershell
+      - name: Send coverage
+        uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: cover.out
+          flag-name: go${{ matrix.go-version }}-${{ matrix.os }}
+          parallel: true
+  # notifies that all test jobs are finished.
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: shogo82148/actions-goveralls@v1
+        with:
+          parallel-finished: true

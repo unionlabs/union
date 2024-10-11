@@ -1,0 +1,138 @@
+\section{Introduction} \label{sec:tendermint}
+
+Consensus is a fundamental problem in distributed computing. It
+is important because of it's role in State Machine Replication (SMR), a generic
+approach for replicating services that can be modeled as a deterministic state
+machine~\cite{Lam78:cacm, Sch90:survey}. The key idea of this approach is that
+service replicas start in the same initial state, and then execute requests
+(also called transactions) in the same order; thereby guaranteeing that
+replicas stay in sync with each other. The role of consensus in the SMR
+approach is ensuring that all replicas receive transactions in the same order.
+Traditionally, deployments of SMR based systems are in data-center settings
+(local area network), have a small number of replicas (three to seven) and are
+typically part of a single administration domain (e.g., Chubby
+\cite{Bur:osdi06}); therefore they handle benign (crash) failures only, as more
+general forms of failure (in particular, malicious or Byzantine faults) are
+considered to occur with only negligible probability.  
+
+The success of cryptocurrencies and blockchain systems in recent years (e.g.,
+\cite{Nak2012:bitcoin, But2014:ethereum}) pose a whole new set of challenges on
+the design and deployment of SMR based systems: reaching agreement over wide
+area network, among large number of nodes (hundreds or thousands) that are not
+part of the same administrative domain, and where a subset of nodes can behave
+maliciously (Byzantine faults). Furthermore, contrary to the previous
+data-center deployments where nodes are fully connected to each other, in
+blockchain systems, a node is only connected to a subset of other nodes, so
+communication is achieved by gossip-based peer-to-peer protocols. 
+The new requirements demand designs and algorithms that are not necessarily
+present in the classical academic literature on Byzantine fault tolerant
+consensus (or SMR) systems (e.g., \cite{DLS88:jacm, CL02:tcs}) as the primary 
+focus was different setup. 
+
+In this paper we describe a novel Byzantine-fault tolerant consensus algorithm
+that is the core of the BFT SMR platform called Tendermint\footnote{The
+	Tendermint platform is available open source at
+	https://github.com/tendermint/tendermint.}. The Tendermint platform consists of
+a high-performance BFT SMR implementation written in Go, a flexible interface
+for
+building arbitrary deterministic applications above the consensus, and a suite
+of tools for deployment and management.  
+
+The Tendermint consensus algorithm is inspired by the PBFT SMR
+algorithm~\cite{CL99:osdi} and the DLS algorithm for authenticated faults (the
+Algorithm 2 from \cite{DLS88:jacm}). Similar to DLS algorithm, Tendermint
+proceeds in
+rounds\footnote{Tendermint is not presented in the basic round model of
+	\cite{DLS88:jacm}. Furthermore, we use the term round differently than in
+	\cite{DLS88:jacm}; in Tendermint a round denotes a sequence of communication
+	steps instead of a single communication step in \cite{DLS88:jacm}.}, where each
+round has a dedicated proposer (also called coordinator or
+leader) and a process proceeds to a new round as part of normal
+processing (not only in case the proposer is faulty or suspected as being faulty
+by enough processes as in PBFT).  
+The communication pattern of each round is very similar to the "normal" case
+of PBFT. Therefore, in preferable conditions (correct proposer, timely and
+reliable communication between correct processes), Tendermint decides in three
+communication steps (the same as PBFT). 
+
+The major novelty and contribution of the Tendermint consensus algorithm is a
+new termination mechanism. As explained in \cite{MHS09:opodis, RMS10:dsn}, the
+existing BFT consensus (and SMR) algorithms for the partially synchronous
+system model (for example PBFT~\cite{CL99:osdi}, \cite{DLS88:jacm},
+\cite{MA06:tdsc}) typically relies on the communication pattern illustrated in
+Figure~\ref{ch3:fig:coordinator-change} for termination. The
+Figure~\ref{ch3:fig:coordinator-change} illustrates messages exchanged during
+the proposer change when processes start a new round\footnote{There is no
+	consistent terminology in the distributed computing terminology on naming
+	sequence of communication steps that corresponds to a logical unit. It is
+	sometimes called a round, phase or a view.}. It guarantees that eventually (ie.
+after some Global Stabilization Time, GST), there exists a round with a correct
+proposer that will bring the system into a univalent configuration.
+Intuitively, in a round in which the proposed value is accepted
+by all correct processes, and communication between correct processes is
+timely and reliable, all correct processes decide.   
+
+
+\begin{figure}[tbh!] \def\rdstretch{5} \def\ystretch{3} \centering
+	\begin{rounddiag}{4}{2} \round{1}{~} \rdmessage{1}{1}{$v_1$}
+		\rdmessage{2}{1}{$v_2$} \rdmessage{3}{1}{$v_3$} \rdmessage{4}{1}{$v_4$}
+		\round{2}{~} \rdmessage{1}{1}{$x, [v_{1..4}]$}
+		\rdmessage{1}{2}{$~~~~~~x, [v_{1..4}]$} \rdmessage{1}{3}{$~~~~~~~~x,
+			[v_{1..4}]$} \rdmessage{1}{4}{$~~~~~~~x, [v_{1..4}]$} \end{rounddiag}
+	\vspace{-5mm} \caption{\boldmath Proposer (coordinator) change: $p_1$ is the
+		new proposer.} \label{ch3:fig:coordinator-change} \end{figure}  
+
+To ensure that a proposed value is accepted by all correct
+processes\footnote{The proposed value is not blindly accepted by correct
+	processes in BFT algorithms. A correct process always verifies if the proposed
+	value is safe to be accepted so that safety properties of consensus are not
+	violated.}
+a proposer will 1) build the global state by receiving messages from other
+processes, 2) select the safe value to propose and 3) send the selected value
+together with the signed messages
+received in the first step to support it. The
+value $v_i$ that a correct process sends to the next proposer normally
+corresponds to a value the process considers as acceptable for a decision: 
+
+\begin{itemize} \item in PBFT~\cite{CL99:osdi} and DLS~\cite{DLS88:jacm} it is
+	not the value itself but a set of $2f+1$ signed messages with the same
+	value id, \item in Fast Byzantine Paxos~\cite{MA06:tdsc} the value
+	itself is being sent.  \end{itemize}
+
+In both cases, using this mechanism in our system model (ie. high
+number of nodes over gossip based network) would have high communication
+complexity that increases with the number of processes: in the first case as
+the message sent depends on the total number of processes, and in the second
+case as the value (block of transactions) is sent by each process. The set of
+messages received in the first step are normally piggybacked on the proposal
+message (in the Figure~\ref{ch3:fig:coordinator-change} denoted with
+$[v_{1..4}]$) to justify the choice of the selected value $x$. Note that
+sending this message also does not scale with the number of processes in the
+system.   
+
+We designed a novel termination mechanism for Tendermint that better suits the
+system model we consider. It does not require additional communication (neither
+sending new messages nor piggybacking information on the existing messages) and
+it is fully based on the communication pattern that is very similar to the
+normal case in PBFT \cite{CL99:osdi}. Therefore, there is only a single mode of
+execution in Tendermint, i.e., there is no separation between the normal and
+the recovery mode, which is the case in other PBFT-like protocols (e.g.,
+\cite{CL99:osdi}, \cite{Ver09:spinning} or \cite{Cle09:aardvark}). We believe
+this makes Tendermint simpler to understand and implement correctly. 
+
+Note that the orthogonal approach for reducing message complexity in order to
+improve
+scalability and decentralization (number of processes) of BFT consensus
+algorithms is using advanced cryptography (for example Boneh-Lynn-Shacham (BLS)
+signatures \cite{BLS2001:crypto}) as done for example in SBFT
+\cite{Gue2018:sbft}.  
+
+The remainder of the paper is as follows: Section~\ref{sec:definitions} defines
+the system model and gives the problem definitions. Tendermint
+consensus algorithm is presented in Section~\ref{sec:tendermint} and the
+proofs are given in Section~\ref{sec:proof}. We conclude in
+Section~\ref{sec:conclusion}.  
+
+
+
+

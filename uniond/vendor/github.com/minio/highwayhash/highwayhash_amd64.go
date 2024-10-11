@@ -2,6 +2,7 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
+//go:build amd64 && !gccgo && !appengine && !nacl && !noasm
 // +build amd64,!gccgo,!appengine,!nacl,!noasm
 
 package highwayhash
@@ -12,6 +13,8 @@ var (
 	useSSE4 = cpu.X86.HasSSE41
 	useAVX2 = cpu.X86.HasAVX2
 	useNEON = false
+	useSVE  = false
+	useSVE2 = false
 	useVMX  = false
 )
 

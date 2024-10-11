@@ -1,0 +1,55 @@
+---
+name: Go workflow
+on:
+  push:
+    branches:
+      - "*"
+      - "*/*"
+      - "**"
+      - "!main"
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.46
+          args: --timeout 5m
+
+  test:
+    name: Test Go ${{ matrix.go }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        go: ["1.13", "1.14", "1.15", "1.16", "1.17", "1.18"]
+    steps:
+      - name: Go ${{ matrix.go }}
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Checkout source code
+        uses: actions/checkout@master
+      - name: Get dependencies
+        run: go get -t -v
+      - name: Run test
+        if: matrix.os == 'windows-latest'
+        run: go test -v
+      - name: Run test coverage
+        if: matrix.os != 'windows-latest'
+        run: go test -v -coverprofile=coverage.out -covermode=count
+      - name: Publish coverage
+        if: matrix.os != 'windows-latest'
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: bash <(curl -s https://codecov.io/bash)

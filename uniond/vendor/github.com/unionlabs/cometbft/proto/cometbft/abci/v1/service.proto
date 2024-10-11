@@ -1,0 +1,42 @@
+syntax = "proto3";
+package cometbft.abci.v1;
+
+import "cometbft/abci/v1/types.proto";
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/abci/v1";
+
+// ABCIService is a service for an ABCI application.
+service ABCIService {
+  // Echo returns back the same message it is sent.
+  rpc Echo(EchoRequest) returns (EchoResponse);
+  // Flush flushes the write buffer.
+  rpc Flush(FlushRequest) returns (FlushResponse);
+  // Info returns information about the application state.
+  rpc Info(InfoRequest) returns (InfoResponse);
+  // CheckTx validates a transaction.
+  rpc CheckTx(CheckTxRequest) returns (CheckTxResponse);
+  // Query queries the application state.
+  rpc Query(QueryRequest) returns (QueryResponse);
+  // Commit commits a block of transactions.
+  rpc Commit(CommitRequest) returns (CommitResponse);
+  // InitChain initializes the blockchain.
+  rpc InitChain(InitChainRequest) returns (InitChainResponse);
+  // ListSnapshots lists all the available snapshots.
+  rpc ListSnapshots(ListSnapshotsRequest) returns (ListSnapshotsResponse);
+  // OfferSnapshot sends a snapshot offer.
+  rpc OfferSnapshot(OfferSnapshotRequest) returns (OfferSnapshotResponse);
+  // LoadSnapshotChunk returns a chunk of snapshot.
+  rpc LoadSnapshotChunk(LoadSnapshotChunkRequest) returns (LoadSnapshotChunkResponse);
+  // ApplySnapshotChunk applies a chunk of snapshot.
+  rpc ApplySnapshotChunk(ApplySnapshotChunkRequest) returns (ApplySnapshotChunkResponse);
+  // PrepareProposal returns a proposal for the next block.
+  rpc PrepareProposal(PrepareProposalRequest) returns (PrepareProposalResponse);
+  // ProcessProposal validates a proposal.
+  rpc ProcessProposal(ProcessProposalRequest) returns (ProcessProposalResponse);
+  // ExtendVote extends a vote with application-injected data (vote extensions).
+  rpc ExtendVote(ExtendVoteRequest) returns (ExtendVoteResponse);
+  // VerifyVoteExtension verifies a vote extension.
+  rpc VerifyVoteExtension(VerifyVoteExtensionRequest) returns (VerifyVoteExtensionResponse);
+  // FinalizeBlock finalizes a block.
+  rpc FinalizeBlock(FinalizeBlockRequest) returns (FinalizeBlockResponse);
+}

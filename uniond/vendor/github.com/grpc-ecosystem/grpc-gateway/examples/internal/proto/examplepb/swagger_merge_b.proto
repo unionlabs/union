@@ -1,0 +1,43 @@
+syntax = "proto3";
+option go_package = "examplepb";
+
+// Merging Services
+//
+// This is an example of merging two proto files.
+package grpc.gateway.examples.internal.examplepb;
+
+import "google/api/annotations.proto";
+
+// InMessageB represents a message to ServiceB.
+message InMessageB {
+	// Here is the explanation about InMessageB.values
+	string value = 1;
+}
+
+// OutMessageB represents a message returned from ServiceB.
+message OutMessageB {
+	// Here is the explanation about OutMessageB.value
+	repeated string values = 1;
+}
+
+// ServiceB service responds to incoming merge requests.
+service ServiceB {
+	// ServiceB.MethodOne receives InMessageB and returns OutMessageB
+	//
+	// Here is the detail explanation about ServiceB.MethodOne.
+	rpc MethodOne(InMessageB) returns (OutMessageB) {
+		option (google.api.http) = {
+            post: "/v1/example/b/1"
+            body: "*"
+		};
+	}
+	// ServiceB.MethodTwo receives OutMessageB and returns InMessageB
+	//
+	// Here is the detail explanation about ServiceB.MethodTwo.
+	rpc MethodTwo(OutMessageB) returns (InMessageB) {
+		option (google.api.http) = {
+            post: "/v1/example/b/2"
+            body: "*"
+		};
+	}
+}

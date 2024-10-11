@@ -1,0 +1,3 @@
+releaseType: go-yoshi
+handleGHRelease: true
+changelogPath: CHANGES.md

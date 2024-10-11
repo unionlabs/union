@@ -1,0 +1,46 @@
+db check
+----
+accepts 1 arg(s), received 0
+
+db check
+non-existent
+----
+error opening database at "non-existent": pebble: database "non-existent" does not exist
+
+db check
+./testdata/corrupt-options-db
+----
+error loading options: invalid key=value syntax: "blargle"
+Custom message in case of corruption error.
+
+
+db check
+../testdata/db-stage-4
+----
+checked 6 points and 0 tombstone
+
+db check
+../testdata/db-stage-4
+--comparer=foo
+----
+unknown comparer "foo"
+
+db check
+../testdata/db-stage-4
+--comparer=test-comparer
+----
+pebble: manifest file "MANIFEST-000005" for DB "db-stage-4": comparer name from file "leveldb.BytewiseComparator" != comparer name from Options "test-comparer"
+
+db check
+../testdata/db-stage-4
+--merger=foo
+----
+unknown merger "foo"
+
+# TODO(peter): this DB does not have any merge records and the merge
+# operator in the OPTIONS file is "nullptr".
+db check
+../testdata/db-stage-4
+--merger=test-merger
+----
+checked 6 points and 0 tombstone

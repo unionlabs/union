@@ -1,0 +1,19 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: cosmossdk.io/api
+    except:
+      - buf.build/googleapis/googleapis
+      - buf.build/cosmos/gogo-proto
+      - buf.build/cosmos/cosmos-proto
+    override:
+      buf.build/cosmos/cosmos-sdk: cosmossdk.io/api
+      buf.build/cometbft/cometbft: buf.build/gen/go/cometbft/cometbft/protocolbuffers/go
+plugins:
+  - name: go-pulsar
+    out: ..
+    opt: paths=source_relative
+  - name: go-grpc
+    out: ..
+    opt: paths=source_relative

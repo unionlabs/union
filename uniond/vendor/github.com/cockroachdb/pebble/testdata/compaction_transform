@@ -1,0 +1,116 @@
+
+# Test snapshot striping and coalescing.
+
+transform snapshots=(5,10,15) disable-elision
+a-c:{(#9,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYSET,@3,foo2)}
+----
+a-c:{(#9,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3)}
+
+transform snapshots=(5,10,15) disable-elision
+a-c:{(#9,RANGEKEYUNSET,@3) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYSET,@3,foo2)}
+----
+a-c:{(#9,RANGEKEYUNSET,@3) (#4,RANGEKEYSET,@3,foo3)}
+
+transform snapshots=(5,10,15) disable-elision
+a-c:{(#9,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYSET,@3,foo2)}
+----
+a-c:{(#9,RANGEKEYDEL) (#4,RANGEKEYSET,@3,foo3)}
+
+transform snapshots=(5,10,15) disable-elision
+a-c:{(#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYSET,@3,foo2)}
+----
+a-c:{(#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3)}
+
+transform disable-elision
+a-c:{(#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYSET,@3,foo2)}
+----
+a-c:{(#11,RANGEKEYDEL)}
+
+# Test that elision works on the last snapshot stripe.
+
+transform snapshots=(5,10,15)
+a-c:{(#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYSET,@3,foo2)}
+----
+a-c:{(#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3)}
+
+transform snapshots=(3,10,15)
+a-c:{(#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYUNSET,@4) (#2,RANGEKEYSET,@3,foo2)}
+----
+a-c:{(#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#3,RANGEKEYUNSET,@4) (#2,RANGEKEYSET,@3,foo2)}
+
+transform snapshots=(2,10,15)
+a-c:{(#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYUNSET,@4) (#2,RANGEKEYSET,@3,foo2)}
+----
+a-c:{(#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5)}
+
+# The RANGEKEYDEL deletes all underlying keys and there are no snapshots or
+# in-use key ranges at play, so all keys should empty out.
+
+transform
+a-c:{(#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYSET,@3,foo2)}
+----
+a-c:{}
+
+# Test RANGEKEYDELs are preserved over in-use key ranges in the last snapshot stripe.
+# in-use key ranges cover keys that exist in lower levels of the LSM, so dropping
+# range keys in that space could cause correctness issues.
+
+transform in-use-key-ranges=(b-d)
+a-c:{(#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYSET,@3,foo2)}
+----
+a-c:{(#11,RANGEKEYDEL)}
+
+# Test RANGEKEYSETs are preserved in the non-last snapshot stripe.
+
+transform in-use-key-ranges=(b-d) snapshots=(8)
+a-c:{(#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYSET,@3,foo2)}
+----
+a-c:{(#11,RANGEKEYDEL) (#4,RANGEKEYSET,@3,foo3)}
+
+transform
+a-c:{(#13,RANGEKEYSET,@3,bar1) (#12,RANGEKEYSET,@2,bar2) (#11,RANGEKEYDEL) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYSET,@3,foo2)}
+----
+a-c:{(#13,RANGEKEYSET,@3,bar1) (#12,RANGEKEYSET,@2,bar2)}
+
+# Test RANGEKEYUNSETs are preserved over in-use key ranges.
+
+transform
+a-c:{(#11,RANGEKEYUNSET,@3) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYSET,@3,foo2)}
+----
+a-c:{}
+
+transform in-use-key-ranges=(b-d)
+a-c:{(#11,RANGEKEYUNSET,@3) (#8,RANGEKEYSET,@3,foo5) (#4,RANGEKEYSET,@3,foo3) (#3,RANGEKEYSET,@3,foo2)}
+----
+a-c:{(#11,RANGEKEYUNSET,@3)}
+
+# Test cases where multiple keys have the same sequence number.
+
+transform
+a-c:{(#11,RANGEKEYSET,@3,foo5) (#11,RANGEKEYUNSET,@4) (#11,RANGEKEYDEL)}
+----
+a-c:{(#11,RANGEKEYSET,@3,foo5)}
+
+transform
+a-c:{(#11,RANGEKEYSET,@3,foo5) (#11,RANGEKEYUNSET,@3) (#11,RANGEKEYDEL)}
+----
+a-c:{(#11,RANGEKEYSET,@3,foo5)}
+
+# Test that UNSETs and DELs are retained over in-use key ranges.
+
+transform in-use-key-ranges=(b-d)
+a-c:{(#11,RANGEKEYSET,@3,foo5) (#11,RANGEKEYUNSET,@4) (#11,RANGEKEYDEL)}
+----
+a-c:{(#11,RANGEKEYSET,@3,foo5) (#11,RANGEKEYUNSET,@4) (#11,RANGEKEYDEL)}
+
+# Test that sets shadow unset at the same prefix, even if elision is disabled.
+
+transform in-use-key-ranges=(b-d)
+a-c:{(#11,RANGEKEYSET,@3,foo5) (#11,RANGEKEYUNSET,@3) (#11,RANGEKEYDEL)}
+----
+a-c:{(#11,RANGEKEYSET,@3,foo5) (#11,RANGEKEYDEL)}
+
+transform disable-elision
+a-c:{(#11,RANGEKEYSET,@3,foo5) (#11,RANGEKEYUNSET,@3) (#11,RANGEKEYDEL)
+----
+a-c:{(#11,RANGEKEYSET,@3,foo5) (#11,RANGEKEYDEL)}

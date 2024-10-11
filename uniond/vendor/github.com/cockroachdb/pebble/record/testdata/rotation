@@ -1,0 +1,65 @@
+rotate 100
+----
+last-snapshot-size: 100
+size-since-last-snapshot: 0
+
+add 10
+----
+last-snapshot-size: 100
+size-since-last-snapshot: 10
+
+# We should only rotate if the next snapshot is much smaller.
+should-rotate 100
+----
+false
+
+should-rotate 5
+----
+true
+
+add 50
+----
+last-snapshot-size: 100
+size-since-last-snapshot: 60
+
+add 50
+----
+last-snapshot-size: 100
+size-since-last-snapshot: 110
+
+add 50
+----
+last-snapshot-size: 100
+size-since-last-snapshot: 160
+
+# We exceeded the last snapshot size, we should rotate regardless.
+should-rotate 1
+----
+true
+
+should-rotate 1000
+----
+true
+
+add 1
+----
+last-snapshot-size: 100
+size-since-last-snapshot: 161
+
+rotate 10
+----
+last-snapshot-size: 10
+size-since-last-snapshot: 1
+
+add 5
+----
+last-snapshot-size: 10
+size-since-last-snapshot: 6
+
+should-rotate 5
+----
+true
+
+should-rotate 100
+----
+false

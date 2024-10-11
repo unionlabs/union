@@ -1,0 +1,96 @@
+run:
+  timeout: 5m
+  tests: true
+  fast: false
+  skip-dirs-use-default: true
+  print-issued-lines: true
+  print-linter-name: true
+
+linters:
+  disable-all: true
+  fast: false
+  enable:
+    - deadcode
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unused
+    - varcheck
+
+    - asciicheck
+    - bodyclose
+    - dogsled
+    - errname
+    - errorlint
+    - exportloopref
+    - forbidigo
+    - forcetypeassert
+    - goconst
+    - gocritic
+    - goerr113
+    - gofmt
+    - gofumpt
+    - goimports
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - ifshort
+    - importas
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - stylecheck
+    - testpackage
+    - unconvert
+    - unparam
+    - wastedassign
+    - whitespace
+    - wrapcheck
+
+linters-settings:
+  gofumpt:
+    lang-version: "1.17"
+  gosimple:
+    go: "1.17"
+  staticcheck:
+    go: "1.17"
+  stylecheck:
+    go: "1.17"
+  unused:
+    go: "1.17"
+
+  misspell:
+    locale: US
+
+  errcheck:
+    exclude-functions:
+      - io/ioutil.ReadFile
+      - io.Copy(*bytes.Buffer)
+      - io.Copy(os.Stdout)
+      - (*github.com/tunabay/go-bitarray.Builder).WriteBit
+      - (*github.com/tunabay/go-bitarray.Builder).WriteByte
+      - (*github.com/tunabay/go-bitarray.Builder).WriteBitArray
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  fix: false
+
+  exclude-use-default: true
+  exclude-rules:
+
+    # ignore in unit tests
+    - linters: [ gosec, goerr113, ifshort ]
+      path: "_test\\.go$"
+    - linters: [ staticcheck ]
+      text: "^SA9003: empty branch"

@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "example-gateway-server_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/v2/examples/internal/cmd/example-gateway-server",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//examples/internal/gateway",
+        "@com_github_golang_glog//:glog",
+    ],
+)
+
+go_binary(
+    name = "example-gateway-server",
+    embed = [":example-gateway-server_lib"],
+    visibility = ["//visibility:public"],
+)

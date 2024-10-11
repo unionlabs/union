@@ -1,0 +1,6 @@
+-- go.mod --
+module example.com/require
+
+go 1.12
+-- require.go --
+package require

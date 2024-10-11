@@ -1,0 +1,21 @@
+mod=example.com/main
+base=v0.0.1
+-- want --
+# example.com/main/b
+## compatible changes
+package added
+
+# summary
+Suggested version: v0.1.0
+-- go.mod --
+module example.com/main
+
+go 1.14
+-- a/a.go --
+package main
+
+func main() {}
+-- b/b.go --
+package main
+
+func main() {}

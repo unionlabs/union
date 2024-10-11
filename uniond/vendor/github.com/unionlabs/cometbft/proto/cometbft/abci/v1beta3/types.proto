@@ -1,0 +1,336 @@
+syntax = "proto3";
+package cometbft.abci.v1beta3;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/abci/v1beta3";
+
+// For more information on gogo.proto, see:
+// https://github.com/cosmos/gogoproto/blob/master/extensions.md
+import "cometbft/abci/v1beta1/types.proto";
+import "cometbft/abci/v1beta2/types.proto";
+import "cometbft/types/v1/params.proto";
+import "cometbft/types/v1beta1/validator.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+// NOTE: When using custom types, mind the warnings.
+// https://github.com/cosmos/gogoproto/blob/master/custom_types.md#warnings-and-issues
+
+// ABCIService is a service for an ABCI application.
+service ABCI {
+  // Echo returns back the same message it is sent.
+  rpc Echo(v1beta1.RequestEcho) returns (v1beta1.ResponseEcho);
+  // Flush flushes the write buffer.
+  rpc Flush(v1beta1.RequestFlush) returns (v1beta1.ResponseFlush);
+  // Info returns information about the application state.
+  rpc Info(v1beta2.RequestInfo) returns (v1beta1.ResponseInfo);
+  // CheckTx validates a transaction.
+  rpc CheckTx(v1beta1.RequestCheckTx) returns (ResponseCheckTx);
+  // Query queries the application state.
+  rpc Query(v1beta1.RequestQuery) returns (v1beta1.ResponseQuery);
+  // Commit commits a block of transactions.
+  rpc Commit(v1beta1.RequestCommit) returns (ResponseCommit);
+  // InitChain initializes the blockchain.
+  rpc InitChain(RequestInitChain) returns (ResponseInitChain);
+  // ListSnapshots lists all the available snapshots.
+  rpc ListSnapshots(v1beta1.RequestListSnapshots) returns (v1beta1.ResponseListSnapshots);
+  // OfferSnapshot sends a snapshot offer.
+  rpc OfferSnapshot(v1beta1.RequestOfferSnapshot) returns (v1beta1.ResponseOfferSnapshot);
+  // LoadSnapshotChunk returns a chunk of snapshot.
+  rpc LoadSnapshotChunk(v1beta1.RequestLoadSnapshotChunk)
+      returns (v1beta1.ResponseLoadSnapshotChunk);
+  // ApplySnapshotChunk applies a chunk of snapshot.
+  rpc ApplySnapshotChunk(v1beta1.RequestApplySnapshotChunk)
+      returns (v1beta1.ResponseApplySnapshotChunk);
+  // PrepareProposal returns a proposal for the next block.
+  rpc PrepareProposal(v1beta3.RequestPrepareProposal) returns (v1beta2.ResponsePrepareProposal);
+  // ProcessProposal validates a proposal.
+  rpc ProcessProposal(RequestProcessProposal) returns (v1beta2.ResponseProcessProposal);
+  // ExtendVote extends a vote with application-injected data (vote extensions).
+  rpc ExtendVote(RequestExtendVote) returns (ResponseExtendVote);
+  // VerifyVoteExtension verifies a vote extension.
+  rpc VerifyVoteExtension(RequestVerifyVoteExtension) returns (ResponseVerifyVoteExtension);
+  // FinalizeBlock finalizes a block.
+  rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
+}
+
+// ----------------------------------------
+// Request types
+
+// Request represents a request to the ABCI application.
+message Request {
+  // Sum of all possible messages.
+  oneof value {
+    v1beta1.RequestEcho               echo                  = 1;
+    v1beta1.RequestFlush              flush                 = 2;
+    v1beta2.RequestInfo               info                  = 3;
+    RequestInitChain                  init_chain            = 5;
+    v1beta1.RequestQuery              query                 = 6;
+    v1beta1.RequestCheckTx            check_tx              = 8;
+    v1beta1.RequestCommit             commit                = 11;
+    v1beta1.RequestListSnapshots      list_snapshots        = 12;
+    v1beta1.RequestOfferSnapshot      offer_snapshot        = 13;
+    v1beta1.RequestLoadSnapshotChunk  load_snapshot_chunk   = 14;
+    v1beta1.RequestApplySnapshotChunk apply_snapshot_chunk  = 15;
+    RequestPrepareProposal            prepare_proposal      = 16;
+    RequestProcessProposal            process_proposal      = 17;
+    RequestExtendVote                 extend_vote           = 18;
+    RequestVerifyVoteExtension        verify_vote_extension = 19;
+    RequestFinalizeBlock              finalize_block        = 20;
+  }
+  reserved 4, 7, 9, 10;  // SetOption, BeginBlock, DeliverTx, EndBlock
+}
+
+// RequestInitChain is a request to initialize the blockchain.
+message RequestInitChain {
+  google.protobuf.Timestamp time = 1
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  string                            chain_id         = 2;
+  cometbft.types.v1.ConsensusParams consensus_params = 3;
+  repeated v1beta1.ValidatorUpdate validators        = 4 [(gogoproto.nullable) = false];
+  bytes                            app_state_bytes   = 5;
+  int64                            initial_height    = 6;
+}
+
+// RequestPrepareProposal is a request for the ABCI application to prepare a new
+// block proposal.
+message RequestPrepareProposal {
+  // the modified transactions cannot exceed this size.
+  int64 max_tx_bytes = 1;
+  // txs is an array of transactions that will be included in a block,
+  // sent to the app for possible modifications.
+  repeated bytes     txs                            = 2;
+  ExtendedCommitInfo local_last_commit              = 3 [(gogoproto.nullable) = false];
+  repeated v1beta2.Misbehavior misbehavior          = 4 [(gogoproto.nullable) = false];
+  int64                        height               = 5;
+  google.protobuf.Timestamp    time                 = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes                        next_validators_hash = 7;
+  // address of the public key of the validator proposing the block.
+  bytes proposer_address = 8;
+}
+
+// RequestProcessProposal is a request for the ABCI application to process proposal.
+message RequestProcessProposal {
+  repeated bytes txs                       = 1;
+  CommitInfo     proposed_last_commit      = 2 [(gogoproto.nullable) = false];
+  repeated v1beta2.Misbehavior misbehavior = 3 [(gogoproto.nullable) = false];
+  // hash is the merkle root hash of the fields of the proposed block.
+  bytes                     hash                 = 4;
+  int64                     height               = 5;
+  google.protobuf.Timestamp time                 = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes                     next_validators_hash = 7;
+  // address of the public key of the original proposer of the block.
+  bytes proposer_address = 8;
+}
+
+// Extends a vote with application-injected data
+message RequestExtendVote {
+  // the hash of the block that this vote may be referring to
+  bytes hash = 1;
+  // the height of the extended vote
+  int64 height = 2;
+  // info of the block that this vote may be referring to
+  google.protobuf.Timestamp time                    = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  repeated bytes            txs                     = 4;
+  CommitInfo                proposed_last_commit    = 5 [(gogoproto.nullable) = false];
+  repeated v1beta2.Misbehavior misbehavior          = 6 [(gogoproto.nullable) = false];
+  bytes                        next_validators_hash = 7;
+  // address of the public key of the original proposer of the block.
+  bytes proposer_address = 8;
+}
+
+// Verify the vote extension
+message RequestVerifyVoteExtension {
+  // the hash of the block that this received vote corresponds to
+  bytes hash = 1;
+  // the validator that signed the vote extension
+  bytes validator_address = 2;
+  int64 height            = 3;
+  bytes vote_extension    = 4;
+}
+
+// RequestFinalizeBlock is a request to finalize the block.
+message RequestFinalizeBlock {
+  repeated bytes txs                       = 1;
+  CommitInfo     decided_last_commit       = 2 [(gogoproto.nullable) = false];
+  repeated v1beta2.Misbehavior misbehavior = 3 [(gogoproto.nullable) = false];
+  // hash is the merkle root hash of the fields of the decided block.
+  bytes                     hash                 = 4;
+  int64                     height               = 5;
+  google.protobuf.Timestamp time                 = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes                     next_validators_hash = 7;
+  // proposer_address is the address of the public key of the original proposer of the block.
+  bytes proposer_address = 8;
+}
+
+// ----------------------------------------
+// Response types
+
+// Response represents a response from the ABCI application.
+message Response {
+  // Sum of all possible messages.
+  oneof value {
+    v1beta1.ResponseException          exception             = 1;
+    v1beta1.ResponseEcho               echo                  = 2;
+    v1beta1.ResponseFlush              flush                 = 3;
+    v1beta1.ResponseInfo               info                  = 4;
+    ResponseInitChain                  init_chain            = 6;
+    v1beta1.ResponseQuery              query                 = 7;
+    ResponseCheckTx                    check_tx              = 9;
+    ResponseCommit                     commit                = 12;
+    v1beta1.ResponseListSnapshots      list_snapshots        = 13;
+    v1beta1.ResponseOfferSnapshot      offer_snapshot        = 14;
+    v1beta1.ResponseLoadSnapshotChunk  load_snapshot_chunk   = 15;
+    v1beta1.ResponseApplySnapshotChunk apply_snapshot_chunk  = 16;
+    v1beta2.ResponsePrepareProposal    prepare_proposal      = 17;
+    v1beta2.ResponseProcessProposal    process_proposal      = 18;
+    ResponseExtendVote                 extend_vote           = 19;
+    ResponseVerifyVoteExtension        verify_vote_extension = 20;
+    ResponseFinalizeBlock              finalize_block        = 21;
+  }
+  reserved 5, 8, 10, 11;  // SetOption, BeginBlock, DeliverTx, EndBlock
+}
+
+// ResponseInitChain contains the ABCI application's hash and updates to the
+// validator set and/or the consensus params, if any.
+message ResponseInitChain {
+  cometbft.types.v1.ConsensusParams consensus_params = 1;
+  repeated v1beta1.ValidatorUpdate validators        = 2 [(gogoproto.nullable) = false];
+  bytes                            app_hash          = 3;
+}
+
+// ResponseCheckTx shows if the transaction was deemed valid by the ABCI
+// application.
+message ResponseCheckTx {
+  uint32   code                 = 1;
+  bytes    data                 = 2;
+  string   log                  = 3;  // nondeterministic
+  string   info                 = 4;  // nondeterministic
+  int64    gas_wanted           = 5 [json_name = "gas_wanted"];
+  int64    gas_used             = 6 [json_name = "gas_used"];
+  repeated v1beta2.Event events = 7
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+  string codespace = 8;
+
+  // These reserved fields were used till v0.37 by the priority mempool (now
+  // removed).
+  reserved 9 to 11;
+  reserved "sender", "priority", "mempool_error";
+}
+
+// ResponseCommit indicates how much blocks should CometBFT retain.
+message ResponseCommit {
+  reserved 1, 2;  // data was previously returned here
+  int64 retain_height = 3;
+}
+
+// ResponseExtendVote is the result of extending a vote with application-injected data.
+message ResponseExtendVote {
+  bytes vote_extension = 1;
+}
+
+// ResponseVerifyVoteExtension is the result of verifying a vote extension.
+message ResponseVerifyVoteExtension {
+  VerifyStatus status = 1;
+
+  // Verification status.
+  enum VerifyStatus {
+    // Unknown
+    UNKNOWN = 0;
+    // Accepted
+    ACCEPT = 1;
+    // Rejecting the vote extension will reject the entire precommit by the sender.
+    // Incorrectly implementing this thus has liveness implications as it may affect
+    // CometBFT's ability to receive 2/3+ valid votes to finalize the block.
+    // Honest nodes should never be rejected.
+    REJECT = 2;
+  }
+}
+
+// FinalizeBlockResponse contains the result of executing the block.
+message ResponseFinalizeBlock {
+  // set of block events emitted as part of executing the block
+  repeated v1beta2.Event events = 1
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+  // the result of executing each transaction including the events
+  // the particular transaction emitted. This should match the order
+  // of the transactions delivered in the block itself
+  repeated ExecTxResult tx_results = 2;
+  // a list of updates to the validator set. These will reflect the validator set at current height + 2.
+  repeated v1beta1.ValidatorUpdate validator_updates = 3 [(gogoproto.nullable) = false];
+  // updates to the consensus params, if any.
+  cometbft.types.v1.ConsensusParams consensus_param_updates = 4;
+  // app_hash is the hash of the applications' state which is used to confirm
+  // that execution of the transactions was deterministic.
+  // It is up to the application to decide which algorithm to use.
+  bytes app_hash = 5;
+}
+
+// ----------------------------------------
+// Blockchain Types
+
+// VoteInfo contains the information about the vote.
+message VoteInfo {
+  v1beta1.Validator                  validator     = 1 [(gogoproto.nullable) = false];
+  cometbft.types.v1beta1.BlockIDFlag block_id_flag = 3;
+
+  reserved 2;  // signed_last_block
+}
+
+// ExtendedVoteInfo extends VoteInfo with the vote extensions (non-deterministic).
+message ExtendedVoteInfo {
+  // The validator that sent the vote.
+  v1beta1.Validator validator = 1 [(gogoproto.nullable) = false];
+  // Non-deterministic extension provided by the sending validator's application.
+  bytes vote_extension = 3;
+  // Vote extension signature created by CometBFT
+  bytes extension_signature = 4;
+  // block_id_flag indicates whether the validator voted for a block, nil, or did not vote at all
+  cometbft.types.v1beta1.BlockIDFlag block_id_flag = 5;
+
+  reserved 2;  // signed_last_block
+}
+
+// ----------------------------------------
+// Misc.
+
+// CommitInfo contains votes for the particular round.
+message CommitInfo {
+  int32             round = 1;
+  repeated VoteInfo votes = 2 [(gogoproto.nullable) = false];
+}
+
+// ExtendedCommitInfo is similar to CommitInfo except that it is only used in
+// the PrepareProposal request such that Tendermint can provide vote extensions
+// to the application.
+message ExtendedCommitInfo {
+  // The round at which the block proposer decided in the previous height.
+  int32 round = 1;
+  // List of validators' addresses in the last validator set with their voting
+  // information, including vote extensions.
+  repeated ExtendedVoteInfo votes = 2 [(gogoproto.nullable) = false];
+}
+
+// ExecTxResult contains results of executing one individual transaction.
+//
+// * Its structure is equivalent to #ResponseDeliverTx which will be deprecated/deleted
+message ExecTxResult {
+  uint32   code                 = 1;
+  bytes    data                 = 2;
+  string   log                  = 3;  // nondeterministic
+  string   info                 = 4;  // nondeterministic
+  int64    gas_wanted           = 5 [json_name = "gas_wanted"];
+  int64    gas_used             = 6 [json_name = "gas_used"];
+  repeated v1beta2.Event events = 7
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];  // nondeterministic
+  string codespace = 8;
+}
+
+// TxResult contains results of executing the transaction.
+//
+// One usage is indexing transaction results.
+message TxResult {
+  int64        height = 1;
+  uint32       index  = 2;
+  bytes        tx     = 3;
+  ExecTxResult result = 4 [(gogoproto.nullable) = false];
+}

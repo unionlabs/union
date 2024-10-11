@@ -1,0 +1,20 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = [
+        "factory.go",
+        "mutator.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/consensus-types/blocks/testing",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//consensus-types/blocks:go_default_library",
+        "//consensus-types/interfaces:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//runtime/version:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)

@@ -1,0 +1,43 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "gateway.go",
+        "log.go",
+        "modifiers.go",
+        "options.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/api/gateway",
+    visibility = [
+        "//beacon-chain:__subpackages__",
+        "//validator:__subpackages__",
+    ],
+    deps = [
+        "//api/server:go_default_library",
+        "//runtime:go_default_library",
+        "@com_github_gorilla_mux//:go_default_library",
+        "@com_github_grpc_ecosystem_grpc_gateway_v2//runtime:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//connectivity:go_default_library",
+        "@org_golang_google_grpc//credentials:go_default_library",
+        "@org_golang_google_grpc//credentials/insecure:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["gateway_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//cmd/beacon-chain/flags:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_gorilla_mux//:go_default_library",
+        "@com_github_sirupsen_logrus//hooks/test:go_default_library",
+        "@com_github_urfave_cli_v2//:go_default_library",
+    ],
+)

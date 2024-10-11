@@ -2,14 +2,31 @@ package appmodule
 
 import (
 	"context"
+	"encoding/json"
 	"io"
+
+	appmodulev2 "cosmossdk.io/core/appmodule/v2"
 )
 
-// HasGenesis is the extension interface that modules should implement to handle
+// HasGenesisBasics is the legacy interface for stateless genesis methods.
+type HasGenesisBasics interface {
+	DefaultGenesis() json.RawMessage
+	ValidateGenesis(json.RawMessage) error
+}
+
+// HasGenesis defines a custom genesis handling API implementation.
+type HasGenesis = appmodulev2.HasGenesis
+
+// HasABCIGenesis defines a custom genesis handling API implementation for ABCI.
+// (stateful genesis methods which returns validator updates)
+// Most modules should not implement this interface.
+type HasABCIGenesis = appmodulev2.HasABCIGenesis
+
+// HasGenesisAuto is the extension interface that modules should implement to handle
 // genesis data and state initialization.
-// WARNING: This interface is experimental and may change at any time.
-type HasGenesis interface {
-	AppModule
+// WARNING: This interface is experimental and may change at any time and has been dropped in v2.
+type HasGenesisAuto interface {
+	appmodulev2.AppModule
 
 	// DefaultGenesis writes the default genesis for this module to the target.
 	DefaultGenesis(GenesisTarget) error

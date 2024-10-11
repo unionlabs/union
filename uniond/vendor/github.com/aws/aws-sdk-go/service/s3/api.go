@@ -67,19 +67,47 @@ func (c *S3) AbortMultipartUploadRequest(input *AbortMultipartUploadInput) (req 
 
 // AbortMultipartUpload API operation for Amazon Simple Storage Service.
 //
-// This action aborts a multipart upload. After a multipart upload is aborted,
+// This operation aborts a multipart upload. After a multipart upload is aborted,
 // no additional parts can be uploaded using that upload ID. The storage consumed
 // by any previously uploaded parts will be freed. However, if any part uploads
 // are currently in progress, those part uploads might or might not succeed.
 // As a result, it might be necessary to abort a given multipart upload multiple
 // times in order to completely free all storage consumed by all parts.
 //
-// To verify that all parts have been removed, so you don't get charged for
+// To verify that all parts have been removed and prevent getting charged for
 // the part storage, you should call the ListParts (https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListParts.html)
-// action and ensure that the parts list is empty.
+// API operation and ensure that the parts list is empty.
 //
-// For information about permissions required to use the multipart upload, see
-// Multipart Upload and Permissions (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html).
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+// requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+// . Path-style requests are not supported. For more information, see Regional
+// and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
+//
+// Permissions
+//
+//   - General purpose bucket permissions - For information about permissions
+//     required to use the multipart upload, see Multipart Upload and Permissions
+//     (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html)
+//     in the Amazon S3 User Guide.
+//
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // The following operations are related to AbortMultipartUpload:
 //
@@ -173,54 +201,93 @@ func (c *S3) CompleteMultipartUploadRequest(input *CompleteMultipartUploadInput)
 //
 // You first initiate the multipart upload and then upload all parts using the
 // UploadPart (https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPart.html)
+// operation or the UploadPartCopy (https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPartCopy.html)
 // operation. After successfully uploading all relevant parts of an upload,
-// you call this action to complete the upload. Upon receiving this request,
-// Amazon S3 concatenates all the parts in ascending order by part number to
-// create a new object. In the Complete Multipart Upload request, you must provide
-// the parts list. You must ensure that the parts list is complete. This action
-// concatenates the parts that you provide in the list. For each part in the
-// list, you must provide the part number and the ETag value, returned after
-// that part was uploaded.
+// you call this CompleteMultipartUpload operation to complete the upload. Upon
+// receiving this request, Amazon S3 concatenates all the parts in ascending
+// order by part number to create a new object. In the CompleteMultipartUpload
+// request, you must provide the parts list and ensure that the parts list is
+// complete. The CompleteMultipartUpload API operation concatenates the parts
+// that you provide in the list. For each part in the list, you must provide
+// the PartNumber value and the ETag value that are returned after that part
+// was uploaded.
 //
-// Processing of a Complete Multipart Upload request could take several minutes
-// to complete. After Amazon S3 begins processing the request, it sends an HTTP
+// The processing of a CompleteMultipartUpload request could take several minutes
+// to finalize. After Amazon S3 begins processing the request, it sends an HTTP
 // response header that specifies a 200 OK response. While processing is in
 // progress, Amazon S3 periodically sends white space characters to keep the
-// connection from timing out. Because a request could fail after the initial
-// 200 OK response has been sent, it is important that you check the response
-// body to determine whether the request succeeded.
+// connection from timing out. A request could fail after the initial 200 OK
+// response has been sent. This means that a 200 OK response can contain either
+// a success or an error. The error response might be embedded in the 200 OK
+// response. If you call this API operation directly, make sure to design your
+// application to parse the contents of the response and handle it appropriately.
+// If you use Amazon Web Services SDKs, SDKs handle this condition. The SDKs
+// detect the embedded error and apply error handling per your configuration
+// settings (including automatically retrying the request as appropriate). If
+// the condition persists, the SDKs throw an exception (or, for the SDKs that
+// don't use exceptions, they return an error).
 //
 // Note that if CompleteMultipartUpload fails, applications should be prepared
-// to retry the failed requests. For more information, see Amazon S3 Error Best
-// Practices (https://docs.aws.amazon.com/AmazonS3/latest/dev/ErrorBestPractices.html).
+// to retry any failed requests (including 500 error responses). For more information,
+// see Amazon S3 Error Best Practices (https://docs.aws.amazon.com/AmazonS3/latest/dev/ErrorBestPractices.html).
 //
-// You cannot use Content-Type: application/x-www-form-urlencoded with Complete
-// Multipart Upload requests. Also, if you do not provide a Content-Type header,
-// CompleteMultipartUpload returns a 200 OK response.
+// You can't use Content-Type: application/x-www-form-urlencoded for the CompleteMultipartUpload
+// requests. Also, if you don't provide a Content-Type header, CompleteMultipartUpload
+// can still return a 200 OK response.
 //
 // For more information about multipart uploads, see Uploading Objects Using
-// Multipart Upload (https://docs.aws.amazon.com/AmazonS3/latest/dev/uploadobjusingmpu.html).
+// Multipart Upload (https://docs.aws.amazon.com/AmazonS3/latest/dev/uploadobjusingmpu.html)
+// in the Amazon S3 User Guide.
 //
-// For information about permissions required to use the multipart upload API,
-// see Multipart Upload and Permissions (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html).
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+// requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+// . Path-style requests are not supported. For more information, see Regional
+// and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
 //
-// CompleteMultipartUpload has the following special errors:
+// Permissions
 //
-//   - Error code: EntityTooSmall Description: Your proposed upload is smaller
+//   - General purpose bucket permissions - For information about permissions
+//     required to use the multipart upload API, see Multipart Upload and Permissions
+//     (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html)
+//     in the Amazon S3 User Guide.
+//
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
+//
+// Special errors
+//
+//   - Error Code: EntityTooSmall Description: Your proposed upload is smaller
 //     than the minimum allowed object size. Each part must be at least 5 MB
-//     in size, except the last part. 400 Bad Request
+//     in size, except the last part. HTTP Status Code: 400 Bad Request
 //
-//   - Error code: InvalidPart Description: One or more of the specified parts
+//   - Error Code: InvalidPart Description: One or more of the specified parts
 //     could not be found. The part might not have been uploaded, or the specified
-//     entity tag might not have matched the part's entity tag. 400 Bad Request
+//     ETag might not have matched the uploaded part's ETag. HTTP Status Code:
+//     400 Bad Request
 //
-//   - Error code: InvalidPartOrder Description: The list of parts was not
+//   - Error Code: InvalidPartOrder Description: The list of parts was not
 //     in ascending order. The parts list must be specified in order by part
-//     number. 400 Bad Request
+//     number. HTTP Status Code: 400 Bad Request
 //
-//   - Error code: NoSuchUpload Description: The specified multipart upload
+//   - Error Code: NoSuchUpload Description: The specified multipart upload
 //     does not exist. The upload ID might be invalid, or the multipart upload
-//     might have been aborted or completed. 404 Not Found
+//     might have been aborted or completed. HTTP Status Code: 404 Not Found
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // The following operations are related to CompleteMultipartUpload:
 //
@@ -313,165 +380,119 @@ func (c *S3) CopyObjectRequest(input *CopyObjectInput) (req *request.Request, ou
 // upload Upload Part - Copy (UploadPartCopy) API. For more information, see
 // Copy Object Using the REST Multipart Upload API (https://docs.aws.amazon.com/AmazonS3/latest/dev/CopyingObjctsUsingRESTMPUapi.html).
 //
-// All copy requests must be authenticated. Additionally, you must have read
-// access to the source object and write access to the destination bucket. For
-// more information, see REST Authentication (https://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html).
+// You can copy individual objects between general purpose buckets, between
+// directory buckets, and between general purpose buckets and directory buckets.
+//
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+// requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+// . Path-style requests are not supported. For more information, see Regional
+// and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
+//
 // Both the Region that you want to copy the object from and the Region that
-// you want to copy the object to must be enabled for your account.
-//
-// A copy request might return an error when Amazon S3 receives the copy request
-// or while Amazon S3 is copying the files. If the error occurs before the copy
-// action starts, you receive a standard Amazon S3 error. If the error occurs
-// during the copy operation, the error response is embedded in the 200 OK response.
-// This means that a 200 OK response can contain either a success or an error.
-// Design your application to parse the contents of the response and handle
-// it appropriately.
-//
-// If the copy is successful, you receive a response with information about
-// the copied object.
-//
-// If the request is an HTTP 1.1 request, the response is chunk encoded. If
-// it were not, it would not contain the content-length, and you would need
-// to read the entire body.
-//
-// The copy request charge is based on the storage class and Region that you
-// specify for the destination object. For pricing information, see Amazon S3
-// pricing (http://aws.amazon.com/s3/pricing/).
+// you want to copy the object to must be enabled for your account. For more
+// information about how to enable a Region for your account, see Enable or
+// disable a Region for standalone accounts (https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-regions.html#manage-acct-regions-enable-standalone)
+// in the Amazon Web Services Account Management Guide.
 //
 // Amazon S3 transfer acceleration does not support cross-Region copies. If
 // you request a cross-Region copy using a transfer acceleration endpoint, you
 // get a 400 Bad Request error. For more information, see Transfer Acceleration
 // (https://docs.aws.amazon.com/AmazonS3/latest/dev/transfer-acceleration.html).
 //
-// # Metadata
+// # Authentication and authorization
 //
-// When copying an object, you can preserve all metadata (default) or specify
-// new metadata. However, the ACL is not preserved and is set to private for
-// the user making the request. To override the default ACL setting, specify
-// a new ACL when generating a copy request. For more information, see Using
-// ACLs (https://docs.aws.amazon.com/AmazonS3/latest/dev/S3_ACLs_UsingACLs.html).
+// All CopyObject requests must be authenticated and signed by using IAM credentials
+// (access key ID and secret access key for the IAM identities). All headers
+// with the x-amz- prefix, including x-amz-copy-source, must be signed. For
+// more information, see REST Authentication (https://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html).
 //
-// To specify whether you want the object metadata copied from the source object
-// or replaced with metadata provided in the request, you can optionally add
-// the x-amz-metadata-directive header. When you grant permissions, you can
-// use the s3:x-amz-metadata-directive condition key to enforce certain metadata
-// behavior when objects are uploaded. For more information, see Specifying
-// Conditions in a Policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/amazon-s3-policy-keys.html)
-// in the Amazon S3 User Guide. For a complete list of Amazon S3-specific condition
-// keys, see Actions, Resources, and Condition Keys for Amazon S3 (https://docs.aws.amazon.com/AmazonS3/latest/dev/list_amazons3.html).
+// Directory buckets - You must use the IAM credentials to authenticate and
+// authorize your access to the CopyObject API operation, instead of using the
+// temporary security credentials through the CreateSession API operation.
 //
-// x-amz-copy-source-if Headers
+// Amazon Web Services CLI or SDKs handles authentication and authorization
+// on your behalf.
 //
-// To only copy an object under certain conditions, such as whether the Etag
-// matches or whether the object was modified before or after a specified date,
-// use the following request parameters:
+// # Permissions
 //
-//   - x-amz-copy-source-if-match
+// You must have read access to the source object and write access to the destination
+// bucket.
 //
-//   - x-amz-copy-source-if-none-match
+//   - General purpose bucket permissions - You must have permissions in an
+//     IAM policy based on the source and destination bucket types in a CopyObject
+//     operation. If the source object is in a general purpose bucket, you must
+//     have s3:GetObject permission to read the source object that is being copied.
+//     If the destination bucket is a general purpose bucket, you must have s3:PutObject
+//     permission to write the object copy to the destination bucket.
 //
-//   - x-amz-copy-source-if-unmodified-since
+//   - Directory bucket permissions - You must have permissions in a bucket
+//     policy or an IAM identity-based policy based on the source and destination
+//     bucket types in a CopyObject operation. If the source object that you
+//     want to copy is in a directory bucket, you must have the s3express:CreateSession
+//     permission in the Action element of a policy to read the object. By default,
+//     the session is in the ReadWrite mode. If you want to restrict the access,
+//     you can explicitly set the s3express:SessionMode condition key to ReadOnly
+//     on the copy source bucket. If the copy destination is a directory bucket,
+//     you must have the s3express:CreateSession permission in the Action element
+//     of a policy to write the object to the destination. The s3express:SessionMode
+//     condition key can't be set to ReadOnly on the copy destination bucket.
+//     For example policies, see Example bucket policies for S3 Express One Zone
+//     (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam-example-bucket-policies.html)
+//     and Amazon Web Services Identity and Access Management (IAM) identity-based
+//     policies for S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam-identity-policies.html)
+//     in the Amazon S3 User Guide.
 //
-//   - x-amz-copy-source-if-modified-since
+// # Response and special errors
 //
-// If both the x-amz-copy-source-if-match and x-amz-copy-source-if-unmodified-since
-// headers are present in the request and evaluate as follows, Amazon S3 returns
-// 200 OK and copies the data:
+// When the request is an HTTP 1.1 request, the response is chunk encoded. When
+// the request is not an HTTP 1.1 request, the response would not contain the
+// Content-Length. You always need to read the entire response body to check
+// if the copy succeeds. to keep the connection alive while we copy the data.
 //
-//   - x-amz-copy-source-if-match condition evaluates to true
+//   - If the copy is successful, you receive a response with information about
+//     the copied object.
 //
-//   - x-amz-copy-source-if-unmodified-since condition evaluates to false
+//   - A copy request might return an error when Amazon S3 receives the copy
+//     request or while Amazon S3 is copying the files. A 200 OK response can
+//     contain either a success or an error. If the error occurs before the copy
+//     action starts, you receive a standard Amazon S3 error. If the error occurs
+//     during the copy operation, the error response is embedded in the 200 OK
+//     response. For example, in a cross-region copy, you may encounter throttling
+//     and receive a 200 OK response. For more information, see Resolve the Error
+//     200 response when copying objects to Amazon S3 (https://repost.aws/knowledge-center/s3-resolve-200-internalerror).
+//     The 200 OK status code means the copy was accepted, but it doesn't mean
+//     the copy is complete. Another example is when you disconnect from Amazon
+//     S3 before the copy is complete, Amazon S3 might cancel the copy and you
+//     may receive a 200 OK response. You must stay connected to Amazon S3 until
+//     the entire response is successfully received and processed. If you call
+//     this API operation directly, make sure to design your application to parse
+//     the content of the response and handle it appropriately. If you use Amazon
+//     Web Services SDKs, SDKs handle this condition. The SDKs detect the embedded
+//     error and apply error handling per your configuration settings (including
+//     automatically retrying the request as appropriate). If the condition persists,
+//     the SDKs throw an exception (or, for the SDKs that don't use exceptions,
+//     they return an error).
 //
-// If both the x-amz-copy-source-if-none-match and x-amz-copy-source-if-modified-since
-// headers are present in the request and evaluate as follows, Amazon S3 returns
-// the 412 Precondition Failed response code:
+// # Charge
 //
-//   - x-amz-copy-source-if-none-match condition evaluates to false
+// The copy request charge is based on the storage class and Region that you
+// specify for the destination object. The request can also result in a data
+// retrieval charge for the source if the source storage class bills for data
+// retrieval. If the copy source is in a different region, the data transfer
+// is billed to the copy source account. For pricing information, see Amazon
+// S3 pricing (http://aws.amazon.com/s3/pricing/).
 //
-//   - x-amz-copy-source-if-modified-since condition evaluates to true
+// # HTTP Host header syntax
 //
-// All headers with the x-amz- prefix, including x-amz-copy-source, must be
-// signed.
-//
-// # Server-side encryption
-//
-// When you perform a CopyObject operation, you can optionally use the appropriate
-// encryption-related headers to encrypt the object using server-side encryption
-// with Amazon Web Services managed encryption keys (SSE-S3 or SSE-KMS) or a
-// customer-provided encryption key. With server-side encryption, Amazon S3
-// encrypts your data as it writes it to disks in its data centers and decrypts
-// the data when you access it. For more information about server-side encryption,
-// see Using Server-Side Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/serv-side-encryption.html).
-//
-// If a target object uses SSE-KMS, you can enable an S3 Bucket Key for the
-// object. For more information, see Amazon S3 Bucket Keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-key.html)
-// in the Amazon S3 User Guide.
-//
-// # Access Control List (ACL)-Specific Request Headers
-//
-// When copying an object, you can optionally use headers to grant ACL-based
-// permissions. By default, all objects are private. Only the owner has full
-// access control. When adding a new object, you can grant permissions to individual
-// Amazon Web Services accounts or to predefined groups defined by Amazon S3.
-// These permissions are then added to the ACL on the object. For more information,
-// see Access Control List (ACL) Overview (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html)
-// and Managing ACLs Using the REST API (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-using-rest-api.html).
-//
-// If the bucket that you're copying objects to uses the bucket owner enforced
-// setting for S3 Object Ownership, ACLs are disabled and no longer affect permissions.
-// Buckets that use this setting only accept PUT requests that don't specify
-// an ACL or PUT requests that specify bucket owner full control ACLs, such
-// as the bucket-owner-full-control canned ACL or an equivalent form of this
-// ACL expressed in the XML format.
-//
-// For more information, see Controlling ownership of objects and disabling
-// ACLs (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html)
-// in the Amazon S3 User Guide.
-//
-// If your bucket uses the bucket owner enforced setting for Object Ownership,
-// all objects written to the bucket by any account will be owned by the bucket
-// owner.
-//
-// # Checksums
-//
-// When copying an object, if it has a checksum, that checksum will be copied
-// to the new object by default. When you copy the object over, you may optionally
-// specify a different checksum algorithm to use with the x-amz-checksum-algorithm
-// header.
-//
-// # Storage Class Options
-//
-// You can use the CopyObject action to change the storage class of an object
-// that is already stored in Amazon S3 using the StorageClass parameter. For
-// more information, see Storage Classes (https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html)
-// in the Amazon S3 User Guide.
-//
-// # Versioning
-//
-// By default, x-amz-copy-source identifies the current version of an object
-// to copy. If the current version is a delete marker, Amazon S3 behaves as
-// if the object was deleted. To copy a different version, use the versionId
-// subresource.
-//
-// If you enable versioning on the target bucket, Amazon S3 generates a unique
-// version ID for the object being copied. This version ID is different from
-// the version ID of the source object. Amazon S3 returns the version ID of
-// the copied object in the x-amz-version-id response header in the response.
-//
-// If you do not enable versioning or suspend it on the target bucket, the version
-// ID that Amazon S3 generates is always null.
-//
-// If the source object's storage class is GLACIER, you must restore a copy
-// of this object before you can use it as a source object for the copy operation.
-// For more information, see RestoreObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_RestoreObject.html).
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // The following operations are related to CopyObject:
 //
 //   - PutObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html)
 //
 //   - GetObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html)
-//
-// For more information, see Copying Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/CopyingObjectsExamples.html).
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -550,94 +571,97 @@ func (c *S3) CreateBucketRequest(input *CreateBucketInput) (req *request.Request
 
 // CreateBucket API operation for Amazon Simple Storage Service.
 //
-// Creates a new S3 bucket. To create a bucket, you must register with Amazon
-// S3 and have a valid Amazon Web Services Access Key ID to authenticate requests.
+// This action creates an Amazon S3 bucket. To create an Amazon S3 on Outposts
+// bucket, see CreateBucket (https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_CreateBucket.html).
+//
+// Creates a new S3 bucket. To create a bucket, you must set up Amazon S3 and
+// have a valid Amazon Web Services Access Key ID to authenticate requests.
 // Anonymous requests are never allowed to create buckets. By creating the bucket,
 // you become the bucket owner.
 //
-// Not every string is an acceptable bucket name. For information about bucket
-// naming restrictions, see Bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html).
-//
-// If you want to create an Amazon S3 on Outposts bucket, see Create Bucket
-// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_control_CreateBucket.html).
-//
-// By default, the bucket is created in the US East (N. Virginia) Region. You
-// can optionally specify a Region in the request body. You might choose a Region
-// to optimize latency, minimize costs, or address regulatory requirements.
-// For example, if you reside in Europe, you will probably find it advantageous
-// to create buckets in the Europe (Ireland) Region. For more information, see
-// Accessing a bucket (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html#access-bucket-intro).
-//
-// If you send your create bucket request to the s3.amazonaws.com endpoint,
-// the request goes to the us-east-1 Region. Accordingly, the signature calculations
-// in Signature Version 4 must use us-east-1 as the Region, even if the location
-// constraint in the request specifies another Region where the bucket is to
-// be created. If you create a bucket in a Region other than US East (N. Virginia),
-// your application must be able to handle 307 redirect. For more information,
-// see Virtual hosting of buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html).
-//
-// Access control lists (ACLs)
-//
-// When creating a bucket using this operation, you can optionally configure
-// the bucket ACL to specify the accounts or groups that should be granted specific
-// permissions on the bucket.
-//
-// If your CreateBucket request sets bucket owner enforced for S3 Object Ownership
-// and specifies a bucket ACL that provides access to an external Amazon Web
-// Services account, your request fails with a 400 error and returns the InvalidBucketAclWithObjectOwnership
-// error code. For more information, see Controlling object ownership (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html)
+// There are two types of buckets: general purpose buckets and directory buckets.
+// For more information about these bucket types, see Creating, configuring,
+// and working with Amazon S3 buckets (https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-buckets-s3.html)
 // in the Amazon S3 User Guide.
 //
-// There are two ways to grant the appropriate permissions using the request
-// headers.
+//   - General purpose buckets - If you send your CreateBucket request to the
+//     s3.amazonaws.com global endpoint, the request goes to the us-east-1 Region.
+//     So the signature calculations in Signature Version 4 must use us-east-1
+//     as the Region, even if the location constraint in the request specifies
+//     another Region where the bucket is to be created. If you create a bucket
+//     in a Region other than US East (N. Virginia), your application must be
+//     able to handle 307 redirect. For more information, see Virtual hosting
+//     of buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html)
+//     in the Amazon S3 User Guide.
 //
-//   - Specify a canned ACL using the x-amz-acl request header. Amazon S3 supports
-//     a set of predefined ACLs, known as canned ACLs. Each canned ACL has a
-//     predefined set of grantees and permissions. For more information, see
-//     Canned ACL (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#CannedACL).
+//   - Directory buckets - For directory buckets, you must make requests for
+//     this API operation to the Regional endpoint. These endpoints support path-style
+//     requests in the format https://s3express-control.region_code.amazonaws.com/bucket-name
+//     . Virtual-hosted-style requests aren't supported. For more information,
+//     see Regional and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+//     in the Amazon S3 User Guide.
 //
-//   - Specify access permissions explicitly using the x-amz-grant-read, x-amz-grant-write,
-//     x-amz-grant-read-acp, x-amz-grant-write-acp, and x-amz-grant-full-control
-//     headers. These headers map to the set of permissions Amazon S3 supports
-//     in an ACL. For more information, see Access control list (ACL) overview
-//     (https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html).
-//     You specify each grantee as a type=value pair, where the type is one of
-//     the following: id – if the value specified is the canonical user ID
-//     of an Amazon Web Services account uri – if you are granting permissions
-//     to a predefined group emailAddress – if the value specified is the email
-//     address of an Amazon Web Services account Using email addresses to specify
-//     a grantee is only supported in the following Amazon Web Services Regions:
-//     US East (N. Virginia) US West (N. California) US West (Oregon) Asia Pacific
-//     (Singapore) Asia Pacific (Sydney) Asia Pacific (Tokyo) Europe (Ireland)
-//     South America (São Paulo) For a list of all the Amazon S3 supported Regions
-//     and endpoints, see Regions and Endpoints (https://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region)
-//     in the Amazon Web Services General Reference. For example, the following
-//     x-amz-grant-read header grants the Amazon Web Services accounts identified
-//     by account IDs permissions to read object data and its metadata: x-amz-grant-read:
-//     id="11112222333", id="444455556666"
+// Permissions
 //
-// You can use either a canned ACL or specify access permissions explicitly.
-// You cannot do both.
+//   - General purpose bucket permissions - In addition to the s3:CreateBucket
+//     permission, the following permissions are required in a policy when your
+//     CreateBucket request includes specific headers: Access control lists (ACLs)
 //
-// # Permissions
+//   - In your CreateBucket request, if you specify an access control list
+//     (ACL) and set it to public-read, public-read-write, authenticated-read,
+//     or if you explicitly specify any other custom ACLs, both s3:CreateBucket
+//     and s3:PutBucketAcl permissions are required. In your CreateBucket request,
+//     if you set the ACL to private, or if you don't specify any ACLs, only
+//     the s3:CreateBucket permission is required. Object Lock - In your CreateBucket
+//     request, if you set x-amz-bucket-object-lock-enabled to true, the s3:PutBucketObjectLockConfiguration
+//     and s3:PutBucketVersioning permissions are required. S3 Object Ownership
 //
-// In addition to s3:CreateBucket, the following permissions are required when
-// your CreateBucket includes specific headers:
+//   - If your CreateBucket request includes the x-amz-object-ownership header,
+//     then the s3:PutBucketOwnershipControls permission is required. To set
+//     an ACL on a bucket as part of a CreateBucket request, you must explicitly
+//     set S3 Object Ownership for the bucket to a different value than the default,
+//     BucketOwnerEnforced. Additionally, if your desired bucket ACL grants public
+//     access, you must first create the bucket (without the bucket ACL) and
+//     then explicitly disable Block Public Access on the bucket before using
+//     PutBucketAcl to set the ACL. If you try to create a bucket with a public
+//     ACL, the request will fail. For the majority of modern use cases in S3,
+//     we recommend that you keep all Block Public Access settings enabled and
+//     keep ACLs disabled. If you would like to share data with users outside
+//     of your account, you can use bucket policies as needed. For more information,
+//     see Controlling ownership of objects and disabling ACLs for your bucket
+//     (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html)
+//     and Blocking public access to your Amazon S3 storage (https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html)
+//     in the Amazon S3 User Guide. S3 Block Public Access - If your specific
+//     use case requires granting public access to your S3 resources, you can
+//     disable Block Public Access. Specifically, you can create a new bucket
+//     with Block Public Access enabled, then separately call the DeletePublicAccessBlock
+//     (https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeletePublicAccessBlock.html)
+//     API. To use this operation, you must have the s3:PutBucketPublicAccessBlock
+//     permission. For more information about S3 Block Public Access, see Blocking
+//     public access to your Amazon S3 storage (https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html)
+//     in the Amazon S3 User Guide.
 //
-//   - ACLs - If your CreateBucket request specifies ACL permissions and the
-//     ACL is public-read, public-read-write, authenticated-read, or if you specify
-//     access permissions explicitly through any other ACL, both s3:CreateBucket
-//     and s3:PutBucketAcl permissions are needed. If the ACL the CreateBucket
-//     request is private or doesn't specify any ACLs, only s3:CreateBucket permission
-//     is needed.
+//   - Directory bucket permissions - You must have the s3express:CreateBucket
+//     permission in an IAM identity-based policy instead of a bucket policy.
+//     Cross-account access to this API operation isn't supported. This operation
+//     can only be performed by the Amazon Web Services account that owns the
+//     resource. For more information about directory bucket policies and permissions,
+//     see Amazon Web Services Identity and Access Management (IAM) for S3 Express
+//     One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam.html)
+//     in the Amazon S3 User Guide. The permissions for ACLs, Object Lock, S3
+//     Object Ownership, and S3 Block Public Access are not supported for directory
+//     buckets. For directory buckets, all Block Public Access settings are enabled
+//     at the bucket level and S3 Object Ownership is set to Bucket owner enforced
+//     (ACLs disabled). These settings can't be modified. For more information
+//     about permissions for creating and working with directory buckets, see
+//     Directory buckets (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-buckets-overview.html)
+//     in the Amazon S3 User Guide. For more information about supported S3 features
+//     for directory buckets, see Features of S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-one-zone.html#s3-express-features)
+//     in the Amazon S3 User Guide.
 //
-//   - Object Lock - If ObjectLockEnabledForBucket is set to true in your CreateBucket
-//     request, s3:PutBucketObjectLockConfiguration and s3:PutBucketVersioning
-//     permissions are required.
+// # HTTP Host header syntax
 //
-//   - S3 Object Ownership - If your CreateBucket request includes the the
-//     x-amz-object-ownership header, s3:PutBucketOwnershipControls permission
-//     is required.
+// Directory buckets - The HTTP Host header syntax is s3express-control.region.amazonaws.com.
 //
 // The following operations are related to CreateBucket:
 //
@@ -735,143 +759,139 @@ func (c *S3) CreateMultipartUploadRequest(input *CreateMultipartUploadInput) (re
 // You specify this upload ID in each of your subsequent upload part requests
 // (see UploadPart (https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPart.html)).
 // You also include this upload ID in the final request to either complete or
-// abort the multipart upload request.
+// abort the multipart upload request. For more information about multipart
+// uploads, see Multipart Upload Overview (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html)
+// in the Amazon S3 User Guide.
 //
-// For more information about multipart uploads, see Multipart Upload Overview
-// (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html).
+// After you initiate a multipart upload and upload one or more parts, to stop
+// being charged for storing the uploaded parts, you must either complete or
+// abort the multipart upload. Amazon S3 frees up the space used to store the
+// parts and stops charging you for storing them only after you either complete
+// or abort a multipart upload.
 //
 // If you have configured a lifecycle rule to abort incomplete multipart uploads,
-// the upload must complete within the number of days specified in the bucket
-// lifecycle configuration. Otherwise, the incomplete multipart upload becomes
-// eligible for an abort action and Amazon S3 aborts the multipart upload. For
-// more information, see Aborting Incomplete Multipart Uploads Using a Bucket
-// Lifecycle Policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config).
+// the created multipart upload must be completed within the number of days
+// specified in the bucket lifecycle configuration. Otherwise, the incomplete
+// multipart upload becomes eligible for an abort action and Amazon S3 aborts
+// the multipart upload. For more information, see Aborting Incomplete Multipart
+// Uploads Using a Bucket Lifecycle Configuration (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config).
 //
-// For information about the permissions required to use the multipart upload
-// API, see Multipart Upload and Permissions (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html).
+//   - Directory buckets - S3 Lifecycle is not supported by directory buckets.
+//
+//   - Directory buckets - For directory buckets, you must make requests for
+//     this API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+//     requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+//     . Path-style requests are not supported. For more information, see Regional
+//     and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+//     in the Amazon S3 User Guide.
+//
+// # Request signing
 //
 // For request signing, multipart upload is just a series of regular requests.
 // You initiate a multipart upload, send one or more requests to upload parts,
 // and then complete the multipart upload process. You sign each request individually.
 // There is nothing special about signing multipart upload requests. For more
 // information about signing, see Authenticating Requests (Amazon Web Services
-// Signature Version 4) (https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html).
-//
-// After you initiate a multipart upload and upload one or more parts, to stop
-// being charged for storing the uploaded parts, you must either complete or
-// abort the multipart upload. Amazon S3 frees up the space used to store the
-// parts and stop charging you for storing them only after you either complete
-// or abort a multipart upload.
-//
-// You can optionally request server-side encryption. For server-side encryption,
-// Amazon S3 encrypts your data as it writes it to disks in its data centers
-// and decrypts it when you access it. You can provide your own encryption key,
-// or use Amazon Web Services KMS keys or Amazon S3-managed encryption keys.
-// If you choose to provide your own encryption key, the request headers you
-// provide in UploadPart (https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPart.html)
-// and UploadPartCopy (https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPartCopy.html)
-// requests must match the headers you used in the request to initiate the upload
-// by using CreateMultipartUpload.
-//
-// To perform a multipart upload with encryption using an Amazon Web Services
-// KMS key, the requester must have permission to the kms:Decrypt and kms:GenerateDataKey*
-// actions on the key. These permissions are required because Amazon S3 must
-// decrypt and read data from the encrypted file parts before it completes the
-// multipart upload. For more information, see Multipart upload API and permissions
-// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html#mpuAndPermissions)
+// Signature Version 4) (https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html)
 // in the Amazon S3 User Guide.
 //
-// If your Identity and Access Management (IAM) user or role is in the same
-// Amazon Web Services account as the KMS key, then you must have these permissions
-// on the key policy. If your IAM user or role belongs to a different account
-// than the key, then you must have the permissions on both the key policy and
-// your IAM user or role.
+// Permissions
 //
-// For more information, see Protecting Data Using Server-Side Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/serv-side-encryption.html).
+//   - General purpose bucket permissions - For information about the permissions
+//     required to use the multipart upload API, see Multipart upload and permissions
+//     (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html)
+//     in the Amazon S3 User Guide. To perform a multipart upload with encryption
+//     by using an Amazon Web Services KMS key, the requester must have permission
+//     to the kms:Decrypt and kms:GenerateDataKey* actions on the key. These
+//     permissions are required because Amazon S3 must decrypt and read data
+//     from the encrypted file parts before it completes the multipart upload.
+//     For more information, see Multipart upload API and permissions (https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html#mpuAndPermissions)
+//     and Protecting data using server-side encryption with Amazon Web Services
+//     KMS (https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html)
+//     in the Amazon S3 User Guide.
 //
-// # Access Permissions
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
 //
-// When copying an object, you can optionally specify the accounts or groups
-// that should be granted specific permissions on the new object. There are
-// two ways to grant the permissions using the request headers:
+// Encryption
 //
-//   - Specify a canned ACL with the x-amz-acl request header. For more information,
-//     see Canned ACL (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#CannedACL).
-//
-//   - Specify access permissions explicitly with the x-amz-grant-read, x-amz-grant-read-acp,
-//     x-amz-grant-write-acp, and x-amz-grant-full-control headers. These parameters
-//     map to the set of permissions that Amazon S3 supports in an ACL. For more
-//     information, see Access Control List (ACL) Overview (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html).
-//
-// You can use either a canned ACL or specify access permissions explicitly.
-// You cannot do both.
-//
-// # Server-Side- Encryption-Specific Request Headers
-//
-// You can optionally tell Amazon S3 to encrypt data at rest using server-side
-// encryption. Server-side encryption is for data encryption at rest. Amazon
-// S3 encrypts your data as it writes it to disks in its data centers and decrypts
-// it when you access it. The option you use depends on whether you want to
-// use Amazon Web Services managed encryption keys or provide your own encryption
-// key.
-//
-//   - Use encryption keys managed by Amazon S3 or customer managed key stored
-//     in Amazon Web Services Key Management Service (Amazon Web Services KMS)
-//     – If you want Amazon Web Services to manage the keys used to encrypt
+//   - General purpose buckets - Server-side encryption is for data encryption
+//     at rest. Amazon S3 encrypts your data as it writes it to disks in its
+//     data centers and decrypts it when you access it. Amazon S3 automatically
+//     encrypts all new objects that are uploaded to an S3 bucket. When doing
+//     a multipart upload, if you don't specify encryption information in your
+//     request, the encryption setting of the uploaded parts is set to the default
+//     encryption configuration of the destination bucket. By default, all buckets
+//     have a base level of encryption configuration that uses server-side encryption
+//     with Amazon S3 managed keys (SSE-S3). If the destination bucket has a
+//     default encryption configuration that uses server-side encryption with
+//     an Key Management Service (KMS) key (SSE-KMS), or a customer-provided
+//     encryption key (SSE-C), Amazon S3 uses the corresponding KMS key, or a
+//     customer-provided key to encrypt the uploaded parts. When you perform
+//     a CreateMultipartUpload operation, if you want to use a different type
+//     of encryption setting for the uploaded parts, you can request that Amazon
+//     S3 encrypts the object with a different encryption key (such as an Amazon
+//     S3 managed key, a KMS key, or a customer-provided key). When the encryption
+//     setting in your request is different from the default encryption configuration
+//     of the destination bucket, the encryption setting in your request takes
+//     precedence. If you choose to provide your own encryption key, the request
+//     headers you provide in UploadPart (https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPart.html)
+//     and UploadPartCopy (https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPartCopy.html)
+//     requests must match the headers you used in the CreateMultipartUpload
+//     request. Use KMS keys (SSE-KMS) that include the Amazon Web Services managed
+//     key (aws/s3) and KMS customer managed keys stored in Key Management Service
+//     (KMS) – If you want Amazon Web Services to manage the keys used to encrypt
 //     data, specify the following headers in the request. x-amz-server-side-encryption
 //     x-amz-server-side-encryption-aws-kms-key-id x-amz-server-side-encryption-context
 //     If you specify x-amz-server-side-encryption:aws:kms, but don't provide
 //     x-amz-server-side-encryption-aws-kms-key-id, Amazon S3 uses the Amazon
-//     Web Services managed key in Amazon Web Services KMS to protect the data.
-//     All GET and PUT requests for an object protected by Amazon Web Services
-//     KMS fail if you don't make them with SSL or by using SigV4. For more information
-//     about server-side encryption with KMS key (SSE-KMS), see Protecting Data
-//     Using Server-Side Encryption with KMS keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingKMSEncryption.html).
+//     Web Services managed key (aws/s3 key) in KMS to protect the data. To perform
+//     a multipart upload with encryption by using an Amazon Web Services KMS
+//     key, the requester must have permission to the kms:Decrypt and kms:GenerateDataKey*
+//     actions on the key. These permissions are required because Amazon S3 must
+//     decrypt and read data from the encrypted file parts before it completes
+//     the multipart upload. For more information, see Multipart upload API and
+//     permissions (https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html#mpuAndPermissions)
+//     and Protecting data using server-side encryption with Amazon Web Services
+//     KMS (https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html)
+//     in the Amazon S3 User Guide. If your Identity and Access Management (IAM)
+//     user or role is in the same Amazon Web Services account as the KMS key,
+//     then you must have these permissions on the key policy. If your IAM user
+//     or role is in a different account from the key, then you must have the
+//     permissions on both the key policy and your IAM user or role. All GET
+//     and PUT requests for an object protected by KMS fail if you don't make
+//     them by using Secure Sockets Layer (SSL), Transport Layer Security (TLS),
+//     or Signature Version 4. For information about configuring any of the officially
+//     supported Amazon Web Services SDKs and Amazon Web Services CLI, see Specifying
+//     the Signature Version in Request Authentication (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingAWSSDK.html#specify-signature-version)
+//     in the Amazon S3 User Guide. For more information about server-side encryption
+//     with KMS keys (SSE-KMS), see Protecting Data Using Server-Side Encryption
+//     with KMS keys (https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html)
+//     in the Amazon S3 User Guide. Use customer-provided encryption keys (SSE-C)
+//     – If you want to manage your own encryption keys, provide all the following
+//     headers in the request. x-amz-server-side-encryption-customer-algorithm
+//     x-amz-server-side-encryption-customer-key x-amz-server-side-encryption-customer-key-MD5
+//     For more information about server-side encryption with customer-provided
+//     encryption keys (SSE-C), see Protecting data using server-side encryption
+//     with customer-provided encryption keys (SSE-C) (https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html)
+//     in the Amazon S3 User Guide.
 //
-//   - Use customer-provided encryption keys – If you want to manage your
-//     own encryption keys, provide all the following headers in the request.
-//     x-amz-server-side-encryption-customer-algorithm x-amz-server-side-encryption-customer-key
-//     x-amz-server-side-encryption-customer-key-MD5 For more information about
-//     server-side encryption with KMS keys (SSE-KMS), see Protecting Data Using
-//     Server-Side Encryption with KMS keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingKMSEncryption.html).
+//   - Directory buckets -For directory buckets, only server-side encryption
+//     with Amazon S3 managed keys (SSE-S3) (AES256) is supported.
 //
-// # Access-Control-List (ACL)-Specific Request Headers
+// # HTTP Host header syntax
 //
-// You also can use the following access control–related headers with this
-// operation. By default, all objects are private. Only the owner has full access
-// control. When adding a new object, you can grant permissions to individual
-// Amazon Web Services accounts or to predefined groups defined by Amazon S3.
-// These permissions are then added to the access control list (ACL) on the
-// object. For more information, see Using ACLs (https://docs.aws.amazon.com/AmazonS3/latest/dev/S3_ACLs_UsingACLs.html).
-// With this operation, you can grant access permissions using one of the following
-// two methods:
-//
-//   - Specify a canned ACL (x-amz-acl) — Amazon S3 supports a set of predefined
-//     ACLs, known as canned ACLs. Each canned ACL has a predefined set of grantees
-//     and permissions. For more information, see Canned ACL (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#CannedACL).
-//
-//   - Specify access permissions explicitly — To explicitly grant access
-//     permissions to specific Amazon Web Services accounts or groups, use the
-//     following headers. Each header maps to specific permissions that Amazon
-//     S3 supports in an ACL. For more information, see Access Control List (ACL)
-//     Overview (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html).
-//     In the header, you specify a list of grantees who get the specific permission.
-//     To grant permissions explicitly, use: x-amz-grant-read x-amz-grant-write
-//     x-amz-grant-read-acp x-amz-grant-write-acp x-amz-grant-full-control You
-//     specify each grantee as a type=value pair, where the type is one of the
-//     following: id – if the value specified is the canonical user ID of an
-//     Amazon Web Services account uri – if you are granting permissions to
-//     a predefined group emailAddress – if the value specified is the email
-//     address of an Amazon Web Services account Using email addresses to specify
-//     a grantee is only supported in the following Amazon Web Services Regions:
-//     US East (N. Virginia) US West (N. California) US West (Oregon) Asia Pacific
-//     (Singapore) Asia Pacific (Sydney) Asia Pacific (Tokyo) Europe (Ireland)
-//     South America (São Paulo) For a list of all the Amazon S3 supported Regions
-//     and endpoints, see Regions and Endpoints (https://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region)
-//     in the Amazon Web Services General Reference. For example, the following
-//     x-amz-grant-read header grants the Amazon Web Services accounts identified
-//     by account IDs permissions to read object data and its metadata: x-amz-grant-read:
-//     id="11112222333", id="444455556666"
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // The following operations are related to CreateMultipartUpload:
 //
@@ -908,6 +928,152 @@ func (c *S3) CreateMultipartUpload(input *CreateMultipartUploadInput) (*CreateMu
 // for more information on using Contexts.
 func (c *S3) CreateMultipartUploadWithContext(ctx aws.Context, input *CreateMultipartUploadInput, opts ...request.Option) (*CreateMultipartUploadOutput, error) {
 	req, out := c.CreateMultipartUploadRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+const opCreateSession = "CreateSession"
+
+// CreateSessionRequest generates a "aws/request.Request" representing the
+// client's request for the CreateSession operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfully.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See CreateSession for more information on using the CreateSession
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//	// Example sending a request using the CreateSessionRequest method.
+//	req, resp := client.CreateSessionRequest(params)
+//
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/CreateSession
+func (c *S3) CreateSessionRequest(input *CreateSessionInput) (req *request.Request, output *CreateSessionOutput) {
+	op := &request.Operation{
+		Name:       opCreateSession,
+		HTTPMethod: "GET",
+		HTTPPath:   "/{Bucket}?session",
+	}
+
+	if input == nil {
+		input = &CreateSessionInput{}
+	}
+
+	output = &CreateSessionOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// CreateSession API operation for Amazon Simple Storage Service.
+//
+// Creates a session that establishes temporary security credentials to support
+// fast authentication and authorization for the Zonal endpoint APIs on directory
+// buckets. For more information about Zonal endpoint APIs that include the
+// Availability Zone in the request endpoint, see S3 Express One Zone APIs (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-APIs.html)
+// in the Amazon S3 User Guide.
+//
+// To make Zonal endpoint API requests on a directory bucket, use the CreateSession
+// API operation. Specifically, you grant s3express:CreateSession permission
+// to a bucket in a bucket policy or an IAM identity-based policy. Then, you
+// use IAM credentials to make the CreateSession API request on the bucket,
+// which returns temporary security credentials that include the access key
+// ID, secret access key, session token, and expiration. These credentials have
+// associated permissions to access the Zonal endpoint APIs. After the session
+// is created, you don’t need to use other policies to grant permissions to
+// each Zonal endpoint API individually. Instead, in your Zonal endpoint API
+// requests, you sign your requests by applying the temporary security credentials
+// of the session to the request headers and following the SigV4 protocol for
+// authentication. You also apply the session token to the x-amz-s3session-token
+// request header for authorization. Temporary security credentials are scoped
+// to the bucket and expire after 5 minutes. After the expiration time, any
+// calls that you make with those credentials will fail. You must use IAM credentials
+// again to make a CreateSession API request that generates a new set of temporary
+// credentials for use. Temporary credentials cannot be extended or refreshed
+// beyond the original specified interval.
+//
+// If you use Amazon Web Services SDKs, SDKs handle the session token refreshes
+// automatically to avoid service interruptions when a session expires. We recommend
+// that you use the Amazon Web Services SDKs to initiate and manage requests
+// to the CreateSession API. For more information, see Performance guidelines
+// and design patterns (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-optimizing-performance-guidelines-design-patterns.html#s3-express-optimizing-performance-session-authentication)
+// in the Amazon S3 User Guide.
+//
+//   - You must make requests for this API operation to the Zonal endpoint.
+//     These endpoints support virtual-hosted-style requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com.
+//     Path-style requests are not supported. For more information, see Regional
+//     and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+//     in the Amazon S3 User Guide.
+//
+//   - CopyObject API operation - Unlike other Zonal endpoint APIs, the CopyObject
+//     API operation doesn't use the temporary security credentials returned
+//     from the CreateSession API operation for authentication and authorization.
+//     For information about authentication and authorization of the CopyObject
+//     API operation on directory buckets, see CopyObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html).
+//
+//   - HeadBucket API operation - Unlike other Zonal endpoint APIs, the HeadBucket
+//     API operation doesn't use the temporary security credentials returned
+//     from the CreateSession API operation for authentication and authorization.
+//     For information about authentication and authorization of the HeadBucket
+//     API operation on directory buckets, see HeadBucket (https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html).
+//
+// # Permissions
+//
+// To obtain temporary security credentials, you must create a bucket policy
+// or an IAM identity-based policy that grants s3express:CreateSession permission
+// to the bucket. In a policy, you can have the s3express:SessionMode condition
+// key to control who can create a ReadWrite or ReadOnly session. For more information
+// about ReadWrite or ReadOnly sessions, see x-amz-create-session-mode (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html#API_CreateSession_RequestParameters).
+// For example policies, see Example bucket policies for S3 Express One Zone
+// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam-example-bucket-policies.html)
+// and Amazon Web Services Identity and Access Management (IAM) identity-based
+// policies for S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam-identity-policies.html)
+// in the Amazon S3 User Guide.
+//
+// To grant cross-account access to Zonal endpoint APIs, the bucket policy should
+// also grant both accounts the s3express:CreateSession permission.
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon Simple Storage Service's
+// API operation CreateSession for usage and error information.
+//
+// Returned Error Codes:
+//   - ErrCodeNoSuchBucket "NoSuchBucket"
+//     The specified bucket does not exist.
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/CreateSession
+func (c *S3) CreateSession(input *CreateSessionInput) (*CreateSessionOutput, error) {
+	req, out := c.CreateSessionRequest(input)
+	return out, req.Send()
+}
+
+// CreateSessionWithContext is the same as CreateSession with the addition of
+// the ability to pass a context and additional request options.
+//
+// See CreateSession for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *S3) CreateSessionWithContext(ctx aws.Context, input *CreateSessionInput, opts ...request.Option) (*CreateSessionOutput, error) {
+	req, out := c.CreateSessionRequest(input)
 	req.SetContext(ctx)
 	req.ApplyOptions(opts...)
 	return out, req.Send()
@@ -960,7 +1126,36 @@ func (c *S3) DeleteBucketRequest(input *DeleteBucketInput) (req *request.Request
 // Deletes the S3 bucket. All objects (including all object versions and delete
 // markers) in the bucket must be deleted before the bucket itself can be deleted.
 //
-// Related Resources
+//   - Directory buckets - If multipart uploads in a directory bucket are in
+//     progress, you can't delete the bucket until all the in-progress multipart
+//     uploads are aborted or completed.
+//
+//   - Directory buckets - For directory buckets, you must make requests for
+//     this API operation to the Regional endpoint. These endpoints support path-style
+//     requests in the format https://s3express-control.region_code.amazonaws.com/bucket-name
+//     . Virtual-hosted-style requests aren't supported. For more information,
+//     see Regional and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+//     in the Amazon S3 User Guide.
+//
+// Permissions
+//
+//   - General purpose bucket permissions - You must have the s3:DeleteBucket
+//     permission on the specified bucket in a policy.
+//
+//   - Directory bucket permissions - You must have the s3express:DeleteBucket
+//     permission in an IAM identity-based policy instead of a bucket policy.
+//     Cross-account access to this API operation isn't supported. This operation
+//     can only be performed by the Amazon Web Services account that owns the
+//     resource. For more information about directory bucket policies and permissions,
+//     see Amazon Web Services Identity and Access Management (IAM) for S3 Express
+//     One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam.html)
+//     in the Amazon S3 User Guide.
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is s3express-control.region.amazonaws.com.
+//
+// The following operations are related to DeleteBucket:
 //
 //   - CreateBucket (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html)
 //
@@ -1037,6 +1232,8 @@ func (c *S3) DeleteBucketAnalyticsConfigurationRequest(input *DeleteBucketAnalyt
 }
 
 // DeleteBucketAnalyticsConfiguration API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Deletes an analytics configuration for the bucket (specified by the analytics
 // configuration ID).
@@ -1130,6 +1327,8 @@ func (c *S3) DeleteBucketCorsRequest(input *DeleteBucketCorsInput) (req *request
 
 // DeleteBucketCors API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Deletes the cors configuration information set for the bucket.
 //
 // To use this operation, you must have permission to perform the s3:PutBucketCORS
@@ -1139,7 +1338,7 @@ func (c *S3) DeleteBucketCorsRequest(input *DeleteBucketCorsInput) (req *request
 // For information about cors, see Enabling Cross-Origin Resource Sharing (https://docs.aws.amazon.com/AmazonS3/latest/dev/cors.html)
 // in the Amazon S3 User Guide.
 //
-// Related Resources:
+// Related Resources
 //
 //   - PutBucketCors (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketCors.html)
 //
@@ -1217,9 +1416,12 @@ func (c *S3) DeleteBucketEncryptionRequest(input *DeleteBucketEncryptionInput) (
 
 // DeleteBucketEncryption API operation for Amazon Simple Storage Service.
 //
-// This implementation of the DELETE action removes default encryption from
-// the bucket. For information about the Amazon S3 default encryption feature,
-// see Amazon S3 Default Bucket Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html)
+// This operation is not supported by directory buckets.
+//
+// This implementation of the DELETE action resets the default encryption for
+// the bucket as server-side encryption with Amazon S3 managed keys (SSE-S3).
+// For information about the bucket default encryption feature, see Amazon S3
+// Bucket Default Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html)
 // in the Amazon S3 User Guide.
 //
 // To use this operation, you must have permissions to perform the s3:PutEncryptionConfiguration
@@ -1229,7 +1431,7 @@ func (c *S3) DeleteBucketEncryptionRequest(input *DeleteBucketEncryptionInput) (
 // and Managing Access Permissions to your Amazon S3 Resources (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-access-control.html)
 // in the Amazon S3 User Guide.
 //
-// Related Resources
+// The following operations are related to DeleteBucketEncryption:
 //
 //   - PutBucketEncryption (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketEncryption.html)
 //
@@ -1306,6 +1508,8 @@ func (c *S3) DeleteBucketIntelligentTieringConfigurationRequest(input *DeleteBuc
 }
 
 // DeleteBucketIntelligentTieringConfiguration API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Deletes the S3 Intelligent-Tiering configuration from the specified bucket.
 //
@@ -1406,6 +1610,8 @@ func (c *S3) DeleteBucketInventoryConfigurationRequest(input *DeleteBucketInvent
 
 // DeleteBucketInventoryConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Deletes an inventory configuration (identified by the inventory ID) from
 // the bucket.
 //
@@ -1497,6 +1703,8 @@ func (c *S3) DeleteBucketLifecycleRequest(input *DeleteBucketLifecycleInput) (re
 }
 
 // DeleteBucketLifecycle API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Deletes the lifecycle configuration from the specified bucket. Amazon S3
 // removes all the lifecycle configuration rules in the lifecycle subresource
@@ -1591,6 +1799,8 @@ func (c *S3) DeleteBucketMetricsConfigurationRequest(input *DeleteBucketMetricsC
 }
 
 // DeleteBucketMetricsConfiguration API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Deletes a metrics configuration for the Amazon CloudWatch request metrics
 // (specified by the metrics configuration ID) from the bucket. Note that this
@@ -1687,6 +1897,8 @@ func (c *S3) DeleteBucketOwnershipControlsRequest(input *DeleteBucketOwnershipCo
 
 // DeleteBucketOwnershipControls API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Removes OwnershipControls for an Amazon S3 bucket. To use this operation,
 // you must have the s3:PutBucketOwnershipControls permission. For more information
 // about Amazon S3 permissions, see Specifying Permissions in a Policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/using-with-s3-actions.html).
@@ -1772,23 +1984,52 @@ func (c *S3) DeleteBucketPolicyRequest(input *DeleteBucketPolicyInput) (req *req
 
 // DeleteBucketPolicy API operation for Amazon Simple Storage Service.
 //
-// This implementation of the DELETE action uses the policy subresource to delete
-// the policy of a specified bucket. If you are using an identity other than
-// the root user of the Amazon Web Services account that owns the bucket, the
-// calling identity must have the DeleteBucketPolicy permissions on the specified
-// bucket and belong to the bucket owner's account to use this operation.
+// Deletes the policy of a specified bucket.
+//
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Regional endpoint. These endpoints support path-style
+// requests in the format https://s3express-control.region_code.amazonaws.com/bucket-name
+// . Virtual-hosted-style requests aren't supported. For more information, see
+// Regional and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
+//
+// # Permissions
+//
+// If you are using an identity other than the root user of the Amazon Web Services
+// account that owns the bucket, the calling identity must both have the DeleteBucketPolicy
+// permissions on the specified bucket and belong to the bucket owner's account
+// in order to use this operation.
 //
 // If you don't have DeleteBucketPolicy permissions, Amazon S3 returns a 403
 // Access Denied error. If you have the correct permissions, but you're not
 // using an identity that belongs to the bucket owner's account, Amazon S3 returns
 // a 405 Method Not Allowed error.
 //
-// As a security precaution, the root user of the Amazon Web Services account
-// that owns a bucket can always use this operation, even if the policy explicitly
-// denies the root user the ability to perform this action.
+// To ensure that bucket owners don't inadvertently lock themselves out of their
+// own buckets, the root principal in a bucket owner's Amazon Web Services account
+// can perform the GetBucketPolicy, PutBucketPolicy, and DeleteBucketPolicy
+// API actions, even if their bucket policy explicitly denies the root principal's
+// access. Bucket owner root principals can only be blocked from performing
+// these API actions by VPC endpoint policies and Amazon Web Services Organizations
+// policies.
 //
-// For more information about bucket policies, see Using Bucket Policies and
-// UserPolicies (https://docs.aws.amazon.com/AmazonS3/latest/dev/using-iam-policies.html).
+//   - General purpose bucket permissions - The s3:DeleteBucketPolicy permission
+//     is required in a policy. For more information about general purpose buckets
+//     bucket policies, see Using Bucket Policies and User Policies (https://docs.aws.amazon.com/AmazonS3/latest/dev/using-iam-policies.html)
+//     in the Amazon S3 User Guide.
+//
+//   - Directory bucket permissions - To grant access to this API operation,
+//     you must have the s3express:DeleteBucketPolicy permission in an IAM identity-based
+//     policy instead of a bucket policy. Cross-account access to this API operation
+//     isn't supported. This operation can only be performed by the Amazon Web
+//     Services account that owns the resource. For more information about directory
+//     bucket policies and permissions, see Amazon Web Services Identity and
+//     Access Management (IAM) for S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam.html)
+//     in the Amazon S3 User Guide.
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is s3express-control.region.amazonaws.com.
 //
 // The following operations are related to DeleteBucketPolicy
 //
@@ -1867,6 +2108,8 @@ func (c *S3) DeleteBucketReplicationRequest(input *DeleteBucketReplicationInput)
 }
 
 // DeleteBucketReplication API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Deletes the replication configuration from the bucket.
 //
@@ -1960,6 +2203,8 @@ func (c *S3) DeleteBucketTaggingRequest(input *DeleteBucketTaggingInput) (req *r
 
 // DeleteBucketTagging API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Deletes the tags from the bucket.
 //
 // To use this operation, you must have permission to perform the s3:PutBucketTagging
@@ -2043,6 +2288,8 @@ func (c *S3) DeleteBucketWebsiteRequest(input *DeleteBucketWebsiteInput) (req *r
 }
 
 // DeleteBucketWebsite API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // This action removes the website configuration for a bucket. Amazon S3 returns
 // a 200 OK response upon successfully deleting a website configuration on the
@@ -2136,30 +2383,87 @@ func (c *S3) DeleteObjectRequest(input *DeleteObjectInput) (req *request.Request
 
 // DeleteObject API operation for Amazon Simple Storage Service.
 //
-// Removes the null version (if there is one) of an object and inserts a delete
-// marker, which becomes the latest version of the object. If there isn't a
-// null version, Amazon S3 does not remove any objects but will still respond
-// that the command was successful.
+// Removes an object from a bucket. The behavior depends on the bucket's versioning
+// state:
 //
-// To remove a specific version, you must be the bucket owner and you must use
-// the version Id subresource. Using this subresource permanently deletes the
-// version. If the object deleted is a delete marker, Amazon S3 sets the response
-// header, x-amz-delete-marker, to true.
+//   - If bucket versioning is not enabled, the operation permanently deletes
+//     the object.
+//
+//   - If bucket versioning is enabled, the operation inserts a delete marker,
+//     which becomes the current version of the object. To permanently delete
+//     an object in a versioned bucket, you must include the object’s versionId
+//     in the request. For more information about versioning-enabled buckets,
+//     see Deleting object versions from a versioning-enabled bucket (https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeletingObjectVersions.html).
+//
+//   - If bucket versioning is suspended, the operation removes the object
+//     that has a null versionId, if there is one, and inserts a delete marker
+//     that becomes the current version of the object. If there isn't an object
+//     with a null versionId, and all versions of the object have a versionId,
+//     Amazon S3 does not remove the object and only inserts a delete marker.
+//     To permanently delete an object that has a versionId, you must include
+//     the object’s versionId in the request. For more information about versioning-suspended
+//     buckets, see Deleting objects from versioning-suspended buckets (https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeletingObjectsfromVersioningSuspendedBuckets.html).
+//
+//   - Directory buckets - S3 Versioning isn't enabled and supported for directory
+//     buckets. For this API operation, only the null value of the version ID
+//     is supported by directory buckets. You can only specify null to the versionId
+//     query parameter in the request.
+//
+//   - Directory buckets - For directory buckets, you must make requests for
+//     this API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+//     requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+//     . Path-style requests are not supported. For more information, see Regional
+//     and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+//     in the Amazon S3 User Guide.
+//
+// To remove a specific version, you must use the versionId query parameter.
+// Using this query parameter permanently deletes the version. If the object
+// deleted is a delete marker, Amazon S3 sets the response header x-amz-delete-marker
+// to true.
 //
 // If the object you want to delete is in a bucket where the bucket versioning
 // configuration is MFA Delete enabled, you must include the x-amz-mfa request
 // header in the DELETE versionId request. Requests that include x-amz-mfa must
-// use HTTPS.
+// use HTTPS. For more information about MFA Delete, see Using MFA Delete (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMFADelete.html)
+// in the Amazon S3 User Guide. To see sample requests that use versioning,
+// see Sample Request (https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectDELETE.html#ExampleVersionObjectDelete).
 //
-// For more information about MFA Delete, see Using MFA Delete (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMFADelete.html).
-// To see sample requests that use versioning, see Sample Request (https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectDELETE.html#ExampleVersionObjectDelete).
+// Directory buckets - MFA delete is not supported by directory buckets.
 //
-// You can delete objects by explicitly calling DELETE Object or configure its
-// lifecycle (PutBucketLifecycle (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycle.html))
+// You can delete objects by explicitly calling DELETE Object or calling (PutBucketLifecycle
+// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycle.html))
 // to enable Amazon S3 to remove them for you. If you want to block users or
 // accounts from removing or deleting objects from your bucket, you must deny
 // them the s3:DeleteObject, s3:DeleteObjectVersion, and s3:PutLifeCycleConfiguration
 // actions.
+//
+// Directory buckets - S3 Lifecycle is not supported by directory buckets.
+//
+// Permissions
+//
+//   - General purpose bucket permissions - The following permissions are required
+//     in your policies when your DeleteObjects request includes specific headers.
+//     s3:DeleteObject - To delete an object from a bucket, you must always have
+//     the s3:DeleteObject permission. s3:DeleteObjectVersion - To delete a specific
+//     version of an object from a versioning-enabled bucket, you must have the
+//     s3:DeleteObjectVersion permission.
+//
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // The following action is related to DeleteObject:
 //
@@ -2236,6 +2540,8 @@ func (c *S3) DeleteObjectTaggingRequest(input *DeleteObjectTaggingInput) (req *r
 
 // DeleteObjectTagging API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Removes the entire tag set from the specified object. For more information
 // about managing object tags, see Object Tagging (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-tagging.html).
 //
@@ -2246,7 +2552,7 @@ func (c *S3) DeleteObjectTaggingRequest(input *DeleteObjectTaggingInput) (req *r
 // in the request. You will need permission for the s3:DeleteObjectVersionTagging
 // action.
 //
-// The following operations are related to DeleteBucketMetricsConfiguration:
+// The following operations are related to DeleteObjectTagging:
 //
 //   - PutObjectTagging (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectTagging.html)
 //
@@ -2327,36 +2633,82 @@ func (c *S3) DeleteObjectsRequest(input *DeleteObjectsInput) (req *request.Reque
 
 // DeleteObjects API operation for Amazon Simple Storage Service.
 //
-// This action enables you to delete multiple objects from a bucket using a
-// single HTTP request. If you know the object keys that you want to delete,
-// then this action provides a suitable alternative to sending individual delete
-// requests, reducing per-request overhead.
+// This operation enables you to delete multiple objects from a bucket using
+// a single HTTP request. If you know the object keys that you want to delete,
+// then this operation provides a suitable alternative to sending individual
+// delete requests, reducing per-request overhead.
 //
-// The request contains a list of up to 1000 keys that you want to delete. In
-// the XML, you provide the object key names, and optionally, version IDs if
-// you want to delete a specific version of the object from a versioning-enabled
-// bucket. For each key, Amazon S3 performs a delete action and returns the
-// result of that delete, success, or failure, in the response. Note that if
+// The request can contain a list of up to 1000 keys that you want to delete.
+// In the XML, you provide the object key names, and optionally, version IDs
+// if you want to delete a specific version of the object from a versioning-enabled
+// bucket. For each key, Amazon S3 performs a delete operation and returns the
+// result of that delete, success or failure, in the response. Note that if
 // the object specified in the request is not found, Amazon S3 returns the result
 // as deleted.
 //
-// The action supports two modes for the response: verbose and quiet. By default,
-// the action uses verbose mode in which the response includes the result of
-// deletion of each key in your request. In quiet mode the response includes
-// only keys where the delete action encountered an error. For a successful
-// deletion, the action does not return any information about the delete in
-// the response body.
+//   - Directory buckets - S3 Versioning isn't enabled and supported for directory
+//     buckets.
+//
+//   - Directory buckets - For directory buckets, you must make requests for
+//     this API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+//     requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+//     . Path-style requests are not supported. For more information, see Regional
+//     and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+//     in the Amazon S3 User Guide.
+//
+// The operation supports two modes for the response: verbose and quiet. By
+// default, the operation uses verbose mode in which the response includes the
+// result of deletion of each key in your request. In quiet mode the response
+// includes only keys where the delete operation encountered an error. For a
+// successful deletion in a quiet mode, the operation does not return any information
+// about the delete in the response body.
 //
 // When performing this action on an MFA Delete enabled bucket, that attempts
 // to delete any versioned objects, you must include an MFA token. If you do
 // not provide one, the entire request will fail, even if there are non-versioned
 // objects you are trying to delete. If you provide an invalid token, whether
 // there are versioned keys in the request or not, the entire Multi-Object Delete
-// request will fail. For information about MFA Delete, see MFA Delete (https://docs.aws.amazon.com/AmazonS3/latest/dev/Versioning.html#MultiFactorAuthenticationDelete).
+// request will fail. For information about MFA Delete, see MFA Delete (https://docs.aws.amazon.com/AmazonS3/latest/dev/Versioning.html#MultiFactorAuthenticationDelete)
+// in the Amazon S3 User Guide.
 //
-// Finally, the Content-MD5 header is required for all Multi-Object Delete requests.
-// Amazon S3 uses the header value to ensure that your request body has not
-// been altered in transit.
+// Directory buckets - MFA delete is not supported by directory buckets.
+//
+// Permissions
+//
+//   - General purpose bucket permissions - The following permissions are required
+//     in your policies when your DeleteObjects request includes specific headers.
+//     s3:DeleteObject - To delete an object from a bucket, you must always specify
+//     the s3:DeleteObject permission. s3:DeleteObjectVersion - To delete a specific
+//     version of an object from a versiong-enabled bucket, you must specify
+//     the s3:DeleteObjectVersion permission.
+//
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
+//
+// Content-MD5 request header
+//
+//   - General purpose bucket - The Content-MD5 request header is required
+//     for all Multi-Object Delete requests. Amazon S3 uses the header value
+//     to ensure that your request body has not been altered in transit.
+//
+//   - Directory bucket - The Content-MD5 request header or a additional checksum
+//     request header (including x-amz-checksum-crc32, x-amz-checksum-crc32c,
+//     x-amz-checksum-sha1, or x-amz-checksum-sha256) is required for all Multi-Object
+//     Delete requests.
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // The following operations are related to DeleteObjects:
 //
@@ -2441,6 +2793,8 @@ func (c *S3) DeletePublicAccessBlockRequest(input *DeletePublicAccessBlockInput)
 }
 
 // DeletePublicAccessBlock API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Removes the PublicAccessBlock configuration for an Amazon S3 bucket. To use
 // this operation, you must have the s3:PutBucketPublicAccessBlock permission.
@@ -2529,6 +2883,8 @@ func (c *S3) GetBucketAccelerateConfigurationRequest(input *GetBucketAccelerateC
 
 // GetBucketAccelerateConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // This implementation of the GET action uses the accelerate subresource to
 // return the Transfer Acceleration state of a bucket, which is either Enabled
 // or Suspended. Amazon S3 Transfer Acceleration is a bucket-level feature that
@@ -2553,7 +2909,7 @@ func (c *S3) GetBucketAccelerateConfigurationRequest(input *GetBucketAccelerateC
 // (https://docs.aws.amazon.com/AmazonS3/latest/dev/transfer-acceleration.html)
 // in the Amazon S3 User Guide.
 //
-// Related Resources
+// The following operations are related to GetBucketAccelerateConfiguration:
 //
 //   - PutBucketAccelerateConfiguration (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketAccelerateConfiguration.html)
 //
@@ -2628,11 +2984,22 @@ func (c *S3) GetBucketAclRequest(input *GetBucketAclInput) (req *request.Request
 
 // GetBucketAcl API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // This implementation of the GET action uses the acl subresource to return
 // the access control list (ACL) of a bucket. To use GET to return the ACL of
-// the bucket, you must have READ_ACP access to the bucket. If READ_ACP permission
-// is granted to the anonymous user, you can return the ACL of the bucket without
-// using an authorization header.
+// the bucket, you must have the READ_ACP access to the bucket. If READ_ACP
+// permission is granted to the anonymous user, you can return the ACL of the
+// bucket without using an authorization header.
+//
+// When you use this API operation with an access point, provide the alias of
+// the access point in place of the bucket name.
+//
+// When you use this API operation with an Object Lambda access point, provide
+// the alias of the Object Lambda access point in place of the bucket name.
+// If the Object Lambda access point alias in a request is not valid, the error
+// code InvalidAccessPointAliasError is returned. For more information about
+// InvalidAccessPointAliasError, see List of Error Codes (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#ErrorCodeList).
 //
 // If your bucket uses the bucket owner enforced setting for S3 Object Ownership,
 // requests to read ACLs are still supported and return the bucket-owner-full-control
@@ -2640,7 +3007,7 @@ func (c *S3) GetBucketAclRequest(input *GetBucketAclInput) (req *request.Request
 // see Controlling object ownership and disabling ACLs (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html)
 // in the Amazon S3 User Guide.
 //
-// Related Resources
+// The following operations are related to GetBucketAcl:
 //
 //   - ListObjects (https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html)
 //
@@ -2715,6 +3082,8 @@ func (c *S3) GetBucketAnalyticsConfigurationRequest(input *GetBucketAnalyticsCon
 
 // GetBucketAnalyticsConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // This implementation of the GET action returns an analytics configuration
 // (identified by the analytics configuration ID) from the bucket.
 //
@@ -2729,7 +3098,7 @@ func (c *S3) GetBucketAnalyticsConfigurationRequest(input *GetBucketAnalyticsCon
 // – Storage Class Analysis (https://docs.aws.amazon.com/AmazonS3/latest/dev/analytics-storage-class.html)
 // in the Amazon S3 User Guide.
 //
-// Related Resources
+// The following operations are related to GetBucketAnalyticsConfiguration:
 //
 //   - DeleteBucketAnalyticsConfiguration (https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucketAnalyticsConfiguration.html)
 //
@@ -2808,12 +3177,23 @@ func (c *S3) GetBucketCorsRequest(input *GetBucketCorsInput) (req *request.Reque
 
 // GetBucketCors API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Returns the Cross-Origin Resource Sharing (CORS) configuration information
 // set for the bucket.
 //
 // To use this operation, you must have permission to perform the s3:GetBucketCORS
 // action. By default, the bucket owner has this permission and can grant it
 // to others.
+//
+// When you use this API operation with an access point, provide the alias of
+// the access point in place of the bucket name.
+//
+// When you use this API operation with an Object Lambda access point, provide
+// the alias of the Object Lambda access point in place of the bucket name.
+// If the Object Lambda access point alias in a request is not valid, the error
+// code InvalidAccessPointAliasError is returned. For more information about
+// InvalidAccessPointAliasError, see List of Error Codes (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#ErrorCodeList).
 //
 // For more information about CORS, see Enabling Cross-Origin Resource Sharing
 // (https://docs.aws.amazon.com/AmazonS3/latest/dev/cors.html).
@@ -2895,12 +3275,14 @@ func (c *S3) GetBucketEncryptionRequest(input *GetBucketEncryptionInput) (req *r
 
 // GetBucketEncryption API operation for Amazon Simple Storage Service.
 //
-// Returns the default encryption configuration for an Amazon S3 bucket. If
-// the bucket does not have a default encryption configuration, GetBucketEncryption
-// returns ServerSideEncryptionConfigurationNotFoundError.
+// This operation is not supported by directory buckets.
 //
-// For information about the Amazon S3 default encryption feature, see Amazon
-// S3 Default Bucket Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html).
+// Returns the default encryption configuration for an Amazon S3 bucket. By
+// default, all buckets have a default encryption configuration that uses server-side
+// encryption with Amazon S3 managed keys (SSE-S3). For information about the
+// bucket default encryption feature, see Amazon S3 Bucket Default Encryption
+// (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html)
+// in the Amazon S3 User Guide.
 //
 // To use this operation, you must have permission to perform the s3:GetEncryptionConfiguration
 // action. The bucket owner has this permission by default. The bucket owner
@@ -2984,6 +3366,8 @@ func (c *S3) GetBucketIntelligentTieringConfigurationRequest(input *GetBucketInt
 }
 
 // GetBucketIntelligentTieringConfiguration API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Gets the S3 Intelligent-Tiering configuration from the specified bucket.
 //
@@ -3082,6 +3466,8 @@ func (c *S3) GetBucketInventoryConfigurationRequest(input *GetBucketInventoryCon
 }
 
 // GetBucketInventoryConfiguration API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Returns an inventory configuration (identified by the inventory configuration
 // ID) from the bucket.
@@ -3184,6 +3570,8 @@ func (c *S3) GetBucketLifecycleRequest(input *GetBucketLifecycleInput) (req *req
 // see the updated version of this topic. This topic is provided for backward
 // compatibility.
 //
+// This operation is not supported by directory buckets.
+//
 // Returns the lifecycle configuration information set on the bucket. For information
 // about lifecycle configuration, see Object Lifecycle Management (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html).
 //
@@ -3282,13 +3670,18 @@ func (c *S3) GetBucketLifecycleConfigurationRequest(input *GetBucketLifecycleCon
 
 // GetBucketLifecycleConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Bucket lifecycle configuration now supports specifying a lifecycle rule using
-// an object key name prefix, one or more object tags, or a combination of both.
+// an object key name prefix, one or more object tags, object size, or any combination
+// of these. Accordingly, this section describes the latest API. The previous
+// version of the API supported filtering based only on an object key name prefix,
+// which is supported for backward compatibility. For the related API description,
+// see GetBucketLifecycle (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLifecycle.html).
 // Accordingly, this section describes the latest API. The response describes
 // the new filter element that you can use to specify a filter to select a subset
 // of objects to which the rule applies. If you are using a previous version
-// of the lifecycle configuration, it still works. For the earlier action, see
-// GetBucketLifecycle (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLifecycle.html).
+// of the lifecycle configuration, it still works. For the earlier action,
 //
 // Returns the lifecycle configuration information set on the bucket. For information
 // about lifecycle configuration, see Object Lifecycle Management (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html).
@@ -3384,14 +3777,24 @@ func (c *S3) GetBucketLocationRequest(input *GetBucketLocationInput) (req *reque
 
 // GetBucketLocation API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Returns the Region the bucket resides in. You set the bucket's Region using
 // the LocationConstraint request parameter in a CreateBucket request. For more
 // information, see CreateBucket (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html).
 //
-// To use this implementation of the operation, you must be the bucket owner.
+// When you use this API operation with an access point, provide the alias of
+// the access point in place of the bucket name.
 //
-// To use this API against an access point, provide the alias of the access
-// point in place of the bucket name.
+// When you use this API operation with an Object Lambda access point, provide
+// the alias of the Object Lambda access point in place of the bucket name.
+// If the Object Lambda access point alias in a request is not valid, the error
+// code InvalidAccessPointAliasError is returned. For more information about
+// InvalidAccessPointAliasError, see List of Error Codes (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#ErrorCodeList).
+//
+// We recommend that you use HeadBucket (https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html)
+// to return the Region that a bucket resides in. For backward compatibility,
+// Amazon S3 continues to support GetBucketLocation.
 //
 // The following operations are related to GetBucketLocation:
 //
@@ -3470,8 +3873,10 @@ func (c *S3) GetBucketLoggingRequest(input *GetBucketLoggingInput) (req *request
 
 // GetBucketLogging API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Returns the logging status of a bucket and the permissions users have to
-// view and modify that status. To use GET, you must be the bucket owner.
+// view and modify that status.
 //
 // The following operations are related to GetBucketLogging:
 //
@@ -3549,6 +3954,8 @@ func (c *S3) GetBucketMetricsConfigurationRequest(input *GetBucketMetricsConfigu
 }
 
 // GetBucketMetricsConfiguration API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Gets a metrics configuration (specified by the metrics configuration ID)
 // from the bucket. Note that this doesn't include the daily storage metrics.
@@ -3648,6 +4055,8 @@ func (c *S3) GetBucketNotificationRequest(input *GetBucketNotificationConfigurat
 
 // GetBucketNotification API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // No longer used, see GetBucketNotificationConfiguration (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketNotificationConfiguration.html).
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -3725,6 +4134,8 @@ func (c *S3) GetBucketNotificationConfigurationRequest(input *GetBucketNotificat
 
 // GetBucketNotificationConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Returns the notification configuration of a bucket.
 //
 // If notifications are not enabled on the bucket, the action returns an empty
@@ -3734,6 +4145,15 @@ func (c *S3) GetBucketNotificationConfigurationRequest(input *GetBucketNotificat
 // of a bucket. However, the bucket owner can use a bucket policy to grant permission
 // to other users to read this configuration with the s3:GetBucketNotification
 // permission.
+//
+// When you use this API operation with an access point, provide the alias of
+// the access point in place of the bucket name.
+//
+// When you use this API operation with an Object Lambda access point, provide
+// the alias of the Object Lambda access point in place of the bucket name.
+// If the Object Lambda access point alias in a request is not valid, the error
+// code InvalidAccessPointAliasError is returned. For more information about
+// InvalidAccessPointAliasError, see List of Error Codes (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#ErrorCodeList).
 //
 // For more information about setting and reading the notification configuration
 // on a bucket, see Setting Up Notification of Bucket Events (https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html).
@@ -3813,6 +4233,8 @@ func (c *S3) GetBucketOwnershipControlsRequest(input *GetBucketOwnershipControls
 }
 
 // GetBucketOwnershipControls API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Retrieves OwnershipControls for an Amazon S3 bucket. To use this operation,
 // you must have the s3:GetBucketOwnershipControls permission. For more information
@@ -3898,22 +4320,62 @@ func (c *S3) GetBucketPolicyRequest(input *GetBucketPolicyInput) (req *request.R
 
 // GetBucketPolicy API operation for Amazon Simple Storage Service.
 //
-// Returns the policy of a specified bucket. If you are using an identity other
-// than the root user of the Amazon Web Services account that owns the bucket,
-// the calling identity must have the GetBucketPolicy permissions on the specified
-// bucket and belong to the bucket owner's account in order to use this operation.
+// Returns the policy of a specified bucket.
+//
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Regional endpoint. These endpoints support path-style
+// requests in the format https://s3express-control.region_code.amazonaws.com/bucket-name
+// . Virtual-hosted-style requests aren't supported. For more information, see
+// Regional and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
+//
+// # Permissions
+//
+// If you are using an identity other than the root user of the Amazon Web Services
+// account that owns the bucket, the calling identity must both have the GetBucketPolicy
+// permissions on the specified bucket and belong to the bucket owner's account
+// in order to use this operation.
 //
 // If you don't have GetBucketPolicy permissions, Amazon S3 returns a 403 Access
 // Denied error. If you have the correct permissions, but you're not using an
 // identity that belongs to the bucket owner's account, Amazon S3 returns a
 // 405 Method Not Allowed error.
 //
-// As a security precaution, the root user of the Amazon Web Services account
-// that owns a bucket can always use this operation, even if the policy explicitly
-// denies the root user the ability to perform this action.
+// To ensure that bucket owners don't inadvertently lock themselves out of their
+// own buckets, the root principal in a bucket owner's Amazon Web Services account
+// can perform the GetBucketPolicy, PutBucketPolicy, and DeleteBucketPolicy
+// API actions, even if their bucket policy explicitly denies the root principal's
+// access. Bucket owner root principals can only be blocked from performing
+// these API actions by VPC endpoint policies and Amazon Web Services Organizations
+// policies.
 //
-// For more information about bucket policies, see Using Bucket Policies and
-// User Policies (https://docs.aws.amazon.com/AmazonS3/latest/dev/using-iam-policies.html).
+//   - General purpose bucket permissions - The s3:GetBucketPolicy permission
+//     is required in a policy. For more information about general purpose buckets
+//     bucket policies, see Using Bucket Policies and User Policies (https://docs.aws.amazon.com/AmazonS3/latest/dev/using-iam-policies.html)
+//     in the Amazon S3 User Guide.
+//
+//   - Directory bucket permissions - To grant access to this API operation,
+//     you must have the s3express:GetBucketPolicy permission in an IAM identity-based
+//     policy instead of a bucket policy. Cross-account access to this API operation
+//     isn't supported. This operation can only be performed by the Amazon Web
+//     Services account that owns the resource. For more information about directory
+//     bucket policies and permissions, see Amazon Web Services Identity and
+//     Access Management (IAM) for S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam.html)
+//     in the Amazon S3 User Guide.
+//
+// # Example bucket policies
+//
+// General purpose buckets example bucket policies - See Bucket policy examples
+// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-bucket-policies.html)
+// in the Amazon S3 User Guide.
+//
+// Directory bucket example bucket policies - See Example bucket policies for
+// S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam-example-bucket-policies.html)
+// in the Amazon S3 User Guide.
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is s3express-control.region.amazonaws.com.
 //
 // The following action is related to GetBucketPolicy:
 //
@@ -3989,6 +4451,8 @@ func (c *S3) GetBucketPolicyStatusRequest(input *GetBucketPolicyStatusInput) (re
 }
 
 // GetBucketPolicyStatus API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Retrieves the policy status for an Amazon S3 bucket, indicating whether the
 // bucket is public. In order to use this operation, you must have the s3:GetBucketPolicyStatus
@@ -4078,6 +4542,8 @@ func (c *S3) GetBucketReplicationRequest(input *GetBucketReplicationInput) (req 
 }
 
 // GetBucketReplication API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Returns the replication configuration of a bucket.
 //
@@ -4176,6 +4642,8 @@ func (c *S3) GetBucketRequestPaymentRequest(input *GetBucketRequestPaymentInput)
 
 // GetBucketRequestPayment API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Returns the request payment configuration of a bucket. To use this version
 // of the operation, you must be the bucket owner. For more information, see
 // Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/RequesterPaysBuckets.html).
@@ -4254,6 +4722,8 @@ func (c *S3) GetBucketTaggingRequest(input *GetBucketTaggingInput) (req *request
 }
 
 // GetBucketTagging API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Returns the tag set associated with the bucket.
 //
@@ -4343,6 +4813,8 @@ func (c *S3) GetBucketVersioningRequest(input *GetBucketVersioningInput) (req *r
 
 // GetBucketVersioning API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Returns the versioning state of a bucket.
 //
 // To retrieve the versioning state of a bucket, you must be the bucket owner.
@@ -4430,6 +4902,8 @@ func (c *S3) GetBucketWebsiteRequest(input *GetBucketWebsiteInput) (req *request
 
 // GetBucketWebsite API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Returns the website configuration for a bucket. To host website on Amazon
 // S3, you can configure a bucket as website by adding a website configuration.
 // For more information about hosting websites, see Hosting Websites on Amazon
@@ -4440,7 +4914,7 @@ func (c *S3) GetBucketWebsiteRequest(input *GetBucketWebsiteInput) (req *request
 // bucket owners can allow other users to read the website configuration by
 // writing a bucket policy granting them the S3:GetBucketWebsite permission.
 //
-// The following operations are related to DeleteBucketWebsite:
+// The following operations are related to GetBucketWebsite:
 //
 //   - DeleteBucketWebsite (https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteBucketWebsite.html)
 //
@@ -4517,110 +4991,106 @@ func (c *S3) GetObjectRequest(input *GetObjectInput) (req *request.Request, outp
 
 // GetObject API operation for Amazon Simple Storage Service.
 //
-// Retrieves objects from Amazon S3. To use GET, you must have READ access to
-// the object. If you grant READ access to the anonymous user, you can return
-// the object without using an authorization header.
+// Retrieves an object from Amazon S3.
 //
-// An Amazon S3 bucket has no directory hierarchy such as you would find in
-// a typical computer file system. You can, however, create a logical hierarchy
-// by using object key names that imply a folder structure. For example, instead
-// of naming an object sample.jpg, you can name it photos/2006/February/sample.jpg.
+// In the GetObject request, specify the full key name for the object.
 //
-// To get an object from such a logical hierarchy, specify the full key name
-// for the object in the GET operation. For a virtual hosted-style request example,
-// if you have the object photos/2006/February/sample.jpg, specify the resource
-// as /photos/2006/February/sample.jpg. For a path-style request example, if
-// you have the object photos/2006/February/sample.jpg in the bucket named examplebucket,
-// specify the resource as /examplebucket/photos/2006/February/sample.jpg. For
-// more information about request types, see HTTP Host Header Bucket Specification
-// (https://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html#VirtualHostingSpecifyBucket).
+// General purpose buckets - Both the virtual-hosted-style requests and the
+// path-style requests are supported. For a virtual hosted-style request example,
+// if you have the object photos/2006/February/sample.jpg, specify the object
+// key name as /photos/2006/February/sample.jpg. For a path-style request example,
+// if you have the object photos/2006/February/sample.jpg in the bucket named
+// examplebucket, specify the object key name as /examplebucket/photos/2006/February/sample.jpg.
+// For more information about request types, see HTTP Host Header Bucket Specification
+// (https://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html#VirtualHostingSpecifyBucket)
+// in the Amazon S3 User Guide.
 //
-// For more information about returning the ACL of an object, see GetObjectAcl
-// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectAcl.html).
+// Directory buckets - Only virtual-hosted-style requests are supported. For
+// a virtual hosted-style request example, if you have the object photos/2006/February/sample.jpg
+// in the bucket named examplebucket--use1-az5--x-s3, specify the object key
+// name as /photos/2006/February/sample.jpg. Also, when you make requests to
+// this API operation, your requests are sent to the Zonal endpoint. These endpoints
+// support virtual-hosted-style requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+// . Path-style requests are not supported. For more information, see Regional
+// and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
 //
-// If the object you are retrieving is stored in the S3 Glacier or S3 Glacier
-// Deep Archive storage class, or S3 Intelligent-Tiering Archive or S3 Intelligent-Tiering
-// Deep Archive tiers, before you can retrieve the object you must first restore
-// a copy using RestoreObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_RestoreObject.html).
-// Otherwise, this action returns an InvalidObjectStateError error. For information
-// about restoring archived objects, see Restoring Archived Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/restoring-objects.html).
+// Permissions
+//
+//   - General purpose bucket permissions - You must have the required permissions
+//     in a policy. To use GetObject, you must have the READ access to the object
+//     (or version). If you grant READ access to the anonymous user, the GetObject
+//     operation returns the object without using an authorization header. For
+//     more information, see Specifying permissions in a policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/using-with-s3-actions.html)
+//     in the Amazon S3 User Guide. If you include a versionId in your request
+//     header, you must have the s3:GetObjectVersion permission to access a specific
+//     version of an object. The s3:GetObject permission is not required in this
+//     scenario. If you request the current version of an object without a specific
+//     versionId in the request header, only the s3:GetObject permission is required.
+//     The s3:GetObjectVersion permission is not required in this scenario. If
+//     the object that you request doesn’t exist, the error that Amazon S3
+//     returns depends on whether you also have the s3:ListBucket permission.
+//     If you have the s3:ListBucket permission on the bucket, Amazon S3 returns
+//     an HTTP status code 404 Not Found error. If you don’t have the s3:ListBucket
+//     permission, Amazon S3 returns an HTTP status code 403 Access Denied error.
+//
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
+//
+// # Storage classes
+//
+// If the object you are retrieving is stored in the S3 Glacier Flexible Retrieval
+// storage class, the S3 Glacier Deep Archive storage class, the S3 Intelligent-Tiering
+// Archive Access tier, or the S3 Intelligent-Tiering Deep Archive Access tier,
+// before you can retrieve the object you must first restore a copy using RestoreObject
+// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_RestoreObject.html).
+// Otherwise, this operation returns an InvalidObjectState error. For information
+// about restoring archived objects, see Restoring Archived Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/restoring-objects.html)
+// in the Amazon S3 User Guide.
+//
+// Directory buckets - For directory buckets, only the S3 Express One Zone storage
+// class is supported to store newly created objects. Unsupported storage class
+// values won't write a destination object and will respond with the HTTP status
+// code 400 Bad Request.
+//
+// # Encryption
 //
 // Encryption request headers, like x-amz-server-side-encryption, should not
-// be sent for GET requests if your object uses server-side encryption with
-// KMS keys (SSE-KMS) or server-side encryption with Amazon S3–managed encryption
-// keys (SSE-S3). If your object does use these types of keys, you’ll get
-// an HTTP 400 BadRequest error.
+// be sent for the GetObject requests, if your object uses server-side encryption
+// with Amazon S3 managed encryption keys (SSE-S3), server-side encryption with
+// Key Management Service (KMS) keys (SSE-KMS), or dual-layer server-side encryption
+// with Amazon Web Services KMS keys (DSSE-KMS). If you include the header in
+// your GetObject requests for the object that uses these types of keys, you’ll
+// get an HTTP 400 Bad Request error.
 //
-// If you encrypt an object by using server-side encryption with customer-provided
-// encryption keys (SSE-C) when you store the object in Amazon S3, then when
-// you GET the object, you must use the following headers:
-//
-//   - x-amz-server-side-encryption-customer-algorithm
-//
-//   - x-amz-server-side-encryption-customer-key
-//
-//   - x-amz-server-side-encryption-customer-key-MD5
-//
-// For more information about SSE-C, see Server-Side Encryption (Using Customer-Provided
-// Encryption Keys) (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html).
-//
-// Assuming you have the relevant permission to read object tags, the response
-// also returns the x-amz-tagging-count header that provides the count of number
-// of tags associated with the object. You can use GetObjectTagging (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectTagging.html)
-// to retrieve the tag set associated with an object.
-//
-// # Permissions
-//
-// You need the relevant read object (or version) permission for this operation.
-// For more information, see Specifying Permissions in a Policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/using-with-s3-actions.html).
-// If the object you request does not exist, the error Amazon S3 returns depends
-// on whether you also have the s3:ListBucket permission.
-//
-//   - If you have the s3:ListBucket permission on the bucket, Amazon S3 will
-//     return an HTTP status code 404 ("no such key") error.
-//
-//   - If you don’t have the s3:ListBucket permission, Amazon S3 will return
-//     an HTTP status code 403 ("access denied") error.
-//
-// # Versioning
-//
-// By default, the GET action returns the current version of an object. To return
-// a different version, use the versionId subresource.
-//
-//   - If you supply a versionId, you need the s3:GetObjectVersion permission
-//     to access a specific version of an object. If you request a specific version,
-//     you do not need to have the s3:GetObject permission.
-//
-//   - If the current version of the object is a delete marker, Amazon S3 behaves
-//     as if the object was deleted and includes x-amz-delete-marker: true in
-//     the response.
-//
-// For more information about versioning, see PutBucketVersioning (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketVersioning.html).
-//
-// # Overriding Response Header Values
+// # Overriding response header values through the request
 //
 // There are times when you want to override certain response header values
-// in a GET response. For example, you might override the Content-Disposition
-// response header value in your GET request.
+// of a GetObject response. For example, you might override the Content-Disposition
+// response header value through your GetObject request.
 //
-// You can override values for a set of response headers using the following
-// query parameters. These response header values are sent only on a successful
-// request, that is, when status code 200 OK is returned. The set of headers
-// you can override using these parameters is a subset of the headers that Amazon
-// S3 accepts when you create an object. The response headers that you can override
-// for the GET response are Content-Type, Content-Language, Expires, Cache-Control,
-// Content-Disposition, and Content-Encoding. To override these header values
-// in the GET response, you use the following request parameters.
+// You can override values for a set of response headers. These modified response
+// header values are included only in a successful response, that is, when the
+// HTTP status code 200 OK is returned. The headers you can override using the
+// following query parameters in the request are a subset of the headers that
+// Amazon S3 accepts when you create an object.
 //
-// You must sign the request, either using an Authorization header or a presigned
-// URL, when using these parameters. They cannot be used with an unsigned (anonymous)
-// request.
+// The response headers that you can override for the GetObject response are
+// Cache-Control, Content-Disposition, Content-Encoding, Content-Language, Content-Type,
+// and Expires.
 //
-//   - response-content-type
-//
-//   - response-content-language
-//
-//   - response-expires
+// To override values for a set of response headers in the GetObject response,
+// you can use the following query parameters in the request.
 //
 //   - response-cache-control
 //
@@ -4628,17 +5098,19 @@ func (c *S3) GetObjectRequest(input *GetObjectInput) (req *request.Request, outp
 //
 //   - response-content-encoding
 //
-// # Additional Considerations about Request Headers
+//   - response-content-language
 //
-// If both of the If-Match and If-Unmodified-Since headers are present in the
-// request as follows: If-Match condition evaluates to true, and; If-Unmodified-Since
-// condition evaluates to false; then, S3 returns 200 OK and the data requested.
+//   - response-content-type
 //
-// If both of the If-None-Match and If-Modified-Since headers are present in
-// the request as follows:If-None-Match condition evaluates to false, and; If-Modified-Since
-// condition evaluates to true; then, S3 returns 304 Not Modified response code.
+//   - response-expires
 //
-// For more information about conditional requests, see RFC 7232 (https://tools.ietf.org/html/rfc7232).
+// When you use these parameters, you must sign the request by using either
+// an Authorization header or a presigned URL. These parameters cannot be used
+// with an unsigned (anonymous) request.
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // The following operations are related to GetObject:
 //
@@ -4660,6 +5132,15 @@ func (c *S3) GetObjectRequest(input *GetObjectInput) (req *request.Request, outp
 //
 //   - ErrCodeInvalidObjectState "InvalidObjectState"
 //     Object is archived and inaccessible until restored.
+//
+//     If the object you are retrieving is stored in the S3 Glacier Flexible Retrieval
+//     storage class, the S3 Glacier Deep Archive storage class, the S3 Intelligent-Tiering
+//     Archive Access tier, or the S3 Intelligent-Tiering Deep Archive Access tier,
+//     before you can retrieve the object you must first restore a copy using RestoreObject
+//     (https://docs.aws.amazon.com/AmazonS3/latest/API/API_RestoreObject.html).
+//     Otherwise, this operation returns an InvalidObjectState error. For information
+//     about restoring archived objects, see Restoring Archived Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/restoring-objects.html)
+//     in the Amazon S3 User Guide.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetObject
 func (c *S3) GetObject(input *GetObjectInput) (*GetObjectOutput, error) {
@@ -4726,15 +5207,15 @@ func (c *S3) GetObjectAclRequest(input *GetObjectAclInput) (req *request.Request
 
 // GetObjectAcl API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Returns the access control list (ACL) of an object. To use this operation,
 // you must have s3:GetObjectAcl permissions or READ_ACP access to the object.
 // For more information, see Mapping of ACL permissions and access policy permissions
 // (https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#acl-access-policy-permission-mapping)
 // in the Amazon S3 User Guide
 //
-// This action is not supported by Amazon S3 on Outposts.
-//
-// # Versioning
+// This functionality is not supported for Amazon S3 on Outposts.
 //
 // By default, GET returns ACL information about the current version of an object.
 // To return ACL information about a different version, use the versionId subresource.
@@ -4832,17 +5313,65 @@ func (c *S3) GetObjectAttributesRequest(input *GetObjectAttributesInput) (req *r
 // GetObjectAttributes API operation for Amazon Simple Storage Service.
 //
 // Retrieves all the metadata from an object without returning the object itself.
-// This action is useful if you're interested only in an object's metadata.
-// To use GetObjectAttributes, you must have READ access to the object.
+// This operation is useful if you're interested only in an object's metadata.
 //
-// GetObjectAttributes combines the functionality of GetObjectAcl, GetObjectLegalHold,
-// GetObjectLockConfiguration, GetObjectRetention, GetObjectTagging, HeadObject,
-// and ListParts. All of the data returned with each of those individual calls
-// can be returned with a single call to GetObjectAttributes.
+// GetObjectAttributes combines the functionality of HeadObject and ListParts.
+// All of the data returned with each of those individual calls can be returned
+// with a single call to GetObjectAttributes.
+//
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+// requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+// . Path-style requests are not supported. For more information, see Regional
+// and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
+//
+// Permissions
+//
+//   - General purpose bucket permissions - To use GetObjectAttributes, you
+//     must have READ access to the object. The permissions that you need to
+//     use this operation with depend on whether the bucket is versioned. If
+//     the bucket is versioned, you need both the s3:GetObjectVersion and s3:GetObjectVersionAttributes
+//     permissions for this operation. If the bucket is not versioned, you need
+//     the s3:GetObject and s3:GetObjectAttributes permissions. For more information,
+//     see Specifying Permissions in a Policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/using-with-s3-actions.html)
+//     in the Amazon S3 User Guide. If the object that you request does not exist,
+//     the error Amazon S3 returns depends on whether you also have the s3:ListBucket
+//     permission. If you have the s3:ListBucket permission on the bucket, Amazon
+//     S3 returns an HTTP status code 404 Not Found ("no such key") error. If
+//     you don't have the s3:ListBucket permission, Amazon S3 returns an HTTP
+//     status code 403 Forbidden ("access denied") error.
+//
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
+//
+// # Encryption
+//
+// Encryption request headers, like x-amz-server-side-encryption, should not
+// be sent for HEAD requests if your object uses server-side encryption with
+// Key Management Service (KMS) keys (SSE-KMS), dual-layer server-side encryption
+// with Amazon Web Services KMS keys (DSSE-KMS), or server-side encryption with
+// Amazon S3 managed encryption keys (SSE-S3). The x-amz-server-side-encryption
+// header is used when you PUT an object to S3 and want to specify the encryption
+// method. If you include this header in a GET request for an object that uses
+// these types of keys, you’ll get an HTTP 400 Bad Request error. It's because
+// the encryption method can't be changed when you retrieve the object.
 //
 // If you encrypt an object by using server-side encryption with customer-provided
 // encryption keys (SSE-C) when you store the object in Amazon S3, then when
-// you retrieve the metadata from the object, you must use the following headers:
+// you retrieve the metadata from the object, you must use the following headers
+// to provide the encryption key for the server to be able to retrieve the object's
+// metadata. The headers are:
 //
 //   - x-amz-server-side-encryption-customer-algorithm
 //
@@ -4854,47 +5383,35 @@ func (c *S3) GetObjectAttributesRequest(input *GetObjectAttributesInput) (req *r
 // Encryption Keys) (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
 // in the Amazon S3 User Guide.
 //
-//   - Encryption request headers, such as x-amz-server-side-encryption, should
-//     not be sent for GET requests if your object uses server-side encryption
-//     with Amazon Web Services KMS keys stored in Amazon Web Services Key Management
-//     Service (SSE-KMS) or server-side encryption with Amazon S3 managed encryption
-//     keys (SSE-S3). If your object does use these types of keys, you'll get
-//     an HTTP 400 Bad Request error.
+// Directory bucket permissions - For directory buckets, only server-side encryption
+// with Amazon S3 managed keys (SSE-S3) (AES256) is supported.
 //
-//   - The last modified property in this case is the creation date of the
-//     object.
+// # Versioning
+//
+// Directory buckets - S3 Versioning isn't enabled and supported for directory
+// buckets. For this API operation, only the null value of the version ID is
+// supported by directory buckets. You can only specify null to the versionId
+// query parameter in the request.
+//
+// # Conditional request headers
 //
 // Consider the following when using request headers:
 //
 //   - If both of the If-Match and If-Unmodified-Since headers are present
 //     in the request as follows, then Amazon S3 returns the HTTP status code
 //     200 OK and the data requested: If-Match condition evaluates to true. If-Unmodified-Since
-//     condition evaluates to false.
+//     condition evaluates to false. For more information about conditional requests,
+//     see RFC 7232 (https://tools.ietf.org/html/rfc7232).
 //
 //   - If both of the If-None-Match and If-Modified-Since headers are present
 //     in the request as follows, then Amazon S3 returns the HTTP status code
 //     304 Not Modified: If-None-Match condition evaluates to false. If-Modified-Since
-//     condition evaluates to true.
+//     condition evaluates to true. For more information about conditional requests,
+//     see RFC 7232 (https://tools.ietf.org/html/rfc7232).
 //
-// For more information about conditional requests, see RFC 7232 (https://tools.ietf.org/html/rfc7232).
+// # HTTP Host header syntax
 //
-// # Permissions
-//
-// The permissions that you need to use this operation depend on whether the
-// bucket is versioned. If the bucket is versioned, you need both the s3:GetObjectVersion
-// and s3:GetObjectVersionAttributes permissions for this operation. If the
-// bucket is not versioned, you need the s3:GetObject and s3:GetObjectAttributes
-// permissions. For more information, see Specifying Permissions in a Policy
-// (https://docs.aws.amazon.com/AmazonS3/latest/dev/using-with-s3-actions.html)
-// in the Amazon S3 User Guide. If the object that you request does not exist,
-// the error Amazon S3 returns depends on whether you also have the s3:ListBucket
-// permission.
-//
-//   - If you have the s3:ListBucket permission on the bucket, Amazon S3 returns
-//     an HTTP status code 404 Not Found ("no such key") error.
-//
-//   - If you don't have the s3:ListBucket permission, Amazon S3 returns an
-//     HTTP status code 403 Forbidden ("access denied") error.
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // The following actions are related to GetObjectAttributes:
 //
@@ -4990,10 +5507,12 @@ func (c *S3) GetObjectLegalHoldRequest(input *GetObjectLegalHoldInput) (req *req
 
 // GetObjectLegalHold API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Gets an object's current legal hold status. For more information, see Locking
 // Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock.html).
 //
-// This action is not supported by Amazon S3 on Outposts.
+// This functionality is not supported for Amazon S3 on Outposts.
 //
 // The following action is related to GetObjectLegalHold:
 //
@@ -5069,6 +5588,8 @@ func (c *S3) GetObjectLockConfigurationRequest(input *GetObjectLockConfiguration
 }
 
 // GetObjectLockConfiguration API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Gets the Object Lock configuration for a bucket. The rule specified in the
 // Object Lock configuration will be applied by default to every new object
@@ -5150,10 +5671,12 @@ func (c *S3) GetObjectRetentionRequest(input *GetObjectRetentionInput) (req *req
 
 // GetObjectRetention API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Retrieves an object's retention settings. For more information, see Locking
 // Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock.html).
 //
-// This action is not supported by Amazon S3 on Outposts.
+// This functionality is not supported for Amazon S3 on Outposts.
 //
 // The following action is related to GetObjectRetention:
 //
@@ -5229,6 +5752,8 @@ func (c *S3) GetObjectTaggingRequest(input *GetObjectTaggingInput) (req *request
 }
 
 // GetObjectTagging API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Returns the tag-set of an object. You send the GET request against the tagging
 // subresource associated with the object.
@@ -5325,9 +5850,10 @@ func (c *S3) GetObjectTorrentRequest(input *GetObjectTorrentInput) (req *request
 
 // GetObjectTorrent API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Returns torrent files from a bucket. BitTorrent can save you bandwidth when
-// you're distributing large files. For more information about BitTorrent, see
-// Using BitTorrent with Amazon S3 (https://docs.aws.amazon.com/AmazonS3/latest/dev/S3Torrent.html).
+// you're distributing large files.
 //
 // You can get torrent only for objects that are less than 5 GB in size, and
 // that are not encrypted using server-side encryption with a customer-provided
@@ -5335,7 +5861,7 @@ func (c *S3) GetObjectTorrentRequest(input *GetObjectTorrentInput) (req *request
 //
 // To use GET, you must have READ access to the object.
 //
-// This action is not supported by Amazon S3 on Outposts.
+// This functionality is not supported for Amazon S3 on Outposts.
 //
 // The following action is related to GetObjectTorrent:
 //
@@ -5411,6 +5937,8 @@ func (c *S3) GetPublicAccessBlockRequest(input *GetPublicAccessBlockInput) (req 
 }
 
 // GetPublicAccessBlock API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Retrieves the PublicAccessBlock configuration for an Amazon S3 bucket. To
 // use this operation, you must have the s3:GetBucketPublicAccessBlock permission.
@@ -5503,33 +6031,63 @@ func (c *S3) HeadBucketRequest(input *HeadBucketInput) (req *request.Request, ou
 
 	output = &HeadBucketOutput{}
 	req = c.newRequest(op, input, output)
-	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, protocol.UnmarshalDiscardBodyHandler)
 	return
 }
 
 // HeadBucket API operation for Amazon Simple Storage Service.
 //
-// This action is useful to determine if a bucket exists and you have permission
-// to access it. The action returns a 200 OK if the bucket exists and you have
-// permission to access it.
+// You can use this operation to determine if a bucket exists and if you have
+// permission to access it. The action returns a 200 OK if the bucket exists
+// and you have permission to access it.
 //
 // If the bucket does not exist or you do not have permission to access it,
-// the HEAD request returns a generic 404 Not Found or 403 Forbidden code. A
-// message body is not included, so you cannot determine the exception beyond
-// these error codes.
+// the HEAD request returns a generic 400 Bad Request, 403 Forbidden or 404
+// Not Found code. A message body is not included, so you cannot determine the
+// exception beyond these HTTP response codes.
 //
-// To use this operation, you must have permissions to perform the s3:ListBucket
-// action. The bucket owner has this permission by default and can grant this
-// permission to others. For more information about permissions, see Permissions
-// Related to Bucket Subresource Operations (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html#using-with-s3-actions-related-to-bucket-subresources)
-// and Managing Access Permissions to Your Amazon S3 Resources (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-access-control.html).
+// Directory buckets - You must make requests for this API operation to the
+// Zonal endpoint. These endpoints support virtual-hosted-style requests in
+// the format https://bucket_name.s3express-az_id.region.amazonaws.com. Path-style
+// requests are not supported. For more information, see Regional and Zonal
+// endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
 //
-// To use this API against an access point, you must provide the alias of the
-// access point in place of the bucket name or specify the access point ARN.
-// When using the access point ARN, you must direct requests to the access point
-// hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
-// When using the Amazon Web Services SDKs, you provide the ARN in place of
-// the bucket name. For more information see, Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html).
+// # Authentication and authorization
+//
+// All HeadBucket requests must be authenticated and signed by using IAM credentials
+// (access key ID and secret access key for the IAM identities). All headers
+// with the x-amz- prefix, including x-amz-copy-source, must be signed. For
+// more information, see REST Authentication (https://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html).
+//
+// Directory bucket - You must use IAM credentials to authenticate and authorize
+// your access to the HeadBucket API operation, instead of using the temporary
+// security credentials through the CreateSession API operation.
+//
+// Amazon Web Services CLI or SDKs handles authentication and authorization
+// on your behalf.
+//
+// Permissions
+//
+//   - General purpose bucket permissions - To use this operation, you must
+//     have permissions to perform the s3:ListBucket action. The bucket owner
+//     has this permission by default and can grant this permission to others.
+//     For more information about permissions, see Managing access permissions
+//     to your Amazon S3 resources (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-access-control.html)
+//     in the Amazon S3 User Guide.
+//
+//   - Directory bucket permissions - You must have the s3express:CreateSession
+//     permission in the Action element of a policy. By default, the session
+//     is in the ReadWrite mode. If you want to restrict the access, you can
+//     explicitly set the s3express:SessionMode condition key to ReadOnly on
+//     the bucket. For more information about example bucket policies, see Example
+//     bucket policies for S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam-example-bucket-policies.html)
+//     and Amazon Web Services Identity and Access Management (IAM) identity-based
+//     policies for S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam-identity-policies.html)
+//     in the Amazon S3 User Guide.
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -5607,19 +6165,70 @@ func (c *S3) HeadObjectRequest(input *HeadObjectInput) (req *request.Request, ou
 
 // HeadObject API operation for Amazon Simple Storage Service.
 //
-// The HEAD action retrieves metadata from an object without returning the object
-// itself. This action is useful if you're only interested in an object's metadata.
-// To use HEAD, you must have READ access to the object.
+// The HEAD operation retrieves metadata from an object without returning the
+// object itself. This operation is useful if you're interested only in an object's
+// metadata.
 //
-// A HEAD request has the same options as a GET action on an object. The response
-// is identical to the GET response except that there is no response body. Because
-// of this, if the HEAD request generates an error, it returns a generic 404
-// Not Found or 403 Forbidden code. It is not possible to retrieve the exact
-// exception beyond these error codes.
+// A HEAD request has the same options as a GET operation on an object. The
+// response is identical to the GET response except that there is no response
+// body. Because of this, if the HEAD request generates an error, it returns
+// a generic code, such as 400 Bad Request, 403 Forbidden, 404 Not Found, 405
+// Method Not Allowed, 412 Precondition Failed, or 304 Not Modified. It's not
+// possible to retrieve the exact exception of these error codes.
+//
+// Request headers are limited to 8 KB in size. For more information, see Common
+// Request Headers (https://docs.aws.amazon.com/AmazonS3/latest/API/RESTCommonRequestHeaders.html).
+//
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+// requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+// . Path-style requests are not supported. For more information, see Regional
+// and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
+//
+// Permissions
+//
+//   - General purpose bucket permissions - To use HEAD, you must have the
+//     s3:GetObject permission. You need the relevant read object (or version)
+//     permission for this operation. For more information, see Actions, resources,
+//     and condition keys for Amazon S3 (https://docs.aws.amazon.com/AmazonS3/latest/dev/list_amazons3.html)
+//     in the Amazon S3 User Guide. If the object you request doesn't exist,
+//     the error that Amazon S3 returns depends on whether you also have the
+//     s3:ListBucket permission. If you have the s3:ListBucket permission on
+//     the bucket, Amazon S3 returns an HTTP status code 404 Not Found error.
+//     If you don’t have the s3:ListBucket permission, Amazon S3 returns an
+//     HTTP status code 403 Forbidden error.
+//
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
+//
+// # Encryption
+//
+// Encryption request headers, like x-amz-server-side-encryption, should not
+// be sent for HEAD requests if your object uses server-side encryption with
+// Key Management Service (KMS) keys (SSE-KMS), dual-layer server-side encryption
+// with Amazon Web Services KMS keys (DSSE-KMS), or server-side encryption with
+// Amazon S3 managed encryption keys (SSE-S3). The x-amz-server-side-encryption
+// header is used when you PUT an object to S3 and want to specify the encryption
+// method. If you include this header in a HEAD request for an object that uses
+// these types of keys, you’ll get an HTTP 400 Bad Request error. It's because
+// the encryption method can't be changed when you retrieve the object.
 //
 // If you encrypt an object by using server-side encryption with customer-provided
 // encryption keys (SSE-C) when you store the object in Amazon S3, then when
-// you retrieve the metadata from the object, you must use the following headers:
+// you retrieve the metadata from the object, you must use the following headers
+// to provide the encryption key for the server to be able to retrieve the object's
+// metadata. The headers are:
 //
 //   - x-amz-server-side-encryption-customer-algorithm
 //
@@ -5628,46 +6237,32 @@ func (c *S3) HeadObjectRequest(input *HeadObjectInput) (req *request.Request, ou
 //   - x-amz-server-side-encryption-customer-key-MD5
 //
 // For more information about SSE-C, see Server-Side Encryption (Using Customer-Provided
-// Encryption Keys) (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html).
+// Encryption Keys) (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
+// in the Amazon S3 User Guide.
 //
-//   - Encryption request headers, like x-amz-server-side-encryption, should
-//     not be sent for GET requests if your object uses server-side encryption
-//     with KMS keys (SSE-KMS) or server-side encryption with Amazon S3–managed
-//     encryption keys (SSE-S3). If your object does use these types of keys,
-//     you’ll get an HTTP 400 BadRequest error.
+// Directory bucket permissions - For directory buckets, only server-side encryption
+// with Amazon S3 managed keys (SSE-S3) (AES256) is supported.
 //
-//   - The last modified property in this case is the creation date of the
-//     object.
+// Versioning
 //
-// Request headers are limited to 8 KB in size. For more information, see Common
-// Request Headers (https://docs.aws.amazon.com/AmazonS3/latest/API/RESTCommonRequestHeaders.html).
+//   - If the current version of the object is a delete marker, Amazon S3 behaves
+//     as if the object was deleted and includes x-amz-delete-marker: true in
+//     the response.
 //
-// Consider the following when using request headers:
+//   - If the specified version is a delete marker, the response returns a
+//     405 Method Not Allowed error and the Last-Modified: timestamp response
+//     header.
 //
-//   - Consideration 1 – If both of the If-Match and If-Unmodified-Since
-//     headers are present in the request as follows: If-Match condition evaluates
-//     to true, and; If-Unmodified-Since condition evaluates to false; Then Amazon
-//     S3 returns 200 OK and the data requested.
+//   - Directory buckets - Delete marker is not supported by directory buckets.
 //
-//   - Consideration 2 – If both of the If-None-Match and If-Modified-Since
-//     headers are present in the request as follows: If-None-Match condition
-//     evaluates to false, and; If-Modified-Since condition evaluates to true;
-//     Then Amazon S3 returns the 304 Not Modified response code.
+//   - Directory buckets - S3 Versioning isn't enabled and supported for directory
+//     buckets. For this API operation, only the null value of the version ID
+//     is supported by directory buckets. You can only specify null to the versionId
+//     query parameter in the request.
 //
-// For more information about conditional requests, see RFC 7232 (https://tools.ietf.org/html/rfc7232).
+// # HTTP Host header syntax
 //
-// # Permissions
-//
-// You need the relevant read object (or version) permission for this operation.
-// For more information, see Specifying Permissions in a Policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/using-with-s3-actions.html).
-// If the object you request does not exist, the error Amazon S3 returns depends
-// on whether you also have the s3:ListBucket permission.
-//
-//   - If you have the s3:ListBucket permission on the bucket, Amazon S3 returns
-//     an HTTP status code 404 ("no such key") error.
-//
-//   - If you don’t have the s3:ListBucket permission, Amazon S3 returns
-//     an HTTP status code 403 ("access denied") error.
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // The following actions are related to HeadObject:
 //
@@ -5748,6 +6343,8 @@ func (c *S3) ListBucketAnalyticsConfigurationsRequest(input *ListBucketAnalytics
 }
 
 // ListBucketAnalyticsConfigurations API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Lists the analytics configurations for the bucket. You can have up to 1,000
 // analytics configurations per bucket.
@@ -5848,6 +6445,8 @@ func (c *S3) ListBucketIntelligentTieringConfigurationsRequest(input *ListBucket
 
 // ListBucketIntelligentTieringConfigurations API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Lists the S3 Intelligent-Tiering configuration from the specified bucket.
 //
 // The S3 Intelligent-Tiering storage class is designed to optimize storage
@@ -5945,6 +6544,8 @@ func (c *S3) ListBucketInventoryConfigurationsRequest(input *ListBucketInventory
 }
 
 // ListBucketInventoryConfigurations API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Returns a list of inventory configurations for the bucket. You can have up
 // to 1,000 analytics configurations per bucket.
@@ -6044,6 +6645,8 @@ func (c *S3) ListBucketMetricsConfigurationsRequest(input *ListBucketMetricsConf
 }
 
 // ListBucketMetricsConfigurations API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Lists the metrics configurations for the bucket. The metrics configurations
 // are only for the request metrics of the bucket and do not provide information
@@ -6145,8 +6748,13 @@ func (c *S3) ListBucketsRequest(input *ListBucketsInput) (req *request.Request, 
 
 // ListBuckets API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Returns a list of all buckets owned by the authenticated sender of the request.
 // To use this operation, you must have the s3:ListAllMyBuckets permission.
+//
+// For information about Amazon S3 buckets, see Creating, configuring, and working
+// with Amazon S3 buckets (https://docs.aws.amazon.com/AmazonS3/latest/userguide/creating-buckets-s3.html).
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -6174,6 +6782,160 @@ func (c *S3) ListBucketsWithContext(ctx aws.Context, input *ListBucketsInput, op
 	req.SetContext(ctx)
 	req.ApplyOptions(opts...)
 	return out, req.Send()
+}
+
+const opListDirectoryBuckets = "ListDirectoryBuckets"
+
+// ListDirectoryBucketsRequest generates a "aws/request.Request" representing the
+// client's request for the ListDirectoryBuckets operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfully.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See ListDirectoryBuckets for more information on using the ListDirectoryBuckets
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//	// Example sending a request using the ListDirectoryBucketsRequest method.
+//	req, resp := client.ListDirectoryBucketsRequest(params)
+//
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/ListDirectoryBuckets
+func (c *S3) ListDirectoryBucketsRequest(input *ListDirectoryBucketsInput) (req *request.Request, output *ListDirectoryBucketsOutput) {
+	op := &request.Operation{
+		Name:       opListDirectoryBuckets,
+		HTTPMethod: "GET",
+		HTTPPath:   "/",
+		Paginator: &request.Paginator{
+			InputTokens:     []string{"ContinuationToken"},
+			OutputTokens:    []string{"ContinuationToken"},
+			LimitToken:      "MaxDirectoryBuckets",
+			TruncationToken: "",
+		},
+	}
+
+	if input == nil {
+		input = &ListDirectoryBucketsInput{}
+	}
+
+	output = &ListDirectoryBucketsOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// ListDirectoryBuckets API operation for Amazon Simple Storage Service.
+//
+// Returns a list of all Amazon S3 directory buckets owned by the authenticated
+// sender of the request. For more information about directory buckets, see
+// Directory buckets (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-buckets-overview.html)
+// in the Amazon S3 User Guide.
+//
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Regional endpoint. These endpoints support path-style
+// requests in the format https://s3express-control.region_code.amazonaws.com/bucket-name
+// . Virtual-hosted-style requests aren't supported. For more information, see
+// Regional and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
+//
+// # Permissions
+//
+// You must have the s3express:ListAllMyDirectoryBuckets permission in an IAM
+// identity-based policy instead of a bucket policy. Cross-account access to
+// this API operation isn't supported. This operation can only be performed
+// by the Amazon Web Services account that owns the resource. For more information
+// about directory bucket policies and permissions, see Amazon Web Services
+// Identity and Access Management (IAM) for S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam.html)
+// in the Amazon S3 User Guide.
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is s3express-control.region.amazonaws.com.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon Simple Storage Service's
+// API operation ListDirectoryBuckets for usage and error information.
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/ListDirectoryBuckets
+func (c *S3) ListDirectoryBuckets(input *ListDirectoryBucketsInput) (*ListDirectoryBucketsOutput, error) {
+	req, out := c.ListDirectoryBucketsRequest(input)
+	return out, req.Send()
+}
+
+// ListDirectoryBucketsWithContext is the same as ListDirectoryBuckets with the addition of
+// the ability to pass a context and additional request options.
+//
+// See ListDirectoryBuckets for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *S3) ListDirectoryBucketsWithContext(ctx aws.Context, input *ListDirectoryBucketsInput, opts ...request.Option) (*ListDirectoryBucketsOutput, error) {
+	req, out := c.ListDirectoryBucketsRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+// ListDirectoryBucketsPages iterates over the pages of a ListDirectoryBuckets operation,
+// calling the "fn" function with the response data for each page. To stop
+// iterating, return false from the fn function.
+//
+// See ListDirectoryBuckets method for more information on how to use this operation.
+//
+// Note: This operation can generate multiple requests to a service.
+//
+//	// Example iterating over at most 3 pages of a ListDirectoryBuckets operation.
+//	pageNum := 0
+//	err := client.ListDirectoryBucketsPages(params,
+//	    func(page *s3.ListDirectoryBucketsOutput, lastPage bool) bool {
+//	        pageNum++
+//	        fmt.Println(page)
+//	        return pageNum <= 3
+//	    })
+func (c *S3) ListDirectoryBucketsPages(input *ListDirectoryBucketsInput, fn func(*ListDirectoryBucketsOutput, bool) bool) error {
+	return c.ListDirectoryBucketsPagesWithContext(aws.BackgroundContext(), input, fn)
+}
+
+// ListDirectoryBucketsPagesWithContext same as ListDirectoryBucketsPages except
+// it takes a Context and allows setting request options on the pages.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *S3) ListDirectoryBucketsPagesWithContext(ctx aws.Context, input *ListDirectoryBucketsInput, fn func(*ListDirectoryBucketsOutput, bool) bool, opts ...request.Option) error {
+	p := request.Pagination{
+		NewRequest: func() (*request.Request, error) {
+			var inCpy *ListDirectoryBucketsInput
+			if input != nil {
+				tmp := *input
+				inCpy = &tmp
+			}
+			req, _ := c.ListDirectoryBucketsRequest(inCpy)
+			req.SetContext(ctx)
+			req.ApplyOptions(opts...)
+			return req, nil
+		},
+	}
+
+	for p.Next() {
+		if !fn(p.Page().(*ListDirectoryBucketsOutput), !p.HasNextPage()) {
+			break
+		}
+	}
+
+	return p.Err()
 }
 
 const opListMultipartUploads = "ListMultipartUploads"
@@ -6225,28 +6987,79 @@ func (c *S3) ListMultipartUploadsRequest(input *ListMultipartUploadsInput) (req 
 
 // ListMultipartUploads API operation for Amazon Simple Storage Service.
 //
-// This action lists in-progress multipart uploads. An in-progress multipart
-// upload is a multipart upload that has been initiated using the Initiate Multipart
-// Upload request, but has not yet been completed or aborted.
+// This operation lists in-progress multipart uploads in a bucket. An in-progress
+// multipart upload is a multipart upload that has been initiated by the CreateMultipartUpload
+// request, but has not yet been completed or aborted.
 //
-// This action returns at most 1,000 multipart uploads in the response. 1,000
-// multipart uploads is the maximum number of uploads a response can include,
-// which is also the default value. You can further limit the number of uploads
-// in a response by specifying the max-uploads parameter in the response. If
-// additional multipart uploads satisfy the list criteria, the response will
-// contain an IsTruncated element with the value true. To list the additional
-// multipart uploads, use the key-marker and upload-id-marker request parameters.
+// Directory buckets - If multipart uploads in a directory bucket are in progress,
+// you can't delete the bucket until all the in-progress multipart uploads are
+// aborted or completed.
 //
-// In the response, the uploads are sorted by key. If your application has initiated
-// more than one multipart upload using the same object key, then uploads in
-// the response are first sorted by key. Additionally, uploads are sorted in
-// ascending order within each key by the upload initiation time.
+// The ListMultipartUploads operation returns a maximum of 1,000 multipart uploads
+// in the response. The limit of 1,000 multipart uploads is also the default
+// value. You can further limit the number of uploads in a response by specifying
+// the max-uploads request parameter. If there are more than 1,000 multipart
+// uploads that satisfy your ListMultipartUploads request, the response returns
+// an IsTruncated element with the value of true, a NextKeyMarker element, and
+// a NextUploadIdMarker element. To list the remaining multipart uploads, you
+// need to make subsequent ListMultipartUploads requests. In these requests,
+// include two query parameters: key-marker and upload-id-marker. Set the value
+// of key-marker to the NextKeyMarker value from the previous response. Similarly,
+// set the value of upload-id-marker to the NextUploadIdMarker value from the
+// previous response.
 //
-// For more information on multipart uploads, see Uploading Objects Using Multipart
-// Upload (https://docs.aws.amazon.com/AmazonS3/latest/dev/uploadobjusingmpu.html).
+// Directory buckets - The upload-id-marker element and the NextUploadIdMarker
+// element aren't supported by directory buckets. To list the additional multipart
+// uploads, you only need to set the value of key-marker to the NextKeyMarker
+// value from the previous response.
 //
-// For information on permissions required to use the multipart upload API,
-// see Multipart Upload and Permissions (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html).
+// For more information about multipart uploads, see Uploading Objects Using
+// Multipart Upload (https://docs.aws.amazon.com/AmazonS3/latest/dev/uploadobjusingmpu.html)
+// in the Amazon S3 User Guide.
+//
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+// requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+// . Path-style requests are not supported. For more information, see Regional
+// and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
+//
+// Permissions
+//
+//   - General purpose bucket permissions - For information about permissions
+//     required to use the multipart upload API, see Multipart Upload and Permissions
+//     (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html)
+//     in the Amazon S3 User Guide.
+//
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
+//
+// Sorting of multipart uploads in response
+//
+//   - General purpose bucket - In the ListMultipartUploads response, the multipart
+//     uploads are sorted based on two criteria: Key-based sorting - Multipart
+//     uploads are initially sorted in ascending order based on their object
+//     keys. Time-based sorting - For uploads that share the same object key,
+//     they are further sorted in ascending order based on the upload initiation
+//     time. Among uploads with the same key, the one that was initiated first
+//     will appear before the ones that were initiated later.
+//
+//   - Directory bucket - In the ListMultipartUploads response, the multipart
+//     uploads aren't sorted lexicographically based on the object keys.
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // The following operations are related to ListMultipartUploads:
 //
@@ -6388,19 +7201,19 @@ func (c *S3) ListObjectVersionsRequest(input *ListObjectVersionsInput) (req *req
 
 // ListObjectVersions API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Returns metadata about all versions of the objects in a bucket. You can also
 // use request parameters as selection criteria to return metadata about a subset
 // of all the object versions.
 //
-// To use this operation, you must have permissions to perform the s3:ListBucketVersions
+// To use this operation, you must have permission to perform the s3:ListBucketVersions
 // action. Be aware of the name difference.
 //
 // A 200 OK response can contain valid or invalid XML. Make sure to design your
 // application to parse the contents of the response and handle it appropriately.
 //
 // To use this operation, you must have READ access to the bucket.
-//
-// This action is not supported by Amazon S3 on Outposts.
 //
 // The following operations are related to ListObjectVersions:
 //
@@ -6539,6 +7352,8 @@ func (c *S3) ListObjectsRequest(input *ListObjectsInput) (req *request.Request, 
 }
 
 // ListObjects API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Returns some or all (up to 1,000) of the objects in a bucket. You can use
 // the request parameters as selection criteria to return a subset of the objects
@@ -6700,25 +7515,57 @@ func (c *S3) ListObjectsV2Request(input *ListObjectsV2Input) (req *request.Reque
 // You can use the request parameters as selection criteria to return a subset
 // of the objects in a bucket. A 200 OK response can contain valid or invalid
 // XML. Make sure to design your application to parse the contents of the response
-// and handle it appropriately. Objects are returned sorted in an ascending
-// order of the respective key names in the list. For more information about
-// listing objects, see Listing object keys programmatically (https://docs.aws.amazon.com/AmazonS3/latest/userguide/ListingKeysUsingAPIs.html)
+// and handle it appropriately. For more information about listing objects,
+// see Listing object keys programmatically (https://docs.aws.amazon.com/AmazonS3/latest/userguide/ListingKeysUsingAPIs.html)
+// in the Amazon S3 User Guide. To get a list of your buckets, see ListBuckets
+// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBuckets.html).
 //
-// To use this operation, you must have READ access to the bucket.
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+// requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+// . Path-style requests are not supported. For more information, see Regional
+// and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
 //
-// To use this action in an Identity and Access Management (IAM) policy, you
-// must have permissions to perform the s3:ListBucket action. The bucket owner
-// has this permission by default and can grant this permission to others. For
-// more information about permissions, see Permissions Related to Bucket Subresource
-// Operations (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html#using-with-s3-actions-related-to-bucket-subresources)
-// and Managing Access Permissions to Your Amazon S3 Resources (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-access-control.html).
+// Permissions
+//
+//   - General purpose bucket permissions - To use this operation, you must
+//     have READ access to the bucket. You must have permission to perform the
+//     s3:ListBucket action. The bucket owner has this permission by default
+//     and can grant this permission to others. For more information about permissions,
+//     see Permissions Related to Bucket Subresource Operations (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html#using-with-s3-actions-related-to-bucket-subresources)
+//     and Managing Access Permissions to Your Amazon S3 Resources (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-access-control.html)
+//     in the Amazon S3 User Guide.
+//
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
+//
+// Sorting order of returned objects
+//
+//   - General purpose bucket - For general purpose buckets, ListObjectsV2
+//     returns objects in lexicographical order based on their key names.
+//
+//   - Directory bucket - For directory buckets, ListObjectsV2 does not return
+//     objects in lexicographical order.
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // This section describes the latest revision of this action. We recommend that
-// you use this revised API for application development. For backward compatibility,
-// Amazon S3 continues to support the prior version of this API, ListObjects
-// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html).
-//
-// To get a list of your buckets, see ListBuckets (https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBuckets.html).
+// you use this revised API operation for application development. For backward
+// compatibility, Amazon S3 continues to support the prior version of this API
+// operation, ListObjects (https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html).
 //
 // The following operations are related to ListObjectsV2:
 //
@@ -6862,24 +7709,58 @@ func (c *S3) ListPartsRequest(input *ListPartsInput) (req *request.Request, outp
 // ListParts API operation for Amazon Simple Storage Service.
 //
 // Lists the parts that have been uploaded for a specific multipart upload.
-// This operation must include the upload ID, which you obtain by sending the
-// initiate multipart upload request (see CreateMultipartUpload (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html)).
-// This request returns a maximum of 1,000 uploaded parts. The default number
-// of parts returned is 1,000 parts. You can restrict the number of parts returned
-// by specifying the max-parts request parameter. If your multipart upload consists
-// of more than 1,000 parts, the response returns an IsTruncated field with
-// the value of true, and a NextPartNumberMarker element. In subsequent ListParts
-// requests you can include the part-number-marker query string parameter and
-// set its value to the NextPartNumberMarker field value from the previous response.
 //
-// If the upload was created using a checksum algorithm, you will need to have
-// permission to the kms:Decrypt action for the request to succeed.
+// To use this operation, you must provide the upload ID in the request. You
+// obtain this uploadID by sending the initiate multipart upload request through
+// CreateMultipartUpload (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html).
+//
+// The ListParts request returns a maximum of 1,000 uploaded parts. The limit
+// of 1,000 parts is also the default value. You can restrict the number of
+// parts in a response by specifying the max-parts request parameter. If your
+// multipart upload consists of more than 1,000 parts, the response returns
+// an IsTruncated field with the value of true, and a NextPartNumberMarker element.
+// To list remaining uploaded parts, in subsequent ListParts requests, include
+// the part-number-marker query string parameter and set its value to the NextPartNumberMarker
+// field value from the previous response.
 //
 // For more information on multipart uploads, see Uploading Objects Using Multipart
-// Upload (https://docs.aws.amazon.com/AmazonS3/latest/dev/uploadobjusingmpu.html).
+// Upload (https://docs.aws.amazon.com/AmazonS3/latest/dev/uploadobjusingmpu.html)
+// in the Amazon S3 User Guide.
 //
-// For information on permissions required to use the multipart upload API,
-// see Multipart Upload and Permissions (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html).
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+// requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+// . Path-style requests are not supported. For more information, see Regional
+// and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
+//
+// Permissions
+//
+//   - General purpose bucket permissions - For information about permissions
+//     required to use the multipart upload API, see Multipart Upload and Permissions
+//     (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html)
+//     in the Amazon S3 User Guide. If the upload was created using server-side
+//     encryption with Key Management Service (KMS) keys (SSE-KMS) or dual-layer
+//     server-side encryption with Amazon Web Services KMS keys (DSSE-KMS), you
+//     must have permission to the kms:Decrypt action for the ListParts request
+//     to succeed.
+//
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
 // The following operations are related to ListParts:
 //
@@ -7018,6 +7899,8 @@ func (c *S3) PutBucketAccelerateConfigurationRequest(input *PutBucketAccelerateC
 
 // PutBucketAccelerateConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Sets the accelerate configuration of an existing bucket. Amazon S3 Transfer
 // Acceleration is a bucket-level feature that enables you to perform faster
 // data transfers to Amazon S3.
@@ -7130,9 +8013,11 @@ func (c *S3) PutBucketAclRequest(input *PutBucketAclInput) (req *request.Request
 
 // PutBucketAcl API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Sets the permissions on an existing bucket using access control lists (ACL).
 // For more information, see Using ACLs (https://docs.aws.amazon.com/AmazonS3/latest/dev/S3_ACLs_UsingACLs.html).
-// To set the ACL of a bucket, you must have WRITE_ACP permission.
+// To set the ACL of a bucket, you must have the WRITE_ACP permission.
 //
 // You can use one of the following two ways to set a bucket's permissions:
 //
@@ -7156,9 +8041,9 @@ func (c *S3) PutBucketAclRequest(input *PutBucketAclInput) (req *request.Request
 // object ownership (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html)
 // in the Amazon S3 User Guide.
 //
-// # Access Permissions
+// # Permissions
 //
-// You can set access permissions using one of the following methods:
+// You can set access permissions by using one of the following methods:
 //
 //   - Specify a canned ACL with the x-amz-acl request header. Amazon S3 supports
 //     a set of predefined ACLs, known as canned ACLs. Each canned ACL has a
@@ -7208,7 +8093,7 @@ func (c *S3) PutBucketAclRequest(input *PutBucketAclInput) (req *request.Request
 //     xsi:type="Group"><URI><>http://acs.amazonaws.com/groups/global/AuthenticatedUsers<></URI></Grantee>
 //
 //   - By Email address: <Grantee xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-//     xsi:type="AmazonCustomerByEmail"><EmailAddress><>Grantees@email.com<></EmailAddress>lt;/Grantee>
+//     xsi:type="AmazonCustomerByEmail"><EmailAddress><>Grantees@email.com<></EmailAddress>&</Grantee>
 //     The grantee is resolved to the CanonicalUser and, in a response to a GET
 //     Object acl request, appears as the CanonicalUser. Using email addresses
 //     to specify a grantee is only supported in the following Amazon Web Services
@@ -7218,7 +8103,7 @@ func (c *S3) PutBucketAclRequest(input *PutBucketAclInput) (req *request.Request
 //     Regions and endpoints, see Regions and Endpoints (https://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region)
 //     in the Amazon Web Services General Reference.
 //
-// Related Resources
+// The following operations are related to PutBucketAcl:
 //
 //   - CreateBucket (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html)
 //
@@ -7298,6 +8183,8 @@ func (c *S3) PutBucketAnalyticsConfigurationRequest(input *PutBucketAnalyticsCon
 
 // PutBucketAnalyticsConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Sets an analytics configuration for the bucket (specified by the analytics
 // configuration ID). You can have up to 1,000 analytics configurations per
 // bucket.
@@ -7323,7 +8210,7 @@ func (c *S3) PutBucketAnalyticsConfigurationRequest(input *PutBucketAnalyticsCon
 // see Permissions Related to Bucket Subresource Operations (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html#using-with-s3-actions-related-to-bucket-subresources)
 // and Managing Access Permissions to Your Amazon S3 Resources (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-access-control.html).
 //
-// Special Errors
+// PutBucketAnalyticsConfiguration has the following special errors:
 //
 //   - HTTP Error: HTTP 400 Bad Request Code: InvalidArgument Cause: Invalid
 //     argument.
@@ -7336,7 +8223,7 @@ func (c *S3) PutBucketAnalyticsConfigurationRequest(input *PutBucketAnalyticsCon
 //     the owner of the specified bucket, or you do not have the s3:PutAnalyticsConfiguration
 //     bucket permission to set the configuration on the bucket.
 //
-// Related Resources
+// The following operations are related to PutBucketAnalyticsConfiguration:
 //
 //   - GetBucketAnalyticsConfiguration (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketAnalyticsConfiguration.html)
 //
@@ -7420,6 +8307,8 @@ func (c *S3) PutBucketCorsRequest(input *PutBucketCorsInput) (req *request.Reque
 
 // PutBucketCors API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Sets the cors configuration for your bucket. If the configuration exists,
 // Amazon S3 replaces it.
 //
@@ -7456,7 +8345,7 @@ func (c *S3) PutBucketCorsRequest(input *PutBucketCorsInput) (req *request.Reque
 // (https://docs.aws.amazon.com/AmazonS3/latest/dev/cors.html) in the Amazon
 // S3 User Guide.
 //
-// Related Resources
+// The following operations are related to PutBucketCors:
 //
 //   - GetBucketCors (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketCors.html)
 //
@@ -7540,31 +8429,33 @@ func (c *S3) PutBucketEncryptionRequest(input *PutBucketEncryptionInput) (req *r
 
 // PutBucketEncryption API operation for Amazon Simple Storage Service.
 //
-// This action uses the encryption subresource to configure default encryption
-// and Amazon S3 Bucket Key for an existing bucket.
+// This operation is not supported by directory buckets.
 //
-// Default encryption for a bucket can use server-side encryption with Amazon
-// S3-managed keys (SSE-S3) or customer managed keys (SSE-KMS). If you specify
-// default encryption using SSE-KMS, you can also configure Amazon S3 Bucket
-// Key. When the default encryption is SSE-KMS, if you upload an object to the
-// bucket and do not specify the KMS key to use for encryption, Amazon S3 uses
-// the default Amazon Web Services managed KMS key for your account. For information
-// about default encryption, see Amazon S3 default bucket encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html)
-// in the Amazon S3 User Guide. For more information about S3 Bucket Keys, see
-// Amazon S3 Bucket Keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-key.html)
-// in the Amazon S3 User Guide.
+// This action uses the encryption subresource to configure default encryption
+// and Amazon S3 Bucket Keys for an existing bucket.
+//
+// By default, all buckets have a default encryption configuration that uses
+// server-side encryption with Amazon S3 managed keys (SSE-S3). You can optionally
+// configure default encryption for a bucket by using server-side encryption
+// with Key Management Service (KMS) keys (SSE-KMS) or dual-layer server-side
+// encryption with Amazon Web Services KMS keys (DSSE-KMS). If you specify default
+// encryption by using SSE-KMS, you can also configure Amazon S3 Bucket Keys
+// (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-key.html). If you
+// use PutBucketEncryption to set your default bucket encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html)
+// to SSE-KMS, you should verify that your KMS key ID is correct. Amazon S3
+// does not validate the KMS key ID provided in PutBucketEncryption requests.
 //
 // This action requires Amazon Web Services Signature Version 4. For more information,
 // see Authenticating Requests (Amazon Web Services Signature Version 4) (https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html).
 //
-// To use this operation, you must have permissions to perform the s3:PutEncryptionConfiguration
+// To use this operation, you must have permission to perform the s3:PutEncryptionConfiguration
 // action. The bucket owner has this permission by default. The bucket owner
 // can grant this permission to others. For more information about permissions,
 // see Permissions Related to Bucket Subresource Operations (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html#using-with-s3-actions-related-to-bucket-subresources)
 // and Managing Access Permissions to Your Amazon S3 Resources (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-access-control.html)
 // in the Amazon S3 User Guide.
 //
-// Related Resources
+// The following operations are related to PutBucketEncryption:
 //
 //   - GetBucketEncryption (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketEncryption.html)
 //
@@ -7642,6 +8533,8 @@ func (c *S3) PutBucketIntelligentTieringConfigurationRequest(input *PutBucketInt
 
 // PutBucketIntelligentTieringConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Puts a S3 Intelligent-Tiering configuration to the specified bucket. You
 // can have up to 1,000 S3 Intelligent-Tiering configurations per bucket.
 //
@@ -7674,17 +8567,26 @@ func (c *S3) PutBucketIntelligentTieringConfigurationRequest(input *PutBucketInt
 // move objects stored in the S3 Intelligent-Tiering storage class to the Archive
 // Access or Deep Archive Access tier.
 //
-// Special Errors
+// PutBucketIntelligentTieringConfiguration has the following special errors:
 //
-//   - HTTP 400 Bad Request Error Code: InvalidArgument Cause: Invalid Argument
+// # HTTP 400 Bad Request Error
 //
-//   - HTTP 400 Bad Request Error Code: TooManyConfigurations Cause: You are
-//     attempting to create a new configuration but have already reached the
-//     1,000-configuration limit.
+// Code: InvalidArgument
 //
-//   - HTTP 403 Forbidden Error Code: AccessDenied Cause: You are not the owner
-//     of the specified bucket, or you do not have the s3:PutIntelligentTieringConfiguration
-//     bucket permission to set the configuration on the bucket.
+// Cause: Invalid Argument
+//
+// # HTTP 400 Bad Request Error
+//
+// Code: TooManyConfigurations
+//
+// Cause: You are attempting to create a new configuration but have already
+// reached the 1,000-configuration limit.
+//
+// # HTTP 403 Forbidden Error
+//
+// Cause: You are not the owner of the specified bucket, or you do not have
+// the s3:PutIntelligentTieringConfiguration bucket permission to set the configuration
+// on the bucket.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -7758,6 +8660,8 @@ func (c *S3) PutBucketInventoryConfigurationRequest(input *PutBucketInventoryCon
 
 // PutBucketInventoryConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // This implementation of the PUT action adds an inventory configuration (identified
 // by the inventory ID) to the bucket. You can have up to 1,000 inventory configurations
 // per bucket.
@@ -7780,26 +8684,50 @@ func (c *S3) PutBucketInventoryConfigurationRequest(input *PutBucketInventoryCon
 // an example policy, see Granting Permissions for Amazon S3 Inventory and Storage
 // Class Analysis (https://docs.aws.amazon.com/AmazonS3/latest/dev/example-bucket-policies.html#example-bucket-policies-use-case-9).
 //
-// To use this operation, you must have permissions to perform the s3:PutInventoryConfiguration
+// # Permissions
+//
+// To use this operation, you must have permission to perform the s3:PutInventoryConfiguration
 // action. The bucket owner has this permission by default and can grant this
-// permission to others. For more information about permissions, see Permissions
-// Related to Bucket Subresource Operations (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html#using-with-s3-actions-related-to-bucket-subresources)
-// and Managing Access Permissions to Your Amazon S3 Resources (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-access-control.html)
+// permission to others.
+//
+// The s3:PutInventoryConfiguration permission allows a user to create an S3
+// Inventory (https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-inventory.html)
+// report that includes all object metadata fields available and to specify
+// the destination bucket to store the inventory. A user with read access to
+// objects in the destination bucket can also access all object metadata fields
+// that are available in the inventory report.
+//
+// To restrict access to an inventory report, see Restricting access to an Amazon
+// S3 Inventory report (https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-bucket-policies.html#example-bucket-policies-use-case-10)
+// in the Amazon S3 User Guide. For more information about the metadata fields
+// available in S3 Inventory, see Amazon S3 Inventory lists (https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-inventory.html#storage-inventory-contents)
+// in the Amazon S3 User Guide. For more information about permissions, see
+// Permissions related to bucket subresource operations (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html#using-with-s3-actions-related-to-bucket-subresources)
+// and Identity and access management in Amazon S3 (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-access-control.html)
 // in the Amazon S3 User Guide.
 //
-// Special Errors
+// PutBucketInventoryConfiguration has the following special errors:
 //
-//   - HTTP 400 Bad Request Error Code: InvalidArgument Cause: Invalid Argument
+// # HTTP 400 Bad Request Error
 //
-//   - HTTP 400 Bad Request Error Code: TooManyConfigurations Cause: You are
-//     attempting to create a new configuration but have already reached the
-//     1,000-configuration limit.
+// Code: InvalidArgument
 //
-//   - HTTP 403 Forbidden Error Code: AccessDenied Cause: You are not the owner
-//     of the specified bucket, or you do not have the s3:PutInventoryConfiguration
-//     bucket permission to set the configuration on the bucket.
+// Cause: Invalid Argument
 //
-// Related Resources
+// # HTTP 400 Bad Request Error
+//
+// Code: TooManyConfigurations
+//
+// Cause: You are attempting to create a new configuration but have already
+// reached the 1,000-configuration limit.
+//
+// # HTTP 403 Forbidden Error
+//
+// Cause: You are not the owner of the specified bucket, or you do not have
+// the s3:PutInventoryConfiguration bucket permission to set the configuration
+// on the bucket.
+//
+// The following operations are related to PutBucketInventoryConfiguration:
 //
 //   - GetBucketInventoryConfiguration (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketInventoryConfiguration.html)
 //
@@ -7888,6 +8816,8 @@ func (c *S3) PutBucketLifecycleRequest(input *PutBucketLifecycleInput) (req *req
 
 // PutBucketLifecycle API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // For an updated version of this API, see PutBucketLifecycleConfiguration (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html).
 // This version has been deprecated. Existing lifecycle configurations will
 // work. For new lifecycle configurations, use the updated API.
@@ -7922,7 +8852,7 @@ func (c *S3) PutBucketLifecycleRequest(input *PutBucketLifecycleInput) (req *req
 // For more examples of transitioning objects to storage classes such as STANDARD_IA
 // or ONEZONE_IA, see Examples of Lifecycle Configuration (https://docs.aws.amazon.com/AmazonS3/latest/dev/intro-lifecycle-rules.html#lifecycle-configuration-examples).
 //
-// Related Resources
+// The following operations are related to PutBucketLifecycle:
 //
 //   - GetBucketLifecycle (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLifecycle.html)(Deprecated)
 //
@@ -8017,6 +8947,8 @@ func (c *S3) PutBucketLifecycleConfigurationRequest(input *PutBucketLifecycleCon
 
 // PutBucketLifecycleConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Creates a new lifecycle configuration for the bucket or replaces an existing
 // lifecycle configuration. Keep in mind that this will overwrite an existing
 // lifecycle configuration, so if you want to retain any configuration details,
@@ -8024,10 +8956,10 @@ func (c *S3) PutBucketLifecycleConfigurationRequest(input *PutBucketLifecycleCon
 // about lifecycle configuration, see Managing your storage lifecycle (https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html).
 //
 // Bucket lifecycle configuration now supports specifying a lifecycle rule using
-// an object key name prefix, one or more object tags, or a combination of both.
-// Accordingly, this section describes the latest API. The previous version
-// of the API supported filtering based only on an object key name prefix, which
-// is supported for backward compatibility. For the related API description,
+// an object key name prefix, one or more object tags, object size, or any combination
+// of these. Accordingly, this section describes the latest API. The previous
+// version of the API supported filtering based only on an object key name prefix,
+// which is supported for backward compatibility. For the related API description,
 // see PutBucketLifecycle (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycle.html).
 //
 // # Rules
@@ -8037,11 +8969,11 @@ func (c *S3) PutBucketLifecycleConfigurationRequest(input *PutBucketLifecycleCon
 // S3 Lifecycle configuration can have up to 1,000 rules. This limit is not
 // adjustable. Each rule consists of the following:
 //
-//   - Filter identifying a subset of objects to which the rule applies. The
-//     filter can be based on a key name prefix, object tags, or a combination
-//     of both.
+//   - A filter identifying a subset of objects to which the rule applies.
+//     The filter can be based on a key name prefix, object tags, object size,
+//     or any combination of these.
 //
-//   - Status whether the rule is in effect.
+//   - A status indicating whether the rule is in effect.
 //
 //   - One or more lifecycle transition and expiration actions that you want
 //     Amazon S3 to perform on the objects identified by the filter. If the state
@@ -8062,10 +8994,10 @@ func (c *S3) PutBucketLifecycleConfigurationRequest(input *PutBucketLifecycleCon
 // optionally grant access permissions to others by writing an access policy.
 // For this operation, a user must get the s3:PutLifecycleConfiguration permission.
 //
-// You can also explicitly deny permissions. Explicit deny also supersedes any
-// other permissions. If you want to block users or accounts from removing or
-// deleting objects from your bucket, you must deny them permissions for the
-// following actions:
+// You can also explicitly deny permissions. An explicit deny also supersedes
+// any other permissions. If you want to block users or accounts from removing
+// or deleting objects from your bucket, you must deny them permissions for
+// the following actions:
 //
 //   - s3:DeleteObject
 //
@@ -8076,7 +9008,7 @@ func (c *S3) PutBucketLifecycleConfigurationRequest(input *PutBucketLifecycleCon
 // For more information about permissions, see Managing Access Permissions to
 // Your Amazon S3 Resources (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-access-control.html).
 //
-// The following are related to PutBucketLifecycleConfiguration:
+// The following operations are related to PutBucketLifecycleConfiguration:
 //
 //   - Examples of Lifecycle Configuration (https://docs.aws.amazon.com/AmazonS3/latest/dev/lifecycle-configuration-examples.html)
 //
@@ -8160,6 +9092,8 @@ func (c *S3) PutBucketLoggingRequest(input *PutBucketLoggingInput) (req *request
 
 // PutBucketLogging API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Set the logging parameters for a bucket and to specify permissions for who
 // can view and modify the logging parameters. All logs are saved to buckets
 // in the same Amazon Web Services Region as the source bucket. To set the logging
@@ -8178,7 +9112,7 @@ func (c *S3) PutBucketLoggingRequest(input *PutBucketLoggingInput) (req *request
 // # Grantee Values
 //
 // You can specify the person (grantee) to whom you're assigning access rights
-// (using request elements) in the following ways:
+// (by using request elements) in the following ways:
 //
 //   - By the person's ID: <Grantee xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 //     xsi:type="CanonicalUser"><ID><>ID<></ID><DisplayName><>GranteesEmail<></DisplayName>
@@ -8186,8 +9120,8 @@ func (c *S3) PutBucketLoggingRequest(input *PutBucketLoggingInput) (req *request
 //
 //   - By Email address: <Grantee xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 //     xsi:type="AmazonCustomerByEmail"><EmailAddress><>Grantees@email.com<></EmailAddress></Grantee>
-//     The grantee is resolved to the CanonicalUser and, in a response to a GET
-//     Object acl request, appears as the CanonicalUser.
+//     The grantee is resolved to the CanonicalUser and, in a response to a GETObjectAcl
+//     request, appears as the CanonicalUser.
 //
 //   - By URI: <Grantee xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 //     xsi:type="Group"><URI><>http://acs.amazonaws.com/groups/global/AuthenticatedUsers<></URI></Grantee>
@@ -8287,6 +9221,8 @@ func (c *S3) PutBucketMetricsConfigurationRequest(input *PutBucketMetricsConfigu
 
 // PutBucketMetricsConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Sets a metrics configuration (specified by the metrics configuration ID)
 // for the bucket. You can have up to 1,000 metrics configurations per bucket.
 // If you're updating an existing metrics configuration, note that this is a
@@ -8310,7 +9246,7 @@ func (c *S3) PutBucketMetricsConfigurationRequest(input *PutBucketMetricsConfigu
 //
 //   - ListBucketMetricsConfigurations (https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListBucketMetricsConfigurations.html)
 //
-// GetBucketLifecycle has the following special error:
+// PutBucketMetricsConfiguration has the following special error:
 //
 //   - Error code: TooManyConfigurations Description: You are attempting to
 //     create a new configuration but have already reached the 1,000-configuration
@@ -8397,6 +9333,8 @@ func (c *S3) PutBucketNotificationRequest(input *PutBucketNotificationInput) (re
 
 // PutBucketNotification API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // No longer used, see the PutBucketNotificationConfiguration (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketNotificationConfiguration.html)
 // operation.
 //
@@ -8476,6 +9414,8 @@ func (c *S3) PutBucketNotificationConfigurationRequest(input *PutBucketNotificat
 
 // PutBucketNotificationConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Enables notifications of specified events for a bucket. For more information
 // about event notifications, see Configuring Event Notifications (https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html).
 //
@@ -8511,15 +9451,14 @@ func (c *S3) PutBucketNotificationConfigurationRequest(input *PutBucketNotificat
 //
 // By default, only the bucket owner can configure notifications on a bucket.
 // However, bucket owners can use a bucket policy to grant permission to other
-// users to set this configuration with s3:PutBucketNotification permission.
+// users to set this configuration with the required s3:PutBucketNotification
+// permission.
 //
 // The PUT notification is an atomic operation. For example, suppose your notification
 // configuration includes SNS topic, SQS queue, and Lambda function configurations.
 // When you send a PUT request with this configuration, Amazon S3 sends test
 // messages to your SNS topic. If the message fails, the entire PUT action will
 // fail, and Amazon S3 will not add the configuration to your bucket.
-//
-// # Responses
 //
 // If the configuration in the request body includes only one TopicConfiguration
 // specifying only the s3:ReducedRedundancyLostObject event type, the response
@@ -8605,6 +9544,8 @@ func (c *S3) PutBucketOwnershipControlsRequest(input *PutBucketOwnershipControls
 }
 
 // PutBucketOwnershipControls API operation for Amazon Simple Storage Service.
+//
+// This operation is not supported by directory buckets.
 //
 // Creates or modifies OwnershipControls for an Amazon S3 bucket. To use this
 // operation, you must have the s3:PutBucketOwnershipControls permission. For
@@ -8696,22 +9637,62 @@ func (c *S3) PutBucketPolicyRequest(input *PutBucketPolicyInput) (req *request.R
 
 // PutBucketPolicy API operation for Amazon Simple Storage Service.
 //
-// Applies an Amazon S3 bucket policy to an Amazon S3 bucket. If you are using
-// an identity other than the root user of the Amazon Web Services account that
-// owns the bucket, the calling identity must have the PutBucketPolicy permissions
-// on the specified bucket and belong to the bucket owner's account in order
-// to use this operation.
+// Applies an Amazon S3 bucket policy to an Amazon S3 bucket.
+//
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Regional endpoint. These endpoints support path-style
+// requests in the format https://s3express-control.region_code.amazonaws.com/bucket-name
+// . Virtual-hosted-style requests aren't supported. For more information, see
+// Regional and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
+//
+// # Permissions
+//
+// If you are using an identity other than the root user of the Amazon Web Services
+// account that owns the bucket, the calling identity must both have the PutBucketPolicy
+// permissions on the specified bucket and belong to the bucket owner's account
+// in order to use this operation.
 //
 // If you don't have PutBucketPolicy permissions, Amazon S3 returns a 403 Access
 // Denied error. If you have the correct permissions, but you're not using an
 // identity that belongs to the bucket owner's account, Amazon S3 returns a
 // 405 Method Not Allowed error.
 //
-// As a security precaution, the root user of the Amazon Web Services account
-// that owns a bucket can always use this operation, even if the policy explicitly
-// denies the root user the ability to perform this action.
+// To ensure that bucket owners don't inadvertently lock themselves out of their
+// own buckets, the root principal in a bucket owner's Amazon Web Services account
+// can perform the GetBucketPolicy, PutBucketPolicy, and DeleteBucketPolicy
+// API actions, even if their bucket policy explicitly denies the root principal's
+// access. Bucket owner root principals can only be blocked from performing
+// these API actions by VPC endpoint policies and Amazon Web Services Organizations
+// policies.
 //
-// For more information, see Bucket policy examples (https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-bucket-policies.html).
+//   - General purpose bucket permissions - The s3:PutBucketPolicy permission
+//     is required in a policy. For more information about general purpose buckets
+//     bucket policies, see Using Bucket Policies and User Policies (https://docs.aws.amazon.com/AmazonS3/latest/dev/using-iam-policies.html)
+//     in the Amazon S3 User Guide.
+//
+//   - Directory bucket permissions - To grant access to this API operation,
+//     you must have the s3express:PutBucketPolicy permission in an IAM identity-based
+//     policy instead of a bucket policy. Cross-account access to this API operation
+//     isn't supported. This operation can only be performed by the Amazon Web
+//     Services account that owns the resource. For more information about directory
+//     bucket policies and permissions, see Amazon Web Services Identity and
+//     Access Management (IAM) for S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam.html)
+//     in the Amazon S3 User Guide.
+//
+// # Example bucket policies
+//
+// General purpose buckets example bucket policies - See Bucket policy examples
+// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-bucket-policies.html)
+// in the Amazon S3 User Guide.
+//
+// Directory bucket example bucket policies - See Example bucket policies for
+// S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam-example-bucket-policies.html)
+// in the Amazon S3 User Guide.
+//
+// # HTTP Host header syntax
+//
+// Directory buckets - The HTTP Host header syntax is s3express-control.region.amazonaws.com.
 //
 // The following operations are related to PutBucketPolicy:
 //
@@ -8795,6 +9776,8 @@ func (c *S3) PutBucketReplicationRequest(input *PutBucketReplicationInput) (req 
 
 // PutBucketReplication API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Creates a replication configuration or replaces an existing one. For more
 // information, see Replication (https://docs.aws.amazon.com/AmazonS3/latest/dev/replication.html)
 // in the Amazon S3 User Guide.
@@ -8803,6 +9786,9 @@ func (c *S3) PutBucketReplicationRequest(input *PutBucketReplicationInput) (req 
 // configuration, you provide the name of the destination bucket or buckets
 // where you want Amazon S3 to replicate objects, the IAM role that Amazon S3
 // can assume to replicate objects on your behalf, and other relevant information.
+// You can invoke this request for a specific Amazon Web Services Region by
+// using the aws:RequestedRegion (https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-requestedregion)
+// condition key.
 //
 // A replication configuration must include at least one rule, and can contain
 // a maximum of 1,000. Each rule identifies a subset of objects to replicate
@@ -8931,6 +9917,8 @@ func (c *S3) PutBucketRequestPaymentRequest(input *PutBucketRequestPaymentInput)
 
 // PutBucketRequestPayment API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Sets the request payment configuration for a bucket. By default, the bucket
 // owner pays for downloads from the bucket. This configuration parameter enables
 // the bucket owner (only) to specify that the person requesting the download
@@ -9019,6 +10007,8 @@ func (c *S3) PutBucketTaggingRequest(input *PutBucketTaggingInput) (req *request
 
 // PutBucketTagging API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Sets the tags for a bucket.
 //
 // Use tags to organize your Amazon Web Services bill to reflect your own cost
@@ -9029,7 +10019,7 @@ func (c *S3) PutBucketTaggingRequest(input *PutBucketTaggingInput) (req *request
 // name, and then organize your billing information to see the total cost of
 // that application across several services. For more information, see Cost
 // Allocation and Tagging (https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html)
-// and Using Cost Allocation in Amazon S3 Bucket Tags (https://docs.aws.amazon.com/AmazonS3/latest/dev/CostAllocTagging.html).
+// and Using Cost Allocation in Amazon S3 Bucket Tags (https://docs.aws.amazon.com/AmazonS3/latest/userguide/CostAllocTagging.html).
 //
 // When this operation sets the tags for a bucket, it will overwrite any current
 // tags the bucket already has. You cannot use this operation to add tags to
@@ -9041,22 +10031,20 @@ func (c *S3) PutBucketTaggingRequest(input *PutBucketTaggingInput) (req *request
 // Related to Bucket Subresource Operations (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html#using-with-s3-actions-related-to-bucket-subresources)
 // and Managing Access Permissions to Your Amazon S3 Resources (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-access-control.html).
 //
-// PutBucketTagging has the following special errors:
+// PutBucketTagging has the following special errors. For more Amazon S3 errors
+// see, Error Responses (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html).
 //
-//   - Error code: InvalidTagError Description: The tag provided was not a
-//     valid tag. This error can occur if the tag did not pass input validation.
-//     For information about tag restrictions, see User-Defined Tag Restrictions
-//     (https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/allocation-tag-restrictions.html)
-//     and Amazon Web Services-Generated Cost Allocation Tag Restrictions (https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/aws-tag-restrictions.html).
+//   - InvalidTag - The tag provided was not a valid tag. This error can occur
+//     if the tag did not pass input validation. For more information, see Using
+//     Cost Allocation in Amazon S3 Bucket Tags (https://docs.aws.amazon.com/AmazonS3/latest/userguide/CostAllocTagging.html).
 //
-//   - Error code: MalformedXMLError Description: The XML provided does not
-//     match the schema.
+//   - MalformedXML - The XML provided does not match the schema.
 //
-//   - Error code: OperationAbortedError Description: A conflicting conditional
-//     action is currently in progress against this resource. Please try again.
+//   - OperationAborted - A conflicting conditional action is currently in
+//     progress against this resource. Please try again.
 //
-//   - Error code: InternalError Description: The service was unable to apply
-//     the provided tag to the bucket.
+//   - InternalError - The service was unable to apply the provided tag to
+//     the bucket.
 //
 // The following operations are related to PutBucketTagging:
 //
@@ -9140,6 +10128,8 @@ func (c *S3) PutBucketVersioningRequest(input *PutBucketVersioningInput) (req *r
 
 // PutBucketVersioning API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Sets the versioning state of an existing bucket.
 //
 // You can set the versioning state with one of the following values:
@@ -9159,15 +10149,15 @@ func (c *S3) PutBucketVersioningRequest(input *PutBucketVersioningInput) (req *r
 // you must include the x-amz-mfa request header and the Status and the MfaDelete
 // request elements in a request to set the versioning state of the bucket.
 //
-// If you have an object expiration lifecycle policy in your non-versioned bucket
-// and you want to maintain the same permanent delete behavior when you enable
-// versioning, you must add a noncurrent expiration policy. The noncurrent expiration
-// lifecycle policy will manage the deletes of the noncurrent object versions
-// in the version-enabled bucket. (A version-enabled bucket maintains one current
-// and zero or more noncurrent object versions.) For more information, see Lifecycle
-// and Versioning (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html#lifecycle-and-other-bucket-config).
+// If you have an object expiration lifecycle configuration in your non-versioned
+// bucket and you want to maintain the same permanent delete behavior when you
+// enable versioning, you must add a noncurrent expiration policy. The noncurrent
+// expiration lifecycle configuration will manage the deletes of the noncurrent
+// object versions in the version-enabled bucket. (A version-enabled bucket
+// maintains one current and zero or more noncurrent object versions.) For more
+// information, see Lifecycle and Versioning (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html#lifecycle-and-other-bucket-config).
 //
-// Related Resources
+// The following operations are related to PutBucketVersioning:
 //
 //   - CreateBucket (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html)
 //
@@ -9251,6 +10241,8 @@ func (c *S3) PutBucketWebsiteRequest(input *PutBucketWebsiteInput) (req *request
 
 // PutBucketWebsite API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Sets the configuration of the website that is specified in the website subresource.
 // To configure a bucket as a website, you can add this subresource on the bucket
 // with website configuration information such as the file name of the index
@@ -9317,6 +10309,8 @@ func (c *S3) PutBucketWebsiteRequest(input *PutBucketWebsiteInput) (req *request
 // If you require more than 50 routing rules, you can use object redirect. For
 // more information, see Configuring an Object Redirect (https://docs.aws.amazon.com/AmazonS3/latest/dev/how-to-page-redirect.html)
 // in the Amazon S3 User Guide.
+//
+// The maximum request length is limited to 128 KB.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -9389,99 +10383,85 @@ func (c *S3) PutObjectRequest(input *PutObjectInput) (req *request.Request, outp
 
 // PutObject API operation for Amazon Simple Storage Service.
 //
-// Adds an object to a bucket. You must have WRITE permissions on a bucket to
-// add an object to it.
+// Adds an object to a bucket.
 //
-// Amazon S3 never adds partial objects; if you receive a success response,
-// Amazon S3 added the entire object to the bucket.
+//   - Amazon S3 never adds partial objects; if you receive a success response,
+//     Amazon S3 added the entire object to the bucket. You cannot use PutObject
+//     to only update a single piece of metadata for an existing object. You
+//     must put the entire object with updated metadata if you want to update
+//     some values.
+//
+//   - If your bucket uses the bucket owner enforced setting for Object Ownership,
+//     ACLs are disabled and no longer affect permissions. All objects written
+//     to the bucket by any account will be owned by the bucket owner.
+//
+//   - Directory buckets - For directory buckets, you must make requests for
+//     this API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+//     requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+//     . Path-style requests are not supported. For more information, see Regional
+//     and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+//     in the Amazon S3 User Guide.
 //
 // Amazon S3 is a distributed system. If it receives multiple write requests
 // for the same object simultaneously, it overwrites all but the last object
-// written. Amazon S3 does not provide object locking; if you need this, make
-// sure to build it into your application layer or use versioning instead.
+// written. However, Amazon S3 provides features that can modify this behavior:
 //
-// To ensure that data is not corrupted traversing the network, use the Content-MD5
-// header. When you use this header, Amazon S3 checks the object against the
-// provided MD5 value and, if they do not match, returns an error. Additionally,
-// you can calculate the MD5 while putting an object to Amazon S3 and compare
-// the returned ETag to the calculated MD5 value.
+//   - S3 Object Lock - To prevent objects from being deleted or overwritten,
+//     you can use Amazon S3 Object Lock (https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html)
+//     in the Amazon S3 User Guide. This functionality is not supported for directory
+//     buckets.
 //
-//   - To successfully complete the PutObject request, you must have the s3:PutObject
-//     in your IAM permissions.
+//   - S3 Versioning - When you enable versioning for a bucket, if Amazon S3
+//     receives multiple write requests for the same object simultaneously, it
+//     stores all versions of the objects. For each write request that is made
+//     to the same object, Amazon S3 automatically generates a unique version
+//     ID of that object being stored in Amazon S3. You can retrieve, replace,
+//     or delete any version of the object. For more information about versioning,
+//     see Adding Objects to Versioning-Enabled Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/AddingObjectstoVersioningEnabledBuckets.html)
+//     in the Amazon S3 User Guide. For information about returning the versioning
+//     state of a bucket, see GetBucketVersioning (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketVersioning.html).
+//     This functionality is not supported for directory buckets.
 //
-//   - To successfully change the objects acl of your PutObject request, you
-//     must have the s3:PutObjectAcl in your IAM permissions.
+// Permissions
 //
-//   - The Content-MD5 header is required for any request to upload an object
-//     with a retention period configured using Amazon S3 Object Lock. For more
-//     information about Amazon S3 Object Lock, see Amazon S3 Object Lock Overview
-//     (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock-overview.html)
-//     in the Amazon S3 User Guide.
+//   - General purpose bucket permissions - The following permissions are required
+//     in your policies when your PutObject request includes specific headers.
+//     s3:PutObject - To successfully complete the PutObject request, you must
+//     always have the s3:PutObject permission on a bucket to add an object to
+//     it. s3:PutObjectAcl - To successfully change the objects ACL of your PutObject
+//     request, you must have the s3:PutObjectAcl. s3:PutObjectTagging - To successfully
+//     set the tag-set with your PutObject request, you must have the s3:PutObjectTagging.
 //
-// # Server-side Encryption
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
 //
-// You can optionally request server-side encryption. With server-side encryption,
-// Amazon S3 encrypts your data as it writes it to disks in its data centers
-// and decrypts the data when you access it. You have the option to provide
-// your own encryption key or use Amazon Web Services managed encryption keys
-// (SSE-S3 or SSE-KMS). For more information, see Using Server-Side Encryption
-// (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html).
+// Data integrity with Content-MD5
 //
-// If you request server-side encryption using Amazon Web Services Key Management
-// Service (SSE-KMS), you can enable an S3 Bucket Key at the object-level. For
-// more information, see Amazon S3 Bucket Keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-key.html)
-// in the Amazon S3 User Guide.
+//   - General purpose bucket - To ensure that data is not corrupted traversing
+//     the network, use the Content-MD5 header. When you use this header, Amazon
+//     S3 checks the object against the provided MD5 value and, if they do not
+//     match, Amazon S3 returns an error. Alternatively, when the object's ETag
+//     is its MD5 digest, you can calculate the MD5 while putting the object
+//     to Amazon S3 and compare the returned ETag to the calculated MD5 value.
 //
-// # Access Control List (ACL)-Specific Request Headers
+//   - Directory bucket - This functionality is not supported for directory
+//     buckets.
 //
-// You can use headers to grant ACL- based permissions. By default, all objects
-// are private. Only the owner has full access control. When adding a new object,
-// you can grant permissions to individual Amazon Web Services accounts or to
-// predefined groups defined by Amazon S3. These permissions are then added
-// to the ACL on the object. For more information, see Access Control List (ACL)
-// Overview (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html)
-// and Managing ACLs Using the REST API (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-using-rest-api.html).
+// # HTTP Host header syntax
 //
-// If the bucket that you're uploading objects to uses the bucket owner enforced
-// setting for S3 Object Ownership, ACLs are disabled and no longer affect permissions.
-// Buckets that use this setting only accept PUT requests that don't specify
-// an ACL or PUT requests that specify bucket owner full control ACLs, such
-// as the bucket-owner-full-control canned ACL or an equivalent form of this
-// ACL expressed in the XML format. PUT requests that contain other ACLs (for
-// example, custom grants to certain Amazon Web Services accounts) fail and
-// return a 400 error with the error code AccessControlListNotSupported.
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
-// For more information, see Controlling ownership of objects and disabling
-// ACLs (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html)
-// in the Amazon S3 User Guide.
-//
-// If your bucket uses the bucket owner enforced setting for Object Ownership,
-// all objects written to the bucket by any account will be owned by the bucket
-// owner.
-//
-// # Storage Class Options
-//
-// By default, Amazon S3 uses the STANDARD Storage Class to store newly created
-// objects. The STANDARD storage class provides high durability and high availability.
-// Depending on performance needs, you can specify a different Storage Class.
-// Amazon S3 on Outposts only uses the OUTPOSTS Storage Class. For more information,
-// see Storage Classes (https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html)
-// in the Amazon S3 User Guide.
-//
-// # Versioning
-//
-// If you enable versioning for a bucket, Amazon S3 automatically generates
-// a unique version ID for the object being stored. Amazon S3 returns this ID
-// in the response. When you enable versioning for a bucket, if Amazon S3 receives
-// multiple write requests for the same object simultaneously, it stores all
-// of the objects.
-//
-// For more information about versioning, see Adding Objects to Versioning Enabled
-// Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/AddingObjectstoVersioningEnabledBuckets.html).
-// For information about returning the versioning state of a bucket, see GetBucketVersioning
-// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketVersioning.html).
-//
-// Related Resources
+// For more information about related Amazon S3 APIs, see the following:
 //
 //   - CopyObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
 //
@@ -9562,13 +10542,15 @@ func (c *S3) PutObjectAclRequest(input *PutObjectAclInput) (req *request.Request
 
 // PutObjectAcl API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Uses the acl subresource to set the access control list (ACL) permissions
-// for a new or existing object in an S3 bucket. You must have WRITE_ACP permission
-// to set the ACL of an object. For more information, see What permissions can
-// I grant? (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#permissions)
+// for a new or existing object in an S3 bucket. You must have the WRITE_ACP
+// permission to set the ACL of an object. For more information, see What permissions
+// can I grant? (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#permissions)
 // in the Amazon S3 User Guide.
 //
-// This action is not supported by Amazon S3 on Outposts.
+// This functionality is not supported for Amazon S3 on Outposts.
 //
 // Depending on your application needs, you can choose to set the ACL on an
 // object using either the request body or the headers. For example, if you
@@ -9585,7 +10567,7 @@ func (c *S3) PutObjectAclRequest(input *PutObjectAclInput) (req *request.Request
 // object ownership (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html)
 // in the Amazon S3 User Guide.
 //
-// # Access Permissions
+// # Permissions
 //
 // You can set access permissions using one of the following methods:
 //
@@ -9651,7 +10633,7 @@ func (c *S3) PutObjectAclRequest(input *PutObjectAclInput) (req *request.Request
 // sets the ACL of the current version of an object. To set the ACL of a different
 // version, use the versionId subresource.
 //
-// Related Resources
+// The following operations are related to PutObjectAcl:
 //
 //   - CopyObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
 //
@@ -9737,10 +10719,12 @@ func (c *S3) PutObjectLegalHoldRequest(input *PutObjectLegalHoldInput) (req *req
 
 // PutObjectLegalHold API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Applies a legal hold configuration to the specified object. For more information,
 // see Locking Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock.html).
 //
-// This action is not supported by Amazon S3 on Outposts.
+// This functionality is not supported for Amazon S3 on Outposts.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -9817,6 +10801,8 @@ func (c *S3) PutObjectLockConfigurationRequest(input *PutObjectLockConfiguration
 
 // PutObjectLockConfiguration API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Places an Object Lock configuration on the specified bucket. The rule specified
 // in the Object Lock configuration will be applied by default to every new
 // object placed in the specified bucket. For more information, see Locking
@@ -9827,8 +10813,8 @@ func (c *S3) PutObjectLockConfigurationRequest(input *PutObjectLockConfiguration
 //   - The DefaultRetention period can be either Days or Years but you must
 //     select one. You cannot specify Days and Years at the same time.
 //
-//   - You can only enable Object Lock for new buckets. If you want to turn
-//     on Object Lock for an existing bucket, contact Amazon Web Services Support.
+//   - You can enable Object Lock for new or existing buckets. For more information,
+//     see Configuring Object Lock (https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock-configure.html).
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -9905,13 +10891,15 @@ func (c *S3) PutObjectRetentionRequest(input *PutObjectRetentionInput) (req *req
 
 // PutObjectRetention API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Places an Object Retention configuration on an object. For more information,
 // see Locking Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock.html).
 // Users or accounts require the s3:PutObjectRetention permission in order to
 // place an Object Retention configuration on objects. Bypassing a Governance
 // Retention configuration requires the s3:BypassGovernanceRetention permission.
 //
-// This action is not supported by Amazon S3 on Outposts.
+// This functionality is not supported for Amazon S3 on Outposts.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -9988,12 +10976,15 @@ func (c *S3) PutObjectTaggingRequest(input *PutObjectTaggingInput) (req *request
 
 // PutObjectTagging API operation for Amazon Simple Storage Service.
 //
-// Sets the supplied tag-set to an object that already exists in a bucket.
+// This operation is not supported by directory buckets.
 //
-// A tag is a key-value pair. You can associate tags with an object by sending
-// a PUT request against the tagging subresource that is associated with the
-// object. You can retrieve tags by sending a GET request. For more information,
-// see GetObjectTagging (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectTagging.html).
+// Sets the supplied tag-set to an object that already exists in a bucket. A
+// tag is a key-value pair. For more information, see Object Tagging (https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-tagging.html).
+//
+// You can associate tags with an object by sending a PUT request against the
+// tagging subresource that is associated with the object. You can retrieve
+// tags by sending a GET request. For more information, see GetObjectTagging
+// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectTagging.html).
 //
 // For tagging-related restrictions related to characters and encodings, see
 // Tag Restrictions (https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/allocation-tag-restrictions.html).
@@ -10006,24 +10997,22 @@ func (c *S3) PutObjectTaggingRequest(input *PutObjectTaggingInput) (req *request
 // To put tags of any other version, use the versionId query parameter. You
 // also need permission for the s3:PutObjectVersionTagging action.
 //
-// For information about the Amazon S3 object tagging feature, see Object Tagging
-// (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-tagging.html).
+// PutObjectTagging has the following special errors. For more Amazon S3 errors
+// see, Error Responses (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html).
 //
-// Special Errors
+//   - InvalidTag - The tag provided was not a valid tag. This error can occur
+//     if the tag did not pass input validation. For more information, see Object
+//     Tagging (https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-tagging.html).
 //
-//   - Code: InvalidTagError Cause: The tag provided was not a valid tag. This
-//     error can occur if the tag did not pass input validation. For more information,
-//     see Object Tagging (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-tagging.html).
+//   - MalformedXML - The XML provided does not match the schema.
 //
-//   - Code: MalformedXMLError Cause: The XML provided does not match the schema.
+//   - OperationAborted - A conflicting conditional action is currently in
+//     progress against this resource. Please try again.
 //
-//   - Code: OperationAbortedError Cause: A conflicting conditional action
-//     is currently in progress against this resource. Please try again.
+//   - InternalError - The service was unable to apply the provided tag to
+//     the object.
 //
-//   - Code: InternalError Cause: The service was unable to apply the provided
-//     tag to the object.
-//
-// Related Resources
+// The following operations are related to PutObjectTagging:
 //
 //   - GetObjectTagging (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectTagging.html)
 //
@@ -10105,6 +11094,8 @@ func (c *S3) PutPublicAccessBlockRequest(input *PutPublicAccessBlockInput) (req 
 
 // PutPublicAccessBlock API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Creates or modifies the PublicAccessBlock configuration for an Amazon S3
 // bucket. To use this operation, you must have the s3:PutBucketPublicAccessBlock
 // permission. For more information about Amazon S3 permissions, see Specifying
@@ -10120,7 +11111,7 @@ func (c *S3) PutPublicAccessBlockRequest(input *PutPublicAccessBlockInput) (req 
 // For more information about when Amazon S3 considers a bucket or an object
 // public, see The Meaning of "Public" (https://docs.aws.amazon.com/AmazonS3/latest/dev/access-control-block-public-access.html#access-control-block-public-access-policy-status).
 //
-// Related Resources
+// The following operations are related to PutPublicAccessBlock:
 //
 //   - GetPublicAccessBlock (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetPublicAccessBlock.html)
 //
@@ -10201,15 +11192,28 @@ func (c *S3) RestoreObjectRequest(input *RestoreObjectInput) (req *request.Reque
 
 // RestoreObject API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // # Restores an archived copy of an object back into Amazon S3
 //
-// This action is not supported by Amazon S3 on Outposts.
+// This functionality is not supported for Amazon S3 on Outposts.
 //
 // This action performs the following types of requests:
 //
-//   - select - Perform a select query on an archived object
-//
 //   - restore an archive - Restore an archived object
+//
+// For more information about the S3 structure in the request body, see the
+// following:
+//
+//   - PutObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html)
+//
+//   - Managing Access with ACLs (https://docs.aws.amazon.com/AmazonS3/latest/dev/S3_ACLs_UsingACLs.html)
+//     in the Amazon S3 User Guide
+//
+//   - Protecting Data Using Server-Side Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/serv-side-encryption.html)
+//     in the Amazon S3 User Guide
+//
+// # Permissions
 //
 // To use this operation, you must have permissions to perform the s3:RestoreObject
 // action. The bucket owner has this permission by default and can grant this
@@ -10218,114 +11222,57 @@ func (c *S3) RestoreObjectRequest(input *RestoreObjectInput) (req *request.Reque
 // and Managing Access Permissions to Your Amazon S3 Resources (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-access-control.html)
 // in the Amazon S3 User Guide.
 //
-// # Querying Archives with Select Requests
-//
-// You use a select type of request to perform SQL queries on archived objects.
-// The archived objects that are being queried by the select request must be
-// formatted as uncompressed comma-separated values (CSV) files. You can run
-// queries and custom analytics on your archived data without having to restore
-// your data to a hotter Amazon S3 tier. For an overview about select requests,
-// see Querying Archived Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/querying-glacier-archives.html)
-// in the Amazon S3 User Guide.
-//
-// When making a select request, do the following:
-//
-//   - Define an output location for the select query's output. This must be
-//     an Amazon S3 bucket in the same Amazon Web Services Region as the bucket
-//     that contains the archive object that is being queried. The Amazon Web
-//     Services account that initiates the job must have permissions to write
-//     to the S3 bucket. You can specify the storage class and encryption for
-//     the output objects stored in the bucket. For more information about output,
-//     see Querying Archived Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/querying-glacier-archives.html)
-//     in the Amazon S3 User Guide. For more information about the S3 structure
-//     in the request body, see the following: PutObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html)
-//     Managing Access with ACLs (https://docs.aws.amazon.com/AmazonS3/latest/dev/S3_ACLs_UsingACLs.html)
-//     in the Amazon S3 User Guide Protecting Data Using Server-Side Encryption
-//     (https://docs.aws.amazon.com/AmazonS3/latest/dev/serv-side-encryption.html)
-//     in the Amazon S3 User Guide
-//
-//   - Define the SQL expression for the SELECT type of restoration for your
-//     query in the request body's SelectParameters structure. You can use expressions
-//     like the following examples. The following expression returns all records
-//     from the specified object. SELECT * FROM Object Assuming that you are
-//     not using any headers for data stored in the object, you can specify columns
-//     with positional headers. SELECT s._1, s._2 FROM Object s WHERE s._3 >
-//     100 If you have headers and you set the fileHeaderInfo in the CSV structure
-//     in the request body to USE, you can specify headers in the query. (If
-//     you set the fileHeaderInfo field to IGNORE, the first row is skipped for
-//     the query.) You cannot mix ordinal positions with header column names.
-//     SELECT s.Id, s.FirstName, s.SSN FROM S3Object s
-//
-// For more information about using SQL with S3 Glacier Select restore, see
-// SQL Reference for Amazon S3 Select and S3 Glacier Select (https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference.html)
-// in the Amazon S3 User Guide.
-//
-// When making a select request, you can also do the following:
-//
-//   - To expedite your queries, specify the Expedited tier. For more information
-//     about tiers, see "Restoring Archives," later in this topic.
-//
-//   - Specify details about the data serialization format of both the input
-//     object that is being queried and the serialization of the CSV-encoded
-//     query results.
-//
-// The following are additional important facts about the select feature:
-//
-//   - The output results are new Amazon S3 objects. Unlike archive retrievals,
-//     they are stored until explicitly deleted-manually or through a lifecycle
-//     policy.
-//
-//   - You can issue more than one select request on the same Amazon S3 object.
-//     Amazon S3 doesn't deduplicate requests, so avoid issuing duplicate requests.
-//
-//   - Amazon S3 accepts a select request even if the object has already been
-//     restored. A select request doesn’t return error response 409.
-//
 // # Restoring objects
 //
-// Objects that you archive to the S3 Glacier or S3 Glacier Deep Archive storage
-// class, and S3 Intelligent-Tiering Archive or S3 Intelligent-Tiering Deep
-// Archive tiers are not accessible in real time. For objects in Archive Access
-// or Deep Archive Access tiers you must first initiate a restore request, and
-// then wait until the object is moved into the Frequent Access tier. For objects
-// in S3 Glacier or S3 Glacier Deep Archive storage classes you must first initiate
-// a restore request, and then wait until a temporary copy of the object is
-// available. To access an archived object, you must restore the object for
-// the duration (number of days) that you specify.
+// Objects that you archive to the S3 Glacier Flexible Retrieval Flexible Retrieval
+// or S3 Glacier Deep Archive storage class, and S3 Intelligent-Tiering Archive
+// or S3 Intelligent-Tiering Deep Archive tiers, are not accessible in real
+// time. For objects in the S3 Glacier Flexible Retrieval Flexible Retrieval
+// or S3 Glacier Deep Archive storage classes, you must first initiate a restore
+// request, and then wait until a temporary copy of the object is available.
+// If you want a permanent copy of the object, create a copy of it in the Amazon
+// S3 Standard storage class in your S3 bucket. To access an archived object,
+// you must restore the object for the duration (number of days) that you specify.
+// For objects in the Archive Access or Deep Archive Access tiers of S3 Intelligent-Tiering,
+// you must first initiate a restore request, and then wait until the object
+// is moved into the Frequent Access tier.
 //
 // To restore a specific object version, you can provide a version ID. If you
 // don't provide a version ID, Amazon S3 restores the current version.
 //
-// When restoring an archived object (or using a select request), you can specify
-// one of the following data access tier options in the Tier element of the
-// request body:
+// When restoring an archived object, you can specify one of the following data
+// access tier options in the Tier element of the request body:
 //
 //   - Expedited - Expedited retrievals allow you to quickly access your data
-//     stored in the S3 Glacier storage class or S3 Intelligent-Tiering Archive
-//     tier when occasional urgent requests for a subset of archives are required.
-//     For all but the largest archived objects (250 MB+), data accessed using
-//     Expedited retrievals is typically made available within 1–5 minutes.
-//     Provisioned capacity ensures that retrieval capacity for Expedited retrievals
-//     is available when you need it. Expedited retrievals and provisioned capacity
-//     are not available for objects stored in the S3 Glacier Deep Archive storage
-//     class or S3 Intelligent-Tiering Deep Archive tier.
+//     stored in the S3 Glacier Flexible Retrieval Flexible Retrieval storage
+//     class or S3 Intelligent-Tiering Archive tier when occasional urgent requests
+//     for restoring archives are required. For all but the largest archived
+//     objects (250 MB+), data accessed using Expedited retrievals is typically
+//     made available within 1–5 minutes. Provisioned capacity ensures that
+//     retrieval capacity for Expedited retrievals is available when you need
+//     it. Expedited retrievals and provisioned capacity are not available for
+//     objects stored in the S3 Glacier Deep Archive storage class or S3 Intelligent-Tiering
+//     Deep Archive tier.
 //
 //   - Standard - Standard retrievals allow you to access any of your archived
 //     objects within several hours. This is the default option for retrieval
 //     requests that do not specify the retrieval option. Standard retrievals
 //     typically finish within 3–5 hours for objects stored in the S3 Glacier
-//     storage class or S3 Intelligent-Tiering Archive tier. They typically finish
-//     within 12 hours for objects stored in the S3 Glacier Deep Archive storage
-//     class or S3 Intelligent-Tiering Deep Archive tier. Standard retrievals
-//     are free for objects stored in S3 Intelligent-Tiering.
+//     Flexible Retrieval Flexible Retrieval storage class or S3 Intelligent-Tiering
+//     Archive tier. They typically finish within 12 hours for objects stored
+//     in the S3 Glacier Deep Archive storage class or S3 Intelligent-Tiering
+//     Deep Archive tier. Standard retrievals are free for objects stored in
+//     S3 Intelligent-Tiering.
 //
-//   - Bulk - Bulk retrievals are the lowest-cost retrieval option in S3 Glacier,
-//     enabling you to retrieve large amounts, even petabytes, of data inexpensively.
-//     Bulk retrievals typically finish within 5–12 hours for objects stored
-//     in the S3 Glacier storage class or S3 Intelligent-Tiering Archive tier.
-//     They typically finish within 48 hours for objects stored in the S3 Glacier
-//     Deep Archive storage class or S3 Intelligent-Tiering Deep Archive tier.
-//     Bulk retrievals are free for objects stored in S3 Intelligent-Tiering.
+//   - Bulk - Bulk retrievals free for objects stored in the S3 Glacier Flexible
+//     Retrieval and S3 Intelligent-Tiering storage classes, enabling you to
+//     retrieve large amounts, even petabytes, of data at no cost. Bulk retrievals
+//     typically finish within 5–12 hours for objects stored in the S3 Glacier
+//     Flexible Retrieval Flexible Retrieval storage class or S3 Intelligent-Tiering
+//     Archive tier. Bulk retrievals are also the lowest-cost retrieval option
+//     when restoring objects from S3 Glacier Deep Archive. They typically finish
+//     within 48 hours for objects stored in the S3 Glacier Deep Archive storage
+//     class or S3 Intelligent-Tiering Deep Archive tier.
 //
 // For more information about archive retrieval options and provisioned capacity
 // for Expedited data access, see Restoring Archived Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/restoring-objects.html)
@@ -10368,11 +11315,9 @@ func (c *S3) RestoreObjectRequest(input *RestoreObjectInput) (req *request.Reque
 //   - If the object is previously restored, Amazon S3 returns 200 OK in the
 //     response.
 //
-// Special Errors
-//
-//   - Code: RestoreAlreadyInProgress Cause: Object restore is already in progress.
-//     (This error does not apply to SELECT type requests.) HTTP Status Code:
-//     409 Conflict SOAP Fault Code Prefix: Client
+//   - Special errors: Code: RestoreAlreadyInProgress Cause: Object restore
+//     is already in progress. HTTP Status Code: 409 Conflict SOAP Fault Code
+//     Prefix: Client
 //
 //   - Code: GlacierExpeditedRetrievalNotAvailable Cause: expedited retrievals
 //     are currently not available. Try again later. (Returned if there is insufficient
@@ -10380,14 +11325,11 @@ func (c *S3) RestoreObjectRequest(input *RestoreObjectInput) (req *request.Reque
 //     Expedited retrievals and not to S3 Standard or Bulk retrievals.) HTTP
 //     Status Code: 503 SOAP Fault Code Prefix: N/A
 //
-// Related Resources
+// The following operations are related to RestoreObject:
 //
 //   - PutBucketLifecycleConfiguration (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html)
 //
 //   - GetBucketNotificationConfiguration (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketNotificationConfiguration.html)
-//
-//   - SQL Reference for Amazon S3 Select and S3 Glacier Select (https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference.html)
-//     in the Amazon S3 User Guide
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -10474,6 +11416,8 @@ func (c *S3) SelectObjectContentRequest(input *SelectObjectContentInput) (req *r
 
 // SelectObjectContent API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // This action filters the contents of an Amazon S3 object based on a simple
 // structured query language (SQL) statement. In the request, along with the
 // SQL expression, you must also specify a data serialization format (JSON,
@@ -10482,20 +11426,16 @@ func (c *S3) SelectObjectContentRequest(input *SelectObjectContentInput) (req *r
 // SQL expression. You must also specify the data serialization format for the
 // response.
 //
-// This action is not supported by Amazon S3 on Outposts.
+// This functionality is not supported for Amazon S3 on Outposts.
 //
 // For more information about Amazon S3 Select, see Selecting Content from Objects
 // (https://docs.aws.amazon.com/AmazonS3/latest/dev/selecting-content-from-objects.html)
 // and SELECT Command (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-glacier-select-sql-reference-select.html)
 // in the Amazon S3 User Guide.
 //
-// For more information about using SQL with Amazon S3 Select, see SQL Reference
-// for Amazon S3 Select and S3 Glacier Select (https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference.html)
-// in the Amazon S3 User Guide.
-//
 // # Permissions
 //
-// You must have s3:GetObject permission for this operation. Amazon S3 Select
+// You must have the s3:GetObject permission for this operation. Amazon S3 Select
 // does not support anonymous access. For more information about permissions,
 // see Specifying Permissions in a Policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/using-with-s3-actions.html)
 // in the Amazon S3 User Guide.
@@ -10522,10 +11462,10 @@ func (c *S3) SelectObjectContentRequest(input *SelectObjectContentInput) (req *r
 //     For more information about SSE-C, see Server-Side Encryption (Using Customer-Provided
 //     Encryption Keys) (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
 //     in the Amazon S3 User Guide. For objects that are encrypted with Amazon
-//     S3 managed encryption keys (SSE-S3) and Amazon Web Services KMS keys (SSE-KMS),
-//     server-side encryption is handled transparently, so you don't need to
-//     specify anything. For more information about server-side encryption, including
-//     SSE-S3 and SSE-KMS, see Protecting Data Using Server-Side Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/serv-side-encryption.html)
+//     S3 managed keys (SSE-S3) and Amazon Web Services KMS keys (SSE-KMS), server-side
+//     encryption is handled transparently, so you don't need to specify anything.
+//     For more information about server-side encryption, including SSE-S3 and
+//     SSE-KMS, see Protecting Data Using Server-Side Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/serv-side-encryption.html)
 //     in the Amazon S3 User Guide.
 //
 // # Working with the Response Body
@@ -10545,9 +11485,13 @@ func (c *S3) SelectObjectContentRequest(input *SelectObjectContentInput) (req *r
 //     in the request parameters), you cannot specify the range of bytes of an
 //     object to return.
 //
-//   - GLACIER, DEEP_ARCHIVE and REDUCED_REDUNDANCY storage classes: You cannot
-//     specify the GLACIER, DEEP_ARCHIVE, or REDUCED_REDUNDANCY storage classes.
-//     For more information, about storage classes see Storage Classes (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html#storage-class-intro)
+//   - The GLACIER, DEEP_ARCHIVE, and REDUCED_REDUNDANCY storage classes, or
+//     the ARCHIVE_ACCESS and DEEP_ARCHIVE_ACCESS access tiers of the INTELLIGENT_TIERING
+//     storage class: You cannot query objects in the GLACIER, DEEP_ARCHIVE,
+//     or REDUCED_REDUNDANCY storage classes, nor objects in the ARCHIVE_ACCESS
+//     or DEEP_ARCHIVE_ACCESS access tiers of the INTELLIGENT_TIERING storage
+//     class. For more information about storage classes, see Using Amazon S3
+//     storage classes (https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)
 //     in the Amazon S3 User Guide.
 //
 // # Special Errors
@@ -10555,7 +11499,7 @@ func (c *S3) SelectObjectContentRequest(input *SelectObjectContentInput) (req *r
 // For a list of special errors for this operation, see List of SELECT Object
 // Content Error Codes (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#SelectObjectContentErrorCodeList)
 //
-// Related Resources
+// The following operations are related to SelectObjectContent:
 //
 //   - GetObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html)
 //
@@ -10592,6 +11536,7 @@ func (c *S3) SelectObjectContentWithContext(ctx aws.Context, input *SelectObject
 }
 
 var _ awserr.Error
+var _ time.Time
 
 // SelectObjectContentEventStream provides the event stream handling for the SelectObjectContent.
 //
@@ -10803,15 +11748,15 @@ func (c *S3) UploadPartRequest(input *UploadPartInput) (req *request.Request, ou
 //
 // Uploads a part in a multipart upload.
 //
-// In this operation, you provide part data in your request. However, you have
-// an option to specify your existing Amazon S3 object as a data source for
-// the part you are uploading. To upload a part from an existing object, you
-// use the UploadPartCopy (https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPartCopy.html)
+// In this operation, you provide new data as a part of an object in your request.
+// However, you have an option to specify your existing Amazon S3 object as
+// a data source for the part you are uploading. To upload a part from an existing
+// object, you use the UploadPartCopy (https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPartCopy.html)
 // operation.
 //
 // You must initiate a multipart upload (see CreateMultipartUpload (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html))
 // before you can upload any part. In response to your initiate request, Amazon
-// S3 returns an upload ID, a unique identifier, that you must include in your
+// S3 returns an upload ID, a unique identifier that you must include in your
 // upload part request.
 //
 // Part numbers can be any number from 1 to 10,000, inclusive. A part number
@@ -10823,18 +11768,8 @@ func (c *S3) UploadPartRequest(input *UploadPartInput) (req *request.Request, ou
 // upload specifications, see Multipart upload limits (https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html)
 // in the Amazon S3 User Guide.
 //
-// To ensure that data is not corrupted when traversing the network, specify
-// the Content-MD5 header in the upload part request. Amazon S3 checks the part
-// data against the provided MD5 value. If they do not match, Amazon S3 returns
-// an error.
-//
-// If the upload request is signed with Signature Version 4, then Amazon Web
-// Services S3 uses the x-amz-content-sha256 header as a checksum instead of
-// Content-MD5. For more information see Authenticating Requests: Using the
-// Authorization Header (Amazon Web Services Signature Version 4) (https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html).
-//
-// Note: After you initiate multipart upload and upload one or more parts, you
-// must either complete or abort multipart upload in order to stop getting charged
+// After you initiate multipart upload and upload one or more parts, you must
+// either complete or abort multipart upload in order to stop getting charged
 // for storage of the uploaded parts. Only after you either complete or abort
 // multipart upload, Amazon S3 frees up the parts storage and stops charging
 // you for the parts storage.
@@ -10843,44 +11778,90 @@ func (c *S3) UploadPartRequest(input *UploadPartInput) (req *request.Request, ou
 // (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html) in the
 // Amazon S3 User Guide .
 //
-// For information on the permissions required to use the multipart upload API,
-// go to Multipart Upload and Permissions (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html)
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+// requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+// . Path-style requests are not supported. For more information, see Regional
+// and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
 // in the Amazon S3 User Guide.
 //
-// You can optionally request server-side encryption where Amazon S3 encrypts
-// your data as it writes it to disks in its data centers and decrypts it for
-// you when you access it. You have the option of providing your own encryption
-// key, or you can use the Amazon Web Services managed encryption keys. If you
-// choose to provide your own encryption key, the request headers you provide
-// in the request must match the headers you used in the request to initiate
-// the upload by using CreateMultipartUpload (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html).
-// For more information, go to Using Server-Side Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html)
+// Permissions
+//
+//   - General purpose bucket permissions - For information on the permissions
+//     required to use the multipart upload API, see Multipart Upload and Permissions
+//     (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html)
+//     in the Amazon S3 User Guide.
+//
+//   - Directory bucket permissions - To grant access to this API operation
+//     on a directory bucket, we recommend that you use the CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html)
+//     API operation for session-based authorization. Specifically, you grant
+//     the s3express:CreateSession permission to the directory bucket in a bucket
+//     policy or an IAM identity-based policy. Then, you make the CreateSession
+//     API call on the bucket to obtain a session token. With the session token
+//     in your request header, you can make API requests to this operation. After
+//     the session token expires, you make another CreateSession API call to
+//     generate a new session token for use. Amazon Web Services CLI or SDKs
+//     create session and refresh the session token automatically to avoid service
+//     interruptions when a session expires. For more information about authorization,
+//     see CreateSession (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateSession.html).
+//
+// # Data integrity
+//
+// General purpose bucket - To ensure that data is not corrupted traversing
+// the network, specify the Content-MD5 header in the upload part request. Amazon
+// S3 checks the part data against the provided MD5 value. If they do not match,
+// Amazon S3 returns an error. If the upload request is signed with Signature
+// Version 4, then Amazon Web Services S3 uses the x-amz-content-sha256 header
+// as a checksum instead of Content-MD5. For more information see Authenticating
+// Requests: Using the Authorization Header (Amazon Web Services Signature Version
+// 4) (https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html).
+//
+// Directory buckets - MD5 is not supported by directory buckets. You can use
+// checksum algorithms to check object integrity.
+//
+// Encryption
+//
+//   - General purpose bucket - Server-side encryption is for data encryption
+//     at rest. Amazon S3 encrypts your data as it writes it to disks in its
+//     data centers and decrypts it when you access it. You have mutually exclusive
+//     options to protect data using server-side encryption in Amazon S3, depending
+//     on how you choose to manage the encryption keys. Specifically, the encryption
+//     key options are Amazon S3 managed keys (SSE-S3), Amazon Web Services KMS
+//     keys (SSE-KMS), and Customer-Provided Keys (SSE-C). Amazon S3 encrypts
+//     data with server-side encryption using Amazon S3 managed keys (SSE-S3)
+//     by default. You can optionally tell Amazon S3 to encrypt data at rest
+//     using server-side encryption with other key options. The option you use
+//     depends on whether you want to use KMS keys (SSE-KMS) or provide your
+//     own encryption key (SSE-C). Server-side encryption is supported by the
+//     S3 Multipart Upload operations. Unless you are using a customer-provided
+//     encryption key (SSE-C), you don't need to specify the encryption parameters
+//     in each UploadPart request. Instead, you only need to specify the server-side
+//     encryption parameters in the initial Initiate Multipart request. For more
+//     information, see CreateMultipartUpload (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html).
+//     If you request server-side encryption using a customer-provided encryption
+//     key (SSE-C) in your initiate multipart upload request, you must provide
+//     identical encryption information in each part upload using the following
+//     request headers. x-amz-server-side-encryption-customer-algorithm x-amz-server-side-encryption-customer-key
+//     x-amz-server-side-encryption-customer-key-MD5
+//
+//   - Directory bucket - For directory buckets, only server-side encryption
+//     with Amazon S3 managed keys (SSE-S3) (AES256) is supported.
+//
+// For more information, see Using Server-Side Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html)
 // in the Amazon S3 User Guide.
 //
-// Server-side encryption is supported by the S3 Multipart Upload actions. Unless
-// you are using a customer-provided encryption key, you don't need to specify
-// the encryption parameters in each UploadPart request. Instead, you only need
-// to specify the server-side encryption parameters in the initial Initiate
-// Multipart request. For more information, see CreateMultipartUpload (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html).
+// Special errors
 //
-// If you requested server-side encryption using a customer-provided encryption
-// key in your initiate multipart upload request, you must provide identical
-// encryption information in each part upload using the following headers.
+//   - Error Code: NoSuchUpload Description: The specified multipart upload
+//     does not exist. The upload ID might be invalid, or the multipart upload
+//     might have been aborted or completed. HTTP Status Code: 404 Not Found
+//     SOAP Fault Code Prefix: Client
 //
-//   - x-amz-server-side-encryption-customer-algorithm
+// # HTTP Host header syntax
 //
-//   - x-amz-server-side-encryption-customer-key
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
-//   - x-amz-server-side-encryption-customer-key-MD5
-//
-// Special Errors
-//
-//   - Code: NoSuchUpload Cause: The specified multipart upload does not exist.
-//     The upload ID might be invalid, or the multipart upload might have been
-//     aborted or completed. HTTP Status Code: 404 Not Found SOAP Fault Code
-//     Prefix: Client
-//
-// Related Resources
+// The following operations are related to UploadPart:
 //
 //   - CreateMultipartUpload (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html)
 //
@@ -10963,83 +11944,107 @@ func (c *S3) UploadPartCopyRequest(input *UploadPartCopyInput) (req *request.Req
 
 // UploadPartCopy API operation for Amazon Simple Storage Service.
 //
-// Uploads a part by copying data from an existing object as data source. You
-// specify the data source by adding the request header x-amz-copy-source in
-// your request and a byte range by adding the request header x-amz-copy-source-range
+// Uploads a part by copying data from an existing object as data source. To
+// specify the data source, you add the request header x-amz-copy-source in
+// your request. To specify a byte range, you add the request header x-amz-copy-source-range
 // in your request.
 //
 // For information about maximum and minimum part sizes and other multipart
 // upload specifications, see Multipart upload limits (https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html)
 // in the Amazon S3 User Guide.
 //
-// Instead of using an existing object as part data, you might use the UploadPart
-// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPart.html) action
-// and provide data in your request.
+// Instead of copying data from an existing object as part data, you might use
+// the UploadPart (https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPart.html)
+// action to upload new data as a part of an object in your request.
 //
 // You must initiate a multipart upload before you can upload any part. In response
-// to your initiate request. Amazon S3 returns a unique identifier, the upload
-// ID, that you must include in your upload part request.
+// to your initiate request, Amazon S3 returns the upload ID, a unique identifier
+// that you must include in your upload part request.
 //
-// For more information about using the UploadPartCopy operation, see the following:
+// For conceptual information about multipart uploads, see Uploading Objects
+// Using Multipart Upload (https://docs.aws.amazon.com/AmazonS3/latest/dev/uploadobjusingmpu.html)
+// in the Amazon S3 User Guide. For information about copying objects using
+// a single atomic action vs. a multipart upload, see Operations on Objects
+// (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectOperations.html) in
+// the Amazon S3 User Guide.
 //
-//   - For conceptual information about multipart uploads, see Uploading Objects
-//     Using Multipart Upload (https://docs.aws.amazon.com/AmazonS3/latest/dev/uploadobjusingmpu.html)
+// Directory buckets - For directory buckets, you must make requests for this
+// API operation to the Zonal endpoint. These endpoints support virtual-hosted-style
+// requests in the format https://bucket_name.s3express-az_id.region.amazonaws.com/key-name
+// . Path-style requests are not supported. For more information, see Regional
+// and Zonal endpoints (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-Regions-and-Zones.html)
+// in the Amazon S3 User Guide.
+//
+// # Authentication and authorization
+//
+// All UploadPartCopy requests must be authenticated and signed by using IAM
+// credentials (access key ID and secret access key for the IAM identities).
+// All headers with the x-amz- prefix, including x-amz-copy-source, must be
+// signed. For more information, see REST Authentication (https://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html).
+//
+// Directory buckets - You must use IAM credentials to authenticate and authorize
+// your access to the UploadPartCopy API operation, instead of using the temporary
+// security credentials through the CreateSession API operation.
+//
+// Amazon Web Services CLI or SDKs handles authentication and authorization
+// on your behalf.
+//
+// # Permissions
+//
+// You must have READ access to the source object and WRITE access to the destination
+// bucket.
+//
+//   - General purpose bucket permissions - You must have the permissions in
+//     a policy based on the bucket types of your source bucket and destination
+//     bucket in an UploadPartCopy operation. If the source object is in a general
+//     purpose bucket, you must have the s3:GetObject permission to read the
+//     source object that is being copied. If the destination bucket is a general
+//     purpose bucket, you must have the s3:PutObject permission to write the
+//     object copy to the destination bucket. For information about permissions
+//     required to use the multipart upload API, see Multipart Upload and Permissions
+//     (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html)
 //     in the Amazon S3 User Guide.
 //
-//   - For information about permissions required to use the multipart upload
-//     API, see Multipart Upload and Permissions (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html)
+//   - Directory bucket permissions - You must have permissions in a bucket
+//     policy or an IAM identity-based policy based on the source and destination
+//     bucket types in an UploadPartCopy operation. If the source object that
+//     you want to copy is in a directory bucket, you must have the s3express:CreateSession
+//     permission in the Action element of a policy to read the object . By default,
+//     the session is in the ReadWrite mode. If you want to restrict the access,
+//     you can explicitly set the s3express:SessionMode condition key to ReadOnly
+//     on the copy source bucket. If the copy destination is a directory bucket,
+//     you must have the s3express:CreateSession permission in the Action element
+//     of a policy to write the object to the destination. The s3express:SessionMode
+//     condition key cannot be set to ReadOnly on the copy destination. For example
+//     policies, see Example bucket policies for S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam-example-bucket-policies.html)
+//     and Amazon Web Services Identity and Access Management (IAM) identity-based
+//     policies for S3 Express One Zone (https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-security-iam-identity-policies.html)
 //     in the Amazon S3 User Guide.
 //
-//   - For information about copying objects using a single atomic action vs.
-//     a multipart upload, see Operations on Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectOperations.html)
-//     in the Amazon S3 User Guide.
+// Encryption
 //
-//   - For information about using server-side encryption with customer-provided
-//     encryption keys with the UploadPartCopy operation, see CopyObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
+//   - General purpose buckets - For information about using server-side encryption
+//     with customer-provided encryption keys with the UploadPartCopy operation,
+//     see CopyObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
 //     and UploadPart (https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPart.html).
 //
-// Note the following additional considerations about the request headers x-amz-copy-source-if-match,
-// x-amz-copy-source-if-none-match, x-amz-copy-source-if-unmodified-since, and
-// x-amz-copy-source-if-modified-since:
+//   - Directory buckets - For directory buckets, only server-side encryption
+//     with Amazon S3 managed keys (SSE-S3) (AES256) is supported.
 //
-//   - Consideration 1 - If both of the x-amz-copy-source-if-match and x-amz-copy-source-if-unmodified-since
-//     headers are present in the request as follows: x-amz-copy-source-if-match
-//     condition evaluates to true, and; x-amz-copy-source-if-unmodified-since
-//     condition evaluates to false; Amazon S3 returns 200 OK and copies the
-//     data.
+// Special errors
 //
-//   - Consideration 2 - If both of the x-amz-copy-source-if-none-match and
-//     x-amz-copy-source-if-modified-since headers are present in the request
-//     as follows: x-amz-copy-source-if-none-match condition evaluates to false,
-//     and; x-amz-copy-source-if-modified-since condition evaluates to true;
-//     Amazon S3 returns 412 Precondition Failed response code.
+//   - Error Code: NoSuchUpload Description: The specified multipart upload
+//     does not exist. The upload ID might be invalid, or the multipart upload
+//     might have been aborted or completed. HTTP Status Code: 404 Not Found
 //
-// # Versioning
+//   - Error Code: InvalidRequest Description: The specified copy source is
+//     not supported as a byte-range copy source. HTTP Status Code: 400 Bad Request
 //
-// If your bucket has versioning enabled, you could have multiple versions of
-// the same object. By default, x-amz-copy-source identifies the current version
-// of the object to copy. If the current version is a delete marker and you
-// don't specify a versionId in the x-amz-copy-source, Amazon S3 returns a 404
-// error, because the object does not exist. If you specify versionId in the
-// x-amz-copy-source and the versionId is a delete marker, Amazon S3 returns
-// an HTTP 400 error, because you are not allowed to specify a delete marker
-// as a version for the x-amz-copy-source.
+// # HTTP Host header syntax
 //
-// You can optionally specify a specific version of the source object to copy
-// by adding the versionId subresource as shown in the following example:
+// Directory buckets - The HTTP Host header syntax is Bucket_name.s3express-az_id.region.amazonaws.com.
 //
-// x-amz-copy-source: /bucket/object?versionId=version id
-//
-// Special Errors
-//
-//   - Code: NoSuchUpload Cause: The specified multipart upload does not exist.
-//     The upload ID might be invalid, or the multipart upload might have been
-//     aborted or completed. HTTP Status Code: 404 Not Found
-//
-//   - Code: InvalidRequest Cause: The specified copy source is not supported
-//     as a byte-range copy source. HTTP Status Code: 400 Bad Request
-//
-// Related Resources
+// The following operations are related to UploadPartCopy:
 //
 //   - CreateMultipartUpload (https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html)
 //
@@ -11130,6 +12135,8 @@ func (c *S3) WriteGetObjectResponseRequest(input *WriteGetObjectResponseInput) (
 
 // WriteGetObjectResponse API operation for Amazon Simple Storage Service.
 //
+// This operation is not supported by directory buckets.
+//
 // Passes transformed objects to a GetObject operation when using Object Lambda
 // access points. For information about Object Lambda access points, see Transforming
 // objects with Object Lambda access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/transforming-objects.html)
@@ -11205,7 +12212,7 @@ func (c *S3) WriteGetObjectResponseWithContext(ctx aws.Context, input *WriteGetO
 // Specifies the days since the initiation of an incomplete multipart upload
 // that Amazon S3 will wait before permanently removing all parts of the upload.
 // For more information, see Aborting Incomplete Multipart Uploads Using a Bucket
-// Lifecycle Policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config)
+// Lifecycle Configuration (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config)
 // in the Amazon S3 User Guide.
 type AbortIncompleteMultipartUpload struct {
 	_ struct{} `type:"structure"`
@@ -11244,27 +12251,41 @@ type AbortMultipartUploadInput struct {
 
 	// The bucket name to which the upload was taking place.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Key of the object for which the multipart upload was initiated.
@@ -11273,10 +12294,14 @@ type AbortMultipartUploadInput struct {
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// Upload ID that identifies the multipart upload.
@@ -11397,6 +12422,8 @@ type AbortMultipartUploadOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 }
 
@@ -11931,9 +12958,7 @@ func (s *AnalyticsS3BucketDestination) SetPrefix(v string) *AnalyticsS3BucketDes
 	return s
 }
 
-// In terms of implementation, a Bucket is a resource. An Amazon S3 bucket name
-// is globally unique, and the namespace is shared by all Amazon Web Services
-// accounts.
+// In terms of implementation, a Bucket is a resource.
 type Bucket struct {
 	_ struct{} `type:"structure"`
 
@@ -11972,6 +12997,51 @@ func (s *Bucket) SetCreationDate(v time.Time) *Bucket {
 // SetName sets the Name field's value.
 func (s *Bucket) SetName(v string) *Bucket {
 	s.Name = &v
+	return s
+}
+
+// Specifies the information about the bucket that will be created. For more
+// information about directory buckets, see Directory buckets (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-buckets-overview.html)
+// in the Amazon S3 User Guide.
+//
+// This functionality is only supported by directory buckets.
+type BucketInfo struct {
+	_ struct{} `type:"structure"`
+
+	// The number of Availability Zone that's used for redundancy for the bucket.
+	DataRedundancy *string `type:"string" enum:"DataRedundancy"`
+
+	// The type of bucket.
+	Type *string `type:"string" enum:"BucketType"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s BucketInfo) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s BucketInfo) GoString() string {
+	return s.String()
+}
+
+// SetDataRedundancy sets the DataRedundancy field's value.
+func (s *BucketInfo) SetDataRedundancy(v string) *BucketInfo {
+	s.DataRedundancy = &v
+	return s
+}
+
+// SetType sets the Type field's value.
+func (s *BucketInfo) SetType(v string) *BucketInfo {
+	s.Type = &v
 	return s
 }
 
@@ -12261,7 +13331,9 @@ type CSVInput struct {
 
 	// A single character used to indicate that a row should be ignored when the
 	// character is present at the start of that row. You can specify any character
-	// to indicate a comment line.
+	// to indicate a comment line. The default character is #.
+	//
+	// Default: #
 	Comments *string `type:"string"`
 
 	// A single character used to separate individual fields in a record. You can
@@ -12444,34 +13516,42 @@ type Checksum struct {
 	_ struct{} `type:"structure"`
 
 	// The base64-encoded, 32-bit CRC32 checksum of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32 *string `type:"string"`
 
 	// The base64-encoded, 32-bit CRC32C checksum of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32C *string `type:"string"`
 
 	// The base64-encoded, 160-bit SHA-1 digest of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use the API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA1 *string `type:"string"`
 
 	// The base64-encoded, 256-bit SHA-256 digest of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA256 *string `type:"string"`
 }
@@ -12631,19 +13711,33 @@ type CompleteMultipartUploadInput struct {
 
 	// Name of the bucket to which the multipart upload was initiated.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
@@ -12677,9 +13771,9 @@ type CompleteMultipartUploadInput struct {
 	// in the Amazon S3 User Guide.
 	ChecksumSHA256 *string `location:"header" locationName:"x-amz-checksum-sha256" type:"string"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Object key for which the multipart upload was initiated.
@@ -12691,22 +13785,31 @@ type CompleteMultipartUploadInput struct {
 	MultipartUpload *CompletedMultipartUpload `locationName:"CompleteMultipartUpload" type:"structure" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// The server-side encryption (SSE) algorithm used to encrypt the object. This
-	// parameter is needed only when the object was created using a checksum algorithm.
-	// For more information, see Protecting data using SSE-C keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
+	// parameter is required only when the object was created using a checksum algorithm
+	// or if your bucket policy requires the use of SSE-C. For more information,
+	// see Protecting data using SSE-C keys (https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html#ssec-require-condition-key)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// The server-side encryption (SSE) customer managed key. This parameter is
 	// needed only when the object was created using a checksum algorithm. For more
 	// information, see Protecting data using SSE-C keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSECustomerKey is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CompleteMultipartUploadInput's
@@ -12717,6 +13820,8 @@ type CompleteMultipartUploadInput struct {
 	// is needed only when the object was created using a checksum algorithm. For
 	// more information, see Protecting data using SSE-C keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// ID for the initiated multipart upload.
@@ -12893,55 +13998,52 @@ type CompleteMultipartUploadOutput struct {
 	// The name of the bucket that contains the newly created object. Does not return
 	// the access point ARN or access point alias if used.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
-	// When using this action with an access point through the Amazon Web Services
-	// SDKs, you provide the access point ARN in place of the bucket name. For more
-	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
-	// in the Amazon S3 User Guide.
-	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
-	// in the Amazon S3 User Guide.
+	// Access points are not supported by directory buckets.
 	Bucket *string `type:"string"`
 
 	// Indicates whether the multipart upload uses an S3 Bucket Key for server-side
-	// encryption with Amazon Web Services KMS (SSE-KMS).
+	// encryption with Key Management Service (KMS) keys (SSE-KMS).
+	//
+	// This functionality is not supported for directory buckets.
 	BucketKeyEnabled *bool `location:"header" locationName:"x-amz-server-side-encryption-bucket-key-enabled" type:"boolean"`
 
 	// The base64-encoded, 32-bit CRC32 checksum of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32 *string `type:"string"`
 
 	// The base64-encoded, 32-bit CRC32C checksum of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32C *string `type:"string"`
 
 	// The base64-encoded, 160-bit SHA-1 digest of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use the API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA1 *string `type:"string"`
 
 	// The base64-encoded, 256-bit SHA-256 digest of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA256 *string `type:"string"`
 
@@ -12957,6 +14059,8 @@ type CompleteMultipartUploadOutput struct {
 
 	// If the object expiration is configured, this will contain the expiration
 	// date (expiry-date) and rule ID (rule-id). The value of rule-id is URL-encoded.
+	//
+	// This functionality is not supported for directory buckets.
 	Expiration *string `location:"header" locationName:"x-amz-expiration" type:"string"`
 
 	// The object key of the newly created object.
@@ -12967,25 +14071,31 @@ type CompleteMultipartUploadOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
-	// If present, specifies the ID of the Amazon Web Services Key Management Service
-	// (Amazon Web Services KMS) symmetric customer managed key that was used for
-	// the object.
+	// If present, indicates the ID of the Key Management Service (KMS) symmetric
+	// encryption customer managed key that was used for the object.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSKeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CompleteMultipartUploadOutput's
 	// String and GoString methods.
 	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
 
-	// If you specified server-side encryption either with an Amazon S3-managed
-	// encryption key or an Amazon Web Services KMS key in your initiate multipart
-	// upload request, the response includes this header. It confirms the encryption
-	// algorithm that Amazon S3 used to encrypt the object.
+	// The server-side encryption algorithm used when storing this object in Amazon
+	// S3 (for example, AES256, aws:kms).
+	//
+	// For directory buckets, only server-side encryption with Amazon S3 managed
+	// keys (SSE-S3) (AES256) is supported.
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
 	// Version ID of the newly created object, in case the bucket has versioning
 	// turned on.
+	//
+	// This functionality is not supported for directory buckets.
 	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 }
 
@@ -13138,34 +14248,42 @@ type CompletedPart struct {
 	_ struct{} `type:"structure"`
 
 	// The base64-encoded, 32-bit CRC32 checksum of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32 *string `type:"string"`
 
 	// The base64-encoded, 32-bit CRC32C checksum of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32C *string `type:"string"`
 
 	// The base64-encoded, 160-bit SHA-1 digest of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use the API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA1 *string `type:"string"`
 
 	// The base64-encoded, 256-bit SHA-256 digest of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA256 *string `type:"string"`
 
@@ -13174,6 +14292,16 @@ type CompletedPart struct {
 
 	// Part number that identifies the part. This is a positive integer between
 	// 1 and 10,000.
+	//
+	//    * General purpose buckets - In CompleteMultipartUpload, when a additional
+	//    checksum (including x-amz-checksum-crc32, x-amz-checksum-crc32c, x-amz-checksum-sha1,
+	//    or x-amz-checksum-sha256) is applied to each part, the PartNumber must
+	//    start at 1 and the part numbers must be consecutive. Otherwise, Amazon
+	//    S3 generates an HTTP 400 Bad Request status code and an InvalidPartOrder
+	//    error code.
+	//
+	//    * Directory buckets - In CompleteMultipartUpload, the PartNumber must
+	//    start at 1 and the part numbers must be consecutive.
 	PartNumber *int64 `type:"integer"`
 }
 
@@ -13333,71 +14461,134 @@ func (s *ContinuationEvent) MarshalEvent(pm protocol.PayloadMarshaler) (msg even
 type CopyObjectInput struct {
 	_ struct{} `locationName:"CopyObjectRequest" type:"structure"`
 
-	// The canned ACL to apply to the object.
+	// The canned access control list (ACL) to apply to the object.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	// When you copy an object, the ACL metadata is not preserved and is set to
+	// private by default. Only the owner has full access control. To override the
+	// default ACL setting, specify a new ACL when you generate a copy request.
+	// For more information, see Using ACLs (https://docs.aws.amazon.com/AmazonS3/latest/dev/S3_ACLs_UsingACLs.html).
+	//
+	// If the destination bucket that you're copying objects to uses the bucket
+	// owner enforced setting for S3 Object Ownership, ACLs are disabled and no
+	// longer affect permissions. Buckets that use this setting only accept PUT
+	// requests that don't specify an ACL or PUT requests that specify bucket owner
+	// full control ACLs, such as the bucket-owner-full-control canned ACL or an
+	// equivalent form of this ACL expressed in the XML format. For more information,
+	// see Controlling ownership of objects and disabling ACLs (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html)
+	// in the Amazon S3 User Guide.
+	//
+	//    * If your destination bucket uses the bucket owner enforced setting for
+	//    Object Ownership, all objects written to the bucket by any account will
+	//    be owned by the bucket owner.
+	//
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	ACL *string `location:"header" locationName:"x-amz-acl" type:"string" enum:"ObjectCannedACL"`
 
 	// The name of the destination bucket.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
 	// Specifies whether Amazon S3 should use an S3 Bucket Key for object encryption
-	// with server-side encryption using AWS KMS (SSE-KMS). Setting this header
-	// to true causes Amazon S3 to use an S3 Bucket Key for object encryption with
-	// SSE-KMS.
+	// with server-side encryption using Key Management Service (KMS) keys (SSE-KMS).
+	// If a target object uses SSE-KMS, you can enable an S3 Bucket Key for the
+	// object.
 	//
-	// Specifying this header with a COPY action doesn’t affect bucket-level settings
-	// for S3 Bucket Key.
+	// Setting this header to true causes Amazon S3 to use an S3 Bucket Key for
+	// object encryption with SSE-KMS. Specifying this header with a COPY action
+	// doesn’t affect bucket-level settings for S3 Bucket Key.
+	//
+	// For more information, see Amazon S3 Bucket Keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-key.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported when the destination bucket is a directory
+	// bucket.
 	BucketKeyEnabled *bool `location:"header" locationName:"x-amz-server-side-encryption-bucket-key-enabled" type:"boolean"`
 
-	// Specifies caching behavior along the request/reply chain.
+	// Specifies the caching behavior along the request/reply chain.
 	CacheControl *string `location:"header" locationName:"Cache-Control" type:"string"`
 
-	// Indicates the algorithm you want Amazon S3 to use to create the checksum
+	// Indicates the algorithm that you want Amazon S3 to use to create the checksum
 	// for the object. For more information, see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
+	//
+	// When you copy an object, if the source object has a checksum, that checksum
+	// value will be copied to the new object by default. If the CopyObject request
+	// does not include this x-amz-checksum-algorithm header, the checksum algorithm
+	// will be copied from the source object to the destination object (if it's
+	// present on the source object). You can optionally specify a different checksum
+	// algorithm to use with the x-amz-checksum-algorithm header. Unrecognized or
+	// unsupported values will respond with the HTTP status code 400 Bad Request.
+	//
+	// For directory buckets, when you use Amazon Web Services SDKs, CRC32 is the
+	// default checksum algorithm that's used for performance.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// Specifies presentational information for the object.
+	// Specifies presentational information for the object. Indicates whether an
+	// object should be displayed in a web browser or downloaded as a file. It allows
+	// specifying the desired filename for the downloaded file.
 	ContentDisposition *string `location:"header" locationName:"Content-Disposition" type:"string"`
 
 	// Specifies what content encodings have been applied to the object and thus
 	// what decoding mechanisms must be applied to obtain the media-type referenced
 	// by the Content-Type header field.
+	//
+	// For directory buckets, only the aws-chunked value is supported in this header
+	// field.
 	ContentEncoding *string `location:"header" locationName:"Content-Encoding" type:"string"`
 
 	// The language the content is in.
 	ContentLanguage *string `location:"header" locationName:"Content-Language" type:"string"`
 
-	// A standard MIME type describing the format of the object data.
+	// A standard MIME type that describes the format of the object data.
 	ContentType *string `location:"header" locationName:"Content-Type" type:"string"`
 
-	// Specifies the source object for the copy operation. You specify the value
-	// in one of two formats, depending on whether you want to access the source
-	// object through an access point (https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points.html):
+	// Specifies the source object for the copy operation. The source object can
+	// be up to 5 GB. If the source object is an object that was uploaded by using
+	// a multipart upload, the object copy will be a single part object after the
+	// source object is copied to the destination bucket.
+	//
+	// You specify the value of the copy source in one of two formats, depending
+	// on whether you want to access the source object through an access point (https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-points.html):
 	//
 	//    * For objects not accessed through an access point, specify the name of
 	//    the source bucket and the key of the source object, separated by a slash
-	//    (/). For example, to copy the object reports/january.pdf from the bucket
-	//    awsexamplebucket, use awsexamplebucket/reports/january.pdf. The value
-	//    must be URL-encoded.
+	//    (/). For example, to copy the object reports/january.pdf from the general
+	//    purpose bucket awsexamplebucket, use awsexamplebucket/reports/january.pdf.
+	//    The value must be URL-encoded. To copy the object reports/january.pdf
+	//    from the directory bucket awsexamplebucket--use1-az5--x-s3, use awsexamplebucket--use1-az5--x-s3/reports/january.pdf.
+	//    The value must be URL-encoded.
 	//
 	//    * For objects accessed through access points, specify the Amazon Resource
 	//    Name (ARN) of the object as accessed through the access point, in the
@@ -13406,43 +14597,104 @@ type CopyObjectInput struct {
 	//    my-access-point owned by account 123456789012 in Region us-west-2, use
 	//    the URL encoding of arn:aws:s3:us-west-2:123456789012:accesspoint/my-access-point/object/reports/january.pdf.
 	//    The value must be URL encoded. Amazon S3 supports copy operations using
-	//    access points only when the source and destination buckets are in the
-	//    same Amazon Web Services Region. Alternatively, for objects accessed through
-	//    Amazon S3 on Outposts, specify the ARN of the object as accessed in the
-	//    format arn:aws:s3-outposts:<Region>:<account-id>:outpost/<outpost-id>/object/<key>.
+	//    Access points only when the source and destination buckets are in the
+	//    same Amazon Web Services Region. Access points are not supported by directory
+	//    buckets. Alternatively, for objects accessed through Amazon S3 on Outposts,
+	//    specify the ARN of the object as accessed in the format arn:aws:s3-outposts:<Region>:<account-id>:outpost/<outpost-id>/object/<key>.
 	//    For example, to copy the object reports/january.pdf through outpost my-outpost
 	//    owned by account 123456789012 in Region us-west-2, use the URL encoding
 	//    of arn:aws:s3-outposts:us-west-2:123456789012:outpost/my-outpost/object/reports/january.pdf.
 	//    The value must be URL-encoded.
 	//
-	// To copy a specific version of an object, append ?versionId=<version-id> to
-	// the value (for example, awsexamplebucket/reports/january.pdf?versionId=QUpfdndhfd8438MNFDN93jdnJFkdmqnh893).
+	// If your source bucket versioning is enabled, the x-amz-copy-source header
+	// by default identifies the current version of an object to copy. If the current
+	// version is a delete marker, Amazon S3 behaves as if the object was deleted.
+	// To copy a different version, use the versionId query parameter. Specifically,
+	// append ?versionId=<version-id> to the value (for example, awsexamplebucket/reports/january.pdf?versionId=QUpfdndhfd8438MNFDN93jdnJFkdmqnh893).
 	// If you don't specify a version ID, Amazon S3 copies the latest version of
 	// the source object.
+	//
+	// If you enable versioning on the destination bucket, Amazon S3 generates a
+	// unique version ID for the copied object. This version ID is different from
+	// the version ID of the source object. Amazon S3 returns the version ID of
+	// the copied object in the x-amz-version-id response header in the response.
+	//
+	// If you do not enable versioning or suspend it on the destination bucket,
+	// the version ID that Amazon S3 generates in the x-amz-version-id response
+	// header is always null.
+	//
+	// Directory buckets - S3 Versioning isn't enabled and supported for directory
+	// buckets.
 	//
 	// CopySource is a required field
 	CopySource *string `location:"header" locationName:"x-amz-copy-source" type:"string" required:"true"`
 
 	// Copies the object if its entity tag (ETag) matches the specified tag.
+	//
+	// If both the x-amz-copy-source-if-match and x-amz-copy-source-if-unmodified-since
+	// headers are present in the request and evaluate as follows, Amazon S3 returns
+	// 200 OK and copies the data:
+	//
+	//    * x-amz-copy-source-if-match condition evaluates to true
+	//
+	//    * x-amz-copy-source-if-unmodified-since condition evaluates to false
 	CopySourceIfMatch *string `location:"header" locationName:"x-amz-copy-source-if-match" type:"string"`
 
 	// Copies the object if it has been modified since the specified time.
+	//
+	// If both the x-amz-copy-source-if-none-match and x-amz-copy-source-if-modified-since
+	// headers are present in the request and evaluate as follows, Amazon S3 returns
+	// the 412 Precondition Failed response code:
+	//
+	//    * x-amz-copy-source-if-none-match condition evaluates to false
+	//
+	//    * x-amz-copy-source-if-modified-since condition evaluates to true
 	CopySourceIfModifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-modified-since" type:"timestamp"`
 
 	// Copies the object if its entity tag (ETag) is different than the specified
 	// ETag.
+	//
+	// If both the x-amz-copy-source-if-none-match and x-amz-copy-source-if-modified-since
+	// headers are present in the request and evaluate as follows, Amazon S3 returns
+	// the 412 Precondition Failed response code:
+	//
+	//    * x-amz-copy-source-if-none-match condition evaluates to false
+	//
+	//    * x-amz-copy-source-if-modified-since condition evaluates to true
 	CopySourceIfNoneMatch *string `location:"header" locationName:"x-amz-copy-source-if-none-match" type:"string"`
 
 	// Copies the object if it hasn't been modified since the specified time.
+	//
+	// If both the x-amz-copy-source-if-match and x-amz-copy-source-if-unmodified-since
+	// headers are present in the request and evaluate as follows, Amazon S3 returns
+	// 200 OK and copies the data:
+	//
+	//    * x-amz-copy-source-if-match condition evaluates to true
+	//
+	//    * x-amz-copy-source-if-unmodified-since condition evaluates to false
 	CopySourceIfUnmodifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-unmodified-since" type:"timestamp"`
 
 	// Specifies the algorithm to use when decrypting the source object (for example,
 	// AES256).
+	//
+	// If the source object for the copy is stored in Amazon S3 using SSE-C, you
+	// must provide the necessary encryption information in your request so that
+	// Amazon S3 can decrypt the object for copying.
+	//
+	// This functionality is not supported when the source object is in a directory
+	// bucket.
 	CopySourceSSECustomerAlgorithm *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-algorithm" type:"string"`
 
 	// Specifies the customer-provided encryption key for Amazon S3 to use to decrypt
-	// the source object. The encryption key provided in this header must be one
-	// that was used when the source object was created.
+	// the source object. The encryption key provided in this header must be the
+	// same one that was used when the source object was created.
+	//
+	// If the source object for the copy is stored in Amazon S3 using SSE-C, you
+	// must provide the necessary encryption information in your request so that
+	// Amazon S3 can decrypt the object for copying.
+	//
+	// This functionality is not supported when the source object is in a directory
+	// bucket.
 	//
 	// CopySourceSSECustomerKey is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CopyObjectInput's
@@ -13452,16 +14704,23 @@ type CopyObjectInput struct {
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure that the
 	// encryption key was transmitted without error.
+	//
+	// If the source object for the copy is stored in Amazon S3 using SSE-C, you
+	// must provide the necessary encryption information in your request so that
+	// Amazon S3 can decrypt the object for copying.
+	//
+	// This functionality is not supported when the source object is in a directory
+	// bucket.
 	CopySourceSSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-key-MD5" type:"string"`
 
-	// The account ID of the expected destination bucket owner. If the destination
-	// bucket is owned by a different account, the request fails with the HTTP status
-	// code 403 Forbidden (access denied).
+	// The account ID of the expected destination bucket owner. If the account ID
+	// that you provide does not match the actual owner of the destination bucket,
+	// the request fails with the HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
-	// The account ID of the expected source bucket owner. If the source bucket
-	// is owned by a different account, the request fails with the HTTP status code
-	// 403 Forbidden (access denied).
+	// The account ID of the expected source bucket owner. If the account ID that
+	// you provide does not match the actual owner of the source bucket, the request
+	// fails with the HTTP status code 403 Forbidden (access denied).
 	ExpectedSourceBucketOwner *string `location:"header" locationName:"x-amz-source-expected-bucket-owner" type:"string"`
 
 	// The date and time at which the object is no longer cacheable.
@@ -13469,22 +14728,30 @@ type CopyObjectInput struct {
 
 	// Gives the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	GrantFullControl *string `location:"header" locationName:"x-amz-grant-full-control" type:"string"`
 
 	// Allows grantee to read the object data and its metadata.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	GrantRead *string `location:"header" locationName:"x-amz-grant-read" type:"string"`
 
 	// Allows grantee to read the object ACL.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	GrantReadACP *string `location:"header" locationName:"x-amz-grant-read-acp" type:"string"`
 
 	// Allows grantee to write the ACL for the applicable object.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	GrantWriteACP *string `location:"header" locationName:"x-amz-grant-write-acp" type:"string"`
 
 	// The key of the destination object.
@@ -13496,34 +14763,68 @@ type CopyObjectInput struct {
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
 
 	// Specifies whether the metadata is copied from the source object or replaced
-	// with metadata provided in the request.
+	// with metadata that's provided in the request. When copying an object, you
+	// can preserve all metadata (the default) or specify new metadata. If this
+	// header isn’t specified, COPY is the default behavior.
+	//
+	// General purpose bucket - For general purpose buckets, when you grant permissions,
+	// you can use the s3:x-amz-metadata-directive condition key to enforce certain
+	// metadata behavior when objects are uploaded. For more information, see Amazon
+	// S3 condition key examples (https://docs.aws.amazon.com/AmazonS3/latest/dev/amazon-s3-policy-keys.html)
+	// in the Amazon S3 User Guide.
+	//
+	// x-amz-website-redirect-location is unique to each object and is not copied
+	// when using the x-amz-metadata-directive header. To copy the value, you must
+	// specify x-amz-website-redirect-location in the request header.
 	MetadataDirective *string `location:"header" locationName:"x-amz-metadata-directive" type:"string" enum:"MetadataDirective"`
 
-	// Specifies whether you want to apply a legal hold to the copied object.
+	// Specifies whether you want to apply a legal hold to the object copy.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockLegalHoldStatus *string `location:"header" locationName:"x-amz-object-lock-legal-hold" type:"string" enum:"ObjectLockLegalHoldStatus"`
 
-	// The Object Lock mode that you want to apply to the copied object.
+	// The Object Lock mode that you want to apply to the object copy.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockMode *string `location:"header" locationName:"x-amz-object-lock-mode" type:"string" enum:"ObjectLockMode"`
 
-	// The date and time when you want the copied object's Object Lock to expire.
+	// The date and time when you want the Object Lock of the object copy to expire.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockRetainUntilDate *time.Time `location:"header" locationName:"x-amz-object-lock-retain-until-date" type:"timestamp" timestampFormat:"iso8601"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
-	// Specifies the algorithm to use to when encrypting the object (for example,
-	// AES256).
+	// Specifies the algorithm to use when encrypting the object (for example, AES256).
+	//
+	// When you perform a CopyObject operation, if you want to use a different type
+	// of encryption setting for the target object, you can specify appropriate
+	// encryption-related headers to encrypt the target object with an Amazon S3
+	// managed key, a KMS key, or a customer-provided key. If the encryption setting
+	// in your request is different from the default encryption configuration of
+	// the destination bucket, the encryption setting in your request takes precedence.
+	//
+	// This functionality is not supported when the destination bucket is a directory
+	// bucket.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// Specifies the customer-provided encryption key for Amazon S3 to use in encrypting
-	// data. This value is used to store the object and then it is discarded; Amazon
+	// data. This value is used to store the object and then it is discarded. Amazon
 	// S3 does not store the encryption key. The key must be appropriate for use
 	// with the algorithm specified in the x-amz-server-side-encryption-customer-algorithm
 	// header.
+	//
+	// This functionality is not supported when the destination bucket is a directory
+	// bucket.
 	//
 	// SSECustomerKey is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CopyObjectInput's
@@ -13533,24 +14834,33 @@ type CopyObjectInput struct {
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure that the
 	// encryption key was transmitted without error.
+	//
+	// This functionality is not supported when the destination bucket is a directory
+	// bucket.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// Specifies the Amazon Web Services KMS Encryption Context to use for object
 	// encryption. The value of this header is a base64-encoded UTF-8 string holding
-	// JSON with the encryption context key-value pairs.
+	// JSON with the encryption context key-value pairs. This value must be explicitly
+	// added to specify encryption context for CopyObject requests.
+	//
+	// This functionality is not supported when the destination bucket is a directory
+	// bucket.
 	//
 	// SSEKMSEncryptionContext is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CopyObjectInput's
 	// String and GoString methods.
 	SSEKMSEncryptionContext *string `location:"header" locationName:"x-amz-server-side-encryption-context" type:"string" sensitive:"true"`
 
-	// Specifies the Amazon Web Services KMS key ID to use for object encryption.
-	// All GET and PUT requests for an object protected by Amazon Web Services KMS
-	// will fail if not made via SSL or using SigV4. For information about configuring
-	// using any of the officially supported Amazon Web Services SDKs and Amazon
-	// Web Services CLI, see Specifying the Signature Version in Request Authentication
-	// (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingAWSSDK.html#specify-signature-version)
+	// Specifies the KMS ID (Key ID, Key ARN, or Key Alias) to use for object encryption.
+	// All GET and PUT requests for an object protected by KMS will fail if they're
+	// not made via SSL or using SigV4. For information about configuring any of
+	// the officially supported Amazon Web Services SDKs and Amazon Web Services
+	// CLI, see Specifying the Signature Version in Request Authentication (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingAWSSDK.html#specify-signature-version)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported when the destination bucket is a directory
+	// bucket.
 	//
 	// SSEKMSKeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CopyObjectInput's
@@ -13558,29 +14868,167 @@ type CopyObjectInput struct {
 	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
 
 	// The server-side encryption algorithm used when storing this object in Amazon
-	// S3 (for example, AES256, aws:kms).
+	// S3 (for example, AES256, aws:kms, aws:kms:dsse). Unrecognized or unsupported
+	// values won’t write a destination object and will receive a 400 Bad Request
+	// response.
+	//
+	// Amazon S3 automatically encrypts all new objects that are copied to an S3
+	// bucket. When copying an object, if you don't specify encryption information
+	// in your copy request, the encryption setting of the target object is set
+	// to the default encryption configuration of the destination bucket. By default,
+	// all buckets have a base level of encryption configuration that uses server-side
+	// encryption with Amazon S3 managed keys (SSE-S3). If the destination bucket
+	// has a default encryption configuration that uses server-side encryption with
+	// Key Management Service (KMS) keys (SSE-KMS), dual-layer server-side encryption
+	// with Amazon Web Services KMS keys (DSSE-KMS), or server-side encryption with
+	// customer-provided encryption keys (SSE-C), Amazon S3 uses the corresponding
+	// KMS key, or a customer-provided key to encrypt the target object copy.
+	//
+	// When you perform a CopyObject operation, if you want to use a different type
+	// of encryption setting for the target object, you can specify appropriate
+	// encryption-related headers to encrypt the target object with an Amazon S3
+	// managed key, a KMS key, or a customer-provided key. If the encryption setting
+	// in your request is different from the default encryption configuration of
+	// the destination bucket, the encryption setting in your request takes precedence.
+	//
+	// With server-side encryption, Amazon S3 encrypts your data as it writes your
+	// data to disks in its data centers and decrypts the data when you access it.
+	// For more information about server-side encryption, see Using Server-Side
+	// Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/serv-side-encryption.html)
+	// in the Amazon S3 User Guide.
+	//
+	// For directory buckets, only server-side encryption with Amazon S3 managed
+	// keys (SSE-S3) (AES256) is supported.
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
-	// By default, Amazon S3 uses the STANDARD Storage Class to store newly created
-	// objects. The STANDARD storage class provides high durability and high availability.
-	// Depending on performance needs, you can specify a different Storage Class.
-	// Amazon S3 on Outposts only uses the OUTPOSTS Storage Class. For more information,
-	// see Storage Classes (https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html)
+	// If the x-amz-storage-class header is not used, the copied object will be
+	// stored in the STANDARD Storage Class by default. The STANDARD storage class
+	// provides high durability and high availability. Depending on performance
+	// needs, you can specify a different Storage Class.
+	//
+	//    * Directory buckets - For directory buckets, only the S3 Express One Zone
+	//    storage class is supported to store newly created objects. Unsupported
+	//    storage class values won't write a destination object and will respond
+	//    with the HTTP status code 400 Bad Request.
+	//
+	//    * Amazon S3 on Outposts - S3 on Outposts only uses the OUTPOSTS Storage
+	//    Class.
+	//
+	// You can use the CopyObject action to change the storage class of an object
+	// that is already stored in Amazon S3 by using the x-amz-storage-class header.
+	// For more information, see Storage Classes (https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Before using an object as a source object for the copy operation, you must
+	// restore a copy of it if it meets any of the following conditions:
+	//
+	//    * The storage class of the source object is GLACIER or DEEP_ARCHIVE.
+	//
+	//    * The storage class of the source object is INTELLIGENT_TIERING and it's
+	//    S3 Intelligent-Tiering access tier (https://docs.aws.amazon.com/AmazonS3/latest/userguide/intelligent-tiering-overview.html#intel-tiering-tier-definition)
+	//    is Archive Access or Deep Archive Access.
+	//
+	// For more information, see RestoreObject (https://docs.aws.amazon.com/AmazonS3/latest/API/API_RestoreObject.html)
+	// and Copying Objects (https://docs.aws.amazon.com/AmazonS3/latest/dev/CopyingObjectsExamples.html)
 	// in the Amazon S3 User Guide.
 	StorageClass *string `location:"header" locationName:"x-amz-storage-class" type:"string" enum:"StorageClass"`
 
-	// The tag-set for the object destination object this value must be used in
-	// conjunction with the TaggingDirective. The tag-set must be encoded as URL
-	// Query parameters.
+	// The tag-set for the object copy in the destination bucket. This value must
+	// be used in conjunction with the x-amz-tagging-directive if you choose REPLACE
+	// for the x-amz-tagging-directive. If you choose COPY for the x-amz-tagging-directive,
+	// you don't need to set the x-amz-tagging header, because the tag-set will
+	// be copied from the source object directly. The tag-set must be encoded as
+	// URL Query parameters.
+	//
+	// The default value is the empty value.
+	//
+	// Directory buckets - For directory buckets in a CopyObject operation, only
+	// the empty tag-set is supported. Any requests that attempt to write non-empty
+	// tags into directory buckets will receive a 501 Not Implemented status code.
+	// When the destination bucket is a directory bucket, you will receive a 501
+	// Not Implemented response in any of the following situations:
+	//
+	//    * When you attempt to COPY the tag-set from an S3 source object that has
+	//    non-empty tags.
+	//
+	//    * When you attempt to REPLACE the tag-set of a source object and set a
+	//    non-empty value to x-amz-tagging.
+	//
+	//    * When you don't set the x-amz-tagging-directive header and the source
+	//    object has non-empty tags. This is because the default value of x-amz-tagging-directive
+	//    is COPY.
+	//
+	// Because only the empty tag-set is supported for directory buckets in a CopyObject
+	// operation, the following situations are allowed:
+	//
+	//    * When you attempt to COPY the tag-set from a directory bucket source
+	//    object that has no tags to a general purpose bucket. It copies an empty
+	//    tag-set to the destination object.
+	//
+	//    * When you attempt to REPLACE the tag-set of a directory bucket source
+	//    object and set the x-amz-tagging value of the directory bucket destination
+	//    object to empty.
+	//
+	//    * When you attempt to REPLACE the tag-set of a general purpose bucket
+	//    source object that has non-empty tags and set the x-amz-tagging value
+	//    of the directory bucket destination object to empty.
+	//
+	//    * When you attempt to REPLACE the tag-set of a directory bucket source
+	//    object and don't set the x-amz-tagging value of the directory bucket destination
+	//    object. This is because the default value of x-amz-tagging is the empty
+	//    value.
 	Tagging *string `location:"header" locationName:"x-amz-tagging" type:"string"`
 
-	// Specifies whether the object tag-set are copied from the source object or
-	// replaced with tag-set provided in the request.
+	// Specifies whether the object tag-set is copied from the source object or
+	// replaced with the tag-set that's provided in the request.
+	//
+	// The default value is COPY.
+	//
+	// Directory buckets - For directory buckets in a CopyObject operation, only
+	// the empty tag-set is supported. Any requests that attempt to write non-empty
+	// tags into directory buckets will receive a 501 Not Implemented status code.
+	// When the destination bucket is a directory bucket, you will receive a 501
+	// Not Implemented response in any of the following situations:
+	//
+	//    * When you attempt to COPY the tag-set from an S3 source object that has
+	//    non-empty tags.
+	//
+	//    * When you attempt to REPLACE the tag-set of a source object and set a
+	//    non-empty value to x-amz-tagging.
+	//
+	//    * When you don't set the x-amz-tagging-directive header and the source
+	//    object has non-empty tags. This is because the default value of x-amz-tagging-directive
+	//    is COPY.
+	//
+	// Because only the empty tag-set is supported for directory buckets in a CopyObject
+	// operation, the following situations are allowed:
+	//
+	//    * When you attempt to COPY the tag-set from a directory bucket source
+	//    object that has no tags to a general purpose bucket. It copies an empty
+	//    tag-set to the destination object.
+	//
+	//    * When you attempt to REPLACE the tag-set of a directory bucket source
+	//    object and set the x-amz-tagging value of the directory bucket destination
+	//    object to empty.
+	//
+	//    * When you attempt to REPLACE the tag-set of a general purpose bucket
+	//    source object that has non-empty tags and set the x-amz-tagging value
+	//    of the directory bucket destination object to empty.
+	//
+	//    * When you attempt to REPLACE the tag-set of a directory bucket source
+	//    object and don't set the x-amz-tagging value of the directory bucket destination
+	//    object. This is because the default value of x-amz-tagging is the empty
+	//    value.
 	TaggingDirective *string `location:"header" locationName:"x-amz-tagging-directive" type:"string" enum:"TaggingDirective"`
 
-	// If the bucket is configured as a website, redirects requests for this object
-	// to another object in the same bucket or to an external URL. Amazon S3 stores
-	// the value of this header in the object metadata.
+	// If the destination bucket is configured as a website, redirects requests
+	// for this object copy to another object in the same bucket or to an external
+	// URL. Amazon S3 stores the value of this header in the object metadata. This
+	// value is unique to each object and is not copied when using the x-amz-metadata-directive
+	// header. Instead, you may opt to provide this header in combination with the
+	// x-amz-metadata-directive header.
+	//
+	// This functionality is not supported for directory buckets.
 	WebsiteRedirectLocation *string `location:"header" locationName:"x-amz-website-redirect-location" type:"string"`
 }
 
@@ -13925,55 +15373,76 @@ type CopyObjectOutput struct {
 	_ struct{} `type:"structure" payload:"CopyObjectResult"`
 
 	// Indicates whether the copied object uses an S3 Bucket Key for server-side
-	// encryption with Amazon Web Services KMS (SSE-KMS).
+	// encryption with Key Management Service (KMS) keys (SSE-KMS).
+	//
+	// This functionality is not supported for directory buckets.
 	BucketKeyEnabled *bool `location:"header" locationName:"x-amz-server-side-encryption-bucket-key-enabled" type:"boolean"`
 
 	// Container for all response elements.
 	CopyObjectResult *CopyObjectResult `type:"structure"`
 
-	// Version of the copied object in the destination bucket.
+	// Version ID of the source object that was copied.
+	//
+	// This functionality is not supported when the source object is in a directory
+	// bucket.
 	CopySourceVersionId *string `location:"header" locationName:"x-amz-copy-source-version-id" type:"string"`
 
 	// If the object expiration is configured, the response includes this header.
+	//
+	// This functionality is not supported for directory buckets.
 	Expiration *string `location:"header" locationName:"x-amz-expiration" type:"string"`
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header confirming the encryption algorithm
-	// used.
+	// the response will include this header to confirm the encryption algorithm
+	// that's used.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header to provide round-trip message integrity
+	// the response will include this header to provide the round-trip message integrity
 	// verification of the customer-provided encryption key.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
-	// If present, specifies the Amazon Web Services KMS Encryption Context to use
+	// If present, indicates the Amazon Web Services KMS Encryption Context to use
 	// for object encryption. The value of this header is a base64-encoded UTF-8
 	// string holding JSON with the encryption context key-value pairs.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSEncryptionContext is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CopyObjectOutput's
 	// String and GoString methods.
 	SSEKMSEncryptionContext *string `location:"header" locationName:"x-amz-server-side-encryption-context" type:"string" sensitive:"true"`
 
-	// If present, specifies the ID of the Amazon Web Services Key Management Service
-	// (Amazon Web Services KMS) symmetric customer managed key that was used for
-	// the object.
+	// If present, indicates the ID of the Key Management Service (KMS) symmetric
+	// encryption customer managed key that was used for the object.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSKeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CopyObjectOutput's
 	// String and GoString methods.
 	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
 
-	// The server-side encryption algorithm used when storing this object in Amazon
-	// S3 (for example, AES256, aws:kms).
+	// The server-side encryption algorithm used when you store this object in Amazon
+	// S3 (for example, AES256, aws:kms, aws:kms:dsse).
+	//
+	// For directory buckets, only server-side encryption with Amazon S3 managed
+	// keys (SSE-S3) (AES256) is supported.
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
 	// Version ID of the newly created copy.
+	//
+	// This functionality is not supported for directory buckets.
 	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 }
 
@@ -14066,34 +15535,26 @@ type CopyObjectResult struct {
 	_ struct{} `type:"structure"`
 
 	// The base64-encoded, 32-bit CRC32 checksum of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. For more information, see Checking
+	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32 *string `type:"string"`
 
 	// The base64-encoded, 32-bit CRC32C checksum of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. For more information, see
+	// Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32C *string `type:"string"`
 
 	// The base64-encoded, 160-bit SHA-1 digest of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. For more information, see Checking
+	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA1 *string `type:"string"`
 
 	// The base64-encoded, 256-bit SHA-256 digest of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. For more information, see
+	// Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA256 *string `type:"string"`
 
@@ -14164,34 +15625,42 @@ type CopyPartResult struct {
 	_ struct{} `type:"structure"`
 
 	// The base64-encoded, 32-bit CRC32 checksum of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32 *string `type:"string"`
 
 	// The base64-encoded, 32-bit CRC32C checksum of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32C *string `type:"string"`
 
 	// The base64-encoded, 160-bit SHA-1 digest of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use the API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA1 *string `type:"string"`
 
 	// The base64-encoded, 256-bit SHA-256 digest of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA256 *string `type:"string"`
 
@@ -14260,8 +15729,29 @@ func (s *CopyPartResult) SetLastModified(v time.Time) *CopyPartResult {
 type CreateBucketConfiguration struct {
 	_ struct{} `type:"structure"`
 
-	// Specifies the Region where the bucket will be created. If you don't specify
-	// a Region, the bucket is created in the US East (N. Virginia) Region (us-east-1).
+	// Specifies the information about the bucket that will be created.
+	//
+	// This functionality is only supported by directory buckets.
+	Bucket *BucketInfo `type:"structure"`
+
+	// Specifies the location where the bucket will be created.
+	//
+	// For directory buckets, the location type is Availability Zone.
+	//
+	// This functionality is only supported by directory buckets.
+	Location *LocationInfo `type:"structure"`
+
+	// Specifies the Region where the bucket will be created. You might choose a
+	// Region to optimize latency, minimize costs, or address regulatory requirements.
+	// For example, if you reside in Europe, you will probably find it advantageous
+	// to create buckets in the Europe (Ireland) Region. For more information, see
+	// Accessing a bucket (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html#access-bucket-intro)
+	// in the Amazon S3 User Guide.
+	//
+	// If you don't specify a Region, the bucket is created in the US East (N. Virginia)
+	// Region (us-east-1) by default.
+	//
+	// This functionality is not supported for directory buckets.
 	LocationConstraint *string `type:"string" enum:"BucketLocationConstraint"`
 }
 
@@ -14283,6 +15773,22 @@ func (s CreateBucketConfiguration) GoString() string {
 	return s.String()
 }
 
+// SetBucket sets the Bucket field's value.
+func (s *CreateBucketConfiguration) SetBucket(v *BucketInfo) *CreateBucketConfiguration {
+	s.Bucket = v
+	return s
+}
+
+func (s *CreateBucketConfiguration) getBucket() (v *BucketInfo) {
+	return s.Bucket
+}
+
+// SetLocation sets the Location field's value.
+func (s *CreateBucketConfiguration) SetLocation(v *LocationInfo) *CreateBucketConfiguration {
+	s.Location = v
+	return s
+}
+
 // SetLocationConstraint sets the LocationConstraint field's value.
 func (s *CreateBucketConfiguration) SetLocationConstraint(v string) *CreateBucketConfiguration {
 	s.LocationConstraint = &v
@@ -14293,9 +15799,24 @@ type CreateBucketInput struct {
 	_ struct{} `locationName:"CreateBucketRequest" type:"structure" payload:"CreateBucketConfiguration"`
 
 	// The canned ACL to apply to the bucket.
+	//
+	// This functionality is not supported for directory buckets.
 	ACL *string `location:"header" locationName:"x-amz-acl" type:"string" enum:"BucketCannedACL"`
 
 	// The name of the bucket to create.
+	//
+	// General purpose buckets - For information about bucket naming restrictions,
+	// see Bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use path-style requests in the format https://s3express-control.region_code.amazonaws.com/bucket-name
+	// . Virtual-hosted-style requests aren't supported. Directory bucket names
+	// must be unique in the chosen Availability Zone. Bucket names must also follow
+	// the format bucket_base_name--az_id--x-s3 (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3).
+	// For information about bucket naming restrictions, see Directory bucket naming
+	// rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
@@ -14305,24 +15826,36 @@ type CreateBucketInput struct {
 
 	// Allows grantee the read, write, read ACP, and write ACP permissions on the
 	// bucket.
+	//
+	// This functionality is not supported for directory buckets.
 	GrantFullControl *string `location:"header" locationName:"x-amz-grant-full-control" type:"string"`
 
 	// Allows grantee to list the objects in the bucket.
+	//
+	// This functionality is not supported for directory buckets.
 	GrantRead *string `location:"header" locationName:"x-amz-grant-read" type:"string"`
 
 	// Allows grantee to read the bucket ACL.
+	//
+	// This functionality is not supported for directory buckets.
 	GrantReadACP *string `location:"header" locationName:"x-amz-grant-read-acp" type:"string"`
 
 	// Allows grantee to create new objects in the bucket.
 	//
 	// For the bucket and object owners of existing objects, also allows deletions
 	// and overwrites of those objects.
+	//
+	// This functionality is not supported for directory buckets.
 	GrantWrite *string `location:"header" locationName:"x-amz-grant-write" type:"string"`
 
 	// Allows grantee to write the ACL for the applicable bucket.
+	//
+	// This functionality is not supported for directory buckets.
 	GrantWriteACP *string `location:"header" locationName:"x-amz-grant-write-acp" type:"string"`
 
 	// Specifies whether you want S3 Object Lock to be enabled for the new bucket.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockEnabledForBucket *bool `location:"header" locationName:"x-amz-bucket-object-lock-enabled" type:"boolean"`
 
 	// The container element for object ownership for a bucket's ownership controls.
@@ -14337,8 +15870,19 @@ type CreateBucketInput struct {
 	// BucketOwnerEnforced - Access control lists (ACLs) are disabled and no longer
 	// affect permissions. The bucket owner automatically owns and has full control
 	// over every object in the bucket. The bucket only accepts PUT requests that
-	// don't specify an ACL or bucket owner full control ACLs, such as the bucket-owner-full-control
-	// canned ACL or an equivalent form of this ACL expressed in the XML format.
+	// don't specify an ACL or specify bucket owner full control ACLs (such as the
+	// predefined bucket-owner-full-control canned ACL or a custom ACL in XML format
+	// that grants the same permissions).
+	//
+	// By default, ObjectOwnership is set to BucketOwnerEnforced and ACLs are disabled.
+	// We recommend keeping ACLs disabled, except in uncommon use cases where you
+	// must control access for each object individually. For more information about
+	// S3 Object Ownership, see Controlling ownership of objects and disabling ACLs
+	// for your bucket (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets. Directory buckets
+	// use the bucket owner enforced setting for S3 Object Ownership.
 	ObjectOwnership *string `location:"header" locationName:"x-amz-object-ownership" type:"string" enum:"ObjectOwnership"`
 }
 
@@ -14477,44 +16021,74 @@ func (s *CreateBucketOutput) SetLocation(v string) *CreateBucketOutput {
 type CreateMultipartUploadInput struct {
 	_ struct{} `locationName:"CreateMultipartUploadRequest" type:"structure"`
 
-	// The canned ACL to apply to the object.
+	// The canned ACL to apply to the object. Amazon S3 supports a set of predefined
+	// ACLs, known as canned ACLs. Each canned ACL has a predefined set of grantees
+	// and permissions. For more information, see Canned ACL (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#CannedACL)
+	// in the Amazon S3 User Guide.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	// By default, all objects are private. Only the owner has full access control.
+	// When uploading an object, you can grant access permissions to individual
+	// Amazon Web Services accounts or to predefined groups defined by Amazon S3.
+	// These permissions are then added to the access control list (ACL) on the
+	// new object. For more information, see Using ACLs (https://docs.aws.amazon.com/AmazonS3/latest/dev/S3_ACLs_UsingACLs.html).
+	// One way to grant the permissions using the request headers is to specify
+	// a canned ACL with the x-amz-acl request header.
+	//
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	ACL *string `location:"header" locationName:"x-amz-acl" type:"string" enum:"ObjectCannedACL"`
 
-	// The name of the bucket to which to initiate the upload
+	// The name of the bucket where the multipart upload is initiated and where
+	// the object is uploaded.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
 	// Specifies whether Amazon S3 should use an S3 Bucket Key for object encryption
-	// with server-side encryption using AWS KMS (SSE-KMS). Setting this header
-	// to true causes Amazon S3 to use an S3 Bucket Key for object encryption with
-	// SSE-KMS.
+	// with server-side encryption using Key Management Service (KMS) keys (SSE-KMS).
+	// Setting this header to true causes Amazon S3 to use an S3 Bucket Key for
+	// object encryption with SSE-KMS.
 	//
 	// Specifying this header with an object action doesn’t affect bucket-level
 	// settings for S3 Bucket Key.
+	//
+	// This functionality is not supported for directory buckets.
 	BucketKeyEnabled *bool `location:"header" locationName:"x-amz-server-side-encryption-bucket-key-enabled" type:"boolean"`
 
 	// Specifies caching behavior along the request/reply chain.
 	CacheControl *string `location:"header" locationName:"Cache-Control" type:"string"`
 
-	// Indicates the algorithm you want Amazon S3 to use to create the checksum
+	// Indicates the algorithm that you want Amazon S3 to use to create the checksum
 	// for the object. For more information, see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
@@ -14525,40 +16099,175 @@ type CreateMultipartUploadInput struct {
 	// Specifies what content encodings have been applied to the object and thus
 	// what decoding mechanisms must be applied to obtain the media-type referenced
 	// by the Content-Type header field.
+	//
+	// For directory buckets, only the aws-chunked value is supported in this header
+	// field.
 	ContentEncoding *string `location:"header" locationName:"Content-Encoding" type:"string"`
 
-	// The language the content is in.
+	// The language that the content is in.
 	ContentLanguage *string `location:"header" locationName:"Content-Language" type:"string"`
 
 	// A standard MIME type describing the format of the object data.
 	ContentType *string `location:"header" locationName:"Content-Type" type:"string"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The date and time at which the object is no longer cacheable.
 	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp"`
 
-	// Gives the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
+	// Specify access permissions explicitly to give the grantee READ, READ_ACP,
+	// and WRITE_ACP permissions on the object.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	// By default, all objects are private. Only the owner has full access control.
+	// When uploading an object, you can use this header to explicitly grant access
+	// permissions to specific Amazon Web Services accounts or groups. This header
+	// maps to specific permissions that Amazon S3 supports in an ACL. For more
+	// information, see Access Control List (ACL) Overview (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html)
+	// in the Amazon S3 User Guide.
+	//
+	// You specify each grantee as a type=value pair, where the type is one of the
+	// following:
+	//
+	//    * id – if the value specified is the canonical user ID of an Amazon
+	//    Web Services account
+	//
+	//    * uri – if you are granting permissions to a predefined group
+	//
+	//    * emailAddress – if the value specified is the email address of an Amazon
+	//    Web Services account Using email addresses to specify a grantee is only
+	//    supported in the following Amazon Web Services Regions: US East (N. Virginia)
+	//    US West (N. California) US West (Oregon) Asia Pacific (Singapore) Asia
+	//    Pacific (Sydney) Asia Pacific (Tokyo) Europe (Ireland) South America (São
+	//    Paulo) For a list of all the Amazon S3 supported Regions and endpoints,
+	//    see Regions and Endpoints (https://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region)
+	//    in the Amazon Web Services General Reference.
+	//
+	// For example, the following x-amz-grant-read header grants the Amazon Web
+	// Services accounts identified by account IDs permissions to read object data
+	// and its metadata:
+	//
+	// x-amz-grant-read: id="11112222333", id="444455556666"
+	//
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	GrantFullControl *string `location:"header" locationName:"x-amz-grant-full-control" type:"string"`
 
-	// Allows grantee to read the object data and its metadata.
+	// Specify access permissions explicitly to allow grantee to read the object
+	// data and its metadata.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	// By default, all objects are private. Only the owner has full access control.
+	// When uploading an object, you can use this header to explicitly grant access
+	// permissions to specific Amazon Web Services accounts or groups. This header
+	// maps to specific permissions that Amazon S3 supports in an ACL. For more
+	// information, see Access Control List (ACL) Overview (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html)
+	// in the Amazon S3 User Guide.
+	//
+	// You specify each grantee as a type=value pair, where the type is one of the
+	// following:
+	//
+	//    * id – if the value specified is the canonical user ID of an Amazon
+	//    Web Services account
+	//
+	//    * uri – if you are granting permissions to a predefined group
+	//
+	//    * emailAddress – if the value specified is the email address of an Amazon
+	//    Web Services account Using email addresses to specify a grantee is only
+	//    supported in the following Amazon Web Services Regions: US East (N. Virginia)
+	//    US West (N. California) US West (Oregon) Asia Pacific (Singapore) Asia
+	//    Pacific (Sydney) Asia Pacific (Tokyo) Europe (Ireland) South America (São
+	//    Paulo) For a list of all the Amazon S3 supported Regions and endpoints,
+	//    see Regions and Endpoints (https://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region)
+	//    in the Amazon Web Services General Reference.
+	//
+	// For example, the following x-amz-grant-read header grants the Amazon Web
+	// Services accounts identified by account IDs permissions to read object data
+	// and its metadata:
+	//
+	// x-amz-grant-read: id="11112222333", id="444455556666"
+	//
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	GrantRead *string `location:"header" locationName:"x-amz-grant-read" type:"string"`
 
-	// Allows grantee to read the object ACL.
+	// Specify access permissions explicitly to allows grantee to read the object
+	// ACL.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	// By default, all objects are private. Only the owner has full access control.
+	// When uploading an object, you can use this header to explicitly grant access
+	// permissions to specific Amazon Web Services accounts or groups. This header
+	// maps to specific permissions that Amazon S3 supports in an ACL. For more
+	// information, see Access Control List (ACL) Overview (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html)
+	// in the Amazon S3 User Guide.
+	//
+	// You specify each grantee as a type=value pair, where the type is one of the
+	// following:
+	//
+	//    * id – if the value specified is the canonical user ID of an Amazon
+	//    Web Services account
+	//
+	//    * uri – if you are granting permissions to a predefined group
+	//
+	//    * emailAddress – if the value specified is the email address of an Amazon
+	//    Web Services account Using email addresses to specify a grantee is only
+	//    supported in the following Amazon Web Services Regions: US East (N. Virginia)
+	//    US West (N. California) US West (Oregon) Asia Pacific (Singapore) Asia
+	//    Pacific (Sydney) Asia Pacific (Tokyo) Europe (Ireland) South America (São
+	//    Paulo) For a list of all the Amazon S3 supported Regions and endpoints,
+	//    see Regions and Endpoints (https://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region)
+	//    in the Amazon Web Services General Reference.
+	//
+	// For example, the following x-amz-grant-read header grants the Amazon Web
+	// Services accounts identified by account IDs permissions to read object data
+	// and its metadata:
+	//
+	// x-amz-grant-read: id="11112222333", id="444455556666"
+	//
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	GrantReadACP *string `location:"header" locationName:"x-amz-grant-read-acp" type:"string"`
 
-	// Allows grantee to write the ACL for the applicable object.
+	// Specify access permissions explicitly to allows grantee to allow grantee
+	// to write the ACL for the applicable object.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	// By default, all objects are private. Only the owner has full access control.
+	// When uploading an object, you can use this header to explicitly grant access
+	// permissions to specific Amazon Web Services accounts or groups. This header
+	// maps to specific permissions that Amazon S3 supports in an ACL. For more
+	// information, see Access Control List (ACL) Overview (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html)
+	// in the Amazon S3 User Guide.
+	//
+	// You specify each grantee as a type=value pair, where the type is one of the
+	// following:
+	//
+	//    * id – if the value specified is the canonical user ID of an Amazon
+	//    Web Services account
+	//
+	//    * uri – if you are granting permissions to a predefined group
+	//
+	//    * emailAddress – if the value specified is the email address of an Amazon
+	//    Web Services account Using email addresses to specify a grantee is only
+	//    supported in the following Amazon Web Services Regions: US East (N. Virginia)
+	//    US West (N. California) US West (Oregon) Asia Pacific (Singapore) Asia
+	//    Pacific (Sydney) Asia Pacific (Tokyo) Europe (Ireland) South America (São
+	//    Paulo) For a list of all the Amazon S3 supported Regions and endpoints,
+	//    see Regions and Endpoints (https://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region)
+	//    in the Amazon Web Services General Reference.
+	//
+	// For example, the following x-amz-grant-read header grants the Amazon Web
+	// Services accounts identified by account IDs permissions to read object data
+	// and its metadata:
+	//
+	// x-amz-grant-read: id="11112222333", id="444455556666"
+	//
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	GrantWriteACP *string `location:"header" locationName:"x-amz-grant-write-acp" type:"string"`
 
 	// Object key for which the multipart upload is to be initiated.
@@ -14570,23 +16279,34 @@ type CreateMultipartUploadInput struct {
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
 
 	// Specifies whether you want to apply a legal hold to the uploaded object.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockLegalHoldStatus *string `location:"header" locationName:"x-amz-object-lock-legal-hold" type:"string" enum:"ObjectLockLegalHoldStatus"`
 
 	// Specifies the Object Lock mode that you want to apply to the uploaded object.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockMode *string `location:"header" locationName:"x-amz-object-lock-mode" type:"string" enum:"ObjectLockMode"`
 
 	// Specifies the date and time when you want the Object Lock to expire.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockRetainUntilDate *time.Time `location:"header" locationName:"x-amz-object-lock-retain-until-date" type:"timestamp" timestampFormat:"iso8601"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
-	// Specifies the algorithm to use to when encrypting the object (for example,
-	// AES256).
+	// Specifies the algorithm to use when encrypting the object (for example, AES256).
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// Specifies the customer-provided encryption key for Amazon S3 to use in encrypting
@@ -14595,56 +16315,70 @@ type CreateMultipartUploadInput struct {
 	// with the algorithm specified in the x-amz-server-side-encryption-customer-algorithm
 	// header.
 	//
+	// This functionality is not supported for directory buckets.
+	//
 	// SSECustomerKey is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CreateMultipartUploadInput's
 	// String and GoString methods.
 	SSECustomerKey *string `marshal-as:"blob" location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string" sensitive:"true"`
 
-	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
-	// Amazon S3 uses this header for a message integrity check to ensure that the
-	// encryption key was transmitted without error.
+	// Specifies the 128-bit MD5 digest of the customer-provided encryption key
+	// according to RFC 1321. Amazon S3 uses this header for a message integrity
+	// check to ensure that the encryption key was transmitted without error.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// Specifies the Amazon Web Services KMS Encryption Context to use for object
 	// encryption. The value of this header is a base64-encoded UTF-8 string holding
 	// JSON with the encryption context key-value pairs.
 	//
+	// This functionality is not supported for directory buckets.
+	//
 	// SSEKMSEncryptionContext is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CreateMultipartUploadInput's
 	// String and GoString methods.
 	SSEKMSEncryptionContext *string `location:"header" locationName:"x-amz-server-side-encryption-context" type:"string" sensitive:"true"`
 
-	// Specifies the ID of the symmetric customer managed key to use for object
-	// encryption. All GET and PUT requests for an object protected by Amazon Web
-	// Services KMS will fail if not made via SSL or using SigV4. For information
-	// about configuring using any of the officially supported Amazon Web Services
-	// SDKs and Amazon Web Services CLI, see Specifying the Signature Version in
-	// Request Authentication (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingAWSSDK.html#specify-signature-version)
-	// in the Amazon S3 User Guide.
+	// Specifies the ID (Key ID, Key ARN, or Key Alias) of the symmetric encryption
+	// customer managed key to use for object encryption.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSKeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CreateMultipartUploadInput's
 	// String and GoString methods.
 	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
 
-	// The server-side encryption algorithm used when storing this object in Amazon
+	// The server-side encryption algorithm used when you store this object in Amazon
 	// S3 (for example, AES256, aws:kms).
+	//
+	// For directory buckets, only server-side encryption with Amazon S3 managed
+	// keys (SSE-S3) (AES256) is supported.
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
 	// By default, Amazon S3 uses the STANDARD Storage Class to store newly created
 	// objects. The STANDARD storage class provides high durability and high availability.
 	// Depending on performance needs, you can specify a different Storage Class.
-	// Amazon S3 on Outposts only uses the OUTPOSTS Storage Class. For more information,
-	// see Storage Classes (https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html)
+	// For more information, see Storage Classes (https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html)
 	// in the Amazon S3 User Guide.
+	//
+	//    * For directory buckets, only the S3 Express One Zone storage class is
+	//    supported to store newly created objects.
+	//
+	//    * Amazon S3 on Outposts only uses the OUTPOSTS Storage Class.
 	StorageClass *string `location:"header" locationName:"x-amz-storage-class" type:"string" enum:"StorageClass"`
 
 	// The tag-set for the object. The tag-set must be encoded as URL Query parameters.
+	//
+	// This functionality is not supported for directory buckets.
 	Tagging *string `location:"header" locationName:"x-amz-tagging" type:"string"`
 
 	// If the bucket is configured as a website, redirects requests for this object
 	// to another object in the same bucket or to an external URL. Amazon S3 stores
 	// the value of this header in the object metadata.
+	//
+	// This functionality is not supported for directory buckets.
 	WebsiteRedirectLocation *string `location:"header" locationName:"x-amz-website-redirect-location" type:"string"`
 }
 
@@ -14917,38 +16651,32 @@ type CreateMultipartUploadOutput struct {
 	// name in the request, the response includes this header. The header indicates
 	// when the initiated multipart upload becomes eligible for an abort operation.
 	// For more information, see Aborting Incomplete Multipart Uploads Using a Bucket
-	// Lifecycle Policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config).
+	// Lifecycle Configuration (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config)
+	// in the Amazon S3 User Guide.
 	//
 	// The response also includes the x-amz-abort-rule-id header that provides the
-	// ID of the lifecycle configuration rule that defines this action.
+	// ID of the lifecycle configuration rule that defines the abort action.
+	//
+	// This functionality is not supported for directory buckets.
 	AbortDate *time.Time `location:"header" locationName:"x-amz-abort-date" type:"timestamp"`
 
 	// This header is returned along with the x-amz-abort-date header. It identifies
 	// the applicable lifecycle configuration rule that defines the action to abort
 	// incomplete multipart uploads.
+	//
+	// This functionality is not supported for directory buckets.
 	AbortRuleId *string `location:"header" locationName:"x-amz-abort-rule-id" type:"string"`
 
 	// The name of the bucket to which the multipart upload was initiated. Does
 	// not return the access point ARN or access point alias if used.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
-	// When using this action with an access point through the Amazon Web Services
-	// SDKs, you provide the access point ARN in place of the bucket name. For more
-	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
-	// in the Amazon S3 User Guide.
-	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
-	// in the Amazon S3 User Guide.
+	// Access points are not supported by directory buckets.
 	Bucket *string `locationName:"Bucket" type:"string"`
 
 	// Indicates whether the multipart upload uses an S3 Bucket Key for server-side
-	// encryption with Amazon Web Services KMS (SSE-KMS).
+	// encryption with Key Management Service (KMS) keys (SSE-KMS).
+	//
+	// This functionality is not supported for directory buckets.
 	BucketKeyEnabled *bool `location:"header" locationName:"x-amz-server-side-encryption-bucket-key-enabled" type:"boolean"`
 
 	// The algorithm that was used to create a checksum of the object.
@@ -14959,38 +16687,50 @@ type CreateMultipartUploadOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header confirming the encryption algorithm
-	// used.
+	// the response will include this header to confirm the encryption algorithm
+	// that's used.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header to provide round-trip message integrity
+	// the response will include this header to provide the round-trip message integrity
 	// verification of the customer-provided encryption key.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
-	// If present, specifies the Amazon Web Services KMS Encryption Context to use
+	// If present, indicates the Amazon Web Services KMS Encryption Context to use
 	// for object encryption. The value of this header is a base64-encoded UTF-8
 	// string holding JSON with the encryption context key-value pairs.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSEncryptionContext is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CreateMultipartUploadOutput's
 	// String and GoString methods.
 	SSEKMSEncryptionContext *string `location:"header" locationName:"x-amz-server-side-encryption-context" type:"string" sensitive:"true"`
 
-	// If present, specifies the ID of the Amazon Web Services Key Management Service
-	// (Amazon Web Services KMS) symmetric customer managed key that was used for
-	// the object.
+	// If present, indicates the ID of the Key Management Service (KMS) symmetric
+	// encryption customer managed key that was used for the object.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSKeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by CreateMultipartUploadOutput's
 	// String and GoString methods.
 	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
 
-	// The server-side encryption algorithm used when storing this object in Amazon
+	// The server-side encryption algorithm used when you store this object in Amazon
 	// S3 (for example, AES256, aws:kms).
+	//
+	// For directory buckets, only server-side encryption with Amazon S3 managed
+	// keys (SSE-S3) (AES256) is supported.
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
 	// ID for the initiated multipart upload.
@@ -15100,6 +16840,136 @@ func (s *CreateMultipartUploadOutput) SetUploadId(v string) *CreateMultipartUplo
 	return s
 }
 
+type CreateSessionInput struct {
+	_ struct{} `locationName:"CreateSessionRequest" type:"structure"`
+
+	// The name of the bucket that you create a session for.
+	//
+	// Bucket is a required field
+	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
+
+	// Specifies the mode of the session that will be created, either ReadWrite
+	// or ReadOnly. By default, a ReadWrite session is created. A ReadWrite session
+	// is capable of executing all the Zonal endpoint APIs on a directory bucket.
+	// A ReadOnly session is constrained to execute the following Zonal endpoint
+	// APIs: GetObject, HeadObject, ListObjectsV2, GetObjectAttributes, ListParts,
+	// and ListMultipartUploads.
+	SessionMode *string `location:"header" locationName:"x-amz-create-session-mode" type:"string" enum:"SessionMode"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s CreateSessionInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s CreateSessionInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *CreateSessionInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "CreateSessionInput"}
+	if s.Bucket == nil {
+		invalidParams.Add(request.NewErrParamRequired("Bucket"))
+	}
+	if s.Bucket != nil && len(*s.Bucket) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Bucket", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetBucket sets the Bucket field's value.
+func (s *CreateSessionInput) SetBucket(v string) *CreateSessionInput {
+	s.Bucket = &v
+	return s
+}
+
+func (s *CreateSessionInput) getBucket() (v string) {
+	if s.Bucket == nil {
+		return v
+	}
+	return *s.Bucket
+}
+
+// SetSessionMode sets the SessionMode field's value.
+func (s *CreateSessionInput) SetSessionMode(v string) *CreateSessionInput {
+	s.SessionMode = &v
+	return s
+}
+
+func (s *CreateSessionInput) getEndpointARN() (arn.Resource, error) {
+	if s.Bucket == nil {
+		return nil, fmt.Errorf("member Bucket is nil")
+	}
+	return parseEndpointARN(*s.Bucket)
+}
+
+func (s *CreateSessionInput) hasEndpointARN() bool {
+	if s.Bucket == nil {
+		return false
+	}
+	return arn.IsARN(*s.Bucket)
+}
+
+// updateArnableField updates the value of the input field that
+// takes an ARN as an input. This method is useful to backfill
+// the parsed resource name from ARN into the input member.
+// It returns a pointer to a modified copy of input and an error.
+// Note that original input is not modified.
+func (s CreateSessionInput) updateArnableField(v string) (interface{}, error) {
+	if s.Bucket == nil {
+		return nil, fmt.Errorf("member Bucket is nil")
+	}
+	s.Bucket = aws.String(v)
+	return &s, nil
+}
+
+type CreateSessionOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The established temporary security credentials for the created session..
+	//
+	// Credentials is a required field
+	Credentials *SessionCredentials `locationName:"Credentials" type:"structure" required:"true"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s CreateSessionOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s CreateSessionOutput) GoString() string {
+	return s.String()
+}
+
+// SetCredentials sets the Credentials field's value.
+func (s *CreateSessionOutput) SetCredentials(v *SessionCredentials) *CreateSessionOutput {
+	s.Credentials = v
+	return s
+}
+
 // The container element for specifying the default Object Lock retention settings
 // for new objects placed in the specified bucket.
 //
@@ -15163,7 +17033,12 @@ func (s *DefaultRetention) SetYears(v int64) *DefaultRetention {
 type Delete struct {
 	_ struct{} `type:"structure"`
 
-	// The objects to delete.
+	// The object to delete.
+	//
+	// Directory buckets - For directory buckets, an object that's composed entirely
+	// of whitespace characters is not supported by the DeleteObjects API operation.
+	// The request will receive a 400 Bad Request error and none of the objects
+	// in the request will be deleted.
 	//
 	// Objects is a required field
 	Objects []*ObjectIdentifier `locationName:"Object" type:"list" flattened:"true" required:"true"`
@@ -15234,9 +17109,9 @@ type DeleteBucketAnalyticsConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The ID that identifies the analytics configuration.
@@ -15364,9 +17239,9 @@ type DeleteBucketCorsInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -15481,9 +17356,9 @@ type DeleteBucketEncryptionInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -15594,12 +17469,25 @@ type DeleteBucketInput struct {
 
 	// Specifies the bucket being deleted.
 	//
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use path-style requests in the format https://s3express-control.region_code.amazonaws.com/bucket-name
+	// . Virtual-hosted-style requests aren't supported. Directory bucket names
+	// must be unique in the chosen Availability Zone. Bucket names must also follow
+	// the format bucket_base_name--az_id--x-s3 (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3).
+	// For information about bucket naming restrictions, see Directory bucket naming
+	// rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide
+	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
+	//
+	// For directory buckets, this header is not supported in this API operation.
+	// If you specify this header, the request fails with the HTTP status code 501
+	// Not Implemented.
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -15811,9 +17699,9 @@ type DeleteBucketInventoryConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The ID used to identify the inventory configuration.
@@ -15941,9 +17829,9 @@ type DeleteBucketLifecycleInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -16057,12 +17945,13 @@ type DeleteBucketMetricsConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
-	// The ID used to identify the metrics configuration.
+	// The ID used to identify the metrics configuration. The ID has a 64 character
+	// limit and can only contain letters, numbers, periods, dashes, and underscores.
 	//
 	// Id is a required field
 	Id *string `location:"querystring" locationName:"id" type:"string" required:"true"`
@@ -16209,9 +18098,9 @@ type DeleteBucketOwnershipControlsInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -16322,12 +18211,25 @@ type DeleteBucketPolicyInput struct {
 
 	// The bucket name.
 	//
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use path-style requests in the format https://s3express-control.region_code.amazonaws.com/bucket-name
+	// . Virtual-hosted-style requests aren't supported. Directory bucket names
+	// must be unique in the chosen Availability Zone. Bucket names must also follow
+	// the format bucket_base_name--az_id--x-s3 (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3).
+	// For information about bucket naming restrictions, see Directory bucket naming
+	// rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide
+	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
+	//
+	// For directory buckets, this header is not supported in this API operation.
+	// If you specify this header, the request fails with the HTTP status code 501
+	// Not Implemented.
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -16441,9 +18343,9 @@ type DeleteBucketReplicationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -16557,9 +18459,9 @@ type DeleteBucketTaggingInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -16673,9 +18575,9 @@ type DeleteBucketWebsiteInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -16792,7 +18694,7 @@ type DeleteMarkerEntry struct {
 	// The object key.
 	Key *string `min:"1" type:"string"`
 
-	// Date and time the object was last modified.
+	// Date and time when the object was last modified.
 	LastModified *time.Time `type:"timestamp"`
 
 	// The account that created the delete marker.>
@@ -16901,19 +18803,33 @@ type DeleteObjectInput struct {
 
 	// The bucket name of the bucket containing the object.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
@@ -16922,11 +18838,13 @@ type DeleteObjectInput struct {
 	// Indicates whether S3 Object Lock should bypass Governance-mode restrictions
 	// to process this operation. To use this header, you must have the s3:BypassGovernanceRetention
 	// permission.
+	//
+	// This functionality is not supported for directory buckets.
 	BypassGovernanceRetention *bool `location:"header" locationName:"x-amz-bypass-governance-retention" type:"boolean"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Key name of the object to delete.
@@ -16938,16 +18856,25 @@ type DeleteObjectInput struct {
 	// and the value that is displayed on your authentication device. Required to
 	// permanently delete a versioned object if versioning is configured with MFA
 	// delete enabled.
+	//
+	// This functionality is not supported for directory buckets.
 	MFA *string `location:"header" locationName:"x-amz-mfa" type:"string"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
-	// VersionId used to reference a specific version of the object.
+	// Version ID used to reference a specific version of the object.
+	//
+	// For directory buckets in this API operation, only the null value of the version
+	// ID is supported.
 	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
 }
 
@@ -17070,16 +18997,24 @@ func (s DeleteObjectInput) updateArnableField(v string) (interface{}, error) {
 type DeleteObjectOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Specifies whether the versioned object that was permanently deleted was (true)
-	// or was not (false) a delete marker.
+	// Indicates whether the specified object version that was permanently deleted
+	// was (true) or was not (false) a delete marker before deletion. In a simple
+	// DELETE, this header indicates whether (true) or not (false) the current version
+	// of the object is a delete marker.
+	//
+	// This functionality is not supported for directory buckets.
 	DeleteMarker *bool `location:"header" locationName:"x-amz-delete-marker" type:"boolean"`
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
 	// Returns the version ID of the delete marker created as a result of the DELETE
 	// operation.
+	//
+	// This functionality is not supported for directory buckets.
 	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 }
 
@@ -17124,27 +19059,30 @@ type DeleteObjectTaggingInput struct {
 
 	// The bucket name containing the objects from which to remove the tags.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The key that identifies the object in the bucket from which to remove all
@@ -17291,19 +19229,33 @@ type DeleteObjectsInput struct {
 
 	// The bucket name containing the objects to delete.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
@@ -17312,21 +19264,37 @@ type DeleteObjectsInput struct {
 	// Specifies whether you want to delete this object even if it has a Governance-type
 	// Object Lock in place. To use this header, you must have the s3:BypassGovernanceRetention
 	// permission.
+	//
+	// This functionality is not supported for directory buckets.
 	BypassGovernanceRetention *bool `location:"header" locationName:"x-amz-bypass-governance-retention" type:"boolean"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum-algorithm or x-amz-trailer header sent. Otherwise, Amazon
+	// S3 fails the request with the HTTP status code 400 Bad Request.
+	//
+	// For the x-amz-checksum-algorithm header, replace algorithm with the supported
+	// algorithm from the following list:
+	//
+	//    * CRC32
+	//
+	//    * CRC32C
+	//
+	//    * SHA1
+	//
+	//    * SHA256
+	//
+	// For more information, see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
+	//
+	// If the individual checksum value you provide through x-amz-checksum-algorithm
+	// doesn't match the checksum algorithm you set through x-amz-sdk-checksum-algorithm,
+	// Amazon S3 ignores any provided ChecksumAlgorithm parameter and uses the checksum
+	// algorithm that matches the provided value in x-amz-checksum-algorithm .
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
 	// parameter.
-	//
-	// This checksum algorithm must be the same for all parts and it match the checksum
-	// value supplied in the CreateMultipartUpload request.
 	//
 	// The AWS SDK for Go v1 does not support automatic computing request payload
 	// checksum. This feature is available in the AWS SDK for Go v2. If a value
@@ -17343,22 +19311,37 @@ type DeleteObjectsInput struct {
 	// Delete is a required field
 	Delete *Delete `locationName:"Delete" type:"structure" required:"true" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The concatenation of the authentication device's serial number, a space,
 	// and the value that is displayed on your authentication device. Required to
 	// permanently delete a versioned object if versioning is configured with MFA
 	// delete enabled.
+	//
+	// When performing the DeleteObjects operation on an MFA delete enabled bucket,
+	// which attempts to delete the specified versioned objects, you must include
+	// an MFA token. If you don't provide an MFA token, the entire request will
+	// fail, even if there are non-versioned objects that you are trying to delete.
+	// If you provide an invalid token, whether there are versioned object keys
+	// in the request or not, the entire Multi-Object Delete request will fail.
+	// For information about MFA Delete, see MFA Delete (https://docs.aws.amazon.com/AmazonS3/latest/dev/Versioning.html#MultiFactorAuthenticationDelete)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	MFA *string `location:"header" locationName:"x-amz-mfa" type:"string"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 }
 
@@ -17493,6 +19476,8 @@ type DeleteObjectsOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 }
 
@@ -17540,9 +19525,9 @@ type DeletePublicAccessBlockInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -17652,20 +19637,27 @@ func (s DeletePublicAccessBlockOutput) GoString() string {
 type DeletedObject struct {
 	_ struct{} `type:"structure"`
 
-	// Specifies whether the versioned object that was permanently deleted was (true)
-	// or was not (false) a delete marker. In a simple DELETE, this header indicates
-	// whether (true) or not (false) a delete marker was created.
+	// Indicates whether the specified object version that was permanently deleted
+	// was (true) or was not (false) a delete marker before deletion. In a simple
+	// DELETE, this header indicates whether (true) or not (false) the current version
+	// of the object is a delete marker.
+	//
+	// This functionality is not supported for directory buckets.
 	DeleteMarker *bool `type:"boolean"`
 
 	// The version ID of the delete marker created as a result of the DELETE operation.
 	// If you delete a specific object version, the value returned by this header
 	// is the version ID of the object version deleted.
+	//
+	// This functionality is not supported for directory buckets.
 	DeleteMarkerVersionId *string `type:"string"`
 
 	// The name of the deleted object.
 	Key *string `min:"1" type:"string"`
 
 	// The version ID of the deleted object.
+	//
+	// This functionality is not supported for directory buckets.
 	VersionId *string `type:"string"`
 }
 
@@ -17871,9 +19863,9 @@ type Encryption struct {
 	KMSContext *string `type:"string"`
 
 	// If the encryption type is aws:kms, this optional value specifies the ID of
-	// the symmetric customer managed key to use for encryption of job results.
-	// Amazon S3 only supports symmetric keys. For more information, see Using symmetric
-	// and asymmetric keys (https://docs.aws.amazon.com/kms/latest/developerguide/symmetric-asymmetric.html)
+	// the symmetric encryption customer managed key to use for encryption of job
+	// results. Amazon S3 only supports symmetric encryption KMS keys. For more
+	// information, see Asymmetric keys in KMS (https://docs.aws.amazon.com/kms/latest/developerguide/symmetric-asymmetric.html)
 	// in the Amazon Web Services Key Management Service Developer Guide.
 	//
 	// KMSKeyId is a sensitive parameter and its value will be
@@ -17939,8 +19931,8 @@ type EncryptionConfiguration struct {
 	// Specifies the ID (Key ARN or Alias ARN) of the customer managed Amazon Web
 	// Services KMS key stored in Amazon Web Services Key Management Service (KMS)
 	// for the destination bucket. Amazon S3 uses this key to encrypt replica objects.
-	// Amazon S3 only supports symmetric, customer managed KMS keys. For more information,
-	// see Using symmetric and asymmetric keys (https://docs.aws.amazon.com/kms/latest/developerguide/symmetric-asymmetric.html)
+	// Amazon S3 only supports symmetric encryption KMS keys. For more information,
+	// see Asymmetric keys in Amazon Web Services KMS (https://docs.aws.amazon.com/kms/latest/developerguide/symmetric-asymmetric.html)
 	// in the Amazon Web Services Key Management Service Developer Guide.
 	ReplicaKmsKeyID *string `type:"string"`
 }
@@ -18019,9 +20011,8 @@ type Error struct {
 
 	// The error code is a string that uniquely identifies an error condition. It
 	// is meant to be read and understood by programs that detect and handle errors
-	// by type.
-	//
-	// Amazon S3 error codes
+	// by type. The following is a list of Amazon S3 error codes. For more information,
+	// see Error responses (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html).
 	//
 	//    * Code: AccessDenied Description: Access Denied HTTP Status Code: 403
 	//    Forbidden SOAP Fault Code Prefix: Client
@@ -18341,8 +20332,8 @@ type Error struct {
 	//    and SOAP Authentication (https://docs.aws.amazon.com/AmazonS3/latest/dev/SOAPAuthentication.html)
 	//    for details. HTTP Status Code: 403 Forbidden SOAP Fault Code Prefix: Client
 	//
-	//    * Code: ServiceUnavailable Description: Reduce your request rate. HTTP
-	//    Status Code: 503 Service Unavailable SOAP Fault Code Prefix: Server
+	//    * Code: ServiceUnavailable Description: Service is unable to handle request.
+	//    HTTP Status Code: 503 Service Unavailable SOAP Fault Code Prefix: Server
 	//
 	//    * Code: SlowDown Description: Reduce your request rate. HTTP Status Code:
 	//    503 Slow Down SOAP Fault Code Prefix: Server
@@ -18382,6 +20373,8 @@ type Error struct {
 	Message *string `type:"string"`
 
 	// The version ID of the error.
+	//
+	// This functionality is not supported for directory buckets.
 	VersionId *string `type:"string"`
 }
 
@@ -18510,6 +20503,8 @@ func (s EventBridgeConfiguration) GoString() string {
 type ExistingObjectReplication struct {
 	_ struct{} `type:"structure"`
 
+	// Specifies whether Amazon S3 replicates existing source bucket objects.
+	//
 	// Status is a required field
 	Status *string `type:"string" required:"true" enum:"ExistingObjectReplicationStatus"`
 }
@@ -18551,8 +20546,15 @@ func (s *ExistingObjectReplication) SetStatus(v string) *ExistingObjectReplicati
 	return s
 }
 
-// Specifies the Amazon S3 object key name to filter on and whether to filter
-// on the suffix or prefix of the key name.
+// Specifies the Amazon S3 object key name to filter on. An object key name
+// is the name assigned to an object in your Amazon S3 bucket. You specify whether
+// to filter on the suffix or prefix of the object key name. A prefix is a specific
+// string of characters at the beginning of an object key name, which you can
+// use to organize objects. For example, you can start the key names of related
+// objects with a prefix, such as 2023- or engineering/. Then, you can use FilterRule
+// to find objects in a bucket with key names that have the same prefix. A suffix
+// is similar to a prefix, but it is at the end of the object key name instead
+// of at the beginning.
 type FilterRule struct {
 	_ struct{} `type:"structure"`
 
@@ -18605,10 +20607,21 @@ type GetBucketAccelerateConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
+
+	// Confirms that the requester knows that they will be charged for the request.
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
+	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
+	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 }
 
 // String returns the string representation.
@@ -18664,6 +20677,12 @@ func (s *GetBucketAccelerateConfigurationInput) SetExpectedBucketOwner(v string)
 	return s
 }
 
+// SetRequestPayer sets the RequestPayer field's value.
+func (s *GetBucketAccelerateConfigurationInput) SetRequestPayer(v string) *GetBucketAccelerateConfigurationInput {
+	s.RequestPayer = &v
+	return s
+}
+
 func (s *GetBucketAccelerateConfigurationInput) getEndpointARN() (arn.Resource, error) {
 	if s.Bucket == nil {
 		return nil, fmt.Errorf("member Bucket is nil")
@@ -18694,6 +20713,12 @@ func (s GetBucketAccelerateConfigurationInput) updateArnableField(v string) (int
 type GetBucketAccelerateConfigurationOutput struct {
 	_ struct{} `type:"structure"`
 
+	// If present, indicates that the requester was successfully charged for the
+	// request.
+	//
+	// This functionality is not supported for directory buckets.
+	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
+
 	// The accelerate configuration of the bucket.
 	Status *string `type:"string" enum:"BucketAccelerateStatus"`
 }
@@ -18716,6 +20741,12 @@ func (s GetBucketAccelerateConfigurationOutput) GoString() string {
 	return s.String()
 }
 
+// SetRequestCharged sets the RequestCharged field's value.
+func (s *GetBucketAccelerateConfigurationOutput) SetRequestCharged(v string) *GetBucketAccelerateConfigurationOutput {
+	s.RequestCharged = &v
+	return s
+}
+
 // SetStatus sets the Status field's value.
 func (s *GetBucketAccelerateConfigurationOutput) SetStatus(v string) *GetBucketAccelerateConfigurationOutput {
 	s.Status = &v
@@ -18727,12 +20758,21 @@ type GetBucketAclInput struct {
 
 	// Specifies the S3 bucket whose ACL is being requested.
 	//
+	// When you use this API operation with an access point, provide the alias of
+	// the access point in place of the bucket name.
+	//
+	// When you use this API operation with an Object Lambda access point, provide
+	// the alias of the Object Lambda access point in place of the bucket name.
+	// If the Object Lambda access point alias in a request is not valid, the error
+	// code InvalidAccessPointAliasError is returned. For more information about
+	// InvalidAccessPointAliasError, see List of Error Codes (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#ErrorCodeList).
+	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -18864,9 +20904,9 @@ type GetBucketAnalyticsConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The ID that identifies the analytics configuration.
@@ -19000,12 +21040,21 @@ type GetBucketCorsInput struct {
 
 	// The bucket name for which to get the cors configuration.
 	//
+	// When you use this API operation with an access point, provide the alias of
+	// the access point in place of the bucket name.
+	//
+	// When you use this API operation with an Object Lambda access point, provide
+	// the alias of the Object Lambda access point in place of the bucket name.
+	// If the Object Lambda access point alias in a request is not valid, the error
+	// code InvalidAccessPointAliasError is returned. For more information about
+	// InvalidAccessPointAliasError, see List of Error Codes (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#ErrorCodeList).
+	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -19130,9 +21179,9 @@ type GetBucketEncryptionInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -19384,9 +21433,9 @@ type GetBucketInventoryConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The ID used to identify the inventory configuration.
@@ -19523,9 +21572,9 @@ type GetBucketLifecycleConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -19648,9 +21697,9 @@ type GetBucketLifecycleInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -19770,12 +21819,21 @@ type GetBucketLocationInput struct {
 
 	// The name of the bucket for which to get the location.
 	//
+	// When you use this API operation with an access point, provide the alias of
+	// the access point in place of the bucket name.
+	//
+	// When you use this API operation with an Object Lambda access point, provide
+	// the alias of the Object Lambda access point in place of the bucket name.
+	// If the Object Lambda access point alias in a request is not valid, the error
+	// code InvalidAccessPointAliasError is returned. For more information about
+	// InvalidAccessPointAliasError, see List of Error Codes (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#ErrorCodeList).
+	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -19900,9 +21958,9 @@ type GetBucketLoggingInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -20028,12 +22086,13 @@ type GetBucketMetricsConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
-	// The ID used to identify the metrics configuration.
+	// The ID used to identify the metrics configuration. The ID has a 64 character
+	// limit and can only contain letters, numbers, periods, dashes, and underscores.
 	//
 	// Id is a required field
 	Id *string `location:"querystring" locationName:"id" type:"string" required:"true"`
@@ -20164,12 +22223,21 @@ type GetBucketNotificationConfigurationRequest struct {
 
 	// The name of the bucket for which to get the notification configuration.
 	//
+	// When you use this API operation with an access point, provide the alias of
+	// the access point in place of the bucket name.
+	//
+	// When you use this API operation with an Object Lambda access point, provide
+	// the alias of the Object Lambda access point in place of the bucket name.
+	// If the Object Lambda access point alias in a request is not valid, the error
+	// code InvalidAccessPointAliasError is returned. For more information about
+	// InvalidAccessPointAliasError, see List of Error Codes (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#ErrorCodeList).
+	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -20261,9 +22329,9 @@ type GetBucketOwnershipControlsInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -20382,14 +22450,40 @@ func (s *GetBucketOwnershipControlsOutput) SetOwnershipControls(v *OwnershipCont
 type GetBucketPolicyInput struct {
 	_ struct{} `locationName:"GetBucketPolicyRequest" type:"structure"`
 
-	// The bucket name for which to get the bucket policy.
+	// The bucket name to get the bucket policy for.
+	//
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use path-style requests in the format https://s3express-control.region_code.amazonaws.com/bucket-name
+	// . Virtual-hosted-style requests aren't supported. Directory bucket names
+	// must be unique in the chosen Availability Zone. Bucket names must also follow
+	// the format bucket_base_name--az_id--x-s3 (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3).
+	// For information about bucket naming restrictions, see Directory bucket naming
+	// rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide
+	//
+	// Access points - When you use this API operation with an access point, provide
+	// the alias of the access point in place of the bucket name.
+	//
+	// Object Lambda access points - When you use this API operation with an Object
+	// Lambda access point, provide the alias of the Object Lambda access point
+	// in place of the bucket name. If the Object Lambda access point alias in a
+	// request is not valid, the error code InvalidAccessPointAliasError is returned.
+	// For more information about InvalidAccessPointAliasError, see List of Error
+	// Codes (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#ErrorCodeList).
+	//
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
+	//
+	// For directory buckets, this header is not supported in this API operation.
+	// If you specify this header, the request fails with the HTTP status code 501
+	// Not Implemented.
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -20512,9 +22606,9 @@ type GetBucketPolicyStatusInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -20637,9 +22731,9 @@ type GetBucketReplicationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -20763,9 +22857,9 @@ type GetBucketRequestPaymentInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -20888,9 +22982,9 @@ type GetBucketTaggingInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -21015,9 +23109,9 @@ type GetBucketVersioningInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -21151,9 +23245,9 @@ type GetBucketWebsiteInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -21301,8 +23395,10 @@ type GetObjectAclInput struct {
 
 	// The bucket name that contains the object for which to get the ACL information.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
@@ -21311,9 +23407,9 @@ type GetObjectAclInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The key of the object for which to get the ACL information.
@@ -21322,13 +23418,19 @@ type GetObjectAclInput struct {
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
-	// VersionId used to reference a specific version of the object.
+	// Version ID used to reference a specific version of the object.
+	//
+	// This functionality is not supported for directory buckets.
 	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
 }
 
@@ -21447,6 +23549,8 @@ type GetObjectAclOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 }
 
@@ -21491,27 +23595,41 @@ type GetObjectAttributesInput struct {
 
 	// The name of the bucket that contains the object.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The object key.
@@ -21522,8 +23640,8 @@ type GetObjectAttributesInput struct {
 	// Sets the maximum number of parts to return.
 	MaxParts *int64 `location:"header" locationName:"x-amz-max-parts" type:"integer"`
 
-	// An XML header that specifies the fields at the root level that you want returned
-	// in the response. Fields that you do not specify are not returned.
+	// Specifies the fields at the root level that you want returned in the response.
+	// Fields that you do not specify are not returned.
 	//
 	// ObjectAttributes is a required field
 	ObjectAttributes []*string `location:"header" locationName:"x-amz-object-attributes" type:"list" required:"true" enum:"ObjectAttributes"`
@@ -21533,13 +23651,19 @@ type GetObjectAttributesInput struct {
 	PartNumberMarker *int64 `location:"header" locationName:"x-amz-part-number-marker" type:"integer"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// Specifies the algorithm to use when encrypting the object (for example, AES256).
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// Specifies the customer-provided encryption key for Amazon S3 to use in encrypting
@@ -21547,6 +23671,8 @@ type GetObjectAttributesInput struct {
 	// S3 does not store the encryption key. The key must be appropriate for use
 	// with the algorithm specified in the x-amz-server-side-encryption-customer-algorithm
 	// header.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSECustomerKey is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by GetObjectAttributesInput's
@@ -21556,9 +23682,16 @@ type GetObjectAttributesInput struct {
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure that the
 	// encryption key was transmitted without error.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// The version ID used to reference a specific version of the object.
+	//
+	// S3 Versioning isn't enabled and supported for directory buckets. For this
+	// API operation, only the null value of the version ID is supported by directory
+	// buckets. You can only specify null to the versionId query parameter in the
+	// request.
 	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
 }
 
@@ -21720,6 +23853,8 @@ type GetObjectAttributesOutput struct {
 
 	// Specifies whether the object retrieved was (true) or was not (false) a delete
 	// marker. If false, this response header does not appear in the response.
+	//
+	// This functionality is not supported for directory buckets.
 	DeleteMarker *bool `location:"header" locationName:"x-amz-delete-marker" type:"boolean"`
 
 	// An ETag is an opaque identifier assigned by a web server to a specific version
@@ -21737,15 +23872,22 @@ type GetObjectAttributesOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
 	// Provides the storage class information of the object. Amazon S3 returns this
 	// header for all objects except for S3 Standard storage class objects.
 	//
 	// For more information, see Storage Classes (https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html).
+	//
+	// Directory buckets - Only the S3 Express One Zone storage class is supported
+	// by directory buckets to store objects.
 	StorageClass *string `type:"string" enum:"StorageClass"`
 
 	// The version ID of the object.
+	//
+	// This functionality is not supported for directory buckets.
 	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 }
 
@@ -21843,6 +23985,15 @@ type GetObjectAttributesParts struct {
 
 	// A container for elements related to a particular part. A response can contain
 	// zero or more Parts elements.
+	//
+	//    * General purpose buckets - For GetObjectAttributes, if a additional checksum
+	//    (including x-amz-checksum-crc32, x-amz-checksum-crc32c, x-amz-checksum-sha1,
+	//    or x-amz-checksum-sha256) isn't applied to the object specified in the
+	//    request, the response doesn't return Part.
+	//
+	//    * Directory buckets - For GetObjectAttributes, no matter whether a additional
+	//    checksum is applied to the object specified in the request, the response
+	//    returns Part.
 	Parts []*ObjectPart `locationName:"Part" type:"list" flattened:"true"`
 
 	// The total number of parts.
@@ -21908,21 +24059,37 @@ type GetObjectInput struct {
 
 	// The bucket name containing the object.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using an Object Lambda access point the hostname takes the form AccessPointName-AccountId.s3-object-lambda.Region.amazonaws.com.
+	// Object Lambda access points - When you use this action with an Object Lambda
+	// access point, you must direct requests to the Object Lambda access point
+	// hostname. The Object Lambda access point hostname takes the form AccessPointName-AccountId.s3-object-lambda.Region.amazonaws.com.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
@@ -21934,25 +24101,50 @@ type GetObjectInput struct {
 	// validation. This feature is available in the AWS SDK for Go v2.
 	ChecksumMode *string `location:"header" locationName:"x-amz-checksum-mode" type:"string" enum:"ChecksumMode"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
-	// Return the object only if its entity tag (ETag) is the same as the one specified;
-	// otherwise, return a 412 (precondition failed) error.
+	// Return the object only if its entity tag (ETag) is the same as the one specified
+	// in this header; otherwise, return a 412 Precondition Failed error.
+	//
+	// If both of the If-Match and If-Unmodified-Since headers are present in the
+	// request as follows: If-Match condition evaluates to true, and; If-Unmodified-Since
+	// condition evaluates to false; then, S3 returns 200 OK and the data requested.
+	//
+	// For more information about conditional requests, see RFC 7232 (https://tools.ietf.org/html/rfc7232).
 	IfMatch *string `location:"header" locationName:"If-Match" type:"string"`
 
 	// Return the object only if it has been modified since the specified time;
-	// otherwise, return a 304 (not modified) error.
+	// otherwise, return a 304 Not Modified error.
+	//
+	// If both of the If-None-Match and If-Modified-Since headers are present in
+	// the request as follows:If-None-Match condition evaluates to false, and; If-Modified-Since
+	// condition evaluates to true; then, S3 returns 304 Not Modified status code.
+	//
+	// For more information about conditional requests, see RFC 7232 (https://tools.ietf.org/html/rfc7232).
 	IfModifiedSince *time.Time `location:"header" locationName:"If-Modified-Since" type:"timestamp"`
 
 	// Return the object only if its entity tag (ETag) is different from the one
-	// specified; otherwise, return a 304 (not modified) error.
+	// specified in this header; otherwise, return a 304 Not Modified error.
+	//
+	// If both of the If-None-Match and If-Modified-Since headers are present in
+	// the request as follows:If-None-Match condition evaluates to false, and; If-Modified-Since
+	// condition evaluates to true; then, S3 returns 304 Not Modified HTTP status
+	// code.
+	//
+	// For more information about conditional requests, see RFC 7232 (https://tools.ietf.org/html/rfc7232).
 	IfNoneMatch *string `location:"header" locationName:"If-None-Match" type:"string"`
 
 	// Return the object only if it has not been modified since the specified time;
-	// otherwise, return a 412 (precondition failed) error.
+	// otherwise, return a 412 Precondition Failed error.
+	//
+	// If both of the If-Match and If-Unmodified-Since headers are present in the
+	// request as follows: If-Match condition evaluates to true, and; If-Unmodified-Since
+	// condition evaluates to false; then, S3 returns 200 OK and the data requested.
+	//
+	// For more information about conditional requests, see RFC 7232 (https://tools.ietf.org/html/rfc7232).
 	IfUnmodifiedSince *time.Time `location:"header" locationName:"If-Unmodified-Since" type:"timestamp"`
 
 	// Key of the object to get.
@@ -21965,24 +24157,28 @@ type GetObjectInput struct {
 	// Useful for downloading just a part of an object.
 	PartNumber *int64 `location:"querystring" locationName:"partNumber" type:"integer"`
 
-	// Downloads the specified range bytes of an object. For more information about
-	// the HTTP Range header, see https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35
-	// (https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35).
+	// Downloads the specified byte range of an object. For more information about
+	// the HTTP Range header, see https://www.rfc-editor.org/rfc/rfc9110.html#name-range
+	// (https://www.rfc-editor.org/rfc/rfc9110.html#name-range).
 	//
 	// Amazon S3 doesn't support retrieving multiple ranges of data per GET request.
 	Range *string `location:"header" locationName:"Range" type:"string"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// Sets the Cache-Control header of the response.
 	ResponseCacheControl *string `location:"querystring" locationName:"response-cache-control" type:"string"`
 
-	// Sets the Content-Disposition header of the response
+	// Sets the Content-Disposition header of the response.
 	ResponseContentDisposition *string `location:"querystring" locationName:"response-content-disposition" type:"string"`
 
 	// Sets the Content-Encoding header of the response.
@@ -21997,27 +24193,92 @@ type GetObjectInput struct {
 	// Sets the Expires header of the response.
 	ResponseExpires *time.Time `location:"querystring" locationName:"response-expires" type:"timestamp" timestampFormat:"rfc822"`
 
-	// Specifies the algorithm to use to when decrypting the object (for example,
-	// AES256).
+	// Specifies the algorithm to use when decrypting the object (for example, AES256).
+	//
+	// If you encrypt an object by using server-side encryption with customer-provided
+	// encryption keys (SSE-C) when you store the object in Amazon S3, then when
+	// you GET the object, you must use the following headers:
+	//
+	//    * x-amz-server-side-encryption-customer-algorithm
+	//
+	//    * x-amz-server-side-encryption-customer-key
+	//
+	//    * x-amz-server-side-encryption-customer-key-MD5
+	//
+	// For more information about SSE-C, see Server-Side Encryption (Using Customer-Provided
+	// Encryption Keys) (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
-	// Specifies the customer-provided encryption key for Amazon S3 used to encrypt
-	// the data. This value is used to decrypt the object when recovering it and
-	// must match the one used when storing the data. The key must be appropriate
-	// for use with the algorithm specified in the x-amz-server-side-encryption-customer-algorithm
-	// header.
+	// Specifies the customer-provided encryption key that you originally provided
+	// for Amazon S3 to encrypt the data before storing it. This value is used to
+	// decrypt the object when recovering it and must match the one used when storing
+	// the data. The key must be appropriate for use with the algorithm specified
+	// in the x-amz-server-side-encryption-customer-algorithm header.
+	//
+	// If you encrypt an object by using server-side encryption with customer-provided
+	// encryption keys (SSE-C) when you store the object in Amazon S3, then when
+	// you GET the object, you must use the following headers:
+	//
+	//    * x-amz-server-side-encryption-customer-algorithm
+	//
+	//    * x-amz-server-side-encryption-customer-key
+	//
+	//    * x-amz-server-side-encryption-customer-key-MD5
+	//
+	// For more information about SSE-C, see Server-Side Encryption (Using Customer-Provided
+	// Encryption Keys) (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSECustomerKey is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by GetObjectInput's
 	// String and GoString methods.
 	SSECustomerKey *string `marshal-as:"blob" location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string" sensitive:"true"`
 
-	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
-	// Amazon S3 uses this header for a message integrity check to ensure that the
-	// encryption key was transmitted without error.
+	// Specifies the 128-bit MD5 digest of the customer-provided encryption key
+	// according to RFC 1321. Amazon S3 uses this header for a message integrity
+	// check to ensure that the encryption key was transmitted without error.
+	//
+	// If you encrypt an object by using server-side encryption with customer-provided
+	// encryption keys (SSE-C) when you store the object in Amazon S3, then when
+	// you GET the object, you must use the following headers:
+	//
+	//    * x-amz-server-side-encryption-customer-algorithm
+	//
+	//    * x-amz-server-side-encryption-customer-key
+	//
+	//    * x-amz-server-side-encryption-customer-key-MD5
+	//
+	// For more information about SSE-C, see Server-Side Encryption (Using Customer-Provided
+	// Encryption Keys) (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
-	// VersionId used to reference a specific version of the object.
+	// Version ID used to reference a specific version of the object.
+	//
+	// By default, the GetObject operation returns the current version of an object.
+	// To return a different version, use the versionId subresource.
+	//
+	//    * If you include a versionId in your request header, you must have the
+	//    s3:GetObjectVersion permission to access a specific version of an object.
+	//    The s3:GetObject permission is not required in this scenario.
+	//
+	//    * If you request the current version of an object without a specific versionId
+	//    in the request header, only the s3:GetObject permission is required. The
+	//    s3:GetObjectVersion permission is not required in this scenario.
+	//
+	//    * Directory buckets - S3 Versioning isn't enabled and supported for directory
+	//    buckets. For this API operation, only the null value of the version ID
+	//    is supported by directory buckets. You can only specify null to the versionId
+	//    query parameter in the request.
+	//
+	// For more information about versioning, see PutBucketVersioning (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketVersioning.html).
 	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
 }
 
@@ -22234,8 +24495,10 @@ type GetObjectLegalHoldInput struct {
 	// The bucket name containing the object whose legal hold status you want to
 	// retrieve.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
@@ -22244,9 +24507,9 @@ type GetObjectLegalHoldInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The key name for the object whose legal hold status you want to retrieve.
@@ -22255,10 +24518,14 @@ type GetObjectLegalHoldInput struct {
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// The version ID of the object whose legal hold status you want to retrieve.
@@ -22373,7 +24640,7 @@ type GetObjectLegalHoldOutput struct {
 	_ struct{} `type:"structure" payload:"LegalHold"`
 
 	// The current legal hold status for the specified object.
-	LegalHold *ObjectLockLegalHold `type:"structure"`
+	LegalHold *ObjectLockLegalHold `locationName:"LegalHold" type:"structure"`
 }
 
 // String returns the string representation.
@@ -22405,8 +24672,10 @@ type GetObjectLockConfigurationInput struct {
 
 	// The bucket whose Object Lock configuration you want to retrieve.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
@@ -22415,9 +24684,9 @@ type GetObjectLockConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -22535,55 +24804,49 @@ func (s *GetObjectLockConfigurationOutput) SetObjectLockConfiguration(v *ObjectL
 type GetObjectOutput struct {
 	_ struct{} `type:"structure" payload:"Body"`
 
-	// Indicates that a range of bytes was specified.
+	// Indicates that a range of bytes was specified in the request.
 	AcceptRanges *string `location:"header" locationName:"accept-ranges" type:"string"`
 
 	// Object data.
 	Body io.ReadCloser `type:"blob"`
 
 	// Indicates whether the object uses an S3 Bucket Key for server-side encryption
-	// with Amazon Web Services KMS (SSE-KMS).
+	// with Key Management Service (KMS) keys (SSE-KMS).
+	//
+	// This functionality is not supported for directory buckets.
 	BucketKeyEnabled *bool `location:"header" locationName:"x-amz-server-side-encryption-bucket-key-enabled" type:"boolean"`
 
 	// Specifies caching behavior along the request/reply chain.
 	CacheControl *string `location:"header" locationName:"Cache-Control" type:"string"`
 
 	// The base64-encoded, 32-bit CRC32 checksum of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. For more information, see Checking
+	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32 *string `location:"header" locationName:"x-amz-checksum-crc32" type:"string"`
 
 	// The base64-encoded, 32-bit CRC32C checksum of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. For more information, see
+	// Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32C *string `location:"header" locationName:"x-amz-checksum-crc32c" type:"string"`
 
 	// The base64-encoded, 160-bit SHA-1 digest of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. For more information, see Checking
+	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA1 *string `location:"header" locationName:"x-amz-checksum-sha1" type:"string"`
 
 	// The base64-encoded, 256-bit SHA-256 digest of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. For more information, see
+	// Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA256 *string `location:"header" locationName:"x-amz-checksum-sha256" type:"string"`
 
 	// Specifies presentational information for the object.
 	ContentDisposition *string `location:"header" locationName:"Content-Disposition" type:"string"`
 
-	// Specifies what content encodings have been applied to the object and thus
+	// Indicates what content encodings have been applied to the object and thus
 	// what decoding mechanisms must be applied to obtain the media-type referenced
 	// by the Content-Type header field.
 	ContentEncoding *string `location:"header" locationName:"Content-Encoding" type:"string"`
@@ -22600,23 +24863,40 @@ type GetObjectOutput struct {
 	// A standard MIME type describing the format of the object data.
 	ContentType *string `location:"header" locationName:"Content-Type" type:"string"`
 
-	// Specifies whether the object retrieved was (true) or was not (false) a Delete
+	// Indicates whether the object retrieved was (true) or was not (false) a Delete
 	// Marker. If false, this response header does not appear in the response.
+	//
+	//    * If the current version of the object is a delete marker, Amazon S3 behaves
+	//    as if the object was deleted and includes x-amz-delete-marker: true in
+	//    the response.
+	//
+	//    * If the specified version in the request is a delete marker, the response
+	//    returns a 405 Method Not Allowed error and the Last-Modified: timestamp
+	//    response header.
 	DeleteMarker *bool `location:"header" locationName:"x-amz-delete-marker" type:"boolean"`
 
 	// An entity tag (ETag) is an opaque identifier assigned by a web server to
 	// a specific version of a resource found at a URL.
 	ETag *string `location:"header" locationName:"ETag" type:"string"`
 
-	// If the object expiration is configured (see PUT Bucket lifecycle), the response
-	// includes this header. It includes the expiry-date and rule-id key-value pairs
-	// providing object expiration information. The value of the rule-id is URL-encoded.
+	// If the object expiration is configured (see PutBucketLifecycleConfiguration
+	// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html)),
+	// the response includes this header. It includes the expiry-date and rule-id
+	// key-value pairs providing object expiration information. The value of the
+	// rule-id is URL-encoded.
+	//
+	// This functionality is not supported for directory buckets.
 	Expiration *string `location:"header" locationName:"x-amz-expiration" type:"string"`
 
 	// The date and time at which the object is no longer cacheable.
 	Expires *string `location:"header" locationName:"Expires" type:"string"`
 
-	// Creation date of the object.
+	// Date and time when the object was last modified.
+	//
+	// General purpose buckets - When you specify a versionId of the object in your
+	// request, if the specified version in the request is a delete marker, the
+	// response returns a 405 Method Not Allowed error and the Last-Modified: timestamp
+	// response header.
 	LastModified *time.Time `location:"header" locationName:"Last-Modified" type:"timestamp"`
 
 	// A map of metadata to store with the object in S3.
@@ -22626,20 +24906,29 @@ type GetObjectOutput struct {
 	// Set `aws.Config.LowerCaseHeaderMaps` to `true` to write unmarshaled keys to the map as lowercase.
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
 
-	// This is set to the number of metadata entries not returned in x-amz-meta
-	// headers. This can happen if you create metadata using an API like SOAP that
-	// supports more flexible metadata than the REST API. For example, using SOAP,
-	// you can create metadata whose values are not legal HTTP headers.
+	// This is set to the number of metadata entries not returned in the headers
+	// that are prefixed with x-amz-meta-. This can happen if you create metadata
+	// using an API like SOAP that supports more flexible metadata than the REST
+	// API. For example, using SOAP, you can create metadata whose values are not
+	// legal HTTP headers.
+	//
+	// This functionality is not supported for directory buckets.
 	MissingMeta *int64 `location:"header" locationName:"x-amz-missing-meta" type:"integer"`
 
 	// Indicates whether this object has an active legal hold. This field is only
 	// returned if you have permission to view an object's legal hold status.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockLegalHoldStatus *string `location:"header" locationName:"x-amz-object-lock-legal-hold" type:"string" enum:"ObjectLockLegalHoldStatus"`
 
-	// The Object Lock mode currently in place for this object.
+	// The Object Lock mode that's currently in place for this object.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockMode *string `location:"header" locationName:"x-amz-object-lock-mode" type:"string" enum:"ObjectLockMode"`
 
 	// The date and time when this object's Object Lock will expire.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockRetainUntilDate *time.Time `location:"header" locationName:"x-amz-object-lock-retain-until-date" type:"timestamp" timestampFormat:"iso8601"`
 
 	// The count of parts this object has. This value is only returned if you specify
@@ -22648,52 +24937,80 @@ type GetObjectOutput struct {
 
 	// Amazon S3 can return this if your request involves a bucket that is either
 	// a source or destination in a replication rule.
+	//
+	// This functionality is not supported for directory buckets.
 	ReplicationStatus *string `location:"header" locationName:"x-amz-replication-status" type:"string" enum:"ReplicationStatus"`
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
 	// Provides information about object restoration action and expiration time
 	// of the restored object copy.
+	//
+	// This functionality is not supported for directory buckets. Only the S3 Express
+	// One Zone storage class is supported by directory buckets to store objects.
 	Restore *string `location:"header" locationName:"x-amz-restore" type:"string"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header confirming the encryption algorithm
-	// used.
+	// the response will include this header to confirm the encryption algorithm
+	// that's used.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header to provide round-trip message integrity
+	// the response will include this header to provide the round-trip message integrity
 	// verification of the customer-provided encryption key.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
-	// If present, specifies the ID of the Amazon Web Services Key Management Service
-	// (Amazon Web Services KMS) symmetric customer managed key that was used for
-	// the object.
+	// If present, indicates the ID of the Key Management Service (KMS) symmetric
+	// encryption customer managed key that was used for the object.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSKeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by GetObjectOutput's
 	// String and GoString methods.
 	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
 
-	// The server-side encryption algorithm used when storing this object in Amazon
-	// S3 (for example, AES256, aws:kms).
+	// The server-side encryption algorithm used when you store this object in Amazon
+	// S3 (for example, AES256, aws:kms, aws:kms:dsse).
+	//
+	// For directory buckets, only server-side encryption with Amazon S3 managed
+	// keys (SSE-S3) (AES256) is supported.
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
 	// Provides storage class information of the object. Amazon S3 returns this
 	// header for all objects except for S3 Standard storage class objects.
+	//
+	// Directory buckets - Only the S3 Express One Zone storage class is supported
+	// by directory buckets to store objects.
 	StorageClass *string `location:"header" locationName:"x-amz-storage-class" type:"string" enum:"StorageClass"`
 
-	// The number of tags, if any, on the object.
+	// The number of tags, if any, on the object, when you have the relevant permission
+	// to read object tags.
+	//
+	// You can use GetObjectTagging (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObjectTagging.html)
+	// to retrieve the tag set associated with an object.
+	//
+	// This functionality is not supported for directory buckets.
 	TagCount *int64 `location:"header" locationName:"x-amz-tagging-count" type:"integer"`
 
-	// Version of the object.
+	// Version ID of the object.
+	//
+	// This functionality is not supported for directory buckets.
 	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 
 	// If the bucket is configured as a website, redirects requests for this object
 	// to another object in the same bucket or to an external URL. Amazon S3 stores
 	// the value of this header in the object metadata.
+	//
+	// This functionality is not supported for directory buckets.
 	WebsiteRedirectLocation *string `location:"header" locationName:"x-amz-website-redirect-location" type:"string"`
 }
 
@@ -22937,8 +25254,10 @@ type GetObjectRetentionInput struct {
 	// The bucket name containing the object whose retention settings you want to
 	// retrieve.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
@@ -22947,9 +25266,9 @@ type GetObjectRetentionInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The key name for the object whose retention settings you want to retrieve.
@@ -22958,10 +25277,14 @@ type GetObjectRetentionInput struct {
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// The version ID for the object whose retention settings you want to retrieve.
@@ -23076,7 +25399,7 @@ type GetObjectRetentionOutput struct {
 	_ struct{} `type:"structure" payload:"Retention"`
 
 	// The container element for an object's retention settings.
-	Retention *ObjectLockRetention `type:"structure"`
+	Retention *ObjectLockRetention `locationName:"Retention" type:"structure"`
 }
 
 // String returns the string representation.
@@ -23108,27 +25431,30 @@ type GetObjectTaggingInput struct {
 
 	// The bucket name containing the object for which to get the tagging information.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Object key for which to get the tagging information.
@@ -23137,10 +25463,14 @@ type GetObjectTaggingInput struct {
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// The versionId of the object for which to get the tagging information.
@@ -23302,9 +25632,9 @@ type GetObjectTorrentInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The object key for which to get the information.
@@ -23313,10 +25643,14 @@ type GetObjectTorrentInput struct {
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 }
 
@@ -23426,6 +25760,8 @@ type GetObjectTorrentOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 }
 
@@ -23468,9 +25804,9 @@ type GetPublicAccessBlockInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -23800,27 +26136,48 @@ type HeadBucketInput struct {
 
 	// The bucket name.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Object Lambda access points - When you use this API operation with an Object
+	// Lambda access point, provide the alias of the Object Lambda access point
+	// in place of the bucket name. If the Object Lambda access point alias in a
+	// request is not valid, the error code InvalidAccessPointAliasError is returned.
+	// For more information about InvalidAccessPointAliasError, see List of Error
+	// Codes (https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html#ErrorCodeList).
+	//
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -23906,6 +26263,30 @@ func (s HeadBucketInput) updateArnableField(v string) (interface{}, error) {
 
 type HeadBucketOutput struct {
 	_ struct{} `type:"structure"`
+
+	// Indicates whether the bucket name used in the request is an access point
+	// alias.
+	//
+	// This functionality is not supported for directory buckets.
+	AccessPointAlias *bool `location:"header" locationName:"x-amz-access-point-alias" type:"boolean"`
+
+	// The name of the location where the bucket will be created.
+	//
+	// For directory buckets, the AZ ID of the Availability Zone where the bucket
+	// is created. An example AZ ID value is usw2-az1.
+	//
+	// This functionality is only supported by directory buckets.
+	BucketLocationName *string `location:"header" locationName:"x-amz-bucket-location-name" type:"string"`
+
+	// The type of location where the bucket is created.
+	//
+	// This functionality is only supported by directory buckets.
+	BucketLocationType *string `location:"header" locationName:"x-amz-bucket-location-type" type:"string" enum:"LocationType"`
+
+	// The Region that the bucket is located.
+	//
+	// This functionality is not supported for directory buckets.
+	BucketRegion *string `location:"header" locationName:"x-amz-bucket-region" type:"string"`
 }
 
 // String returns the string representation.
@@ -23926,24 +26307,62 @@ func (s HeadBucketOutput) GoString() string {
 	return s.String()
 }
 
+// SetAccessPointAlias sets the AccessPointAlias field's value.
+func (s *HeadBucketOutput) SetAccessPointAlias(v bool) *HeadBucketOutput {
+	s.AccessPointAlias = &v
+	return s
+}
+
+// SetBucketLocationName sets the BucketLocationName field's value.
+func (s *HeadBucketOutput) SetBucketLocationName(v string) *HeadBucketOutput {
+	s.BucketLocationName = &v
+	return s
+}
+
+// SetBucketLocationType sets the BucketLocationType field's value.
+func (s *HeadBucketOutput) SetBucketLocationType(v string) *HeadBucketOutput {
+	s.BucketLocationType = &v
+	return s
+}
+
+// SetBucketRegion sets the BucketRegion field's value.
+func (s *HeadBucketOutput) SetBucketRegion(v string) *HeadBucketOutput {
+	s.BucketRegion = &v
+	return s
+}
+
 type HeadObjectInput struct {
 	_ struct{} `locationName:"HeadObjectRequest" type:"structure"`
 
-	// The name of the bucket containing the object.
+	// The name of the bucket that contains the object.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
@@ -23956,25 +26375,69 @@ type HeadObjectInput struct {
 	// must have permission to use the kms:Decrypt action for the request to succeed.
 	ChecksumMode *string `location:"header" locationName:"x-amz-checksum-mode" type:"string" enum:"ChecksumMode"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Return the object only if its entity tag (ETag) is the same as the one specified;
 	// otherwise, return a 412 (precondition failed) error.
+	//
+	// If both of the If-Match and If-Unmodified-Since headers are present in the
+	// request as follows:
+	//
+	//    * If-Match condition evaluates to true, and;
+	//
+	//    * If-Unmodified-Since condition evaluates to false;
+	//
+	// Then Amazon S3 returns 200 OK and the data requested.
+	//
+	// For more information about conditional requests, see RFC 7232 (https://tools.ietf.org/html/rfc7232).
 	IfMatch *string `location:"header" locationName:"If-Match" type:"string"`
 
 	// Return the object only if it has been modified since the specified time;
 	// otherwise, return a 304 (not modified) error.
+	//
+	// If both of the If-None-Match and If-Modified-Since headers are present in
+	// the request as follows:
+	//
+	//    * If-None-Match condition evaluates to false, and;
+	//
+	//    * If-Modified-Since condition evaluates to true;
+	//
+	// Then Amazon S3 returns the 304 Not Modified response code.
+	//
+	// For more information about conditional requests, see RFC 7232 (https://tools.ietf.org/html/rfc7232).
 	IfModifiedSince *time.Time `location:"header" locationName:"If-Modified-Since" type:"timestamp"`
 
 	// Return the object only if its entity tag (ETag) is different from the one
 	// specified; otherwise, return a 304 (not modified) error.
+	//
+	// If both of the If-None-Match and If-Modified-Since headers are present in
+	// the request as follows:
+	//
+	//    * If-None-Match condition evaluates to false, and;
+	//
+	//    * If-Modified-Since condition evaluates to true;
+	//
+	// Then Amazon S3 returns the 304 Not Modified response code.
+	//
+	// For more information about conditional requests, see RFC 7232 (https://tools.ietf.org/html/rfc7232).
 	IfNoneMatch *string `location:"header" locationName:"If-None-Match" type:"string"`
 
 	// Return the object only if it has not been modified since the specified time;
 	// otherwise, return a 412 (precondition failed) error.
+	//
+	// If both of the If-Match and If-Unmodified-Since headers are present in the
+	// request as follows:
+	//
+	//    * If-Match condition evaluates to true, and;
+	//
+	//    * If-Unmodified-Since condition evaluates to false;
+	//
+	// Then Amazon S3 returns 200 OK and the data requested.
+	//
+	// For more information about conditional requests, see RFC 7232 (https://tools.ietf.org/html/rfc7232).
 	IfUnmodifiedSince *time.Time `location:"header" locationName:"If-Unmodified-Since" type:"timestamp"`
 
 	// The object key.
@@ -23988,19 +26451,25 @@ type HeadObjectInput struct {
 	// object.
 	PartNumber *int64 `location:"querystring" locationName:"partNumber" type:"integer"`
 
-	// Because HeadObject returns only the metadata for an object, this parameter
-	// has no effect.
+	// HeadObject returns only the metadata for an object. If the Range is satisfiable,
+	// only the ContentLength is affected in the response. If the Range is not satisfiable,
+	// S3 returns a 416 - Requested Range Not Satisfiable error.
 	Range *string `location:"header" locationName:"Range" type:"string"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
-	// Specifies the algorithm to use to when encrypting the object (for example,
-	// AES256).
+	// Specifies the algorithm to use when encrypting the object (for example, AES256).
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// Specifies the customer-provided encryption key for Amazon S3 to use in encrypting
@@ -24008,6 +26477,8 @@ type HeadObjectInput struct {
 	// S3 does not store the encryption key. The key must be appropriate for use
 	// with the algorithm specified in the x-amz-server-side-encryption-customer-algorithm
 	// header.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSECustomerKey is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by HeadObjectInput's
@@ -24017,9 +26488,14 @@ type HeadObjectInput struct {
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure that the
 	// encryption key was transmitted without error.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
-	// VersionId used to reference a specific version of the object.
+	// Version ID used to reference a specific version of the object.
+	//
+	// For directory buckets in this API operation, only the null value of the version
+	// ID is supported.
 	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
 }
 
@@ -24201,51 +26677,63 @@ type HeadObjectOutput struct {
 	AcceptRanges *string `location:"header" locationName:"accept-ranges" type:"string"`
 
 	// The archive state of the head object.
+	//
+	// This functionality is not supported for directory buckets.
 	ArchiveStatus *string `location:"header" locationName:"x-amz-archive-status" type:"string" enum:"ArchiveStatus"`
 
 	// Indicates whether the object uses an S3 Bucket Key for server-side encryption
-	// with Amazon Web Services KMS (SSE-KMS).
+	// with Key Management Service (KMS) keys (SSE-KMS).
+	//
+	// This functionality is not supported for directory buckets.
 	BucketKeyEnabled *bool `location:"header" locationName:"x-amz-server-side-encryption-bucket-key-enabled" type:"boolean"`
 
 	// Specifies caching behavior along the request/reply chain.
 	CacheControl *string `location:"header" locationName:"Cache-Control" type:"string"`
 
 	// The base64-encoded, 32-bit CRC32 checksum of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32 *string `location:"header" locationName:"x-amz-checksum-crc32" type:"string"`
 
 	// The base64-encoded, 32-bit CRC32C checksum of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32C *string `location:"header" locationName:"x-amz-checksum-crc32c" type:"string"`
 
 	// The base64-encoded, 160-bit SHA-1 digest of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use the API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA1 *string `location:"header" locationName:"x-amz-checksum-sha1" type:"string"`
 
 	// The base64-encoded, 256-bit SHA-256 digest of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA256 *string `location:"header" locationName:"x-amz-checksum-sha256" type:"string"`
 
 	// Specifies presentational information for the object.
 	ContentDisposition *string `location:"header" locationName:"Content-Disposition" type:"string"`
 
-	// Specifies what content encodings have been applied to the object and thus
+	// Indicates what content encodings have been applied to the object and thus
 	// what decoding mechanisms must be applied to obtain the media-type referenced
 	// by the Content-Type header field.
 	ContentEncoding *string `location:"header" locationName:"Content-Encoding" type:"string"`
@@ -24261,21 +26749,27 @@ type HeadObjectOutput struct {
 
 	// Specifies whether the object retrieved was (true) or was not (false) a Delete
 	// Marker. If false, this response header does not appear in the response.
+	//
+	// This functionality is not supported for directory buckets.
 	DeleteMarker *bool `location:"header" locationName:"x-amz-delete-marker" type:"boolean"`
 
 	// An entity tag (ETag) is an opaque identifier assigned by a web server to
 	// a specific version of a resource found at a URL.
 	ETag *string `location:"header" locationName:"ETag" type:"string"`
 
-	// If the object expiration is configured (see PUT Bucket lifecycle), the response
-	// includes this header. It includes the expiry-date and rule-id key-value pairs
-	// providing object expiration information. The value of the rule-id is URL-encoded.
+	// If the object expiration is configured (see PutBucketLifecycleConfiguration
+	// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html)),
+	// the response includes this header. It includes the expiry-date and rule-id
+	// key-value pairs providing object expiration information. The value of the
+	// rule-id is URL-encoded.
+	//
+	// This functionality is not supported for directory buckets.
 	Expiration *string `location:"header" locationName:"x-amz-expiration" type:"string"`
 
 	// The date and time at which the object is no longer cacheable.
 	Expires *string `location:"header" locationName:"Expires" type:"string"`
 
-	// Creation date of the object.
+	// Date and time when the object was last modified.
 	LastModified *time.Time `location:"header" locationName:"Last-Modified" type:"timestamp"`
 
 	// A map of metadata to store with the object in S3.
@@ -24289,6 +26783,8 @@ type HeadObjectOutput struct {
 	// headers. This can happen if you create metadata using an API like SOAP that
 	// supports more flexible metadata than the REST API. For example, using SOAP,
 	// you can create metadata whose values are not legal HTTP headers.
+	//
+	// This functionality is not supported for directory buckets.
 	MissingMeta *int64 `location:"header" locationName:"x-amz-missing-meta" type:"integer"`
 
 	// Specifies whether a legal hold is in effect for this object. This header
@@ -24296,15 +26792,21 @@ type HeadObjectOutput struct {
 	// This header is not returned if the specified version of this object has never
 	// had a legal hold applied. For more information about S3 Object Lock, see
 	// Object Lock (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock.html).
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockLegalHoldStatus *string `location:"header" locationName:"x-amz-object-lock-legal-hold" type:"string" enum:"ObjectLockLegalHoldStatus"`
 
 	// The Object Lock mode, if any, that's in effect for this object. This header
 	// is only returned if the requester has the s3:GetObjectRetention permission.
 	// For more information about S3 Object Lock, see Object Lock (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock.html).
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockMode *string `location:"header" locationName:"x-amz-object-lock-mode" type:"string" enum:"ObjectLockMode"`
 
 	// The date and time when the Object Lock retention period expires. This header
 	// is only returned if the requester has the s3:GetObjectRetention permission.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockRetainUntilDate *time.Time `location:"header" locationName:"x-amz-object-lock-retain-until-date" type:"timestamp" timestampFormat:"iso8601"`
 
 	// The count of parts this object has. This value is only returned if you specify
@@ -24343,10 +26845,14 @@ type HeadObjectOutput struct {
 	//    header will return FAILED.
 	//
 	// For more information, see Replication (https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html).
+	//
+	// This functionality is not supported for directory buckets.
 	ReplicationStatus *string `location:"header" locationName:"x-amz-replication-status" type:"string" enum:"ReplicationStatus"`
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
 	// If the object is an archived object (an object whose storage class is GLACIER),
@@ -24364,45 +26870,61 @@ type HeadObjectOutput struct {
 	//
 	// For more information about archiving objects, see Transitioning Objects:
 	// General Considerations (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lifecycle-mgmt.html#lifecycle-transition-general-considerations).
+	//
+	// This functionality is not supported for directory buckets. Only the S3 Express
+	// One Zone storage class is supported by directory buckets to store objects.
 	Restore *string `location:"header" locationName:"x-amz-restore" type:"string"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header confirming the encryption algorithm
-	// used.
+	// the response will include this header to confirm the encryption algorithm
+	// that's used.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header to provide round-trip message integrity
+	// the response will include this header to provide the round-trip message integrity
 	// verification of the customer-provided encryption key.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
-	// If present, specifies the ID of the Amazon Web Services Key Management Service
-	// (Amazon Web Services KMS) symmetric customer managed key that was used for
-	// the object.
+	// If present, indicates the ID of the Key Management Service (KMS) symmetric
+	// encryption customer managed key that was used for the object.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSKeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by HeadObjectOutput's
 	// String and GoString methods.
 	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
 
-	// If the object is stored using server-side encryption either with an Amazon
-	// Web Services KMS key or an Amazon S3-managed encryption key, the response
-	// includes this header with the value of the server-side encryption algorithm
-	// used when storing this object in Amazon S3 (for example, AES256, aws:kms).
+	// The server-side encryption algorithm used when you store this object in Amazon
+	// S3 (for example, AES256, aws:kms, aws:kms:dsse).
+	//
+	// For directory buckets, only server-side encryption with Amazon S3 managed
+	// keys (SSE-S3) (AES256) is supported.
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
 	// Provides storage class information of the object. Amazon S3 returns this
 	// header for all objects except for S3 Standard storage class objects.
 	//
 	// For more information, see Storage Classes (https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html).
+	//
+	// Directory buckets - Only the S3 Express One Zone storage class is supported
+	// by directory buckets to store objects.
 	StorageClass *string `location:"header" locationName:"x-amz-storage-class" type:"string" enum:"StorageClass"`
 
-	// Version of the object.
+	// Version ID of the object.
+	//
+	// This functionality is not supported for directory buckets.
 	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 
 	// If the bucket is configured as a website, redirects requests for this object
 	// to another object in the same bucket or to an external URL. Amazon S3 stores
 	// the value of this header in the object metadata.
+	//
+	// This functionality is not supported for directory buckets.
 	WebsiteRedirectLocation *string `location:"header" locationName:"x-amz-website-redirect-location" type:"string"`
 }
 
@@ -24688,10 +27210,16 @@ type Initiator struct {
 	_ struct{} `type:"structure"`
 
 	// Name of the Principal.
+	//
+	// This functionality is not supported for directory buckets.
 	DisplayName *string `type:"string"`
 
 	// If the principal is an Amazon Web Services account, it provides the Canonical
 	// User ID. If the principal is an IAM User, it provides a user ARN value.
+	//
+	// Directory buckets - If the principal is an Amazon Web Services account, it
+	// provides the Amazon Web Services account ID. If the principal is an IAM User,
+	// it provides a user ARN value.
 	ID *string `type:"string"`
 }
 
@@ -25596,7 +28124,8 @@ type LambdaFunctionConfiguration struct {
 	Events []*string `locationName:"Event" type:"list" flattened:"true" required:"true" enum:"Event"`
 
 	// Specifies object key name filtering rules. For information about key name
-	// filtering, see Configuring Event Notifications (https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// filtering, see Configuring event notifications using object key name filtering
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-filtering.html)
 	// in the Amazon S3 User Guide.
 	Filter *NotificationConfigurationFilter `type:"structure"`
 
@@ -25670,6 +28199,9 @@ func (s *LambdaFunctionConfiguration) SetLambdaFunctionArn(v string) *LambdaFunc
 }
 
 // Container for lifecycle rules. You can add as many as 1000 rules.
+//
+// For more information see, Managing your storage lifecycle (https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html)
+// in the Amazon S3 User Guide.
 type LifecycleConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -25727,11 +28259,14 @@ func (s *LifecycleConfiguration) SetRules(v []*Rule) *LifecycleConfiguration {
 }
 
 // Container for the expiration for the lifecycle of the object.
+//
+// For more information see, Managing your storage lifecycle (https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html)
+// in the Amazon S3 User Guide.
 type LifecycleExpiration struct {
 	_ struct{} `type:"structure"`
 
-	// Indicates at what date the object is to be moved or deleted. Should be in
-	// GMT ISO 8601 Format.
+	// Indicates at what date the object is to be moved or deleted. The date value
+	// must conform to the ISO 8601 format. The time is always midnight UTC.
 	Date *time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	// Indicates the lifetime, in days, of the objects that are subject to the rule.
@@ -25782,13 +28317,16 @@ func (s *LifecycleExpiration) SetExpiredObjectDeleteMarker(v bool) *LifecycleExp
 }
 
 // A lifecycle rule for individual objects in an Amazon S3 bucket.
+//
+// For more information see, Managing your storage lifecycle (https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html)
+// in the Amazon S3 User Guide.
 type LifecycleRule struct {
 	_ struct{} `type:"structure"`
 
 	// Specifies the days since the initiation of an incomplete multipart upload
 	// that Amazon S3 will wait before permanently removing all parts of the upload.
 	// For more information, see Aborting Incomplete Multipart Uploads Using a Bucket
-	// Lifecycle Policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config)
+	// Lifecycle Configuration (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config)
 	// in the Amazon S3 User Guide.
 	AbortIncompleteMultipartUpload *AbortIncompleteMultipartUpload `type:"structure"`
 
@@ -26011,7 +28549,9 @@ func (s *LifecycleRuleAndOperator) SetTags(v []*Tag) *LifecycleRuleAndOperator {
 }
 
 // The Filter is used to identify objects that a Lifecycle Rule applies to.
-// A Filter must have exactly one of Prefix, Tag, or And specified.
+// A Filter can have exactly one of Prefix, Tag, ObjectSizeGreaterThan, ObjectSizeLessThan,
+// or And specified. If the Filter element is left empty, the Lifecycle Rule
+// applies to all objects in the bucket.
 type LifecycleRuleFilter struct {
 	_ struct{} `type:"structure"`
 
@@ -26117,9 +28657,9 @@ type ListBucketAnalyticsConfigurationsInput struct {
 	// should begin.
 	ContinuationToken *string `location:"querystring" locationName:"continuation-token" type:"string"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -26443,9 +28983,9 @@ type ListBucketInventoryConfigurationsInput struct {
 	// that Amazon S3 understands.
 	ContinuationToken *string `location:"querystring" locationName:"continuation-token" type:"string"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -26612,9 +29152,9 @@ type ListBucketMetricsConfigurationsInput struct {
 	// value that Amazon S3 understands.
 	ContinuationToken *string `location:"querystring" locationName:"continuation-token" type:"string"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -26830,24 +29370,123 @@ func (s *ListBucketsOutput) SetOwner(v *Owner) *ListBucketsOutput {
 	return s
 }
 
+type ListDirectoryBucketsInput struct {
+	_ struct{} `locationName:"ListDirectoryBucketsRequest" type:"structure"`
+
+	// ContinuationToken indicates to Amazon S3 that the list is being continued
+	// on this bucket with a token. ContinuationToken is obfuscated and is not a
+	// real key. You can use this ContinuationToken for pagination of the list results.
+	ContinuationToken *string `location:"querystring" locationName:"continuation-token" type:"string"`
+
+	// Maximum number of buckets to be returned in response. When the number is
+	// more than the count of buckets that are owned by an Amazon Web Services account,
+	// return all the buckets in response.
+	MaxDirectoryBuckets *int64 `location:"querystring" locationName:"max-directory-buckets" type:"integer"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ListDirectoryBucketsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ListDirectoryBucketsInput) GoString() string {
+	return s.String()
+}
+
+// SetContinuationToken sets the ContinuationToken field's value.
+func (s *ListDirectoryBucketsInput) SetContinuationToken(v string) *ListDirectoryBucketsInput {
+	s.ContinuationToken = &v
+	return s
+}
+
+// SetMaxDirectoryBuckets sets the MaxDirectoryBuckets field's value.
+func (s *ListDirectoryBucketsInput) SetMaxDirectoryBuckets(v int64) *ListDirectoryBucketsInput {
+	s.MaxDirectoryBuckets = &v
+	return s
+}
+
+type ListDirectoryBucketsOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The list of buckets owned by the requester.
+	Buckets []*Bucket `locationNameList:"Bucket" type:"list"`
+
+	// If ContinuationToken was sent with the request, it is included in the response.
+	// You can use the returned ContinuationToken for pagination of the list response.
+	ContinuationToken *string `type:"string"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ListDirectoryBucketsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ListDirectoryBucketsOutput) GoString() string {
+	return s.String()
+}
+
+// SetBuckets sets the Buckets field's value.
+func (s *ListDirectoryBucketsOutput) SetBuckets(v []*Bucket) *ListDirectoryBucketsOutput {
+	s.Buckets = v
+	return s
+}
+
+// SetContinuationToken sets the ContinuationToken field's value.
+func (s *ListDirectoryBucketsOutput) SetContinuationToken(v string) *ListDirectoryBucketsOutput {
+	s.ContinuationToken = &v
+	return s
+}
+
 type ListMultipartUploadsInput struct {
 	_ struct{} `locationName:"ListMultipartUploadsRequest" type:"structure"`
 
 	// The name of the bucket to which the multipart upload was initiated.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
@@ -26861,30 +29500,40 @@ type ListMultipartUploadsInput struct {
 	// parameter, then the substring starts at the beginning of the key. The keys
 	// that are grouped under CommonPrefixes result element are not returned elsewhere
 	// in the response.
+	//
+	// Directory buckets - For directory buckets, / is the only supported delimiter.
 	Delimiter *string `location:"querystring" locationName:"delimiter" type:"string"`
 
 	// Requests Amazon S3 to encode the object keys in the response and specifies
-	// the encoding method to use. An object key may contain any Unicode character;
-	// however, XML 1.0 parser cannot parse some characters, such as characters
+	// the encoding method to use. An object key can contain any Unicode character;
+	// however, the XML 1.0 parser cannot parse some characters, such as characters
 	// with an ASCII value from 0 to 10. For characters that are not supported in
 	// XML 1.0, you can add this parameter to request that Amazon S3 encode the
 	// keys in the response.
 	EncodingType *string `location:"querystring" locationName:"encoding-type" type:"string" enum:"EncodingType"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
-	// Together with upload-id-marker, this parameter specifies the multipart upload
-	// after which listing should begin.
+	// Specifies the multipart upload after which listing should begin.
 	//
-	// If upload-id-marker is not specified, only the keys lexicographically greater
-	// than the specified key-marker will be included in the list.
+	//    * General purpose buckets - For general purpose buckets, key-marker is
+	//    an object key. Together with upload-id-marker, this parameter specifies
+	//    the multipart upload after which listing should begin. If upload-id-marker
+	//    is not specified, only the keys lexicographically greater than the specified
+	//    key-marker will be included in the list. If upload-id-marker is specified,
+	//    any multipart uploads for a key equal to the key-marker might also be
+	//    included, provided those multipart uploads have upload IDs lexicographically
+	//    greater than the specified upload-id-marker.
 	//
-	// If upload-id-marker is specified, any multipart uploads for a key equal to
-	// the key-marker might also be included, provided those multipart uploads have
-	// upload IDs lexicographically greater than the specified upload-id-marker.
+	//    * Directory buckets - For directory buckets, key-marker is obfuscated
+	//    and isn't a real object key. The upload-id-marker parameter isn't supported
+	//    by directory buckets. To list the additional multipart uploads, you only
+	//    need to set the value of key-marker to the NextKeyMarker value from the
+	//    previous response. In the ListMultipartUploads response, the multipart
+	//    uploads aren't sorted lexicographically based on the object keys.
 	KeyMarker *string `location:"querystring" locationName:"key-marker" type:"string"`
 
 	// Sets the maximum number of multipart uploads, from 1 to 1,000, to return
@@ -26894,15 +29543,31 @@ type ListMultipartUploadsInput struct {
 
 	// Lists in-progress uploads only for those keys that begin with the specified
 	// prefix. You can use prefixes to separate a bucket into different grouping
-	// of keys. (You can think of using prefix to make groups in the same way you'd
-	// use a folder in a file system.)
+	// of keys. (You can think of using prefix to make groups in the same way that
+	// you'd use a folder in a file system.)
+	//
+	// Directory buckets - For directory buckets, only prefixes that end in a delimiter
+	// (/) are supported.
 	Prefix *string `location:"querystring" locationName:"prefix" type:"string"`
+
+	// Confirms that the requester knows that they will be charged for the request.
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
+	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
+	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// Together with key-marker, specifies the multipart upload after which listing
 	// should begin. If key-marker is not specified, the upload-id-marker parameter
 	// is ignored. Otherwise, any multipart uploads for a key equal to the key-marker
 	// might be included in the list only if they have an upload ID lexicographically
 	// greater than the specified upload-id-marker.
+	//
+	// This functionality is not supported for directory buckets.
 	UploadIdMarker *string `location:"querystring" locationName:"upload-id-marker" type:"string"`
 }
 
@@ -26989,6 +29654,12 @@ func (s *ListMultipartUploadsInput) SetPrefix(v string) *ListMultipartUploadsInp
 	return s
 }
 
+// SetRequestPayer sets the RequestPayer field's value.
+func (s *ListMultipartUploadsInput) SetRequestPayer(v string) *ListMultipartUploadsInput {
+	s.RequestPayer = &v
+	return s
+}
+
 // SetUploadIdMarker sets the UploadIdMarker field's value.
 func (s *ListMultipartUploadsInput) SetUploadIdMarker(v string) *ListMultipartUploadsInput {
 	s.UploadIdMarker = &v
@@ -27032,17 +29703,22 @@ type ListMultipartUploadsOutput struct {
 	// If you specify a delimiter in the request, then the result returns each distinct
 	// key prefix containing the delimiter in a CommonPrefixes element. The distinct
 	// key prefixes are returned in the Prefix child element.
+	//
+	// Directory buckets - For directory buckets, only prefixes that end in a delimiter
+	// (/) are supported.
 	CommonPrefixes []*CommonPrefix `type:"list" flattened:"true"`
 
 	// Contains the delimiter you specified in the request. If you don't specify
 	// a delimiter in your request, this element is absent from the response.
+	//
+	// Directory buckets - For directory buckets, / is the only supported delimiter.
 	Delimiter *string `type:"string"`
 
 	// Encoding type used by Amazon S3 to encode object keys in the response.
 	//
-	// If you specify encoding-type request parameter, Amazon S3 includes this element
-	// in the response, and returns encoded key name values in the following response
-	// elements:
+	// If you specify the encoding-type request parameter, Amazon S3 includes this
+	// element in the response, and returns encoded key name values in the following
+	// response elements:
 	//
 	// Delimiter, KeyMarker, Prefix, NextKeyMarker, Key.
 	EncodingType *string `type:"string" enum:"EncodingType"`
@@ -27066,13 +29742,30 @@ type ListMultipartUploadsOutput struct {
 
 	// When a list is truncated, this element specifies the value that should be
 	// used for the upload-id-marker request parameter in a subsequent request.
+	//
+	// This functionality is not supported for directory buckets.
 	NextUploadIdMarker *string `type:"string"`
 
 	// When a prefix is provided in the request, this field contains the specified
 	// prefix. The result contains only keys starting with the specified prefix.
+	//
+	// Directory buckets - For directory buckets, only prefixes that end in a delimiter
+	// (/) are supported.
 	Prefix *string `type:"string"`
 
-	// Upload ID after which listing began.
+	// If present, indicates that the requester was successfully charged for the
+	// request.
+	//
+	// This functionality is not supported for directory buckets.
+	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
+
+	// Together with key-marker, specifies the multipart upload after which listing
+	// should begin. If key-marker is not specified, the upload-id-marker parameter
+	// is ignored. Otherwise, any multipart uploads for a key equal to the key-marker
+	// might be included in the list only if they have an upload ID lexicographically
+	// greater than the specified upload-id-marker.
+	//
+	// This functionality is not supported for directory buckets.
 	UploadIdMarker *string `type:"string"`
 
 	// Container for elements related to a particular multipart upload. A response
@@ -27165,6 +29858,12 @@ func (s *ListMultipartUploadsOutput) SetPrefix(v string) *ListMultipartUploadsOu
 	return s
 }
 
+// SetRequestCharged sets the RequestCharged field's value.
+func (s *ListMultipartUploadsOutput) SetRequestCharged(v string) *ListMultipartUploadsOutput {
+	s.RequestCharged = &v
+	return s
+}
+
 // SetUploadIdMarker sets the UploadIdMarker field's value.
 func (s *ListMultipartUploadsOutput) SetUploadIdMarker(v string) *ListMultipartUploadsOutput {
 	s.UploadIdMarker = &v
@@ -27193,22 +29892,22 @@ type ListObjectVersionsInput struct {
 	Delimiter *string `location:"querystring" locationName:"delimiter" type:"string"`
 
 	// Requests Amazon S3 to encode the object keys in the response and specifies
-	// the encoding method to use. An object key may contain any Unicode character;
-	// however, XML 1.0 parser cannot parse some characters, such as characters
+	// the encoding method to use. An object key can contain any Unicode character;
+	// however, the XML 1.0 parser cannot parse some characters, such as characters
 	// with an ASCII value from 0 to 10. For characters that are not supported in
 	// XML 1.0, you can add this parameter to request that Amazon S3 encode the
 	// keys in the response.
 	EncodingType *string `location:"querystring" locationName:"encoding-type" type:"string" enum:"EncodingType"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Specifies the key to start with when listing objects in a bucket.
 	KeyMarker *string `location:"querystring" locationName:"key-marker" type:"string"`
 
-	// Sets the maximum number of keys returned in the response. By default the
+	// Sets the maximum number of keys returned in the response. By default, the
 	// action returns up to 1,000 key names. The response might contain fewer keys
 	// but will never contain more. If additional keys satisfy the search criteria,
 	// but were not returned because max-keys was exceeded, the response contains
@@ -27216,12 +29915,27 @@ type ListObjectVersionsInput struct {
 	// and version-id-marker.
 	MaxKeys *int64 `location:"querystring" locationName:"max-keys" type:"integer"`
 
+	// Specifies the optional fields that you want returned in the response. Fields
+	// that you do not specify are not returned.
+	OptionalObjectAttributes []*string `location:"header" locationName:"x-amz-optional-object-attributes" type:"list" enum:"OptionalObjectAttributes"`
+
 	// Use this parameter to select only those keys that begin with the specified
 	// prefix. You can use prefixes to separate a bucket into different groupings
-	// of keys. (You can think of using prefix to make groups in the same way you'd
-	// use a folder in a file system.) You can use prefix with delimiter to roll
-	// up numerous objects into a single result under CommonPrefixes.
+	// of keys. (You can think of using prefix to make groups in the same way that
+	// you'd use a folder in a file system.) You can use prefix with delimiter to
+	// roll up numerous objects into a single result under CommonPrefixes.
 	Prefix *string `location:"querystring" locationName:"prefix" type:"string"`
+
+	// Confirms that the requester knows that they will be charged for the request.
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
+	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
+	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// Specifies the object version you want to start listing from.
 	VersionIdMarker *string `location:"querystring" locationName:"version-id-marker" type:"string"`
@@ -27304,9 +30018,21 @@ func (s *ListObjectVersionsInput) SetMaxKeys(v int64) *ListObjectVersionsInput {
 	return s
 }
 
+// SetOptionalObjectAttributes sets the OptionalObjectAttributes field's value.
+func (s *ListObjectVersionsInput) SetOptionalObjectAttributes(v []*string) *ListObjectVersionsInput {
+	s.OptionalObjectAttributes = v
+	return s
+}
+
 // SetPrefix sets the Prefix field's value.
 func (s *ListObjectVersionsInput) SetPrefix(v string) *ListObjectVersionsInput {
 	s.Prefix = &v
+	return s
+}
+
+// SetRequestPayer sets the RequestPayer field's value.
+func (s *ListObjectVersionsInput) SetRequestPayer(v string) *ListObjectVersionsInput {
+	s.RequestPayer = &v
 	return s
 }
 
@@ -27363,16 +30089,16 @@ type ListObjectVersionsOutput struct {
 
 	// Encoding type used by Amazon S3 to encode object key names in the XML response.
 	//
-	// If you specify encoding-type request parameter, Amazon S3 includes this element
-	// in the response, and returns encoded key name values in the following response
-	// elements:
+	// If you specify the encoding-type request parameter, Amazon S3 includes this
+	// element in the response, and returns encoded key name values in the following
+	// response elements:
 	//
 	// KeyMarker, NextKeyMarker, Prefix, Key, and Delimiter.
 	EncodingType *string `type:"string" enum:"EncodingType"`
 
 	// A flag that indicates whether Amazon S3 returned all of the results that
 	// satisfied the search criteria. If your results were truncated, you can make
-	// a follow-up paginated request using the NextKeyMarker and NextVersionIdMarker
+	// a follow-up paginated request by using the NextKeyMarker and NextVersionIdMarker
 	// response parameters as a starting place in another request to return the
 	// rest of the results.
 	IsTruncated *bool `type:"boolean"`
@@ -27399,6 +30125,12 @@ type ListObjectVersionsOutput struct {
 
 	// Selects objects that start with the value supplied by this parameter.
 	Prefix *string `type:"string"`
+
+	// If present, indicates that the requester was successfully charged for the
+	// request.
+	//
+	// This functionality is not supported for directory buckets.
+	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
 	// Marks the last version of the key returned in a truncated response.
 	VersionIdMarker *string `type:"string"`
@@ -27491,6 +30223,12 @@ func (s *ListObjectVersionsOutput) SetPrefix(v string) *ListObjectVersionsOutput
 	return s
 }
 
+// SetRequestCharged sets the RequestCharged field's value.
+func (s *ListObjectVersionsOutput) SetRequestCharged(v string) *ListObjectVersionsOutput {
+	s.RequestCharged = &v
+	return s
+}
+
 // SetVersionIdMarker sets the VersionIdMarker field's value.
 func (s *ListObjectVersionsOutput) SetVersionIdMarker(v string) *ListObjectVersionsOutput {
 	s.VersionIdMarker = &v
@@ -27508,48 +30246,66 @@ type ListObjectsInput struct {
 
 	// The name of the bucket containing the objects.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// A delimiter is a character you use to group keys.
+	// A delimiter is a character that you use to group keys.
 	Delimiter *string `location:"querystring" locationName:"delimiter" type:"string"`
 
 	// Requests Amazon S3 to encode the object keys in the response and specifies
-	// the encoding method to use. An object key may contain any Unicode character;
-	// however, XML 1.0 parser cannot parse some characters, such as characters
+	// the encoding method to use. An object key can contain any Unicode character;
+	// however, the XML 1.0 parser cannot parse some characters, such as characters
 	// with an ASCII value from 0 to 10. For characters that are not supported in
 	// XML 1.0, you can add this parameter to request that Amazon S3 encode the
 	// keys in the response.
 	EncodingType *string `location:"querystring" locationName:"encoding-type" type:"string" enum:"EncodingType"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Marker is where you want Amazon S3 to start listing from. Amazon S3 starts
 	// listing after this specified key. Marker can be any key in the bucket.
 	Marker *string `location:"querystring" locationName:"marker" type:"string"`
 
-	// Sets the maximum number of keys returned in the response. By default the
+	// Sets the maximum number of keys returned in the response. By default, the
 	// action returns up to 1,000 key names. The response might contain fewer keys
 	// but will never contain more.
 	MaxKeys *int64 `location:"querystring" locationName:"max-keys" type:"integer"`
+
+	// Specifies the optional fields that you want returned in the response. Fields
+	// that you do not specify are not returned.
+	OptionalObjectAttributes []*string `location:"header" locationName:"x-amz-optional-object-attributes" type:"list" enum:"OptionalObjectAttributes"`
 
 	// Limits the response to keys that begin with the specified prefix.
 	Prefix *string `location:"querystring" locationName:"prefix" type:"string"`
@@ -27637,6 +30393,12 @@ func (s *ListObjectsInput) SetMaxKeys(v int64) *ListObjectsInput {
 	return s
 }
 
+// SetOptionalObjectAttributes sets the OptionalObjectAttributes field's value.
+func (s *ListObjectsInput) SetOptionalObjectAttributes(v []*string) *ListObjectsInput {
+	s.OptionalObjectAttributes = v
+	return s
+}
+
 // SetPrefix sets the Prefix field's value.
 func (s *ListObjectsInput) SetPrefix(v string) *ListObjectsInput {
 	s.Prefix = &v
@@ -27690,7 +30452,7 @@ type ListObjectsOutput struct {
 	// CommonPrefixes lists keys that act like subdirectories in the directory specified
 	// by Prefix.
 	//
-	// For example, if the prefix is notes/ and the delimiter is a slash (/) as
+	// For example, if the prefix is notes/ and the delimiter is a slash (/), as
 	// in notes/summer/july, the common prefix is notes/summer/. All of the keys
 	// that roll up into a common prefix count as a single return when calculating
 	// the number of returns.
@@ -27706,7 +30468,9 @@ type ListObjectsOutput struct {
 	// the MaxKeys value.
 	Delimiter *string `type:"string"`
 
-	// Encoding type used by Amazon S3 to encode object keys in the response.
+	// Encoding type used by Amazon S3 to encode object keys in the response. If
+	// using url, non-ASCII characters used in an object's key name will be URL
+	// encoded. For example, the object test_file(3).png will appear as test_file%283%29.png.
 	EncodingType *string `type:"string" enum:"EncodingType"`
 
 	// A flag that indicates whether Amazon S3 returned all of the results that
@@ -27723,17 +30487,26 @@ type ListObjectsOutput struct {
 	// The bucket name.
 	Name *string `type:"string"`
 
-	// When response is truncated (the IsTruncated element value in the response
-	// is true), you can use the key name in this field as marker in the subsequent
-	// request to get next set of objects. Amazon S3 lists objects in alphabetical
-	// order Note: This element is returned only if you have delimiter request parameter
-	// specified. If response does not include the NextMarker and it is truncated,
-	// you can use the value of the last Key in the response as the marker in the
-	// subsequent request to get the next set of object keys.
+	// When the response is truncated (the IsTruncated element value in the response
+	// is true), you can use the key name in this field as the marker parameter
+	// in the subsequent request to get the next set of objects. Amazon S3 lists
+	// objects in alphabetical order.
+	//
+	// This element is returned only if you have the delimiter request parameter
+	// specified. If the response does not include the NextMarker element and it
+	// is truncated, you can use the value of the last Key element in the response
+	// as the marker parameter in the subsequent request to get the next set of
+	// object keys.
 	NextMarker *string `type:"string"`
 
 	// Keys that begin with the indicated prefix.
 	Prefix *string `type:"string"`
+
+	// If present, indicates that the requester was successfully charged for the
+	// request.
+	//
+	// This functionality is not supported for directory buckets.
+	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 }
 
 // String returns the string representation.
@@ -27814,65 +30587,110 @@ func (s *ListObjectsOutput) SetPrefix(v string) *ListObjectsOutput {
 	return s
 }
 
+// SetRequestCharged sets the RequestCharged field's value.
+func (s *ListObjectsOutput) SetRequestCharged(v string) *ListObjectsOutput {
+	s.RequestCharged = &v
+	return s
+}
+
 type ListObjectsV2Input struct {
 	_ struct{} `locationName:"ListObjectsV2Request" type:"structure"`
 
-	// Bucket name to list.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// ContinuationToken indicates Amazon S3 that the list is being continued on
-	// this bucket with a token. ContinuationToken is obfuscated and is not a real
-	// key.
+	// ContinuationToken indicates to Amazon S3 that the list is being continued
+	// on this bucket with a token. ContinuationToken is obfuscated and is not a
+	// real key. You can use this ContinuationToken for pagination of the list results.
 	ContinuationToken *string `location:"querystring" locationName:"continuation-token" type:"string"`
 
-	// A delimiter is a character you use to group keys.
+	// A delimiter is a character that you use to group keys.
+	//
+	//    * Directory buckets - For directory buckets, / is the only supported delimiter.
+	//
+	//    * Directory buckets - When you query ListObjectsV2 with a delimiter during
+	//    in-progress multipart uploads, the CommonPrefixes response parameter contains
+	//    the prefixes that are associated with the in-progress multipart uploads.
+	//    For more information about multipart uploads, see Multipart Upload Overview
+	//    (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html) in
+	//    the Amazon S3 User Guide.
 	Delimiter *string `location:"querystring" locationName:"delimiter" type:"string"`
 
-	// Encoding type used by Amazon S3 to encode object keys in the response.
+	// Encoding type used by Amazon S3 to encode object keys in the response. If
+	// using url, non-ASCII characters used in an object's key name will be URL
+	// encoded. For example, the object test_file(3).png will appear as test_file%283%29.png.
 	EncodingType *string `location:"querystring" locationName:"encoding-type" type:"string" enum:"EncodingType"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
-	// The owner field is not present in listV2 by default, if you want to return
-	// owner field with each key in the result then set the fetch owner field to
-	// true.
+	// The owner field is not present in ListObjectsV2 by default. If you want to
+	// return the owner field with each key in the result, then set the FetchOwner
+	// field to true.
+	//
+	// Directory buckets - For directory buckets, the bucket owner is returned as
+	// the object owner for all objects.
 	FetchOwner *bool `location:"querystring" locationName:"fetch-owner" type:"boolean"`
 
-	// Sets the maximum number of keys returned in the response. By default the
+	// Sets the maximum number of keys returned in the response. By default, the
 	// action returns up to 1,000 key names. The response might contain fewer keys
 	// but will never contain more.
 	MaxKeys *int64 `location:"querystring" locationName:"max-keys" type:"integer"`
 
+	// Specifies the optional fields that you want returned in the response. Fields
+	// that you do not specify are not returned.
+	//
+	// This functionality is not supported for directory buckets.
+	OptionalObjectAttributes []*string `location:"header" locationName:"x-amz-optional-object-attributes" type:"list" enum:"OptionalObjectAttributes"`
+
 	// Limits the response to keys that begin with the specified prefix.
+	//
+	// Directory buckets - For directory buckets, only prefixes that end in a delimiter
+	// (/) are supported.
 	Prefix *string `location:"querystring" locationName:"prefix" type:"string"`
 
 	// Confirms that the requester knows that she or he will be charged for the
 	// list objects request in V2 style. Bucket owners need not specify this parameter
 	// in their requests.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// StartAfter is where you want Amazon S3 to start listing from. Amazon S3 starts
 	// listing after this specified key. StartAfter can be any key in the bucket.
+	//
+	// This functionality is not supported for directory buckets.
 	StartAfter *string `location:"querystring" locationName:"start-after" type:"string"`
 }
 
@@ -27959,6 +30777,12 @@ func (s *ListObjectsV2Input) SetMaxKeys(v int64) *ListObjectsV2Input {
 	return s
 }
 
+// SetOptionalObjectAttributes sets the OptionalObjectAttributes field's value.
+func (s *ListObjectsV2Input) SetOptionalObjectAttributes(v []*string) *ListObjectsV2Input {
+	s.OptionalObjectAttributes = v
+	return s
+}
+
 // SetPrefix sets the Prefix field's value.
 func (s *ListObjectsV2Input) SetPrefix(v string) *ListObjectsV2Input {
 	s.Prefix = &v
@@ -28007,8 +30831,9 @@ func (s ListObjectsV2Input) updateArnableField(v string) (interface{}, error) {
 type ListObjectsV2Output struct {
 	_ struct{} `type:"structure"`
 
-	// All of the keys (up to 1,000) rolled up into a common prefix count as a single
-	// return when calculating the number of returns.
+	// All of the keys (up to 1,000) that share the same prefix are grouped together.
+	// When counting the total numbers of returns by this API operation, this group
+	// of keys is considered as one item.
 	//
 	// A response can contain CommonPrefixes only if you specify a delimiter.
 	//
@@ -28022,12 +30847,24 @@ type ListObjectsV2Output struct {
 	// in notes/summer/july, the common prefix is notes/summer/. All of the keys
 	// that roll up into a common prefix count as a single return when calculating
 	// the number of returns.
+	//
+	//    * Directory buckets - For directory buckets, only prefixes that end in
+	//    a delimiter (/) are supported.
+	//
+	//    * Directory buckets - When you query ListObjectsV2 with a delimiter during
+	//    in-progress multipart uploads, the CommonPrefixes response parameter contains
+	//    the prefixes that are associated with the in-progress multipart uploads.
+	//    For more information about multipart uploads, see Multipart Upload Overview
+	//    (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html) in
+	//    the Amazon S3 User Guide.
 	CommonPrefixes []*CommonPrefix `type:"list" flattened:"true"`
 
 	// Metadata about each object returned.
 	Contents []*Object `type:"list" flattened:"true"`
 
 	// If ContinuationToken was sent with the request, it is included in the response.
+	// You can use the returned ContinuationToken for pagination of the list response.
+	// You can use this ContinuationToken for pagination of the list results.
 	ContinuationToken *string `type:"string"`
 
 	// Causes keys that contain the same string between the prefix and the first
@@ -28035,6 +30872,8 @@ type ListObjectsV2Output struct {
 	// in the CommonPrefixes collection. These rolled-up keys are not returned elsewhere
 	// in the response. Each rolled-up result counts as only one return against
 	// the MaxKeys value.
+	//
+	// Directory buckets - For directory buckets, / is the only supported delimiter.
 	Delimiter *string `type:"string"`
 
 	// Encoding type used by Amazon S3 to encode object key names in the XML response.
@@ -28052,31 +30891,16 @@ type ListObjectsV2Output struct {
 	IsTruncated *bool `type:"boolean"`
 
 	// KeyCount is the number of keys returned with this request. KeyCount will
-	// always be less than or equals to MaxKeys field. Say you ask for 50 keys,
-	// your result will include less than equals 50 keys
+	// always be less than or equal to the MaxKeys field. For example, if you ask
+	// for 50 keys, your result will include 50 keys or fewer.
 	KeyCount *int64 `type:"integer"`
 
-	// Sets the maximum number of keys returned in the response. By default the
+	// Sets the maximum number of keys returned in the response. By default, the
 	// action returns up to 1,000 key names. The response might contain fewer keys
 	// but will never contain more.
 	MaxKeys *int64 `type:"integer"`
 
 	// The bucket name.
-	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
-	// When using this action with an access point through the Amazon Web Services
-	// SDKs, you provide the access point ARN in place of the bucket name. For more
-	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
-	// in the Amazon S3 User Guide.
-	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
-	// in the Amazon S3 User Guide.
 	Name *string `type:"string"`
 
 	// NextContinuationToken is sent when isTruncated is true, which means there
@@ -28086,9 +30910,20 @@ type ListObjectsV2Output struct {
 	NextContinuationToken *string `type:"string"`
 
 	// Keys that begin with the indicated prefix.
+	//
+	// Directory buckets - For directory buckets, only prefixes that end in a delimiter
+	// (/) are supported.
 	Prefix *string `type:"string"`
 
+	// If present, indicates that the requester was successfully charged for the
+	// request.
+	//
+	// This functionality is not supported for directory buckets.
+	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
+
 	// If StartAfter was sent with the request, it is included in the response.
+	//
+	// This functionality is not supported for directory buckets.
 	StartAfter *string `type:"string"`
 }
 
@@ -28176,6 +31011,12 @@ func (s *ListObjectsV2Output) SetPrefix(v string) *ListObjectsV2Output {
 	return s
 }
 
+// SetRequestCharged sets the RequestCharged field's value.
+func (s *ListObjectsV2Output) SetRequestCharged(v string) *ListObjectsV2Output {
+	s.RequestCharged = &v
+	return s
+}
+
 // SetStartAfter sets the StartAfter field's value.
 func (s *ListObjectsV2Output) SetStartAfter(v string) *ListObjectsV2Output {
 	s.StartAfter = &v
@@ -28187,27 +31028,41 @@ type ListPartsInput struct {
 
 	// The name of the bucket to which the parts are being uploaded.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Object key for which the multipart upload was initiated.
@@ -28223,22 +31078,30 @@ type ListPartsInput struct {
 	PartNumberMarker *int64 `location:"querystring" locationName:"part-number-marker" type:"integer"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// The server-side encryption (SSE) algorithm used to encrypt the object. This
 	// parameter is needed only when the object was created using a checksum algorithm.
 	// For more information, see Protecting data using SSE-C keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// The server-side encryption (SSE) customer managed key. This parameter is
 	// needed only when the object was created using a checksum algorithm. For more
 	// information, see Protecting data using SSE-C keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSECustomerKey is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by ListPartsInput's
@@ -28249,6 +31112,8 @@ type ListPartsInput struct {
 	// is needed only when the object was created using a checksum algorithm. For
 	// more information, see Protecting data using SSE-C keys (https://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// Upload ID identifying the multipart upload whose parts are being listed.
@@ -28409,15 +31274,19 @@ type ListPartsOutput struct {
 	// name in the request, then the response includes this header indicating when
 	// the initiated multipart upload will become eligible for abort operation.
 	// For more information, see Aborting Incomplete Multipart Uploads Using a Bucket
-	// Lifecycle Policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config).
+	// Lifecycle Configuration (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config).
 	//
 	// The response will also include the x-amz-abort-rule-id header that will provide
 	// the ID of the lifecycle configuration rule that defines this action.
+	//
+	// This functionality is not supported for directory buckets.
 	AbortDate *time.Time `location:"header" locationName:"x-amz-abort-date" type:"timestamp"`
 
 	// This header is returned along with the x-amz-abort-date header. It identifies
 	// applicable lifecycle configuration rule that defines the action to abort
 	// incomplete multipart uploads.
+	//
+	// This functionality is not supported for directory buckets.
 	AbortRuleId *string `location:"header" locationName:"x-amz-abort-rule-id" type:"string"`
 
 	// The name of the bucket to which the multipart upload was initiated. Does
@@ -28452,11 +31321,13 @@ type ListPartsOutput struct {
 	// Container element that identifies the object owner, after the object is created.
 	// If multipart upload is initiated by an IAM user, this element provides the
 	// parent account ID and display name.
+	//
+	// Directory buckets - The bucket owner is returned as the object owner for
+	// all the parts.
 	Owner *Owner `type:"structure"`
 
-	// When a list is truncated, this element specifies the last part in the list,
-	// as well as the value to use for the part-number-marker request parameter
-	// in a subsequent request.
+	// Specifies the part after which listing should begin. Only parts with higher
+	// part numbers will be listed.
 	PartNumberMarker *int64 `type:"integer"`
 
 	// Container for elements related to a particular part. A response can contain
@@ -28465,10 +31336,14 @@ type ListPartsOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
-	// Class of storage (STANDARD or REDUCED_REDUNDANCY) used to store the uploaded
-	// object.
+	// The class of storage used to store the uploaded object.
+	//
+	// Directory buckets - Only the S3 Express One Zone storage class is supported
+	// by directory buckets to store objects.
 	StorageClass *string `type:"string" enum:"StorageClass"`
 
 	// Upload ID identifying the multipart upload whose parts are being listed.
@@ -28726,6 +31601,56 @@ func (s *Location) SetUserMetadata(v []*MetadataEntry) *Location {
 	return s
 }
 
+// Specifies the location where the bucket will be created.
+//
+// For directory buckets, the location type is Availability Zone. For more information
+// about directory buckets, see Directory buckets (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-buckets-overview.html)
+// in the Amazon S3 User Guide.
+//
+// This functionality is only supported by directory buckets.
+type LocationInfo struct {
+	_ struct{} `type:"structure"`
+
+	// The name of the location where the bucket will be created.
+	//
+	// For directory buckets, the name of the location is the AZ ID of the Availability
+	// Zone where the bucket will be created. An example AZ ID value is usw2-az1.
+	Name *string `type:"string"`
+
+	// The type of location where the bucket will be created.
+	Type *string `type:"string" enum:"LocationType"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s LocationInfo) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s LocationInfo) GoString() string {
+	return s.String()
+}
+
+// SetName sets the Name field's value.
+func (s *LocationInfo) SetName(v string) *LocationInfo {
+	s.Name = &v
+	return s
+}
+
+// SetType sets the Type field's value.
+func (s *LocationInfo) SetType(v string) *LocationInfo {
+	s.Type = &v
+	return s
+}
+
 // Describes where logs are stored and the prefix that Amazon S3 assigns to
 // all log object keys for a bucket. For more information, see PUT Bucket logging
 // (https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketPUTlogging.html)
@@ -28750,6 +31675,9 @@ type LoggingEnabled struct {
 	// log delivery (https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-server-access-logging.html#grant-log-delivery-permissions-general)
 	// in the Amazon S3 User Guide.
 	TargetGrants []*TargetGrant `locationNameList:"Grant" type:"list"`
+
+	// Amazon S3 key format for log objects.
+	TargetObjectKeyFormat *TargetObjectKeyFormat `type:"structure"`
 
 	// A prefix for all log object keys. If you store log files from multiple Amazon
 	// S3 buckets in a single bucket, you can use a prefix to distinguish which
@@ -28815,6 +31743,12 @@ func (s *LoggingEnabled) SetTargetGrants(v []*TargetGrant) *LoggingEnabled {
 	return s
 }
 
+// SetTargetObjectKeyFormat sets the TargetObjectKeyFormat field's value.
+func (s *LoggingEnabled) SetTargetObjectKeyFormat(v *TargetObjectKeyFormat) *LoggingEnabled {
+	s.TargetObjectKeyFormat = v
+	return s
+}
+
 // SetTargetPrefix sets the TargetPrefix field's value.
 func (s *LoggingEnabled) SetTargetPrefix(v string) *LoggingEnabled {
 	s.TargetPrefix = &v
@@ -28825,10 +31759,10 @@ func (s *LoggingEnabled) SetTargetPrefix(v string) *LoggingEnabled {
 type MetadataEntry struct {
 	_ struct{} `type:"structure"`
 
-	// Name of the Object.
+	// Name of the object.
 	Name *string `type:"string"`
 
-	// Value of the Object.
+	// Value of the object.
 	Value *string `type:"string"`
 }
 
@@ -29006,7 +31940,8 @@ type MetricsConfiguration struct {
 	// prefix, an object tag, an access point ARN, or a conjunction (MetricsAndOperator).
 	Filter *MetricsFilter `type:"structure"`
 
-	// The ID used to identify the metrics configuration.
+	// The ID used to identify the metrics configuration. The ID has a 64 character
+	// limit and can only contain letters, numbers, periods, dashes, and underscores.
 	//
 	// Id is a required field
 	Id *string `type:"string" required:"true"`
@@ -29161,9 +32096,15 @@ type MultipartUpload struct {
 	Key *string `min:"1" type:"string"`
 
 	// Specifies the owner of the object that is part of the multipart upload.
+	//
+	// Directory buckets - The bucket owner is returned as the object owner for
+	// all the objects.
 	Owner *Owner `type:"structure"`
 
 	// The class of storage used to store the object.
+	//
+	// Directory buckets - Only the S3 Express One Zone storage class is supported
+	// by directory buckets to store objects.
 	StorageClass *string `type:"string" enum:"StorageClass"`
 
 	// Upload ID that identifies the multipart upload.
@@ -29238,9 +32179,10 @@ func (s *MultipartUpload) SetUploadId(v string) *MultipartUpload {
 type NoncurrentVersionExpiration struct {
 	_ struct{} `type:"structure"`
 
-	// Specifies how many noncurrent versions Amazon S3 will retain. If there are
-	// this many more recent noncurrent versions, Amazon S3 will take the associated
-	// action. For more information about noncurrent versions, see Lifecycle configuration
+	// Specifies how many newer noncurrent versions must exist before Amazon S3
+	// can perform the associated action on a given version. If there are this many
+	// more recent noncurrent versions, Amazon S3 will take the associated action.
+	// For more information about noncurrent versions, see Lifecycle configuration
 	// elements (https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html)
 	// in the Amazon S3 User Guide.
 	NewerNoncurrentVersions *int64 `type:"integer"`
@@ -29293,9 +32235,10 @@ func (s *NoncurrentVersionExpiration) SetNoncurrentDays(v int64) *NoncurrentVers
 type NoncurrentVersionTransition struct {
 	_ struct{} `type:"structure"`
 
-	// Specifies how many noncurrent versions Amazon S3 will retain. If there are
-	// this many more recent noncurrent versions, Amazon S3 will take the associated
-	// action. For more information about noncurrent versions, see Lifecycle configuration
+	// Specifies how many newer noncurrent versions must exist before Amazon S3
+	// can perform the associated action on a given version. If there are this many
+	// more recent noncurrent versions, Amazon S3 will take the associated action.
+	// For more information about noncurrent versions, see Lifecycle configuration
 	// elements (https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html)
 	// in the Amazon S3 User Guide.
 	NewerNoncurrentVersions *int64 `type:"integer"`
@@ -29504,7 +32447,8 @@ func (s *NotificationConfigurationDeprecated) SetTopicConfiguration(v *TopicConf
 }
 
 // Specifies object key name filtering rules. For information about key name
-// filtering, see Configuring Event Notifications (https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+// filtering, see Configuring event notifications using object key name filtering
+// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-filtering.html)
 // in the Amazon S3 User Guide.
 type NotificationConfigurationFilter struct {
 	_ struct{} `type:"structure"`
@@ -29564,6 +32508,8 @@ type Object struct {
 	//    encryption. If an object is larger than 16 MB, the Amazon Web Services
 	//    Management Console will upload or copy that object as a Multipart Upload,
 	//    and therefore the ETag will not be an MD5 digest.
+	//
+	// Directory buckets - MD5 is not supported by directory buckets.
 	ETag *string `type:"string"`
 
 	// The name that you assign to an object. You use the object key to retrieve
@@ -29574,12 +32520,27 @@ type Object struct {
 	LastModified *time.Time `type:"timestamp"`
 
 	// The owner of the object
+	//
+	// Directory buckets - The bucket owner is returned as the object owner.
 	Owner *Owner `type:"structure"`
 
+	// Specifies the restoration status of an object. Objects in certain storage
+	// classes must be restored before they can be retrieved. For more information
+	// about these storage classes and how to work with archived objects, see Working
+	// with archived objects (https://docs.aws.amazon.com/AmazonS3/latest/userguide/archived-objects.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets. Only the S3 Express
+	// One Zone storage class is supported by directory buckets to store objects.
+	RestoreStatus *RestoreStatus `type:"structure"`
+
 	// Size in bytes of the object
-	Size *int64 `type:"integer"`
+	Size *int64 `type:"long"`
 
 	// The class of storage used to store the object.
+	//
+	// Directory buckets - Only the S3 Express One Zone storage class is supported
+	// by directory buckets to store objects.
 	StorageClass *string `type:"string" enum:"ObjectStorageClass"`
 }
 
@@ -29631,6 +32592,12 @@ func (s *Object) SetOwner(v *Owner) *Object {
 	return s
 }
 
+// SetRestoreStatus sets the RestoreStatus field's value.
+func (s *Object) SetRestoreStatus(v *RestoreStatus) *Object {
+	s.RestoreStatus = v
+	return s
+}
+
 // SetSize sets the Size field's value.
 func (s *Object) SetSize(v int64) *Object {
 	s.Size = &v
@@ -29656,7 +32623,9 @@ type ObjectIdentifier struct {
 	// Key is a required field
 	Key *string `min:"1" type:"string" required:"true"`
 
-	// VersionId for the specific version of the object to delete.
+	// Version ID for the specific version of the object to delete.
+	//
+	// This functionality is not supported for directory buckets.
 	VersionId *string `type:"string"`
 }
 
@@ -29871,26 +32840,32 @@ type ObjectPart struct {
 	ChecksumCRC32 *string `type:"string"`
 
 	// The base64-encoded, 32-bit CRC32C checksum of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32C *string `type:"string"`
 
 	// The base64-encoded, 160-bit SHA-1 digest of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use the API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA1 *string `type:"string"`
 
 	// The base64-encoded, 256-bit SHA-256 digest of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA256 *string `type:"string"`
 
@@ -29899,7 +32874,7 @@ type ObjectPart struct {
 	PartNumber *int64 `type:"integer"`
 
 	// The size of the uploaded part in bytes.
-	Size *int64 `type:"integer"`
+	Size *int64 `type:"long"`
 }
 
 // String returns the string representation.
@@ -29973,14 +32948,21 @@ type ObjectVersion struct {
 	// The object key.
 	Key *string `min:"1" type:"string"`
 
-	// Date and time the object was last modified.
+	// Date and time when the object was last modified.
 	LastModified *time.Time `type:"timestamp"`
 
 	// Specifies the owner of the object.
 	Owner *Owner `type:"structure"`
 
+	// Specifies the restoration status of an object. Objects in certain storage
+	// classes must be restored before they can be retrieved. For more information
+	// about these storage classes and how to work with archived objects, see Working
+	// with archived objects (https://docs.aws.amazon.com/AmazonS3/latest/userguide/archived-objects.html)
+	// in the Amazon S3 User Guide.
+	RestoreStatus *RestoreStatus `type:"structure"`
+
 	// Size in bytes of the object.
-	Size *int64 `type:"integer"`
+	Size *int64 `type:"long"`
 
 	// The class of storage used to store the object.
 	StorageClass *string `type:"string" enum:"ObjectVersionStorageClass"`
@@ -30040,6 +33022,12 @@ func (s *ObjectVersion) SetLastModified(v time.Time) *ObjectVersion {
 // SetOwner sets the Owner field's value.
 func (s *ObjectVersion) SetOwner(v *Owner) *ObjectVersion {
 	s.Owner = v
+	return s
+}
+
+// SetRestoreStatus sets the RestoreStatus field's value.
+func (s *ObjectVersion) SetRestoreStatus(v *RestoreStatus) *ObjectVersion {
+	s.RestoreStatus = v
 	return s
 }
 
@@ -30153,7 +33141,26 @@ func (s *OutputSerialization) SetJSON(v *JSONOutput) *OutputSerialization {
 type Owner struct {
 	_ struct{} `type:"structure"`
 
-	// Container for the display name of the owner.
+	// Container for the display name of the owner. This value is only supported
+	// in the following Amazon Web Services Regions:
+	//
+	//    * US East (N. Virginia)
+	//
+	//    * US West (N. California)
+	//
+	//    * US West (Oregon)
+	//
+	//    * Asia Pacific (Singapore)
+	//
+	//    * Asia Pacific (Sydney)
+	//
+	//    * Asia Pacific (Tokyo)
+	//
+	//    * Europe (Ireland)
+	//
+	//    * South America (São Paulo)
+	//
+	// This functionality is not supported for directory buckets.
 	DisplayName *string `type:"string"`
 
 	// Container for the ID of the owner.
@@ -30263,8 +33270,19 @@ type OwnershipControlsRule struct {
 	// BucketOwnerEnforced - Access control lists (ACLs) are disabled and no longer
 	// affect permissions. The bucket owner automatically owns and has full control
 	// over every object in the bucket. The bucket only accepts PUT requests that
-	// don't specify an ACL or bucket owner full control ACLs, such as the bucket-owner-full-control
-	// canned ACL or an equivalent form of this ACL expressed in the XML format.
+	// don't specify an ACL or specify bucket owner full control ACLs (such as the
+	// predefined bucket-owner-full-control canned ACL or a custom ACL in XML format
+	// that grants the same permissions).
+	//
+	// By default, ObjectOwnership is set to BucketOwnerEnforced and ACLs are disabled.
+	// We recommend keeping ACLs disabled, except in uncommon use cases where you
+	// must control access for each object individually. For more information about
+	// S3 Object Ownership, see Controlling ownership of objects and disabling ACLs
+	// for your bucket (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets. Directory buckets
+	// use the bucket owner enforced setting for S3 Object Ownership.
 	//
 	// ObjectOwnership is a required field
 	ObjectOwnership *string `type:"string" required:"true" enum:"ObjectOwnership"`
@@ -30342,18 +33360,22 @@ type Part struct {
 	ChecksumCRC32 *string `type:"string"`
 
 	// The base64-encoded, 32-bit CRC32C checksum of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32C *string `type:"string"`
 
 	// The base64-encoded, 160-bit SHA-1 digest of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use the API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA1 *string `type:"string"`
 
@@ -30375,7 +33397,7 @@ type Part struct {
 	PartNumber *int64 `type:"integer"`
 
 	// Size in bytes of the uploaded part data.
-	Size *int64 `type:"integer"`
+	Size *int64 `type:"long"`
 }
 
 // String returns the string representation.
@@ -30441,6 +33463,44 @@ func (s *Part) SetPartNumber(v int64) *Part {
 // SetSize sets the Size field's value.
 func (s *Part) SetSize(v int64) *Part {
 	s.Size = &v
+	return s
+}
+
+// Amazon S3 keys for log objects are partitioned in the following format:
+//
+// [DestinationPrefix][SourceAccountId]/[SourceRegion]/[SourceBucket]/[YYYY]/[MM]/[DD]/[YYYY]-[MM]-[DD]-[hh]-[mm]-[ss]-[UniqueString]
+//
+// PartitionedPrefix defaults to EventTime delivery when server access logs
+// are delivered.
+type PartitionedPrefix struct {
+	_ struct{} `locationName:"PartitionedPrefix" type:"structure"`
+
+	// Specifies the partition date source for the partitioned prefix. PartitionDateSource
+	// can be EventTime or DeliveryTime.
+	PartitionDateSource *string `type:"string" enum:"PartitionDateSource"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s PartitionedPrefix) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s PartitionedPrefix) GoString() string {
+	return s.String()
+}
+
+// SetPartitionDateSource sets the PartitionDateSource field's value.
+func (s *PartitionedPrefix) SetPartitionDateSource(v string) *PartitionedPrefix {
+	s.PartitionDateSource = &v
 	return s
 }
 
@@ -30691,12 +33751,12 @@ type PutBucketAccelerateConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -30708,9 +33768,9 @@ type PutBucketAccelerateConfigurationInput struct {
 	// must be populated with the algorithm's checksum of the request payload.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -30845,12 +33905,12 @@ type PutBucketAclInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -30866,9 +33926,9 @@ type PutBucketAclInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Allows grantee the read, write, read ACP, and write ACP permissions on the
@@ -31059,9 +34119,9 @@ type PutBucketAnalyticsConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The ID that identifies the analytics configuration.
@@ -31211,12 +34271,12 @@ type PutBucketCorsInput struct {
 	// CORSConfiguration is a required field
 	CORSConfiguration *CORSConfiguration `locationName:"CORSConfiguration" type:"structure" required:"true" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -31232,9 +34292,9 @@ type PutBucketCorsInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -31364,20 +34424,23 @@ type PutBucketEncryptionInput struct {
 	_ struct{} `locationName:"PutBucketEncryptionRequest" type:"structure" payload:"ServerSideEncryptionConfiguration"`
 
 	// Specifies default encryption for a bucket using server-side encryption with
-	// Amazon S3-managed keys (SSE-S3) or customer managed keys (SSE-KMS). For information
-	// about the Amazon S3 default encryption feature, see Amazon S3 Default Bucket
-	// Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html)
+	// different key options. By default, all buckets have a default encryption
+	// configuration that uses server-side encryption with Amazon S3 managed keys
+	// (SSE-S3). You can optionally configure default encryption for a bucket by
+	// using server-side encryption with an Amazon Web Services KMS key (SSE-KMS)
+	// or a customer-provided key (SSE-C). For information about the bucket default
+	// encryption feature, see Amazon S3 Bucket Default Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -31393,9 +34456,9 @@ type PutBucketEncryptionInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Specifies the default server-side-encryption configuration.
@@ -31673,9 +34736,9 @@ type PutBucketInventoryConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The ID used to identify the inventory configuration.
@@ -31822,12 +34885,12 @@ type PutBucketLifecycleConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -31843,9 +34906,9 @@ type PutBucketLifecycleConfigurationInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Container for lifecycle rules. You can add as many as 1,000 rules.
@@ -31977,12 +35040,12 @@ type PutBucketLifecycleInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -31998,12 +35061,15 @@ type PutBucketLifecycleInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Container for lifecycle rules. You can add as many as 1000 rules.
+	//
+	// For more information see, Managing your storage lifecycle (https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html)
+	// in the Amazon S3 User Guide.
 	LifecycleConfiguration *LifecycleConfiguration `locationName:"LifecycleConfiguration" type:"structure" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
 }
 
@@ -32139,12 +35205,12 @@ type PutBucketLoggingInput struct {
 	// BucketLoggingStatus is a required field
 	BucketLoggingStatus *BucketLoggingStatus `locationName:"BucketLoggingStatus" type:"structure" required:"true" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -32160,9 +35226,9 @@ type PutBucketLoggingInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 }
 
@@ -32296,12 +35362,13 @@ type PutBucketMetricsConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
-	// The ID used to identify the metrics configuration.
+	// The ID used to identify the metrics configuration. The ID has a 64 character
+	// limit and can only contain letters, numbers, periods, dashes, and underscores.
 	//
 	// Id is a required field
 	Id *string `location:"querystring" locationName:"id" type:"string" required:"true"`
@@ -32445,9 +35512,9 @@ type PutBucketNotificationConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// A container for specifying the notification configuration of the bucket.
@@ -32591,12 +35658,12 @@ type PutBucketNotificationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -32612,9 +35679,9 @@ type PutBucketNotificationInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The container for the configuration.
@@ -32748,9 +35815,9 @@ type PutBucketOwnershipControlsInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The OwnershipControls (BucketOwnerEnforced, BucketOwnerPreferred, or ObjectWriter)
@@ -32881,19 +35948,45 @@ type PutBucketPolicyInput struct {
 
 	// The name of the bucket.
 	//
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use path-style requests in the format https://s3express-control.region_code.amazonaws.com/bucket-name
+	// . Virtual-hosted-style requests aren't supported. Directory bucket names
+	// must be unique in the chosen Availability Zone. Bucket names must also follow
+	// the format bucket_base_name--az_id--x-s3 (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3).
+	// For information about bucket naming restrictions, see Directory bucket naming
+	// rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide
+	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum-algorithm or x-amz-trailer header sent. Otherwise, Amazon
+	// S3 fails the request with the HTTP status code 400 Bad Request.
+	//
+	// For the x-amz-checksum-algorithm header, replace algorithm with the supported
+	// algorithm from the following list:
+	//
+	//    * CRC32
+	//
+	//    * CRC32C
+	//
+	//    * SHA1
+	//
+	//    * SHA256
+	//
+	// For more information, see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
-	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
-	// parameter.
+	// If the individual checksum value you provide through x-amz-checksum-algorithm
+	// doesn't match the checksum algorithm you set through x-amz-sdk-checksum-algorithm,
+	// Amazon S3 ignores any provided ChecksumAlgorithm parameter and uses the checksum
+	// algorithm that matches the provided value in x-amz-checksum-algorithm .
+	//
+	// For directory buckets, when you use Amazon Web Services SDKs, CRC32 is the
+	// default checksum algorithm that's used for performance.
 	//
 	// The AWS SDK for Go v1 does not support automatic computing request payload
 	// checksum. This feature is available in the AWS SDK for Go v2. If a value
@@ -32907,14 +36000,23 @@ type PutBucketPolicyInput struct {
 
 	// Set this parameter to true to confirm that you want to remove your permissions
 	// to change this bucket policy in the future.
+	//
+	// This functionality is not supported for directory buckets.
 	ConfirmRemoveSelfBucketAccess *bool `location:"header" locationName:"x-amz-confirm-remove-self-bucket-access" type:"boolean"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
+	//
+	// For directory buckets, this header is not supported in this API operation.
+	// If you specify this header, the request fails with the HTTP status code 501
+	// Not Implemented.
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The bucket policy as a JSON document.
+	//
+	// For directory buckets, the only IAM action supported in the bucket policy
+	// is s3express:CreateSession.
 	//
 	// Policy is a required field
 	Policy *string `type:"string" required:"true"`
@@ -33051,12 +36153,12 @@ type PutBucketReplicationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -33072,9 +36174,9 @@ type PutBucketReplicationInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// A container for replication rules. You can add up to 1,000 rules. The maximum
@@ -33223,12 +36325,12 @@ type PutBucketRequestPaymentInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -33244,9 +36346,9 @@ type PutBucketRequestPaymentInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Container for Payer.
@@ -33385,12 +36487,12 @@ type PutBucketTaggingInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -33406,9 +36508,9 @@ type PutBucketTaggingInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Container for the TagSet and Tag elements.
@@ -33547,12 +36649,12 @@ type PutBucketVersioningInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -33568,9 +36670,9 @@ type PutBucketVersioningInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The concatenation of the authentication device's serial number, a space,
@@ -33714,12 +36816,12 @@ type PutBucketWebsiteInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -33735,9 +36837,9 @@ type PutBucketWebsiteInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Container for the request.
@@ -33881,22 +36983,33 @@ type PutObjectAclInput struct {
 	// The bucket name that contains the object to which you want to attach the
 	// ACL.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// in the Amazon S3 User Guide.
+	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -33912,25 +37025,25 @@ type PutObjectAclInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Allows grantee the read, write, read ACP, and write ACP permissions on the
 	// bucket.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	// This functionality is not supported for Amazon S3 on Outposts.
 	GrantFullControl *string `location:"header" locationName:"x-amz-grant-full-control" type:"string"`
 
 	// Allows grantee to list the objects in the bucket.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	// This functionality is not supported for Amazon S3 on Outposts.
 	GrantRead *string `location:"header" locationName:"x-amz-grant-read" type:"string"`
 
 	// Allows grantee to read the bucket ACL.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	// This functionality is not supported for Amazon S3 on Outposts.
 	GrantReadACP *string `location:"header" locationName:"x-amz-grant-read-acp" type:"string"`
 
 	// Allows grantee to create new objects in the bucket.
@@ -33941,37 +37054,28 @@ type PutObjectAclInput struct {
 
 	// Allows grantee to write the ACL for the applicable bucket.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	// This functionality is not supported for Amazon S3 on Outposts.
 	GrantWriteACP *string `location:"header" locationName:"x-amz-grant-write-acp" type:"string"`
 
 	// Key for which the PUT action was initiated.
-	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
-	// When using this action with an access point through the Amazon Web Services
-	// SDKs, you provide the access point ARN in place of the bucket name. For more
-	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
-	// in the Amazon S3 User Guide.
-	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
-	// in the Amazon S3 User Guide.
 	//
 	// Key is a required field
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
-	// VersionId used to reference a specific version of the object.
+	// Version ID used to reference a specific version of the object.
+	//
+	// This functionality is not supported for directory buckets.
 	VersionId *string `location:"querystring" locationName:"versionId" type:"string"`
 }
 
@@ -34137,6 +37241,8 @@ type PutObjectAclOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 }
 
@@ -34168,9 +37274,32 @@ type PutObjectInput struct {
 	_ struct{} `locationName:"PutObjectRequest" type:"structure" payload:"Body"`
 
 	// The canned ACL to apply to the object. For more information, see Canned ACL
-	// (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#CannedACL).
+	// (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#CannedACL)
+	// in the Amazon S3 User Guide.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	// When adding a new object, you can use headers to grant ACL-based permissions
+	// to individual Amazon Web Services accounts or to predefined groups defined
+	// by Amazon S3. These permissions are then added to the ACL on the object.
+	// By default, all objects are private. Only the owner has full access control.
+	// For more information, see Access Control List (ACL) Overview (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html)
+	// and Managing ACLs Using the REST API (https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-using-rest-api.html)
+	// in the Amazon S3 User Guide.
+	//
+	// If the bucket that you're uploading objects to uses the bucket owner enforced
+	// setting for S3 Object Ownership, ACLs are disabled and no longer affect permissions.
+	// Buckets that use this setting only accept PUT requests that don't specify
+	// an ACL or PUT requests that specify bucket owner full control ACLs, such
+	// as the bucket-owner-full-control canned ACL or an equivalent form of this
+	// ACL expressed in the XML format. PUT requests that contain other ACLs (for
+	// example, custom grants to certain Amazon Web Services accounts) fail and
+	// return a 400 error with the error code AccessControlListNotSupported. For
+	// more information, see Controlling ownership of objects and disabling ACLs
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html)
+	// in the Amazon S3 User Guide.
+	//
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	ACL *string `location:"header" locationName:"x-amz-acl" type:"string" enum:"ObjectCannedACL"`
 
 	// Object data.
@@ -34178,31 +37307,47 @@ type PutObjectInput struct {
 
 	// The bucket name to which the PUT action was initiated.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
 	// Specifies whether Amazon S3 should use an S3 Bucket Key for object encryption
-	// with server-side encryption using AWS KMS (SSE-KMS). Setting this header
-	// to true causes Amazon S3 to use an S3 Bucket Key for object encryption with
-	// SSE-KMS.
+	// with server-side encryption using Key Management Service (KMS) keys (SSE-KMS).
+	// Setting this header to true causes Amazon S3 to use an S3 Bucket Key for
+	// object encryption with SSE-KMS.
 	//
 	// Specifying this header with a PUT action doesn’t affect bucket-level settings
 	// for S3 Bucket Key.
+	//
+	// This functionality is not supported for directory buckets.
 	BucketKeyEnabled *bool `location:"header" locationName:"x-amz-server-side-encryption-bucket-key-enabled" type:"boolean"`
 
 	// Can be used to specify caching behavior along the request/reply chain. For
@@ -34210,16 +37355,33 @@ type PutObjectInput struct {
 	// (http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9).
 	CacheControl *string `location:"header" locationName:"Cache-Control" type:"string"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum-algorithm or x-amz-trailer header sent. Otherwise, Amazon
+	// S3 fails the request with the HTTP status code 400 Bad Request.
+	//
+	// For the x-amz-checksum-algorithm header, replace algorithm with the supported
+	// algorithm from the following list:
+	//
+	//    * CRC32
+	//
+	//    * CRC32C
+	//
+	//    * SHA1
+	//
+	//    * SHA256
+	//
+	// For more information, see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
-	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
-	// parameter.
+	// If the individual checksum value you provide through x-amz-checksum-algorithm
+	// doesn't match the checksum algorithm you set through x-amz-sdk-checksum-algorithm,
+	// Amazon S3 ignores any provided ChecksumAlgorithm parameter and uses the checksum
+	// algorithm that matches the provided value in x-amz-checksum-algorithm .
+	//
+	// For directory buckets, when you use Amazon Web Services SDKs, CRC32 is the
+	// default checksum algorithm that's used for performance.
 	//
 	// The AWS SDK for Go v1 does not support automatic computing request payload
 	// checksum. This feature is available in the AWS SDK for Go v2. If a value
@@ -34256,21 +37418,21 @@ type PutObjectInput struct {
 	ChecksumSHA256 *string `location:"header" locationName:"x-amz-checksum-sha256" type:"string"`
 
 	// Specifies presentational information for the object. For more information,
-	// see http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html#sec19.5.1 (http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html#sec19.5.1).
+	// see https://www.rfc-editor.org/rfc/rfc6266#section-4 (https://www.rfc-editor.org/rfc/rfc6266#section-4).
 	ContentDisposition *string `location:"header" locationName:"Content-Disposition" type:"string"`
 
 	// Specifies what content encodings have been applied to the object and thus
 	// what decoding mechanisms must be applied to obtain the media-type referenced
-	// by the Content-Type header field. For more information, see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.11
-	// (http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.11).
+	// by the Content-Type header field. For more information, see https://www.rfc-editor.org/rfc/rfc9110.html#field.content-encoding
+	// (https://www.rfc-editor.org/rfc/rfc9110.html#field.content-encoding).
 	ContentEncoding *string `location:"header" locationName:"Content-Encoding" type:"string"`
 
 	// The language the content is in.
 	ContentLanguage *string `location:"header" locationName:"Content-Language" type:"string"`
 
 	// Size of the body in bytes. This parameter is useful when the size of the
-	// body cannot be determined automatically. For more information, see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.13
-	// (http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.13).
+	// body cannot be determined automatically. For more information, see https://www.rfc-editor.org/rfc/rfc9110.html#name-content-length
+	// (https://www.rfc-editor.org/rfc/rfc9110.html#name-content-length).
 	ContentLength *int64 `location:"header" locationName:"Content-Length" type:"long"`
 
 	// The base64-encoded 128-bit MD5 digest of the message (without the headers)
@@ -34279,39 +37441,54 @@ type PutObjectInput struct {
 	// it is optional, we recommend using the Content-MD5 mechanism as an end-to-end
 	// integrity check. For more information about REST request authentication,
 	// see REST Authentication (https://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html).
+	//
+	// The Content-MD5 header is required for any request to upload an object with
+	// a retention period configured using Amazon S3 Object Lock. For more information
+	// about Amazon S3 Object Lock, see Amazon S3 Object Lock Overview (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock-overview.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	ContentMD5 *string `location:"header" locationName:"Content-MD5" type:"string"`
 
 	// A standard MIME type describing the format of the contents. For more information,
-	// see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.17 (http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.17).
+	// see https://www.rfc-editor.org/rfc/rfc9110.html#name-content-type (https://www.rfc-editor.org/rfc/rfc9110.html#name-content-type).
 	ContentType *string `location:"header" locationName:"Content-Type" type:"string"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The date and time at which the object is no longer cacheable. For more information,
-	// see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.21 (http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.21).
+	// see https://www.rfc-editor.org/rfc/rfc7234#section-5.3 (https://www.rfc-editor.org/rfc/rfc7234#section-5.3).
 	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp"`
 
 	// Gives the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	GrantFullControl *string `location:"header" locationName:"x-amz-grant-full-control" type:"string"`
 
 	// Allows grantee to read the object data and its metadata.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	GrantRead *string `location:"header" locationName:"x-amz-grant-read" type:"string"`
 
 	// Allows grantee to read the object ACL.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	GrantReadACP *string `location:"header" locationName:"x-amz-grant-read-acp" type:"string"`
 
 	// Allows grantee to write the ACL for the applicable object.
 	//
-	// This action is not supported by Amazon S3 on Outposts.
+	//    * This functionality is not supported for directory buckets.
+	//
+	//    * This functionality is not supported for Amazon S3 on Outposts.
 	GrantWriteACP *string `location:"header" locationName:"x-amz-grant-write-acp" type:"string"`
 
 	// Object key for which the PUT action was initiated.
@@ -34323,25 +37500,37 @@ type PutObjectInput struct {
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
 
 	// Specifies whether a legal hold will be applied to this object. For more information
-	// about S3 Object Lock, see Object Lock (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock.html).
+	// about S3 Object Lock, see Object Lock (https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockLegalHoldStatus *string `location:"header" locationName:"x-amz-object-lock-legal-hold" type:"string" enum:"ObjectLockLegalHoldStatus"`
 
 	// The Object Lock mode that you want to apply to this object.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockMode *string `location:"header" locationName:"x-amz-object-lock-mode" type:"string" enum:"ObjectLockMode"`
 
 	// The date and time when you want this object's Object Lock to expire. Must
 	// be formatted as a timestamp parameter.
+	//
+	// This functionality is not supported for directory buckets.
 	ObjectLockRetainUntilDate *time.Time `location:"header" locationName:"x-amz-object-lock-retain-until-date" type:"timestamp" timestampFormat:"iso8601"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
-	// Specifies the algorithm to use to when encrypting the object (for example,
-	// AES256).
+	// Specifies the algorithm to use when encrypting the object (for example, AES256).
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// Specifies the customer-provided encryption key for Amazon S3 to use in encrypting
@@ -34349,6 +37538,8 @@ type PutObjectInput struct {
 	// S3 does not store the encryption key. The key must be appropriate for use
 	// with the algorithm specified in the x-amz-server-side-encryption-customer-algorithm
 	// header.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSECustomerKey is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by PutObjectInput's
@@ -34358,51 +37549,81 @@ type PutObjectInput struct {
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure that the
 	// encryption key was transmitted without error.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// Specifies the Amazon Web Services KMS Encryption Context to use for object
 	// encryption. The value of this header is a base64-encoded UTF-8 string holding
-	// JSON with the encryption context key-value pairs.
+	// JSON with the encryption context key-value pairs. This value is stored as
+	// object metadata and automatically gets passed on to Amazon Web Services KMS
+	// for future GetObject or CopyObject operations on this object. This value
+	// must be explicitly added during CopyObject operations.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSEncryptionContext is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by PutObjectInput's
 	// String and GoString methods.
 	SSEKMSEncryptionContext *string `location:"header" locationName:"x-amz-server-side-encryption-context" type:"string" sensitive:"true"`
 
-	// If x-amz-server-side-encryption is present and has the value of aws:kms,
-	// this header specifies the ID of the Amazon Web Services Key Management Service
-	// (Amazon Web Services KMS) symmetrical customer managed key that was used
-	// for the object. If you specify x-amz-server-side-encryption:aws:kms, but
-	// do not providex-amz-server-side-encryption-aws-kms-key-id, Amazon S3 uses
-	// the Amazon Web Services managed key to protect the data. If the KMS key does
-	// not exist in the same account issuing the command, you must use the full
-	// ARN and not just the ID.
+	// If x-amz-server-side-encryption has a valid value of aws:kms or aws:kms:dsse,
+	// this header specifies the ID (Key ID, Key ARN, or Key Alias) of the Key Management
+	// Service (KMS) symmetric encryption customer managed key that was used for
+	// the object. If you specify x-amz-server-side-encryption:aws:kms or x-amz-server-side-encryption:aws:kms:dsse,
+	// but do not providex-amz-server-side-encryption-aws-kms-key-id, Amazon S3
+	// uses the Amazon Web Services managed key (aws/s3) to protect the data. If
+	// the KMS key does not exist in the same account that's issuing the command,
+	// you must use the full ARN and not just the ID.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSKeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by PutObjectInput's
 	// String and GoString methods.
 	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
 
-	// The server-side encryption algorithm used when storing this object in Amazon
-	// S3 (for example, AES256, aws:kms).
+	// The server-side encryption algorithm that was used when you store this object
+	// in Amazon S3 (for example, AES256, aws:kms, aws:kms:dsse).
+	//
+	// General purpose buckets - You have four mutually exclusive options to protect
+	// data using server-side encryption in Amazon S3, depending on how you choose
+	// to manage the encryption keys. Specifically, the encryption key options are
+	// Amazon S3 managed keys (SSE-S3), Amazon Web Services KMS keys (SSE-KMS or
+	// DSSE-KMS), and customer-provided keys (SSE-C). Amazon S3 encrypts data with
+	// server-side encryption by using Amazon S3 managed keys (SSE-S3) by default.
+	// You can optionally tell Amazon S3 to encrypt data at rest by using server-side
+	// encryption with other key options. For more information, see Using Server-Side
+	// Encryption (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Directory buckets - For directory buckets, only the server-side encryption
+	// with Amazon S3 managed keys (SSE-S3) (AES256) value is supported.
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
 	// By default, Amazon S3 uses the STANDARD Storage Class to store newly created
 	// objects. The STANDARD storage class provides high durability and high availability.
 	// Depending on performance needs, you can specify a different Storage Class.
-	// Amazon S3 on Outposts only uses the OUTPOSTS Storage Class. For more information,
-	// see Storage Classes (https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html)
+	// For more information, see Storage Classes (https://docs.aws.amazon.com/AmazonS3/latest/dev/storage-class-intro.html)
 	// in the Amazon S3 User Guide.
+	//
+	//    * For directory buckets, only the S3 Express One Zone storage class is
+	//    supported to store newly created objects.
+	//
+	//    * Amazon S3 on Outposts only uses the OUTPOSTS Storage Class.
 	StorageClass *string `location:"header" locationName:"x-amz-storage-class" type:"string" enum:"StorageClass"`
 
 	// The tag-set for the object. The tag-set must be encoded as URL Query parameters.
 	// (For example, "Key1=Value1")
+	//
+	// This functionality is not supported for directory buckets.
 	Tagging *string `location:"header" locationName:"x-amz-tagging" type:"string"`
 
 	// If the bucket is configured as a website, redirects requests for this object
 	// to another object in the same bucket or to an external URL. Amazon S3 stores
 	// the value of this header in the object metadata. For information about object
-	// metadata, see Object Key and Metadata (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html).
+	// metadata, see Object Key and Metadata (https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html)
+	// in the Amazon S3 User Guide.
 	//
 	// In the following example, the request header sets the redirect to an object
 	// (anotherPage.html) in the same bucket:
@@ -34416,7 +37637,10 @@ type PutObjectInput struct {
 	//
 	// For more information about website hosting in Amazon S3, see Hosting Websites
 	// on Amazon S3 (https://docs.aws.amazon.com/AmazonS3/latest/dev/WebsiteHosting.html)
-	// and How to Configure Website Page Redirects (https://docs.aws.amazon.com/AmazonS3/latest/dev/how-to-page-redirect.html).
+	// and How to Configure Website Page Redirects (https://docs.aws.amazon.com/AmazonS3/latest/dev/how-to-page-redirect.html)
+	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	WebsiteRedirectLocation *string `location:"header" locationName:"x-amz-website-redirect-location" type:"string"`
 }
 
@@ -34729,8 +37953,10 @@ type PutObjectLegalHoldInput struct {
 	// The bucket name containing the object that you want to place a legal hold
 	// on.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
@@ -34739,12 +37965,12 @@ type PutObjectLegalHoldInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -34760,9 +37986,9 @@ type PutObjectLegalHoldInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The key name for the object that you want to place a legal hold on.
@@ -34775,10 +38001,14 @@ type PutObjectLegalHoldInput struct {
 	LegalHold *ObjectLockLegalHold `locationName:"LegalHold" type:"structure" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// The version ID of the object that you want to place a legal hold on.
@@ -34906,6 +38136,8 @@ type PutObjectLegalHoldOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 }
 
@@ -34941,12 +38173,12 @@ type PutObjectLockConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -34962,19 +38194,23 @@ type PutObjectLockConfigurationInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The Object Lock configuration that you want to apply to the specified bucket.
 	ObjectLockConfiguration *ObjectLockConfiguration `locationName:"ObjectLockConfiguration" type:"structure" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// A token to allow Object Lock to be enabled for an existing bucket.
@@ -35090,6 +38326,8 @@ type PutObjectLockConfigurationOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 }
 
@@ -35121,91 +38359,134 @@ type PutObjectOutput struct {
 	_ struct{} `type:"structure"`
 
 	// Indicates whether the uploaded object uses an S3 Bucket Key for server-side
-	// encryption with Amazon Web Services KMS (SSE-KMS).
+	// encryption with Key Management Service (KMS) keys (SSE-KMS).
+	//
+	// This functionality is not supported for directory buckets.
 	BucketKeyEnabled *bool `location:"header" locationName:"x-amz-server-side-encryption-bucket-key-enabled" type:"boolean"`
 
 	// The base64-encoded, 32-bit CRC32 checksum of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32 *string `location:"header" locationName:"x-amz-checksum-crc32" type:"string"`
 
 	// The base64-encoded, 32-bit CRC32C checksum of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32C *string `location:"header" locationName:"x-amz-checksum-crc32c" type:"string"`
 
 	// The base64-encoded, 160-bit SHA-1 digest of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use the API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA1 *string `location:"header" locationName:"x-amz-checksum-sha1" type:"string"`
 
 	// The base64-encoded, 256-bit SHA-256 digest of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA256 *string `location:"header" locationName:"x-amz-checksum-sha256" type:"string"`
 
 	// Entity tag for the uploaded object.
+	//
+	// General purpose buckets - To ensure that data is not corrupted traversing
+	// the network, for objects where the ETag is the MD5 digest of the object,
+	// you can calculate the MD5 while putting an object to Amazon S3 and compare
+	// the returned ETag to the calculated MD5 value.
+	//
+	// Directory buckets - The ETag for the object in a directory bucket isn't the
+	// MD5 digest of the object.
 	ETag *string `location:"header" locationName:"ETag" type:"string"`
 
 	// If the expiration is configured for the object (see PutBucketLifecycleConfiguration
-	// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html)),
-	// the response includes this header. It includes the expiry-date and rule-id
-	// key-value pairs that provide information about object expiration. The value
-	// of the rule-id is URL-encoded.
+	// (https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLifecycleConfiguration.html))
+	// in the Amazon S3 User Guide, the response includes this header. It includes
+	// the expiry-date and rule-id key-value pairs that provide information about
+	// object expiration. The value of the rule-id is URL-encoded.
+	//
+	// This functionality is not supported for directory buckets.
 	Expiration *string `location:"header" locationName:"x-amz-expiration" type:"string"`
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header confirming the encryption algorithm
-	// used.
+	// the response will include this header to confirm the encryption algorithm
+	// that's used.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header to provide round-trip message integrity
+	// the response will include this header to provide the round-trip message integrity
 	// verification of the customer-provided encryption key.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
-	// If present, specifies the Amazon Web Services KMS Encryption Context to use
+	// If present, indicates the Amazon Web Services KMS Encryption Context to use
 	// for object encryption. The value of this header is a base64-encoded UTF-8
-	// string holding JSON with the encryption context key-value pairs.
+	// string holding JSON with the encryption context key-value pairs. This value
+	// is stored as object metadata and automatically gets passed on to Amazon Web
+	// Services KMS for future GetObject or CopyObject operations on this object.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSEncryptionContext is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by PutObjectOutput's
 	// String and GoString methods.
 	SSEKMSEncryptionContext *string `location:"header" locationName:"x-amz-server-side-encryption-context" type:"string" sensitive:"true"`
 
-	// If x-amz-server-side-encryption is present and has the value of aws:kms,
-	// this header specifies the ID of the Amazon Web Services Key Management Service
-	// (Amazon Web Services KMS) symmetric customer managed key that was used for
-	// the object.
+	// If x-amz-server-side-encryption has a valid value of aws:kms or aws:kms:dsse,
+	// this header indicates the ID of the Key Management Service (KMS) symmetric
+	// encryption customer managed key that was used for the object.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSKeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by PutObjectOutput's
 	// String and GoString methods.
 	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
 
-	// If you specified server-side encryption either with an Amazon Web Services
-	// KMS key or Amazon S3-managed encryption key in your PUT request, the response
-	// includes this header. It confirms the encryption algorithm that Amazon S3
-	// used to encrypt the object.
+	// The server-side encryption algorithm used when you store this object in Amazon
+	// S3 (for example, AES256, aws:kms, aws:kms:dsse).
+	//
+	// For directory buckets, only server-side encryption with Amazon S3 managed
+	// keys (SSE-S3) (AES256) is supported.
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
-	// Version of the object.
+	// Version ID of the object.
+	//
+	// If you enable versioning for a bucket, Amazon S3 automatically generates
+	// a unique version ID for the object being stored. Amazon S3 returns this ID
+	// in the response. When you enable versioning for a bucket, if Amazon S3 receives
+	// multiple write requests for the same object simultaneously, it stores all
+	// of the objects. For more information about versioning, see Adding Objects
+	// to Versioning-Enabled Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/AddingObjectstoVersioningEnabledBuckets.html)
+	// in the Amazon S3 User Guide. For information about returning the versioning
+	// state of a bucket, see GetBucketVersioning (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketVersioning.html).
+	//
+	// This functionality is not supported for directory buckets.
 	VersionId *string `location:"header" locationName:"x-amz-version-id" type:"string"`
 }
 
@@ -35317,8 +38598,10 @@ type PutObjectRetentionInput struct {
 	// The bucket name that contains the object you want to apply this Object Retention
 	// configuration to.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
@@ -35330,12 +38613,12 @@ type PutObjectRetentionInput struct {
 	// Indicates whether this action should bypass Governance-mode restrictions.
 	BypassGovernanceRetention *bool `location:"header" locationName:"x-amz-bypass-governance-retention" type:"boolean"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -35351,9 +38634,9 @@ type PutObjectRetentionInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The key name for the object that you want to apply this Object Retention
@@ -35363,10 +38646,14 @@ type PutObjectRetentionInput struct {
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// The container element for the Object Retention configuration.
@@ -35504,6 +38791,8 @@ type PutObjectRetentionOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 }
 
@@ -35536,30 +38825,33 @@ type PutObjectTaggingInput struct {
 
 	// The bucket name containing the object.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -35575,9 +38867,9 @@ type PutObjectTaggingInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Name of the object key.
@@ -35586,10 +38878,14 @@ type PutObjectTaggingInput struct {
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// Container for the TagSet and Tag elements
@@ -35765,12 +39061,12 @@ type PutPublicAccessBlockInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -35786,9 +39082,9 @@ type PutPublicAccessBlockInput struct {
 	// to be used.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The PublicAccessBlock configuration that you want to apply to this Amazon
@@ -35929,7 +39225,8 @@ type QueueConfiguration struct {
 	Events []*string `locationName:"Event" type:"list" flattened:"true" required:"true" enum:"Event"`
 
 	// Specifies object key name filtering rules. For information about key name
-	// filtering, see Configuring Event Notifications (https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// filtering, see Configuring event notifications using object key name filtering
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-filtering.html)
 	// in the Amazon S3 User Guide.
 	Filter *NotificationConfigurationFilter `type:"structure"`
 
@@ -36922,30 +40219,33 @@ type RestoreObjectInput struct {
 
 	// The bucket name containing the object to restore.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -36957,9 +40257,9 @@ type RestoreObjectInput struct {
 	// must be populated with the algorithm's checksum of the request payload.
 	ChecksumAlgorithm *string `location:"header" locationName:"x-amz-sdk-checksum-algorithm" type:"string" enum:"ChecksumAlgorithm"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Object key for which the action was initiated.
@@ -36968,10 +40268,14 @@ type RestoreObjectInput struct {
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
 	// Container for restore job parameters.
@@ -37107,6 +40411,8 @@ type RestoreObjectOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
 	// Indicates the path in the provided S3 output location where Select results
@@ -37260,6 +40566,67 @@ func (s *RestoreRequest) SetType(v string) *RestoreRequest {
 	return s
 }
 
+// Specifies the restoration status of an object. Objects in certain storage
+// classes must be restored before they can be retrieved. For more information
+// about these storage classes and how to work with archived objects, see Working
+// with archived objects (https://docs.aws.amazon.com/AmazonS3/latest/userguide/archived-objects.html)
+// in the Amazon S3 User Guide.
+//
+// This functionality is not supported for directory buckets. Only the S3 Express
+// One Zone storage class is supported by directory buckets to store objects.
+type RestoreStatus struct {
+	_ struct{} `type:"structure"`
+
+	// Specifies whether the object is currently being restored. If the object restoration
+	// is in progress, the header returns the value TRUE. For example:
+	//
+	// x-amz-optional-object-attributes: IsRestoreInProgress="true"
+	//
+	// If the object restoration has completed, the header returns the value FALSE.
+	// For example:
+	//
+	// x-amz-optional-object-attributes: IsRestoreInProgress="false", RestoreExpiryDate="2012-12-21T00:00:00.000Z"
+	//
+	// If the object hasn't been restored, there is no header response.
+	IsRestoreInProgress *bool `type:"boolean"`
+
+	// Indicates when the restored copy will expire. This value is populated only
+	// if the object has already been restored. For example:
+	//
+	// x-amz-optional-object-attributes: IsRestoreInProgress="false", RestoreExpiryDate="2012-12-21T00:00:00.000Z"
+	RestoreExpiryDate *time.Time `type:"timestamp"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s RestoreStatus) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s RestoreStatus) GoString() string {
+	return s.String()
+}
+
+// SetIsRestoreInProgress sets the IsRestoreInProgress field's value.
+func (s *RestoreStatus) SetIsRestoreInProgress(v bool) *RestoreStatus {
+	s.IsRestoreInProgress = &v
+	return s
+}
+
+// SetRestoreExpiryDate sets the RestoreExpiryDate field's value.
+func (s *RestoreStatus) SetRestoreExpiryDate(v time.Time) *RestoreStatus {
+	s.RestoreExpiryDate = &v
+	return s
+}
+
 // Specifies the redirect behavior and when a redirect is applied. For more
 // information about routing rules, see Configuring advanced conditional redirects
 // (https://docs.aws.amazon.com/AmazonS3/latest/dev/how-to-page-redirect.html#advanced-conditional-redirects)
@@ -37334,7 +40701,7 @@ type Rule struct {
 	// Specifies the days since the initiation of an incomplete multipart upload
 	// that Amazon S3 will wait before permanently removing all parts of the upload.
 	// For more information, see Aborting Incomplete Multipart Uploads Using a Bucket
-	// Lifecycle Policy (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config)
+	// Lifecycle Configuration (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config)
 	// in the Amazon S3 User Guide.
 	AbortIncompleteMultipartUpload *AbortIncompleteMultipartUpload `type:"structure"`
 
@@ -37469,9 +40836,8 @@ func (s *Rule) SetTransition(v *Transition) *Rule {
 type SSEKMS struct {
 	_ struct{} `locationName:"SSE-KMS" type:"structure"`
 
-	// Specifies the ID of the Amazon Web Services Key Management Service (Amazon
-	// Web Services KMS) symmetric customer managed key to use for encrypting inventory
-	// reports.
+	// Specifies the ID of the Key Management Service (KMS) symmetric encryption
+	// customer managed key to use for encrypting inventory reports.
 	//
 	// KeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by SSEKMS's
@@ -37775,9 +41141,9 @@ type SelectObjectContentInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// The expression that is used to query the object.
@@ -38154,21 +41520,26 @@ type ServerSideEncryptionByDefault struct {
 
 	// Amazon Web Services Key Management Service (KMS) customer Amazon Web Services
 	// KMS key ID to use for the default encryption. This parameter is allowed if
-	// and only if SSEAlgorithm is set to aws:kms.
+	// and only if SSEAlgorithm is set to aws:kms or aws:kms:dsse.
 	//
-	// You can specify the key ID or the Amazon Resource Name (ARN) of the KMS key.
-	// However, if you are using encryption with cross-account or Amazon Web Services
-	// service operations you must use a fully qualified KMS key ARN. For more information,
-	// see Using encryption for cross-account operations (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html#bucket-encryption-update-bucket-policy).
-	//
-	// For example:
+	// You can specify the key ID, key alias, or the Amazon Resource Name (ARN)
+	// of the KMS key.
 	//
 	//    * Key ID: 1234abcd-12ab-34cd-56ef-1234567890ab
 	//
 	//    * Key ARN: arn:aws:kms:us-east-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab
 	//
-	// Amazon S3 only supports symmetric KMS keys and not asymmetric KMS keys. For
-	// more information, see Using symmetric and asymmetric keys (https://docs.aws.amazon.com/kms/latest/developerguide/symmetric-asymmetric.html)
+	//    * Key Alias: alias/alias-name
+	//
+	// If you use a key ID, you can run into a LogDestination undeliverable error
+	// when creating a VPC flow log.
+	//
+	// If you are using encryption with cross-account or Amazon Web Services service
+	// operations you must use a fully qualified KMS key ARN. For more information,
+	// see Using encryption for cross-account operations (https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html#bucket-encryption-update-bucket-policy).
+	//
+	// Amazon S3 only supports symmetric encryption KMS keys. For more information,
+	// see Asymmetric keys in Amazon Web Services KMS (https://docs.aws.amazon.com/kms/latest/developerguide/symmetric-asymmetric.html)
 	// in the Amazon Web Services Key Management Service Developer Guide.
 	//
 	// KMSMasterKeyID is a sensitive parameter and its value will be
@@ -38345,6 +41716,118 @@ func (s *ServerSideEncryptionRule) SetApplyServerSideEncryptionByDefault(v *Serv
 func (s *ServerSideEncryptionRule) SetBucketKeyEnabled(v bool) *ServerSideEncryptionRule {
 	s.BucketKeyEnabled = &v
 	return s
+}
+
+// The established temporary security credentials of the session.
+//
+// Directory buckets - These session credentials are only supported for the
+// authentication and authorization of Zonal endpoint APIs on directory buckets.
+type SessionCredentials struct {
+	_ struct{} `type:"structure"`
+
+	// A unique identifier that's associated with a secret access key. The access
+	// key ID and the secret access key are used together to sign programmatic Amazon
+	// Web Services requests cryptographically.
+	//
+	// AccessKeyId is a required field
+	AccessKeyId *string `locationName:"AccessKeyId" type:"string" required:"true"`
+
+	// Temporary security credentials expire after a specified interval. After temporary
+	// credentials expire, any calls that you make with those credentials will fail.
+	// So you must generate a new set of temporary credentials. Temporary credentials
+	// cannot be extended or refreshed beyond the original specified interval.
+	//
+	// Expiration is a required field
+	Expiration *time.Time `locationName:"Expiration" type:"timestamp" required:"true"`
+
+	// A key that's used with the access key ID to cryptographically sign programmatic
+	// Amazon Web Services requests. Signing a request identifies the sender and
+	// prevents the request from being altered.
+	//
+	// SecretAccessKey is a sensitive parameter and its value will be
+	// replaced with "sensitive" in string returned by SessionCredentials's
+	// String and GoString methods.
+	//
+	// SecretAccessKey is a required field
+	SecretAccessKey *string `locationName:"SecretAccessKey" type:"string" required:"true" sensitive:"true"`
+
+	// A part of the temporary security credentials. The session token is used to
+	// validate the temporary security credentials.
+	//
+	// SessionToken is a sensitive parameter and its value will be
+	// replaced with "sensitive" in string returned by SessionCredentials's
+	// String and GoString methods.
+	//
+	// SessionToken is a required field
+	SessionToken *string `locationName:"SessionToken" type:"string" required:"true" sensitive:"true"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s SessionCredentials) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s SessionCredentials) GoString() string {
+	return s.String()
+}
+
+// SetAccessKeyId sets the AccessKeyId field's value.
+func (s *SessionCredentials) SetAccessKeyId(v string) *SessionCredentials {
+	s.AccessKeyId = &v
+	return s
+}
+
+// SetExpiration sets the Expiration field's value.
+func (s *SessionCredentials) SetExpiration(v time.Time) *SessionCredentials {
+	s.Expiration = &v
+	return s
+}
+
+// SetSecretAccessKey sets the SecretAccessKey field's value.
+func (s *SessionCredentials) SetSecretAccessKey(v string) *SessionCredentials {
+	s.SecretAccessKey = &v
+	return s
+}
+
+// SetSessionToken sets the SessionToken field's value.
+func (s *SessionCredentials) SetSessionToken(v string) *SessionCredentials {
+	s.SessionToken = &v
+	return s
+}
+
+// To use simple format for S3 keys for log objects, set SimplePrefix to an
+// empty object.
+//
+// [DestinationPrefix][YYYY]-[MM]-[DD]-[hh]-[mm]-[ss]-[UniqueString]
+type SimplePrefix struct {
+	_ struct{} `locationName:"SimplePrefix" type:"structure"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s SimplePrefix) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s SimplePrefix) GoString() string {
+	return s.String()
 }
 
 // A container that describes additional filters for identifying the source
@@ -38883,6 +42366,49 @@ func (s *TargetGrant) SetPermission(v string) *TargetGrant {
 	return s
 }
 
+// Amazon S3 key format for log objects. Only one format, PartitionedPrefix
+// or SimplePrefix, is allowed.
+type TargetObjectKeyFormat struct {
+	_ struct{} `type:"structure"`
+
+	// Partitioned S3 key for log objects.
+	PartitionedPrefix *PartitionedPrefix `locationName:"PartitionedPrefix" type:"structure"`
+
+	// To use the simple format for S3 keys for log objects. To specify SimplePrefix
+	// format, set SimplePrefix to {}.
+	SimplePrefix *SimplePrefix `locationName:"SimplePrefix" type:"structure"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s TargetObjectKeyFormat) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s TargetObjectKeyFormat) GoString() string {
+	return s.String()
+}
+
+// SetPartitionedPrefix sets the PartitionedPrefix field's value.
+func (s *TargetObjectKeyFormat) SetPartitionedPrefix(v *PartitionedPrefix) *TargetObjectKeyFormat {
+	s.PartitionedPrefix = v
+	return s
+}
+
+// SetSimplePrefix sets the SimplePrefix field's value.
+func (s *TargetObjectKeyFormat) SetSimplePrefix(v *SimplePrefix) *TargetObjectKeyFormat {
+	s.SimplePrefix = v
+	return s
+}
+
 // The S3 Intelligent-Tiering storage class is designed to optimize storage
 // costs by automatically moving data to the most cost-effective storage access
 // tier, without additional operational overhead.
@@ -38966,7 +42492,8 @@ type TopicConfiguration struct {
 	Events []*string `locationName:"Event" type:"list" flattened:"true" required:"true" enum:"Event"`
 
 	// Specifies object key name filtering rules. For information about key name
-	// filtering, see Configuring Event Notifications (https://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// filtering, see Configuring event notifications using object key name filtering
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-filtering.html)
 	// in the Amazon S3 User Guide.
 	Filter *NotificationConfigurationFilter `type:"structure"`
 
@@ -39166,19 +42693,33 @@ type UploadPartCopyInput struct {
 
 	// The bucket name.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
@@ -39200,34 +42741,81 @@ type UploadPartCopyInput struct {
 	//    my-access-point owned by account 123456789012 in Region us-west-2, use
 	//    the URL encoding of arn:aws:s3:us-west-2:123456789012:accesspoint/my-access-point/object/reports/january.pdf.
 	//    The value must be URL encoded. Amazon S3 supports copy operations using
-	//    access points only when the source and destination buckets are in the
-	//    same Amazon Web Services Region. Alternatively, for objects accessed through
-	//    Amazon S3 on Outposts, specify the ARN of the object as accessed in the
-	//    format arn:aws:s3-outposts:<Region>:<account-id>:outpost/<outpost-id>/object/<key>.
+	//    Access points only when the source and destination buckets are in the
+	//    same Amazon Web Services Region. Access points are not supported by directory
+	//    buckets. Alternatively, for objects accessed through Amazon S3 on Outposts,
+	//    specify the ARN of the object as accessed in the format arn:aws:s3-outposts:<Region>:<account-id>:outpost/<outpost-id>/object/<key>.
 	//    For example, to copy the object reports/january.pdf through outpost my-outpost
 	//    owned by account 123456789012 in Region us-west-2, use the URL encoding
 	//    of arn:aws:s3-outposts:us-west-2:123456789012:outpost/my-outpost/object/reports/january.pdf.
 	//    The value must be URL-encoded.
 	//
-	// To copy a specific version of an object, append ?versionId=<version-id> to
-	// the value (for example, awsexamplebucket/reports/january.pdf?versionId=QUpfdndhfd8438MNFDN93jdnJFkdmqnh893).
-	// If you don't specify a version ID, Amazon S3 copies the latest version of
-	// the source object.
+	// If your bucket has versioning enabled, you could have multiple versions of
+	// the same object. By default, x-amz-copy-source identifies the current version
+	// of the source object to copy. To copy a specific version of the source object
+	// to copy, append ?versionId=<version-id> to the x-amz-copy-source request
+	// header (for example, x-amz-copy-source: /awsexamplebucket/reports/january.pdf?versionId=QUpfdndhfd8438MNFDN93jdnJFkdmqnh893).
+	//
+	// If the current version is a delete marker and you don't specify a versionId
+	// in the x-amz-copy-source request header, Amazon S3 returns a 404 Not Found
+	// error, because the object does not exist. If you specify versionId in the
+	// x-amz-copy-source and the versionId is a delete marker, Amazon S3 returns
+	// an HTTP 400 Bad Request error, because you are not allowed to specify a delete
+	// marker as a version for the x-amz-copy-source.
+	//
+	// Directory buckets - S3 Versioning isn't enabled and supported for directory
+	// buckets.
 	//
 	// CopySource is a required field
 	CopySource *string `location:"header" locationName:"x-amz-copy-source" type:"string" required:"true"`
 
 	// Copies the object if its entity tag (ETag) matches the specified tag.
+	//
+	// If both of the x-amz-copy-source-if-match and x-amz-copy-source-if-unmodified-since
+	// headers are present in the request as follows:
+	//
+	// x-amz-copy-source-if-match condition evaluates to true, and;
+	//
+	// x-amz-copy-source-if-unmodified-since condition evaluates to false;
+	//
+	// Amazon S3 returns 200 OK and copies the data.
 	CopySourceIfMatch *string `location:"header" locationName:"x-amz-copy-source-if-match" type:"string"`
 
 	// Copies the object if it has been modified since the specified time.
+	//
+	// If both of the x-amz-copy-source-if-none-match and x-amz-copy-source-if-modified-since
+	// headers are present in the request as follows:
+	//
+	// x-amz-copy-source-if-none-match condition evaluates to false, and;
+	//
+	// x-amz-copy-source-if-modified-since condition evaluates to true;
+	//
+	// Amazon S3 returns 412 Precondition Failed response code.
 	CopySourceIfModifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-modified-since" type:"timestamp"`
 
 	// Copies the object if its entity tag (ETag) is different than the specified
 	// ETag.
+	//
+	// If both of the x-amz-copy-source-if-none-match and x-amz-copy-source-if-modified-since
+	// headers are present in the request as follows:
+	//
+	// x-amz-copy-source-if-none-match condition evaluates to false, and;
+	//
+	// x-amz-copy-source-if-modified-since condition evaluates to true;
+	//
+	// Amazon S3 returns 412 Precondition Failed response code.
 	CopySourceIfNoneMatch *string `location:"header" locationName:"x-amz-copy-source-if-none-match" type:"string"`
 
 	// Copies the object if it hasn't been modified since the specified time.
+	//
+	// If both of the x-amz-copy-source-if-match and x-amz-copy-source-if-unmodified-since
+	// headers are present in the request as follows:
+	//
+	// x-amz-copy-source-if-match condition evaluates to true, and;
+	//
+	// x-amz-copy-source-if-unmodified-since condition evaluates to false;
+	//
+	// Amazon S3 returns 200 OK and copies the data.
 	CopySourceIfUnmodifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-unmodified-since" type:"timestamp"`
 
 	// The range of bytes to copy from the source object. The range value must use
@@ -39239,11 +42827,17 @@ type UploadPartCopyInput struct {
 
 	// Specifies the algorithm to use when decrypting the source object (for example,
 	// AES256).
+	//
+	// This functionality is not supported when the source object is in a directory
+	// bucket.
 	CopySourceSSECustomerAlgorithm *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-algorithm" type:"string"`
 
 	// Specifies the customer-provided encryption key for Amazon S3 to use to decrypt
 	// the source object. The encryption key provided in this header must be one
 	// that was used when the source object was created.
+	//
+	// This functionality is not supported when the source object is in a directory
+	// bucket.
 	//
 	// CopySourceSSECustomerKey is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by UploadPartCopyInput's
@@ -39253,16 +42847,19 @@ type UploadPartCopyInput struct {
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure that the
 	// encryption key was transmitted without error.
+	//
+	// This functionality is not supported when the source object is in a directory
+	// bucket.
 	CopySourceSSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-key-MD5" type:"string"`
 
-	// The account ID of the expected destination bucket owner. If the destination
-	// bucket is owned by a different account, the request fails with the HTTP status
-	// code 403 Forbidden (access denied).
+	// The account ID of the expected destination bucket owner. If the account ID
+	// that you provide does not match the actual owner of the destination bucket,
+	// the request fails with the HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
-	// The account ID of the expected source bucket owner. If the source bucket
-	// is owned by a different account, the request fails with the HTTP status code
-	// 403 Forbidden (access denied).
+	// The account ID of the expected source bucket owner. If the account ID that
+	// you provide does not match the actual owner of the source bucket, the request
+	// fails with the HTTP status code 403 Forbidden (access denied).
 	ExpectedSourceBucketOwner *string `location:"header" locationName:"x-amz-source-expected-bucket-owner" type:"string"`
 
 	// Object key for which the multipart upload was initiated.
@@ -39277,14 +42874,20 @@ type UploadPartCopyInput struct {
 	PartNumber *int64 `location:"querystring" locationName:"partNumber" type:"integer" required:"true"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
-	// Specifies the algorithm to use to when encrypting the object (for example,
-	// AES256).
+	// Specifies the algorithm to use when encrypting the object (for example, AES256).
+	//
+	// This functionality is not supported when the destination bucket is a directory
+	// bucket.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// Specifies the customer-provided encryption key for Amazon S3 to use in encrypting
@@ -39294,6 +42897,9 @@ type UploadPartCopyInput struct {
 	// header. This must be the same encryption key specified in the initiate multipart
 	// upload request.
 	//
+	// This functionality is not supported when the destination bucket is a directory
+	// bucket.
+	//
 	// SSECustomerKey is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by UploadPartCopyInput's
 	// String and GoString methods.
@@ -39302,6 +42908,9 @@ type UploadPartCopyInput struct {
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure that the
 	// encryption key was transmitted without error.
+	//
+	// This functionality is not supported when the destination bucket is a directory
+	// bucket.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// Upload ID identifying the multipart upload whose part is being copied.
@@ -39525,7 +43134,9 @@ type UploadPartCopyOutput struct {
 	_ struct{} `type:"structure" payload:"CopyPartResult"`
 
 	// Indicates whether the multipart upload uses an S3 Bucket Key for server-side
-	// encryption with Amazon Web Services KMS (SSE-KMS).
+	// encryption with Key Management Service (KMS) keys (SSE-KMS).
+	//
+	// This functionality is not supported for directory buckets.
 	BucketKeyEnabled *bool `location:"header" locationName:"x-amz-server-side-encryption-bucket-key-enabled" type:"boolean"`
 
 	// Container for all response elements.
@@ -39533,33 +43144,46 @@ type UploadPartCopyOutput struct {
 
 	// The version of the source object that was copied, if you have enabled versioning
 	// on the source bucket.
+	//
+	// This functionality is not supported when the source object is in a directory
+	// bucket.
 	CopySourceVersionId *string `location:"header" locationName:"x-amz-copy-source-version-id" type:"string"`
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header confirming the encryption algorithm
-	// used.
+	// the response will include this header to confirm the encryption algorithm
+	// that's used.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header to provide round-trip message integrity
+	// the response will include this header to provide the round-trip message integrity
 	// verification of the customer-provided encryption key.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
-	// If present, specifies the ID of the Amazon Web Services Key Management Service
-	// (Amazon Web Services KMS) symmetric customer managed key that was used for
-	// the object.
+	// If present, indicates the ID of the Key Management Service (KMS) symmetric
+	// encryption customer managed key that was used for the object.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSKeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by UploadPartCopyOutput's
 	// String and GoString methods.
 	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
 
-	// The server-side encryption algorithm used when storing this object in Amazon
+	// The server-side encryption algorithm used when you store this object in Amazon
 	// S3 (for example, AES256, aws:kms).
+	//
+	// For directory buckets, only server-side encryption with Amazon S3 managed
+	// keys (SSE-S3) (AES256) is supported.
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 }
 
@@ -39637,30 +43261,44 @@ type UploadPartInput struct {
 
 	// The name of the bucket to which the multipart upload was initiated.
 	//
-	// When using this action with an access point, you must direct requests to
-	// the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
+	// Directory buckets - When you use this operation with a directory bucket,
+	// you must use virtual-hosted-style requests in the format Bucket_name.s3express-az_id.region.amazonaws.com.
+	// Path-style requests are not supported. Directory bucket names must be unique
+	// in the chosen Availability Zone. Bucket names must follow the format bucket_base_name--az-id--x-s3
+	// (for example, DOC-EXAMPLE-BUCKET--usw2-az1--x-s3). For information about
+	// bucket naming restrictions, see Directory bucket naming rules (https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-naming-rules.html)
+	// in the Amazon S3 User Guide.
+	//
+	// Access points - When you use this action with an access point, you must provide
+	// the alias of the access point in place of the bucket name or specify the
+	// access point ARN. When using the access point ARN, you must direct requests
+	// to the access point hostname. The access point hostname takes the form AccessPointName-AccountId.s3-accesspoint.Region.amazonaws.com.
 	// When using this action with an access point through the Amazon Web Services
 	// SDKs, you provide the access point ARN in place of the bucket name. For more
 	// information about access point ARNs, see Using access points (https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-access-points.html)
 	// in the Amazon S3 User Guide.
 	//
-	// When using this action with Amazon S3 on Outposts, you must direct requests
-	// to the S3 on Outposts hostname. The S3 on Outposts hostname takes the form
-	// AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com. When
-	// using this action with S3 on Outposts through the Amazon Web Services SDKs,
-	// you provide the Outposts bucket ARN in place of the bucket name. For more
-	// information about S3 on Outposts ARNs, see Using Amazon S3 on Outposts (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
+	// Access points and Object Lambda access points are not supported by directory
+	// buckets.
+	//
+	// S3 on Outposts - When you use this action with Amazon S3 on Outposts, you
+	// must direct requests to the S3 on Outposts hostname. The S3 on Outposts hostname
+	// takes the form AccessPointName-AccountId.outpostID.s3-outposts.Region.amazonaws.com.
+	// When you use this action with S3 on Outposts through the Amazon Web Services
+	// SDKs, you provide the Outposts access point ARN in place of the bucket name.
+	// For more information about S3 on Outposts ARNs, see What is S3 on Outposts?
+	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/S3onOutposts.html)
 	// in the Amazon S3 User Guide.
 	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Indicates the algorithm used to create the checksum for the object when using
-	// the SDK. This header will not provide any additional functionality if not
-	// using the SDK. When sending this header, there must be a corresponding x-amz-checksum
-	// or x-amz-trailer header sent. Otherwise, Amazon S3 fails the request with
-	// the HTTP status code 400 Bad Request. For more information, see Checking
-	// object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
+	// Indicates the algorithm used to create the checksum for the object when you
+	// use the SDK. This header will not provide any additional functionality if
+	// you don't use the SDK. When you send this header, there must be a corresponding
+	// x-amz-checksum or x-amz-trailer header sent. Otherwise, Amazon S3 fails the
+	// request with the HTTP status code 400 Bad Request. For more information,
+	// see Checking object integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html)
 	// in the Amazon S3 User Guide.
 	//
 	// If you provide an individual checksum, Amazon S3 ignores any provided ChecksumAlgorithm
@@ -39710,11 +43348,13 @@ type UploadPartInput struct {
 	// The base64-encoded 128-bit MD5 digest of the part data. This parameter is
 	// auto-populated when using the command from the CLI. This parameter is required
 	// if object lock parameters are specified.
+	//
+	// This functionality is not supported for directory buckets.
 	ContentMD5 *string `location:"header" locationName:"Content-MD5" type:"string"`
 
-	// The account ID of the expected bucket owner. If the bucket is owned by a
-	// different account, the request fails with the HTTP status code 403 Forbidden
-	// (access denied).
+	// The account ID of the expected bucket owner. If the account ID that you provide
+	// does not match the actual owner of the bucket, the request fails with the
+	// HTTP status code 403 Forbidden (access denied).
 	ExpectedBucketOwner *string `location:"header" locationName:"x-amz-expected-bucket-owner" type:"string"`
 
 	// Object key for which the multipart upload was initiated.
@@ -39729,14 +43369,19 @@ type UploadPartInput struct {
 	PartNumber *int64 `location:"querystring" locationName:"partNumber" type:"integer" required:"true"`
 
 	// Confirms that the requester knows that they will be charged for the request.
-	// Bucket owners need not specify this parameter in their requests. For information
-	// about downloading objects from Requester Pays buckets, see Downloading Objects
+	// Bucket owners need not specify this parameter in their requests. If either
+	// the source or destination S3 bucket has Requester Pays enabled, the requester
+	// will pay for corresponding charges to copy the object. For information about
+	// downloading objects from Requester Pays buckets, see Downloading Objects
 	// in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 	// in the Amazon S3 User Guide.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestPayer *string `location:"header" locationName:"x-amz-request-payer" type:"string" enum:"RequestPayer"`
 
-	// Specifies the algorithm to use to when encrypting the object (for example,
-	// AES256).
+	// Specifies the algorithm to use when encrypting the object (for example, AES256).
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// Specifies the customer-provided encryption key for Amazon S3 to use in encrypting
@@ -39746,6 +43391,8 @@ type UploadPartInput struct {
 	// header. This must be the same encryption key specified in the initiate multipart
 	// upload request.
 	//
+	// This functionality is not supported for directory buckets.
+	//
 	// SSECustomerKey is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by UploadPartInput's
 	// String and GoString methods.
@@ -39754,6 +43401,8 @@ type UploadPartInput struct {
 	// Specifies the 128-bit MD5 digest of the encryption key according to RFC 1321.
 	// Amazon S3 uses this header for a message integrity check to ensure that the
 	// encryption key was transmitted without error.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// Upload ID identifying the multipart upload whose part is being uploaded.
@@ -39955,38 +43604,48 @@ type UploadPartOutput struct {
 	_ struct{} `type:"structure"`
 
 	// Indicates whether the multipart upload uses an S3 Bucket Key for server-side
-	// encryption with Amazon Web Services KMS (SSE-KMS).
+	// encryption with Key Management Service (KMS) keys (SSE-KMS).
+	//
+	// This functionality is not supported for directory buckets.
 	BucketKeyEnabled *bool `location:"header" locationName:"x-amz-server-side-encryption-bucket-key-enabled" type:"boolean"`
 
 	// The base64-encoded, 32-bit CRC32 checksum of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32 *string `location:"header" locationName:"x-amz-checksum-crc32" type:"string"`
 
 	// The base64-encoded, 32-bit CRC32C checksum of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumCRC32C *string `location:"header" locationName:"x-amz-checksum-crc32c" type:"string"`
 
 	// The base64-encoded, 160-bit SHA-1 digest of the object. This will only be
-	// present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// present if it was uploaded with the object. When you use the API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA1 *string `location:"header" locationName:"x-amz-checksum-sha1" type:"string"`
 
 	// The base64-encoded, 256-bit SHA-256 digest of the object. This will only
-	// be present if it was uploaded with the object. With multipart uploads, this
-	// may not be a checksum value of the object. For more information about how
-	// checksums are calculated with multipart uploads, see Checking object integrity
-	// (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
+	// be present if it was uploaded with the object. When you use an API operation
+	// on an object that was uploaded using multipart uploads, this value may not
+	// be a direct checksum value of the full object. Instead, it's a calculation
+	// based on the checksum values of each individual part. For more information
+	// about how checksums are calculated with multipart uploads, see Checking object
+	// integrity (https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html#large-object-checksums)
 	// in the Amazon S3 User Guide.
 	ChecksumSHA256 *string `location:"header" locationName:"x-amz-checksum-sha256" type:"string"`
 
@@ -39995,29 +43654,39 @@ type UploadPartOutput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header confirming the encryption algorithm
-	// used.
+	// the response will include this header to confirm the encryption algorithm
+	// that's used.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
 
 	// If server-side encryption with a customer-provided encryption key was requested,
-	// the response will include this header to provide round-trip message integrity
+	// the response will include this header to provide the round-trip message integrity
 	// verification of the customer-provided encryption key.
+	//
+	// This functionality is not supported for directory buckets.
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
-	// If present, specifies the ID of the Amazon Web Services Key Management Service
-	// (Amazon Web Services KMS) symmetric customer managed key was used for the
-	// object.
+	// If present, indicates the ID of the Key Management Service (KMS) symmetric
+	// encryption customer managed key that was used for the object.
+	//
+	// This functionality is not supported for directory buckets.
 	//
 	// SSEKMSKeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by UploadPartOutput's
 	// String and GoString methods.
 	SSEKMSKeyId *string `location:"header" locationName:"x-amz-server-side-encryption-aws-kms-key-id" type:"string" sensitive:"true"`
 
-	// The server-side encryption algorithm used when storing this object in Amazon
+	// The server-side encryption algorithm used when you store this object in Amazon
 	// S3 (for example, AES256, aws:kms).
+	//
+	// For directory buckets, only server-side encryption with Amazon S3 managed
+	// keys (SSE-S3) (AES256) is supported.
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 }
 
@@ -40401,6 +44070,8 @@ type WriteGetObjectResponseInput struct {
 
 	// If present, indicates that the requester was successfully charged for the
 	// request.
+	//
+	// This functionality is not supported for directory buckets.
 	RequestCharged *string `location:"header" locationName:"x-amz-fwd-header-x-amz-request-charged" type:"string" enum:"RequestCharged"`
 
 	// Route prefix to the HTTP URL generated.
@@ -40427,9 +44098,9 @@ type WriteGetObjectResponseInput struct {
 	// server-side encryption with customer-provided encryption keys (SSE-C) (https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html).
 	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-fwd-header-x-amz-server-side-encryption-customer-key-MD5" type:"string"`
 
-	// If present, specifies the ID of the Amazon Web Services Key Management Service
-	// (Amazon Web Services KMS) symmetric customer managed key that was used for
-	// stored in Amazon S3 object.
+	// If present, specifies the ID (Key ID, Key ARN, or Key Alias) of the Amazon
+	// Web Services Key Management Service (Amazon Web Services KMS) symmetric encryption
+	// customer managed key that was used for stored in Amazon S3 object.
 	//
 	// SSEKMSKeyId is a sensitive parameter and its value will be
 	// replaced with "sensitive" in string returned by WriteGetObjectResponseInput's
@@ -40441,9 +44112,7 @@ type WriteGetObjectResponseInput struct {
 	ServerSideEncryption *string `location:"header" locationName:"x-amz-fwd-header-x-amz-server-side-encryption" type:"string" enum:"ServerSideEncryption"`
 
 	// The integer status code for an HTTP response of a corresponding GetObject
-	// request.
-	//
-	// Status Codes
+	// request. The following is a list of status codes.
 	//
 	//    * 200 - OK
 	//
@@ -40879,6 +44548,9 @@ const (
 	// BucketLocationConstraintApSouth1 is a BucketLocationConstraint enum value
 	BucketLocationConstraintApSouth1 = "ap-south-1"
 
+	// BucketLocationConstraintApSouth2 is a BucketLocationConstraint enum value
+	BucketLocationConstraintApSouth2 = "ap-south-2"
+
 	// BucketLocationConstraintApSoutheast1 is a BucketLocationConstraint enum value
 	BucketLocationConstraintApSoutheast1 = "ap-southeast-1"
 
@@ -40908,6 +44580,9 @@ const (
 
 	// BucketLocationConstraintEuSouth1 is a BucketLocationConstraint enum value
 	BucketLocationConstraintEuSouth1 = "eu-south-1"
+
+	// BucketLocationConstraintEuSouth2 is a BucketLocationConstraint enum value
+	BucketLocationConstraintEuSouth2 = "eu-south-2"
 
 	// BucketLocationConstraintEuWest1 is a BucketLocationConstraint enum value
 	BucketLocationConstraintEuWest1 = "eu-west-1"
@@ -40949,6 +44624,7 @@ func BucketLocationConstraint_Values() []string {
 		BucketLocationConstraintApNortheast2,
 		BucketLocationConstraintApNortheast3,
 		BucketLocationConstraintApSouth1,
+		BucketLocationConstraintApSouth2,
 		BucketLocationConstraintApSoutheast1,
 		BucketLocationConstraintApSoutheast2,
 		BucketLocationConstraintApSoutheast3,
@@ -40959,6 +44635,7 @@ func BucketLocationConstraint_Values() []string {
 		BucketLocationConstraintEuCentral1,
 		BucketLocationConstraintEuNorth1,
 		BucketLocationConstraintEuSouth1,
+		BucketLocationConstraintEuSouth2,
 		BucketLocationConstraintEuWest1,
 		BucketLocationConstraintEuWest2,
 		BucketLocationConstraintEuWest3,
@@ -40989,6 +44666,18 @@ func BucketLogsPermission_Values() []string {
 		BucketLogsPermissionFullControl,
 		BucketLogsPermissionRead,
 		BucketLogsPermissionWrite,
+	}
+}
+
+const (
+	// BucketTypeDirectory is a BucketType enum value
+	BucketTypeDirectory = "Directory"
+)
+
+// BucketType_Values returns all elements of the BucketType enum
+func BucketType_Values() []string {
+	return []string{
+		BucketTypeDirectory,
 	}
 }
 
@@ -41065,6 +44754,18 @@ func CompressionType_Values() []string {
 }
 
 const (
+	// DataRedundancySingleAvailabilityZone is a DataRedundancy enum value
+	DataRedundancySingleAvailabilityZone = "SingleAvailabilityZone"
+)
+
+// DataRedundancy_Values returns all elements of the DataRedundancy enum
+func DataRedundancy_Values() []string {
+	return []string{
+		DataRedundancySingleAvailabilityZone,
+	}
+}
+
+const (
 	// DeleteMarkerReplicationStatusEnabled is a DeleteMarkerReplicationStatus enum value
 	DeleteMarkerReplicationStatusEnabled = "Enabled"
 
@@ -41081,8 +44782,8 @@ func DeleteMarkerReplicationStatus_Values() []string {
 }
 
 // Requests Amazon S3 to encode the object keys in the response and specifies
-// the encoding method to use. An object key may contain any Unicode character;
-// however, XML 1.0 parser cannot parse some characters, such as characters
+// the encoding method to use. An object key can contain any Unicode character;
+// however, the XML 1.0 parser cannot parse some characters, such as characters
 // with an ASCII value from 0 to 10. For characters that are not supported in
 // XML 1.0, you can add this parameter to request that Amazon S3 encode the
 // keys in the response.
@@ -41418,6 +45119,12 @@ const (
 
 	// InventoryOptionalFieldChecksumAlgorithm is a InventoryOptionalField enum value
 	InventoryOptionalFieldChecksumAlgorithm = "ChecksumAlgorithm"
+
+	// InventoryOptionalFieldObjectAccessControlList is a InventoryOptionalField enum value
+	InventoryOptionalFieldObjectAccessControlList = "ObjectAccessControlList"
+
+	// InventoryOptionalFieldObjectOwner is a InventoryOptionalField enum value
+	InventoryOptionalFieldObjectOwner = "ObjectOwner"
 )
 
 // InventoryOptionalField_Values returns all elements of the InventoryOptionalField enum
@@ -41436,6 +45143,8 @@ func InventoryOptionalField_Values() []string {
 		InventoryOptionalFieldIntelligentTieringAccessTier,
 		InventoryOptionalFieldBucketKeyStatus,
 		InventoryOptionalFieldChecksumAlgorithm,
+		InventoryOptionalFieldObjectAccessControlList,
+		InventoryOptionalFieldObjectOwner,
 	}
 }
 
@@ -41452,6 +45161,18 @@ func JSONType_Values() []string {
 	return []string{
 		JSONTypeDocument,
 		JSONTypeLines,
+	}
+}
+
+const (
+	// LocationTypeAvailabilityZone is a LocationType enum value
+	LocationTypeAvailabilityZone = "AvailabilityZone"
+)
+
+// LocationType_Values returns all elements of the LocationType enum
+func LocationType_Values() []string {
+	return []string{
+		LocationTypeAvailabilityZone,
 	}
 }
 
@@ -41655,8 +45376,19 @@ func ObjectLockRetentionMode_Values() []string {
 // BucketOwnerEnforced - Access control lists (ACLs) are disabled and no longer
 // affect permissions. The bucket owner automatically owns and has full control
 // over every object in the bucket. The bucket only accepts PUT requests that
-// don't specify an ACL or bucket owner full control ACLs, such as the bucket-owner-full-control
-// canned ACL or an equivalent form of this ACL expressed in the XML format.
+// don't specify an ACL or specify bucket owner full control ACLs (such as the
+// predefined bucket-owner-full-control canned ACL or a custom ACL in XML format
+// that grants the same permissions).
+//
+// By default, ObjectOwnership is set to BucketOwnerEnforced and ACLs are disabled.
+// We recommend keeping ACLs disabled, except in uncommon use cases where you
+// must control access for each object individually. For more information about
+// S3 Object Ownership, see Controlling ownership of objects and disabling ACLs
+// for your bucket (https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html)
+// in the Amazon S3 User Guide.
+//
+// This functionality is not supported for directory buckets. Directory buckets
+// use the bucket owner enforced setting for S3 Object Ownership.
 const (
 	// ObjectOwnershipBucketOwnerPreferred is a ObjectOwnership enum value
 	ObjectOwnershipBucketOwnerPreferred = "BucketOwnerPreferred"
@@ -41704,6 +45436,12 @@ const (
 
 	// ObjectStorageClassGlacierIr is a ObjectStorageClass enum value
 	ObjectStorageClassGlacierIr = "GLACIER_IR"
+
+	// ObjectStorageClassSnow is a ObjectStorageClass enum value
+	ObjectStorageClassSnow = "SNOW"
+
+	// ObjectStorageClassExpressOnezone is a ObjectStorageClass enum value
+	ObjectStorageClassExpressOnezone = "EXPRESS_ONEZONE"
 )
 
 // ObjectStorageClass_Values returns all elements of the ObjectStorageClass enum
@@ -41718,6 +45456,8 @@ func ObjectStorageClass_Values() []string {
 		ObjectStorageClassDeepArchive,
 		ObjectStorageClassOutposts,
 		ObjectStorageClassGlacierIr,
+		ObjectStorageClassSnow,
+		ObjectStorageClassExpressOnezone,
 	}
 }
 
@@ -41734,6 +45474,18 @@ func ObjectVersionStorageClass_Values() []string {
 }
 
 const (
+	// OptionalObjectAttributesRestoreStatus is a OptionalObjectAttributes enum value
+	OptionalObjectAttributesRestoreStatus = "RestoreStatus"
+)
+
+// OptionalObjectAttributes_Values returns all elements of the OptionalObjectAttributes enum
+func OptionalObjectAttributes_Values() []string {
+	return []string{
+		OptionalObjectAttributesRestoreStatus,
+	}
+}
+
+const (
 	// OwnerOverrideDestination is a OwnerOverride enum value
 	OwnerOverrideDestination = "Destination"
 )
@@ -41742,6 +45494,22 @@ const (
 func OwnerOverride_Values() []string {
 	return []string{
 		OwnerOverrideDestination,
+	}
+}
+
+const (
+	// PartitionDateSourceEventTime is a PartitionDateSource enum value
+	PartitionDateSourceEventTime = "EventTime"
+
+	// PartitionDateSourceDeliveryTime is a PartitionDateSource enum value
+	PartitionDateSourceDeliveryTime = "DeliveryTime"
+)
+
+// PartitionDateSource_Values returns all elements of the PartitionDateSource enum
+func PartitionDateSource_Values() []string {
+	return []string{
+		PartitionDateSourceEventTime,
+		PartitionDateSourceDeliveryTime,
 	}
 }
 
@@ -41865,6 +45633,9 @@ const (
 
 	// ReplicationStatusReplica is a ReplicationStatus enum value
 	ReplicationStatusReplica = "REPLICA"
+
+	// ReplicationStatusCompleted is a ReplicationStatus enum value
+	ReplicationStatusCompleted = "COMPLETED"
 )
 
 // ReplicationStatus_Values returns all elements of the ReplicationStatus enum
@@ -41874,6 +45645,7 @@ func ReplicationStatus_Values() []string {
 		ReplicationStatusPending,
 		ReplicationStatusFailed,
 		ReplicationStatusReplica,
+		ReplicationStatusCompleted,
 	}
 }
 
@@ -41895,6 +45667,8 @@ func ReplicationTimeStatus_Values() []string {
 
 // If present, indicates that the requester was successfully charged for the
 // request.
+//
+// This functionality is not supported for directory buckets.
 const (
 	// RequestChargedRequester is a RequestCharged enum value
 	RequestChargedRequester = "requester"
@@ -41908,10 +45682,14 @@ func RequestCharged_Values() []string {
 }
 
 // Confirms that the requester knows that they will be charged for the request.
-// Bucket owners need not specify this parameter in their requests. For information
-// about downloading objects from Requester Pays buckets, see Downloading Objects
+// Bucket owners need not specify this parameter in their requests. If either
+// the source or destination S3 bucket has Requester Pays enabled, the requester
+// will pay for corresponding charges to copy the object. For information about
+// downloading objects from Requester Pays buckets, see Downloading Objects
 // in Requester Pays Buckets (https://docs.aws.amazon.com/AmazonS3/latest/dev/ObjectsinRequesterPaysBuckets.html)
 // in the Amazon S3 User Guide.
+//
+// This functionality is not supported for directory buckets.
 const (
 	// RequestPayerRequester is a RequestPayer enum value
 	RequestPayerRequester = "requester"
@@ -41942,6 +45720,9 @@ const (
 
 	// ServerSideEncryptionAwsKms is a ServerSideEncryption enum value
 	ServerSideEncryptionAwsKms = "aws:kms"
+
+	// ServerSideEncryptionAwsKmsDsse is a ServerSideEncryption enum value
+	ServerSideEncryptionAwsKmsDsse = "aws:kms:dsse"
 )
 
 // ServerSideEncryption_Values returns all elements of the ServerSideEncryption enum
@@ -41949,6 +45730,23 @@ func ServerSideEncryption_Values() []string {
 	return []string{
 		ServerSideEncryptionAes256,
 		ServerSideEncryptionAwsKms,
+		ServerSideEncryptionAwsKmsDsse,
+	}
+}
+
+const (
+	// SessionModeReadOnly is a SessionMode enum value
+	SessionModeReadOnly = "ReadOnly"
+
+	// SessionModeReadWrite is a SessionMode enum value
+	SessionModeReadWrite = "ReadWrite"
+)
+
+// SessionMode_Values returns all elements of the SessionMode enum
+func SessionMode_Values() []string {
+	return []string{
+		SessionModeReadOnly,
+		SessionModeReadWrite,
 	}
 }
 
@@ -41995,6 +45793,12 @@ const (
 
 	// StorageClassGlacierIr is a StorageClass enum value
 	StorageClassGlacierIr = "GLACIER_IR"
+
+	// StorageClassSnow is a StorageClass enum value
+	StorageClassSnow = "SNOW"
+
+	// StorageClassExpressOnezone is a StorageClass enum value
+	StorageClassExpressOnezone = "EXPRESS_ONEZONE"
 )
 
 // StorageClass_Values returns all elements of the StorageClass enum
@@ -42009,6 +45813,8 @@ func StorageClass_Values() []string {
 		StorageClassDeepArchive,
 		StorageClassOutposts,
 		StorageClassGlacierIr,
+		StorageClassSnow,
+		StorageClassExpressOnezone,
 	}
 }
 

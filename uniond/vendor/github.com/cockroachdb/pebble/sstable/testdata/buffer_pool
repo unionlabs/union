@@ -1,0 +1,84 @@
+# Each command prints the current state of the buffer pool.
+#
+# [    ] - Indicates a cell within BufferPool.pool's underlying array that's
+#          unused and does not hold a buffer.
+# [   n] - Indicates a cell within BufferPool.pool that is not currently in use,
+#          but does hold a buffer of size n.
+# <   n> - Indicates a cell within BufferPool.pool that holds a buffer of size
+#          n, and that buffer is presently in-use and ineligible for reuse.
+
+init size=5
+----
+[    ] [    ] [    ] [    ] [    ]
+
+alloc n=512 handle=foo
+----
+< 512> [    ] [    ] [    ] [    ]
+
+release handle=foo
+----
+[ 512] [    ] [    ] [    ] [    ]
+
+# Allocating again should use the existing buffer.
+
+alloc n=512 handle=bar
+----
+< 512> [    ] [    ] [    ] [    ]
+
+# Allocating again should allocate a new buffer for the next slot.
+
+alloc n=512 handle=bax
+----
+< 512> < 512> [    ] [    ] [    ]
+
+release handle=bar
+----
+[ 512] < 512> [    ] [    ] [    ]
+
+release handle=bax
+----
+[ 512] [ 512] [    ] [    ] [    ]
+
+# Fill up the entire preallocated pool slice.
+
+alloc n=128 handle=bar
+----
+< 512> [ 512] [    ] [    ] [    ]
+
+alloc n=1 handle=bax
+----
+< 512> < 512> [    ] [    ] [    ]
+
+alloc n=1 handle=bux
+----
+< 512> < 512> <   1> [    ] [    ]
+
+alloc n=1024 handle=foo
+----
+< 512> < 512> <   1> <1024> [    ]
+
+alloc n=1024 handle=fax
+----
+< 512> < 512> <   1> <1024> <1024>
+
+# Allocating one more should grow the underlying slice, and allocate a
+# new appropriately sized buffer.
+
+alloc n=2048 handle=zed
+----
+< 512> < 512> <   1> <1024> <1024> <2048> [    ] [    ] [    ] [    ]
+
+release handle=bux
+----
+< 512> < 512> [   1] <1024> <1024> <2048> [    ] [    ] [    ] [    ]
+
+alloc n=2 handle=bux
+----
+< 512> < 512> [   1] <1024> <1024> <2048> <   2> [    ] [    ] [    ]
+
+init size=0
+----
+
+alloc n=1 handle=foo
+----
+<   1>

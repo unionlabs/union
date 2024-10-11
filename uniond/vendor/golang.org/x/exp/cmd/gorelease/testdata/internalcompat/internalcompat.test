@@ -1,0 +1,8 @@
+mod=example.com/internalcompat/b
+version=v1.0.0
+release=v1.0.1
+base=example.com/internalcompat/a@v1.0.0
+-- want --
+# example.com/internalcompat/a/p
+## incompatible changes
+V: changed from example.com/internalcompat/a/q.Q to example.com/internalcompat/b/q.Q

@@ -1,0 +1,18 @@
+name: Merge main into master
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync:
+    name: Merge main branch
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with: {fetch-depth: 0}
+    - name: merge
+      run: |
+        git checkout master
+        git merge --ff-only main
+        git push origin master

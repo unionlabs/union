@@ -1,0 +1,23 @@
+name: lint-soft
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  pull-requests: read
+
+jobs:
+  golangci:
+    name: lint-soft
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          # Optional: golangci-lint command line arguments.
+          args: --config .golangci-soft.yml --issues-exit-code=0
+          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          only-new-issues: true

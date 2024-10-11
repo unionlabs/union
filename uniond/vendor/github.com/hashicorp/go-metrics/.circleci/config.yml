@@ -1,0 +1,29 @@
+version: 2.1
+
+orbs:
+  go: gotest/tools@0.0.13
+
+workflows:
+  ci:
+    jobs:
+    - go/test:
+        name: test-golang-1.16
+        executor:
+          name: go/golang
+          tag:  "1.16"
+          cgo-enabled: "1"
+        go-test-flags: -race
+    - go/test:
+        name: test-golang-1.17
+        executor:
+          name: go/golang
+          tag:  "1.17"
+          cgo-enabled: "1"
+        go-test-flags: -race
+    - go/test:
+        name: test-golang-1.18
+        executor:
+          name: go/golang
+          tag:  "1.18"
+          cgo-enabled: "1"
+        go-test-flags: -race

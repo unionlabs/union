@@ -1,0 +1,166 @@
+# A simple case of read compaction, 2 files in different levels with overlapping ranges
+define
+L5
+a.SET.55:a b.SET.5:b
+L6
+a.SET.54:a b.SET.4:b
+----
+5:
+  000004:[a#55,SET-b#5,SET]
+6:
+  000005:[a#54,SET-b#4,SET]
+
+add-read-compaction
+5: a-b 000004
+----
+
+show-read-compactions
+----
+(level: 5, start: a, end: b)
+
+maybe-compact
+----
+[JOB 100] compacted(read) L5 [000004] (784B) Score=0.00 + L6 [000005] (784B) Score=0.00 -> L6 [000006] (778B), in 1.0s (2.0s total), output rate 778B/s
+
+show-read-compactions
+----
+(none)
+
+version
+----
+6:
+  000006:[a#0,SET-b#0,SET]
+
+# Check to make sure another compaction will not take place
+
+maybe-compact
+----
+(none)
+
+# Case where there is an in-progress flush. No compaction should occur while flushing is true.
+define
+L5
+a.SET.55:a b.SET.5:b
+L6
+a.SET.54:a b.SET.4:b
+----
+5:
+  000004:[a#55,SET-b#5,SET]
+6:
+  000005:[a#54,SET-b#4,SET]
+
+add-read-compaction flushing=true
+5: a-b 000004
+----
+
+show-read-compactions
+----
+(level: 5, start: a, end: b)
+
+maybe-compact
+----
+(none)
+
+show-read-compactions
+----
+(level: 5, start: a, end: b)
+
+version
+----
+5:
+  000004:[a#55,SET-b#5,SET]
+6:
+  000005:[a#54,SET-b#4,SET]
+
+add-read-compaction flushing=false
+----
+
+show-read-compactions
+----
+(level: 5, start: a, end: b)
+
+maybe-compact
+----
+[JOB 100] compacted(read) L5 [000004] (784B) Score=0.00 + L6 [000005] (784B) Score=0.00 -> L6 [000006] (778B), in 1.0s (2.0s total), output rate 778B/s
+
+show-read-compactions
+----
+(none)
+
+version
+----
+6:
+  000006:[a#0,SET-b#0,SET]
+
+# Test case where there is mismatch in the level of chosen read compaction and current version.
+# In this case, we skip the compaction.
+define
+L5
+a.SET.55:a b.SET.5:b
+L6
+a.SET.55:a b.SET.5:b
+----
+5:
+  000004:[a#55,SET-b#5,SET]
+6:
+  000005:[a#55,SET-b#5,SET]
+
+add-read-compaction
+4: a-b 000004
+----
+
+show-read-compactions
+----
+(level: 4, start: a, end: b)
+
+maybe-compact
+----
+(none)
+
+show-read-compactions
+----
+(none)
+
+version
+----
+5:
+  000004:[a#55,SET-b#5,SET]
+6:
+  000005:[a#55,SET-b#5,SET]
+
+# The read compaction range overlaps with the appropriate level, but
+# the file number is different.
+# So, we skip the compaction.
+define
+L5
+a.SET.55:a b.SET.5:b
+L6
+a.SET.55:a b.SET.5:b
+----
+5:
+  000004:[a#55,SET-b#5,SET]
+6:
+  000005:[a#55,SET-b#5,SET]
+
+add-read-compaction
+5: a-b 000003
+----
+
+show-read-compactions
+----
+(level: 5, start: a, end: b)
+
+maybe-compact
+----
+(none)
+
+show-read-compactions
+----
+(none)
+
+version
+----
+5:
+  000004:[a#55,SET-b#5,SET]
+6:
+  000005:[a#55,SET-b#5,SET]

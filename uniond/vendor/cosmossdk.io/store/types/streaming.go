@@ -3,7 +3,7 @@ package types
 import (
 	"context"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 )
 
 // ABCIListener is the interface that we're exposing as a streaming service.
@@ -12,9 +12,9 @@ import (
 // if you don't want to affect consensus, handle the errors internally and always return `nil` in these APIs.
 type ABCIListener interface {
 	// ListenFinalizeBlock updates the streaming service with the latest FinalizeBlock messages
-	ListenFinalizeBlock(ctx context.Context, req abci.RequestFinalizeBlock, res abci.ResponseFinalizeBlock) error
+	ListenFinalizeBlock(ctx context.Context, req abci.FinalizeBlockRequest, res abci.FinalizeBlockResponse) error
 	// ListenCommit updates the steaming service with the latest Commit messages and state changes
-	ListenCommit(ctx context.Context, res abci.ResponseCommit, changeSet []*StoreKVPair) error
+	ListenCommit(ctx context.Context, res abci.CommitResponse, changeSet []*StoreKVPair) error
 }
 
 // StreamingManager is the struct that maintains a list of ABCIListeners and configuration settings.

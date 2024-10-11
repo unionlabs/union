@@ -92,6 +92,17 @@ type Settings struct {
 	// out a large chunk of dirty filesystem buffers.
 	BytesPerSync int
 
+	// Local contains fields that are only relevant for files stored on the local
+	// filesystem.
+	Local struct {
+		// TODO(radu): move FSCleaner, NoSyncOnClose, BytesPerSync here.
+
+		// ReadaheadConfigFn is a function used to retrieve the current readahead
+		// mode. This function is run whenever a local object is open for reading.
+		// If it is nil, DefaultReadaheadConfig is used.
+		ReadaheadConfigFn func() ReadaheadConfig
+	}
+
 	// Fields here are set only if the provider is to support remote objects
 	// (experimental).
 	Remote struct {
@@ -128,6 +139,43 @@ type Settings struct {
 		// instance-local SSD).
 	}
 }
+
+// ReadaheadConfig controls the use of read-ahead.
+type ReadaheadConfig struct {
+	// Informed is the type of read-ahead for operations that are known to read a
+	// large consecutive chunk of a file.
+	Informed ReadaheadMode
+
+	// Speculative is the type of read-ahead used automatically, when consecutive
+	// reads are detected.
+	Speculative ReadaheadMode
+}
+
+// DefaultReadaheadConfig is the readahead config used when ReadaheadConfigFn is
+// not specified.
+var DefaultReadaheadConfig = ReadaheadConfig{
+	Informed:    FadviseSequential,
+	Speculative: FadviseSequential,
+}
+
+// ReadaheadMode indicates the type of read-ahead to use, either for informed
+// read-ahead (e.g. compactions) or speculative read-ahead.
+type ReadaheadMode uint8
+
+const (
+	// NoReadahead disables readahead altogether.
+	NoReadahead ReadaheadMode = iota
+
+	// SysReadahead enables the use of SYS_READAHEAD call to prefetch data.
+	// The prefetch window grows dynamically as consecutive writes are detected.
+	SysReadahead
+
+	// FadviseSequential enables to use of FADV_SEQUENTIAL. For informed
+	// read-ahead, FADV_SEQUENTIAL is used from the beginning. For speculative
+	// read-ahead SYS_READAHEAD is first used until the window reaches the maximum
+	// size, then we siwtch to FADV_SEQUENTIAL.
+	FadviseSequential
+)
 
 // DefaultSettings initializes default settings (with no remote storage),
 // suitable for tests and tools.

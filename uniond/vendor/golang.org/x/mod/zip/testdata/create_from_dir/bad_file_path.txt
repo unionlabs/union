@@ -1,0 +1,5 @@
+path=example.com/m
+version=v1.0.0
+wantErr=malformed file path "bad.go'": invalid char '\''
+-- bad.go' --
+package bad

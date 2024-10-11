@@ -145,17 +145,17 @@ func (t Section) ValueType(k string) (ValueType, bool) {
 }
 
 // Bool returns a bool value at k
-func (t Section) Bool(k string) bool {
+func (t Section) Bool(k string) (bool, bool) {
 	return t.values[k].BoolValue()
 }
 
 // Int returns an integer value at k
-func (t Section) Int(k string) int64 {
+func (t Section) Int(k string) (int64, bool) {
 	return t.values[k].IntValue()
 }
 
 // Float64 returns a float value at k
-func (t Section) Float64(k string) float64 {
+func (t Section) Float64(k string) (float64, bool) {
 	return t.values[k].FloatValue()
 }
 

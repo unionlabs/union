@@ -1,0 +1,40 @@
+INFO [10-20|12:56:42.532] big.Int                                  111,222,333,444,555,678,999=111,222,333,444,555,678,999
+INFO [10-20|12:56:42.532] -big.Int                                 -111,222,333,444,555,678,999=-111,222,333,444,555,678,999
+INFO [10-20|12:56:42.532] big.Int                                  11,122,233,344,455,567,899,900=11,122,233,344,455,567,899,900
+INFO [10-20|12:56:42.532] -big.Int                                 -11,122,233,344,455,567,899,900=-11,122,233,344,455,567,899,900
+INFO [10-20|12:56:42.532] uint256                                  111,222,333,444,555,678,999=111,222,333,444,555,678,999
+INFO [10-20|12:56:42.532] uint256                                  11,122,233,344,455,567,899,900=11,122,233,344,455,567,899,900
+INFO [10-20|12:56:42.532] int64                                    1,000,000=1,000,000
+INFO [10-20|12:56:42.532] int64                                    -1,000,000=-1,000,000
+INFO [10-20|12:56:42.532] int64                                    9,223,372,036,854,775,807=9,223,372,036,854,775,807
+INFO [10-20|12:56:42.532] int64                                    -9,223,372,036,854,775,808=-9,223,372,036,854,775,808
+INFO [10-20|12:56:42.532] uint64                                   1,000,000=1,000,000
+INFO [10-20|12:56:42.532] uint64                                   18,446,744,073,709,551,615=18,446,744,073,709,551,615
+INFO [10-20|12:56:42.532] Special chars in value                   key="special \r\n\t chars"
+INFO [10-20|12:56:42.532] Special chars in key                     "special \n\t chars"=value
+INFO [10-20|12:56:42.532] nospace                                  nospace=nospace
+INFO [10-20|12:56:42.532] with space                               "with nospace"="with nospace"
+INFO [10-20|12:56:42.532] Bash escapes in value                    key="\x1b[1G\x1b[K\x1b[1A"
+INFO [10-20|12:56:42.532] Bash escapes in key                      "\x1b[1G\x1b[K\x1b[1A"=value
+INFO [10-20|12:56:42.532] "Bash escapes in message  \x1b[1G\x1b[K\x1b[1A end" key=value
+INFO [10-20|12:56:42.532] "\x1b[35mColored\x1b[0m["                "\x1b[35mColored\x1b[0m["="\x1b[35mColored\x1b[0m["
+INFO [10-20|12:56:42.532] Custom Stringer value                    2562047h47m16.854s=2562047h47m16.854s
+INFO [10-20|12:56:42.532] Lazy evaluation of value                 key="lazy value"
+INFO [10-20|12:56:42.532] "A message with wonky 💩 characters"
+INFO [10-20|12:56:42.532] "A multiline message \nINFO [10-18|14:11:31.106] with wonky characters 💩"
+INFO [10-20|12:56:42.532] A multiline message
+LALA [ZZZZZZZZZZZZZZZZZZ] Actually part of message above
+INFO [10-20|12:56:42.532] boolean                                  true=true false=false
+INFO [10-20|12:56:42.532] repeated-key 1                           foo=alpha foo=beta
+INFO [10-20|12:56:42.532] repeated-key 2                           xx=short xx=longer
+INFO [10-20|12:56:42.532] log at level info
+WARN [10-20|12:56:42.532] log at level warn
+ERROR[10-20|12:56:42.532] log at level error
+INFO [10-20|12:56:42.532] test                                     bar=short a="aligned left"
+INFO [10-20|12:56:42.532] test                                     bar="a long message" a=1
+INFO [10-20|12:56:42.532] test                                     bar=short            a="aligned right"
+INFO [10-20|12:56:42.532] The following logs should align so that the key-fields make 5 columns
+INFO [10-20|12:56:42.532] Inserted known block                     number=1012 hash=000000..001234 txs=200 gas=1,123,123 other=first
+INFO [10-20|12:56:42.532] Inserted new block                       number=1    hash=000000..001235 txs=2   gas=1123      other=second
+INFO [10-20|12:56:42.532] Inserted known block                     number=99   hash=000000..012322 txs=10  gas=1         other=third
+WARN [10-20|12:56:42.532] Inserted known block                     number=1012 hash=000000..001234 txs=200 gas=99        other=fourth

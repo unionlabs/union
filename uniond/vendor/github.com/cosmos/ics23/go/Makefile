@@ -1,7 +1,7 @@
 test:
 	go test .
 
-.PHONY: test 
+.PHONY: test
 ##### Linting #####
 
 golangci_lint_cmd=golangci-lint

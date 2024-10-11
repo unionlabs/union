@@ -1,0 +1,59 @@
+syntax = "proto3";
+package cosmos.protocolpool.v1;
+
+option go_package = "cosmossdk.io/x/protocolpool/types";
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// Query defines the gRPC querier service for community pool module.
+service Query {
+  // CommunityPool queries the community pool coins.
+  rpc CommunityPool(QueryCommunityPoolRequest) returns (QueryCommunityPoolResponse) {
+    option (google.api.http).get = "/cosmos/protocolpool/v1/community_pool";
+  }
+
+  // UnclaimedBudget queries the remaining budget left to be claimed and it gives overall budget allocation view.
+  rpc UnclaimedBudget(QueryUnclaimedBudgetRequest) returns (QueryUnclaimedBudgetResponse) {
+    option (google.api.http).get = "/cosmos/protocolpool/v1/unclaimed_budget/{address}";
+  }
+}
+
+// QueryCommunityPoolRequest is the request type for the Query/CommunityPool RPC
+// method.
+message QueryCommunityPoolRequest {}
+
+// QueryCommunityPoolResponse is the response type for the Query/CommunityPool
+// RPC method.
+message QueryCommunityPoolResponse {
+  // pool defines community pool's coins.
+  repeated cosmos.base.v1beta1.DecCoin pool = 1
+      [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins", (gogoproto.nullable) = false];
+}
+
+// QueryUnclaimedBudgetRequest is the request type for the Query/UnclaimedBudgetRequest
+// RPC method.
+message QueryUnclaimedBudgetRequest {
+  // address is the recipient address to query unclaimed budget amount for.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// QueryUnclaimedBudgetResponse is the response type for the Query/UnclaimedBudget
+// RPC method.
+message QueryUnclaimedBudgetResponse {
+  // claimed_amount is the budget amount already claimed by the recipient
+  cosmos.base.v1beta1.Coin claimed_amount = 1;
+  // unclaimed_amount is the remaining budget amount that is unclaimed by the recipient
+  cosmos.base.v1beta1.Coin unclaimed_amount = 2;
+  // next_claim_from is the next starting claim time for fund distribution.
+  // It represents the time when we can claim funds after the period time interval has passed.
+  google.protobuf.Timestamp next_claim_from = 3 [(gogoproto.stdtime) = true];
+  // period is the time interval for fund distribution
+  google.protobuf.Duration period = 4 [(gogoproto.stdduration) = true];
+  // tranches_left is the number of tranches left for the amount to be distributed
+  uint64 tranches_left = 5;
+}

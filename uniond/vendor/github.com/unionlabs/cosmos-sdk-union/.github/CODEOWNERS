@@ -1,0 +1,14 @@
+# CODEOWNERS: https://help.github.com/articles/about-codeowners/
+
+# NOTE: Order is important; the last matching pattern takes the most precedence
+
+# Primary repo maintainers
+
+*       @cosmos/sdk-core-dev
+
+# CODEOWNERS for docs configuration
+
+/docs/docusaurus.config.js @julienrbrt @tac0turtle
+/docs/sidebars.js @julienrbrt @tac0turtle
+/docs/pre.sh @julienrbrt @tac0turtle
+/docs/post.sh @julienrbrt @tac0turtle

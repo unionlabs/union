@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+# gazelle:ignore Prevent this tool from using @prysm//tools/go:def.bzl go_library.
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/tools/beacon-fuzz",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//io/file:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "beacon-fuzz",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)

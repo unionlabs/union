@@ -1,0 +1,26 @@
+# commit to be tagged for new release
+commit = "HEAD"
+
+project_name = "go-digest"
+github_repo = "opencontainers/go-digest"
+
+pre_release = false
+
+preface = """\
+This is the first official release of the go-digest package. This package
+provides a simple toolkit for working with the digests used in the open
+containers ecosystem.
+
+This includes support for `sha256`, `sha384`, and `sha512` algorithms, with
+`sha256` being the most common and preferred for greatest compatibility across
+the ecosystem. Encoding ambiguity has been removed by only supporting lower
+case hex-encoded characters in the format for this release.
+
+The `digestset` package is provided to securely and unambiguously use
+shortened forms of the digest in environments where there is a full set
+of known digests."""
+
+# notable prs to include in the release notes, 1234 is the pr number
+[notes]
+
+[breaking]

@@ -1,0 +1,25 @@
+name: FOSSA License Scanning
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  - pull_request
+  - push
+
+permissions:
+  contents: read # to fetch code (actions/checkout)
+
+jobs:
+  scan-license:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run FOSSA scan and upload build data
+        uses: fossa-contrib/fossa-action@v2
+        with:
+          fossa-api-key: cac3dc8d4f2ba86142f6c0f2199a160f

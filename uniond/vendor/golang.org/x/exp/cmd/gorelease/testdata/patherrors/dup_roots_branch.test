@@ -1,0 +1,20 @@
+dir=dup
+base=none
+success=false
+vcs=git
+-- dup/go.mod --
+module example.com/dup/v2
+
+go 1.13
+-- dup/v2/go.mod --
+module example.com/dup/v2
+
+go 1.13
+-- want --
+# diagnostics
+module is defined in two locations:
+	dup/go.mod
+	dup/v2/go.mod
+
+# summary
+Suggested version: v2.0.0 (with tag dup/v2.0.0)

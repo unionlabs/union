@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("\xb2\x01\nT,\x18^\tj^P{L77`TY[\x1da\v:o\x00")

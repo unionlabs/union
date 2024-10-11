@@ -1,0 +1,161 @@
+syntax = "proto3";
+package cosmwasm.wasm.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmwasm/wasm/v1/types.proto";
+import "google/protobuf/any.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/wasm/types";
+option (gogoproto.goproto_getters_all) = false;
+
+// StoreCodeAuthorization defines authorization for wasm code upload.
+// Since: wasmd 0.42
+message StoreCodeAuthorization {
+  option (amino.name) = "wasm/StoreCodeAuthorization";
+  option (cosmos_proto.implements_interface) =
+      "cosmos.authz.v1beta1.Authorization";
+
+  // Grants for code upload
+  repeated CodeGrant grants = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// ContractExecutionAuthorization defines authorization for wasm execute.
+// Since: wasmd 0.30
+message ContractExecutionAuthorization {
+  option (amino.name) = "wasm/ContractExecutionAuthorization";
+  option (cosmos_proto.implements_interface) =
+      "cosmos.authz.v1beta1.Authorization";
+
+  // Grants for contract executions
+  repeated ContractGrant grants = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// ContractMigrationAuthorization defines authorization for wasm contract
+// migration. Since: wasmd 0.30
+message ContractMigrationAuthorization {
+  option (amino.name) = "wasm/ContractMigrationAuthorization";
+  option (cosmos_proto.implements_interface) =
+      "cosmos.authz.v1beta1.Authorization";
+
+  // Grants for contract migrations
+  repeated ContractGrant grants = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// CodeGrant a granted permission for a single code
+message CodeGrant {
+  // CodeHash is the unique identifier created by wasmvm
+  // Wildcard "*" is used to specify any kind of grant.
+  bytes code_hash = 1;
+
+  // InstantiatePermission is the superset access control to apply
+  // on contract creation.
+  // Optional
+  AccessConfig instantiate_permission = 2;
+}
+
+// ContractGrant a granted permission for a single contract
+// Since: wasmd 0.30
+message ContractGrant {
+  // Contract is the bech32 address of the smart contract
+  string contract = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // Limit defines execution limits that are enforced and updated when the grant
+  // is applied. When the limit lapsed the grant is removed.
+  google.protobuf.Any limit = 2 [ (cosmos_proto.accepts_interface) =
+                                      "cosmwasm.wasm.v1.ContractAuthzLimitX" ];
+
+  // Filter define more fine-grained control on the message payload passed
+  // to the contract in the operation. When no filter applies on execution, the
+  // operation is prohibited.
+  google.protobuf.Any filter = 3
+      [ (cosmos_proto.accepts_interface) =
+            "cosmwasm.wasm.v1.ContractAuthzFilterX" ];
+}
+
+// MaxCallsLimit limited number of calls to the contract. No funds transferable.
+// Since: wasmd 0.30
+message MaxCallsLimit {
+  option (amino.name) = "wasm/MaxCallsLimit";
+  option (cosmos_proto.implements_interface) =
+      "cosmwasm.wasm.v1.ContractAuthzLimitX";
+
+  // Remaining number that is decremented on each execution
+  uint64 remaining = 1;
+}
+
+// MaxFundsLimit defines the maximal amounts that can be sent to the contract.
+// Since: wasmd 0.30
+message MaxFundsLimit {
+  option (amino.name) = "wasm/MaxFundsLimit";
+  option (cosmos_proto.implements_interface) =
+      "cosmwasm.wasm.v1.ContractAuthzLimitX";
+
+  // Amounts is the maximal amount of tokens transferable to the contract.
+  repeated cosmos.base.v1beta1.Coin amounts = 1 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.encoding) = "legacy_coins"
+  ];
+}
+
+// CombinedLimit defines the maximal amounts that can be sent to a contract and
+// the maximal number of calls executable. Both need to remain >0 to be valid.
+// Since: wasmd 0.30
+message CombinedLimit {
+  option (amino.name) = "wasm/CombinedLimit";
+  option (cosmos_proto.implements_interface) =
+      "cosmwasm.wasm.v1.ContractAuthzLimitX";
+
+  // Remaining number that is decremented on each execution
+  uint64 calls_remaining = 1;
+  // Amounts is the maximal amount of tokens transferable to the contract.
+  repeated cosmos.base.v1beta1.Coin amounts = 2 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.encoding) = "legacy_coins"
+  ];
+}
+
+// AllowAllMessagesFilter is a wildcard to allow any type of contract payload
+// message.
+// Since: wasmd 0.30
+message AllowAllMessagesFilter {
+  option (amino.name) = "wasm/AllowAllMessagesFilter";
+  option (cosmos_proto.implements_interface) =
+      "cosmwasm.wasm.v1.ContractAuthzFilterX";
+}
+
+// AcceptedMessageKeysFilter accept only the specific contract message keys in
+// the json object to be executed.
+// Since: wasmd 0.30
+message AcceptedMessageKeysFilter {
+  option (amino.name) = "wasm/AcceptedMessageKeysFilter";
+  option (cosmos_proto.implements_interface) =
+      "cosmwasm.wasm.v1.ContractAuthzFilterX";
+
+  // Messages is the list of unique keys
+  repeated string keys = 1;
+}
+
+// AcceptedMessagesFilter accept only the specific raw contract messages to be
+// executed.
+// Since: wasmd 0.30
+message AcceptedMessagesFilter {
+  option (amino.name) = "wasm/AcceptedMessagesFilter";
+  option (cosmos_proto.implements_interface) =
+      "cosmwasm.wasm.v1.ContractAuthzFilterX";
+
+  // Messages is the list of raw contract messages
+  repeated bytes messages = 1 [
+    (gogoproto.casttype) = "RawContractMessage",
+    (amino.encoding) = "inline_json"
+  ];
+}

@@ -1,0 +1,8 @@
+# Automatically require code review from core-team.
+* @prysmaticlabs/core-team
+
+# Starlark code owners
+*.bzl @prestonvanloon
+
+# Anyone on prylabs team can approve dependency updates.
+deps.bzl @prysmaticlabs/core-team

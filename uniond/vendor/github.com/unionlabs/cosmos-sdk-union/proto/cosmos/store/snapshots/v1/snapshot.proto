@@ -1,0 +1,63 @@
+syntax = "proto3";
+package cosmos.store.snapshots.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+option go_package = "cosmossdk.io/store/snapshots/types";
+
+// Snapshot contains Tendermint state sync snapshot info.
+message Snapshot {
+  uint64   height   = 1;
+  uint32   format   = 2;
+  uint32   chunks   = 3;
+  bytes    hash     = 4;
+  Metadata metadata = 5 [(gogoproto.nullable) = false];
+}
+
+// Metadata contains SDK-specific snapshot metadata.
+message Metadata {
+  repeated bytes chunk_hashes = 1; // SHA-256 chunk hashes
+}
+
+// SnapshotItem is an item contained in a rootmulti.Store snapshot.
+//
+message SnapshotItem {
+  // item is the specific type of snapshot item.
+  oneof item {
+    SnapshotStoreItem        store             = 1;
+    SnapshotIAVLItem         iavl              = 2 [(gogoproto.customname) = "IAVL"];
+    SnapshotExtensionMeta    extension         = 3;
+    SnapshotExtensionPayload extension_payload = 4;
+  }
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+}
+
+// SnapshotStoreItem contains metadata about a snapshotted store.
+message SnapshotStoreItem {
+  string name                            = 1;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+}
+
+// SnapshotIAVLItem is an exported IAVL node.
+message SnapshotIAVLItem {
+  bytes key   = 1;
+  bytes value = 2;
+  // version is block height
+  int64 version = 3;
+  // height is depth of the tree.
+  int32 height                           = 4;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+}
+
+// SnapshotExtensionMeta contains metadata about an external snapshotter.
+message SnapshotExtensionMeta {
+  string name                            = 1;
+  uint32 format                          = 2;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+}
+
+// SnapshotExtensionPayload contains payloads of an external snapshotter.
+message SnapshotExtensionPayload {
+  bytes payload                          = 1;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+}

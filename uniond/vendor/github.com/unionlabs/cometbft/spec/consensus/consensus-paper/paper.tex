@@ -1,0 +1,153 @@
+%\documentclass[conference]{IEEEtran}
+\documentclass[conference,onecolumn,draft,a4paper]{IEEEtran}
+% Add the compsoc option for Computer Society conferences.
+%
+% If IEEEtran.cls has not been installed into the LaTeX system files,
+% manually specify the path to it like:
+% \documentclass[conference]{../sty/IEEEtran}
+
+
+
+% *** GRAPHICS RELATED PACKAGES ***
+%
+\ifCLASSINFOpdf
+\else
+\fi
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+%\usepackage[caption=false,font=footnotesize]{subfig}
+\usepackage{tikz}
+\usetikzlibrary{decorations,shapes,backgrounds,calc}
+\tikzstyle{msg}=[->,black,>=latex]
+\tikzstyle{rubber}=[|<->|]
+\tikzstyle{announce}=[draw=blue,fill=blue,shape=diamond,right,minimum
+  height=2mm,minimum width=1.6667mm,inner sep=0pt]
+\tikzstyle{decide}=[draw=red,fill=red,shape=isosceles triangle,right,minimum
+  height=2mm,minimum width=1.6667mm,inner sep=0pt,shape border rotate=90]
+\tikzstyle{cast}=[draw=green!50!black,fill=green!50!black,shape=circle,left,minimum
+  height=2mm,minimum width=1.6667mm,inner sep=0pt]
+
+
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{amssymb}
+\usepackage{rounddiag}
+\graphicspath{{../}}
+
+\usepackage{technote}
+\usepackage{homodel}
+\usepackage{enumerate}
+%%\usepackage{ulem}\normalem
+
+% to center caption
+\usepackage{caption}
+
+\newcommand{\textstretch}{1.4}
+\newcommand{\algostretch}{1}
+\newcommand{\eqnstretch}{0.5}
+
+\newconstruct{\FOREACH}{\textbf{for each}}{\textbf{do}}{\ENDFOREACH}{}
+
+%\newconstruct{\ON}{\textbf{on}}{\textbf{do}}{\ENDON}{\textbf{end on}}
+\newcommand\With{\textbf{while}}
+\newcommand\From{\textbf{from}}
+\newcommand\Broadcast{\textbf{broadcast}}
+\newcommand\PBroadcast{send}
+\newcommand\UpCall{\textbf{UpCall}}
+\newcommand\DownCall{\textbf{DownCall}}
+\newcommand \Call{\textbf{Call}}
+\newident{noop}
+\newconstruct{\UPON}{\textbf{upon}}{\textbf{do}}{\ENDUPON}{}
+
+
+
+\newcommand{\abcast}{\mathsf{to\mbox{\sf-}broadcast}}
+\newcommand{\adeliver}{\mathsf{to\mbox{\sf-}deliver}}
+
+\newcommand{\ABCAgreement}{\emph{TO-Agreement}}
+\newcommand{\ABCIntegrity}{\emph{TO-Integrity}}
+\newcommand{\ABCValidity}{\emph{TO-Validity}}
+\newcommand{\ABCTotalOrder}{\emph{TO-Order}}
+\newcommand{\ABCBoundedDelivery}{\emph{TO-Bounded Delivery}}
+
+
+\newcommand{\tabc}{\mathit{atab\mbox{\sf-}cast}}
+\newcommand{\anno}{\mathit{atab\mbox{\sf-}announce}}
+\newcommand{\abort}{\mathit{atab\mbox{\sf-}abort}}
+\newcommand{\tadel}{\mathit{atab\mbox{\sf-}deliver}}
+
+\newcommand{\ATABAgreement}{\emph{ATAB-Agreement}}
+\newcommand{\ATABAbort}{\emph{ATAB-Abort}}
+\newcommand{\ATABIntegrity}{\emph{ATAB-Integrity}}
+\newcommand{\ATABValidity}{\emph{ATAB-Validity}}
+\newcommand{\ATABAnnounce}{\emph{ATAB-Announcement}}
+\newcommand{\ATABTermination}{\emph{ATAB-Termination}}
+%\newcommand{\ATABFastAnnounce}{\emph{ATAB-Fast-Announcement}}
+
+%% Command for observations.
+\newtheorem{observation}{Observation}
+
+
+%% HO ALGORITHM DEFINITIONS
+\newconstruct{\FUNCTION}{\textbf{Function}}{\textbf{:}}{\ENDFUNCTION}{}
+
+%% Uncomment the following four lines to remove remarks and visible traces of
+%%    modifications in the document
+%%\renewcommand{\sout}[1]{\relaxx}
+%%\renewcommand{\uline}[1]{#1}
+%% \renewcommand{\uwave}[1]{#1}
+ \renewcommand{\note}[2][default]{\relax}
+
+
+%% The following commands can be used to generate TR or Conference version of the paper
+\newcommand{\tr}[1]{}
+\renewcommand{\tr}[1]{#1}
+\newcommand{\onlypaper}[1]{#1}
+%\renewcommand{\onlypaper}[1]{}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\pagestyle{plain}
+%\pagestyle{empty}
+
+%% IEEE tweaks
+%\setlength{\IEEEilabelindent}{.5\parindent}
+%\setlength{\IEEEiednormlabelsep}{.5\parindent}
+
+\begin{document}
+%
+% paper title
+% can use linebreaks \\ within to get better formatting as desired
+\title{The latest gossip on BFT consensus\vspace{-0.7\baselineskip}}
+
+
+
+\author{\IEEEauthorblockN{\large Ethan Buchman, Jae Kwon and Zarko Milosevic\\}
+	\IEEEauthorblockN{\large Tendermint}\\
+	%\\\vspace{-0.5\baselineskip}
+	\IEEEauthorblockN{September 24, 2018}
+}
+
+% make the title area
+\maketitle
+\vspace*{0.5em}
+
+\begin{abstract}
+This paper presents Tendermint, a new protocol for ordering events in a distributed network under adversarial conditions. More commonly known as Byzantine Fault Tolerant (BFT) consensus or atomic broadcast, the problem has attracted significant attention in recent years due to the widespread success of blockchain-based digital currencies, such as Bitcoin and Ethereum, which successfully solved the problem in a public setting without a central authority. Tendermint modernizes classic academic work on the subject and simplifies the design of the BFT algorithm by relying on a peer-to-peer gossip protocol among nodes. 
+\end{abstract}
+
+%\noindent \textbf{Keywords:} Blockchain, Byzantine Fault Tolerance, State Machine %Replication
+
+\input{intro}
+\input{definitions}
+\input{consensus}
+\input{proof}
+\input{conclusion}
+
+\bibliographystyle{IEEEtran}
+\bibliography{lit}
+
+%\appendix
+
+\end{document}

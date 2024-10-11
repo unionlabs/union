@@ -1,0 +1,87 @@
+define
+a.SET.1:a
+b.SET.1:b
+c.SET.1:c
+d.SET.1:d
+----
+
+# Exercise noop optimization with no errors
+
+iter
+seek-ge aa
+seek-ge aa
+seek-ge aaa
+seek-ge b
+seek-ge bb
+----
+b: (b, .)
+b: (b, .)
+b: (b, .)
+b: (b, .)
+c: (c, .)
+
+iter
+seek-lt ddd
+seek-lt ddd
+seek-lt dd
+seek-lt d
+seek-lt c
+----
+d: (d, .)
+d: (d, .)
+d: (d, .)
+c: (c, .)
+b: (b, .)
+
+# Exercise errors which should prevent seek optimizations.
+
+iter seek-error=(0,1)
+seek-ge a
+seek-ge b
+seek-ge c
+seek-ge d
+----
+err=injecting error
+err=injecting error
+c: (c, .)
+d: (d, .)
+
+iter seek-error=(1)
+seek-ge d
+seek-ge a
+seek-ge b
+seek-ge b
+----
+d: (d, .)
+err=injecting error
+b: (b, .)
+b: (b, .)
+
+iter seek-error=(0,1)
+seek-lt e
+seek-lt d
+seek-lt c
+seek-lt b
+----
+err=injecting error
+err=injecting error
+b: (b, .)
+a: (a, .)
+
+iter seek-error=(1)
+seek-lt b
+seek-lt e
+seek-lt e
+----
+a: (a, .)
+err=injecting error
+d: (d, .)
+
+iter seek-error=(1)
+seek-prefix-ge d
+seek-prefix-ge a
+seek-prefix-ge b
+----
+d: (d, .)
+err=injecting error
+b: (b, .)

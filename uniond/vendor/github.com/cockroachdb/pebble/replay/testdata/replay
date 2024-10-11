@@ -1,0 +1,108 @@
+corpus simple
+----
+
+tree
+----
+          /
+            build/
+      89      000004.log
+     658      000005.sst
+      49      000006.log
+     686      000007.sst
+      16      CURRENT
+       0      LOCK
+      98      MANIFEST-000001
+     122      MANIFEST-000008
+    1189      OPTIONS-000003
+       0      marker.format-version.000007.008
+       0      marker.manifest.000002.MANIFEST-000008
+            simple/
+     686      000007.sst
+      98      MANIFEST-000001
+     122      MANIFEST-000008
+              checkpoint/
+      25        000004.log
+     658        000005.sst
+      98        MANIFEST-000001
+    1189        OPTIONS-000003
+       0        marker.format-version.000001.008
+       0        marker.manifest.000001.MANIFEST-000001
+
+cat build/OPTIONS-000003
+----
+----
+[Version]
+  pebble_version=0.1
+
+[Options]
+  bytes_per_sync=524288
+  cache_size=8388608
+  cleaner=replay.WorkloadCollector("delete")
+  compaction_debt_concurrency=1073741824
+  comparer=pebble.internal.testkeys
+  disable_wal=false
+  flush_delay_delete_range=0s
+  flush_delay_range_key=0s
+  flush_split_bytes=4194304
+  format_major_version=8
+  l0_compaction_concurrency=10
+  l0_compaction_file_threshold=500
+  l0_compaction_threshold=4
+  l0_stop_writes_threshold=12
+  lbase_max_bytes=67108864
+  max_concurrent_compactions=1
+  max_manifest_file_size=96
+  max_open_files=1000
+  mem_table_size=4194304
+  mem_table_stop_writes_threshold=2
+  min_deletion_rate=0
+  merger=pebble.concatenate
+  read_compaction_rate=16000
+  read_sampling_multiplier=16
+  strict_wal_tail=true
+  table_cache_shards=2
+  table_property_collectors=[]
+  validate_on_ingest=false
+  wal_dir=
+  wal_bytes_per_sync=0
+  max_writer_concurrency=0
+  force_writer_parallelism=false
+  secondary_cache_size_bytes=0
+  create_on_shared=0
+
+[Level "0"]
+  block_restart_interval=16
+  block_size=4096
+  block_size_threshold=90
+  compression=Snappy
+  filter_policy=none
+  filter_type=table
+  index_block_size=4096
+  target_file_size=2097152
+----
+----
+
+replay simple unpaced
+----
+
+wait
+----
+replayed 42B in writes
+
+# NB: The file sizes are non-deterministic after replay (because compactions are
+# nondeterministic). We don't `tree` here as a result.
+
+scan-keys
+----
+a: a
+b: b
+c: c
+d: d
+e: e
+f: f
+g: g
+h: h
+i: i
+
+close
+----

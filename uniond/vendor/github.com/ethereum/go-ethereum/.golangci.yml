@@ -1,0 +1,64 @@
+# This file configures github.com/golangci/golangci-lint.
+
+run:
+  timeout: 20m
+  tests: true
+  # default is true. Enables skipping of directories:
+  #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
+  skip-dirs-use-default: true
+  skip-files:
+    - core/genesis_alloc.go
+
+linters:
+  disable-all: true
+  enable:
+    - goconst
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - unconvert
+    - typecheck
+    - unused
+    - staticcheck
+    - bidichk
+    - durationcheck
+    - exportloopref
+    - whitespace
+
+    # - structcheck # lots of false positives
+    # - errcheck #lot of false positives
+    # - contextcheck
+    # - errchkjson # lots of false positives
+    # - errorlint # this check crashes
+    # - exhaustive # silly check
+    # - makezero # false positives
+    # - nilerr # several intentional
+
+linters-settings:
+  gofmt:
+    simplify: true
+  goconst:
+    min-len: 3 # minimum length of string constant
+    min-occurrences: 6 # minimum number of occurrences
+
+issues:
+  exclude-rules:
+    - path: crypto/bn256/cloudflare/optate.go
+      linters:
+        - deadcode
+        - staticcheck
+    - path: internal/build/pgp.go
+      text: 'SA1019: "golang.org/x/crypto/openpgp" is deprecated: this package is unmaintained except for security fixes.'
+    - path: core/vm/contracts.go
+      text: 'SA1019: "golang.org/x/crypto/ripemd160" is deprecated: RIPEMD-160 is a legacy hash and should not be used for new applications.'
+    - path: accounts/usbwallet/trezor.go
+      text: 'SA1019: "github.com/golang/protobuf/proto" is deprecated: Use the "google.golang.org/protobuf/proto" package instead.'
+    - path: accounts/usbwallet/trezor/
+      text: 'SA1019: "github.com/golang/protobuf/proto" is deprecated: Use the "google.golang.org/protobuf/proto" package instead.'
+  exclude:
+    - 'SA1019: event.TypeMux is deprecated: use Feed'
+    - 'SA1019: strings.Title is deprecated'
+    - 'SA1019: strings.Title has been deprecated since Go 1.18 and an alternative has been available since Go 1.0: The rule Title uses for word boundaries does not handle Unicode punctuation properly. Use golang.org/x/text/cases instead.'
+    - 'SA1029: should not use built-in type string as key for value'

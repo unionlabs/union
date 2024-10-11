@@ -1,0 +1,11 @@
+-- go.mod --
+module example.com/retractdep/v3
+
+go 1.12
+
+// This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message. This is a very long message.
+retract v3.0.0
+-- a.go --
+package a
+
+const A = "a"

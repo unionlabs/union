@@ -1,0 +1,14 @@
+Plain
+[38;5;196mRed[0m
+[38;5;196;48;5;46mRed on Blue[0m
+[38;5;51mCyan[0m
+[48;5;201mMagenta Bg[0m
+[38;5;51m[48;5;201mCyan on Magenta Bg[0m[0m
+[1mBold[0m
+[2mFaint[0m
+[3mItalic[0m
+[4mUnderline[0m
+[53mOverline[0m
+[5mBlink[0m
+[7mReverse[0m
+[9mCrossOut[0m

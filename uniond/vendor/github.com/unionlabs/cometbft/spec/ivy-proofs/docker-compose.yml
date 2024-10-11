@@ -1,0 +1,7 @@
+version: '3'
+services:
+  tendermint-proof:
+    build: .
+    volumes:
+      - ./:/home/user/tendermint-proof:ro
+      - ./output:/home/user/tendermint-proof/output:rw

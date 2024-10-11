@@ -1,0 +1,3 @@
+{
+	"cert_provider_command":["cat", "testdata/testcert.pem"]
+}

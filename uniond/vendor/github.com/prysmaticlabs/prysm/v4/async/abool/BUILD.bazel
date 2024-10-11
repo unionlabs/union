@@ -1,0 +1,14 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["abool.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/async/abool",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["abool_test.go"],
+    embed = [":go_default_library"],
+)

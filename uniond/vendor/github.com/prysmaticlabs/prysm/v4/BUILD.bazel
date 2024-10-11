@@ -1,0 +1,288 @@
+load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@com_github_atlassian_bazel_tools//gometalinter:def.bzl", "gometalinter")
+load("@com_github_atlassian_bazel_tools//goimports:def.bzl", "goimports")
+load("@io_kubernetes_build//defs:run_in_workspace.bzl", "workspace_binary")
+load("@io_bazel_rules_go//go:def.bzl", "nogo")
+load("@bazel_skylib//rules:common_settings.bzl", "string_setting")
+load("@prysm//tools/nogo_config:def.bzl", "nogo_config_exclude")
+
+prefix = "github.com/prysmaticlabs/prysm"
+
+exports_files([
+    "LICENSE.md",
+])
+
+# gazelle:prefix github.com/prysmaticlabs/prysm/v4
+# gazelle:map_kind go_library go_library @prysm//tools/go:def.bzl
+# gazelle:map_kind go_test go_test @prysm//tools/go:def.bzl
+# gazelle:map_kind go_repository go_repository @prysm//tools/go:def.bzl
+# gazelle:build_tags bazel
+# gazelle:exclude tools/analyzers/**/testdata/**
+gazelle(
+    name = "gazelle",
+    prefix = prefix,
+)
+
+# Protobuf compiler (non-gRPC)
+alias(
+    name = "proto_compiler",
+    actual = "@io_bazel_rules_go//proto:go_proto",
+    visibility = [
+        "//proto:__subpackages__",
+    ],
+)
+
+# Cast protobuf compiler (non-gRPC)
+alias(
+    name = "cast_proto_compiler",
+    actual = "@com_github_prysmaticlabs_protoc_gen_go_cast//:go_cast",
+    visibility = [
+        "//proto:__subpackages__",
+    ],
+)
+
+# Protobuf compiler (gRPC)
+alias(
+    name = "grpc_proto_compiler",
+    actual = "@io_bazel_rules_go//proto:go_grpc",
+    visibility = ["//visibility:public"],
+)
+
+# Cast protobuf compiler (gRPC)
+alias(
+    name = "cast_grpc_proto_compiler",
+    actual = "@com_github_prysmaticlabs_protoc_gen_go_cast//:go_cast_grpc",
+    visibility = ["//visibility:public"],
+)
+
+# Protobuf gRPC gateway compiler
+alias(
+    name = "grpc_gateway_proto_compiler",
+    actual = "@com_github_grpc_ecosystem_grpc_gateway_v2//protoc-gen-grpc-gateway:go_gen_grpc_gateway",
+    visibility = ["//visibility:public"],
+)
+
+gometalinter(
+    name = "gometalinter",
+    config = "//:.gometalinter.json",
+    paths = [
+        "./...",
+    ],
+    prefix = prefix,
+)
+
+goimports(
+    name = "goimports",
+    display_diffs = True,
+    prefix = prefix,
+    write = False,
+)
+
+workspace_binary(
+    name = "golint",
+    cmd = "@com_github_golang_lint//golint",
+)
+
+STATICCHECK_ANALYZERS = [
+    # Enabled static checks. See https://staticcheck.dev/docs/checks/
+    # Please. keep this list sorted. Don't be a bad person by inserting stuff randomly.
+    "sa1000",
+    "sa1001",
+    "sa1002",
+    "sa1003",
+    "sa1004",
+    "sa1005",
+    "sa1006",
+    "sa1007",
+    "sa1008",
+    "sa1010",
+    "sa1011",
+    "sa1012",
+    "sa1013",
+    "sa1014",
+    "sa1015",
+    "sa1016",
+    "sa1017",
+    "sa1018",
+    # "sa1019", # TODO: Fix all uses of deprecated things.
+    "sa1020",
+    "sa1021",
+    "sa1023",
+    "sa1024",
+    "sa1025",
+    "sa1026",
+    "sa1027",
+    "sa1028",
+    "sa1029",
+    "sa1030",
+    "sa2000",
+    "sa2001",
+    "sa2002",
+    "sa2003",
+    "sa3000",
+    "sa3001",
+    "sa4000",
+    "sa4001",
+    "sa4003",
+    "sa4004",
+    "sa4005",
+    "sa4006",
+    "sa4008",
+    "sa4009",
+    "sa4010",
+    "sa4011",
+    "sa4012",
+    "sa4013",
+    "sa4014",
+    "sa4015",
+    "sa4016",
+    "sa4017",
+    "sa4018",
+    "sa4019",
+    "sa4020",
+    "sa4021",
+    "sa4022",
+    "sa4023",
+    "sa4024",
+    "sa4025",
+    "sa4026",
+    "sa4027",
+    "sa4028",
+    "sa4029",
+    "sa4030",
+    "sa4031",
+    "sa4032",
+    "sa5000",
+    "sa5001",
+    "sa5002",
+    "sa5003",
+    "sa5004",
+    "sa5005",
+    "sa5007",
+    "sa5008",
+    "sa5009",
+    "sa5010",
+    "sa5011",
+    "sa5012",
+    "sa6000",
+    "sa6001",
+    "sa6002",
+    "sa6003",
+    "sa6005",
+    "sa6006",
+    "sa9001",
+    "sa9002",
+    #"sa9003", # Doesn't build. See https://github.com/dominikh/go-tools/pull/1483
+    "sa9004",
+    "sa9005",
+    "sa9006",
+    "sa9007",
+    "sa9008",
+]
+
+nogo_config_exclude(
+    name = "nogo_config_with_excludes",
+    checks = [sa.upper() for sa in STATICCHECK_ANALYZERS],
+    exclude_files = [
+        "external/.*",
+    ],
+    input = "nogo_config.json",
+)
+
+nogo(
+    name = "nogo",
+    config = ":nogo_config_with_excludes",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//tools/analyzers/comparesame:go_default_library",
+        "//tools/analyzers/cryptorand:go_default_library",
+        "//tools/analyzers/errcheck:go_default_library",
+        "//tools/analyzers/featureconfig:go_default_library",
+        "//tools/analyzers/gocognit:go_default_library",
+        "//tools/analyzers/ineffassign:go_default_library",
+        "//tools/analyzers/interfacechecker:go_default_library",
+        "//tools/analyzers/logruswitherror:go_default_library",
+        "//tools/analyzers/maligned:go_default_library",
+        "//tools/analyzers/nop:go_default_library",
+        "//tools/analyzers/properpermissions:go_default_library",
+        "//tools/analyzers/recursivelock:go_default_library",
+        "//tools/analyzers/shadowpredecl:go_default_library",
+        "//tools/analyzers/slicedirect:go_default_library",
+        "//tools/analyzers/uintcast:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/appends:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/asmdecl:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/assign:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/atomic:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/atomicalign:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/bools:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/buildssa:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/buildtag:go_default_library",
+        # cgocall disabled
+        #"@org_golang_x_tools//go/analysis/passes/cgocall:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/copylock:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/ctrlflow:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/deepequalerrors:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/defers:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/directive:go_default_library",
+        # fieldalignment disabled
+        #"@org_golang_x_tools//go/analysis/passes/fieldalignment:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/findcall:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/framepointer:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/httpmux:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/httpresponse:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/ifaceassert:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/inspect:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/loopclosure:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/nilfunc:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/nilness:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/pkgfact:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/printf:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/reflectvaluecompare:go_default_library",
+        # shadow disabled
+        #"@org_golang_x_tools//go/analysis/passes/shadow:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/shift:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/sigchanyzer:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/slog:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/sortslice:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/stdmethods:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/stringintconv:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/structtag:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/testinggoroutine:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/tests:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/timeformat:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/unmarshal:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/unreachable:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/unsafeptr:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/unusedresult:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/unusedwrite:go_default_library",
+        "@org_golang_x_tools//go/analysis/passes/usesgenerics:go_default_library",
+    ] + select({
+        # nogo checks that fail with coverage enabled.
+        ":coverage_enabled": [],
+        "//conditions:default": [
+            "@org_golang_x_tools//go/analysis/passes/composite:go_default_library",
+            "@org_golang_x_tools//go/analysis/passes/lostcancel:go_default_library",
+        ],
+    }) + ["@co_honnef_go_tools//staticcheck/%s:go_default_library" % c for c in STATICCHECK_ANALYZERS],
+)
+
+config_setting(
+    name = "coverage_enabled",
+    values = {"define": "coverage_enabled=1"},
+)
+
+config_setting(
+    name = "pgo_enabled",
+    values = {"define": "pgo_enabled=1"},
+)
+
+common_files = {
+    "//:LICENSE.md": "LICENSE.md",
+    "//:README.md": "README.md",
+}
+
+sh_binary(
+    name = "prysm_sh",
+    srcs = ["prysm.sh"],
+    visibility = ["//visibility:public"],
+)

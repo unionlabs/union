@@ -1,0 +1,20 @@
+# Verify that important design docs have ToC entries.
+name: Check documentation ToC
+on:
+  pull_request:
+    push:
+      branches:
+        - v1.x
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: technote-space/get-diff-action@v6
+        with:
+          PATTERNS: |
+            docs/architecture/**
+            docs/rfc/**
+      - run: make check-docs-toc
+        if: env.GIT_DIFF

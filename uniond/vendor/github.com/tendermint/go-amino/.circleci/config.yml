@@ -1,0 +1,22 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.12.0
+
+    steps:
+      - checkout
+      - restore_cache:
+              keys:
+                - go-mod-v1-{{ checksum "go.sum" }}
+      - run:
+              name: test
+              command: |
+                export PATH="$GOBIN:$PATH"
+                go env
+                go version
+                make get_tools && make && make test
+      - save_cache:
+          key: go-mod-v1-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"

@@ -90,11 +90,10 @@ func NewDsn(rawURL string) (*Dsn, error) {
 	// Port
 	var port int
 	if parsedURL.Port() != "" {
-		parsedPort, err := strconv.Atoi(parsedURL.Port())
+		port, err = strconv.Atoi(parsedURL.Port())
 		if err != nil {
 			return nil, &DsnParseError{"invalid port"}
 		}
-		port = parsedPort
 	} else {
 		port = scheme.defaultPort()
 	}

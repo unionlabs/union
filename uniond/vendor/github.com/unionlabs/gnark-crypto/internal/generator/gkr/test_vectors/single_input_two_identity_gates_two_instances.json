@@ -1,0 +1,56 @@
+{
+	"hash": {
+		"type": "const",
+		"val": -1
+	},
+	"circuit": "resources/single_input_two_identity_gates.json",
+	"input": [
+		[
+			2,
+			3
+		]
+	],
+	"output": [
+		[
+			2,
+			3
+		],
+		[
+			2,
+			3
+		]
+	],
+	"proof": [
+		{
+			"finalEvalProof": [],
+			"partialSumPolys": [
+				[
+					0,
+					0
+				]
+			]
+		},
+		{
+			"finalEvalProof": [
+				1
+			],
+			"partialSumPolys": [
+				[
+					-3,
+					-16
+				]
+			]
+		},
+		{
+			"finalEvalProof": [
+				1
+			],
+			"partialSumPolys": [
+				[
+					-3,
+					-16
+				]
+			]
+		}
+	]
+}

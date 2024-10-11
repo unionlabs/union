@@ -1,0 +1,38 @@
+db space
+----
+accepts 1 arg(s), received 0
+
+# covers the whole 4.sst
+
+db space --start=a --end=z
+../testdata/db-stage-4
+----
+986
+
+# covers from left of 4.sst to its only data block
+
+db space --start=a --end=bar
+../testdata/db-stage-4
+----
+62
+
+# covers from 4.sst's only data block to its right
+
+db space --start=foo --end=z
+../testdata/db-stage-4
+----
+62
+
+# covers non-overlapping range to left of 4.sst
+
+db space --start=a --end=a
+../testdata/db-stage-4
+----
+0
+
+# covers non-overlapping range to right of 4.sst
+
+db space --start=z --end=z
+../testdata/db-stage-4
+----
+0

@@ -1,0 +1,201 @@
+define
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL) (#8,RANGEKEYUNSET,@1) (#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@2,oranges)}
+c-d:{(#4,RANGEKEYSET,@3,coconut)}
+e-f:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+h-j:{(#22,RANGEKEYDEL) (#21,RANGEKEYSET,@5,peaches) (#21,RANGEKEYSET,@3,starfruit)}
+l-m:{(#2,RANGEKEYUNSET,@9) (#2,RANGEKEYUNSET,@5)}
+q-z:{(#14,RANGEKEYSET,@9,mangos)}
+----
+OK
+
+iter
+first
+next
+next
+next
+next
+next
+next
+----
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+c-d:{(#4,RANGEKEYSET,@3,coconut)}
+e-f:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+h-j:{(#22,RANGEKEYDEL)}
+l-m:{(#2,RANGEKEYUNSET,@9) (#2,RANGEKEYUNSET,@5)}
+q-z:{(#14,RANGEKEYSET,@9,mangos)}
+<nil>
+
+iter
+last
+prev
+prev
+prev
+prev
+prev
+prev
+----
+q-z:{(#14,RANGEKEYSET,@9,mangos)}
+l-m:{(#2,RANGEKEYUNSET,@9) (#2,RANGEKEYUNSET,@5)}
+h-j:{(#22,RANGEKEYDEL)}
+e-f:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+c-d:{(#4,RANGEKEYSET,@3,coconut)}
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+<nil>
+
+iter
+seek-ge cat
+prev
+next
+next
+next
+----
+c-d:{(#4,RANGEKEYSET,@3,coconut)}
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+c-d:{(#4,RANGEKEYSET,@3,coconut)}
+e-f:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+h-j:{(#22,RANGEKEYDEL)}
+
+iter
+seek-ge c
+prev
+next
+next
+next
+----
+c-d:{(#4,RANGEKEYSET,@3,coconut)}
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+c-d:{(#4,RANGEKEYSET,@3,coconut)}
+e-f:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+h-j:{(#22,RANGEKEYDEL)}
+
+iter
+seek-ge cat
+seek-ge c
+prev
+prev
+next
+next
+next
+----
+c-d:{(#4,RANGEKEYSET,@3,coconut)}
+c-d:{(#4,RANGEKEYSET,@3,coconut)}
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+<nil>
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+c-d:{(#4,RANGEKEYSET,@3,coconut)}
+e-f:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+
+iter
+seek-ge dog
+next
+prev
+next
+next
+next
+next
+----
+e-f:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+h-j:{(#22,RANGEKEYDEL)}
+e-f:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+h-j:{(#22,RANGEKEYDEL)}
+l-m:{(#2,RANGEKEYUNSET,@9) (#2,RANGEKEYUNSET,@5)}
+q-z:{(#14,RANGEKEYSET,@9,mangos)}
+<nil>
+
+iter
+seek-ge a
+seek-ge ace
+seek-ge bat
+seek-ge c
+----
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+c-d:{(#4,RANGEKEYSET,@3,coconut)}
+
+iter
+seek-ge 1
+seek-ge c1
+----
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+c-d:{(#4,RANGEKEYSET,@3,coconut)}
+
+iter
+seek-ge zoo
+prev
+seek-ge z
+prev
+seek-ge yeti
+----
+<nil>
+q-z:{(#14,RANGEKEYSET,@9,mangos)}
+<nil>
+q-z:{(#14,RANGEKEYSET,@9,mangos)}
+q-z:{(#14,RANGEKEYSET,@9,mangos)}
+
+iter
+seek-ge h
+seek-ge j
+----
+h-j:{(#22,RANGEKEYDEL)}
+l-m:{(#2,RANGEKEYUNSET,@9) (#2,RANGEKEYUNSET,@5)}
+
+iter
+first
+prev
+next
+----
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+<nil>
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+
+iter
+last
+next
+prev
+----
+q-z:{(#14,RANGEKEYSET,@9,mangos)}
+<nil>
+q-z:{(#14,RANGEKEYSET,@9,mangos)}
+
+iter
+seek-lt a
+seek-lt 0
+seek-lt aa
+seek-lt z
+seek-lt zoo
+next
+prev
+----
+<nil>
+<nil>
+a-c:{(#10,RANGEKEYSET,@5,apples) (#10,RANGEKEYDEL)}
+q-z:{(#14,RANGEKEYSET,@9,mangos)}
+q-z:{(#14,RANGEKEYSET,@9,mangos)}
+<nil>
+q-z:{(#14,RANGEKEYSET,@9,mangos)}
+
+define visible-seq-num=10
+a-c:{(#8,RANGEKEYSET,@5,apples) (#7,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@2,oranges)}
+c-d:{(#12,RANGEKEYSET,@3,coconut) (#5,RANGEKEYSET,@1,coconut)}
+d-f:{(#15,RANGEKEYSET,@2,oranges) (#5,RANGEKEYSET,@1,coconut)}
+----
+OK
+
+iter
+first
+next
+next
+----
+a-c:{(#8,RANGEKEYSET,@5,apples) (#7,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@2,oranges)}
+c-d:{(#5,RANGEKEYSET,@1,coconut)}
+d-f:{(#5,RANGEKEYSET,@1,coconut)}
+
+iter
+last
+prev
+prev
+----
+d-f:{(#5,RANGEKEYSET,@1,coconut)}
+c-d:{(#5,RANGEKEYSET,@1,coconut)}
+a-c:{(#8,RANGEKEYSET,@5,apples) (#7,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@2,oranges)}

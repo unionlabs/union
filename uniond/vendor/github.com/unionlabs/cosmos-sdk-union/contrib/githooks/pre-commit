@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -e
+
+CMDS='git go gofmt goimports misspell'
+STAGED_GO_FILES=$(git diff --cached --name-only -- '*.go')
+
+f_echo_stderr() {
+  echo $@ >&2
+}
+
+f_exit_success() {
+  [ x"$@" != "x" ] && f_echo_stderr $@ || exit 0
+}
+trap f_exit_success EXIT
+
+f_check_cmds() {
+  for cmd in ${CMDS}; do
+    which ${cmd} &>/dev/null || f_exit_success "couldn't find ${cmd}, skipping"
+  done
+}
+
+f_check_cmds
+
+if [[ $STAGED_GO_FILES != "" ]]; then
+  f_echo_stderr "[pre-commit] fmt'ing staged files..."
+  for file in $STAGED_GO_FILES; do
+    if [[ $file =~ vendor/ ]] || [[ $file =~ tests/mocks/ ]] || [[ $file =~ \.pb\.go ]]; then
+      continue
+    fi
+
+    gofmt -w -s $file
+    misspell -w $file
+    goimports -w -local github.com/cosmos/cosmos-sdk $file
+    git add $file
+
+  done
+fi
+
+# Run go mod tidy
+go mod tidy && git add go.mod go.sum

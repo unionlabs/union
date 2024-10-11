@@ -1,0 +1,58 @@
+syntax = "proto3";
+package cosmwasm.wasm.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmwasm/wasm/v1/types.proto";
+import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/wasm/types";
+
+// GenesisState - genesis state of x/wasm
+message GenesisState {
+  Params params = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  repeated Code codes = 2 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.jsontag) = "codes,omitempty"
+  ];
+  repeated Contract contracts = 3 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.jsontag) = "contracts,omitempty"
+  ];
+  repeated Sequence sequences = 4 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.jsontag) = "sequences,omitempty"
+  ];
+}
+
+// Code struct encompasses CodeInfo and CodeBytes
+message Code {
+  uint64 code_id = 1 [ (gogoproto.customname) = "CodeID" ];
+  CodeInfo code_info = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  bytes code_bytes = 3;
+  // Pinned to wasmvm cache
+  bool pinned = 4;
+}
+
+// Contract struct encompasses ContractAddress, ContractInfo, and ContractState
+message Contract {
+  string contract_address = 1
+      [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  ContractInfo contract_info = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  repeated Model contract_state = 3
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  repeated ContractCodeHistoryEntry contract_code_history = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// Sequence key and value of an id generation counter
+message Sequence {
+  bytes id_key = 1 [ (gogoproto.customname) = "IDKey" ];
+  uint64 value = 2;
+}

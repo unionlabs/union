@@ -1,0 +1,81 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("//tools:prysm_image.bzl", "prysm_image_upload")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "log.go",
+        "main.go",
+        "usage.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain",
+    visibility = ["//beacon-chain:__subpackages__"],
+    deps = [
+        "//beacon-chain/builder:go_default_library",
+        "//beacon-chain/node:go_default_library",
+        "//cmd:go_default_library",
+        "//cmd/beacon-chain/blockchain:go_default_library",
+        "//cmd/beacon-chain/db:go_default_library",
+        "//cmd/beacon-chain/execution:go_default_library",
+        "//cmd/beacon-chain/flags:go_default_library",
+        "//cmd/beacon-chain/jwt:go_default_library",
+        "//cmd/beacon-chain/storage:go_default_library",
+        "//cmd/beacon-chain/sync/backfill:go_default_library",
+        "//cmd/beacon-chain/sync/backfill/flags:go_default_library",
+        "//cmd/beacon-chain/sync/checkpoint:go_default_library",
+        "//cmd/beacon-chain/sync/genesis:go_default_library",
+        "//config/features:go_default_library",
+        "//io/file:go_default_library",
+        "//io/logs:go_default_library",
+        "//monitoring/journald:go_default_library",
+        "//runtime/debug:go_default_library",
+        "//runtime/fdlimits:go_default_library",
+        "//runtime/logging/logrus-prefixed-formatter:go_default_library",
+        "//runtime/maxprocs:go_default_library",
+        "//runtime/tos:go_default_library",
+        "//runtime/version:go_default_library",
+        "@com_github_ethereum_go_ethereum//log:go_default_library",
+        "@com_github_ipfs_go_log_v2//:go_default_library",
+        "@com_github_joonix_log//:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+        "@com_github_urfave_cli_v2//:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "beacon-chain",
+    embed = [":go_default_library"],
+    pgoprofile = select({
+        "//:pgo_enabled": "pprof.beacon-chain.samples.cpu.pb.gz",
+        "//conditions:default": None,
+    }),
+    visibility = [
+        "//beacon-chain:__subpackages__",
+        "//testing/endtoend:__pkg__",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = ["usage_test.go"],
+    embed = [":go_default_library"],
+    visibility = ["//beacon-chain:__pkg__"],
+    deps = [
+        "//config/features:go_default_library",
+        "@com_github_urfave_cli_v2//:go_default_library",
+    ],
+)
+
+prysm_image_upload(
+    name = "push_images",
+    binary = ":beacon-chain",
+    entrypoint = ["/beacon-chain"],
+    repository = "gcr.io/prysmaticlabs/prysm/beacon-chain",
+    symlinks = {
+        # Backwards compatibility for images that depended on the old filepath.
+        "/app/cmd/beacon-chain/beacon-chain": "/beacon-chain",
+    },
+    tags = ["manual"],
+)

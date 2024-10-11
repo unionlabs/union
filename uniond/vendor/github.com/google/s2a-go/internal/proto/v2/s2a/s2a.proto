@@ -1,0 +1,365 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package s2a.proto.v2;
+
+option go_package = "github.com/google/s2a/internal/proto/v2/s2a_go_proto";
+
+import "internal/proto/common/common.proto";
+import "internal/proto/v2/common/common.proto";
+import "internal/proto/v2/s2a_context/s2a_context.proto";
+
+enum SignatureAlgorithm {
+  S2A_SSL_SIGN_UNSPECIFIED = 0;
+  // RSA Public-Key Cryptography Standards #1.
+  S2A_SSL_SIGN_RSA_PKCS1_SHA256 = 1;
+  S2A_SSL_SIGN_RSA_PKCS1_SHA384 = 2;
+  S2A_SSL_SIGN_RSA_PKCS1_SHA512 = 3;
+  // ECDSA.
+  S2A_SSL_SIGN_ECDSA_SECP256R1_SHA256 = 4;
+  S2A_SSL_SIGN_ECDSA_SECP384R1_SHA384 = 5;
+  S2A_SSL_SIGN_ECDSA_SECP521R1_SHA512 = 6;
+  // RSA Probabilistic Signature Scheme.
+  S2A_SSL_SIGN_RSA_PSS_RSAE_SHA256 = 7;
+  S2A_SSL_SIGN_RSA_PSS_RSAE_SHA384 = 8;
+  S2A_SSL_SIGN_RSA_PSS_RSAE_SHA512 = 9;
+  // ED25519.
+  S2A_SSL_SIGN_ED25519 = 10;
+}
+
+message AlpnPolicy {
+  // If true, the application MUST perform ALPN negotiation.
+  bool enable_alpn_negotiation = 1;
+
+  // The ordered list of ALPN protocols that specify how the application SHOULD
+  // negotiate ALPN during the TLS handshake.
+  //
+  // The application MAY ignore any ALPN protocols in this list that are not
+  // supported by the application.
+  repeated AlpnProtocol alpn_protocols = 2;
+}
+
+message AuthenticationMechanism {
+  // Applications may specify an identity associated to an authentication
+  // mechanism. Otherwise, S2A assumes that the authentication mechanism is
+  // associated with the default identity. If the default identity cannot be
+  // determined, the request is rejected.
+  s2a.proto.Identity identity = 1;
+
+  oneof mechanism_oneof {
+    // A token that the application uses to authenticate itself to S2A.
+    string token = 2;
+  }
+}
+
+message Status {
+  // The status code that is specific to the application and the implementation
+  // of S2A, e.g., gRPC status code.
+  uint32 code = 1;
+
+  // The status details.
+  string details = 2;
+}
+
+message GetTlsConfigurationReq {
+  // The role of the application in the TLS connection.
+  ConnectionSide connection_side = 1;
+
+  // The server name indication (SNI) extension, which MAY be populated when a
+  // server is offloading to S2A. The SNI is used to determine the server
+  // identity if the local identity in the request is empty.
+  string sni = 2;
+}
+
+message GetTlsConfigurationResp {
+  // Next ID: 8
+  message ClientTlsConfiguration {
+    reserved 4, 5;
+
+    // The certificate chain that the client MUST use for the TLS handshake.
+    // It's a list of PEM-encoded certificates, ordered from leaf to root,
+    // excluding the root.
+    repeated string certificate_chain = 1;
+
+    // The minimum TLS version number that the client MUST use for the TLS
+    // handshake. If this field is not provided, the client MUST use the default
+    // minimum version of the client's TLS library.
+    TLSVersion min_tls_version = 2;
+
+    // The maximum TLS version number that the client MUST use for the TLS
+    // handshake. If this field is not provided, the client MUST use the default
+    // maximum version of the client's TLS library.
+    TLSVersion max_tls_version = 3;
+
+    // The ordered list of TLS 1.0-1.2 ciphersuites that the client MAY offer to
+    // negotiate in the TLS handshake.
+    repeated Ciphersuite ciphersuites = 6;
+
+    // The policy that dictates how the client negotiates ALPN during the TLS
+    // handshake.
+    AlpnPolicy alpn_policy = 7;
+  }
+
+  // Next ID: 12
+  message ServerTlsConfiguration {
+    reserved 4, 5;
+
+    enum RequestClientCertificate {
+      UNSPECIFIED = 0;
+      DONT_REQUEST_CLIENT_CERTIFICATE = 1;
+      REQUEST_CLIENT_CERTIFICATE_BUT_DONT_VERIFY = 2;
+      REQUEST_CLIENT_CERTIFICATE_AND_VERIFY = 3;
+      REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_BUT_DONT_VERIFY = 4;
+      REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY = 5;
+    }
+
+    // The certificate chain that the server MUST use for the TLS handshake.
+    // It's a list of PEM-encoded certificates, ordered from leaf to root,
+    // excluding the root.
+    repeated string certificate_chain = 1;
+
+    // The minimum TLS version number that the server MUST use for the TLS
+    // handshake. If this field is not provided, the server MUST use the default
+    // minimum version of the server's TLS library.
+    TLSVersion min_tls_version = 2;
+
+    // The maximum TLS version number that the server MUST use for the TLS
+    // handshake. If this field is not provided, the server MUST use the default
+    // maximum version of the server's TLS library.
+    TLSVersion max_tls_version = 3;
+
+    // The ordered list of TLS 1.0-1.2 ciphersuites that the server MAY offer to
+    // negotiate in the TLS handshake.
+    repeated Ciphersuite ciphersuites = 10;
+
+    // Whether to enable TLS resumption.
+    bool tls_resumption_enabled = 6;
+
+    // Whether the server MUST request a client certificate (i.e. to negotiate
+    // TLS vs. mTLS).
+    RequestClientCertificate request_client_certificate = 7;
+
+    // Returns the maximum number of extra bytes that
+    // |OffloadResumptionKeyOperation| can add to the number of unencrypted
+    // bytes to form the encrypted bytes.
+    uint32 max_overhead_of_ticket_aead = 9;
+
+    // The policy that dictates how the server negotiates ALPN during the TLS
+    // handshake.
+    AlpnPolicy alpn_policy = 11;
+  }
+
+  oneof tls_configuration {
+    ClientTlsConfiguration client_tls_configuration = 1;
+    ServerTlsConfiguration server_tls_configuration = 2;
+  }
+}
+
+message OffloadPrivateKeyOperationReq {
+  enum PrivateKeyOperation {
+    UNSPECIFIED = 0;
+    // When performing a TLS 1.2 or 1.3 handshake, the (partial) transcript of
+    // the TLS handshake must be signed to prove possession of the private key.
+    //
+    // See https://www.rfc-editor.org/rfc/rfc8446.html#section-4.4.3.
+    SIGN = 1;
+    // When performing a TLS 1.2 handshake using an RSA algorithm, the key
+    // exchange algorithm involves the client generating a premaster secret,
+    // encrypting it using the server's public key, and sending this encrypted
+    // blob to the server in a ClientKeyExchange message.
+    //
+    // See https://www.rfc-editor.org/rfc/rfc4346#section-7.4.7.1.
+    DECRYPT = 2;
+  }
+
+  // The operation the private key is used for.
+  PrivateKeyOperation operation = 1;
+
+  // The signature algorithm to be used for signing operations.
+  SignatureAlgorithm signature_algorithm = 2;
+
+  // The input bytes to be signed or decrypted.
+  oneof in_bytes {
+    // Raw bytes to be hashed and signed, or decrypted.
+    bytes raw_bytes = 4;
+    // A SHA256 hash to be signed. Must be 32 bytes.
+    bytes sha256_digest = 5;
+    // A SHA384 hash to be signed. Must be 48 bytes.
+    bytes sha384_digest = 6;
+    // A SHA512 hash to be signed. Must be 64 bytes.
+    bytes sha512_digest = 7;
+  }
+}
+
+message OffloadPrivateKeyOperationResp {
+  // The signed or decrypted output bytes.
+  bytes out_bytes = 1;
+}
+
+message OffloadResumptionKeyOperationReq {
+  enum ResumptionKeyOperation {
+    UNSPECIFIED = 0;
+    ENCRYPT = 1;
+    DECRYPT = 2;
+  }
+
+  // The operation the resumption key is used for.
+  ResumptionKeyOperation operation = 1;
+
+  // The bytes to be encrypted or decrypted.
+  bytes in_bytes = 2;
+}
+
+message OffloadResumptionKeyOperationResp {
+  // The encrypted or decrypted bytes.
+  bytes out_bytes = 1;
+}
+
+message ValidatePeerCertificateChainReq {
+  enum VerificationMode {
+    // The default verification mode supported by S2A.
+    UNSPECIFIED = 0;
+    // The SPIFFE verification mode selects the set of trusted certificates to
+    // use for path building based on the SPIFFE trust domain in the peer's leaf
+    // certificate.
+    SPIFFE = 1;
+    // The connect-to-Google verification mode uses the trust bundle for
+    // connecting to Google, e.g. *.mtls.googleapis.com endpoints.
+    CONNECT_TO_GOOGLE = 2;
+  }
+
+  message ClientPeer {
+    // The certificate chain to be verified. The chain MUST be a list of
+    // DER-encoded certificates, ordered from leaf to root, excluding the root.
+    repeated bytes certificate_chain = 1;
+  }
+
+  message ServerPeer {
+    // The certificate chain to be verified. The chain MUST be a list of
+    // DER-encoded certificates, ordered from leaf to root, excluding the root.
+    repeated bytes certificate_chain = 1;
+
+    // The expected hostname of the server.
+    string server_hostname = 2;
+
+    // The UnrestrictedClientPolicy specified by the user.
+    bytes serialized_unrestricted_client_policy = 3;
+  }
+
+  // The verification mode that S2A MUST use to validate the peer certificate
+  // chain.
+  VerificationMode mode = 1;
+
+  oneof peer_oneof {
+    ClientPeer client_peer = 2;
+    ServerPeer server_peer = 3;
+  }
+}
+
+message ValidatePeerCertificateChainResp {
+  enum ValidationResult {
+    UNSPECIFIED = 0;
+    SUCCESS = 1;
+    FAILURE = 2;
+  }
+
+  // The result of validating the peer certificate chain.
+  ValidationResult validation_result = 1;
+
+  // The validation details. This field is only populated when the validation
+  // result is NOT SUCCESS.
+  string validation_details = 2;
+
+  // The S2A context contains information from the peer certificate chain.
+  //
+  // The S2A context MAY be populated even if validation of the peer certificate
+  // chain fails.
+  S2AContext context = 3;
+}
+
+message SessionReq {
+  // The identity corresponding to the TLS configurations that MUST be used for
+  // the TLS handshake.
+  //
+  // If a managed identity already exists, the local identity and authentication
+  // mechanisms are ignored. If a managed identity doesn't exist and the local
+  // identity is not populated, S2A will try to deduce the managed identity to
+  // use from the SNI extension. If that also fails, S2A uses the default
+  // identity (if one exists).
+  s2a.proto.Identity local_identity = 1;
+
+  // The authentication mechanisms that the application wishes to use to
+  // authenticate to S2A, ordered by preference. S2A will always use the first
+  // authentication mechanism that matches the managed identity.
+  repeated AuthenticationMechanism authentication_mechanisms = 2;
+
+  oneof req_oneof {
+    // Requests the certificate chain and TLS configuration corresponding to the
+    // local identity, which the application MUST use to negotiate the TLS
+    // handshake.
+    GetTlsConfigurationReq get_tls_configuration_req = 3;
+
+    // Signs or decrypts the input bytes using a private key corresponding to
+    // the local identity in the request.
+    //
+    // WARNING: More than one OffloadPrivateKeyOperationReq may be sent to the
+    // S2Av2 by a server during a TLS 1.2 handshake.
+    OffloadPrivateKeyOperationReq offload_private_key_operation_req = 4;
+
+    // Encrypts or decrypts the input bytes using a resumption key corresponding
+    // to the local identity in the request.
+    OffloadResumptionKeyOperationReq offload_resumption_key_operation_req = 5;
+
+    // Verifies the peer's certificate chain using
+    // (a) trust bundles corresponding to the local identity in the request, and
+    // (b) the verification mode in the request.
+    ValidatePeerCertificateChainReq validate_peer_certificate_chain_req = 6;
+  }
+}
+
+message SessionResp {
+  // Status of the session response.
+  //
+  // The status field is populated so that if an error occurs when making an
+  // individual request, then communication with the S2A may continue. If an
+  // error is returned directly (e.g. at the gRPC layer), then it may result
+  // that the bidirectional stream being closed.
+  Status status = 1;
+
+  oneof resp_oneof {
+    // Contains the certificate chain and TLS configurations corresponding to
+    // the local identity.
+    GetTlsConfigurationResp get_tls_configuration_resp = 2;
+
+    // Contains the signed or encrypted output bytes using the private key
+    // corresponding to the local identity.
+    OffloadPrivateKeyOperationResp offload_private_key_operation_resp = 3;
+
+    // Contains the encrypted or decrypted output bytes using the resumption key
+    // corresponding to the local identity.
+    OffloadResumptionKeyOperationResp offload_resumption_key_operation_resp = 4;
+
+    // Contains the validation result, peer identity and fingerprints of peer
+    // certificates.
+    ValidatePeerCertificateChainResp validate_peer_certificate_chain_resp = 5;
+  }
+}
+
+service S2AService {
+  // SetUpSession is a bidirectional stream used by applications to offload
+  // operations from the TLS handshake.
+  rpc SetUpSession(stream SessionReq) returns (stream SessionResp) {}
+}

@@ -1,0 +1,43 @@
+syntax = "proto3";
+package cosmos.protocolpool.v1;
+
+option go_package = "cosmossdk.io/x/protocolpool/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// Budget defines the fields of a budget proposal.
+message Budget {
+  // recipient_address is the address of the recipient who can claim the budget.
+  string recipient_address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // claimed_amount is the total amount claimed from the total budget amount requested.
+  cosmos.base.v1beta1.Coin claimed_amount = 2;
+  // last_claimed_at is the time when the budget was last successfully claimed or distributed.
+  // It is used to track the next starting claim time for fund distribution.
+  google.protobuf.Timestamp last_claimed_at = 3 [(gogoproto.stdtime) = true];
+  // tranches_left is the number of tranches left for the amount to be distributed.
+  uint64 tranches_left = 4;
+  // budget_per_tranche is the amount allocated per tranche.
+  cosmos.base.v1beta1.Coin budget_per_tranche = 5;
+  // Period is the time interval(number of seconds) at which funds distribution should be performed.
+  // For example, if a period is set to 3600, it represents an action that
+  // should occur every hour (3600 seconds).
+  google.protobuf.Duration period = 6 [(gogoproto.stdduration) = true];
+}
+
+// ContinuousFund defines the fields of continuous fund proposal.
+message ContinuousFund {
+  // Recipient address of the account receiving funds.
+  string recipient = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Percentage is the percentage of funds to be allocated from Community pool.
+  string percentage = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+  ];
+  // Optional, if expiry is set, removes the state object when expired.
+  google.protobuf.Timestamp expiry = 3 [(gogoproto.stdtime) = true];
+}

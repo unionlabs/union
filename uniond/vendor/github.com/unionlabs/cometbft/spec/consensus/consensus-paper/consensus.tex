@@ -1,0 +1,397 @@
+
+\section{Tendermint consensus algorithm} \label{sec:tendermint}
+
+\newcommand\Disseminate{\textbf{Disseminate}}
+
+\newcommand\Proposal{\mathsf{PROPOSAL}}
+\newcommand\ProposalPart{\mathsf{PROPOSAL\mbox{-}PART}}
+\newcommand\PrePrepare{\mathsf{INIT}} \newcommand\Prevote{\mathsf{PREVOTE}}
+\newcommand\Precommit{\mathsf{PRECOMMIT}}
+\newcommand\Decision{\mathsf{DECISION}}
+
+\newcommand\ViewChange{\mathsf{VC}}
+\newcommand\ViewChangeAck{\mathsf{VC\mbox{-}ACK}}
+\newcommand\NewPrePrepare{\mathsf{VC\mbox{-}INIT}}
+\newcommand\coord{\mathsf{proposer}}
+
+\newcommand\newHeight{newHeight} \newcommand\newRound{newRound}
+\newcommand\nil{nil} \newcommand\id{id} \newcommand{\propose}{propose}
+\newcommand\prevote{prevote} \newcommand\prevoteWait{prevoteWait}
+\newcommand\precommit{precommit} \newcommand\precommitWait{precommitWait}
+\newcommand\commit{commit}
+
+\newcommand\timeoutPropose{timeoutPropose}
+\newcommand\timeoutPrevote{timeoutPrevote}
+\newcommand\timeoutPrecommit{timeoutPrecommit}
+\newcommand\proofOfLocking{proof\mbox{-}of\mbox{-}locking}
+
+\begin{algorithm}[htb!] \def\baselinestretch{1} \scriptsize\raggedright
+	\begin{algorithmic}[1] 
+		\SHORTSPACE 
+		\INIT{} 
+		\STATE $h_p := 0$  
+		\COMMENT{current height, or consensus instance we are currently executing} 
+		\STATE $round_p := 0$   \COMMENT{current round number}
+		\STATE $step_p  \in \set{\propose, \prevote, \precommit}$
+		\STATE $decision_p[] := nil$ 
+		\STATE $lockedValue_p := nil$ 
+		\STATE $lockedRound_p := -1$ 
+		\STATE $validValue_p := nil$ 
+		\STATE $validRound_p := -1$ 
+		\ENDINIT 
+		\SHORTSPACE 
+		\STATE \textbf{upon} start \textbf{do} $StartRound(0)$ 
+		\SHORTSPACE 
+		\FUNCTION{$StartRound(round)$} \label{line:tab:startRound} 
+		\STATE $round_p \assign round$ 
+		\STATE $step_p \assign \propose$ 
+		\IF{$\coord(h_p, round_p) = p$}
+		\IF{$validValue_p \neq \nil$} \label{line:tab:isThereLockedValue}
+		\STATE $proposal \assign validValue_p$ \ELSE \STATE $proposal \assign
+		getValue()$ 
+		\label{line:tab:getValidValue} 
+		\ENDIF 	  
+		\STATE \Broadcast\ $\li{\Proposal,h_p, round_p, proposal, validRound_p}$
+		\label{line:tab:send-proposal} 
+		\ELSE 
+		\STATE \textbf{schedule} $OnTimeoutPropose(h_p,
+		round_p)$ to be executed \textbf{after} $\timeoutPropose(round_p)$ 
+		\ENDIF
+		\ENDFUNCTION
+		
+		\SPACE 
+		\UPON{$\li{\Proposal,h_p,round_p, v, -1}$ \From\ $\coord(h_p,round_p)$
+			\With\ $step_p = \propose$} \label{line:tab:recvProposal}
+			\IF{$valid(v) \wedge (lockedRound_p = -1  \vee lockedValue_p = v$)}
+			\label{line:tab:accept-proposal-2} 
+				\STATE \Broadcast \ $\li{\Prevote,h_p,round_p,id(v)}$  
+				\label{line:tab:prevote-proposal}	
+			\ELSE
+			\label{line:tab:acceptProposal1}		
+				\STATE \Broadcast \ $\li{\Prevote,h_p,round_p,\nil}$  
+				\label{line:tab:prevote-nil}	
+			\ENDIF
+				\STATE $step_p \assign \prevote$ \label{line:tab:setStateToPrevote1} 
+		\ENDUPON
+		
+		\SPACE 
+		\UPON{$\li{\Proposal,h_p,round_p, v, vr}$ \From\ $\coord(h_p,round_p)$
+			\textbf{AND} $2f+1$ $\li{\Prevote,h_p, vr,id(v)}$  \With\ $step_p = \propose \wedge (vr \ge 0 \wedge vr < round_p)$}
+		\label{line:tab:acceptProposal} 
+		\IF{$valid(v) \wedge (lockedRound_p \le vr
+			\vee lockedValue_p = v)$} \label{line:tab:cond-prevote-higher-proposal}	
+			\STATE \Broadcast \ $\li{\Prevote,h_p,round_p,id(v)}$
+			\label{line:tab:prevote-higher-proposal}		 
+		\ELSE
+			\label{line:tab:acceptProposal2}		
+			\STATE \Broadcast \ $\li{\Prevote,h_p,round_p,\nil}$  
+			\label{line:tab:prevote-nil2}	
+		\ENDIF
+		\STATE $step_p \assign \prevote$ \label{line:tab:setStateToPrevote3} 	 
+		\ENDUPON
+		
+		\SPACE 
+		\UPON{$2f+1$ $\li{\Prevote,h_p, round_p,*}$ \With\ $step_p = \prevote$ for the first time}
+		\label{line:tab:recvAny2/3Prevote} 
+		\STATE \textbf{schedule} $OnTimeoutPrevote(h_p, round_p)$ to be executed \textbf{after}  $\timeoutPrevote(round_p)$ \label{line:tab:timeoutPrevote} 
+		\ENDUPON
+		
+		\SPACE 
+		\UPON{$\li{\Proposal,h_p,round_p, v, *}$ \From\ $\coord(h_p,round_p)$
+			\textbf{AND} $2f+1$ $\li{\Prevote,h_p, round_p,id(v)}$  \With\ $valid(v) \wedge step_p \ge \prevote$ for the first time}
+		\label{line:tab:recvPrevote} 
+		\IF{$step_p = \prevote$}	
+			\STATE $lockedValue_p \assign v$                \label{line:tab:setLockedValue} 
+			\STATE $lockedRound_p \assign round_p$   \label{line:tab:setLockedRound} 
+			\STATE \Broadcast \ $\li{\Precommit,h_p,round_p,id(v))}$  
+			\label{line:tab:precommit-v}	
+			\STATE $step_p \assign \precommit$ \label{line:tab:setStateToCommit} 
+		\ENDIF 
+		\STATE $validValue_p \assign v$ \label{line:tab:setValidRound} 
+		\STATE $validRound_p \assign round_p$ \label{line:tab:setValidValue} 
+		\ENDUPON
+		
+		\SHORTSPACE 
+		\UPON{$2f+1$ $\li{\Prevote,h_p,round_p, \nil}$ 
+			\With\ $step_p = \prevote$} 
+			\STATE \Broadcast \ $\li{\Precommit,h_p,round_p, \nil}$
+			\label{line:tab:precommit-v-1} 
+			\STATE $step_p \assign \precommit$ 
+		\ENDUPON
+		
+		\SPACE 
+		\UPON{$2f+1$ $\li{\Precommit,h_p,round_p,*}$ for the first time}
+		\label{line:tab:startTimeoutPrecommit} 
+			\STATE \textbf{schedule} $OnTimeoutPrecommit(h_p, round_p)$ to be executed \textbf{after} $\timeoutPrecommit(round_p)$ 
+			 
+		\ENDUPON 
+		
+		\SPACE 
+		\UPON{$\li{\Proposal,h_p,r, v, *}$ \From\ $\coord(h_p,r)$ \textbf{AND}
+			$2f+1$ $\li{\Precommit,h_p,r,id(v)}$ \With\ $decision_p[h_p] = \nil$}
+		\label{line:tab:onDecideRule} 
+			\IF{$valid(v)$} \label{line:tab:validDecisionValue} 
+				\STATE $decision_p[h_p] = v$ \label{line:tab:decide} 
+				\STATE$h_p \assign h_p + 1$ \label{line:tab:increaseHeight} 
+				\STATE reset $lockedRound_p$, $lockedValue_p$, $validRound_p$ and $validValue_p$ to initial values 
+				and empty message log 
+				\STATE $StartRound(0)$   	
+			\ENDIF 
+		\ENDUPON
+		
+		\SHORTSPACE 
+		\UPON{$f+1$ $\li{*,h_p,round, *, *}$ \textbf{with} $round > round_p$} 
+		\label{line:tab:skipRounds} 
+			\STATE $StartRound(round)$ \label{line:tab:nextRound2} 
+		\ENDUPON
+		
+		\SHORTSPACE 
+		\FUNCTION{$OnTimeoutPropose(height,round)$} \label{line:tab:onTimeoutPropose} 
+		\IF{$height = h_p \wedge round = round_p \wedge step_p = \propose$} 
+			\STATE \Broadcast \ $\li{\Prevote,h_p,round_p, \nil}$ 
+		 	\label{line:tab:prevote-nil-on-timeout}	
+		 	\STATE $step_p \assign \prevote$ 
+		 \ENDIF	
+		 \ENDFUNCTION
+		
+		\SHORTSPACE 
+		\FUNCTION{$OnTimeoutPrevote(height,round)$} \label{line:tab:onTimeoutPrevote} 
+		\IF{$height = h_p \wedge round = round_p \wedge step_p = \prevote$} 
+			\STATE \Broadcast \ $\li{\Precommit,h_p,round_p,\nil}$   
+			\label{line:tab:precommit-nil-onTimeout}
+			\STATE $step_p \assign \precommit$ 
+		\ENDIF	
+		\ENDFUNCTION
+		
+		\SHORTSPACE 
+		\FUNCTION{$OnTimeoutPrecommit(height,round)$} \label{line:tab:onTimeoutPrecommit} 
+		\IF{$height = h_p \wedge round = round_p$}
+			\STATE $StartRound(round_p + 1)$ \label{line:tab:nextRound} 
+		\ENDIF
+		\ENDFUNCTION	
+	\end{algorithmic} \caption{Tendermint consensus algorithm}
+	\label{alg:tendermint} 
+\end{algorithm}
+
+In this section we present the Tendermint Byzantine fault-tolerant consensus
+algorithm. The algorithm is specified by the pseudo-code shown in
+Algorithm~\ref{alg:tendermint}. We present the algorithm as a set of \emph{upon
+rules} that are executed atomically\footnote{In case several rules are active
+at the same time, the first rule to be executed is picked randomly. The
+correctness of the algorithm does not depend on the order in which rules are
+executed.}. We assume that processes exchange protocol messages using a gossip
+protocol and that both sent and received messages are stored in a local message
+log for every process. An upon rule is triggered once the message log contains
+messages such that the corresponding condition evaluates to $\tt{true}$. The
+condition that assumes reception of $X$ messages of a particular type and
+content denotes reception of messages whose senders have aggregate voting power at
+least equal to $X$. For example, the condition $2f+1$ $\li{\Precommit,h_p,r,id(v)}$,  
+evaluates to true upon reception of $\Precommit$ messages for height $h_p$, 
+a round $r$ and with value equal to $id(v)$ whose senders have aggregate voting 
+power at least equal to $2f+1$. Some of the rules ends with "for the first time" constraint 
+to denote that it is triggered only the first time a corresponding condition evaluates 
+to $\tt{true}$. This is because those rules do not always change the state of algorithm 
+variables so without this constraint, the algorithm could keep 
+executing those rules forever. The variables with index $p$ are process local state
+variables, while variables without index $p$ are value placeholders. The sign
+$*$ denotes any value.    
+
+We denote with $n$ the total voting power of processes in the system, and we
+assume that the total voting power of faulty processes in the system is bounded
+with a system parameter $f$.  The algorithm assumes that $n > 3f$, i.e., it
+requires that the total voting power of faulty processes is smaller than one
+third of the total voting power. For simplicity we present the algorithm for
+the case $n = 3f + 1$.
+
+The algorithm proceeds in rounds, where each round has a dedicated
+\emph{proposer}. The mapping of rounds to proposers is known to all processes
+and is given as a function $\coord(h, round)$, returning the proposer for
+the round $round$ in the consensus instance $h$. We
+assume that the proposer selection function is weighted round-robin, where
+processes are rotated proportional to their voting power\footnote{A validator
+with more voting power is selected more frequently, proportional to its power.
+More precisely, during a sequence of rounds of size $n$, every process is
+proposer in a number of rounds equal to its voting power.}. 
+The internal protocol state transitions are triggered by message reception and 
+by expiration of timeouts. There are three timeouts in Algorithm \ref{alg:tendermint}:
+$\timeoutPropose$, $\timeoutPrevote$ and $\timeoutPrecommit$.
+The timeouts prevent the algorithm from blocking and
+waiting forever for some condition to be true, ensure that processes continuously 
+transition between rounds, and guarantee that eventually (after GST) communication 
+between correct processes is timely and reliable so they can decide. 
+The last role is achieved by increasing the timeouts with every new round $r$, 
+i.e, $timeoutX(r) = initTimeoutX + r*timeoutDelta$; 
+they are reset for every new height (consensus
+instance). 
+
+Processes exchange the following messages in Tendermint: $\Proposal$,
+$\Prevote$ and $\Precommit$. The $\Proposal$ message is used by the proposer of
+the current round to suggest a potential decision value, while $\Prevote$ and
+$\Precommit$ are votes for a proposed value. According to the classification of
+consensus algorithms from \cite{RMS10:dsn}, Tendermint, like PBFT
+\cite{CL02:tcs} and DLS \cite{DLS88:jacm}, belongs to class 3, so it requires
+two voting steps (three communication exchanges in total) to decide a value.
+The Tendermint consensus algorithm is designed for the blockchain context where
+the value to decide is a block of transactions (ie. it is potentially quite
+large, consisting of many transactions). Therefore, in the Algorithm
+\ref{alg:tendermint} (similar as in \cite{CL02:tcs}) we are explicit about
+sending a value (block of transactions) and a small, constant size value id (a
+unique value identifier, normally a hash of the value, i.e., if $\id(v) =
+\id(v')$, then $v=v'$). The $\Proposal$ message is the only one carrying the
+value; $\Prevote$ and $\Precommit$ messages carry the value id.  A correct
+process decides on a value $v$ in Tendermint upon receiving the $\Proposal$ for
+$v$ and $2f+1$ voting-power equivalent $\Precommit$ messages for $\id(v)$ in
+some round $r$. In order to send $\Precommit$ message for $v$ in a round $r$, a
+correct process waits to receive the $\Proposal$ and $2f+1$ of the
+corresponding $\Prevote$ messages in the round $r$. Otherwise, 
+it sends $\Precommit$ message with a special $\nil$ value.  
+This ensures that correct processes can $\Precommit$ only a 
+single value (or $\nil$) in a round.  As
+proposers may be faulty, the proposed value is treated by correct processes as
+a suggestion (it is not blindly accepted), and a correct process tells others
+if it accepted the $\Proposal$ for value $v$ by sending $\Prevote$ message for
+$\id(v)$; otherwise it sends $\Prevote$ message with the special $\nil$ value. 
+
+Every process maintains the following variables in the Algorithm
+\ref{alg:tendermint}: $step$, $lockedValue$, $lockedRound$, $validValue$ and
+$validRound$. The $step$ denotes the current state of the internal Tendermint
+state machine, i.e., it reflects the stage of the algorithm execution in the
+current round. The $lockedValue$ stores the most recent value (with respect to
+a round number) for which a $\Precommit$ message has been sent. The
+$lockedRound$ is the last round in which the process sent a $\Precommit$
+message that is not $\nil$. We also say that a correct process locks a value
+$v$ in a round $r$ by setting $lockedValue = v$ and $lockedRound = r$ before
+sending $\Precommit$ message for $\id(v)$. As a correct process can decide a
+value $v$ only if $2f+1$ $\Precommit$ messages for $\id(v)$ are received, this
+implies that a possible decision value is a value that is locked by at least
+$f+1$ voting power equivalent of correct processes. Therefore, any value $v$
+for which $\Proposal$ and $2f+1$ of the corresponding $\Prevote$ messages are
+received in some round $r$ is a \emph{possible decision} value. The role of the
+$validValue$ variable is to store the most recent possible decision value; the
+$validRound$ is the last round in which $validValue$ is updated. Apart from
+those variables, a process also stores the current consensus instance ($h_p$,
+called \emph{height} in Tendermint), and the current round number ($round_p$)
+and attaches them to every message. Finally, a process also stores an array of
+decisions, $decision_p$ (Tendermint assumes a sequence of consensus instances,
+one for each height).
+
+Every round starts by a proposer suggesting a value with the $\Proposal$
+message (see line \ref{line:tab:send-proposal}). In the initial round of each
+height, the proposer is free to chose the value to suggest. In the
+Algorithm~\ref{alg:tendermint}, a correct process obtains a value to propose
+using an external function    $getValue()$ that returns a valid value to
+propose. In the following rounds, a correct proposer will suggest a new value
+only if $validValue = \nil$; otherwise $validValue$ is proposed (see
+lines~\ref{line:tab:isThereLockedValue}-\ref{line:tab:getValidValue}). 
+In addition to the value proposed, the $\Proposal$ message also
+contains the $validRound$ so other processes are informed about the last round
+in which the proposer observed $validValue$ as a possible decision value.
+Note that if a correct proposer $p$ sends $validValue$ with the $validRound$ in the
+$\Proposal$, this implies that the process $p$ received $\Proposal$ and the
+corresponding $2f+1$ $\Prevote$ messages for $validValue$ in the round
+$validRound$. 
+If a correct process sends $\Proposal$ message with $validValue$ ($validRound > -1$)
+at time $t > GST$, by the \emph{Gossip communication} property, the
+corresponding $\Proposal$ and the $\Prevote$ messages will be received by all
+correct processes before time $t+\Delta$. Therefore, all correct processes will
+be able to verify the correctness of the suggested value as it is supported by
+the $\Proposal$ and the corresponding $2f+1$ voting power equivalent $\Prevote$
+messages.   
+
+A correct process $p$ accepts the proposal for a value $v$  (send $\Prevote$
+for $id(v)$) if an external \emph{valid} function returns $true$ for the value
+$v$, and if $p$ hasn't locked any value ($lockedRound = -1$) or $p$ has locked
+the value $v$ ($lockedValue = v$); see the line
+\ref{line:tab:accept-proposal-2}.  In case the proposed pair is $(v,vr \ge 0)$ and a
+correct process $p$ has locked some value, it will accept
+$v$ if it is a more recent possible decision value\footnote{As
+explained above, the possible decision value in a round $r$ is the one for
+which $\Proposal$ and the corresponding $2f+1$ $\Prevote$ messages are received
+for the round $r$.}, $vr > lockedRound_p$,  or if $lockedValue = v$ 
+(see line~\ref{line:tab:cond-prevote-higher-proposal}).  Otherwise, a correct
+process will reject the proposal by sending $\Prevote$ message with $\nil$
+value. A correct process will send $\Prevote$ message with $\nil$ value also in
+case $\timeoutPropose$ expired (it is triggered when a correct process starts a
+new round) and a process has not sent $\Prevote$ message in the current round
+yet (see the line \ref{line:tab:onTimeoutPropose}). 
+
+If a correct process receives $\Proposal$ message for some value $v$ and $2f+1$
+$\Prevote$ messages for $\id(v)$, then it sends $\Precommit$ message with
+$\id(v)$. Otherwise, it sends $\Precommit$ $\nil$. A correct process will send
+$\Precommit$ message with $\nil$ value also in case $\timeoutPrevote$ expired
+(it is started when a correct process sent $\Prevote$ message and received any
+$2f+1$ $\Prevote$ messages)  and a process has not sent $\Precommit$ message in
+the current round yet (see the line \ref{line:tab:onTimeoutPrecommit}).  A
+correct process decides on some value $v$ if it receives in some round $r$
+$\Proposal$ message for $v$ and $2f+1$ $\Precommit$ messages with $\id(v)$ (see
+the line \ref{line:tab:decide}).  To prevent the algorithm from blocking and
+waiting forever for this condition to be true, the Algorithm
+\ref{alg:tendermint} relies on $\timeoutPrecommit$. It is triggered after a
+process receives any set of $2f+1$ $\Precommit$ messages for the current round.
+If the $\timeoutPrecommit$ expires and a process has not decided yet, the
+process starts the next round (see the line \ref{line:tab:onTimeoutPrecommit}).
+When a correct process $p$ decides, it starts the next consensus instance 
+(for the next height). The \emph{Gossip communication} property ensures 
+that $\Proposal$ and $2f+1$ $\Prevote$ messages that led $p$ to decide 
+are eventually received by all correct processes, so they will also decide. 
+
+\subsection{Termination mechanism}
+
+Tendermint ensures termination by a novel mechanism that benefits from the
+gossip based nature of communication (see \emph{Gossip communication}
+property).  It requires managing two additional variables, $validValue$ and
+$validRound$ that are then used by the proposer during the propose step as
+explained above.   The $validValue$ and $validRound$ are updated to $v$ and $r$
+by a correct process in a round $r$ when the process receives valid $\Proposal$
+message for the value $v$ and the corresponding $2f+1$ $\Prevote$ messages for
+$id(v)$ in the round $r$ (see the rule at line~\ref{line:tab:recvPrevote}).
+
+We now give briefly the intuition how managing and proposing $validValue$
+and $validRound$ ensures termination. Formal treatment is left for
+Section~\ref{sec:proof}.  
+
+The first thing to note is that during good period, because of the
+\emph{Gossip communication} property, if a correct process $p$ locks a value
+$v$ in some round $r$, all correct processes will update $validValue$ to $v$
+and $validRound$ to $r$ before the end of the round $r$ (we prove this formally
+in the Section~\ref{sec:proof}). The intuition is that messages that led to $p$
+locking a value $v$ in the round $r$ will be gossiped to all correct processes
+before the end of the round $r$, so it will update $validValue$ and
+$validRound$ (the line~\ref{line:tab:recvPrevote}). Therefore, if a correct
+process locks some value during good period, $validValue$ and $validRound$ are
+updated by all correct processes so that the value proposed in the following
+rounds will be acceptable by all correct processes. Note 
+that it could happen that during good period, no correct process locks a value,
+but some correct process $q$ updates $validValue$ and $validRound$ during some
+round. As no correct process locks a value in this case, $validValue_q$ and
+$validRound_q$ will also be acceptable by all correct processes as
+$validRound_q > lockedRound_c$ for every correct process $c$ and as the
+\emph{Gossip communication} property ensures that the corresponding $\Prevote$
+messages that $q$ received in the round $validRound_q$ are received by all
+correct processes $\Delta$ time later. 
+
+Finally, it could happen that after GST, there is a long sequence of rounds in which 
+no correct process neither locks a value nor update $validValue$ and $validRound$. 
+In this case, during this sequence of rounds, the proposed value suggested by correct
+processes was not accepted by all correct processes. Note that this sequence of rounds 
+is always finite as at the beginning of every
+round there is at least a single correct process $c$ such that $validValue_c$
+and $validRound_c$ are acceptable by every correct process. This is true as
+there exists a correct process $c$ such that for every other correct process
+$p$, $validRound_c > lockedRound_p$ or $validValue_c = lockedValue_p$. This is
+true as $c$ is the process that has locked a value in the most recent round
+among all correct processes (or no correct process locked any value). Therefore,
+eventually $c$ will be the proper in some round and the proposed value will be accepted
+by all correct processes, terminating therefore this sequence of 
+rounds. 
+
+Therefore, updating $validValue$ and $validRound$ variables, and the
+\emph{Gossip communication} property, together ensures that eventually, during
+the good period, there exists a round with a correct proposer whose proposed
+value will be accepted by all correct processes, and all correct processes will
+terminate in that round. Note that this mechanism, contrary to the common
+termination mechanism illustrated in the
+Figure~\ref{ch3:fig:coordinator-change}, does not require exchanging any
+additional information in addition to messages already sent as part of what is
+normally being called "normal" case.     
+

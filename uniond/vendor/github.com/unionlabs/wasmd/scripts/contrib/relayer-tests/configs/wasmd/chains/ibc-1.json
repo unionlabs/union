@@ -1,0 +1,1 @@
+{"key":"testkey","chain-id":"ibc-1","rpc-addr":"http://localhost:26557","account-prefix":"wasm","gas-adjustment":1.5,"gas-prices":"0.025stake", "trusting-period":"336h"}

@@ -1,0 +1,350 @@
+{
+    "kind": "discovery#restDescription",
+    "etag": "\"ye6orv2F-1npMW3u9suM3a7C5Bo/WoU1Y-TPU2mFiyKWAKMijLjE-Hc\"",
+    "discoveryVersion": "v1",
+    "id": "logging:v1beta3",
+    "name": "logging",
+    "version": "v1beta3",
+    "revision": "20150326",
+    "title": "Google Cloud Logging API",
+    "description": "Google Cloud Logging API lets you create logs, ingest log entries, and manage log sinks.",
+    "ownerDomain": "google.com",
+    "ownerName": "Google",
+    "icons": {
+     "x16": "http://www.google.com/images/icons/product/search-16.gif",
+     "x32": "http://www.google.com/images/icons/product/search-32.gif"
+    },
+    "documentationLink": "",
+    "protocol": "rest",
+    "baseUrl": "https://logging.googleapis.com/",
+    "basePath": "",
+    "rootUrl": "https://logging.googleapis.com/",
+    "mtlsRootUrl": "https://logging.mtls.googleapis.com/",
+    "servicePath": "",
+    "batchPath": "batch",
+    "parameters": {
+     "access_token": {
+      "type": "string",
+      "description": "OAuth access token.",
+      "location": "query"
+     },
+     "alt": {
+      "type": "string",
+      "description": "Data format for response.",
+      "default": "json",
+      "enumDescriptions": [
+       "Responses with Content-Type of application/json",
+       "Media download with context-dependent Content-Type",
+       "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query"
+     },
+     "bearer_token": {
+      "type": "string",
+      "description": "OAuth bearer token.",
+      "location": "query"
+     },
+     "callback": {
+      "type": "string",
+      "description": "JSONP",
+      "location": "query"
+     },
+     "fields": {
+      "type": "string",
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query"
+     },
+     "key": {
+      "type": "string",
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query"
+     },
+     "oauth_token": {
+      "type": "string",
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query"
+     },
+     "pp": {
+      "type": "boolean",
+      "description": "Pretty-print response.",
+      "default": "true",
+      "location": "query"
+     },
+     "prettyPrint": {
+      "type": "boolean",
+      "description": "Returns response with indentations and line breaks.",
+      "default": "true",
+      "location": "query"
+     },
+     "quotaUser": {
+      "type": "string",
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query"
+     },
+     "$.xgafv": {
+      "type": "string",
+      "description": "V1 error format.",
+      "enumDescriptions": [
+       "v1 error format",
+       "v2 error format"
+      ],
+      "location": "query"
+     }
+    },
+    "auth": {
+     "oauth2": {
+      "scopes": {
+       "https://www.googleapis.com/auth/cloud-platform": {
+        "description": "View and manage your data across Google Cloud Platform services"
+       }
+      }
+     }
+    },
+    "schemas": {
+     "Log": {
+      "id": "Log",
+      "type": "object",
+      "description": "A log object.",
+      "properties": {
+       "name": {
+        "type": "string",
+        "description": "REQUIRED: The log's name name. Example: `\"compute.googleapis.com/activity_log\"`."
+       },
+       "displayName": {
+        "type": "string",
+        "description": "Name used when displaying the log to the user (for example, in a UI). Example: `\"activity_log\"`"
+       },
+       "payloadType": {
+        "type": "string",
+        "description": "Type URL describing the expected payload type for the log."
+       }
+      }
+     },
+     "WriteLogEntriesRequest": {
+      "id": "WriteLogEntriesRequest",
+      "type": "object",
+      "description": "The parameters to WriteLogEntries.",
+      "properties": {
+       "commonLabels": {
+        "type": "object",
+        "description": "Metadata labels that apply to all entries in this request. If one of the log entries contains a (key, value) with the same key that is in `commonLabels`, then the entry's (key, value) overrides the one in `commonLabels`.",
+        "additionalProperties": {
+         "type": "string"
+        }
+       },
+       "entries": {
+        "type": "array",
+        "description": "Log entries to insert.",
+        "items": {
+         "$ref": "LogEntry"
+        },
+        "extras": {
+          "type": "array",
+          "description": "THIS IS AN INVALID QUERY PARAM",
+          "items": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "any",
+              "description": "Properties of the object. Contains field @type with type URL."
+            }
+          }
+        }
+       }
+      }
+     },
+     "LogEntry": {
+      "id": "LogEntry",
+      "type": "object",
+      "description": "An individual entry in a log.",
+      "properties": {
+       "metadata": {
+        "$ref": "LogEntryMetadata",
+        "description": "Information about the log entry."
+       },
+       "protoPayload": {
+        "type": "object",
+        "description": "The log entry payload, represented as a protocol buffer that is expressed as a JSON object. You can only pass `protoPayload` values that belong to a set of approved types.",
+        "additionalProperties": {
+         "type": "any",
+         "description": "Properties of the object. Contains field @ype with type URL."
+        }
+       },
+       "textPayload": {
+        "type": "string",
+        "description": "The log entry payload, represented as a text string."
+       },
+       "structPayload": {
+        "type": "object",
+        "description": "The log entry payload, represented as a structure that is expressed as a JSON object.",
+        "additionalProperties": {
+         "type": "any",
+         "description": "Properties of the object."
+        }
+       },
+       "insertId": {
+        "type": "string",
+        "description": "A unique ID for the log entry. If you provide this field, the logging service considers other log entries in the same log with the same ID as duplicates which can be removed."
+       },
+       "log": {
+        "type": "string",
+        "description": "The log to which this entry belongs. When a log entry is ingested, the value of this field is set by the logging system."
+       }
+      }
+     },
+     "LogEntryMetadata": {
+      "id": "LogEntryMetadata",
+      "type": "object",
+      "description": "Additional data that is associated with a log entry, set by the service creating the log entry.",
+      "properties": {
+       "timestamp": {
+        "type": "string",
+        "description": "The time the event described by the log entry occurred. Timestamps must be later than January 1, 1970."
+       },
+       "severity": {
+        "type": "string",
+        "description": "The severity of the log entry.",
+        "default": "EMERGENCY",
+        "enum": [
+         "DEFAULT",
+         "DEBUG",
+         "INFO",
+         "NOTICE",
+         "WARNING",
+         "ERROR",
+         "CRITICAL",
+         "ALERT",
+         "EMERGENCY"
+        ],
+        "enumDescriptions": [
+         "This is the DEFAULT description",
+         "This is the DEBUG description",
+         "This is the INFO description",
+         "This is the NOTICE description",
+         "This is the WARNING description",
+         "This is the ERROR description",
+         "This is the CRITICAL description",
+         "This is the ALERT description",
+         "This is the EMERGENCY description"
+        ]
+       },
+       "projectId": {
+        "type": "string",
+        "description": "The project ID of the Google Cloud Platform service that created the log entry."
+       },
+       "serviceName": {
+        "type": "string",
+        "description": "The API name of the Google Cloud Platform service that created the log entry. For example, `\"compute.googleapis.com\"`."
+       },
+       "region": {
+        "type": "string",
+        "description": "The region name of the Google Cloud Platform service that created the log entry. For example, `\"us-central1\"`."
+       },
+       "zone": {
+        "type": "string",
+        "description": "The zone of the Google Cloud Platform service that created the log entry. For example, `\"us-central1-a\"`."
+       },
+       "userId": {
+        "type": "string",
+        "description": "The fully-qualified email address of the authenticated user that performed or requested the action represented by the log entry. If the log entry does not apply to an action taken by an authenticated user, then the field should be empty."
+       },
+       "labels": {
+        "type": "object",
+        "description": "A set of (key, value) data that provides additional information about the log entry. If the log entry is from one of the Google Cloud Platform sources listed below, the indicated (key, value) information must be provided: Google App Engine, service_name `appengine.googleapis.com`: \"appengine.googleapis.com/module_id\",  \"appengine.googleapis.com/version_id\",  and one of: \"appengine.googleapis.com/replica_index\",  \"appengine.googleapis.com/clone_id\",  or else provide the following Compute Engine labels: Google Compute Engine, service_name `compute.googleapis.com`: \"compute.googleapis.com/resource_type\", \"instance\" \"compute.googleapis.com/resource_id\",",
+        "additionalProperties": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "WriteLogEntriesResponse": {
+      "id": "WriteLogEntriesResponse",
+      "type": "object",
+      "description": "Result returned from WriteLogEntries. empty"
+     },
+     "Status": {
+      "id": "Status",
+      "type": "object",
+      "description": "Represents the RPC error status for Google APIs. See http://go/errormodel for details.",
+      "properties": {
+       "code": {
+        "type": "integer",
+        "description": "The status code, which should be an enum value of [google.rpc.Code][].",
+        "format": "int32"
+       },
+       "message": {
+        "type": "string",
+        "description": "A developer-facing error message, which should be in English. The user-facing error message should be localized and stored in the [google.rpc.Status.details][google.rpc.Status.details] field."
+       },
+       "details": {
+        "type": "array",
+        "description": "A list of messages that carry the error details. There will be a common set of message types for APIs to use.",
+        "items": {
+         "type": "object",
+         "additionalProperties": {
+          "type": "any",
+          "description": "Properties of the object. Contains field @ype with type URL."
+         }
+        }
+       }
+      }
+     }
+    },
+    "resources": {
+     "projects": {
+      "resources": {
+       "logs": {
+        "resources": {
+         "entries": {
+          "methods": {
+           "write": {
+            "id": "logging.projects.logs.entries.write",
+            "path": "v1beta3/projects/{projectsId}/logs/{logsId}/entries:write",
+            "httpMethod": "POST",
+            "description": "Creates one or more log entries in a log. You must supply a list of `LogEntry` objects, named `entries`. Each `LogEntry` object must contain a payload object and a `LogEntryMetadata` object that describes the entry. You must fill in all the fields of the entry, metadata, and payload. You can also supply a map, `commonLabels`, that supplies default (key, value) data for the `entries[].metadata.labels` maps, saving you the trouble of creating identical copies for each entry.",
+            "parameters": {
+             "projectsId": {
+              "type": "string",
+              "description": "Part of `logName`. The name of the log resource into which to insert the log entries.",
+              "required": true,
+              "location": "path"
+             },
+             "logsId": {
+              "type": "string",
+              "description": "Part of `logName`. See documentation of `projectsId`.",
+              "required": true,
+              "location": "path"
+             },
+             "extras": {
+               "description": "THIS IS AN INVALID QUERY PARAM",
+               "location": "query",
+               "repeated": true,
+               "type": "object",
+               "additionalProperties": {
+                 "type": "any",
+                 "description": "Properties of the object. Contains field @type with type URL."
+               }
+             }
+            },
+            "parameterOrder": [
+             "projectsId",
+             "logsId"
+            ],
+            "request": {
+             "$ref": "WriteLogEntriesRequest"
+            },
+            "response": {
+             "$ref": "WriteLogEntriesResponse"
+            },
+            "scopes": [
+             "https://www.googleapis.com/auth/cloud-platform"
+            ]
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+   

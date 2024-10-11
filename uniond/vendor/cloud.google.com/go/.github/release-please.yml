@@ -1,0 +1,17 @@
+handleGHRelease: true
+manifest: true
+releaseType: go-yoshi
+
+branches:
+  - branch: main
+    handleGHRelease: true
+    manifest: true
+    releaseType: go-yoshi
+    manifestFile: .release-please-manifest-submodules.json
+    manifestConfig: release-please-config-yoshi-submodules.json
+  - branch: main
+    handleGHRelease: true
+    manifest: true
+    releaseType: go-yoshi
+    manifestFile: .release-please-manifest-individual.json
+    manifestConfig: release-please-config-individual.json

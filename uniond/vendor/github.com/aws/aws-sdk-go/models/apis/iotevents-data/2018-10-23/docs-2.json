@@ -1,0 +1,749 @@
+{
+  "version": "2.0",
+  "service": "<p>IoT Events monitors your equipment or device fleets for failures or changes in operation, and triggers actions when such events occur. You can use IoT Events Data API commands to send inputs to detectors, list detectors, and view or update a detector's status.</p> <p> For more information, see <a href=\"https://docs.aws.amazon.com/iotevents/latest/developerguide/what-is-iotevents.html\">What is IoT Events?</a> in the <i>IoT Events Developer Guide</i>.</p>",
+  "operations": {
+    "BatchAcknowledgeAlarm": "<p>Acknowledges one or more alarms. The alarms change to the <code>ACKNOWLEDGED</code> state after you acknowledge them.</p>",
+    "BatchDeleteDetector": "<p>Deletes one or more detectors that were created. When a detector is deleted, its state will be cleared and the detector will be removed from the list of detectors. The deleted detector will no longer appear if referenced in the <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_iotevents-data_ListDetectors.html\">ListDetectors</a> API call.</p>",
+    "BatchDisableAlarm": "<p>Disables one or more alarms. The alarms change to the <code>DISABLED</code> state after you disable them.</p>",
+    "BatchEnableAlarm": "<p>Enables one or more alarms. The alarms change to the <code>NORMAL</code> state after you enable them.</p>",
+    "BatchPutMessage": "<p>Sends a set of messages to the IoT Events system. Each message payload is transformed into the input you specify (<code>\"inputName\"</code>) and ingested into any detectors that monitor that input. If multiple messages are sent, the order in which the messages are processed isn't guaranteed. To guarantee ordering, you must send messages one at a time and wait for a successful response.</p>",
+    "BatchResetAlarm": "<p>Resets one or more alarms. The alarms return to the <code>NORMAL</code> state after you reset them.</p>",
+    "BatchSnoozeAlarm": "<p>Changes one or more alarms to the snooze mode. The alarms change to the <code>SNOOZE_DISABLED</code> state after you set them to the snooze mode.</p>",
+    "BatchUpdateDetector": "<p>Updates the state, variable values, and timer settings of one or more detectors (instances) of a specified detector model.</p>",
+    "DescribeAlarm": "<p>Retrieves information about an alarm.</p>",
+    "DescribeDetector": "<p>Returns information about the specified detector (instance).</p>",
+    "ListAlarms": "<p>Lists one or more alarms. The operation returns only the metadata associated with each alarm.</p>",
+    "ListDetectors": "<p>Lists detectors (the instances of a detector model).</p>"
+  },
+  "shapes": {
+    "AcknowledgeActionConfiguration": {
+      "base": "<p>Contains the configuration information of an acknowledge action.</p>",
+      "refs": {
+        "CustomerAction$acknowledgeActionConfiguration": "<p>Contains the configuration information of an acknowledge action.</p>"
+      }
+    },
+    "AcknowledgeAlarmActionRequest": {
+      "base": "<p>Information needed to acknowledge the alarm.</p>",
+      "refs": {
+        "AcknowledgeAlarmActionRequests$member": null
+      }
+    },
+    "AcknowledgeAlarmActionRequests": {
+      "base": null,
+      "refs": {
+        "BatchAcknowledgeAlarmRequest$acknowledgeActionRequests": "<p>The list of acknowledge action requests. You can specify up to 10 requests per operation.</p>"
+      }
+    },
+    "Alarm": {
+      "base": "<p>Contains information about an alarm.</p>",
+      "refs": {
+        "DescribeAlarmResponse$alarm": "<p>Contains information about an alarm.</p>"
+      }
+    },
+    "AlarmModelName": {
+      "base": null,
+      "refs": {
+        "AcknowledgeAlarmActionRequest$alarmModelName": "<p>The name of the alarm model.</p>",
+        "Alarm$alarmModelName": "<p>The name of the alarm model.</p>",
+        "AlarmSummary$alarmModelName": "<p>The name of the alarm model.</p>",
+        "DescribeAlarmRequest$alarmModelName": "<p>The name of the alarm model.</p>",
+        "DisableAlarmActionRequest$alarmModelName": "<p>The name of the alarm model.</p>",
+        "EnableAlarmActionRequest$alarmModelName": "<p>The name of the alarm model.</p>",
+        "ListAlarmsRequest$alarmModelName": "<p>The name of the alarm model.</p>",
+        "ResetAlarmActionRequest$alarmModelName": "<p>The name of the alarm model.</p>",
+        "SnoozeAlarmActionRequest$alarmModelName": "<p>The name of the alarm model.</p>"
+      }
+    },
+    "AlarmModelVersion": {
+      "base": null,
+      "refs": {
+        "Alarm$alarmModelVersion": "<p>The version of the alarm model.</p>",
+        "AlarmSummary$alarmModelVersion": "<p>The version of the alarm model.</p>"
+      }
+    },
+    "AlarmState": {
+      "base": "<p>Contains information about the current state of the alarm.</p>",
+      "refs": {
+        "Alarm$alarmState": "<p>Contains information about the current state of the alarm.</p>"
+      }
+    },
+    "AlarmStateName": {
+      "base": null,
+      "refs": {
+        "AlarmState$stateName": "<p>The name of the alarm state. The state name can be one of the following values:</p> <ul> <li> <p> <code>DISABLED</code> - When the alarm is in the <code>DISABLED</code> state, it isn't ready to evaluate data. To enable the alarm, you must change the alarm to the <code>NORMAL</code> state.</p> </li> <li> <p> <code>NORMAL</code> - When the alarm is in the <code>NORMAL</code> state, it's ready to evaluate data.</p> </li> <li> <p> <code>ACTIVE</code> - If the alarm is in the <code>ACTIVE</code> state, the alarm is invoked.</p> </li> <li> <p> <code>ACKNOWLEDGED</code> - When the alarm is in the <code>ACKNOWLEDGED</code> state, the alarm was invoked and you acknowledged the alarm.</p> </li> <li> <p> <code>SNOOZE_DISABLED</code> - When the alarm is in the <code>SNOOZE_DISABLED</code> state, the alarm is disabled for a specified period of time. After the snooze time, the alarm automatically changes to the <code>NORMAL</code> state. </p> </li> <li> <p> <code>LATCHED</code> - When the alarm is in the <code>LATCHED</code> state, the alarm was invoked. However, the data that the alarm is currently evaluating is within the specified range. To change the alarm to the <code>NORMAL</code> state, you must acknowledge the alarm.</p> </li> </ul>",
+        "AlarmSummary$stateName": "<p>The name of the alarm state. The state name can be one of the following values:</p> <ul> <li> <p> <code>DISABLED</code> - When the alarm is in the <code>DISABLED</code> state, it isn't ready to evaluate data. To enable the alarm, you must change the alarm to the <code>NORMAL</code> state.</p> </li> <li> <p> <code>NORMAL</code> - When the alarm is in the <code>NORMAL</code> state, it's ready to evaluate data.</p> </li> <li> <p> <code>ACTIVE</code> - If the alarm is in the <code>ACTIVE</code> state, the alarm is invoked.</p> </li> <li> <p> <code>ACKNOWLEDGED</code> - When the alarm is in the <code>ACKNOWLEDGED</code> state, the alarm was invoked and you acknowledged the alarm.</p> </li> <li> <p> <code>SNOOZE_DISABLED</code> - When the alarm is in the <code>SNOOZE_DISABLED</code> state, the alarm is disabled for a specified period of time. After the snooze time, the alarm automatically changes to the <code>NORMAL</code> state. </p> </li> <li> <p> <code>LATCHED</code> - When the alarm is in the <code>LATCHED</code> state, the alarm was invoked. However, the data that the alarm is currently evaluating is within the specified range. To change the alarm to the <code>NORMAL</code> state, you must acknowledge the alarm.</p> </li> </ul>"
+      }
+    },
+    "AlarmSummaries": {
+      "base": null,
+      "refs": {
+        "ListAlarmsResponse$alarmSummaries": "<p>A list that summarizes each alarm.</p>"
+      }
+    },
+    "AlarmSummary": {
+      "base": "<p>Contains a summary of an alarm.</p>",
+      "refs": {
+        "AlarmSummaries$member": null
+      }
+    },
+    "BatchAcknowledgeAlarmRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchAcknowledgeAlarmResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchAlarmActionErrorEntries": {
+      "base": null,
+      "refs": {
+        "BatchAcknowledgeAlarmResponse$errorEntries": "<p>A list of errors associated with the request, or <code>null</code> if there are no errors. Each error entry contains an entry ID that helps you identify the entry that failed.</p>",
+        "BatchDisableAlarmResponse$errorEntries": "<p>A list of errors associated with the request, or <code>null</code> if there are no errors. Each error entry contains an entry ID that helps you identify the entry that failed.</p>",
+        "BatchEnableAlarmResponse$errorEntries": "<p>A list of errors associated with the request, or <code>null</code> if there are no errors. Each error entry contains an entry ID that helps you identify the entry that failed.</p>",
+        "BatchResetAlarmResponse$errorEntries": "<p>A list of errors associated with the request, or <code>null</code> if there are no errors. Each error entry contains an entry ID that helps you identify the entry that failed.</p>",
+        "BatchSnoozeAlarmResponse$errorEntries": "<p>A list of errors associated with the request, or <code>null</code> if there are no errors. Each error entry contains an entry ID that helps you identify the entry that failed.</p>"
+      }
+    },
+    "BatchAlarmActionErrorEntry": {
+      "base": "<p>Contains error messages associated with one of the following requests:</p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_iotevents-data_BatchAcknowledgeAlarm.html\">BatchAcknowledgeAlarm</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_iotevents-data_BatchDisableAlarm.html\">BatchDisableAlarm</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_iotevents-data_BatchEnableAlarm.html\">BatchEnableAlarm</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_iotevents-data_BatchResetAlarm.html\">BatchResetAlarm</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_iotevents-data_BatchSnoozeAlarm.html\">BatchSnoozeAlarm</a> </p> </li> </ul>",
+      "refs": {
+        "BatchAlarmActionErrorEntries$member": null
+      }
+    },
+    "BatchDeleteDetectorErrorEntries": {
+      "base": null,
+      "refs": {
+        "BatchDeleteDetectorResponse$batchDeleteDetectorErrorEntries": "<p>A list of errors associated with the request, or an empty array (<code>[]</code>) if there are no errors. Each error entry contains a <code>messageId</code> that helps you identify the entry that failed.</p>"
+      }
+    },
+    "BatchDeleteDetectorErrorEntry": {
+      "base": "<p>Contains error messages associated with the deletion request.</p>",
+      "refs": {
+        "BatchDeleteDetectorErrorEntries$member": null
+      }
+    },
+    "BatchDeleteDetectorRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchDeleteDetectorResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchDisableAlarmRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchDisableAlarmResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchEnableAlarmRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchEnableAlarmResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchPutMessageErrorEntries": {
+      "base": null,
+      "refs": {
+        "BatchPutMessageResponse$BatchPutMessageErrorEntries": "<p>A list of any errors encountered when sending the messages.</p>"
+      }
+    },
+    "BatchPutMessageErrorEntry": {
+      "base": "<p>Contains information about the errors encountered.</p>",
+      "refs": {
+        "BatchPutMessageErrorEntries$member": null
+      }
+    },
+    "BatchPutMessageRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchPutMessageResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchResetAlarmRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchResetAlarmResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchSnoozeAlarmRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchSnoozeAlarmResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchUpdateDetectorErrorEntries": {
+      "base": null,
+      "refs": {
+        "BatchUpdateDetectorResponse$batchUpdateDetectorErrorEntries": "<p>A list of those detector updates that resulted in errors. (If an error is listed here, the specific update did not occur.)</p>"
+      }
+    },
+    "BatchUpdateDetectorErrorEntry": {
+      "base": "<p>Information about the error that occurred when attempting to update a detector.</p>",
+      "refs": {
+        "BatchUpdateDetectorErrorEntries$member": null
+      }
+    },
+    "BatchUpdateDetectorRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchUpdateDetectorResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ComparisonOperator": {
+      "base": null,
+      "refs": {
+        "SimpleRuleEvaluation$operator": "<p>The comparison operator.</p>"
+      }
+    },
+    "CustomerAction": {
+      "base": "<p>Contains information about the action that you can take to respond to the alarm.</p>",
+      "refs": {
+        "AlarmState$customerAction": "<p>Contains information about the action that you can take to respond to the alarm.</p>"
+      }
+    },
+    "CustomerActionName": {
+      "base": null,
+      "refs": {
+        "CustomerAction$actionName": "<p>The name of the action. The action name can be one of the following values:</p> <ul> <li> <p> <code>SNOOZE</code> - When you snooze the alarm, the alarm state changes to <code>SNOOZE_DISABLED</code>.</p> </li> <li> <p> <code>ENABLE</code> - When you enable the alarm, the alarm state changes to <code>NORMAL</code>.</p> </li> <li> <p> <code>DISABLE</code> - When you disable the alarm, the alarm state changes to <code>DISABLED</code>.</p> </li> <li> <p> <code>ACKNOWLEDGE</code> - When you acknowledge the alarm, the alarm state changes to <code>ACKNOWLEDGED</code>.</p> </li> <li> <p> <code>RESET</code> - When you reset the alarm, the alarm state changes to <code>NORMAL</code>.</p> </li> </ul> <p>For more information, see the <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_iotevents-data_AlarmState.html\">AlarmState</a> API.</p>"
+      }
+    },
+    "DeleteDetectorRequest": {
+      "base": "<p>Information used to delete the detector model.</p>",
+      "refs": {
+        "DeleteDetectorRequests$member": null
+      }
+    },
+    "DeleteDetectorRequests": {
+      "base": null,
+      "refs": {
+        "BatchDeleteDetectorRequest$detectors": "<p>The list of one or more detectors to be deleted.</p>"
+      }
+    },
+    "DescribeAlarmRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeAlarmResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeDetectorRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeDetectorResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Detector": {
+      "base": "<p>Information about the detector (instance).</p>",
+      "refs": {
+        "DescribeDetectorResponse$detector": "<p>Information about the detector (instance).</p>"
+      }
+    },
+    "DetectorModelName": {
+      "base": null,
+      "refs": {
+        "DeleteDetectorRequest$detectorModelName": "<p>The name of the detector model that was used to create the detector instance.</p>",
+        "DescribeDetectorRequest$detectorModelName": "<p>The name of the detector model whose detectors (instances) you want information about.</p>",
+        "Detector$detectorModelName": "<p>The name of the detector model that created this detector (instance).</p>",
+        "DetectorSummary$detectorModelName": "<p>The name of the detector model that created this detector (instance).</p>",
+        "ListDetectorsRequest$detectorModelName": "<p>The name of the detector model whose detectors (instances) are listed.</p>",
+        "UpdateDetectorRequest$detectorModelName": "<p>The name of the detector model that created the detectors (instances).</p>"
+      }
+    },
+    "DetectorModelVersion": {
+      "base": null,
+      "refs": {
+        "Detector$detectorModelVersion": "<p>The version of the detector model that created this detector (instance).</p>",
+        "DetectorSummary$detectorModelVersion": "<p>The version of the detector model that created this detector (instance).</p>"
+      }
+    },
+    "DetectorState": {
+      "base": "<p>Information about the current state of the detector instance.</p>",
+      "refs": {
+        "Detector$state": "<p>The current state of the detector (instance).</p>"
+      }
+    },
+    "DetectorStateDefinition": {
+      "base": "<p>The new state, variable values, and timer settings of the detector (instance).</p>",
+      "refs": {
+        "UpdateDetectorRequest$state": "<p>The new state, variable values, and timer settings of the detector (instance).</p>"
+      }
+    },
+    "DetectorStateSummary": {
+      "base": "<p>Information about the detector state.</p>",
+      "refs": {
+        "DetectorSummary$state": "<p>The current state of the detector (instance).</p>"
+      }
+    },
+    "DetectorSummaries": {
+      "base": null,
+      "refs": {
+        "ListDetectorsResponse$detectorSummaries": "<p>A list of summary information about the detectors (instances).</p>"
+      }
+    },
+    "DetectorSummary": {
+      "base": "<p>Information about the detector (instance).</p>",
+      "refs": {
+        "DetectorSummaries$member": null
+      }
+    },
+    "DisableActionConfiguration": {
+      "base": "<p>Contains the configuration information of a disable action.</p>",
+      "refs": {
+        "CustomerAction$disableActionConfiguration": "<p>Contains the configuration information of a disable action.</p>"
+      }
+    },
+    "DisableAlarmActionRequest": {
+      "base": "<p>Information used to disable the alarm.</p>",
+      "refs": {
+        "DisableAlarmActionRequests$member": null
+      }
+    },
+    "DisableAlarmActionRequests": {
+      "base": null,
+      "refs": {
+        "BatchDisableAlarmRequest$disableActionRequests": "<p>The list of disable action requests. You can specify up to 10 requests per operation.</p>"
+      }
+    },
+    "EnableActionConfiguration": {
+      "base": "<p>Contains the configuration information of an enable action.</p>",
+      "refs": {
+        "CustomerAction$enableActionConfiguration": "<p>Contains the configuration information of an enable action.</p>"
+      }
+    },
+    "EnableAlarmActionRequest": {
+      "base": "<p>Information needed to enable the alarm.</p>",
+      "refs": {
+        "EnableAlarmActionRequests$member": null
+      }
+    },
+    "EnableAlarmActionRequests": {
+      "base": null,
+      "refs": {
+        "BatchEnableAlarmRequest$enableActionRequests": "<p>The list of enable action requests. You can specify up to 10 requests per operation.</p>"
+      }
+    },
+    "EphemeralInputName": {
+      "base": null,
+      "refs": {
+        "Message$inputName": "<p>The name of the input into which the message payload is transformed.</p>"
+      }
+    },
+    "EpochMilliTimestamp": {
+      "base": null,
+      "refs": {
+        "TimestampValue$timeInMillis": "<p>The value of the timestamp, in the Unix epoch format.</p>"
+      }
+    },
+    "ErrorCode": {
+      "base": null,
+      "refs": {
+        "BatchAlarmActionErrorEntry$errorCode": "<p>The error code.</p>",
+        "BatchDeleteDetectorErrorEntry$errorCode": "<p>The error code.</p>",
+        "BatchPutMessageErrorEntry$errorCode": "<p>The error code.</p>",
+        "BatchUpdateDetectorErrorEntry$errorCode": "<p>The error code.</p>"
+      }
+    },
+    "ErrorMessage": {
+      "base": null,
+      "refs": {
+        "BatchAlarmActionErrorEntry$errorMessage": "<p>A message that describes the error.</p>",
+        "BatchDeleteDetectorErrorEntry$errorMessage": "<p>A message that describes the error.</p>",
+        "BatchPutMessageErrorEntry$errorMessage": "<p>A message that describes the error.</p>",
+        "BatchUpdateDetectorErrorEntry$errorMessage": "<p>A message that describes the error.</p>"
+      }
+    },
+    "EventType": {
+      "base": null,
+      "refs": {
+        "SystemEvent$eventType": "<p>The event type. If the value is <code>STATE_CHANGE</code>, the event contains information about alarm state changes.</p>"
+      }
+    },
+    "InputPropertyValue": {
+      "base": null,
+      "refs": {
+        "SimpleRuleEvaluation$inputPropertyValue": "<p>The value of the input property, on the left side of the comparison operator.</p>"
+      }
+    },
+    "InternalFailureException": {
+      "base": "<p>An internal failure occurred.</p>",
+      "refs": {
+      }
+    },
+    "InvalidRequestException": {
+      "base": "<p>The request was invalid.</p>",
+      "refs": {
+      }
+    },
+    "KeyValue": {
+      "base": null,
+      "refs": {
+        "AcknowledgeAlarmActionRequest$keyValue": "<p>The value of the key used as a filter to select only the alarms associated with the <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_CreateAlarmModel.html#iotevents-CreateAlarmModel-request-key\">key</a>.</p>",
+        "Alarm$keyValue": "<p>The value of the key used as a filter to select only the alarms associated with the <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_CreateAlarmModel.html#iotevents-CreateAlarmModel-request-key\">key</a>.</p>",
+        "AlarmSummary$keyValue": "<p>The value of the key used as a filter to select only the alarms associated with the <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_CreateAlarmModel.html#iotevents-CreateAlarmModel-request-key\">key</a>.</p>",
+        "DeleteDetectorRequest$keyValue": "<p>The value of the <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_CreateDetectorModel.html#iotevents-CreateDetectorModel-request-key\">key</a> used to identify the detector. </p>",
+        "DescribeAlarmRequest$keyValue": "<p>The value of the key used as a filter to select only the alarms associated with the <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_CreateAlarmModel.html#iotevents-CreateAlarmModel-request-key\">key</a>.</p>",
+        "DescribeDetectorRequest$keyValue": "<p>A filter used to limit results to detectors (instances) created because of the given key ID.</p>",
+        "Detector$keyValue": "<p>The value of the key (identifying the device or system) that caused the creation of this detector (instance).</p>",
+        "DetectorSummary$keyValue": "<p>The value of the key (identifying the device or system) that caused the creation of this detector (instance).</p>",
+        "DisableAlarmActionRequest$keyValue": "<p>The value of the key used as a filter to select only the alarms associated with the <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_CreateAlarmModel.html#iotevents-CreateAlarmModel-request-key\">key</a>.</p>",
+        "EnableAlarmActionRequest$keyValue": "<p>The value of the key used as a filter to select only the alarms associated with the <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_CreateAlarmModel.html#iotevents-CreateAlarmModel-request-key\">key</a>.</p>",
+        "ResetAlarmActionRequest$keyValue": "<p>The value of the key used as a filter to select only the alarms associated with the <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_CreateAlarmModel.html#iotevents-CreateAlarmModel-request-key\">key</a>.</p>",
+        "SnoozeAlarmActionRequest$keyValue": "<p>The value of the key used as a filter to select only the alarms associated with the <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_CreateAlarmModel.html#iotevents-CreateAlarmModel-request-key\">key</a>.</p>",
+        "UpdateDetectorRequest$keyValue": "<p>The value of the input key attribute (identifying the device or system) that caused the creation of this detector (instance).</p>"
+      }
+    },
+    "ListAlarmsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListAlarmsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListDetectorsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListDetectorsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "MaxResults": {
+      "base": null,
+      "refs": {
+        "ListAlarmsRequest$maxResults": "<p>The maximum number of results to be returned per request.</p>",
+        "ListDetectorsRequest$maxResults": "<p>The maximum number of results to be returned per request.</p>"
+      }
+    },
+    "Message": {
+      "base": "<p>Information about a message.</p>",
+      "refs": {
+        "Messages$member": null
+      }
+    },
+    "MessageId": {
+      "base": null,
+      "refs": {
+        "BatchDeleteDetectorErrorEntry$messageId": "<p>The ID of the message that caused the error. (See the value of the <code>\"messageId\"</code> in the <a href=\"https://docs.aws.amazon.com/iotevents/latest/apireference/API_iotevents-data_BatchDeleteDetector.html#iotevents-iotevents-data_BatchDeleteDetector-request-detectors\">detectors</a> object of the <code>DeleteDetectorRequest</code>.)</p>",
+        "BatchPutMessageErrorEntry$messageId": "<p>The ID of the message that caused the error. (See the value corresponding to the <code>\"messageId\"</code> key in the <code>\"message\"</code> object.)</p>",
+        "BatchUpdateDetectorErrorEntry$messageId": "<p>The <code>\"messageId\"</code> of the update request that caused the error. (The value of the <code>\"messageId\"</code> in the update request <code>\"Detector\"</code> object.)</p>",
+        "DeleteDetectorRequest$messageId": "<p>The ID to assign to the <code>DeleteDetectorRequest</code>. Each <code>\"messageId\"</code> must be unique within each batch sent.</p>",
+        "Message$messageId": "<p>The ID to assign to the message. Within each batch sent, each <code>\"messageId\"</code> must be unique.</p>",
+        "UpdateDetectorRequest$messageId": "<p>The ID to assign to the detector update <code>\"message\"</code>. Each <code>\"messageId\"</code> must be unique within each batch sent.</p>"
+      }
+    },
+    "Messages": {
+      "base": null,
+      "refs": {
+        "BatchPutMessageRequest$messages": "<p>The list of messages to send. Each message has the following format: <code>'{ \"messageId\": \"string\", \"inputName\": \"string\", \"payload\": \"string\"}'</code> </p>"
+      }
+    },
+    "NextToken": {
+      "base": null,
+      "refs": {
+        "ListAlarmsRequest$nextToken": "<p>The token that you can use to return the next set of results.</p>",
+        "ListAlarmsResponse$nextToken": "<p>The token that you can use to return the next set of results, or <code>null</code> if there are no more results.</p>",
+        "ListDetectorsRequest$nextToken": "<p>The token that you can use to return the next set of results.</p>",
+        "ListDetectorsResponse$nextToken": "<p>The token that you can use to return the next set of results, or <code>null</code> if there are no more results.</p>"
+      }
+    },
+    "Note": {
+      "base": null,
+      "refs": {
+        "AcknowledgeActionConfiguration$note": "<p>The note that you can leave when you acknowledge the alarm.</p>",
+        "AcknowledgeAlarmActionRequest$note": "<p>The note that you can leave when you acknowledge the alarm.</p>",
+        "DisableActionConfiguration$note": "<p>The note that you can leave when you disable the alarm.</p>",
+        "DisableAlarmActionRequest$note": "<p>The note that you can leave when you disable the alarm.</p>",
+        "EnableActionConfiguration$note": "<p>The note that you can leave when you enable the alarm.</p>",
+        "EnableAlarmActionRequest$note": "<p>The note that you can leave when you enable the alarm.</p>",
+        "ResetActionConfiguration$note": "<p>The note that you can leave when you reset the alarm.</p>",
+        "ResetAlarmActionRequest$note": "<p>The note that you can leave when you reset the alarm.</p>",
+        "SnoozeActionConfiguration$note": "<p>The note that you can leave when you snooze the alarm.</p>",
+        "SnoozeAlarmActionRequest$note": "<p>The note that you can leave when you snooze the alarm.</p>"
+      }
+    },
+    "Payload": {
+      "base": null,
+      "refs": {
+        "Message$payload": "<p>The payload of the message. This can be a JSON string or a Base-64-encoded string representing binary data (in which case you must decode it).</p>"
+      }
+    },
+    "RequestId": {
+      "base": null,
+      "refs": {
+        "AcknowledgeAlarmActionRequest$requestId": "<p>The request ID. Each ID must be unique within each batch.</p>",
+        "BatchAlarmActionErrorEntry$requestId": "<p>The request ID. Each ID must be unique within each batch.</p>",
+        "DisableAlarmActionRequest$requestId": "<p>The request ID. Each ID must be unique within each batch.</p>",
+        "EnableAlarmActionRequest$requestId": "<p>The request ID. Each ID must be unique within each batch.</p>",
+        "ResetAlarmActionRequest$requestId": "<p>The request ID. Each ID must be unique within each batch.</p>",
+        "SnoozeAlarmActionRequest$requestId": "<p>The request ID. Each ID must be unique within each batch.</p>"
+      }
+    },
+    "ResetActionConfiguration": {
+      "base": "<p>Contains the configuration information of a reset action.</p>",
+      "refs": {
+        "CustomerAction$resetActionConfiguration": "<p>Contains the configuration information of a reset action.</p>"
+      }
+    },
+    "ResetAlarmActionRequest": {
+      "base": "<p>Information needed to reset the alarm.</p>",
+      "refs": {
+        "ResetAlarmActionRequests$member": null
+      }
+    },
+    "ResetAlarmActionRequests": {
+      "base": null,
+      "refs": {
+        "BatchResetAlarmRequest$resetActionRequests": "<p>The list of reset action requests. You can specify up to 10 requests per operation.</p>"
+      }
+    },
+    "ResourceNotFoundException": {
+      "base": "<p>The resource was not found.</p>",
+      "refs": {
+      }
+    },
+    "RuleEvaluation": {
+      "base": "<p>Information needed to evaluate data.</p>",
+      "refs": {
+        "AlarmState$ruleEvaluation": "<p>Information needed to evaluate data.</p>"
+      }
+    },
+    "Seconds": {
+      "base": null,
+      "refs": {
+        "TimerDefinition$seconds": "<p>The new setting of the timer (the number of seconds before the timer elapses).</p>"
+      }
+    },
+    "ServiceUnavailableException": {
+      "base": "<p>The service is currently unavailable.</p>",
+      "refs": {
+      }
+    },
+    "Severity": {
+      "base": null,
+      "refs": {
+        "Alarm$severity": "<p>A non-negative integer that reflects the severity level of the alarm.</p>"
+      }
+    },
+    "SimpleRuleEvaluation": {
+      "base": "<p>Information needed to compare two values with a comparison operator.</p>",
+      "refs": {
+        "RuleEvaluation$simpleRuleEvaluation": "<p>Information needed to compare two values with a comparison operator.</p>"
+      }
+    },
+    "SnoozeActionConfiguration": {
+      "base": "<p>Contains the configuration information of a snooze action.</p>",
+      "refs": {
+        "CustomerAction$snoozeActionConfiguration": "<p>Contains the configuration information of a snooze action.</p>"
+      }
+    },
+    "SnoozeAlarmActionRequest": {
+      "base": "<p>Information needed to snooze the alarm.</p>",
+      "refs": {
+        "SnoozeAlarmActionRequests$member": null
+      }
+    },
+    "SnoozeAlarmActionRequests": {
+      "base": null,
+      "refs": {
+        "BatchSnoozeAlarmRequest$snoozeActionRequests": "<p>The list of snooze action requests. You can specify up to 10 requests per operation.</p>"
+      }
+    },
+    "SnoozeDuration": {
+      "base": null,
+      "refs": {
+        "SnoozeActionConfiguration$snoozeDuration": "<p>The snooze time in seconds. The alarm automatically changes to the <code>NORMAL</code> state after this duration.</p>",
+        "SnoozeAlarmActionRequest$snoozeDuration": "<p>The snooze time in seconds. The alarm automatically changes to the <code>NORMAL</code> state after this duration.</p>"
+      }
+    },
+    "StateChangeConfiguration": {
+      "base": "<p>Contains the configuration information of alarm state changes.</p>",
+      "refs": {
+        "SystemEvent$stateChangeConfiguration": "<p>Contains the configuration information of alarm state changes.</p>"
+      }
+    },
+    "StateName": {
+      "base": null,
+      "refs": {
+        "DetectorState$stateName": "<p>The name of the state.</p>",
+        "DetectorStateDefinition$stateName": "<p>The name of the new state of the detector (instance).</p>",
+        "DetectorStateSummary$stateName": "<p>The name of the state.</p>",
+        "ListDetectorsRequest$stateName": "<p>A filter that limits results to those detectors (instances) in the given state.</p>"
+      }
+    },
+    "SystemEvent": {
+      "base": "<p>Contains information about alarm state changes.</p>",
+      "refs": {
+        "AlarmState$systemEvent": "<p>Contains information about alarm state changes.</p>"
+      }
+    },
+    "ThresholdValue": {
+      "base": null,
+      "refs": {
+        "SimpleRuleEvaluation$thresholdValue": "<p>The threshold value, on the right side of the comparison operator.</p>"
+      }
+    },
+    "ThrottlingException": {
+      "base": "<p>The request could not be completed due to throttling.</p>",
+      "refs": {
+      }
+    },
+    "Timer": {
+      "base": "<p>The current state of a timer.</p>",
+      "refs": {
+        "Timers$member": null
+      }
+    },
+    "TimerDefinition": {
+      "base": "<p>The new setting of a timer.</p>",
+      "refs": {
+        "TimerDefinitions$member": null
+      }
+    },
+    "TimerDefinitions": {
+      "base": null,
+      "refs": {
+        "DetectorStateDefinition$timers": "<p>The new values of the detector's timers. Any timer whose value isn't specified is cleared, and its timeout event won't occur.</p>"
+      }
+    },
+    "TimerName": {
+      "base": null,
+      "refs": {
+        "Timer$name": "<p>The name of the timer.</p>",
+        "TimerDefinition$name": "<p>The name of the timer.</p>"
+      }
+    },
+    "Timers": {
+      "base": null,
+      "refs": {
+        "DetectorState$timers": "<p>The current state of the detector's timers.</p>"
+      }
+    },
+    "Timestamp": {
+      "base": null,
+      "refs": {
+        "Alarm$creationTime": "<p>The time the alarm was created, in the Unix epoch format.</p>",
+        "Alarm$lastUpdateTime": "<p>The time the alarm was last updated, in the Unix epoch format.</p>",
+        "AlarmSummary$creationTime": "<p>The time the alarm was created, in the Unix epoch format.</p>",
+        "AlarmSummary$lastUpdateTime": "<p>The time the alarm was last updated, in the Unix epoch format.</p>",
+        "Detector$creationTime": "<p>The time the detector (instance) was created.</p>",
+        "Detector$lastUpdateTime": "<p>The time the detector (instance) was last updated.</p>",
+        "DetectorSummary$creationTime": "<p>The time the detector (instance) was created.</p>",
+        "DetectorSummary$lastUpdateTime": "<p>The time the detector (instance) was last updated.</p>",
+        "Timer$timestamp": "<p>The expiration time for the timer.</p>"
+      }
+    },
+    "TimestampValue": {
+      "base": "<p>Contains information about a timestamp.</p>",
+      "refs": {
+        "Message$timestamp": "<p>The timestamp associated with the message.</p>"
+      }
+    },
+    "TriggerType": {
+      "base": null,
+      "refs": {
+        "StateChangeConfiguration$triggerType": "<p>The trigger type. If the value is <code>SNOOZE_TIMEOUT</code>, the snooze duration ends and the alarm automatically changes to the <code>NORMAL</code> state.</p>"
+      }
+    },
+    "UpdateDetectorRequest": {
+      "base": "<p>Information used to update the detector (instance).</p>",
+      "refs": {
+        "UpdateDetectorRequests$member": null
+      }
+    },
+    "UpdateDetectorRequests": {
+      "base": null,
+      "refs": {
+        "BatchUpdateDetectorRequest$detectors": "<p>The list of detectors (instances) to update, along with the values to update.</p>"
+      }
+    },
+    "Variable": {
+      "base": "<p>The current state of the variable.</p>",
+      "refs": {
+        "Variables$member": null
+      }
+    },
+    "VariableDefinition": {
+      "base": "<p>The new value of the variable.</p>",
+      "refs": {
+        "VariableDefinitions$member": null
+      }
+    },
+    "VariableDefinitions": {
+      "base": null,
+      "refs": {
+        "DetectorStateDefinition$variables": "<p>The new values of the detector's variables. Any variable whose value isn't specified is cleared.</p>"
+      }
+    },
+    "VariableName": {
+      "base": null,
+      "refs": {
+        "Variable$name": "<p>The name of the variable.</p>",
+        "VariableDefinition$name": "<p>The name of the variable.</p>"
+      }
+    },
+    "VariableValue": {
+      "base": null,
+      "refs": {
+        "Variable$value": "<p>The current value of the variable.</p>",
+        "VariableDefinition$value": "<p>The new value of the variable.</p>"
+      }
+    },
+    "Variables": {
+      "base": null,
+      "refs": {
+        "DetectorState$variables": "<p>The current values of the detector's variables.</p>"
+      }
+    },
+    "errorMessage": {
+      "base": null,
+      "refs": {
+        "InternalFailureException$message": "<p>The message for the exception.</p>",
+        "InvalidRequestException$message": "<p>The message for the exception.</p>",
+        "ResourceNotFoundException$message": "<p>The message for the exception.</p>",
+        "ServiceUnavailableException$message": "<p>The message for the exception.</p>",
+        "ThrottlingException$message": "<p>The message for the exception.</p>"
+      }
+    }
+  }
+}

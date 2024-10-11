@@ -1,7 +1,7 @@
 .PHONY: all build build-rust build-go test
 
 # Builds the Rust library libwasmvm
-BUILDERS_PREFIX := cosmwasm/go-ext-builder:0018
+BUILDERS_PREFIX := cosmwasm/libwasmvm-builder:0100
 # Contains a full Go dev environment including CGO support in order to run Go tests on the built shared library
 # This image is currently not published.
 ALPINE_TESTER := cosmwasm/alpine-tester:local
@@ -44,14 +44,10 @@ build-rust-debug:
 	make update-bindings
 
 # use release build to actually ship - smaller and much faster
-#
-# See https://github.com/CosmWasm/wasmvm/issues/222#issuecomment-880616953 for two approaches to
-# enable stripping through cargo (if that is desired).
 build-rust-release:
 	(cd libwasmvm && cargo build --release)
 	cp libwasmvm/target/release/$(SHARED_LIB_SRC) internal/api/$(SHARED_LIB_DST)
 	make update-bindings
-	@ #this pulls out ELF symbols, 80% size reduction!
 
 build-go:
 	go build ./...
@@ -72,49 +68,36 @@ bench:
 
 # Creates a release build in a containerized build environment of the static library for Alpine Linux (.a)
 release-build-alpine:
-	# Builders should not write their target folder into the host file system (https://github.com/CosmWasm/wasmvm/issues/437)
-	rm -rf libwasmvm/target/aarch64-unknown-linux-musl/release
-	rm -rf libwasmvm/target/x86_64-unknown-linux-musl/release
 	# build the muslc *.a file
-	docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd)/libwasmvm:/code $(BUILDERS_PREFIX)-alpine
+	docker run --rm -v $(shell pwd)/libwasmvm:/code $(BUILDERS_PREFIX)-alpine
 	cp libwasmvm/artifacts/libwasmvm_muslc.x86_64.a internal/api
 	cp libwasmvm/artifacts/libwasmvm_muslc.aarch64.a internal/api
 	make update-bindings
 
 # Creates a release build in a containerized build environment of the shared library for glibc Linux (.so)
 release-build-linux:
-	# Builders should not write their target folder into the host file system (https://github.com/CosmWasm/wasmvm/issues/437)
-	rm -rf libwasmvm/target/x86_64-unknown-linux-gnu/release
-	rm -rf libwasmvm/target/aarch64-unknown-linux-gnu/release
-	docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd)/libwasmvm:/code $(BUILDERS_PREFIX)-centos7 build_linux.sh
+	docker run --rm -v $(shell pwd)/libwasmvm:/code $(BUILDERS_PREFIX)-debian build_gnu_x86_64.sh
+	docker run --rm -v $(shell pwd)/libwasmvm:/code $(BUILDERS_PREFIX)-debian build_gnu_aarch64.sh
 	cp libwasmvm/artifacts/libwasmvm.x86_64.so internal/api
 	cp libwasmvm/artifacts/libwasmvm.aarch64.so internal/api
 	make update-bindings
 
 # Creates a release build in a containerized build environment of the shared library for macOS (.dylib)
 release-build-macos:
-	# Builders should not write their target folder into the host file system (https://github.com/CosmWasm/wasmvm/issues/437)
-	rm -rf libwasmvm/target/x86_64-apple-darwin/release
-	rm -rf libwasmvm/target/aarch64-apple-darwin/release
-	docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd)/libwasmvm:/code $(BUILDERS_PREFIX)-cross build_macos.sh
+	docker run --rm -v $(shell pwd)/libwasmvm:/code $(BUILDERS_PREFIX)-cross build_macos.sh
 	cp libwasmvm/artifacts/libwasmvm.dylib internal/api
 	make update-bindings
 
 # Creates a release build in a containerized build environment of the static library for macOS (.a)
 release-build-macos-static:
-	# Builders should not write their target folder into the host file system (https://github.com/CosmWasm/wasmvm/issues/437)
-	rm -rf libwasmvm/target/x86_64-apple-darwin/release
-	rm -rf libwasmvm/target/aarch64-apple-darwin/release
-	docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd)/libwasmvm:/code $(BUILDERS_PREFIX)-cross build_macos_static.sh
+	docker run --rm -v $(shell pwd)/libwasmvm:/code $(BUILDERS_PREFIX)-cross build_macos_static.sh
 	cp libwasmvm/artifacts/libwasmvmstatic_darwin.a internal/api/libwasmvmstatic_darwin.a
 	make update-bindings
 
 # Creates a release build in a containerized build environment of the shared library for Windows (.dll)
 release-build-windows:
-	# Builders should not write their target folder into the host file system (https://github.com/CosmWasm/wasmvm/issues/437)
-	rm -rf libwasmvm/target/x86_64-pc-windows-gnu/release
-	docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd)/libwasmvm:/code $(BUILDERS_PREFIX)-cross build_windows.sh
-	cp libwasmvm/target/x86_64-pc-windows-gnu/release/wasmvm.dll internal/api
+	docker run --rm -v $(shell pwd)/libwasmvm:/code $(BUILDERS_PREFIX)-cross build_windows.sh
+	cp libwasmvm/artifacts/wasmvm.dll internal/api
 	make update-bindings
 
 update-bindings:
@@ -134,7 +117,6 @@ create-tester-image:
 	docker build -t $(ALPINE_TESTER) - < ./Dockerfile.alpine_tester
 
 test-alpine: release-build-alpine create-tester-image
-	@[ "$(shell uname -m)" = "x86_64" ] || (echo "This test is only working on x86_64. See https://github.com/CosmWasm/wasmvm/issues/483."; exit 78)
 # try running go tests using this lib with muslc
 	docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd):/mnt/testrun -w /mnt/testrun $(ALPINE_TESTER) go build -tags muslc ./...
 # Use package list mode to include all subdirectores. The -count=1 turns off caching.
@@ -161,8 +143,11 @@ test-alpine: release-build-alpine create-tester-image
 format:
 	find . -name '*.go' -type f | xargs gofumpt -w -s
 	find . -name '*.go' -type f | xargs misspell -w
-	find . -name '*.go' -type f | xargs goimports -w -local github.com/CosmWasm/wasmvm
 
 .PHONY: lint
 lint:
 	golangci-lint run
+
+.PHONY: lint-fix
+lint-fix:
+	golangci-lint run --fix

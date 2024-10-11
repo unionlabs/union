@@ -1,0 +1,8 @@
+# If ioutil.TempDir returns a sym linked dir (default behaviour in macOS for example) the
+# matcher will have problems with external programs that uses the real path.
+# This script tests that $WORK is matched in a consistent way (also see #79).
+[windows] skip
+exec pwd
+stdout ^$WORK$
+exec pwd -P
+stdout ^$WORK$

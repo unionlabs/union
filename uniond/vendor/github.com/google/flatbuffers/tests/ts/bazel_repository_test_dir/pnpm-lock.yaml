@@ -1,0 +1,12 @@
+lockfileVersion: '6.0'
+
+devDependencies:
+  '@types/node':
+    specifier: 18.15.11
+    version: 18.15.11
+
+packages:
+
+  /@types/node@18.15.11:
+    resolution: {integrity: sha512-E5Kwq2n4SbMzQOn6wnmBjuK9ouqlURrcZDVfbo9ftDDTFt3nk7ZKK4GMOzoYgnpQJKcxwQw+lGaBvvlMo0qN/Q==}
+    dev: true

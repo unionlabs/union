@@ -1,0 +1,18 @@
+<WindowsPerformanceRecorder Version="1">
+  <Profiles>
+    <EventCollector Id="Collector" Name="MyCollector">
+      <BufferSize Value="256"/>
+      <Buffers Value="100"/>
+    </EventCollector>
+    <EventProvider Id="HookTest" Name="5e50de03-107c-5a83-74c6-998c4491e7e9"/>
+    <Profile Id="Test.Verbose.File" Name="Test" Description="Test" LoggingMode="File" DetailLevel="Verbose">
+      <Collectors>
+        <EventCollectorId Value="Collector">
+          <EventProviders>
+            <EventProviderId Value="HookTest"/>
+          </EventProviders>
+        </EventCollectorId>
+      </Collectors>
+    </Profile>
+  </Profiles>
+</WindowsPerformanceRecorder>

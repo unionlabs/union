@@ -135,8 +135,20 @@ func (e *bestFastEncoder) Encode(blk *blockEnc, src []byte) {
 		break
 	}
 
+	// Add block to history
 	s := e.addBlock(src)
 	blk.size = len(src)
+
+	// Check RLE first
+	if len(src) > zstdMinMatch {
+		ml := matchLen(src[1:], src)
+		if ml == len(src)-1 {
+			blk.literals = append(blk.literals, src[0])
+			blk.sequences = append(blk.sequences, seq{litLen: 1, matchLen: uint32(len(src)-1) - zstdMinMatch, offset: 1 + 3})
+			return
+		}
+	}
+
 	if len(src) < minNonLiteralBlockSize {
 		blk.extraLits = len(src)
 		blk.literals = blk.literals[:len(src)]

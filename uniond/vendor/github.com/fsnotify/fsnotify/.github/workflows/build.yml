@@ -1,0 +1,47 @@
+name: 'build'
+on:
+  pull_request:
+    paths: ['**.go', 'go.mod', '.github/workflows/*']
+  push:
+    branches: ['main', 'aix']
+
+jobs:
+  cross-compile:
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ['1.17', '1.21']
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: build
+        run: |
+          for a in $(go tool dist list); do
+            export GOOS=${a%%/*}
+            export GOARCH=${a#*/}
+
+            case "$GOOS" in
+              (android|ios)  exit 0 ;; # Requires cgo to link.
+              (js)           exit 0 ;; # No build tags in internal/ TODO: should maybe fix?
+              (openbsd)
+                case "$GOARCH" in
+                  # Fails with:
+                  #   golang.org/x/sys/unix.syscall_syscall9: relocation target syscall.syscall10 not defined
+                  #   golang.org/x/sys/unix.kevent: relocation target syscall.syscall6 not defined
+                  #   golang.org/x/sys/unix.pipe2: relocation target syscall.rawSyscall not defined
+                  #   ...
+                  # Works for me locally though, hmm...
+                  (386) exit 0 ;;
+                esac
+            esac
+
+            go test -c
+            go build ./cmd/fsnotify
+          done

@@ -1,0 +1,38 @@
+---
+buildifier: latest
+bazel: 6.4.0
+platforms:
+  ubuntu1804:
+    environment:
+      CC: clang
+      SWIFT_VERSION: "5.5.3"
+      SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
+      PATH: "$PATH:$SWIFT_HOME/usr/bin"
+    shell_commands:
+      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
+      - "mkdir $SWIFT_HOME"
+      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu1804/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+    build_targets:
+    - "//..."
+    test_targets:
+    - "//..."
+  ubuntu2004:
+    environment:
+      CC: clang
+      SWIFT_VERSION: "5.5.3"
+      SWIFT_HOME: "$HOME/swift-$SWIFT_VERSION"
+      PATH: "$PATH:$SWIFT_HOME/usr/bin"
+    shell_commands:
+      - "echo --- Downloading and extracting Swift $SWIFT_VERSION to $SWIFT_HOME"
+      - "mkdir $SWIFT_HOME"
+      - "curl https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu2004/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu20.04.tar.gz | tar xvz --strip-components=1 -C $SWIFT_HOME"
+    build_targets:
+    - "//..."
+    test_targets:
+    - "//..."
+  macos:
+    xcode_version: "14.2"
+    build_targets:
+    - "//..."
+    test_targets:
+    - "//..."

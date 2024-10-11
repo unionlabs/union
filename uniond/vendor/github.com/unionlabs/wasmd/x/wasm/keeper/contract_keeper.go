@@ -1,0 +1,132 @@
+package keeper
+
+import (
+	"context"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/CosmWasm/wasmd/x/wasm/types"
+)
+
+var _ types.ContractOpsKeeper = PermissionedKeeper{}
+
+// decoratedKeeper contains a subset of the wasm keeper that are already or can be guarded by an authorization policy in the future
+type decoratedKeeper interface {
+	create(ctx context.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *types.AccessConfig, authZ types.AuthorizationPolicy) (codeID uint64, checksum []byte, err error)
+
+	instantiate(
+		ctx context.Context,
+		codeID uint64,
+		creator, admin sdk.AccAddress,
+		initMsg []byte,
+		label string,
+		deposit sdk.Coins,
+		addressGenerator AddressGenerator,
+		authZ types.AuthorizationPolicy,
+	) (sdk.AccAddress, []byte, error)
+
+	migrate(ctx context.Context, contractAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte, authZ types.AuthorizationPolicy) ([]byte, error)
+	setContractAdmin(ctx context.Context, contractAddress, caller, newAdmin sdk.AccAddress, authZ types.AuthorizationPolicy) error
+	pinCode(ctx context.Context, codeID uint64) error
+	unpinCode(ctx context.Context, codeID uint64) error
+	execute(ctx context.Context, contractAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error)
+	Sudo(ctx context.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
+	setContractInfoExtension(ctx context.Context, contract sdk.AccAddress, extra types.ContractInfoExtension) error
+	setAccessConfig(ctx context.Context, codeID uint64, caller sdk.AccAddress, newConfig types.AccessConfig, autz types.AuthorizationPolicy) error
+	ClassicAddressGenerator() AddressGenerator
+}
+
+type PermissionedKeeper struct {
+	authZPolicy types.AuthorizationPolicy
+	nested      decoratedKeeper
+}
+
+func NewPermissionedKeeper(nested decoratedKeeper, authZPolicy types.AuthorizationPolicy) *PermissionedKeeper {
+	return &PermissionedKeeper{authZPolicy: authZPolicy, nested: nested}
+}
+
+func NewGovPermissionKeeper(nested decoratedKeeper) *PermissionedKeeper {
+	return NewPermissionedKeeper(nested, GovAuthorizationPolicy{})
+}
+
+func NewDefaultPermissionKeeper(nested decoratedKeeper) *PermissionedKeeper {
+	return NewPermissionedKeeper(nested, DefaultAuthorizationPolicy{})
+}
+
+func (p PermissionedKeeper) Create(ctx context.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *types.AccessConfig) (codeID uint64, checksum []byte, err error) {
+	return p.nested.create(ctx, creator, wasmCode, instantiateAccess, p.authZPolicy)
+}
+
+// Instantiate creates an instance of a WASM contract using the classic sequence based address generator
+func (p PermissionedKeeper) Instantiate(
+	ctx context.Context,
+	codeID uint64,
+	creator, admin sdk.AccAddress,
+	initMsg []byte,
+	label string,
+	deposit sdk.Coins,
+) (sdk.AccAddress, []byte, error) {
+	return p.nested.instantiate(ctx, codeID, creator, admin, initMsg, label, deposit, p.nested.ClassicAddressGenerator(), p.authZPolicy)
+}
+
+// Instantiate2 creates an instance of a WASM contract using the predictable address generator
+func (p PermissionedKeeper) Instantiate2(
+	ctx context.Context,
+	codeID uint64,
+	creator, admin sdk.AccAddress,
+	initMsg []byte,
+	label string,
+	deposit sdk.Coins,
+	salt []byte,
+	fixMsg bool,
+) (sdk.AccAddress, []byte, error) {
+	return p.nested.instantiate(
+		ctx,
+		codeID,
+		creator,
+		admin,
+		initMsg,
+		label,
+		deposit,
+		PredictableAddressGenerator(creator, salt, initMsg, fixMsg),
+		p.authZPolicy,
+	)
+}
+
+func (p PermissionedKeeper) Execute(ctx context.Context, contractAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error) {
+	return p.nested.execute(ctx, contractAddress, caller, msg, coins)
+}
+
+func (p PermissionedKeeper) Migrate(ctx context.Context, contractAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte) ([]byte, error) {
+	return p.nested.migrate(ctx, contractAddress, caller, newCodeID, msg, p.authZPolicy)
+}
+
+func (p PermissionedKeeper) Sudo(ctx context.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
+	return p.nested.Sudo(ctx, contractAddress, msg)
+}
+
+func (p PermissionedKeeper) UpdateContractAdmin(ctx context.Context, contractAddress, caller, newAdmin sdk.AccAddress) error {
+	return p.nested.setContractAdmin(ctx, contractAddress, caller, newAdmin, p.authZPolicy)
+}
+
+func (p PermissionedKeeper) ClearContractAdmin(ctx context.Context, contractAddress, caller sdk.AccAddress) error {
+	return p.nested.setContractAdmin(ctx, contractAddress, caller, nil, p.authZPolicy)
+}
+
+func (p PermissionedKeeper) PinCode(ctx context.Context, codeID uint64) error {
+	return p.nested.pinCode(ctx, codeID)
+}
+
+func (p PermissionedKeeper) UnpinCode(ctx context.Context, codeID uint64) error {
+	return p.nested.unpinCode(ctx, codeID)
+}
+
+// SetContractInfoExtension updates the extra attributes that can be stored with the contract info
+func (p PermissionedKeeper) SetContractInfoExtension(ctx context.Context, contract sdk.AccAddress, extra types.ContractInfoExtension) error {
+	return p.nested.setContractInfoExtension(ctx, contract, extra)
+}
+
+// SetAccessConfig updates the access config of a code id.
+func (p PermissionedKeeper) SetAccessConfig(ctx context.Context, codeID uint64, caller sdk.AccAddress, newConfig types.AccessConfig) error {
+	return p.nested.setAccessConfig(ctx, codeID, caller, newConfig, p.authZPolicy)
+}

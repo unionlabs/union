@@ -1,0 +1,83 @@
+version: 2.1
+workflows:
+  main:
+    jobs: ['linux-arm64', 'ios']
+
+jobs:
+  # linux/arm64
+  linux-arm64:
+    machine:
+      image: ubuntu-2204:2022.07.1
+    resource_class: arm.medium
+    working_directory: ~/repo
+    steps:
+      - checkout
+
+      - run:
+          name: install-go
+          command: |
+            sudo apt -y install golang
+
+      - run:
+          name: test
+          command: |
+            uname -a
+            go version
+            FSNOTIFY_BUFFER=4096 go test -parallel 1 -race ./...
+                                 go test -parallel 1 -race ./...
+
+  # iOS
+  ios:
+    macos:
+      xcode: 13.4.1
+    working_directory: ~/repo
+    steps:
+      - checkout
+
+      - run:
+          name: install-go
+          command: |
+            export HOMEBREW_NO_AUTO_UPDATE=1
+            brew install go
+
+      - run:
+          name: test
+          environment:
+            SCAN_DEVICE: iPhone 6
+            SCAN_SCHEME: WebTests
+          command: |
+            export PATH=$PATH:/usr/local/Cellar/go/*/bin
+            uname -a
+            go version
+            FSNOTIFY_BUFFER=4096 go test -parallel 1 -race ./...
+                                 go test -parallel 1 -race ./...
+
+  # This is just Linux x86_64; also need to get a Go with GOOS=android, but
+  # there aren't any pre-built versions of that on the Go site. Idk, disable for
+  # now; number of people using Go on Android is probably very tiny, and the
+  # number of people using Go with this lib smaller still.
+  # android:
+  #   machine:
+  #     image: android:2022.01.1
+  #   working_directory: ~/repo
+  #   steps:
+  #     - checkout
+
+  #     - run:
+  #         name: install-go
+  #         command: |
+  #           v=1.19.2
+  #           curl --silent --show-error --location --fail --retry 3 --output /tmp/go${v}.tgz \
+  #             "https://go.dev/dl/go$v.linux-arm64.tar.gz"
+  #           sudo tar -C /usr/local -xzf /tmp/go${v}.tgz
+  #           rm /tmp/go${v}.tgz
+
+  #     - run:
+  #         name: test
+  #         command: |
+  #           uname -a
+  #           export PATH=/usr/local/go/bin:$PATH
+  #           go version
+  #           FSNOTIFY_BUFFER=4096 go test -parallel 1 -race ./...
+  #                                go test -parallel 1 -race ./...
+  #

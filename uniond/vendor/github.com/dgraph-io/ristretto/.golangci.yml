@@ -1,23 +1,29 @@
 run:
-  tests: false
   skip-dirs:
-    - contrib
-    - sim
+  skip-files:
 
 linters-settings:
   lll:
     line-length: 120
+  staticcheck:
+    checks:
+      - all
+      - '-SA1019' # it is okay to use math/rand at times.
+  gosec:
+    excludes:
+      - G404  # it is okay to use math/rand at times.
 
 linters:
   disable-all: true
   enable:
-    #- errcheck
-    #- ineffassign
-    - gas
-    #- gofmt
-    #- golint
-    #- gosimple
-    #- govet
+    - errcheck
+    - gofmt
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
     - lll
-    #- varcheck
-    #- unused
+    - staticcheck
+    - unconvert
+    - unused

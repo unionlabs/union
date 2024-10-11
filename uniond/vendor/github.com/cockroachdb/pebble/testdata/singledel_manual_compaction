@@ -1,0 +1,77 @@
+# This is not actually a manual compaction test, and simply uses manual
+# compaction to demonstrate single delete semantics. Specifically, it
+# demonstrates that the behavior can be non-deterministic if not used
+# correctly.
+
+# Define a sequence of SET=>SET=>DEL=>SET=>SINGLEDEL.
+define target-file-sizes=(1, 1, 1, 1, 1)
+L1
+  a.SINGLEDEL.10:
+L2
+  a.SET.9:v3
+L3
+  a.DEL.8:
+L4
+  a.SET.7:v2
+L5
+  a.SET.6:v1
+----
+1:
+  000004:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+2:
+  000005:[a#9,SET-a#9,SET]
+3:
+  000006:[a#8,DEL-a#8,DEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+5:
+  000008:[a#6,SET-a#6,SET]
+
+# No data.
+iter
+first
+----
+.
+
+# Compact away the DEL.
+compact a-b L2
+----
+1:
+  000004:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+3:
+  000009:[a#9,SET-a#9,SET]
+4:
+  000007:[a#7,SET-a#7,SET]
+5:
+  000008:[a#6,SET-a#6,SET]
+
+# No data.
+iter
+first
+----
+.
+
+# Do two compactions to compact away the SINGLEDEL and 1 SET.
+compact a-b L1
+----
+2:
+  000010:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+3:
+  000009:[a#9,SET-a#9,SET]
+4:
+  000007:[a#7,SET-a#7,SET]
+5:
+  000008:[a#6,SET-a#6,SET]
+
+compact a-b L2
+----
+4:
+  000007:[a#7,SET-a#7,SET]
+5:
+  000008:[a#6,SET-a#6,SET]
+
+# Deleted data reappears.
+iter
+first
+----
+a: (v2, .)

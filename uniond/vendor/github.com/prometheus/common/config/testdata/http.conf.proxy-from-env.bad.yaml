@@ -1,0 +1,2 @@
+proxy_from_environment: true
+proxy_url: foo

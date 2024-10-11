@@ -1,0 +1,14 @@
+[
+  {
+    "gate": null,
+    "inputs": []
+  },
+  {
+    "gate": null,
+    "inputs": []
+  },
+  {
+    "gate": "select-input-3",
+    "inputs": [0,0,1]
+  }
+]

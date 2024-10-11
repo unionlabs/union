@@ -1,0 +1,30 @@
+the ABCI CLI tool wraps an ABCI client and is used for testing ABCI servers
+
+Usage:
+  abci-cli [command]
+
+Available Commands:
+  batch            run a batch of abci commands against an application
+  check_tx         validate a transaction
+  commit           commit the application state and return the Merkle root hash
+  completion       Generate the autocompletion script for the specified shell
+  console          start an interactive ABCI console for multiple commands
+  echo             have the application echo a message
+  finalize_block   deliver a block of transactions to the application
+  help             Help about any command
+  info             get some info about the application
+  kvstore          ABCI demo example
+  prepare_proposal prepare proposal
+  process_proposal process proposal
+  query            query the application state
+  test             run integration tests
+  version          print ABCI console version
+
+Flags:
+      --abci string        either socket or grpc (default "socket")
+      --address string     address of application socket (default "tcp://0.0.0.0:26658")
+  -h, --help               help for abci-cli
+      --log_level string   set the logger level (default "debug")
+  -v, --verbose            print the command and results as if it were a console session
+
+Use "abci-cli [command] --help" for more information about a command.

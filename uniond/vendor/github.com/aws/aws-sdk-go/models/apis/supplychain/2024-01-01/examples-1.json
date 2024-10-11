@@ -1,0 +1,266 @@
+{
+  "version": "1.0",
+  "examples": {
+    "CreateBillOfMaterialsImportJob": [
+      {
+        "input": {
+          "clientToken": "550e8400-e29b-41d4-a716-446655440000",
+          "instanceId": "60f82bbd-71f7-4fcd-a941-472f574c5243",
+          "s3uri": "s3://mybucketname/pathelemene/file.csv"
+        },
+        "output": {
+          "jobId": "f79b359b-1515-4436-a3bf-bae7b33e47b4"
+        },
+        "id": "example-1",
+        "title": "Invoke CreateBillOfMaterialsImportJob"
+      }
+    ],
+    "GetBillOfMaterialsImportJob": [
+      {
+        "input": {
+          "instanceId": "60f82bbd-71f7-4fcd-a941-472f574c5243",
+          "jobId": "f79b359b-1515-4436-a3bf-bae7b33e47b4"
+        },
+        "output": {
+          "job": {
+            "instanceId": "60f82bbd-71f7-4fcd-a941-472f574c5243",
+            "jobId": "f79b359b-1515-4436-a3bf-bae7b33e47b4",
+            "message": "Import job completed successfully.",
+            "s3uri": "s3://mybucketname/pathelemene/file.csv",
+            "status": "SUCCESS"
+          }
+        },
+        "id": "example-1",
+        "title": "Invoke GetBillOfMaterialsImportJob for a successful job"
+      },
+      {
+        "input": {
+          "instanceId": "60f82bbd-71f7-4fcd-a941-472f574c5243",
+          "jobId": "f79b359b-1515-4436-a3bf-bae7b33e47b4"
+        },
+        "output": {
+          "job": {
+            "instanceId": "60f82bbd-71f7-4fcd-a941-472f574c5243",
+            "jobId": "f79b359b-1515-4436-a3bf-bae7b33e47b4",
+            "s3uri": "s3://mybucketname/pathelemene/file.csv",
+            "status": "IN_PROGRESS"
+          }
+        },
+        "id": "example-2",
+        "title": "Invoke GetBillOfMaterialsImportJob for an in-progress job"
+      }
+    ],
+    "SendDataIntegrationEvent": [
+      {
+        "input": {
+          "data": "{\"id\": \"inbound-order-id-test-123\", \"tpartner_id\": \"partner-id-test-123\" }",
+          "eventGroupId": "inboundOrderId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.inboundorder",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "c4132c1d-8f60-44a2-9932-f723c4f7b8a7"
+        },
+        "id": "example-1",
+        "title": "Successful SendDataIntegrationEvent for inboundorder event type"
+      },
+      {
+        "input": {
+          "data": "{\"id\": \"inbound-order-line-id-test-123\", \"order_id\": \"order-id-test-123\", \"tpartner_id\": \"partner-id-test-123\", \"product_id\": \"product-id-test-123\", \"quantity_submitted\": \"100.0\" }",
+          "eventGroupId": "inboundOrderLineId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.inboundorderline",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "45d95db2-d106-40e0-aa98-f1204230a691"
+        },
+        "id": "example-2",
+        "title": "Successful SendDataIntegrationEvent for inboundorderline event type"
+      },
+      {
+        "input": {
+          "data": "{\"id\": \"inbound-order-line-schedule-id-test-123\", \"order_id\": \"order-id-test-123\", \"order_line_id\": \"order-line-id-test-123\", \"product_id\": \"product-id-test-123\"}",
+          "eventGroupId": "inboundOrderLineScheduleId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.inboundorderlineschedule",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "5abba995-7735-4d1e-95c4-7cc93e48cf9f"
+        },
+        "id": "example-3",
+        "title": "Successful SendDataIntegrationEvent for inboundorderlineschedule event type"
+      },
+      {
+        "input": {
+          "data": "{\"snapshot_date\": \"1672470400000\", \"product_id\": \"product-id-test-123\", \"site_id\": \"site-id-test-123\", \"region_id\": \"region-id-test-123\", \"product_group_id\": \"product-group-id-test-123\", \"forecast_start_dttm\": \"1672470400000\", \"forecast_end_dttm\": \"1672470400000\" }",
+          "eventGroupId": "forecastId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.forecast",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "29312d5b-f499-4dcd-b017-3dab3cd34d61"
+        },
+        "id": "example-4",
+        "title": "Successful SendDataIntegrationEvent for forecast event type"
+      },
+      {
+        "input": {
+          "data": "{\"snapshot_date\": \"1672470400000\", \"site_id\": \"site-id-test-123\", \"product_id\": \"product-id-test-123\", \"on_hand_inventory\": \"100.0\", \"inv_condition\": \"good\", \"lot_number\": \"lot-number-test-123\"}",
+          "eventGroupId": "inventoryLevelId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.inventorylevel",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "3aa78324-acd8-4fdd-a19e-231ea003c2b3"
+        },
+        "id": "example-5",
+        "title": "Successful SendDataIntegrationEvent for inventorylevel event type"
+      },
+      {
+        "input": {
+          "data": "{\"id\": \"outbound-orderline-id-test-123\", \"cust_order_id\": \"cust-order-id-test-123\", \"product_id\": \"product-id-test-123\" }",
+          "eventGroupId": "outboundOrderLineId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.outboundorderline",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "959b7ef9-5e2d-4795-b1ca-5b16a3eb6b89"
+        },
+        "id": "example-6",
+        "title": "Successful SendDataIntegrationEvent for outboundorderline event type"
+      },
+      {
+        "input": {
+          "data": "{\"id\": \"outbound-shipment-id-test-123\", \"cust_order_id\": \"cust-order-id-test-123\", \"cust_order_line_id\": \"cust-order-line-id-test-123\", \"product_id\": \"product-id-test-123\" }",
+          "eventGroupId": "outboundShipmentId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.outboundshipment",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "59feded3-5e46-4126-81bf-0137ca176ee0"
+        },
+        "id": "example-7",
+        "title": "Successful SendDataIntegrationEvent for outboundshipment event type"
+      },
+      {
+        "input": {
+          "data": "{\"process_id\": \"process-id-test-123\" }",
+          "eventGroupId": "processHeaderId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.processheader",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "564130eb-2d8a-4550-a768-ddf0daf7b4a9"
+        },
+        "id": "example-8",
+        "title": "Successful SendDataIntegrationEvent for processheader event type"
+      },
+      {
+        "input": {
+          "data": "{\"process_operation_id\": \"process-operation-id-test-123\", \"process_id\": \"process-id-test-123\" }",
+          "eventGroupId": "processOperationId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.processoperation",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "db5df408-89c7-4b9f-a326-016f6c2b3396"
+        },
+        "id": "example-9",
+        "title": "Successful SendDataIntegrationEvent for processoperation event type"
+      },
+      {
+        "input": {
+          "data": "{\"process_product_id\": \"process-product-id-test-123\", \"process_id\": \"process-id-test-123\" }",
+          "eventGroupId": "processProductId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.processproduct",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "6929b275-485e-4035-a798-99077ca6d669"
+        },
+        "id": "example-10",
+        "title": "Successful SendDataIntegrationEvent for processproduct event type"
+      },
+      {
+        "input": {
+          "data": "{\"reservation_id\": \"reservation-id-test-123\", \"reservation_detail_id\": \"reservation-detail-id-test-123\" }",
+          "eventGroupId": "reservationId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.reservation",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "f6c55a8b-fde2-44f6-848a-9b4336c77209"
+        },
+        "id": "example-11",
+        "title": "Successful SendDataIntegrationEvent for reservation event type"
+      },
+      {
+        "input": {
+          "data": "{\"id\": \"shipment-id-test-123\", \"supplier_tpartner_id\": \"supplier-tpartner-id-test-123\", \"product_id\": \"product-id-test-123\", \"order_id\": \"order-id-test-123\", \"order_line_id\": \"order-line-id-test-123\", \"package_id\": \"package-id-test-123\" }",
+          "eventGroupId": "shipmentId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.shipment",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "61d079d8-3f56-49bb-b35a-c0271a4e4f0a"
+        },
+        "id": "example-12",
+        "title": "Successful SendDataIntegrationEvent for shipment event type"
+      },
+      {
+        "input": {
+          "data": "{\"shipment_stop_id\": \"shipment-stop-id-test-123\", \"shipment_id\": \"shipment-id-test-123\" }",
+          "eventGroupId": "shipmentStopId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.shipmentstop",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "3610992a-fc2f-4da4-9beb-724994622ba1"
+        },
+        "id": "example-13",
+        "title": "Successful SendDataIntegrationEvent for shipmentstop event type"
+      },
+      {
+        "input": {
+          "data": "{\"shipment_stop_order_id\": \"shipment-stop-order-id-test-123\", \"shipment_stop_id\": \"shipment-stop-id-test-123\", \"shipment_id\": \"shipment-id-test-123\" }",
+          "eventGroupId": "shipmentStopOrderId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.shipmentstoporder",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "1d550a60-9321-4d25-a132-9dd4b2d9e934"
+        },
+        "id": "example-14",
+        "title": "Successful SendDataIntegrationEvent for shipmentstoporder event type"
+      },
+      {
+        "input": {
+          "data": "{\"supply_plan_id\": \"supply-plan-id-test-123\" }",
+          "eventGroupId": "supplyPlanId",
+          "eventTimestamp": 1515531081.123,
+          "eventType": "scn.data.supplyplan",
+          "instanceId": "8928ae12-15e5-4441-825d-ec2184f0a43a"
+        },
+        "output": {
+          "eventId": "9abaee56-5dc4-4c31-8250-3206a651d8a1"
+        },
+        "id": "example-15",
+        "title": "Successful SendDataIntegrationEvent for supplyplan event type"
+      }
+    ]
+  }
+}

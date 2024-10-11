@@ -1,0 +1,127 @@
+#lang ivy1.7
+
+include tendermint
+include abstract_tendermint
+
+isolate ghost_ = {
+    instantiate abstract_tendermint
+}
+
+isolate protocol = {
+    instantiate tendermint(ghost_) # here we instantiate the parameter of the tendermint module with `ghost_`; however note that we don't extract any code for `ghost_` (it's not in the list of object in the extract, and it's thus sliced away).
+    implementation {
+        definition init_val(n:node) = <<< `n`%2 >>>
+    }
+    # attribute test = impl
+} with ghost_, shim, value, round, proposers
+
+# Here we run a simple scenario that exhibits an execution in which nodes make
+# a decision. We do this to rule out trivial modeling errors.
+
+# One option to check that this scenario is valid is to run it in Ivy's REPL.
+# For this, first compile the scenario:
+#```ivyc target=repl isolate=code trace=true tendermint_test.ivy
+# Then, run the produced binary (e.g. for 4 nodes):
+#``` ./tendermint_test 4
+# Finally, call the action:
+#``` scenarios.scenario_1
+# Note that Ivy will check at runtime that all action preconditions are
+# satisfied. For example, running the scenario twice will cause a violation of
+# the precondition of the `start` action, because a node cannot start twice
+# (see `require ~_has_started` in action `start`).
+
+# Another possibility would be to run `ivy_check` on the scenario, but that
+# does not seem to work at the moment.
+
+isolate scenarios = {
+    individual all:nset # will be used as parameter to actions requiring a quorum
+
+    after init {
+        var iter := node.iter.create(0);
+        while ~iter.is_end
+        {
+            all := all.insert(iter.val);
+            iter := iter.next;
+        };
+        assert nset.is_quorum(all); # we can also use asserts to make sure we are getting what we expect
+    }
+
+    export action scenario_1 = {
+        # all nodes start:
+        var iter := node.iter.create(0);
+        while ~iter.is_end
+        {
+            call protocol.server.start(iter.val);
+            iter := iter.next;
+        };
+        # all nodes receive the leader's proposal:
+        var m:msg;
+        m.m_kind := msg_kind.proposal;
+        m.m_src := 0;
+        m.m_round := 0;
+        m.m_value := 0;
+        m.m_vround := round.minus_one;
+        iter := node.iter.create(0);
+        while ~iter.is_end
+        {
+            call net.recv(iter.val,m);
+            iter := iter.next;
+        };
+        # all nodes prevote:
+        iter := node.iter.create(0);
+        while ~iter.is_end
+        {
+            call protocol.server.l_22(iter.val,0);
+            iter := iter.next;
+        };
+        # all nodes receive each other's prevote messages;
+        m.m_kind := msg_kind.prevote;
+        m.m_vround := 0;
+        iter := node.iter.create(0);
+        while ~iter.is_end
+        {
+            var iter2 := node.iter.create(0); # the sender
+            while ~iter2.is_end
+            {
+                m.m_src := iter2.val;
+                call net.recv(iter.val,m);
+                iter2 := iter2.next;
+            };
+            iter := iter.next;
+        };
+        # all nodes precommit:
+        iter := node.iter.create(0);
+        while ~iter.is_end
+        {
+            call protocol.server.l_36(iter.val,0,0,all);
+            iter := iter.next;
+        };
+        # all nodes receive each other's pre-commits
+        m.m_kind := msg_kind.precommit;
+        iter := node.iter.create(0);
+        while ~iter.is_end
+        {
+            var iter2 := node.iter.create(0); # the sender
+            while ~iter2.is_end
+            {
+                m.m_src := iter2.val;
+                call net.recv(iter.val,m);
+                iter2 := iter2.next;
+            };
+            iter := iter.next;
+        };
+        # now all nodes can decide:
+        iter := node.iter.create(0);
+        while ~iter.is_end
+        {
+            call protocol.server.l_49_decide(iter.val,0,0,all);
+            iter := iter.next;
+        };
+    }
+
+    # TODO: add more scenarios
+
+} with round, node, proposers, value, nset, protocol, shim, net
+
+# extract code = protocol, shim, round, node
+extract code = round, node, proposers, value, nset, protocol, shim, net, scenarios

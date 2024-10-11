@@ -1,0 +1,7 @@
+version: v1
+managed:
+  enabled: true
+plugins:
+  - name: go-pulsar
+    out: .
+    opt: paths=source_relative

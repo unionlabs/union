@@ -10,7 +10,7 @@ import (
 
 type durationType struct{}
 
-func (d durationType) NewValue(context.Context, *Builder) Value {
+func (d durationType) NewValue(*context.Context, *Builder) Value {
 	return &durationValue{}
 }
 

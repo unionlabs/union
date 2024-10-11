@@ -1,0 +1,47 @@
+[
+  {
+    "error": "transaction type not supported"
+  },
+  {
+    "error": "transaction type not supported"
+  },
+  {
+    "error": "transaction type not supported"
+  },
+  {
+    "error": "transaction type not supported"
+  },
+  {
+    "error": "transaction type not supported"
+  },
+  {
+    "error": "transaction type not supported"
+  },
+  {
+    "error": "transaction type not supported"
+  },
+  {
+    "error": "typed transaction too short"
+  },
+  {
+    "error": "typed transaction too short"
+  },
+  {
+    "error": "typed transaction too short"
+  },
+  {
+    "error": "typed transaction too short"
+  },
+  {
+    "error": "typed transaction too short"
+  },
+  {
+    "error": "rlp: expected input list for types.AccessListTx"
+  },
+  {
+    "error": "transaction type not supported"
+  },
+  {
+    "error": "transaction type not supported"
+  }
+]

@@ -1,0 +1,33 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/tools/unencrypted-keys-gen",
+    visibility = [
+        "//tools/interop/convert-keys:__pkg__",
+    ],
+    deps = [
+        "//crypto/bls:go_default_library",
+        "//runtime/interop:go_default_library",
+        "//tools/unencrypted-keys-gen/keygen:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "unencrypted-keys-gen",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["main_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "//tools/unencrypted-keys-gen/keygen:go_default_library",
+    ],
+)

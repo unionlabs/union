@@ -1,0 +1,189 @@
+syntax = "proto3";
+
+package ibc.lightclients.solomachine.v2;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/core/02-client/migrations/v7";
+
+import "ibc/core/connection/v1/connection.proto";
+import "ibc/core/channel/v1/channel.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+
+// ClientState defines a solo machine client that tracks the current consensus
+// state and if the client is frozen.
+message ClientState {
+  option (gogoproto.goproto_getters) = false;
+  // latest sequence of the client state
+  uint64 sequence = 1;
+  // frozen sequence of the solo machine
+  bool           is_frozen       = 2;
+  ConsensusState consensus_state = 3;
+  // when set to true, will allow governance to update a solo machine client.
+  // The client will be unfrozen if it is frozen.
+  bool allow_update_after_proposal = 4;
+}
+
+// ConsensusState defines a solo machine consensus state. The sequence of a
+// consensus state is contained in the "height" key used in storing the
+// consensus state.
+message ConsensusState {
+  option (gogoproto.goproto_getters) = false;
+  // public key of the solo machine
+  google.protobuf.Any public_key = 1;
+  // diversifier allows the same public key to be re-used across different solo
+  // machine clients (potentially on different chains) without being considered
+  // misbehaviour.
+  string diversifier = 2;
+  uint64 timestamp   = 3;
+}
+
+// Header defines a solo machine consensus header
+message Header {
+  option (gogoproto.goproto_getters) = false;
+  // sequence to update solo machine public key at
+  uint64              sequence        = 1;
+  uint64              timestamp       = 2;
+  bytes               signature       = 3;
+  google.protobuf.Any new_public_key  = 4;
+  string              new_diversifier = 5;
+}
+
+// Misbehaviour defines misbehaviour for a solo machine which consists
+// of a sequence and two signatures over different messages at that sequence.
+message Misbehaviour {
+  option (gogoproto.goproto_getters) = false;
+  string           client_id         = 1;
+  uint64           sequence          = 2;
+  SignatureAndData signature_one     = 3;
+  SignatureAndData signature_two     = 4;
+}
+
+// SignatureAndData contains a signature and the data signed over to create that
+// signature.
+message SignatureAndData {
+  option (gogoproto.goproto_getters) = false;
+  bytes    signature                 = 1;
+  DataType data_type                 = 2;
+  bytes    data                      = 3;
+  uint64   timestamp                 = 4;
+}
+
+// TimestampedSignatureData contains the signature data and the timestamp of the
+// signature.
+message TimestampedSignatureData {
+  option (gogoproto.goproto_getters) = false;
+  bytes  signature_data              = 1;
+  uint64 timestamp                   = 2;
+}
+
+// SignBytes defines the signed bytes used for signature verification.
+message SignBytes {
+  option (gogoproto.goproto_getters) = false;
+
+  uint64 sequence    = 1;
+  uint64 timestamp   = 2;
+  string diversifier = 3;
+  // type of the data used
+  DataType data_type = 4;
+  // marshaled data
+  bytes data = 5;
+}
+
+// DataType defines the type of solo machine proof being created. This is done
+// to preserve uniqueness of different data sign byte encodings.
+enum DataType {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // Default State
+  DATA_TYPE_UNINITIALIZED_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "UNSPECIFIED"];
+  // Data type for client state verification
+  DATA_TYPE_CLIENT_STATE = 1 [(gogoproto.enumvalue_customname) = "CLIENT"];
+  // Data type for consensus state verification
+  DATA_TYPE_CONSENSUS_STATE = 2 [(gogoproto.enumvalue_customname) = "CONSENSUS"];
+  // Data type for connection state verification
+  DATA_TYPE_CONNECTION_STATE = 3 [(gogoproto.enumvalue_customname) = "CONNECTION"];
+  // Data type for channel state verification
+  DATA_TYPE_CHANNEL_STATE = 4 [(gogoproto.enumvalue_customname) = "CHANNEL"];
+  // Data type for packet commitment verification
+  DATA_TYPE_PACKET_COMMITMENT = 5 [(gogoproto.enumvalue_customname) = "PACKETCOMMITMENT"];
+  // Data type for packet acknowledgement verification
+  DATA_TYPE_PACKET_ACKNOWLEDGEMENT = 6 [(gogoproto.enumvalue_customname) = "PACKETACKNOWLEDGEMENT"];
+  // Data type for packet receipt absence verification
+  DATA_TYPE_PACKET_RECEIPT_ABSENCE = 7 [(gogoproto.enumvalue_customname) = "PACKETRECEIPTABSENCE"];
+  // Data type for next sequence recv verification
+  DATA_TYPE_NEXT_SEQUENCE_RECV = 8 [(gogoproto.enumvalue_customname) = "NEXTSEQUENCERECV"];
+  // Data type for header verification
+  DATA_TYPE_HEADER = 9 [(gogoproto.enumvalue_customname) = "HEADER"];
+}
+
+// HeaderData returns the SignBytes data for update verification.
+message HeaderData {
+  option (gogoproto.goproto_getters) = false;
+
+  // header public key
+  google.protobuf.Any new_pub_key = 1;
+  // header diversifier
+  string new_diversifier = 2;
+}
+
+// ClientStateData returns the SignBytes data for client state verification.
+message ClientStateData {
+  option (gogoproto.goproto_getters) = false;
+
+  bytes               path         = 1;
+  google.protobuf.Any client_state = 2;
+}
+
+// ConsensusStateData returns the SignBytes data for consensus state
+// verification.
+message ConsensusStateData {
+  option (gogoproto.goproto_getters) = false;
+
+  bytes               path            = 1;
+  google.protobuf.Any consensus_state = 2;
+}
+
+// ConnectionStateData returns the SignBytes data for connection state
+// verification.
+message ConnectionStateData {
+  option (gogoproto.goproto_getters) = false;
+
+  bytes                                path       = 1;
+  ibc.core.connection.v1.ConnectionEnd connection = 2;
+}
+
+// ChannelStateData returns the SignBytes data for channel state
+// verification.
+message ChannelStateData {
+  option (gogoproto.goproto_getters) = false;
+
+  bytes                       path    = 1;
+  ibc.core.channel.v1.Channel channel = 2;
+}
+
+// PacketCommitmentData returns the SignBytes data for packet commitment
+// verification.
+message PacketCommitmentData {
+  bytes path       = 1;
+  bytes commitment = 2;
+}
+
+// PacketAcknowledgementData returns the SignBytes data for acknowledgement
+// verification.
+message PacketAcknowledgementData {
+  bytes path            = 1;
+  bytes acknowledgement = 2;
+}
+
+// PacketReceiptAbsenceData returns the SignBytes data for
+// packet receipt absence verification.
+message PacketReceiptAbsenceData {
+  bytes path = 1;
+}
+
+// NextSequenceRecvData returns the SignBytes data for verification of the next
+// sequence to be received.
+message NextSequenceRecvData {
+  bytes  path          = 1;
+  uint64 next_seq_recv = 2;
+}

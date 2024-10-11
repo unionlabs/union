@@ -1,0 +1,27 @@
+name: properties
+on: [push, pull_request]
+jobs:
+  test:
+    name: Test ${{ matrix.os }} go${{ matrix.go }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        go: ["1.19.x","1.18.x","1.7.x"] # code works with 1.3.x but we need 1.7.x for Benchmark.Run
+
+    steps:
+      - name: Setup Go ${{ matrix.go }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+        with:
+          path: go/src/github.com/magiconair/properties
+
+      - name: Run Tests (GOPATH)
+        run: go test ./...
+        env:
+          GOPATH: /home/runner/work/properties/go

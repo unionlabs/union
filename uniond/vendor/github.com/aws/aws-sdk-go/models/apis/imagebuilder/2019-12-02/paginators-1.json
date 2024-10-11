@@ -1,0 +1,129 @@
+{
+  "pagination": {
+    "ListComponentBuildVersions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "componentSummaryList"
+    },
+    "ListComponents": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "componentVersionList"
+    },
+    "ListContainerRecipes": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "containerRecipeSummaryList"
+    },
+    "ListDistributionConfigurations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "distributionConfigurationSummaryList"
+    },
+    "ListImageBuildVersions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "imageSummaryList"
+    },
+    "ListImagePackages": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "imagePackageList"
+    },
+    "ListImagePipelineImages": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "imageSummaryList"
+    },
+    "ListImagePipelines": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "imagePipelineList"
+    },
+    "ListImageRecipes": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "imageRecipeSummaryList"
+    },
+    "ListImageScanFindingAggregations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "result_key": "responses"
+    },
+    "ListImageScanFindings": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "findings"
+    },
+    "ListImages": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "imageVersionList"
+    },
+    "ListInfrastructureConfigurations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "infrastructureConfigurationSummaryList"
+    },
+    "ListLifecycleExecutionResources": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "resources"
+    },
+    "ListLifecycleExecutions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "lifecycleExecutions"
+    },
+    "ListLifecyclePolicies": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "lifecyclePolicySummaryList"
+    },
+    "ListWaitingWorkflowSteps": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "steps"
+    },
+    "ListWorkflowBuildVersions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "workflowSummaryList"
+    },
+    "ListWorkflowExecutions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "workflowExecutions"
+    },
+    "ListWorkflowStepExecutions": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "steps"
+    },
+    "ListWorkflows": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "workflowVersionList"
+    }
+  }
+}

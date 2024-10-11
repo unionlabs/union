@@ -1,0 +1,55 @@
+name: PR code coverage (publish)
+
+on:
+  workflow_run:
+    workflows: [ "PR code coverage (generate)" ]
+    types: [ "completed" ]
+
+
+jobs:
+  # This job downloads the artifacts genearted by the code-cover-gen job and
+  # uploads them to a GCS bucket, from where Reviewable can access them.
+  code-cover-publish:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: 'Download artifact'
+        uses: actions/github-script@v3.1.0
+        with:
+          script: |
+            var artifacts = await github.actions.listWorkflowRunArtifacts({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               run_id: ${{github.event.workflow_run.id }},
+            });
+            var matchArtifact = artifacts.data.artifacts.filter((artifact) => {
+              return artifact.name == "cover"
+            })[0];
+            var download = await github.actions.downloadArtifact({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               artifact_id: matchArtifact.id,
+               archive_format: 'zip',
+            });
+            var fs = require('fs');
+            fs.writeFileSync('${{github.workspace}}/cover.zip', Buffer.from(download.data));
+
+      - run: |
+          mkdir -p cover
+          unzip cover.zip -d cover
+
+      - name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.CODECOVER_SERVICE_ACCOUNT_KEY }}'
+
+      - name: 'Upload to GCS'
+        uses: 'google-github-actions/upload-cloud-storage@v1'
+        with:
+          path: 'cover'
+          glob: '**/cover-*.json'
+          parent: false
+          destination: 'crl-codecover-public/pr-pebble/'
+          process_gcloudignore: false

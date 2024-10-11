@@ -539,6 +539,15 @@ func (r *Reader) readBlock(
 	}
 
 	// Cache miss.
+
+	if sema := r.opts.LoadBlockSema; sema != nil {
+		if err := sema.Acquire(ctx, 1); err != nil {
+			// An error here can only come from the context.
+			return bufferHandle{}, err
+		}
+		defer sema.Release(1)
+	}
+
 	var compressed cacheValueOrBuf
 	if bufferPool != nil {
 		compressed = cacheValueOrBuf{
@@ -571,6 +580,7 @@ func (r *Reader) readBlock(
 			int(bh.Length+blockTrailerLen), readDuration.String())
 	}
 	if stats != nil {
+		stats.BlockBytes += bh.Length
 		stats.BlockReadDuration += readDuration
 	}
 	if err != nil {
@@ -628,9 +638,6 @@ func (r *Reader) readBlock(
 		decompressed = transformed
 	}
 
-	if stats != nil {
-		stats.BlockBytes += bh.Length
-	}
 	if decompressed.buf.Valid() {
 		return bufferHandle{b: decompressed.buf}, nil
 	}

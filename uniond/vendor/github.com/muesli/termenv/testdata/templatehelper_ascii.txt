@@ -1,0 +1,14 @@
+Plain
+Red
+Red on Blue
+Cyan
+Magenta Bg
+Cyan on Magenta Bg
+Bold
+Faint
+Italic
+Underline
+Overline
+Blink
+Reverse
+CrossOut

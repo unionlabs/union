@@ -1,0 +1,22 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "collector.go",
+        "heap.go",
+        "leakybucket.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/container/leaky-bucket",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "collector_test.go",
+        "heap_test.go",
+        "leakybucket_test.go",
+    ],
+    embed = [":go_default_library"],
+)

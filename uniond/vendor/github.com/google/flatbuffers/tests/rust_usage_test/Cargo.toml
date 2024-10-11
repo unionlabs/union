@@ -1,0 +1,58 @@
+[package]
+name = "rust_usage_test"
+version = "0.1.0"
+authors = ["Robert Winslow <hello@rwinslow.com>",
+           "Casper Neo <cneo@google.com>",
+           "FlatBuffers Maintainers"]
+edition = "2018"
+
+[dependencies]
+flatbuffers = { path = "../../rust/flatbuffers", default-features = false }
+flexbuffers = { path = "../../rust/flexbuffers" }
+serde_derive = "1.0"
+serde = "1.0"
+serde_bytes = "0.11"
+libc_alloc = { version = "1.0.3", optional = true }
+
+[features]
+default = ["flatbuffers/default"]
+no_std = ["libc_alloc"]
+
+[[bin]]
+name = "monster_example"
+path = "bin/monster_example.rs"
+
+[[bin]]
+name = "flatbuffers_alloc_check"
+path = "bin/flatbuffers_alloc_check.rs"
+
+[[bin]]
+name = "flexbuffers_alloc_check"
+path = "bin/flexbuffers_alloc_check.rs"
+
+[[bin]]
+name = "sample_flexbuffers"
+path = "../../samples/sample_flexbuffers.rs"
+
+[[bin]]
+name = "sample_flexbuffers_serde"
+path = "../../samples/sample_flexbuffers_serde.rs"
+
+[[bin]]
+name = "sample_flatbuffers"
+path = "../../samples/sample_binary.rs"
+
+[dev-dependencies]
+quickcheck = "0.6"
+# TODO(rw): look into moving to criterion.rs
+serde = "1.0"
+bencher = "0.1.5"
+static_assertions = "1.0.0"
+rand = "*"
+quickcheck_derive = "*"
+array-init = "2.0"
+
+[[bench]]
+# setup for bencher
+name = "benchmarks"
+harness = false

@@ -1,0 +1,4 @@
+no;filename;tool;timeout;init;inv;next;args
+1;LCD_MC3_3_faulty.tla;apalache;1h;;PrecisionInvGrayZone;;--length=10
+2;LCD_MC3_4_faulty.tla;apalache;1h;;PrecisionInvGrayZone;;--length=10
+3;LCD_MC4_4_faulty.tla;apalache;1h;;PrecisionInvGrayZone;;--length=10

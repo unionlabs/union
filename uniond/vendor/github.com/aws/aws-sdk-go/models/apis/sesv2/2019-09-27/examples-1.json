@@ -1,0 +1,268 @@
+{
+  "version": "1.0",
+  "examples": {
+    "CancelExportJob": [
+      {
+        "input": {
+          "JobId": "ef28cf62-9d8e-4b60-9283-b09816c99a99"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "Cancels the export job with ID ef28cf62-9d8e-4b60-9283-b09816c99a99",
+        "id": "cancel-export-job-1685699696331",
+        "title": "Cancel export job"
+      }
+    ],
+    "CreateExportJob": [
+      {
+        "input": {
+          "ExportDataSource": {
+            "MetricsDataSource": {
+              "Dimensions": {
+                "ISP": [
+                  "*"
+                ]
+              },
+              "EndDate": "2023-07-02T00:00:00",
+              "Metrics": [
+                {
+                  "Aggregation": "VOLUME",
+                  "Name": "SEND"
+                },
+                {
+                  "Aggregation": "VOLUME",
+                  "Name": "COMPLAINT"
+                },
+                {
+                  "Aggregation": "RATE",
+                  "Name": "COMPLAINT"
+                }
+              ],
+              "Namespace": "VDM",
+              "StartDate": "2023-07-01T00:00:00"
+            }
+          },
+          "ExportDestination": {
+            "DataFormat": "CSV"
+          }
+        },
+        "output": {
+          "JobId": "ef28cf62-9d8e-4b60-9283-b09816c99a99"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "Creates a new export job for Metrics data",
+        "id": "create-export-job-1685701853690",
+        "title": "Create Metrics export job"
+      },
+      {
+        "input": {
+          "ExportDataSource": {
+            "MessageInsightsDataSource": {
+              "EndDate": "2023-07-02T00:00:00",
+              "Exclude": {
+                "FromEmailAddress": [
+                  "hello@example.com"
+                ]
+              },
+              "Include": {
+                "Subject": [
+                  "Hello"
+                ]
+              },
+              "StartDate": "2023-07-01T00:00:00"
+            }
+          },
+          "ExportDestination": {
+            "DataFormat": "CSV"
+          }
+        },
+        "output": {
+          "JobId": "ef28cf62-9d8e-4b60-9283-b09816c99a99"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "Creates a new export job for Message Insights data",
+        "id": "create-export-job-1689957853323",
+        "title": "Create Message Insights export job"
+      }
+    ],
+    "GetExportJob": [
+      {
+        "input": {
+          "JobId": "ef28cf62-9d8e-4b60-9283-b09816c99a99"
+        },
+        "output": {
+          "CreatedTimestamp": "1685700961057",
+          "ExportDataSource": {
+            "MetricsDataSource": {
+              "Dimensions": {
+                "ISP": [
+                  "*"
+                ]
+              },
+              "EndDate": "1675209600000",
+              "Metrics": [
+                {
+                  "Aggregation": "VOLUME",
+                  "Name": "SEND"
+                },
+                {
+                  "Aggregation": "VOLUME",
+                  "Name": "COMPLAINT"
+                },
+                {
+                  "Aggregation": "RATE",
+                  "Name": "COMPLAINT"
+                }
+              ],
+              "Namespace": "VDM",
+              "StartDate": "1672531200000"
+            }
+          },
+          "ExportDestination": {
+            "DataFormat": "CSV"
+          },
+          "ExportSourceType": "METRICS_DATA",
+          "JobId": "ef28cf62-9d8e-4b60-9283-b09816c99a99",
+          "JobStatus": "PROCESSING",
+          "Statistics": {
+            "ExportedRecordsCount": 5,
+            "ProcessedRecordsCount": 5
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "Gets the export job with ID ef28cf62-9d8e-4b60-9283-b09816c99a99",
+        "id": "get-export-job-1685699942772",
+        "title": "Get export job"
+      }
+    ],
+    "GetMessageInsights": [
+      {
+        "input": {
+          "MessageId": "000000000000ab00-0a000aa0-1234-0a0a-1234-0a0aaa0aa00a-000000"
+        },
+        "output": {
+          "EmailTags": [
+            {
+              "Name": "ses:operation",
+              "Value": "SendEmail"
+            },
+            {
+              "Name": "ses:recipient-isp",
+              "Value": "UNKNOWN_ISP"
+            },
+            {
+              "Name": "ses:source-ip",
+              "Value": "0.0.0.0"
+            },
+            {
+              "Name": "ses:from-domain",
+              "Value": "example.com"
+            },
+            {
+              "Name": "ses:sender-identity",
+              "Value": "hello@example.com"
+            },
+            {
+              "Name": "ses:caller-identity",
+              "Value": "Identity"
+            }
+          ],
+          "FromEmailAddress": "hello@example.com",
+          "Insights": [
+            {
+              "Destination": "recipient@example.com",
+              "Events": [
+                {
+                  "Timestamp": "2023-01-01T00:00:00.000000+01:00",
+                  "Type": "SEND"
+                },
+                {
+                  "Timestamp": "2023-01-01T00:00:01.000000+01:00",
+                  "Type": "DELIVERY"
+                }
+              ],
+              "Isp": "UNKNOWN_ISP"
+            }
+          ],
+          "MessageId": "000000000000ab00-0a000aa0-1234-0a0a-1234-0a0aaa0aa00a-000000",
+          "Subject": "hello"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "Provides information about a specific message.",
+        "id": "get-message-insights-1689955713493",
+        "title": "Get Message Insights"
+      }
+    ],
+    "ListExportJobs": [
+      {
+        "input": {
+          "ExportSourceType": "METRICS_DATA",
+          "JobStatus": "PROCESSING",
+          "PageSize": 25
+        },
+        "output": {
+          "ExportJobs": [
+            {
+              "CreatedTimestamp": "167697473543",
+              "ExportSourceType": "METRICS_DATA",
+              "JobId": "72de83a0-6b49-47ca-9783-8b812576887a",
+              "JobStatus": "PROCESSING"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "Lists export jobs of type METRICS_DATA and status PROCESSING",
+        "id": "list-export-jobs-1685702074256",
+        "title": "List export jobs"
+      }
+    ],
+    "PutDedicatedIpPoolScalingAttributes": [
+      {
+        "input": {
+          "PoolName": "sample-ses-pool",
+          "ScalingMode": "MANAGED"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example converts a dedicated IP pool from STANDARD to MANAGED.",
+        "id": "put-dedicated-ip-pool-scaling-attributes-example-1683639172",
+        "title": "Used to convert a dedicated IP pool to a different scaling mode."
+      }
+    ]
+  }
+}

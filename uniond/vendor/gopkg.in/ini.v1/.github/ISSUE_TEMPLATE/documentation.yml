@@ -1,0 +1,30 @@
+name: Improve documentation
+description: Suggest an idea or a patch for documentation
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this form!
+
+        - Before you file an issue read the [Contributing guide](https://github.com/go-ini/ini/blob/main/.github/contributing.md).
+        - Check to make sure someone hasn't already opened a similar [issue](https://github.com/go-ini/ini/issues).
+  - type: textarea
+    attributes:
+      label: What needs to be improved? Please describe
+      description: A clear and concise description of what is wrong or missing.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Why do you think it is important?
+      description: A clear and concise explanation of the rationale.
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://go.dev/conduct)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

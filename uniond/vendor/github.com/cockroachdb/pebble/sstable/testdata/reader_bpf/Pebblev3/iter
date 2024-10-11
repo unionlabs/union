@@ -1,0 +1,146 @@
+# Test case for bug https://github.com/cockroachdb/pebble/issues/2036 Build
+# sstable with two-level index, with two data blocks in each lower-level index
+# block.
+build block-size=1 index-block-size=40 print-layout=true
+c@10.SET.10:cAT10
+d@7.SET.9:dAT7
+e@15.SET.8:eAT15
+f@7.SET.5:fAT7
+----
+index entries:
+ d@7: size 53
+   c@10: size 29
+   d@7: size 27
+ g: size 51
+   e@15: size 29
+   g: size 27
+
+iter
+first
+next
+next
+next
+----
+<c@10:10>
+<d@7:9>
+<e@15:8>
+<f@7:5>
+
+
+# The block property filter matches data block 2 and 4.
+iter block-property-filter=(7,8)
+first
+next
+----
+<d@7:9>
+<f@7:5>
+
+# Use the same block property filter, but use seeks to find these entries.
+# With the bug the second seek-ge below would step to the second lower-level
+# index block and only see the entry in the data block 4.
+iter block-property-filter=(7,8)
+set-bounds lower=a upper=c
+seek-ge a
+seek-ge b true
+set-bounds lower=c upper=g
+seek-ge c
+next
+next
+----
+.
+.
+.
+.
+<d@7:9>
+<f@7:5>
+.
+
+# Regression test for #2816
+#
+# This unit test tests a scenario where the two-level index iterator's position
+# could diverge from the currently loaded index block. When taking advantage of
+# the monotonic bounds optimization at the two-level index level, the iterator
+# would mistakenly seek within the wrong index block.
+#
+# This allowed the final `seek-ge wc` and `next` to both return wz@8.
+
+build  block-size=1 index-block-size=1 print-layout=true
+eu@2.SET.2:eu
+wb@2.SET.2:wb
+wz@8.SET.8:wzAT8
+ye@1.SET.1:yeAT1
+----
+index entries:
+ f: size 26
+   f: size 26
+ wc: size 27
+   wc: size 26
+ x: size 26
+   x: size 29
+ z: size 26
+   z: size 29
+
+iter block-property-filter=(8,9)
+set-bounds lower=v upper=v
+seek-ge wz@8
+internal-iter-state
+seek-ge wb@2
+internal-iter-state
+set-bounds lower=v upper=z
+internal-iter-state
+seek-ge wc
+internal-iter-state
+next
+----
+.
+.
+| *sstable.twoLevelIterator:
+|  topLevelIndex.Key() = "x#72057594037927935,17"
+|  topLevelIndex.InPlaceValue() = (Offset: 193, Length: 26, Props: 00020801)
+|  topLevelIndex.isDataInvalidated()=false
+|  index.Key() = "x#72057594037927935,17"
+|  index.InPlaceValue() = (Offset: 62, Length: 29, Props: 00020801)
+|  index.isDataInvalidated()=false
+|  data.isDataInvalidated()=false
+|  hideObsoletePoints = false
+|  dataBH = (Offset: 62, Length: 29)
+|  (boundsCmp,positionedUsingLatestBounds) = (0,true)
+|  exhaustedBounds = 1
+.
+| *sstable.twoLevelIterator:
+|  topLevelIndex.Key() = "wc#72057594037927935,17"
+|  topLevelIndex.InPlaceValue() = (Offset: 161, Length: 27, Props: 00020201)
+|  topLevelIndex.isDataInvalidated()=false
+|  index iter invalid
+|  index.isDataInvalidated()=true
+|  data.isDataInvalidated()=true
+|  hideObsoletePoints = false
+|  dataBH = (Offset: 62, Length: 29)
+|  (boundsCmp,positionedUsingLatestBounds) = (0,true)
+|  exhaustedBounds = 1
+.
+| *sstable.twoLevelIterator:
+|  topLevelIndex.Key() = "wc#72057594037927935,17"
+|  topLevelIndex.InPlaceValue() = (Offset: 161, Length: 27, Props: 00020201)
+|  topLevelIndex.isDataInvalidated()=false
+|  index iter invalid
+|  index.isDataInvalidated()=true
+|  data.isDataInvalidated()=true
+|  hideObsoletePoints = false
+|  dataBH = (Offset: 62, Length: 29)
+|  (boundsCmp,positionedUsingLatestBounds) = (1,false)
+|  exhaustedBounds = 1
+<wz@8:8>
+| *sstable.twoLevelIterator:
+|  topLevelIndex.Key() = "x#72057594037927935,17"
+|  topLevelIndex.InPlaceValue() = (Offset: 193, Length: 26, Props: 00020801)
+|  topLevelIndex.isDataInvalidated()=false
+|  index.Key() = "x#72057594037927935,17"
+|  index.InPlaceValue() = (Offset: 62, Length: 29, Props: 00020801)
+|  index.isDataInvalidated()=false
+|  data.isDataInvalidated()=false
+|  hideObsoletePoints = false
+|  dataBH = (Offset: 62, Length: 29)
+|  (boundsCmp,positionedUsingLatestBounds) = (0,false)
+|  exhaustedBounds = 0
+.

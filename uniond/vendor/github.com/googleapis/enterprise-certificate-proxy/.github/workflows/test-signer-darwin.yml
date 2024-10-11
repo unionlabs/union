@@ -1,0 +1,56 @@
+name: Build and Test Signer Darwin
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.19
+
+    - name: Build
+      working-directory: ./internal/signer/darwin
+      run: go build -v ./...
+
+      # The binary must be built before creating credentials so it can be added
+      # as a trusted application to the keychain.
+    - name: Build Test Binary
+      working-directory: ./internal/signer/darwin
+      run: go test -c ./keychain
+
+    - name: Create keychain credentials
+      run: ./scripts/keychain_cred.sh
+      
+    - name: Run Test Binary
+      working-directory: ./internal/signer/darwin
+      run: ./keychain.test
+      
+    - name: Lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        working-directory: ./internal/signer/darwin
+        args: -E gofmt --max-same-issues 0
+
+    - name: Create Binaries
+      run: ./build/scripts/darwin_amd64.sh && ./build/scripts/darwin_arm64.sh
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: darwin_amd64
+        path: ./build/bin/darwin_amd64/*
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: darwin_arm64
+        path: ./build/bin/darwin_arm64/*

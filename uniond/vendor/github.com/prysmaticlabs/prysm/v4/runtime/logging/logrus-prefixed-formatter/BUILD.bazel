@@ -1,0 +1,29 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["formatter.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/runtime/logging/logrus-prefixed-formatter",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_mgutz_ansi//:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+        "@org_golang_x_crypto//ssh/terminal:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "formatter_test.go",
+        "logrus_prefixed_formatter_suite_test.go",
+    ],
+    deps = [
+        ":go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_onsi_ginkgo//:go_default_library",
+        "@com_github_onsi_gomega//:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+    ],
+)

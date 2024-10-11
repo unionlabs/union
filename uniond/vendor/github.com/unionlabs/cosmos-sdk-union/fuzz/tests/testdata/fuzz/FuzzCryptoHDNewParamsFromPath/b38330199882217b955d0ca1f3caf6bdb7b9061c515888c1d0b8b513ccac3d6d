@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("c\u2028\u2029/")

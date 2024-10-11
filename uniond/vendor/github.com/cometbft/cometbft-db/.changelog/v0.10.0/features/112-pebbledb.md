@@ -1,0 +1,1 @@
+- Add [pebbledb](https://github.com/cockroachdb/pebble) ([\#112](https://github.com/cometbft/cometbft-db/pull/112))

@@ -1,0 +1,419 @@
+# Test an L6 file that contains range tombstones, but whose keys are not in
+# the last snapshot stripe. The tombstones wouldn't be elided, so no
+# compaction is pursued.
+define snapshots=(70, 100, 180, 210)
+L6
+b.RANGEDEL.230:h h.RANGEDEL.200:r
+----
+6:
+  000004:[b#230,RANGEDEL-r#inf,RANGEDEL]
+
+wait-pending-table-stats
+000004
+----
+num-entries: 2
+num-deletions: 2
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+maybe-compact
+----
+(none)
+
+# Test the same scenario, but the file is in the last stripe. Since the file
+# only contains deletes, no new sstable is written.
+define snapshots=(270, 300, 380, 410)
+L6
+b.RANGEDEL.230:h h.RANGEDEL.200:r
+----
+6:
+  000004:[b#230,RANGEDEL-r#inf,RANGEDEL]
+
+wait-pending-table-stats
+000004
+----
+num-entries: 2
+num-deletions: 2
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+maybe-compact
+----
+[JOB 100] compacted(elision-only) L6 [000004] (748B) Score=0.00 + L6 [] (0B) Score=0.00 -> L6 [] (0B), in 1.0s (2.0s total), output rate 0B/s
+
+# Test a table that straddles a snapshot. It should not be compacted.
+define snapshots=(50) auto-compactions=off
+L6
+a.SET.55:a b.RANGEDEL.5:h
+----
+6:
+  000004:[a#55,SET-h#inf,RANGEDEL]
+
+wait-pending-table-stats
+000004
+----
+num-entries: 2
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+maybe-compact
+----
+(none)
+
+# Test a table with a point deletion and a non-deletion entry. The table
+# should be compacted, and a new table with the point tombstone should be
+# written.
+define auto-compactions=off
+L6
+a.SET.55:a b.DEL.5:
+----
+6:
+  000004:[a#55,SET-b#5,DEL]
+
+wait-pending-table-stats
+000004
+----
+num-entries: 2
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 93
+range-deletions-bytes-estimate: 0
+
+maybe-compact
+----
+[JOB 100] compacted(elision-only) L6 [000004] (714B) Score=0.00 + L6 [] (0B) Score=0.00 -> L6 [000005] (663B), in 1.0s (2.0s total), output rate 663B/s
+
+version
+----
+6:
+  000005:[a#0,SET-a#0,SET]
+
+# Checking for a compaction again should not trigger a compaction, because
+# 000005 does not contain deletions.
+
+maybe-compact
+----
+(none)
+
+maybe-compact
+----
+(none)
+
+# Test a table that contains both deletions and non-deletions, but whose
+# deletions remove the non-deletions. The compaction should not create a new
+# table, but shouldn't happen until the snapshots are removed.
+define snapshots=(59, 103) auto-compactions=off
+L6
+a.DEL.60: a.SET.55:a b.SET.100:b c.SET.101:c d.SET.102:d b.RANGEDEL.103:z
+----
+6:
+  000004:[a#60,DEL-z#inf,RANGEDEL]
+
+wait-pending-table-stats
+000004
+----
+num-entries: 6
+num-deletions: 2
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 42
+range-deletions-bytes-estimate: 66
+
+maybe-compact
+----
+(none)
+
+close-snapshot
+59
+----
+(none)
+
+close-snapshot
+103
+----
+[JOB 100] compacted(elision-only) L6 [000004] (892B) Score=0.00 + L6 [] (0B) Score=0.00 -> L6 [] (0B), in 1.0s (2.0s total), output rate 0B/s
+
+# Test a table that contains both deletions and non-deletions, but whose
+# non-deletions well outnumber its deletions. The table should not be
+# compacted because it falls beneath the threshold.
+define snapshots=(15) auto-compactions=off
+L6
+a.DEL.20: a.SET.1:a b.SET.2:b c.SET.3:c d.SET.4:d e.SET.5:e f.SET.6:f g.SET.7:g h.SET.8:h i.SET.9:i j.SET.10:j
+----
+6:
+  000004:[a#20,DEL-j#10,SET]
+
+wait-pending-table-stats
+000004
+----
+num-entries: 11
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 23
+range-deletions-bytes-estimate: 0
+
+close-snapshot
+15
+----
+(none)
+
+# Test a table that contains both deletions and non-deletions, but whose
+# deletions remove the non-deletions. Set L5's max bytes low so that an
+# automatic compaction will be pursued when we call maybe-compact.
+# Automatic compactions need to be disabled to prevent a race where an
+# automatic compaction compacts before we've closen the snapshot.
+define snapshots=(103) level-max-bytes=(L5 : 1000) auto-compactions=off
+L5
+b.SET.200:<rand-bytes=4096> bb.SET.203:<rand-bytes=4096> cc.SET.204:<rand-bytes=4096>
+L5
+d.SET.302:<rand-bytes=4096> dd.SET.303:<rand-bytes=4096> de.SET.303:<rand-bytes=4096>
+L5
+m.SET.320:<rand-bytes=4096> n.SET.330:<rand-bytes=4096> o.SET.340:<rand-bytes=4096>
+L6
+a.SET.55:<rand-bytes=4096> b.SET.100:<rand-bytes=4096> c.SET.101:<rand-bytes=4096> d.SET.102:<rand-bytes=4096> a.RANGEDEL.103:e
+L6
+f.SET.30:<rand-bytes=4096> z.SET.31:<rand-bytes=4096>
+----
+5:
+  000004:[b#200,SET-cc#204,SET]
+  000005:[d#302,SET-de#303,SET]
+  000006:[m#320,SET-o#340,SET]
+6:
+  000007:[a#103,RANGEDEL-e#inf,RANGEDEL]
+  000008:[f#30,SET-z#31,SET]
+
+close-snapshot
+103
+----
+(none)
+
+wait-pending-table-stats
+000007
+----
+num-entries: 5
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 16492
+
+# Because we set max bytes low, maybe-compact will trigger an automatic
+# compaction in preference over an elision-only compaction.
+# By plain file size, 000006 should be picked because it overlaps
+# significantly less data in L6. However, 000007 has significant obsolete
+# data. The compaction picker should recognize that it's more efficient to
+# compact (000004 + 000005) into 000007.
+
+maybe-compact
+----
+[JOB 100] compacted(default) L5 [000004 000005] (26KB) Score=87.72 + L6 [000007] (17KB) Score=0.73 -> L6 [000009] (25KB), in 1.0s (2.0s total), output rate 25KB/s
+
+define level-max-bytes=(L5 : 1000) auto-compactions=off
+L5
+a.DEL.101: b.DEL.102: c.DEL.103:
+L5
+m.SET.107:<rand-bytes=4096>
+L6
+a.SET.001:<rand-bytes=4096> b.SET.002:<rand-bytes=4096> c.SET.003:<rand-bytes=4096>
+L6
+f.SET.007:<rand-bytes=4096> x.SET.008:<rand-bytes=4096> z.SET.009:<rand-bytes=4096>
+----
+5:
+  000004:[a#101,DEL-c#103,DEL]
+  000005:[m#107,SET-m#107,SET]
+6:
+  000006:[a#1,SET-c#3,SET]
+  000007:[f#7,SET-z#9,SET]
+
+wait-pending-table-stats
+000004
+----
+num-entries: 3
+num-deletions: 3
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 6858
+range-deletions-bytes-estimate: 0
+
+# By plain file size, 000005 should be picked because it is larger and
+# overlaps the same amount of data in L6. However, 000004 has a high
+# point-deletions-bytes-estimate, and the compaction picker should pick 000004
+# instead.
+
+maybe-compact
+----
+[JOB 100] compacted(default) L5 [000004] (724B) Score=13.45 + L6 [000006] (13KB) Score=0.92 -> L6 [] (0B), in 1.0s (2.0s total), output rate 0B/s
+
+# A table containing only range keys is not eligible for elision.
+# RANGEKEYDEL or RANGEKEYUNSET.
+
+define auto-compactions=off
+L6
+  rangekey:a-b:{(#1,RANGEKEYDEL)}
+L6
+  rangekey:b-c:{(#2,RANGEKEYUNSET,@1)}
+L6
+  rangekey:c-d:{(#3,RANGEKEYSET,@1)}
+----
+6:
+  000004:[a#1,RANGEKEYDEL-b#inf,RANGEKEYDEL]
+  000005:[b#2,RANGEKEYUNSET-c#inf,RANGEKEYUNSET]
+  000006:[c#3,RANGEKEYSET-d#inf,RANGEKEYSET]
+
+wait-pending-table-stats
+000004
+----
+num-entries: 0
+num-deletions: 0
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+wait-pending-table-stats
+000005
+----
+num-entries: 0
+num-deletions: 0
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+wait-pending-table-stats
+000006
+----
+num-entries: 0
+num-deletions: 0
+num-range-key-sets: 1
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+maybe-compact
+----
+(none)
+
+# Regression test for cockroachdb/cockroach#90149, exercising reference counting
+# on tables that contain a mixture of point, range dels and range keys.
+#
+# Place a table in L6 that contains a RANGEKEYDEL. Because this table is in the
+# bottom of the LSM, and there are no range keys below it, the RANGEKEYDEL is
+# eligible for elision (the RANGEDEL too). After the elision, the input table
+# should be deleted. In #90149, the table still had a reference count, and
+# therefore could not be deleted from the filesystem.
+
+define auto-compactions=off
+L6
+  rangekey:a-b:{(#1,RANGEKEYDEL)}
+  a.SET.2:a
+  b.SET.3:b
+  c.SET.4:c
+  c.RANGEDEL.5:z
+----
+6:
+  000004:[a#2,SET-z#inf,RANGEDEL]
+
+wait-pending-table-stats
+000004
+----
+num-entries: 3
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 41
+
+maybe-compact
+----
+[JOB 100] compacted(elision-only) L6 [000004] (894B) Score=0.00 + L6 [] (0B) Score=0.00 -> L6 [000005] (669B), in 1.0s (2.0s total), output rate 669B/s
+
+# Close the DB, asserting that the reference counts balance.
+close
+----
+
+# Demonstration of point tombstone weighting.
+#
+# Construct an LSM with two tables in L6, with a table above each in L5. The
+# layout of the tables is such that the range deletion bytes estimate for table
+# 000005 is greater than the point deletion bytes estimate for table 000004.
+# Without weighting, table 000005 will be selected.
+
+define auto-compactions=off level-max-bytes=(L5 : 1000)
+L5
+a.DEL.101: b.SET.102:
+L5
+e.RANGEDEL.107:f f.SET.108:
+L6
+a.SET.001:<rand-bytes=4096> b.SET.002:<rand-bytes=4096> c.SET.003:<rand-bytes=4096>
+L6
+e.SET.007:<rand-bytes=4096> f.SET.008:<rand-bytes=4096> g.SET.009:<rand-bytes=4096>
+----
+5:
+  000004:[a#101,DEL-b#102,SET]
+  000005:[e#107,RANGEDEL-f#108,SET]
+6:
+  000006:[a#1,SET-c#3,SET]
+  000007:[e#7,SET-g#9,SET]
+
+wait-pending-table-stats
+000004
+----
+num-entries: 2
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 2742
+range-deletions-bytes-estimate: 0
+
+wait-pending-table-stats
+000005
+----
+num-entries: 2
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 8246
+
+maybe-compact
+----
+[JOB 100] compacted(default) L5 [000005] (741B) Score=11.82 + L6 [000007] (13KB) Score=1.05 -> L6 [000008] (4.7KB), in 1.0s (2.0s total), output rate 4.7KB/s
+
+# The same LSM as above. However, this time, with point tombstone weighting at
+# 2x, the table with the point tombstone (000004) will be selected as the
+# compaction input.
+
+define auto-compactions=off level-max-bytes=(L5 : 1000) point-tombstone-weight=2
+L5
+a.DEL.101: b.SET.102:
+L5
+e.RANGEDEL.107:f f.SET.108:
+L6
+a.SET.001:<rand-bytes=4096> b.SET.002:<rand-bytes=4096> c.SET.003:<rand-bytes=4096>
+L6
+e.SET.007:<rand-bytes=4096> f.SET.008:<rand-bytes=4096> g.SET.009:<rand-bytes=4096>
+----
+5:
+  000004:[a#101,DEL-b#102,SET]
+  000005:[e#107,RANGEDEL-f#108,SET]
+6:
+  000006:[a#1,SET-c#3,SET]
+  000007:[e#7,SET-g#9,SET]
+
+wait-pending-table-stats
+000004
+----
+num-entries: 2
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 2742
+range-deletions-bytes-estimate: 0
+
+wait-pending-table-stats
+000005
+----
+num-entries: 2
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 8246
+
+maybe-compact
+----
+[JOB 100] compacted(default) L5 [000005] (741B) Score=11.82 + L6 [000007] (13KB) Score=1.05 -> L6 [000008] (4.7KB), in 1.0s (2.0s total), output rate 4.7KB/s

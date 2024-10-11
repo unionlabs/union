@@ -1,0 +1,16 @@
+syntax = "proto3";
+package cometbft.types.v1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/types/v1";
+
+import "cometbft/types/v1/types.proto";
+import "cometbft/types/v1/evidence.proto";
+import "gogoproto/gogo.proto";
+
+// Block defines the structure of a block in the CometBFT blockchain.
+message Block {
+  Header       header      = 1 [(gogoproto.nullable) = false];
+  Data         data        = 2 [(gogoproto.nullable) = false];
+  EvidenceList evidence    = 3 [(gogoproto.nullable) = false];
+  Commit       last_commit = 4;
+}

@@ -1,0 +1,91 @@
+define
+a-b:{(#5,RANGEDEL) (#3,RANGEDEL)}
+----
+a-b:{(#5,RANGEDEL) (#3,RANGEDEL)}
+
+covers-at
+6 6
+6 5
+6 4
+6 2
+6 3
+5 5
+5 4
+5 3
+5 2
+4 5
+4 1
+3 9
+3 2
+3 1
+3 0
+2 0
+1 0
+----
+6 6 : false
+6 5 : false
+6 4 : true
+6 2 : true
+6 3 : true
+5 5 : false
+5 4 : false
+5 3 : false
+5 2 : true
+4 5 : false
+4 1 : true
+3 9 : false
+3 2 : false
+3 1 : false
+3 0 : false
+2 0 : false
+1 0 : false
+
+# The below sequence number is the minimal batch sequence number (eg, a RANGEDEL
+# written right at the beginning of the batch.) In the tests below, all other
+# batch sequence numbers are not covered by it.
+
+define
+a-c:{(#36028797018963968,RANGEDEL)}
+----
+a-c:{(#36028797018963968,RANGEDEL)}
+
+covers-at
+100 90000
+100 90
+0 0
+33 36028797018964068
+33 36028797018963968
+----
+100 90000 : true
+100 90 : true
+0 0 : true
+33 36028797018964068 : false
+33 36028797018963968 : false
+
+# The below sequence number is a batch sequence number for offset 100.
+
+define
+a-c:{(#36028797018964068,RANGEDEL)}
+----
+a-c:{(#36028797018964068,RANGEDEL)}
+
+covers-at
+10 10
+----
+10 10 : true
+
+# The below sequence number is a batch sequence number for offset 200. It should
+# not be covered.
+
+covers-at
+100 36028797018964168
+----
+100 36028797018964168 : false
+
+# The below sequence number is a batch sequence number for offset 0. It should
+# be covered.
+
+covers-at
+100 36028797018963968
+----
+100 36028797018963968 : true

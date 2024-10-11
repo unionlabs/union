@@ -17,6 +17,9 @@ div_3_limbs:
 	movq	%r8,%rdx
 .LSEH_body_div_3_limbs:
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	(%rdi),%r8
 	movq	8(%rdi),%r9
 	xorq	%rax,%rax
@@ -52,7 +55,15 @@ div_3_limbs:
 	mov	8(%rsp),%rdi
 	mov	16(%rsp),%rsi
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .LSEH_end_div_3_limbs:
 .globl	quot_rem_128
@@ -72,6 +83,9 @@ quot_rem_128:
 	movq	%r8,%rdx
 .LSEH_body_quot_rem_128:
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	%rdx,%rax
 	movq	%rdx,%rcx
 
@@ -110,7 +124,15 @@ quot_rem_128:
 	mov	8(%rsp),%rdi
 	mov	16(%rsp),%rsi
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .LSEH_end_quot_rem_128:
 
@@ -135,6 +157,9 @@ quot_rem_64:
 	movq	%r8,%rdx
 .LSEH_body_quot_rem_64:
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	%rdx,%rax
 	imulq	0(%rsi),%rdx
 
@@ -149,7 +174,15 @@ quot_rem_64:
 	mov	8(%rsp),%rdi
 	mov	16(%rsp),%rsi
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .LSEH_end_quot_rem_64:
 .section	.pdata

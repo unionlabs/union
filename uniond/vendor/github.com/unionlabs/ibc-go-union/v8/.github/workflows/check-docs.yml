@@ -1,0 +1,27 @@
+# This check-docs workflow was created based on instructions from:
+# https://docusaurus.io/docs/deployment
+name: Check docs build
+# This workflow runs when a PR is labeled with `docs`
+# This will check if the docs build successfully by running `npm run build`
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - './docs'
+
+jobs:
+  check-docs-build:
+    name: Check docs build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+      - name: Test build website
+        run: npm run build

@@ -1,0 +1,54 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["epoch_processing.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/core/epoch",
+    visibility = [
+        "//beacon-chain:__subpackages__",
+        "//testing/spectest:__subpackages__",
+    ],
+    deps = [
+        "//beacon-chain/core/helpers:go_default_library",
+        "//beacon-chain/core/time:go_default_library",
+        "//beacon-chain/core/validators:go_default_library",
+        "//beacon-chain/state:go_default_library",
+        "//beacon-chain/state/stateutil:go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//math:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/prysm/v1alpha1/attestation:go_default_library",
+        "//runtime/version:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = [
+        "epoch_processing_fuzz_test.go",
+        "epoch_processing_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//beacon-chain/core/helpers:go_default_library",
+        "//beacon-chain/core/time:go_default_library",
+        "//beacon-chain/core/transition:go_default_library",
+        "//beacon-chain/state:go_default_library",
+        "//beacon-chain/state/state-native:go_default_library",
+        "//beacon-chain/state/stateutil:go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/util:go_default_library",
+        "@com_github_google_gofuzz//:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
+    ],
+)

@@ -1,0 +1,5 @@
+oauth2:
+  client_id: "myclient"
+  client_secret: "mysecret"
+  token_url: "http://auth"
+  proxy_url: "http://foo"

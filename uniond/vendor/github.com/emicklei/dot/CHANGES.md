@@ -1,6 +1,10 @@
 # Change history of the dot package
 
 
+## v1.6.2
+
+- fix issue #38 : incorrect handling of strict option (thx kiambogo)
+
 ## v1.6.1 - 2024-01-17
 
 - deprecated MermaidShapeCirle => use MermaidShapeCircle

@@ -1,0 +1,32 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
+
+go_test(
+    name = "integration_test",
+    srcs = [
+        "client_test.go",
+        "integration_test.go",
+        "main_test.go",
+    ],
+    deps = [
+        "//examples/internal/clients/abe",
+        "//examples/internal/clients/echo",
+        "//examples/internal/clients/unannotatedecho",
+        "//examples/internal/gateway",
+        "//examples/internal/proto/examplepb",
+        "//examples/internal/proto/pathenum",
+        "//examples/internal/proto/sub",
+        "//examples/internal/server",
+        "//runtime",
+        "@com_github_golang_glog//:glog",
+        "@com_github_google_go_cmp//cmp",
+        "@com_github_rogpeppe_fastuuid//:fastuuid",
+        "@go_googleapis//google/rpc:status_go_proto",
+        "@io_bazel_rules_go//proto/wkt:field_mask_go_proto",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_protobuf//encoding/protojson",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//testing/protocmp",
+        "@org_golang_google_protobuf//types/known/emptypb",
+        "@org_golang_google_protobuf//types/known/structpb",
+    ],
+)

@@ -1,0 +1,199 @@
+{
+    "testCases": [
+        {
+            "documentation": "For region us-west-2 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://supportapp-fips.us-west-2.api.aws"
+                }
+            },
+            "params": {
+                "UseFIPS": true,
+                "UseDualStack": true,
+                "Region": "us-west-2"
+            }
+        },
+        {
+            "documentation": "For region us-west-2 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://supportapp-fips.us-west-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseFIPS": true,
+                "UseDualStack": false,
+                "Region": "us-west-2"
+            }
+        },
+        {
+            "documentation": "For region us-west-2 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://supportapp.us-west-2.api.aws"
+                }
+            },
+            "params": {
+                "UseFIPS": false,
+                "UseDualStack": true,
+                "Region": "us-west-2"
+            }
+        },
+        {
+            "documentation": "For region us-west-2 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://supportapp.us-west-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "Region": "us-west-2"
+            }
+        },
+        {
+            "documentation": "For region eu-west-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://supportapp-fips.eu-west-1.api.aws"
+                }
+            },
+            "params": {
+                "UseFIPS": true,
+                "UseDualStack": true,
+                "Region": "eu-west-1"
+            }
+        },
+        {
+            "documentation": "For region eu-west-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://supportapp-fips.eu-west-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseFIPS": true,
+                "UseDualStack": false,
+                "Region": "eu-west-1"
+            }
+        },
+        {
+            "documentation": "For region eu-west-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://supportapp.eu-west-1.api.aws"
+                }
+            },
+            "params": {
+                "UseFIPS": false,
+                "UseDualStack": true,
+                "Region": "eu-west-1"
+            }
+        },
+        {
+            "documentation": "For region eu-west-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://supportapp.eu-west-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "Region": "eu-west-1"
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://supportapp-fips.us-east-1.api.aws"
+                }
+            },
+            "params": {
+                "UseFIPS": true,
+                "UseDualStack": true,
+                "Region": "us-east-1"
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://supportapp-fips.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseFIPS": true,
+                "UseDualStack": false,
+                "Region": "us-east-1"
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://supportapp.us-east-1.api.aws"
+                }
+            },
+            "params": {
+                "UseFIPS": false,
+                "UseDualStack": true,
+                "Region": "us-east-1"
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://supportapp.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "Region": "us-east-1"
+            }
+        },
+        {
+            "documentation": "For custom endpoint with fips disabled and dualstack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://example.com"
+                }
+            },
+            "params": {
+                "UseFIPS": false,
+                "UseDualStack": false,
+                "Region": "us-east-1",
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "For custom endpoint with fips enabled and dualstack disabled",
+            "expect": {
+                "error": "Invalid Configuration: FIPS and custom endpoint are not supported"
+            },
+            "params": {
+                "UseFIPS": true,
+                "UseDualStack": false,
+                "Region": "us-east-1",
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "For custom endpoint with fips disabled and dualstack enabled",
+            "expect": {
+                "error": "Invalid Configuration: Dualstack and custom endpoint are not supported"
+            },
+            "params": {
+                "UseFIPS": false,
+                "UseDualStack": true,
+                "Region": "us-east-1",
+                "Endpoint": "https://example.com"
+            }
+        }
+    ],
+    "version": "1.0"
+}

@@ -1,0 +1,4 @@
+basic_auth:
+  username: user
+  username_file: testdata/basic-auth-username
+  password: foo

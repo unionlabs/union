@@ -1,0 +1,123 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  GO111MODULE: on
+
+permissions:
+  contents: read
+
+jobs:
+
+
+  lic-headers:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - run: >-
+          docker run
+          -v $(pwd):/wrk -w /wrk
+          ghcr.io/google/addlicense
+          -c 'The Cobra Authors'
+          -y '2013-2023'
+          -l apache
+          -ignore '.github/**'
+          -check
+          .
+
+
+  golangci-lint:
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for golangci/golangci-lint-action to fetch pull requests
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '^1.22'
+          check-latest: true
+          cache: true
+
+      - uses: golangci/golangci-lint-action@v4.0.0
+        with:
+          version: latest
+          args: --verbose
+
+
+  test-unix:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+        - ubuntu
+        - macOS
+        go:
+        - 17
+        - 18
+        - 19
+        - 20
+        - 21
+        - 22
+    name: '${{ matrix.platform }} | 1.${{ matrix.go }}.x'
+    runs-on: ${{ matrix.platform }}-latest
+    steps:
+
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-go@v5
+      with:
+        go-version: 1.${{ matrix.go }}.x
+        cache: true
+
+    - run: |
+        export GOBIN=$HOME/go/bin
+        go install github.com/kyoh86/richgo@latest
+        go install github.com/mitchellh/gox@latest
+
+    - run: RICHGO_FORCE_COLOR=1 PATH=$HOME/go/bin/:$PATH make richtest
+
+
+  test-win:
+    name: MINGW64
+    defaults:
+      run:
+        shell: msys2 {0}
+    runs-on: windows-latest
+    steps:
+
+    - shell: bash
+      run: git config --global core.autocrlf input
+
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >
+          git
+          make
+          unzip
+          mingw-w64-x86_64-go
+
+    - uses: actions/checkout@v4
+
+    - uses: actions/cache@v4
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-${{ matrix.go }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: ${{ runner.os }}-${{ matrix.go }}-
+
+    - run: |
+        export GOBIN=$HOME/go/bin
+        go install github.com/kyoh86/richgo@latest
+        go install github.com/mitchellh/gox@latest
+
+    - run: RICHGO_FORCE_COLOR=1 PATH=$HOME/go/bin:$PATH make richtest

@@ -1,0 +1,40 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+syntax = "proto3";
+package proto;
+option go_package = "./proto";
+
+message GetRequest {
+    string key = 1;
+}
+
+message GetResponse {
+    int64 value = 1;
+}
+
+message PutRequest {
+    uint32 add_server = 1;
+    string key = 2;
+    int64 value = 3;
+}
+
+message Empty {}
+
+message SumRequest {
+    int64 a = 1;
+    int64 b = 2;
+}
+
+message SumResponse {
+    int64 r = 1;
+}
+
+service Counter {
+    rpc Get(GetRequest) returns (GetResponse);
+    rpc Put(PutRequest) returns (Empty);
+}
+
+service AddHelper {
+    rpc Sum(SumRequest) returns (SumResponse);
+}

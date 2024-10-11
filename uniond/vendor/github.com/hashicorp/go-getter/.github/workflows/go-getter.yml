@@ -1,0 +1,158 @@
+name: go-getter
+
+on: [push]
+
+env:
+  TEST_RESULTS_PATH: /tmp/test-results
+
+jobs:
+
+  linux-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version:
+          - 1.17
+          - 1.18
+          - 1.19
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Setup go
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
+        with:
+          go-version: ${{ matrix.go-version }}
+      
+      - name: Checkout code
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+
+      - name: Create test directory
+        run: |
+          mkdir -p ${{ env.TEST_RESULTS_PATH }}
+  
+      - name: Setup cache for go modules
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      
+      - name: Download go modules
+        run: go mod download
+      
+      # Check go fmt output because it does not report non-zero when there are fmt changes
+      - name: Run gofmt
+        run: |
+          go fmt ./...
+          files=$(go fmt ./...)
+            if [ -n "$files" ]; then
+              echo "The following file(s) do not conform to go fmt:"
+              echo "$files"
+              exit 1
+            fi
+      
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@v1.8.2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 # v4.0.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::388664967494:role/hc-go-getter-test
+          role-session-name: ${{ github.run_id }}
+          audience: https://github.com/hashicorp
+
+      - name: 'Authenticate to Google Cloud'
+        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
+        with:
+          workload_identity_provider: 'projects/328212837253/locations/global/workloadIdentityPools/hc-go-getter-test/providers/github-hc-go-getter-test'
+          service_account: hc-go-getter-test@hc-e56c0f7c21c448d2be9e7696073.iam.gserviceaccount.com
+          audience: https://github.com/hashicorp
+        
+      - name: Run go tests
+        run: |
+          PACKAGE_NAMES=$(go list ./...)
+          echo "Running $(echo $PACKAGE_NAMES | wc -w) packages"
+          echo $PACKAGE_NAMES
+          gotestsum --format=short-verbose --junitfile $TEST_RESULTS_PATH/go-getter/gotestsum-report.xml -- -p 2 -cover -coverprofile=linux_cov.part $PACKAGE_NAMES
+      
+      # Save coverage report parts
+      - name: Upload and save artifacts
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        with:
+          name: linux test results
+          path: linux_cov.part
+
+  windows-tests:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        go-version:
+          - 1.17
+          - 1.18
+          - 1.19
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Run git config #Windows-only
+        run: git config --global core.autocrlf false
+
+      - name: Setup Go
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
+        with:
+          go-version: ${{ matrix.go-version }}
+      
+      - name: Checkout code
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+
+      - name: Setup cache for go modules
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+        with:
+          path: |
+            ~\AppData\Local\go-build
+            ~\go\pkg\mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download go modules
+        run: go mod download
+       
+      - name: Install gotestsum
+        shell: bash
+        run: go install gotest.tools/gotestsum@v1.8.2
+        
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497 # v4.0.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::388664967494:role/hc-go-getter-test
+          role-session-name: ${{ github.run_id }}
+          audience: https://github.com/hashicorp
+
+      - name: 'Authenticate to Google Cloud'
+        uses: google-github-actions/auth@35b0e87d162680511bf346c299f71c9c5c379033 # v1.1.1
+        with:
+          workload_identity_provider: 'projects/328212837253/locations/global/workloadIdentityPools/hc-go-getter-test/providers/github-hc-go-getter-test'
+          service_account: hc-go-getter-test@hc-e56c0f7c21c448d2be9e7696073.iam.gserviceaccount.com
+          audience: https://github.com/hashicorp
+      
+      - name: Run go tests
+        shell: bash
+        run: |
+          PACKAGE_NAMES=$(go list ./...)
+          echo "Running $(echo $PACKAGE_NAMES | wc -w) packages"
+          echo $PACKAGE_NAMES
+          gotestsum --format=short-verbose --junitfile $TEST_RESULTS_PATH/go-getter/gotestsum-report.xml -- -p 2 -cover -race -coverprofile=win_cov.part $PACKAGE_NAMES
+      
+      # Save coverage report parts
+      - name: Upload and save artifacts
+        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        with:
+          name: windows test results
+          path: win_cov.part

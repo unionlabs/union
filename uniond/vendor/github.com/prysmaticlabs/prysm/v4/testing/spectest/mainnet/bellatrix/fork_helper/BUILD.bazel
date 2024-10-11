@@ -1,0 +1,13 @@
+load("@prysm//tools/go:def.bzl", "go_test")
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = ["upgrade_to_altair_test.go"],
+    data = glob(["*.yaml"]) + [
+        "@consensus_spec_tests_mainnet//:test_data",
+    ],
+    shard_count = 4,
+    tags = ["spectest"],
+    deps = ["//testing/spectest/shared/bellatrix/fork:go_default_library"],
+)

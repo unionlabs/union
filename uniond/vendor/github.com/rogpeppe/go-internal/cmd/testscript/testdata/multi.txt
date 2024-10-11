@@ -1,0 +1,16 @@
+# Check that all scripts are executed even when one fails.
+
+! testscript a.txt b.txt
+cmp stdout want-stdout
+-- want-stdout --
+> exec false
+[exit status 1]
+FAIL: a.txt:1: unexpected command failure
+> exec false
+[exit status 1]
+FAIL: b.txt:2: unexpected command failure
+-- a.txt --
+exec false
+-- b.txt --
+
+exec false

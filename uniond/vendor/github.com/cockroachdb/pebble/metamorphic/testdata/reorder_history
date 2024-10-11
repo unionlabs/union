@@ -1,0 +1,33 @@
+reorder
+Init(49 /* batches */, 66 /* iters */, 46 /* snapshots */) #0
+db.Set("ynnjczfq", "rvfk") // <nil> #1
+db.Get("ynnjczfq") // ["rvfk"] <nil> #2
+db.DeleteRange("ynnjczfq", "ynnjczfq") // <nil> #3
+db.SingleDelete("ynnjczfq", false /* maybeReplaceDelete */) // <nil> #4
+db.Restart() #5
+db.DeleteRange("ynnjczfq", "ynnjczfq") // <nil> #6
+----
+Init(49 /* batches */, 66 /* iters */, 46 /* snapshots */) #0
+db.Set("ynnjczfq", "rvfk") // <nil> #1
+db.Get("ynnjczfq") // ["rvfk"] <nil> #2
+db.DeleteRange("ynnjczfq", "ynnjczfq") // <nil> #3
+db.SingleDelete("ynnjczfq", false /* maybeReplaceDelete */) // <nil> #4
+db.Restart() #5
+db.DeleteRange("ynnjczfq", "ynnjczfq") // <nil> #6
+
+reorder
+db.DeleteRange("ynnjczfq", "ynnjczfq") // <nil> #6
+db.Restart() #5
+db.SingleDelete("ynnjczfq", false /* maybeReplaceDelete */) // <nil> #4
+db.DeleteRange("ynnjczfq", "ynnjczfq") // <nil> #3
+db.Get("ynnjczfq") // ["rvfk"] <nil> #2
+db.Set("ynnjczfq", "rvfk") // <nil> #1
+Init(49 /* batches */, 66 /* iters */, 46 /* snapshots */) #0
+----
+Init(49 /* batches */, 66 /* iters */, 46 /* snapshots */) #0
+db.Set("ynnjczfq", "rvfk") // <nil> #1
+db.Get("ynnjczfq") // ["rvfk"] <nil> #2
+db.DeleteRange("ynnjczfq", "ynnjczfq") // <nil> #3
+db.SingleDelete("ynnjczfq", false /* maybeReplaceDelete */) // <nil> #4
+db.Restart() #5
+db.DeleteRange("ynnjczfq", "ynnjczfq") // <nil> #6

@@ -1651,11 +1651,20 @@ blst_sha256_block_data_order:
 .cfi_restore	%rbp
 .cfi_restore	%rbx
 	leaq	(%r11),%rsp
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 .size	blst_sha256_block_data_order,.-blst_sha256_block_data_order
 
 #ifndef __BLST_PORTABLE__
+.section	.rodata
 .align	64
 .type	K256,@object
 K256:
@@ -1705,7 +1714,15 @@ blst_sha256_emit:
 	shrq	$32,%r11
 	movl	%r10d,16(%rdi)
 	movl	%r11d,24(%rdi)
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	blst_sha256_emit,.-blst_sha256_emit
 
@@ -1724,7 +1741,15 @@ blst_sha256_bcopy:
 	movb	%al,-1(%rdi,%rsi,1)
 	decq	%rdx
 	jnz	.Loop_bcopy
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	blst_sha256_bcopy,.-blst_sha256_bcopy
 
@@ -1744,15 +1769,25 @@ blst_sha256_hcopy:
 	movq	%r9,8(%rdi)
 	movq	%r10,16(%rdi)
 	movq	%r11,24(%rdi)
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	blst_sha256_hcopy,.-blst_sha256_hcopy
 #endif
 
 .section	.note.GNU-stack,"",@progbits
+#ifndef	__SGX_LVI_HARDENING__
 .section	.note.gnu.property,"a",@note
 	.long	4,2f-1f,5
 	.byte	0x47,0x4E,0x55,0
 1:	.long	0xc0000002,4,3
 .align	8
 2:
+#endif

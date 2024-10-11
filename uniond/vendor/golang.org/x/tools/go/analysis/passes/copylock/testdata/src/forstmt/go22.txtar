@@ -1,0 +1,87 @@
+Test copylock at go version go1.22.
+
+-- go.mod --
+module golang.org/fake/forstmt
+
+go 1.22
+-- pre.go --
+//go:build go1.21
+
+package forstmt
+
+import "sync"
+
+func InGo21(l []int) {
+	var mu sync.Mutex
+	var x int
+
+	for x, mu = 0, (sync.Mutex{}); x < 10; x++ {   // Not reported on '='.
+	}
+	for x, mu := 0, (sync.Mutex{}); x < 10; x++ {  // Not reported before 1.22.
+		_ = mu.TryLock()
+	}
+	for x, _ := 0, (sync.Mutex{}); x < 10; x++ {  // Not reported due to '_'.
+		_ = mu.TryLock()
+	}
+	for _, mu := 0, (sync.Mutex{}); x < 10; x++ { // Not reported before 1.22.
+		_ = mu.TryLock()
+	}
+}
+-- go22.go --
+//go:build go1.22
+
+package forstmt
+
+import "sync"
+
+func InGo22(l []int) {
+	var mu sync.Mutex
+	var x int
+
+	for x, mu = 0, (sync.Mutex{}); x < 10; x++ {  // Not reported on '='.
+	}
+	for x, mu := 0, (sync.Mutex{}); x < 10; x++ { // want "for loop iteration copies lock value to mu: sync.Mutex"
+		_ = mu.TryLock()
+	}
+	for x, _ := 0, (sync.Mutex{}); x < 10; x++ {  // Not reported due to '_'.
+		_ = mu.TryLock()
+	}
+	for _, mu := 0, (sync.Mutex{}); x < 10; x++ { // want "for loop iteration copies lock value to mu: sync.Mutex"
+		_ = mu.TryLock()
+	}
+}
+-- modver.go --
+package forstmt
+
+import "sync"
+
+func InGo22ByModuleVersion(l []int) {
+	var mu sync.Mutex
+	var x int
+
+	for x, mu = 0, (sync.Mutex{}); x < 10; x++ {  // Not reported on '='.
+	}
+	for x, mu := 0, (sync.Mutex{}); x < 10; x++ { // want "for loop iteration copies lock value to mu: sync.Mutex"
+		_ = mu.TryLock()
+	}
+	for x, _ := 0, (sync.Mutex{}); x < 10; x++ {  // Not reported due to '_'.
+		_ = mu.TryLock()
+	}
+	for _, mu := 0, (sync.Mutex{}); x < 10; x++ { // want "for loop iteration copies lock value to mu: sync.Mutex"
+		_ = mu.TryLock()
+	}
+}
+-- assign.go --
+//go:build go1.22
+
+package forstmt
+
+import "sync"
+
+func ReportAssign(l []int) {
+	// Test we do not report a duplicate if the assignment is reported.
+	var mu sync.Mutex
+	for x, mu := 0, mu; x < 10; x++ { // want "assignment copies lock value to mu: sync.Mutex"
+		_ = mu.TryLock()
+	}
+}

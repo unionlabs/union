@@ -1,0 +1,10 @@
+// -*- mode: go -*-
+
+package test
+
+import "math/big"
+
+type Test struct {
+	Int      *big.Int
+	IntNoPtr big.Int
+}

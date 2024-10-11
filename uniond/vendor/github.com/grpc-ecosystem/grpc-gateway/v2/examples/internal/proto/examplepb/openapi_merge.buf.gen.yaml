@@ -1,0 +1,7 @@
+version: v1
+plugins:
+  - plugin: openapiv2
+    out: .
+    opt:
+      - allow_merge=true
+      - merge_file_name=examples/internal/proto/examplepb/openapi_merge

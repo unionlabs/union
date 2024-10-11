@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package cosmos.store.streaming.abci;
+
+import "cometbft/abci/v1/types.proto";
+import "cosmos/store/v1beta1/listening.proto";
+
+option go_package = "cosmossdk.io/store/streaming/abci";
+
+// ListenEndBlockRequest is the request type for the ListenEndBlock RPC method
+message ListenFinalizeBlockRequest {
+
+  cometbft.abci.v1.FinalizeBlockRequest  req = 1;
+  cometbft.abci.v1.FinalizeBlockResponse res = 2;
+}
+
+// ListenEndBlockResponse is the response type for the ListenEndBlock RPC method
+message ListenFinalizeBlockResponse {}
+
+// ListenCommitRequest is the request type for the ListenCommit RPC method
+message ListenCommitRequest {
+
+  // explicitly pass in block height as ResponseCommit does not contain this
+  // info
+  int64                           block_height         = 1;
+  cometbft.abci.v1.CommitResponse res                  = 2;
+  repeated cosmos.store.v1beta1.StoreKVPair change_set = 3;
+}
+
+// ListenCommitResponse is the response type for the ListenCommit RPC method
+message ListenCommitResponse {}
+
+// ABCIListenerService is the service for the BaseApp ABCIListener interface
+service ABCIListenerService {
+
+  // ListenFinalizeBlock is the corresponding endpoint for
+  // ABCIListener.ListenEndBlock
+  rpc ListenFinalizeBlock(ListenFinalizeBlockRequest) returns (ListenFinalizeBlockResponse);
+  // ListenCommit is the corresponding endpoint for ABCIListener.ListenCommit
+  rpc ListenCommit(ListenCommitRequest) returns (ListenCommitResponse);
+}

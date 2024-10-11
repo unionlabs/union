@@ -1,0 +1,91 @@
+# Tests when an object is unrefed before it is attached to another provider.
+
+open p5 5
+----
+<local fs> mkdir-all: p5 0755
+<local fs> open-dir: p5
+<local fs> open-dir: p5
+<local fs> create: p5/REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p5/REMOTE-OBJ-CATALOG-000001
+<local fs> create: p5/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> close: p5/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p5
+<local fs> sync: p5/REMOTE-OBJ-CATALOG-000001
+
+create 1 shared 1 100
+----
+<remote> create object "d632-5-000001.sst"
+<remote> close writer for "d632-5-000001.sst" after 100 bytes
+<remote> create object "d632-5-000001.sst.ref.5.000001"
+<remote> close writer for "d632-5-000001.sst.ref.5.000001" after 0 bytes
+
+save-backing p5b1 1
+----
+
+# This should do nothing.
+remove 1
+----
+
+open p6 6
+----
+<local fs> mkdir-all: p6 0755
+<local fs> open-dir: p6
+<local fs> open-dir: p6
+<local fs> create: p6/REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p6/REMOTE-OBJ-CATALOG-000001
+<local fs> create: p6/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> close: p6/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p6
+<local fs> sync: p6/REMOTE-OBJ-CATALOG-000001
+
+# Attach should succeed.
+attach
+p5b1 101
+----
+<remote> create object "d632-5-000001.sst.ref.6.000101"
+<remote> close writer for "d632-5-000001.sst.ref.6.000101" after 0 bytes
+<remote> size of object "d632-5-000001.sst.ref.5.000001": 0
+<local fs> sync: p6/REMOTE-OBJ-CATALOG-000001
+000101 -> remote://d632-5-000001.sst
+
+switch p5
+----
+
+# TODO(radu): after we close the backing, the unref should happen.
+close-backing p5b1
+----
+
+create 2 shared 2 100
+----
+<remote> create object "1ab5-5-000002.sst"
+<remote> close writer for "1ab5-5-000002.sst" after 100 bytes
+<remote> create object "1ab5-5-000002.sst.ref.5.000002"
+<remote> close writer for "1ab5-5-000002.sst.ref.5.000002" after 0 bytes
+
+save-backing p5b2 2
+----
+
+# Close the backing, then unref the object.
+close-backing p5b2
+----
+
+remove 2
+----
+<remote> delete object "1ab5-5-000002.sst.ref.5.000002"
+<remote> list (prefix="1ab5-5-000002.sst.ref.", delimiter="")
+<remote> delete object "1ab5-5-000002.sst"
+
+switch p6
+----
+
+# Attach should error out because it can't find p5's ref.
+attach
+p5b2 102
+----
+<remote> create object "1ab5-5-000002.sst.ref.6.000102"
+<remote> close writer for "1ab5-5-000002.sst.ref.6.000102" after 0 bytes
+<remote> size of object "1ab5-5-000002.sst.ref.5.000002": error: file does not exist
+<remote> delete object "1ab5-5-000002.sst.ref.6.000102"
+<remote> list (prefix="1ab5-5-000002.sst.ref.", delimiter="")
+<remote> delete object "1ab5-5-000002.sst"
+error: origin marker object "1ab5-5-000002.sst.ref.5.000002" does not exist; object probably removed from the provider which created the backing

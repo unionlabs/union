@@ -1,0 +1,46 @@
+syntax = "proto3";
+package ibc.lightclients.wasm.v1;
+
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+
+option go_package = "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types";
+
+// Query service for wasm module
+service Query {
+  // Get all Wasm checksums
+  rpc Checksums(QueryChecksumsRequest) returns (QueryChecksumsResponse) {
+    option (google.api.http).get = "/ibc/lightclients/wasm/v1/checksums";
+  }
+
+  // Get Wasm code for given checksum
+  rpc Code(QueryCodeRequest) returns (QueryCodeResponse) {
+    option (google.api.http).get = "/ibc/lightclients/wasm/v1/checksums/{checksum}/code";
+  }
+}
+
+// QueryChecksumsRequest is the request type for the Query/Checksums RPC method.
+message QueryChecksumsRequest {
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryChecksumsResponse is the response type for the Query/Checksums RPC method.
+message QueryChecksumsResponse {
+  // checksums is a list of the hex encoded checksums of all wasm codes stored.
+  repeated string checksums = 1;
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryCodeRequest is the request type for the Query/Code RPC method.
+message QueryCodeRequest {
+  // checksum is a hex encoded string of the code stored.
+  string checksum = 1;
+}
+
+// QueryCodeResponse is the response type for the Query/Code RPC method.
+message QueryCodeResponse {
+  bytes data = 1;
+}

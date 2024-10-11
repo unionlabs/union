@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package ibc.applications.interchain_accounts.controller.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types";
+
+import "ibc/applications/interchain_accounts/controller/v1/controller.proto";
+import "google/api/annotations.proto";
+
+// Query provides defines the gRPC querier service.
+service Query {
+  // InterchainAccount returns the interchain account address for a given owner address on a given connection
+  rpc InterchainAccount(QueryInterchainAccountRequest) returns (QueryInterchainAccountResponse) {
+    option (google.api.http).get =
+        "/ibc/apps/interchain_accounts/controller/v1/owners/{owner}/connections/{connection_id}";
+  }
+
+  // Params queries all parameters of the ICA controller submodule.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/ibc/apps/interchain_accounts/controller/v1/params";
+  }
+}
+
+// QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method.
+message QueryInterchainAccountRequest {
+  string owner         = 1;
+  string connection_id = 2;
+}
+
+// QueryInterchainAccountResponse the response type for the Query/InterchainAccount RPC method.
+message QueryInterchainAccountResponse {
+  string address = 1;
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1;
+}

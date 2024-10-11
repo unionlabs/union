@@ -1,0 +1,118 @@
+syntax = "proto3";
+package cosmos.bank.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+
+option go_package = "cosmossdk.io/x/bank/types";
+
+// Params defines the parameters for the bank module.
+message Params {
+  option (amino.name) = "cosmos-sdk/x/bank/Params";
+  // Deprecated: Use of SendEnabled in params is deprecated.
+  // For genesis, use the newly added send_enabled field in the genesis object.
+  // Storage, lookup, and manipulation of this information is now in the keeper.
+  //
+  // As of cosmos-sdk 0.47, this only exists for backwards compatibility of genesis files.
+  repeated SendEnabled send_enabled         = 1 [deprecated = true];
+  bool                 default_send_enabled = 2;
+}
+
+// SendEnabled maps coin denom to a send_enabled status (whether a denom is
+// sendable).
+message SendEnabled {
+  option (gogoproto.equal) = true;
+  string denom             = 1;
+  bool   enabled           = 2;
+}
+
+// Input models transaction input.
+message Input {
+  option (cosmos.msg.v1.signer) = "address";
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string   address                        = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated cosmos.base.v1beta1.Coin coins = 2 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (amino.encoding)         = "legacy_coins",
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+// Output models transaction outputs.
+message Output {
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string   address                        = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated cosmos.base.v1beta1.Coin coins = 2 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (amino.encoding)         = "legacy_coins",
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+// Supply represents a struct that passively keeps track of the total supply
+// amounts in the network.
+// This message is deprecated now that supply is indexed by denom.
+message Supply {
+  option deprecated = true;
+
+  option (gogoproto.equal)           = true;
+  option (gogoproto.goproto_getters) = false;
+
+  option (cosmos_proto.implements_interface) = "cosmos.bank.v1beta1.SupplyI";
+
+  // total is the total supply of coins across the network.
+  repeated cosmos.base.v1beta1.Coin total = 1 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (amino.encoding)         = "legacy_coins",
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+// DenomUnit represents a struct that describes a given
+// denomination unit of the basic token.
+message DenomUnit {
+  // denom represents the string name of the given denom unit (e.g uatom).
+  string denom = 1;
+  // exponent represents power of 10 exponent that one must
+  // raise the base_denom to in order to equal the given DenomUnit's denom
+  // 1 denom = 10^exponent base_denom
+  // (e.g. with a base_denom of uatom, one can create a DenomUnit of 'atom' with
+  // exponent = 6, thus: 1 atom = 10^6 uatom).
+  uint32 exponent = 2;
+  // aliases is a list of string aliases for the given denom
+  repeated string aliases = 3;
+}
+
+// Metadata represents a struct that describes
+// a basic token.
+message Metadata {
+  string description = 1;
+  // denom_units represents the list of DenomUnit's for a given coin
+  repeated DenomUnit denom_units = 2;
+  // base represents the base denom (should be the DenomUnit with exponent = 0).
+  string base = 3;
+  // display indicates the suggested denom that should be
+  // displayed in clients.
+  string display = 4;
+  // name defines the name of the token (eg: Cosmos Atom)
+  string name = 5 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.43"];
+  // symbol is the token symbol usually shown on exchanges (eg: ATOM). This can
+  // be the same as the display.
+  string symbol = 6 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.43"];
+  // URI to a document (on or off-chain) that contains additional information. Optional.
+  string uri = 7 [(gogoproto.customname) = "URI", (cosmos_proto.field_added_in) = "cosmos-sdk 0.46"];
+  // URIHash is a sha256 hash of a document pointed by URI. It's used to verify that
+  // the document didn't change. Optional.
+  string uri_hash = 8 [(gogoproto.customname) = "URIHash", (cosmos_proto.field_added_in) = "cosmos-sdk 0.46"];
+}

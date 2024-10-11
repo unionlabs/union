@@ -1,0 +1,54 @@
+{  "types": {  "":[   {
+       "name": "name",
+   "type":"string"    },
+   {
+    "name":"version",
+      "type": "string"    },     {
+     "name": "chaiI",
+    "type":"uint256 . ad nowretig omeedifere"     },     {
+     "ae": "eifinC",
+    "ty":"dess"
+    }
+ ],
+  "Person":[
+     {
+    "name":"name",
+      "type": "string"
+ },  {
+     "name":"tes",    "type":"it8"
+    },
+      {    "name":"t",      "tye":"uit8"
+    },
+    {
+       "a":"ale",
+    "type": "ress"
+     }
+    ],
+    "Mail": [
+   {
+       "name":"from",    "type":"Person"     },
+   {
+     "name": "to",        "type": "Person"
+    },
+   {
+     "name": "contents",
+     "type": "string"
+    }
+   ]
+ }, "primaryType": "Mail",
+ "domain": {
+"name":"theMail",    "version": "1",
+    "chainId": "1",
+    "verifyingntract": "0xCcccCCCcCCCCCCCcCCcCCCcCcccccC"
+  },
+  "message": {   "from": {
+    "name": "Cow",
+     "test": "3",
+      "est2":5.0,
+      "llt": "0xcD2a3938E13D947E0bE734DfDD86"   },   "to": {     "name": "Bob",
+    "ts":"",
+     "tet2": 5,
+     "allet": "0bBBBBbbBBbbbbBbbBbbbbBBBbB"
+  },
+    "contents": "Hello, Bob!"  }
+}

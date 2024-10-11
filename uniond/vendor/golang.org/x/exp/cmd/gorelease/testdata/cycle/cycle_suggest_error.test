@@ -1,0 +1,8 @@
+mod=example.com/cycle
+base=v1.0.0
+version=v1.0.0
+success=false
+-- want --
+# summary
+Cannot suggest a release version.
+Module indirectly depends on a higher version of itself (v1.5.0) than the base version (v1.0.0).

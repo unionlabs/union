@@ -1,0 +1,71 @@
+branches:
+    only:
+      - /.*/
+
+language: rust
+
+git:
+    quiet: true
+
+os:
+    - linux
+
+arch:
+    - arm64
+    - s390x
+
+before_script:
+    - lscpu 2>/dev/null && echo --- || true
+    - env | sort
+
+script:
+    - if [ "$TRAVIS_LANGUAGE" = "rust" ]; then
+          if [ "$TRAVIS_OS_NAME" = "windows" ]; then
+              rustup set default-host x86_64-pc-windows-msvc;
+              export ML=-nologo;
+          fi;
+          ( cd bindings/rust;
+            if [ -f target/Cargo.lock ]; then
+                mv -f target/Cargo.lock .;
+            fi;
+            NOW=`date +%s`;
+            REF=.cargo/registry/index/*/.last-updated;
+            THEN=`(stat -c %Y "$TRAVIS_HOME"/$REF || stat -f %m "$TRAVIS_HOME"/$REF) 2>/dev/null`;
+            if [ $(($NOW - ${THEN:-0})) -gt 604800 ]; then
+                env CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse cargo update;
+            fi;
+            cargo test --release )
+      fi
+    - if which go > /dev/null 2>&1; then
+          go version;
+          if ! (grep -q -e '^flags.*\badx\b' /proc/cpuinfo) 2>/dev/null; then
+              export CGO_CFLAGS="-O -D__BLST_PORTABLE__";
+          fi;
+          (cd bindings/go; go test -test.v)
+      fi
+
+matrix:
+    include:
+      - os: linux
+        arch: arm64
+        language: go
+
+notifications:
+    email: false
+
+before_cache:
+    - if [ "$TRAVIS_LANGUAGE" = "rust" ]; then
+        ( cd bindings/rust;
+          cargo clean -p blst; cargo clean -p blst --release;
+          rm -rf target/.rustc_info.json;
+          rm -rf target/{debug,release}/incremental;
+          mv -f Cargo.lock target )
+      fi
+    - (cd "$TRAVIS_HOME"; rm -rf .cargo/registry/src)
+    - (cd "$TRAVIS_HOME"; rm -rf .cargo/registry/index/*/.cache)
+
+cache:
+    cargo: true
+    directories:
+      - bindings/rust/target
+

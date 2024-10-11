@@ -1,0 +1,77 @@
+make-file capture log 1
+----
+created
+
+make-file capture log 2
+----
+created
+
+make-file capture log 3
+----
+created
+
+make-file capture table 1
+----
+created
+
+make-file capture table 4
+----
+created
+
+make-file capture file totally_not_relevant_file_000001.log
+----
+created
+
+list-files capture
+----
+capture:
+  000001.log
+  000001.sst
+  000002.log
+  000003.log
+  000004.sst
+  totally_not_relevant_file_000001.log
+
+find-workload-files capture
+----
+manifests
+sstables
+error
+  no manifests found
+
+make-file capture manifest 1
+----
+created
+
+make-file capture manifest 2
+----
+created
+
+make-file capture manifest 3
+----
+created
+
+
+list-files capture
+----
+capture:
+  000001.log
+  000001.sst
+  000002.log
+  000003.log
+  000004.sst
+  MANIFEST-000001
+  MANIFEST-000002
+  MANIFEST-000003
+  totally_not_relevant_file_000001.log
+
+find-workload-files capture
+----
+manifests
+  MANIFEST-000001
+  MANIFEST-000002
+  MANIFEST-000003
+sstables
+  000001
+  000004
+error

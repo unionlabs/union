@@ -1,0 +1,1312 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/cloud-platform": {
+          "description": "See, edit, configure, and delete your Google Cloud data and see the email address for your Google Account."
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://contactcenteraiplatform.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "CCAI Platform",
+  "description": "",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://cloud.google.com/solutions/contact-center-ai-platform",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "contactcenteraiplatform:v1alpha1",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://contactcenteraiplatform.mtls.googleapis.com/",
+  "name": "contactcenteraiplatform",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "projects": {
+      "resources": {
+        "locations": {
+          "methods": {
+            "get": {
+              "description": "Gets information about a location.",
+              "flatPath": "v1alpha1/projects/{projectsId}/locations/{locationsId}",
+              "httpMethod": "GET",
+              "id": "contactcenteraiplatform.projects.locations.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Resource name for the location.",
+                  "location": "path",
+                  "pattern": "^projects/[^/]+/locations/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v1alpha1/{+name}",
+              "response": {
+                "$ref": "Location"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            },
+            "list": {
+              "description": "Lists information about the supported locations for this service.",
+              "flatPath": "v1alpha1/projects/{projectsId}/locations",
+              "httpMethod": "GET",
+              "id": "contactcenteraiplatform.projects.locations.list",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "filter": {
+                  "description": "A filter to narrow down results to a preferred subset. The filtering language accepts strings like `\"displayName=tokyo\"`, and is documented in more detail in [AIP-160](https://google.aip.dev/160).",
+                  "location": "query",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "The resource that owns the locations collection, if applicable.",
+                  "location": "path",
+                  "pattern": "^projects/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                },
+                "pageSize": {
+                  "description": "The maximum number of results to return. If not set, the service selects a default.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "A page token received from the `next_page_token` field in the response. Send that page token to receive the subsequent page.",
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "v1alpha1/{+name}/locations",
+              "response": {
+                "$ref": "ListLocationsResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            },
+            "queryContactCenterQuota": {
+              "description": "Queries the contact center quota, an aggregation over all the projects, that belongs to the billing account, which the input project belongs to.",
+              "flatPath": "v1alpha1/projects/{projectsId}/locations/{locationsId}:queryContactCenterQuota",
+              "httpMethod": "GET",
+              "id": "contactcenteraiplatform.projects.locations.queryContactCenterQuota",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "parent": {
+                  "description": "Required. Parent project resource id.",
+                  "location": "path",
+                  "pattern": "^projects/[^/]+/locations/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v1alpha1/{+parent}:queryContactCenterQuota",
+              "response": {
+                "$ref": "ContactCenterQuota"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            }
+          },
+          "resources": {
+            "contactCenters": {
+              "methods": {
+                "create": {
+                  "description": "Creates a new ContactCenter in a given project and location.",
+                  "flatPath": "v1alpha1/projects/{projectsId}/locations/{locationsId}/contactCenters",
+                  "httpMethod": "POST",
+                  "id": "contactcenteraiplatform.projects.locations.contactCenters.create",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "contactCenterId": {
+                      "description": "Required. Id of the requesting object If auto-generating Id server-side, remove this field and contact_center_id from the method_signature of Create RPC",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. Value for parent.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "description": "Optional. An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed. The server will guarantee that for at least 60 minutes since the first request. For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments. The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1alpha1/{+parent}/contactCenters",
+                  "request": {
+                    "$ref": "ContactCenter"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "delete": {
+                  "description": "Deletes a single ContactCenter.",
+                  "flatPath": "v1alpha1/projects/{projectsId}/locations/{locationsId}/contactCenters/{contactCentersId}",
+                  "httpMethod": "DELETE",
+                  "id": "contactcenteraiplatform.projects.locations.contactCenters.delete",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Name of the resource",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/contactCenters/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "description": "Optional. An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed. The server will guarantee that for at least 60 minutes after the first request. For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments. The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1alpha1/{+name}",
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "get": {
+                  "description": "Gets details of a single ContactCenter.",
+                  "flatPath": "v1alpha1/projects/{projectsId}/locations/{locationsId}/contactCenters/{contactCentersId}",
+                  "httpMethod": "GET",
+                  "id": "contactcenteraiplatform.projects.locations.contactCenters.get",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Name of the resource",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/contactCenters/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1alpha1/{+name}",
+                  "response": {
+                    "$ref": "ContactCenter"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "list": {
+                  "description": "Lists ContactCenters in a given project and location.",
+                  "flatPath": "v1alpha1/projects/{projectsId}/locations/{locationsId}/contactCenters",
+                  "httpMethod": "GET",
+                  "id": "contactcenteraiplatform.projects.locations.contactCenters.list",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "filter": {
+                      "description": "Filtering results",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "orderBy": {
+                      "description": "Hint for how to order the results",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "pageSize": {
+                      "description": "Requested page size. Server may return fewer items than requested. If unspecified, server will pick an appropriate default.",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "A token identifying a page of results the server should return.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. Parent value for ListContactCentersRequest",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1alpha1/{+parent}/contactCenters",
+                  "response": {
+                    "$ref": "ListContactCentersResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "patch": {
+                  "description": "Updates the parameters of a single ContactCenter.",
+                  "flatPath": "v1alpha1/projects/{projectsId}/locations/{locationsId}/contactCenters/{contactCentersId}",
+                  "httpMethod": "PATCH",
+                  "id": "contactcenteraiplatform.projects.locations.contactCenters.patch",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "name of resource",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/contactCenters/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "description": "Optional. An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed. The server will guarantee that for at least 60 minutes since the first request. For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments. The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "updateMask": {
+                      "description": "Required. Field mask is used to specify the fields to be overwritten in the ContactCenter resource by the update. The fields specified in the update_mask are relative to the resource, not the full request. A field will be overwritten if it is in the mask. If the user does not provide a mask then all fields will be overwritten.",
+                      "format": "google-fieldmask",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1alpha1/{+name}",
+                  "request": {
+                    "$ref": "ContactCenter"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                }
+              }
+            },
+            "operations": {
+              "methods": {
+                "cancel": {
+                  "description": "Starts asynchronous cancellation on a long-running operation. The server makes a best effort to cancel the operation, but success is not guaranteed. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`. Clients can use Operations.GetOperation or other methods to check whether the cancellation succeeded or whether the operation completed despite cancellation. On successful cancellation, the operation is not deleted; instead, it becomes an operation with an Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+                  "flatPath": "v1alpha1/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}:cancel",
+                  "httpMethod": "POST",
+                  "id": "contactcenteraiplatform.projects.locations.operations.cancel",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "The name of the operation resource to be cancelled.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1alpha1/{+name}:cancel",
+                  "request": {
+                    "$ref": "CancelOperationRequest"
+                  },
+                  "response": {
+                    "$ref": "Empty"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "delete": {
+                  "description": "Deletes a long-running operation. This method indicates that the client is no longer interested in the operation result. It does not cancel the operation. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`.",
+                  "flatPath": "v1alpha1/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}",
+                  "httpMethod": "DELETE",
+                  "id": "contactcenteraiplatform.projects.locations.operations.delete",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "The name of the operation resource to be deleted.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1alpha1/{+name}",
+                  "response": {
+                    "$ref": "Empty"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "get": {
+                  "description": "Gets the latest state of a long-running operation. Clients can use this method to poll the operation result at intervals as recommended by the API service.",
+                  "flatPath": "v1alpha1/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}",
+                  "httpMethod": "GET",
+                  "id": "contactcenteraiplatform.projects.locations.operations.get",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "The name of the operation resource.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1alpha1/{+name}",
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "list": {
+                  "description": "Lists operations that match the specified filter in the request. If the server doesn't support this method, it returns `UNIMPLEMENTED`.",
+                  "flatPath": "v1alpha1/projects/{projectsId}/locations/{locationsId}/operations",
+                  "httpMethod": "GET",
+                  "id": "contactcenteraiplatform.projects.locations.operations.list",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "filter": {
+                      "description": "The standard list filter.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "The name of the operation's parent resource.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "pageSize": {
+                      "description": "The standard list page size.",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "The standard list page token.",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1alpha1/{+name}/operations",
+                  "response": {
+                    "$ref": "ListOperationsResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20240621",
+  "rootUrl": "https://contactcenteraiplatform.googleapis.com/",
+  "schemas": {
+    "AdminUser": {
+      "description": "Message storing info about the first admin user. Next ID: 3",
+      "id": "AdminUser",
+      "properties": {
+        "familyName": {
+          "description": "Optional. Last/family name of the first admin user.",
+          "type": "string"
+        },
+        "givenName": {
+          "description": "Optional. First/given name of the first admin user.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CancelOperationRequest": {
+      "description": "The request message for Operations.CancelOperation.",
+      "id": "CancelOperationRequest",
+      "properties": {},
+      "type": "object"
+    },
+    "Component": {
+      "description": "Defines a logical CCAIP component that e.g. “EMAIL”, \"CRM\". For more information see go/ccaip-private-path-v2. Each logical component is associated with a list of service attachments.",
+      "id": "Component",
+      "properties": {
+        "name": {
+          "description": "Name of the component.",
+          "type": "string"
+        },
+        "serviceAttachmentNames": {
+          "description": "Associated service attachments. The service attachment names that will be used for sending private traffic to the CCAIP tenant project. Example service attachment name: \"projects/${TENANT_PROJECT_ID}/regions/${REGION}/serviceAttachments/ingress-default\".",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ContactCenter": {
+      "description": "Message describing ContactCenter object Next ID: 23",
+      "id": "ContactCenter",
+      "properties": {
+        "adminUser": {
+          "$ref": "AdminUser",
+          "description": "Optional. Info about the first admin user, such as given name and family name."
+        },
+        "ccaipManagedUsers": {
+          "description": "Optional. Whether to enable users to be created in the CCAIP-instance concurrently to having users in Cloud identity",
+          "type": "boolean"
+        },
+        "createTime": {
+          "description": "Output only. [Output only] Create time stamp",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "critical": {
+          "$ref": "Critical",
+          "description": "Optional. Critical release channel."
+        },
+        "customerDomainPrefix": {
+          "description": "Required. Immutable. At least 2 and max 16 char long, must conform to [RFC 1035](https://www.ietf.org/rfc/rfc1035.txt).",
+          "type": "string"
+        },
+        "displayName": {
+          "description": "Required. A user friendly name for the ContactCenter.",
+          "type": "string"
+        },
+        "early": {
+          "$ref": "Early",
+          "description": "Optional. Early release channel."
+        },
+        "instanceConfig": {
+          "$ref": "InstanceConfig",
+          "description": "The configuration of this instance, it is currently immutable once created."
+        },
+        "kmsKey": {
+          "description": "Immutable. The KMS key name to encrypt the user input (`ContactCenter`).",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Labels as key value pairs",
+          "type": "object"
+        },
+        "name": {
+          "description": "name of resource",
+          "type": "string"
+        },
+        "normal": {
+          "$ref": "Normal",
+          "description": "Optional. Normal release channel."
+        },
+        "privateAccess": {
+          "$ref": "PrivateAccess",
+          "description": "Optional. VPC-SC related networking configuration."
+        },
+        "privateComponents": {
+          "description": "Output only. TODO(b/283407860) Deprecate this field.",
+          "items": {
+            "type": "string"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "samlParams": {
+          "$ref": "SAMLParams",
+          "description": "Optional. Params that sets up Google as IdP."
+        },
+        "state": {
+          "description": "Output only. The state of this contact center.",
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "STATE_DEPLOYING",
+            "STATE_DEPLOYED",
+            "STATE_TERMINATING",
+            "STATE_FAILED",
+            "STATE_TERMINATING_FAILED",
+            "STATE_TERMINATED",
+            "STATE_IN_GRACE_PERIOD",
+            "STATE_FAILING_OVER",
+            "STATE_DEGRADED",
+            "STATE_REPAIRING"
+          ],
+          "enumDescriptions": [
+            "The default value. This value is used if the state is omitted.",
+            "State DEPLOYING",
+            "State DEPLOYED",
+            "State TERMINATING",
+            "State FAILED",
+            "State TERMINATING_FAILED",
+            "State TERMINATED",
+            "State IN_GRACE_PERIOD",
+            "State in STATE_FAILING_OVER. This State must ONLY be used by Multiregional Instances when a failover was triggered. Customers are not able to update instances in this state.",
+            "State DEGRADED. This State must ONLY be used by Multiregional Instances after a failover was executed successfully. Customers are not able to update instances in this state.",
+            "State REPAIRING. This State must ONLY be used by Multiregional Instances after a fallback was triggered. Customers are not able to update instancs in this state."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "Output only. [Output only] Update time stamp",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "uris": {
+          "$ref": "URIs",
+          "description": "Output only. URIs to access the deployed ContactCenters.",
+          "readOnly": true
+        },
+        "userEmail": {
+          "description": "Optional. Email address of the first admin user.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ContactCenterQuota": {
+      "description": "Represents a quota for contact centers.",
+      "id": "ContactCenterQuota",
+      "properties": {
+        "contactCenterCountLimit": {
+          "deprecated": true,
+          "description": "Deprecated: Use the Quota fields instead. Reflects the count limit of contact centers on a billing account.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "contactCenterCountSum": {
+          "deprecated": true,
+          "description": "Deprecated: Use the Quota fields instead. Reflects the count sum of contact centers on a billing account.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "quotas": {
+          "description": "Quota details per contact center instance type.",
+          "items": {
+            "$ref": "Quota"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Critical": {
+      "description": "Instances in this Channel will receive updates after all instances in `Critical` were updated + 2 days. They also will only be updated outside of their peak hours.",
+      "id": "Critical",
+      "properties": {
+        "peakHours": {
+          "description": "Required. Hours during which the instance should not be updated.",
+          "items": {
+            "$ref": "WeeklySchedule"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Early": {
+      "description": "LINT.IfChange First Channel to receive the updates. Meant to dev/test instances",
+      "id": "Early",
+      "properties": {},
+      "type": "object"
+    },
+    "Empty": {
+      "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); }",
+      "id": "Empty",
+      "properties": {},
+      "type": "object"
+    },
+    "GoogleCloudCommonOperationMetadata": {
+      "description": "Represents the metadata of the long-running operation.",
+      "id": "GoogleCloudCommonOperationMetadata",
+      "properties": {
+        "apiVersion": {
+          "description": "Output only. API version used to start the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "cancelRequested": {
+          "description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have been cancelled successfully have Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "createTime": {
+          "description": "Output only. The time the operation was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "endTime": {
+          "description": "Output only. The time the operation finished running.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "statusDetail": {
+          "description": "Output only. Human-readable status of the operation, if any.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "target": {
+          "description": "Output only. Server-defined resource path for the target of the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "verb": {
+          "description": "Output only. Name of the verb executed by the operation.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "InstanceConfig": {
+      "description": "Message storing the instance configuration.",
+      "id": "InstanceConfig",
+      "properties": {
+        "instanceSize": {
+          "description": "The instance size of this the instance configuration.",
+          "enum": [
+            "INSTANCE_SIZE_UNSPECIFIED",
+            "STANDARD_SMALL",
+            "STANDARD_MEDIUM",
+            "STANDARD_LARGE",
+            "STANDARD_XLARGE",
+            "STANDARD_2XLARGE",
+            "STANDARD_3XLARGE",
+            "DEV_XSMALL",
+            "MULTIREGION_SMALL",
+            "MULTIREGION_MEDIUM",
+            "MULTIREGION_LARGE",
+            "MULTIREGION_XLARGE",
+            "MULTIREGION_2XLARGE",
+            "MULTIREGION_3XLARGE"
+          ],
+          "enumDescriptions": [
+            "The default value. This value is used if the state is omitted.",
+            "Instance Size STANDARD_SMALL.",
+            "Instance Size STANDARD_MEDIUM.",
+            "Instance Size STANDARD_LARGE.",
+            "Instance Size STANDARD_XLARGE.",
+            "Instance Size STANDARD_2XLARGE.",
+            "Instance Size STANDARD_3XLARGE.",
+            "Instance Size DEV_EXTRA_SMALL.",
+            "Instance Size MULTIREGION_SMALL",
+            "Instance Size MULTIREGION_MEDIUM",
+            "Instance Size MULTIREGION_LARGE",
+            "Instance Size MULTIREGION_XLARGE",
+            "Instance Size MULTIREGION_2XLARGE.",
+            "Instance Size MULTIREGION_3XLARGE."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListContactCentersResponse": {
+      "description": "Message for response to listing ContactCenters",
+      "id": "ListContactCentersResponse",
+      "properties": {
+        "contactCenters": {
+          "description": "The list of ContactCenter",
+          "items": {
+            "$ref": "ContactCenter"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token identifying a page of results the server should return.",
+          "type": "string"
+        },
+        "unreachable": {
+          "description": "Locations that could not be reached.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ListLocationsResponse": {
+      "description": "The response message for Locations.ListLocations.",
+      "id": "ListLocationsResponse",
+      "properties": {
+        "locations": {
+          "description": "A list of locations that matches the specified filter in the request.",
+          "items": {
+            "$ref": "Location"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "The standard List next-page token.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListOperationsResponse": {
+      "description": "The response message for Operations.ListOperations.",
+      "id": "ListOperationsResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "The standard List next-page token.",
+          "type": "string"
+        },
+        "operations": {
+          "description": "A list of operations that matches the specified filter in the request.",
+          "items": {
+            "$ref": "Operation"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Location": {
+      "description": "A resource that represents a Google Cloud location.",
+      "id": "Location",
+      "properties": {
+        "displayName": {
+          "description": "The friendly name for this location, typically a nearby city name. For example, \"Tokyo\".",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Cross-service attributes for the location. For example {\"cloud.googleapis.com/region\": \"us-east1\"}",
+          "type": "object"
+        },
+        "locationId": {
+          "description": "The canonical id for this location. For example: `\"us-east1\"`.",
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "Service-specific metadata. For example the available capacity at the given location.",
+          "type": "object"
+        },
+        "name": {
+          "description": "Resource name for the location, which may vary between implementations. For example: `\"projects/example-project/locations/us-east1\"`",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Normal": {
+      "description": "Instances in this Channel will receive updates after all instances in `Early` were updated + 2 days.",
+      "id": "Normal",
+      "properties": {},
+      "type": "object"
+    },
+    "Operation": {
+      "description": "This resource represents a long-running operation that is the result of a network API call.",
+      "id": "Operation",
+      "properties": {
+        "done": {
+          "description": "If the value is `false`, it means the operation is still in progress. If `true`, the operation is completed, and either `error` or `response` is available.",
+          "type": "boolean"
+        },
+        "error": {
+          "$ref": "Status",
+          "description": "The error result of the operation in case of failure or cancellation."
+        },
+        "metadata": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "Service-specific metadata associated with the operation. It typically contains progress information and common metadata such as create time. Some services might not provide such metadata. Any method that returns a long-running operation should document the metadata type, if any.",
+          "type": "object"
+        },
+        "name": {
+          "description": "The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.",
+          "type": "string"
+        },
+        "response": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "OperationMetadata": {
+      "description": "Represents the metadata of the long-running operation.",
+      "id": "OperationMetadata",
+      "properties": {
+        "apiVersion": {
+          "description": "Output only. API version used to start the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "contactCenter": {
+          "$ref": "ContactCenter",
+          "description": "Contact center information for this request"
+        },
+        "createTime": {
+          "description": "Output only. The time the operation was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "endTime": {
+          "description": "Output only. The time the operation finished running.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "requestedCancellation": {
+          "description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have been cancelled successfully have Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "statusMessage": {
+          "description": "Output only. Human-readable status of the operation, if any.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "target": {
+          "description": "Output only. Server-defined resource path for the target of the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "verb": {
+          "description": "Output only. Name of the verb executed by the operation.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PrivateAccess": {
+      "description": "Defines ingress and egress private traffic settings for CCAIP instances.",
+      "id": "PrivateAccess",
+      "properties": {
+        "egressSettings": {
+          "description": "List of egress components that should not be accessed via the Internet. For more information see go/ccaip-private-path-v2.",
+          "items": {
+            "$ref": "Component"
+          },
+          "type": "array"
+        },
+        "ingressSettings": {
+          "description": "List of ingress components that should not be accessed via the Internet. For more information see go/ccaip-private-path-v2.",
+          "items": {
+            "$ref": "Component"
+          },
+          "type": "array"
+        },
+        "pscSetting": {
+          "$ref": "PscSetting",
+          "description": "Private service connect settings."
+        }
+      },
+      "type": "object"
+    },
+    "PscSetting": {
+      "description": "Private service connect settings.",
+      "id": "PscSetting",
+      "properties": {
+        "allowedConsumerProjectIds": {
+          "description": "The list of project ids that are allowed to send traffic to the service attachment. This field should be filled only for the ingress components.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Quota": {
+      "description": "Quota details.",
+      "id": "Quota",
+      "properties": {
+        "contactCenterCountLimit": {
+          "description": "Reflects the count limit of contact centers on a billing account.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "contactCenterCountSum": {
+          "description": "Reflects the count sum of contact centers on a billing account.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "contactCenterInstanceSize": {
+          "description": "Contact center instance type.",
+          "enum": [
+            "INSTANCE_SIZE_UNSPECIFIED",
+            "STANDARD_SMALL",
+            "STANDARD_MEDIUM",
+            "STANDARD_LARGE",
+            "STANDARD_XLARGE",
+            "STANDARD_2XLARGE",
+            "STANDARD_3XLARGE",
+            "DEV_XSMALL",
+            "MULTIREGION_SMALL",
+            "MULTIREGION_MEDIUM",
+            "MULTIREGION_LARGE",
+            "MULTIREGION_XLARGE",
+            "MULTIREGION_2XLARGE",
+            "MULTIREGION_3XLARGE"
+          ],
+          "enumDescriptions": [
+            "The default value. This value is used if the state is omitted.",
+            "Instance Size STANDARD_SMALL.",
+            "Instance Size STANDARD_MEDIUM.",
+            "Instance Size STANDARD_LARGE.",
+            "Instance Size STANDARD_XLARGE.",
+            "Instance Size STANDARD_2XLARGE.",
+            "Instance Size STANDARD_3XLARGE.",
+            "Instance Size DEV_EXTRA_SMALL.",
+            "Instance Size MULTIREGION_SMALL",
+            "Instance Size MULTIREGION_MEDIUM",
+            "Instance Size MULTIREGION_LARGE",
+            "Instance Size MULTIREGION_XLARGE",
+            "Instance Size MULTIREGION_2XLARGE.",
+            "Instance Size MULTIREGION_3XLARGE."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SAMLParams": {
+      "description": "Message storing SAML params to enable Google as IDP.",
+      "id": "SAMLParams",
+      "properties": {
+        "authenticationContexts": {
+          "description": "Additional contexts used for authentication.",
+          "items": {
+            "enum": [
+              "AUTHENTICATION_CONTEXT_UNSPECIFIED",
+              "INTERNET_PROTOCOL",
+              "INTERNET_PROTOCOL_PASSWORD",
+              "KERBEROS",
+              "MOBILE_ONE_FACTOR_UNREGISTERED",
+              "MOBILE_TWO_FACTOR_UNREGISTERED",
+              "MOBILE_ONE_FACTOR_CONTRACT",
+              "MOBILE_TWO_FACTOR_CONTRACT",
+              "PASSWORD",
+              "PASSWORD_PROTECTED_TRANSPORT",
+              "PREVIOUS_SESSION",
+              "PUBLIC_KEY_X509",
+              "PUBLIC_KEY_PGP",
+              "PUBLIC_KEY_SPKI",
+              "PUBLIC_KEY_XML_DIGITAL_SIGNATURE",
+              "SMARTCARD",
+              "SMARTCARD_PKI",
+              "SOFTWARE_PKI",
+              "TELEPHONY",
+              "TELEPHONY_NOMADIC",
+              "TELEPHONY_PERSONALIZED",
+              "TELEPHONY_AUTHENTICATED",
+              "SECURE_REMOTE_PASSWORD",
+              "SSL_TLS_CERTIFICATE_BASED",
+              "TIME_SYNC_TOKEN"
+            ],
+            "enumDescriptions": [
+              "The Unspecified class indicates that the authentication was performed by unspecified means.",
+              "The Internet Protocol class is applicable when a principal is authenticated through the use of a provided IP address.",
+              "The Internet Protocol Password class is applicable when a principal is authenticated through the use of a provided IP address, in addition to a username/password.",
+              "This class is applicable when the principal has authenticated using a password to a local authentication authority, in order to acquire a Kerberos ticket. That Kerberos ticket is then used for subsequent network authentication.",
+              "Reflects no mobile customer registration procedures and an authentication of the mobile device without requiring explicit end-user interaction. This context class authenticates only the device and never the user; it is useful when services other than the mobile operator want to add a secure device authentication to their authentication process.",
+              "Reflects no mobile customer registration procedures and a two-factor based authentication, such as secure device and user PIN. This context class is useful when a service other than the mobile operator wants to link their customer ID to a mobile supplied two-factor authentication service by capturing mobile phone data at enrollment.",
+              "Reflects mobile contract customer registration procedures and a single factor authentication. For example, a digital signing device with tamper resistant memory for key storage, such as the mobile MSISDN, but no required PIN or biometric for real-time user authentication.",
+              "Reflects mobile contract customer registration procedures and a two-factor based authentication. For example, a digital signing device with tamper resistant memory for key storage, such as a GSM SIM, that requires explicit proof of user identity and intent, such as a PIN or biometric.",
+              "The Password class is applicable when a principal authenticates to an authentication authority through the presentation of a password over an unprotected HTTP session.",
+              "The PasswordProtectedTransport class is applicable when a principal authenticates to an authentication authority through the presentation of a password over a protected session.",
+              "The PreviousSession class is applicable when a principal had authenticated to an authentication authority at some point in the past using any authentication context supported by that authentication authority",
+              "The X509 context class indicates that the principal authenticated by means of a digital signature where the key was validated as part of an X.509 Public Key Infrastructure.",
+              "The PGP context class indicates that the principal authenticated by means of a digital signature where the key was validated as part of a PGP Public Key Infrastructure.",
+              "The SPKI context class indicates that the principal authenticated by means of a digital signature where the key was validated via an SPKI Infrastructure.",
+              "This context class indicates that the principal authenticated by means of a digital signature according to the processing rules specified in the XML Digital Signature specification [XMLSig].",
+              "The Smartcard class is identified when a principal authenticates to an authentication authority using a smartcard.",
+              "The SmartcardPKI class is applicable when a principal authenticates to an authentication authority through a two-factor authentication mechanism using a smartcard with enclosed private key and a PIN.",
+              "The Software-PKI class is applicable when a principal uses an X.509 certificate stored in software to authenticate to the authentication authority.",
+              "This class is used to indicate that the principal authenticated via the provision of a fixed-line telephone number, transported via a telephony protocol such as ADSL.",
+              "Indicates that the principal is \"roaming\" (perhaps using a phone card) and authenticates via the means of the line number, a user suffix, and a password element.",
+              "This class is used to indicate that the principal authenticated via the provision of a fixed-line telephone number and a user suffix, transported via a telephony protocol such as ADSL.",
+              "Indicates that the principal authenticated via the means of the line number, a user suffix, and a password element.",
+              "The Secure Remote Password class is applicable when the authentication was performed by means of Secure Remote Password as specified in [RFC 2945].",
+              "This class indicates that the principal authenticated by means of a client certificate, secured with the SSL/TLS transport.",
+              "The TimeSyncToken class is applicable when a principal authenticates through a time synchronization token."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "certificate": {
+          "description": "SAML certificate",
+          "type": "string"
+        },
+        "emailMapping": {
+          "description": "IdP field that maps to the user’s email address",
+          "type": "string"
+        },
+        "entityId": {
+          "description": "Entity id URL",
+          "type": "string"
+        },
+        "ssoUri": {
+          "description": "Single sign-on URL",
+          "type": "string"
+        },
+        "userEmail": {
+          "deprecated": true,
+          "description": "Email address of the first admin users.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Status": {
+      "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+      "id": "Status",
+      "properties": {
+        "code": {
+          "description": "The status code, which should be an enum value of google.rpc.Code.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "details": {
+          "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+          "items": {
+            "additionalProperties": {
+              "description": "Properties of the object. Contains field @type with type URL.",
+              "type": "any"
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "message": {
+          "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TimeOfDay": {
+      "description": "Represents a time of day. The date and time zone are either not significant or are specified elsewhere. An API may choose to allow leap seconds. Related types are google.type.Date and `google.protobuf.Timestamp`.",
+      "id": "TimeOfDay",
+      "properties": {
+        "hours": {
+          "description": "Hours of day in 24 hour format. Should be from 0 to 23. An API may choose to allow the value \"24:00:00\" for scenarios like business closing time.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "minutes": {
+          "description": "Minutes of hour of day. Must be from 0 to 59.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "nanos": {
+          "description": "Fractions of seconds in nanoseconds. Must be from 0 to 999,999,999.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "seconds": {
+          "description": "Seconds of minutes of the time. Must normally be from 0 to 59. An API may allow the value 60 if it allows leap-seconds.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "URIs": {
+      "description": "Message storing the URIs of the ContactCenter.",
+      "id": "URIs",
+      "properties": {
+        "chatBotUri": {
+          "description": "Chat Bot Uri of the ContactCenter",
+          "type": "string"
+        },
+        "mediaUri": {
+          "description": "Media Uri of the ContactCenter.",
+          "type": "string"
+        },
+        "rootUri": {
+          "description": "Root Uri of the ContactCenter.",
+          "type": "string"
+        },
+        "virtualAgentStreamingServiceUri": {
+          "description": "Virtual Agent Streaming Service Uri of the ContactCenter.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "WeeklySchedule": {
+      "description": "Message representing a weekly schedule.",
+      "id": "WeeklySchedule",
+      "properties": {
+        "days": {
+          "description": "Required. Days of the week this schedule applies to.",
+          "items": {
+            "enum": [
+              "DAY_OF_WEEK_UNSPECIFIED",
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY",
+              "SUNDAY"
+            ],
+            "enumDescriptions": [
+              "The day of the week is unspecified.",
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday"
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "duration": {
+          "description": "Optional. Duration of the schedule.",
+          "format": "google-duration",
+          "type": "string"
+        },
+        "endTime": {
+          "$ref": "TimeOfDay",
+          "description": "Optional. Daily end time of the schedule. If `end_time` is before `start_time`, the schedule will be considered as ending on the next day."
+        },
+        "startTime": {
+          "$ref": "TimeOfDay",
+          "description": "Required. Daily start time of the schedule."
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Contact Center AI Platform API",
+  "version": "v1alpha1",
+  "version_module": true
+}

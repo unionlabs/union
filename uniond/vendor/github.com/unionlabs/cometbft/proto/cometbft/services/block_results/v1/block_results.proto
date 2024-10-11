@@ -1,0 +1,22 @@
+syntax = "proto3";
+package cometbft.services.block_results.v1;
+
+import "cometbft/abci/v1/types.proto";
+import "cometbft/types/v1/params.proto";
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1";
+
+// GetBlockResults is a request for the BlockResults of a given height.
+message GetBlockResultsRequest {
+  int64 height = 1;
+}
+
+// GetBlockResultsResponse contains the block results for the given height.
+message GetBlockResultsResponse {
+  int64    height                                                   = 1;
+  repeated cometbft.abci.v1.ExecTxResult tx_results                 = 2;
+  repeated cometbft.abci.v1.Event finalize_block_events             = 3;
+  repeated cometbft.abci.v1.ValidatorUpdate validator_updates       = 4;
+  cometbft.types.v1.ConsensusParams         consensus_param_updates = 5;
+  bytes                                     app_hash                = 6;
+}

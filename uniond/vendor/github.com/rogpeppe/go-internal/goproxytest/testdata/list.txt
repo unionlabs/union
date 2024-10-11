@@ -1,0 +1,16 @@
+go list -m -versions fruit.com
+stdout 'v1.0.0 v1.1.0'
+
+go get -d fruit.com@v1.0.0
+go get -d fruit.com@v1.1.0
+
+# On Go 1.18 and later, this will error out if GOPATH is ${WORK}/gopath,
+# as that places GOMODCACHE inside the Go module and "mod tidy" walks it.
+# "mod tidy" then complains about invalid import paths such as
+# "mod/gopath/pkg/mod/fruit.com@v1.1.0/fruit".
+# It's for that reason that we moved the default GOPATH to ${WORK}/.gopath.
+go mod tidy
+
+-- go.mod --
+module mod
+

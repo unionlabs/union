@@ -1,0 +1,19 @@
+[
+    {"proto": {"seconds": 0, "nanos": 0}, "text": "0 seconds"},
+    {"proto": {"seconds": 1, "nanos": 0}, "text": "1 second"},
+    {"proto": {"seconds": 2, "nanos": 0}, "text": "2 seconds"},
+    {"proto": {"seconds": -1, "nanos": 0}, "text": "-1 second"},
+    {"proto": {"seconds": 0, "nanos": 500000000}, "text": "0.5 seconds"},
+    {"proto": {"seconds": 0, "nanos": -500000000}, "text": "-0.5 seconds"},
+    {"proto": {"seconds": -1, "nanos": -500000000}, "text": "-1.5 seconds"},
+    {"proto": {"seconds": 60, "nanos": 0}, "text": "1 minute"},
+    {"proto": {"seconds": 3600, "nanos": 0}, "text": "1 hour"},
+    {"proto": {"seconds": 86400, "nanos": 0}, "text": "1 day"},
+    {"proto": {"seconds": 604800, "nanos": 0}, "text": "7 days"},
+    {"proto": {"seconds": 1483530, "nanos": 0}, "text": "17 days, 4 hours, 5 minutes, 30 seconds"},
+    {"proto": {"seconds": 1468800, "nanos": 100000000}, "text": "17 days, 0 hours, 0 minutes, 0.1 seconds"},
+    {"proto": {"seconds": 1468860, "nanos": 100000000}, "text": "17 days, 0 hours, 1 minute, 0.1 seconds"},
+    {"proto": {"seconds": 1, "nanos": -1}, "error": true},
+    {"proto": {"seconds": -1, "nanos": 1}, "error": true},
+    {"proto": {"seconds": 1, "nanos": 2000000000}, "error": true}
+]

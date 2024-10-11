@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+# gazelle:exclude hack.go
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "config.go",
+        "config_exclusion.go",
+        "main.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/tools/nogo_config",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "nogo_config",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["config_exclusion_test.go"],
+    embed = [":go_default_library"],
+)

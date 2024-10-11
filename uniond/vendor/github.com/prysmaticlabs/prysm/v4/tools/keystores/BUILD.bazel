@@ -1,0 +1,42 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/tools/keystores",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//crypto/bls:go_default_library",
+        "//io/file:go_default_library",
+        "//io/prompt:go_default_library",
+        "//validator/keymanager:go_default_library",
+        "@com_github_google_uuid//:go_default_library",
+        "@com_github_logrusorgru_aurora//:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_urfave_cli_v2//:go_default_library",
+        "@com_github_wealdtech_go_eth2_wallet_encryptor_keystorev4//:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "keystores",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["main_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//config/params:go_default_library",
+        "//crypto/bls:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "//validator/keymanager:go_default_library",
+        "@com_github_google_uuid//:go_default_library",
+        "@com_github_urfave_cli_v2//:go_default_library",
+        "@com_github_wealdtech_go_eth2_wallet_encryptor_keystorev4//:go_default_library",
+    ],
+)

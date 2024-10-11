@@ -1,0 +1,176 @@
+
+reset
+----
+
+switch 1
+----
+ok
+
+batch
+set d foo
+set e bar
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+switch 2
+----
+ok
+
+batch
+set c fooz
+set f foobar
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+batch
+set d foobar
+----
+
+flush
+----
+
+lsm
+----
+0.0:
+  000007:[d#12,SET-d#12,SET]
+6:
+  000005:[c#10,SET-f#11,SET]
+
+compact a-z block=c1
+----
+spun off in separate goroutine
+
+iter
+first
+next
+next
+next
+next
+----
+c: (fooz, .)
+d: (foobar, .)
+f: (foobar, .)
+.
+.
+
+# This excise should cancel the in-flight compaction, causing it to error out
+# below. The eventually file-only snapshot should go through because it's not
+# waiting on any keys in memtables
+
+file-only-snapshot s1
+  c e
+----
+ok
+
+replicate 1 2 b e
+----
+replicated 1 shared SSTs
+
+unblock c1
+----
+ok
+
+wait-for-file-only-snapshot s1
+----
+ok
+
+lsm
+----
+6:
+  000010:[d#13,SET-d#13,SET]
+  000011:[f#11,SET-f#11,SET]
+
+compact a-z
+----
+ok
+
+wait-for-background-error
+----
+pebble: compaction cancelled by a concurrent operation, will retry compaction
+
+iter
+first
+next
+next
+next
+next
+----
+d: (foo, .)
+f: (foobar, .)
+.
+.
+.
+
+batch
+set d fo
+set ee foobar
+set f3 something
+----
+
+flush
+----
+
+compact a-z
+----
+ok
+
+switch 1
+----
+ok
+
+# The below file-only snapshot should be errored out by the concurrent excise.
+
+batch
+set d something
+----
+
+flush
+----
+
+batch
+set dd memory
+----
+
+file-only-snapshot s2
+ c e
+----
+ok
+
+iter snapshot=s2
+first
+next
+next
+next
+----
+d: (something, .)
+dd: (memory, .)
+e: (bar, .)
+.
+
+replicate 2 1 c dd
+----
+replicated 1 shared SSTs
+
+wait-for-file-only-snapshot s2
+----
+pebble: snapshot excised before conversion to file-only snapshot
+
+iter snapshot=s2
+first
+next
+next
+next
+----
+pebble: snapshot excised before conversion to file-only snapshot

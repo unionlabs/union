@@ -1,0 +1,125 @@
+# Verify the behaviour of cmp in the case of a small diff between
+# two large files
+
+unquote dir/script.txt
+! testscript dir
+env
+cmpenv stdout stdout.golden
+
+-- dir/script.txt --
+>cmp a b
+>
+>-- a --
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>-- b --
+>b
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+>a
+-- stdout.golden --
+** RUN script **
+> cmp a b
+diff a b
+--- a
++++ b
+@@ -1,4 +1,4 @@
+-a
++b
+ a
+ a
+ a
+
+FAIL: $$WORK${/}dir${/}script.txt:1: a and b differ

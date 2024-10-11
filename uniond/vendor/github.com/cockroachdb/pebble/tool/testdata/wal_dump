@@ -1,0 +1,118 @@
+wal dump
+----
+requires at least 1 arg(s), only received 0
+
+wal dump
+../testdata/db-stage-2/000003.log
+----
+000003.log
+0(21) seq=1 count=1
+    SET(test formatter: foo,test value formatter: one)
+28(21) seq=2 count=1
+    SET(test formatter: bar,test value formatter: two)
+56(23) seq=3 count=1
+    SET(test formatter: baz,test value formatter: three)
+86(22) seq=4 count=1
+    SET(test formatter: foo,test value formatter: four)
+115(17) seq=5 count=1
+    DEL(test formatter: bar)
+EOF
+
+wal dump
+../testdata/db-stage-2/000003.log
+--key=pretty:leveldb.BytewiseComparator
+--value=size
+----
+000003.log
+0(21) seq=1 count=1
+    SET(foo,<3>)
+28(21) seq=2 count=1
+    SET(bar,<3>)
+56(23) seq=3 count=1
+    SET(baz,<5>)
+86(22) seq=4 count=1
+    SET(foo,<4>)
+115(17) seq=5 count=1
+    DEL(bar)
+EOF
+
+wal dump
+--key=pretty:leveldb.BytewiseComparator
+--value=size
+../testdata/db-stage-4/000006.log
+----
+000006.log
+0(22) seq=6 count=1
+    SET(foo,<4>)
+29(22) seq=7 count=1
+    SET(quux,<3>)
+58(17) seq=8 count=1
+    DEL(baz)
+EOF
+
+wal dump
+../testdata/db-stage-4/000006.log
+--key=%x
+--value=%x
+----
+000006.log
+0(22) seq=6 count=1
+    SET(666f6f,66697665)
+29(22) seq=7 count=1
+    SET(71757578,736978)
+58(17) seq=8 count=1
+    DEL(62617a)
+EOF
+
+wal dump
+../testdata/db-stage-4/000006.log
+--key=pretty:leveldb.BytewiseComparator
+--value=pretty:test-comparer
+----
+000006.log
+0(22) seq=6 count=1
+    SET(foo,test value formatter: five)
+29(22) seq=7 count=1
+    SET(quux,test value formatter: six)
+58(17) seq=8 count=1
+    DEL(baz)
+EOF
+
+wal dump
+../testdata/db-stage-4/000006.log
+--key=pretty:test-comparer
+--value=%x
+----
+000006.log
+0(22) seq=6 count=1
+    SET(test formatter: foo,66697665)
+29(22) seq=7 count=1
+    SET(test formatter: quux,736978)
+58(17) seq=8 count=1
+    DEL(test formatter: baz)
+EOF
+
+wal dump
+../testdata/db-stage-4/000006.log
+--key=pretty:leveldb.BytewiseComparator
+--value=quoted
+----
+000006.log
+0(22) seq=6 count=1
+    SET(foo,five)
+29(22) seq=7 count=1
+    SET(quux,six)
+58(17) seq=8 count=1
+    DEL(baz)
+EOF
+
+wal dump
+./testdata/mixed/000004.log
+----
+000004.log
+0(42) seq=30 count=4
+    SET(test formatter: a@2,test value formatter: )
+    RANGEKEYSET(test formatter: a-test formatter: z:{(#31,RANGEKEYSET,@3)})
+    RANGEKEYUNSET(test formatter: a-test formatter: z:{(#32,RANGEKEYUNSET,@4)})
+    RANGEKEYDEL(test formatter: a-test formatter: b:{(#33,RANGEKEYDEL)})
+EOF

@@ -1,0 +1,212 @@
+syntax = "proto3";
+package cosmos.auth.v1beta1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "google/api/annotations.proto";
+import "cosmos/auth/v1beta1/auth.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/query/v1/query.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/auth/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Accounts returns all the existing accounts.
+  // When called from another module, this query might consume a high amount of
+  // gas if the pagination field is incorrectly set.
+  rpc Accounts(QueryAccountsRequest) returns (QueryAccountsResponse) {
+    option (cosmos_proto.method_added_in)      = "cosmos-sdk 0.43";
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/cosmos/auth/v1beta1/accounts";
+  }
+
+  // Account returns account details based on address.
+  rpc Account(QueryAccountRequest) returns (QueryAccountResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/cosmos/auth/v1beta1/accounts/{address}";
+  }
+
+  // AccountAddressByID returns account address based on account number.
+  rpc AccountAddressByID(QueryAccountAddressByIDRequest) returns (QueryAccountAddressByIDResponse) {
+    option (cosmos_proto.method_added_in)      = "cosmos-sdk 0.46.2";
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/cosmos/auth/v1beta1/address_by_id/{account_id}";
+  }
+
+  // Params queries all parameters.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/cosmos/auth/v1beta1/params";
+  }
+
+  // ModuleAccounts returns all the existing module accounts.
+  rpc ModuleAccounts(QueryModuleAccountsRequest) returns (QueryModuleAccountsResponse) {
+    option (cosmos_proto.method_added_in)      = "cosmos-sdk 0.46.2";
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/cosmos/auth/v1beta1/module_accounts";
+  }
+
+  // ModuleAccountByName returns the module account info by module name
+  rpc ModuleAccountByName(QueryModuleAccountByNameRequest) returns (QueryModuleAccountByNameResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/cosmos/auth/v1beta1/module_accounts/{name}";
+  }
+
+  // Bech32Prefix queries bech32Prefix
+  rpc Bech32Prefix(Bech32PrefixRequest) returns (Bech32PrefixResponse) {
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
+    option (google.api.http).get          = "/cosmos/auth/v1beta1/bech32";
+  }
+
+  // AddressBytesToString converts Account Address bytes to string
+  rpc AddressBytesToString(AddressBytesToStringRequest) returns (AddressBytesToStringResponse) {
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
+    option (google.api.http).get          = "/cosmos/auth/v1beta1/bech32/{address_bytes}";
+  }
+
+  // AddressStringToBytes converts Address string to bytes
+  rpc AddressStringToBytes(AddressStringToBytesRequest) returns (AddressStringToBytesResponse) {
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
+    option (google.api.http).get          = "/cosmos/auth/v1beta1/bech32/{address_string}";
+  }
+
+  // AccountInfo queries account info which is common to all account types.
+  rpc AccountInfo(QueryAccountInfoRequest) returns (QueryAccountInfoResponse) {
+    option (cosmos_proto.method_added_in)      = "cosmos-sdk 0.47";
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/cosmos/auth/v1beta1/account_info/{address}";
+  }
+}
+
+// QueryAccountsRequest is the request type for the Query/Accounts RPC method.
+message QueryAccountsRequest {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.43";
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryAccountsResponse is the response type for the Query/Accounts RPC method.
+message QueryAccountsResponse {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
+  // accounts are the existing accounts
+  repeated google.protobuf.Any accounts = 1 [(cosmos_proto.accepts_interface) = "cosmos.auth.v1beta1.AccountI"];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryAccountRequest is the request type for the Query/Account RPC method.
+message QueryAccountRequest {
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // address defines the address to query for.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// QueryAccountResponse is the response type for the Query/Account RPC method.
+message QueryAccountResponse {
+  // account defines the account of the corresponding address.
+  google.protobuf.Any account = 1 [(cosmos_proto.accepts_interface) = "cosmos.auth.v1beta1.AccountI"];
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryModuleAccountsRequest is the request type for the Query/ModuleAccounts RPC method.
+message QueryModuleAccountsRequest {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+}
+
+// QueryModuleAccountsResponse is the response type for the Query/ModuleAccounts RPC method.
+message QueryModuleAccountsResponse {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+  repeated google.protobuf.Any accounts  = 1 [(cosmos_proto.accepts_interface) = "cosmos.auth.v1beta1.ModuleAccountI"];
+}
+
+// QueryModuleAccountByNameRequest is the request type for the Query/ModuleAccountByName RPC method.
+message QueryModuleAccountByNameRequest {
+  string name = 1;
+}
+
+// QueryModuleAccountByNameResponse is the response type for the Query/ModuleAccountByName RPC method.
+message QueryModuleAccountByNameResponse {
+  google.protobuf.Any account = 1 [(cosmos_proto.accepts_interface) = "cosmos.auth.v1beta1.ModuleAccountI"];
+}
+
+// Bech32PrefixRequest is the request type for Bech32Prefix rpc method.
+message Bech32PrefixRequest {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+}
+
+// Bech32PrefixResponse is the response type for Bech32Prefix rpc method.
+message Bech32PrefixResponse {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+  string bech32_prefix                   = 1;
+}
+
+// AddressBytesToStringRequest is the request type for AddressString rpc method.
+message AddressBytesToStringRequest {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+  bytes address_bytes                    = 1;
+}
+
+// AddressBytesToStringResponse is the response type for AddressString rpc method.
+message AddressBytesToStringResponse {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+  string address_string                  = 1;
+}
+
+// AddressStringToBytesRequest is the request type for AccountBytes rpc method.
+message AddressStringToBytesRequest {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+  string address_string                  = 1;
+}
+
+// AddressStringToBytesResponse is the response type for AddressBytes rpc method.
+message AddressStringToBytesResponse {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+  bytes address_bytes                    = 1;
+}
+
+// QueryAccountAddressByIDRequest is the request type for AccountAddressByID rpc method
+message QueryAccountAddressByIDRequest {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46.2";
+  // Deprecated, use account_id instead
+  //
+  // id is the account number of the address to be queried. This field
+  // should have been an uint64 (like all account numbers), and will be
+  // updated to uint64 in a future version of the auth query.
+  int64 id = 1 [deprecated = true];
+
+  // account_id is the account number of the address to be queried.
+  uint64 account_id = 2 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+}
+
+// QueryAccountAddressByIDResponse is the response type for AccountAddressByID rpc method
+message QueryAccountAddressByIDResponse {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46.2";
+  string account_address                 = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// QueryAccountInfoRequest is the Query/AccountInfo request type.
+message QueryAccountInfoRequest {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
+  // address is the account address string.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// QueryAccountInfoResponse is the Query/AccountInfo response type.
+message QueryAccountInfoResponse {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
+  // info is the account info which is represented by BaseAccount.
+  BaseAccount info = 1;
+}

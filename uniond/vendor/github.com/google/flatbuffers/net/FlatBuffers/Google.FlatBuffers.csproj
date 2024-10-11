@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1;net6.0;net8.0</TargetFrameworks>
+    <Description>A cross-platform memory efficient serialization library</Description>
+    <PackageVersion>24.3.25</PackageVersion>
+    <Authors>Google LLC</Authors>
+    <PackageProjectUrl>https://github.com/google/flatbuffers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/google/flatbuffers</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageIcon>flatbuffers.png</PackageIcon>
+    <PackageTags>Google;FlatBuffers;Serialization;Buffer;Binary;zero copy</PackageTags>
+    <Copyright>Copyright 2022 Google LLC</Copyright>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>flatbuffers.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UNSAFE_BYTEBUFFER)' == 'true'">
+    <DefineConstants>$(DefineConstants);UNSAFE_BYTEBUFFER</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(BYTEBUFFER_NO_BOUNDS_CHECK)' == 'true'">
+    <DefineConstants>$(DefineConstants);BYTEBUFFER_NO_BOUNDS_CHECK</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ENABLE_SPAN_T)' == 'true'">
+    <DefineConstants>$(DefineConstants);ENABLE_SPAN_T</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="" />
+    <None Include="flatbuffers.png" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package ibc.applications.transfer.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "ibc/applications/transfer/v1/transfer.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types";
+
+// Query provides defines the gRPC querier service.
+service Query {
+  // DenomTraces queries all denomination traces.
+  rpc DenomTraces(QueryDenomTracesRequest) returns (QueryDenomTracesResponse) {
+    option (google.api.http).get = "/ibc/apps/transfer/v1/denom_traces";
+  }
+
+  // DenomTrace queries a denomination trace information.
+  rpc DenomTrace(QueryDenomTraceRequest) returns (QueryDenomTraceResponse) {
+    option (google.api.http).get = "/ibc/apps/transfer/v1/denom_traces/{hash=**}";
+  }
+
+  // Params queries all parameters of the ibc-transfer module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/ibc/apps/transfer/v1/params";
+  }
+
+  // DenomHash queries a denomination hash information.
+  rpc DenomHash(QueryDenomHashRequest) returns (QueryDenomHashResponse) {
+    option (google.api.http).get = "/ibc/apps/transfer/v1/denom_hashes/{trace=**}";
+  }
+
+  // EscrowAddress returns the escrow address for a particular port and channel id.
+  rpc EscrowAddress(QueryEscrowAddressRequest) returns (QueryEscrowAddressResponse) {
+    option (google.api.http).get = "/ibc/apps/transfer/v1/channels/{channel_id}/ports/{port_id}/escrow_address";
+  }
+
+  // TotalEscrowForDenom returns the total amount of tokens in escrow based on the denom.
+  rpc TotalEscrowForDenom(QueryTotalEscrowForDenomRequest) returns (QueryTotalEscrowForDenomResponse) {
+    option (google.api.http).get = "/ibc/apps/transfer/v1/denoms/{denom=**}/total_escrow";
+  }
+}
+
+// QueryDenomTraceRequest is the request type for the Query/DenomTrace RPC
+// method
+message QueryDenomTraceRequest {
+  // hash (in hex format) or denom (full denom with ibc prefix) of the denomination trace information.
+  string hash = 1;
+}
+
+// QueryDenomTraceResponse is the response type for the Query/DenomTrace RPC
+// method.
+message QueryDenomTraceResponse {
+  // denom_trace returns the requested denomination trace information.
+  DenomTrace denom_trace = 1;
+}
+
+// QueryConnectionsRequest is the request type for the Query/DenomTraces RPC
+// method
+message QueryDenomTracesRequest {
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryConnectionsResponse is the response type for the Query/DenomTraces RPC
+// method.
+message QueryDenomTracesResponse {
+  // denom_traces returns all denominations trace information.
+  repeated DenomTrace denom_traces = 1 [(gogoproto.castrepeated) = "Traces", (gogoproto.nullable) = false];
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1;
+}
+
+// QueryDenomHashRequest is the request type for the Query/DenomHash RPC
+// method
+message QueryDenomHashRequest {
+  // The denomination trace ([port_id]/[channel_id])+/[denom]
+  string trace = 1;
+}
+
+// QueryDenomHashResponse is the response type for the Query/DenomHash RPC
+// method.
+message QueryDenomHashResponse {
+  // hash (in hex format) of the denomination trace information.
+  string hash = 1;
+}
+
+// QueryEscrowAddressRequest is the request type for the EscrowAddress RPC method.
+message QueryEscrowAddressRequest {
+  // unique port identifier
+  string port_id = 1;
+  // unique channel identifier
+  string channel_id = 2;
+}
+
+// QueryEscrowAddressResponse is the response type of the EscrowAddress RPC method.
+message QueryEscrowAddressResponse {
+  // the escrow account address
+  string escrow_address = 1;
+}
+
+// QueryTotalEscrowForDenomRequest is the request type for TotalEscrowForDenom RPC method.
+message QueryTotalEscrowForDenomRequest {
+  string denom = 1;
+}
+
+// QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method.
+message QueryTotalEscrowForDenomResponse {
+  cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false];
+}

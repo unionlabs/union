@@ -1,0 +1,12 @@
+# Check that RequireUniqueNames works;
+# it should reject txtar archives with duplicate names as defined by the host system.
+
+unquote scripts-normalized/testscript.txt
+
+testscript scripts-normalized
+! testscript -unique-names scripts-normalized
+stdout '.* would overwrite .* \(because RequireUniqueNames is enabled\)'
+
+-- scripts-normalized/testscript.txt --
+>-- file --
+>-- dir/../file --

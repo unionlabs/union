@@ -1,0 +1,562 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/cloud-platform": {
+          "description": "See, edit, configure, and delete your Google Cloud data and see the email address for your Google Account."
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://pollen.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "Pollen",
+  "description": "The Pollen API. ",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://developers.google.com/maps/documentation/pollen",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "pollen:v1",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://pollen.mtls.googleapis.com/",
+  "name": "pollen",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "forecast": {
+      "methods": {
+        "lookup": {
+          "description": "Returns up to 5 days of daily pollen information in more than 65 countries, up to 1km resolution.",
+          "flatPath": "v1/forecast:lookup",
+          "httpMethod": "GET",
+          "id": "pollen.forecast.lookup",
+          "parameterOrder": [],
+          "parameters": {
+            "days": {
+              "description": "Required. A number that indicates how many forecast days to request (minimum value 1, maximum value is 5).",
+              "format": "int32",
+              "location": "query",
+              "type": "integer"
+            },
+            "languageCode": {
+              "description": "Optional. Allows the client to choose the language for the response. If data cannot be provided for that language the API uses the closest match. Allowed values rely on the IETF BCP-47 standard. Default value is \"en\".",
+              "location": "query",
+              "type": "string"
+            },
+            "location.latitude": {
+              "description": "The latitude in degrees. It must be in the range [-90.0, +90.0].",
+              "format": "double",
+              "location": "query",
+              "type": "number"
+            },
+            "location.longitude": {
+              "description": "The longitude in degrees. It must be in the range [-180.0, +180.0].",
+              "format": "double",
+              "location": "query",
+              "type": "number"
+            },
+            "pageSize": {
+              "description": "Optional. The maximum number of daily info records to return per page. The default and max value is 5 (5 days of data).",
+              "format": "int32",
+              "location": "query",
+              "type": "integer"
+            },
+            "pageToken": {
+              "description": "Optional. A page token received from a previous daily call. It is used to retrieve the subsequent page. Note that when providing a value for the page token all other request parameters provided must match the previous call that provided the page token.",
+              "location": "query",
+              "type": "string"
+            },
+            "plantsDescription": {
+              "description": "Optional. Contains general information about plants, including details on their seasonality, special shapes and colors, information about allergic cross-reactions, and plant photos.",
+              "location": "query",
+              "type": "boolean"
+            }
+          },
+          "path": "v1/forecast:lookup",
+          "response": {
+            "$ref": "LookupForecastResponse"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform"
+          ]
+        }
+      }
+    },
+    "mapTypes": {
+      "resources": {
+        "heatmapTiles": {
+          "methods": {
+            "lookupHeatmapTile": {
+              "description": "Returns a byte array containing the data of the tile PNG image.",
+              "flatPath": "v1/mapTypes/{mapType}/heatmapTiles/{zoom}/{x}/{y}",
+              "httpMethod": "GET",
+              "id": "pollen.mapTypes.heatmapTiles.lookupHeatmapTile",
+              "parameterOrder": [
+                "mapType",
+                "zoom",
+                "x",
+                "y"
+              ],
+              "parameters": {
+                "mapType": {
+                  "description": "Required. The type of the pollen heatmap. Defines the combination of pollen type and index that the map will graphically represent.",
+                  "enum": [
+                    "MAP_TYPE_UNSPECIFIED",
+                    "TREE_UPI",
+                    "GRASS_UPI",
+                    "WEED_UPI"
+                  ],
+                  "enumDescriptions": [
+                    "Unspecified map type.",
+                    "The heatmap type will represent a tree index graphical map.",
+                    "The heatmap type will represent a grass index graphical map.",
+                    "The heatmap type will represent a weed index graphically map."
+                  ],
+                  "location": "path",
+                  "required": true,
+                  "type": "string"
+                },
+                "x": {
+                  "description": "Required. Defines the east-west point in the requested tile.",
+                  "format": "int32",
+                  "location": "path",
+                  "required": true,
+                  "type": "integer"
+                },
+                "y": {
+                  "description": "Required. Defines the north-south point in the requested tile.",
+                  "format": "int32",
+                  "location": "path",
+                  "required": true,
+                  "type": "integer"
+                },
+                "zoom": {
+                  "description": "Required. The map's zoom level. Defines how large or small the contents of a map appear in a map view. * Zoom level 0 is the entire world in a single tile. * Zoom level 1 is the entire world in 4 tiles. * Zoom level 2 is the entire world in 16 tiles. * Zoom level 16 is the entire world in 65,536 tiles. Allowed values: 0-16",
+                  "format": "int32",
+                  "location": "path",
+                  "required": true,
+                  "type": "integer"
+                }
+              },
+              "path": "v1/mapTypes/{mapType}/heatmapTiles/{zoom}/{x}/{y}",
+              "response": {
+                "$ref": "HttpBody"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20240611",
+  "rootUrl": "https://pollen.googleapis.com/",
+  "schemas": {
+    "Color": {
+      "description": "Represents a color in the RGBA color space. This representation is designed for simplicity of conversion to and from color representations in various languages over compactness. For example, the fields of this representation can be trivially provided to the constructor of `java.awt.Color` in Java; it can also be trivially provided to UIColor's `+colorWithRed:green:blue:alpha` method in iOS; and, with just a little work, it can be easily formatted into a CSS `rgba()` string in JavaScript. This reference page doesn't have information about the absolute color space that should be used to interpret the RGB value—for example, sRGB, Adobe RGB, DCI-P3, and BT.2020. By default, applications should assume the sRGB color space. When color equality needs to be decided, implementations, unless documented otherwise, treat two colors as equal if all their red, green, blue, and alpha values each differ by at most `1e-5`. Example (Java): import com.google.type.Color; // ... public static java.awt.Color fromProto(Color protocolor) { float alpha = protocolor.hasAlpha() ? protocolor.getAlpha().getValue() : 1.0; return new java.awt.Color( protocolor.getRed(), protocolor.getGreen(), protocolor.getBlue(), alpha); } public static Color toProto(java.awt.Color color) { float red = (float) color.getRed(); float green = (float) color.getGreen(); float blue = (float) color.getBlue(); float denominator = 255.0; Color.Builder resultBuilder = Color .newBuilder() .setRed(red / denominator) .setGreen(green / denominator) .setBlue(blue / denominator); int alpha = color.getAlpha(); if (alpha != 255) { result.setAlpha( FloatValue .newBuilder() .setValue(((float) alpha) / denominator) .build()); } return resultBuilder.build(); } // ... Example (iOS / Obj-C): // ... static UIColor* fromProto(Color* protocolor) { float red = [protocolor red]; float green = [protocolor green]; float blue = [protocolor blue]; FloatValue* alpha_wrapper = [protocolor alpha]; float alpha = 1.0; if (alpha_wrapper != nil) { alpha = [alpha_wrapper value]; } return [UIColor colorWithRed:red green:green blue:blue alpha:alpha]; } static Color* toProto(UIColor* color) { CGFloat red, green, blue, alpha; if (![color getRed:\u0026red green:\u0026green blue:\u0026blue alpha:\u0026alpha]) { return nil; } Color* result = [[Color alloc] init]; [result setRed:red]; [result setGreen:green]; [result setBlue:blue]; if (alpha \u003c= 0.9999) { [result setAlpha:floatWrapperWithValue(alpha)]; } [result autorelease]; return result; } // ... Example (JavaScript): // ... var protoToCssColor = function(rgb_color) { var redFrac = rgb_color.red || 0.0; var greenFrac = rgb_color.green || 0.0; var blueFrac = rgb_color.blue || 0.0; var red = Math.floor(redFrac * 255); var green = Math.floor(greenFrac * 255); var blue = Math.floor(blueFrac * 255); if (!('alpha' in rgb_color)) { return rgbToCssColor(red, green, blue); } var alphaFrac = rgb_color.alpha.value || 0.0; var rgbParams = [red, green, blue].join(','); return ['rgba(', rgbParams, ',', alphaFrac, ')'].join(''); }; var rgbToCssColor = function(red, green, blue) { var rgbNumber = new Number((red \u003c\u003c 16) | (green \u003c\u003c 8) | blue); var hexString = rgbNumber.toString(16); var missingZeros = 6 - hexString.length; var resultBuilder = ['#']; for (var i = 0; i \u003c missingZeros; i++) { resultBuilder.push('0'); } resultBuilder.push(hexString); return resultBuilder.join(''); }; // ...",
+      "id": "Color",
+      "properties": {
+        "alpha": {
+          "description": "The fraction of this color that should be applied to the pixel. That is, the final pixel color is defined by the equation: `pixel color = alpha * (this color) + (1.0 - alpha) * (background color)` This means that a value of 1.0 corresponds to a solid color, whereas a value of 0.0 corresponds to a completely transparent color. This uses a wrapper message rather than a simple float scalar so that it is possible to distinguish between a default value and the value being unset. If omitted, this color object is rendered as a solid color (as if the alpha value had been explicitly given a value of 1.0).",
+          "format": "float",
+          "type": "number"
+        },
+        "blue": {
+          "description": "The amount of blue in the color as a value in the interval [0, 1].",
+          "format": "float",
+          "type": "number"
+        },
+        "green": {
+          "description": "The amount of green in the color as a value in the interval [0, 1].",
+          "format": "float",
+          "type": "number"
+        },
+        "red": {
+          "description": "The amount of red in the color as a value in the interval [0, 1].",
+          "format": "float",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "Date": {
+      "description": "Represents a whole or partial calendar date, such as a birthday. The time of day and time zone are either specified elsewhere or are insignificant. The date is relative to the Gregorian Calendar. This can represent one of the following: * A full date, with non-zero year, month, and day values. * A month and day, with a zero year (for example, an anniversary). * A year on its own, with a zero month and a zero day. * A year and month, with a zero day (for example, a credit card expiration date). Related types: * google.type.TimeOfDay * google.type.DateTime * google.protobuf.Timestamp",
+      "id": "Date",
+      "properties": {
+        "day": {
+          "description": "Day of a month. Must be from 1 to 31 and valid for the year and month, or 0 to specify a year by itself or a year and month where the day isn't significant.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "month": {
+          "description": "Month of a year. Must be from 1 to 12, or 0 to specify a year without a month and day.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "year": {
+          "description": "Year of the date. Must be from 1 to 9999, or 0 to specify a date without a year.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "DayInfo": {
+      "description": "This object contains the daily forecast information for each day requested.",
+      "id": "DayInfo",
+      "properties": {
+        "date": {
+          "$ref": "Date",
+          "description": "The date in UTC at which the pollen forecast data is represented."
+        },
+        "plantInfo": {
+          "description": "This list will include (up to) 15 pollen species affecting the location specified in the request.",
+          "items": {
+            "$ref": "PlantInfo"
+          },
+          "type": "array"
+        },
+        "pollenTypeInfo": {
+          "description": "This list will include (up to) three pollen types (grass, weed, tree) affecting the location specified in the request.",
+          "items": {
+            "$ref": "PollenTypeInfo"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "HttpBody": {
+      "description": "Message that represents an arbitrary HTTP body. It should only be used for payload formats that can't be represented as JSON, such as raw binary or an HTML page. This message can be used both in streaming and non-streaming API methods in the request as well as the response. It can be used as a top-level request field, which is convenient if one wants to extract parameters from either the URL or HTTP template into the request fields and also want access to the raw HTTP body. Example: message GetResourceRequest { // A unique request id. string request_id = 1; // The raw HTTP body is bound to this field. google.api.HttpBody http_body = 2; } service ResourceService { rpc GetResource(GetResourceRequest) returns (google.api.HttpBody); rpc UpdateResource(google.api.HttpBody) returns (google.protobuf.Empty); } Example with streaming methods: service CaldavService { rpc GetCalendar(stream google.api.HttpBody) returns (stream google.api.HttpBody); rpc UpdateCalendar(stream google.api.HttpBody) returns (stream google.api.HttpBody); } Use of this type only changes how the request and response bodies are handled, all other features will continue to work unchanged.",
+      "id": "HttpBody",
+      "properties": {
+        "contentType": {
+          "description": "The HTTP Content-Type header value specifying the content type of the body.",
+          "type": "string"
+        },
+        "data": {
+          "description": "The HTTP request/response body as raw binary.",
+          "format": "byte",
+          "type": "string"
+        },
+        "extensions": {
+          "description": "Application specific response metadata. Must be set in the first response for streaming APIs.",
+          "items": {
+            "additionalProperties": {
+              "description": "Properties of the object. Contains field @type with type URL.",
+              "type": "any"
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "IndexInfo": {
+      "description": "This object contains data representing specific pollen index value, category and description.",
+      "id": "IndexInfo",
+      "properties": {
+        "category": {
+          "description": "Text classification of index numerical score interpretation. The index consists of six categories: * 0: \"None\" * 1: \"Very low\" * 2: \"Low\" * 3: \"Moderate\" * 4: \"High\" * 5: \"Very high",
+          "type": "string"
+        },
+        "code": {
+          "description": "The index's code. This field represents the index for programming purposes by using snake cases instead of spaces. Example: \"UPI\".",
+          "enum": [
+            "INDEX_UNSPECIFIED",
+            "UPI"
+          ],
+          "enumDescriptions": [
+            "Unspecified index.",
+            "Universal Pollen Index."
+          ],
+          "type": "string"
+        },
+        "color": {
+          "$ref": "Color",
+          "description": "The color used to represent the Pollen Index numeric score."
+        },
+        "displayName": {
+          "description": "A human readable representation of the index name. Example: \"Universal Pollen Index\".",
+          "type": "string"
+        },
+        "indexDescription": {
+          "description": "Textual explanation of current index level.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The index's numeric score. Numeric range is between 0 and 5.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "LookupForecastResponse": {
+      "id": "LookupForecastResponse",
+      "properties": {
+        "dailyInfo": {
+          "description": "Required. This object contains the daily forecast information for each day requested.",
+          "items": {
+            "$ref": "DayInfo"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "Optional. The token to retrieve the next page.",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "The ISO_3166-1 alpha-2 code of the country/region corresponding to the location provided in the request. This field might be omitted from the response if the location provided in the request resides in a disputed territory.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PlantDescription": {
+      "description": "Contains general information about plants, including details on their seasonality, special shapes and colors, information about allergic cross-reactions, and plant photos.",
+      "id": "PlantDescription",
+      "properties": {
+        "crossReaction": {
+          "description": "Textual description of pollen cross reaction plants. Example: Alder, Hazel, Hornbeam, Beech, Willow, and Oak pollen.",
+          "type": "string"
+        },
+        "family": {
+          "description": "A human readable representation of the plant family name. Example: \"Betulaceae (the Birch family)\".",
+          "type": "string"
+        },
+        "picture": {
+          "description": "Link to the picture of the plant.",
+          "type": "string"
+        },
+        "pictureCloseup": {
+          "description": "Link to a closeup picture of the plant.",
+          "type": "string"
+        },
+        "season": {
+          "description": "Textual list of explanations of seasons where the pollen is active. Example: \"Late winter, spring\".",
+          "type": "string"
+        },
+        "specialColors": {
+          "description": "Textual description of the plants' colors of leaves, bark, flowers or seeds that helps identify the plant.",
+          "type": "string"
+        },
+        "specialShapes": {
+          "description": "Textual description of the plants' shapes of leaves, bark, flowers or seeds that helps identify the plant.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The plant's pollen type. For example: \"GRASS\". A list of all available codes could be found here.",
+          "enum": [
+            "POLLEN_TYPE_UNSPECIFIED",
+            "GRASS",
+            "TREE",
+            "WEED"
+          ],
+          "enumDescriptions": [
+            "Unspecified plant type.",
+            "Grass pollen type.",
+            "Tree pollen type.",
+            "Weed pollen type."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PlantInfo": {
+      "description": "This object contains the daily information on specific plant.",
+      "id": "PlantInfo",
+      "properties": {
+        "code": {
+          "description": "The plant code name. For example: \"COTTONWOOD\". A list of all available codes could be found here.",
+          "enum": [
+            "PLANT_UNSPECIFIED",
+            "ALDER",
+            "ASH",
+            "BIRCH",
+            "COTTONWOOD",
+            "ELM",
+            "MAPLE",
+            "OLIVE",
+            "JUNIPER",
+            "OAK",
+            "PINE",
+            "CYPRESS_PINE",
+            "HAZEL",
+            "GRAMINALES",
+            "RAGWEED",
+            "MUGWORT"
+          ],
+          "enumDescriptions": [
+            "Unspecified plant code.",
+            "Alder is classified as a tree pollen type.",
+            "Ash is classified as a tree pollen type.",
+            "Birch is classified as a tree pollen type.",
+            "Cottonwood is classified as a tree pollen type.",
+            "Elm is classified as a tree pollen type.",
+            "Maple is classified as a tree pollen type.",
+            "Olive is classified as a tree pollen type.",
+            "Juniper is classified as a tree pollen type.",
+            "Oak is classified as a tree pollen type.",
+            "Pine is classified as a tree pollen type.",
+            "Cypress pine is classified as a tree pollen type.",
+            "Hazel is classified as a tree pollen type.",
+            "Graminales is classified as a grass pollen type.",
+            "Ragweed is classified as a weed pollen type.",
+            "Mugwort is classified as a weed pollen type."
+          ],
+          "type": "string"
+        },
+        "displayName": {
+          "description": "A human readable representation of the plant name. Example: “Cottonwood\".",
+          "type": "string"
+        },
+        "inSeason": {
+          "description": "Indication of either the plant is in season or not.",
+          "type": "boolean"
+        },
+        "indexInfo": {
+          "$ref": "IndexInfo",
+          "description": "This object contains data representing specific pollen index value, category and description."
+        },
+        "plantDescription": {
+          "$ref": "PlantDescription",
+          "description": "Contains general information about plants, including details on their seasonality, special shapes and colors, information about allergic cross-reactions, and plant photos."
+        }
+      },
+      "type": "object"
+    },
+    "PollenTypeInfo": {
+      "description": "This object contains the pollen type index and health recommendation information on specific pollen type.",
+      "id": "PollenTypeInfo",
+      "properties": {
+        "code": {
+          "description": "The pollen type's code name. For example: \"GRASS\"",
+          "enum": [
+            "POLLEN_TYPE_UNSPECIFIED",
+            "GRASS",
+            "TREE",
+            "WEED"
+          ],
+          "enumDescriptions": [
+            "Unspecified plant type.",
+            "Grass pollen type.",
+            "Tree pollen type.",
+            "Weed pollen type."
+          ],
+          "type": "string"
+        },
+        "displayName": {
+          "description": "A human readable representation of the pollen type name. Example: \"Grass\"",
+          "type": "string"
+        },
+        "healthRecommendations": {
+          "description": "Textual list of explanations, related to health insights based on the current pollen levels.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "inSeason": {
+          "description": "Indication whether the plant is in season or not.",
+          "type": "boolean"
+        },
+        "indexInfo": {
+          "$ref": "IndexInfo",
+          "description": "Contains the Universal Pollen Index (UPI) data for the pollen type."
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Pollen API",
+  "version": "v1",
+  "version_module": true
+}

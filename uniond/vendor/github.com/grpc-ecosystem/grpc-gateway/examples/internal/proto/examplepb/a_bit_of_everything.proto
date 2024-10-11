@@ -1,0 +1,654 @@
+syntax = "proto3";
+option go_package = "examplepb";
+package grpc.gateway.examples.internal.examplepb;
+
+import "google/api/annotations.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+import "examples/internal/proto/pathenum/path_enum.proto";
+import "examples/internal/proto/sub/message.proto";
+import "examples/internal/proto/sub2/message.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+	info: {
+		title: "A Bit of Everything";
+		version: "1.0";
+		contact: {
+			name: "gRPC-Gateway project";
+			url: "https://github.com/grpc-ecosystem/grpc-gateway";
+			email: "none@example.com";
+		};
+		license: {
+			name: "BSD 3-Clause License";
+			url: "https://github.com/grpc-ecosystem/grpc-gateway/blob/master/LICENSE.txt";
+		};
+		extensions: {
+			key: "x-something-something";
+			value {
+				string_value: "yadda";
+			}
+		}
+	};
+	// Overwriting host entry breaks tests, so this is not done here.
+	external_docs: {
+		url: "https://github.com/grpc-ecosystem/grpc-gateway";
+		description: "More about gRPC-Gateway";
+	}
+	schemes: HTTP;
+	schemes: HTTPS;
+	schemes: WSS;
+	consumes: "application/json";
+	consumes: "application/x-foo-mime";
+	produces: "application/json";
+	produces: "application/x-foo-mime";
+	security_definitions: {
+		security: {
+			key: "BasicAuth";
+			value: {
+				type: TYPE_BASIC;
+			}
+		}
+		security: {
+			key: "ApiKeyAuth";
+			value: {
+				type: TYPE_API_KEY;
+				in: IN_HEADER;
+				name: "X-API-Key";
+				extensions: {
+					key: "x-amazon-apigateway-authtype";
+					value {
+						string_value: "oauth2";
+					}
+				}
+				extensions: {
+					key: "x-amazon-apigateway-authorizer";
+					value {
+						struct_value {
+							fields {
+								key: "type";
+								value {
+									string_value: "token";
+								}
+							}
+							fields {
+								key: "authorizerResultTtlInSeconds";
+								value {
+									number_value: 60;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		security: {
+			key: "OAuth2";
+			value: {
+				type: TYPE_OAUTH2;
+				flow: FLOW_ACCESS_CODE;
+				authorization_url: "https://example.com/oauth/authorize";
+				token_url: "https://example.com/oauth/token";
+				scopes: {
+					scope: {
+						key: "read";
+						value: "Grants read access";
+					}
+					scope: {
+						key: "write";
+						value: "Grants write access";
+					}
+					scope: {
+						key: "admin";
+						value: "Grants read and write access to administrative information";
+					}
+				}
+			}
+		}
+	}
+	security: {
+		security_requirement: {
+			key: "BasicAuth";
+			value: {};
+		}
+		security_requirement: {
+			key: "ApiKeyAuth";
+			value: {};
+		}
+	}
+	security: {
+		security_requirement: {
+			key: "OAuth2";
+			value: {
+				scope: "read";
+				scope: "write";
+			}
+		}
+		security_requirement: {
+			key: "ApiKeyAuth";
+			value: {};
+		}
+	}
+	responses: {
+		key: "403";
+		value: {
+			description: "Returned when the user does not have permission to access the resource.";
+		}
+	}
+	responses: {
+		key: "404";
+		value: {
+			description: "Returned when the resource does not exist.";
+			schema: {
+				json_schema: {
+					type: STRING;
+				}
+			}
+		}
+	}
+	responses: {
+		key: "418";
+		value: {
+			description: "I'm a teapot.";
+			schema: {
+				json_schema: {
+					ref: ".grpc.gateway.examples.internal.examplepb.NumericEnum";
+				}
+			}
+		}
+	}
+	responses: {
+		key: "500";
+		value: {
+			description: "Server error";
+			headers: {
+				key: "X-Correlation-Id"
+				value: {
+					description: "Unique event identifier for server requests"
+					type: "string"
+					format: "uuid"
+					default: "\"2438ac3c-37eb-4902-adef-ed16b4431030\""
+					pattern: "^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$"
+				}
+			};
+			schema: {
+				json_schema: {
+					ref: ".grpc.gateway.examples.internal.examplepb.ErrorResponse";
+				}
+			}
+		}
+	}
+	extensions: {
+		key: "x-grpc-gateway-foo";
+		value {
+			string_value: "bar";
+		}
+	}
+	extensions: {
+		key: "x-grpc-gateway-baz-list";
+		value {
+			list_value: {
+				values: {
+					string_value: "one";
+				}
+				values: {
+					bool_value: true;
+				}
+			}
+		}
+	}
+};
+
+message ErrorResponse{
+	string correlationId = 1 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field) = {
+		pattern: "^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$",
+		title: "x-correlation-id",
+		description: "Unique event identifier for server requests",
+		format: "uuid",
+		example: "\"2438ac3c-37eb-4902-adef-ed16b4431030\""
+	}];
+	ErrorObject error = 2;
+}
+
+message ErrorObject{
+	int32 code = 1 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field) = {
+		pattern: "^[0-9]$",
+		title: "code",
+		description: "Response code",
+		format: "integer"
+	}];
+	string message = 2 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field) = {
+		pattern: "^[a-zA-Z0-9]{1, 32}$",
+		title: "message",
+		description: "Response message"
+	}];
+}
+
+
+// Intentionally complicated message type to cover many features of Protobuf.
+message ABitOfEverything {
+	option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+		json_schema: {
+			title: "A bit of everything"
+			description: "Intentionaly complicated message type to cover many features of Protobuf."
+			required: ["uuid", "int64_value", "double_value"]
+		}
+		external_docs: {
+			url: "https://github.com/grpc-ecosystem/grpc-gateway";
+			description: "Find out more about ABitOfEverything";
+		}
+		example_string: "{\"uuid\": \"0cf361e1-4b44-483d-a159-54dabdf7e814\"}"
+	};
+
+	// Nested is nested type.
+	message Nested {
+		option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+			example_string: "{\"ok\": \"TRUE\"}"
+		};
+		// name is nested field.
+		string name = 1;
+		uint32 amount = 2;
+		// DeepEnum is one or zero.
+		enum DeepEnum {
+			// FALSE is false.
+			FALSE = 0;
+			// TRUE is true.
+			TRUE = 1;
+		}
+
+		// DeepEnum comment.
+		DeepEnum ok = 3 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field) = {description: "DeepEnum description."}];
+	}
+	Nested single_nested = 25;
+
+	string uuid = 1 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field) = {pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}", min_length: 1}];
+	repeated Nested nested = 2;
+	float float_value = 3 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field) = {description: "Float value field", default: "0.2", required: ['float_value']}];
+	double double_value = 4;
+	int64 int64_value = 5;
+	uint64 uint64_value = 6;
+	int32 int32_value = 7;
+	fixed64 fixed64_value = 8;
+	fixed32 fixed32_value = 9;
+	bool bool_value = 10;
+	string string_value = 11;
+	bytes bytes_value = 29;
+	uint32 uint32_value = 13;
+	NumericEnum enum_value = 14;
+	pathenum.PathEnum path_enum_value = 30;
+	pathenum.MessagePathEnum.NestedPathEnum nested_path_enum_value = 31;
+	sfixed32 sfixed32_value = 15;
+	sfixed64 sfixed64_value = 16;
+	sint32 sint32_value = 17;
+	sint64 sint64_value = 18;
+	repeated string repeated_string_value = 19;
+	oneof oneof_value {
+		google.protobuf.Empty oneof_empty = 20;
+		string oneof_string = 21;
+	}
+
+	map<string, NumericEnum> map_value = 22;
+	map<string, string> mapped_string_value = 23;
+	map<string, Nested> mapped_nested_value = 24;
+
+	string nonConventionalNameValue = 26;
+
+	google.protobuf.Timestamp timestamp_value = 27;
+
+	// repeated enum value. it is comma-separated in query
+	repeated NumericEnum repeated_enum_value = 28;
+
+	// repeated numeric enum comment (This comment is overridden by the field annotation)
+	repeated NumericEnum repeated_enum_annotation = 32 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field) = {title: "Repeated numeric enum title", description: "Repeated numeric enum description."}];
+
+	// numeric enum comment (This comment is overridden by the field annotation)
+	NumericEnum enum_value_annotation = 33 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field) = {title: "Numeric enum title", description: "Numeric enum description."}];
+
+	// repeated string comment (This comment is overridden by the field annotation)
+	repeated string repeated_string_annotation = 34 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field) = {title: "Repeated string title", description: "Repeated string description."}];
+
+	// repeated nested object comment (This comment is overridden by the field annotation)
+	repeated Nested repeated_nested_annotation = 35 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field) = {title: "Repeated nested object title", description: "Repeated nested object description."}];
+
+	// nested object comments (This comment is overridden by the field annotation)
+	Nested nested_annotation = 36 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field) = {title: "Nested object title", description: "Nested object description."}];
+
+	int64 int64_override_type = 37 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field) = {type: INTEGER}];
+}
+
+// ABitOfEverythingRepeated is used to validate repeated path parameter functionality
+message ABitOfEverythingRepeated {
+	option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+		example_string: "{\"path_repeated_bool_value\": [true, true, false, true], \"path_repeated_int32_value\": [1, 2, 3]}"
+	};
+
+	// repeated values. they are comma-separated in path
+	repeated float path_repeated_float_value = 1;
+	repeated double path_repeated_double_value = 2;
+	repeated int64 path_repeated_int64_value = 3;
+	repeated uint64 path_repeated_uint64_value = 4;
+	repeated int32 path_repeated_int32_value = 5;
+	repeated fixed64 path_repeated_fixed64_value = 6;
+	repeated fixed32 path_repeated_fixed32_value = 7;
+	repeated bool path_repeated_bool_value = 8;
+	repeated string path_repeated_string_value = 9;
+	repeated bytes path_repeated_bytes_value = 10;
+	repeated uint32 path_repeated_uint32_value = 11;
+	repeated NumericEnum path_repeated_enum_value = 12;
+	repeated sfixed32 path_repeated_sfixed32_value = 13;
+	repeated sfixed64 path_repeated_sfixed64_value = 14;
+	repeated sint32 path_repeated_sint32_value = 15;
+	repeated sint64 path_repeated_sint64_value = 16;
+}
+
+message Body {
+	string name = 1;
+}
+
+message MessageWithBody {
+	string id = 1;
+	Body data = 2;
+}
+
+
+// NumericEnum is one or zero.
+enum NumericEnum {
+	// ZERO means 0
+	ZERO = 0;
+	// ONE means 1
+	ONE = 1;
+}
+
+// UpdateV2Request request for update includes the message and the update mask
+message UpdateV2Request {
+	ABitOfEverything abe = 1;
+	google.protobuf.FieldMask update_mask = 2;
+}
+
+// An example resource type from AIP-123 used to test the behavior described in
+// the CreateBookRequest message.
+//
+// See: https://google.aip.dev/123
+message Book {
+	// The resource name of the book.
+	//
+	// Format: `publishers/{publisher}/books/{book}`
+	//
+	// Example: `publishers/1257894000000000000/books/my-book`
+	string name = 1;
+
+	// Output only. The book's ID.
+	string id = 2;
+
+	// Output only. Creation time of the book.
+	google.protobuf.Timestamp create_time = 3;
+}
+
+// A standard Create message from AIP-133 with a user-specified ID.
+// The user-specified ID (the `book_id` field in this example) must become a
+// query parameter in the OpenAPI spec.
+//
+// See: https://google.aip.dev/133#user-specified-ids
+message CreateBookRequest {
+	// The publisher in which to create the book.
+	//
+	// Format: `publishers/{publisher}`
+	//
+	// Example: `publishers/1257894000000000000`
+	string parent = 1;
+
+	// The book to create.
+	Book book = 2;
+
+	// The ID to use for the book.
+	//
+	// This must start with an alphanumeric character.
+	string book_id = 3;
+}
+
+// ABitOfEverything service is used to validate that APIs with complicated
+// proto messages and URL templates are still processed correctly.
+service ABitOfEverythingService {
+
+	option (grpc.gateway.protoc_gen_swagger.options.openapiv2_tag) = {
+		description: "ABitOfEverythingService description -- which should not be used in place of the documentation comment!"
+		external_docs: {
+			url: "https://github.com/grpc-ecosystem/grpc-gateway";
+			description: "Find out more about EchoService";
+		}
+	};
+
+	// Create a new ABitOfEverything
+	//
+	// This API creates a new ABitOfEverything
+	rpc Create(ABitOfEverything) returns (ABitOfEverything) {
+		option (google.api.http) = {
+			post: "/v1/example/a_bit_of_everything/{float_value}/{double_value}/{int64_value}/separator/{uint64_value}/{int32_value}/{fixed64_value}/{fixed32_value}/{bool_value}/{string_value=strprefix/*}/{uint32_value}/{sfixed32_value}/{sfixed64_value}/{sint32_value}/{sint64_value}/{nonConventionalNameValue}/{enum_value}/{path_enum_value}/{nested_path_enum_value}/{enum_value_annotation}"
+		};
+	}
+	rpc CreateBody(ABitOfEverything) returns (ABitOfEverything) {
+		option (google.api.http) = {
+			post: "/v1/example/a_bit_of_everything"
+			body: "*"
+		};
+	}
+	// Create a book.
+	rpc CreateBook(CreateBookRequest) returns (Book) {
+		option (google.api.http) = {
+			post: "/v1/{parent=publishers/*}/books"
+			body: "book"
+		};
+	}
+	rpc Lookup(sub2.IdMessage) returns (ABitOfEverything) {
+		option (google.api.http) = {
+			get: "/v1/example/a_bit_of_everything/{uuid}"
+		};
+	}
+	rpc Update(ABitOfEverything) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			put: "/v1/example/a_bit_of_everything/{uuid}"
+			body: "*"
+		};
+	}
+	rpc UpdateV2(UpdateV2Request) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			put: "/v2/example/a_bit_of_everything/{abe.uuid}"
+			body: "abe"
+			additional_bindings: [
+				{
+					patch: "/v2/example/a_bit_of_everything/{abe.uuid}"
+					body: "abe"
+				},
+				{
+					patch: "/v2a/example/a_bit_of_everything/{abe.uuid}"
+					body: "*"
+				}
+			]
+		};
+	}
+
+	rpc Delete(sub2.IdMessage) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			delete: "/v1/example/a_bit_of_everything/{uuid}"
+		};
+		option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+			security: {
+				security_requirement: {
+					key: "ApiKeyAuth";
+					value: {}
+				}
+				security_requirement: {
+					key: "OAuth2";
+					value: {
+						scope: "read";
+						scope: "write";
+					}
+				}
+			}
+			extensions: {
+				key: "x-irreversible";
+				value {
+					bool_value: true;
+				}
+			}
+		};
+	}
+	rpc GetQuery(ABitOfEverything) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			get: "/v1/example/a_bit_of_everything/query/{uuid}"
+		};
+		option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+			deprecated: true // For testing purposes.
+			external_docs: {
+				url: "https://github.com/grpc-ecosystem/grpc-gateway";
+				description: "Find out more about GetQuery";
+			}
+			security: {
+			}
+		};
+	}
+	rpc GetRepeatedQuery(ABitOfEverythingRepeated) returns (ABitOfEverythingRepeated) {
+		option (google.api.http) = {
+			get: "/v1/example/a_bit_of_everything_repeated/{path_repeated_float_value}/{path_repeated_double_value}/{path_repeated_int64_value}/{path_repeated_uint64_value}/{path_repeated_int32_value}/{path_repeated_fixed64_value}/{path_repeated_fixed32_value}/{path_repeated_bool_value}/{path_repeated_string_value}/{path_repeated_bytes_value}/{path_repeated_uint32_value}/{path_repeated_enum_value}/{path_repeated_sfixed32_value}/{path_repeated_sfixed64_value}/{path_repeated_sint32_value}/{path_repeated_sint64_value}"
+		};
+	}
+	// Echo allows posting a StringMessage value.
+	//
+	// It also exposes multiple bindings.
+	//
+	// This makes it useful when validating that the OpenAPI v2 API
+	// description exposes documentation correctly on all paths
+	// defined as additional_bindings in the proto.
+	rpc Echo(grpc.gateway.examples.internal.sub.StringMessage) returns (grpc.gateway.examples.internal.sub.StringMessage) {
+		option (google.api.http) = {
+			get: "/v1/example/a_bit_of_everything/echo/{value}"
+			additional_bindings {
+				post: "/v2/example/echo"
+				body: "value"
+			}
+			additional_bindings {
+				get: "/v2/example/echo"
+			}
+		};
+		option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+			description: "Description Echo";
+			summary: "Summary: Echo rpc";
+			tags: "echo rpc";
+			external_docs: {
+				url: "https://github.com/grpc-ecosystem/grpc-gateway";
+				description: "Find out more Echo";
+			}
+			responses: {
+				key: "200"
+				value: {
+					examples: {
+						key: "application/json"
+						value: '{"value": "the input value"}'
+					}
+				}
+			}
+			responses: {
+				key: "503";
+				value: {
+					description: "Returned when the resource is temporarily unavailable.";
+					extensions: {
+						key: "x-number";
+						value {
+							number_value: 100;
+						}
+					}
+				}
+			}
+			responses: {
+				// Overwrites global definition.
+				key: "404";
+				value: {
+					description: "Returned when the resource does not exist.";
+					schema: {
+						json_schema: {
+							type: INTEGER;
+						}
+					}
+				}
+			}
+		};
+	}
+	rpc DeepPathEcho(ABitOfEverything) returns (ABitOfEverything) {
+		option (google.api.http) = {
+			post: "/v1/example/a_bit_of_everything/{single_nested.name}"
+			body: "*"
+		};
+	}
+	rpc NoBindings(google.protobuf.Duration) returns (google.protobuf.Empty) {}
+	rpc Timeout(google.protobuf.Empty) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			get: "/v2/example/timeout",
+		};
+	}
+	rpc ErrorWithDetails(google.protobuf.Empty) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			get: "/v2/example/errorwithdetails",
+		};
+	}
+	rpc GetMessageWithBody(MessageWithBody) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			post: "/v2/example/withbody/{id}",
+			body: "data"
+		};
+	}
+	rpc PostWithEmptyBody(Body) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			post: "/v2/example/postwithemptybody/{name}",
+			body: "*"
+		};
+	}
+	rpc CheckGetQueryParams(ABitOfEverything) returns (ABitOfEverything) {
+		option (google.api.http) = {
+			get: "/v1/example/a_bit_of_everything/params/get/{single_nested.name}"
+		};
+	}
+	rpc CheckNestedEnumGetQueryParams(ABitOfEverything) returns (ABitOfEverything) {
+		option (google.api.http) = {
+			get: "/v1/example/a_bit_of_everything/params/get/nested_enum/{single_nested.ok}"
+		};
+	}
+	rpc CheckPostQueryParams(ABitOfEverything) returns (ABitOfEverything) {
+		option (google.api.http) = {
+			post: "/v1/example/a_bit_of_everything/params/post/{string_value}"
+			body: "single_nested"
+		};
+	}
+	rpc OverwriteResponseContentType(google.protobuf.Empty) returns (google.protobuf.StringValue) {
+		option (google.api.http) = {
+			get: "/v2/example/overwriteresponsecontenttype"
+		};
+		option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+			produces: "application/text"
+		};
+	}
+	rpc CheckExternalPathEnum(pathenum.MessageWithPathEnum) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			get: "/v2/{value}:check"
+		};
+	}
+	rpc CheckExternalNestedPathEnum(pathenum.MessageWithNestedPathEnum) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			get: "/v2/{value}:check"
+		};
+	}
+}
+
+// camelCase and lowercase service names are valid but not recommended (use TitleCase instead)
+service camelCaseServiceName {
+	rpc Empty(google.protobuf.Empty) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			get: "/v2/example/empty",
+		};
+	}
+}
+service AnotherServiceWithNoBindings {
+	rpc NoBindings(google.protobuf.Empty) returns (google.protobuf.Empty) {}
+}

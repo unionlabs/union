@@ -1,0 +1,295 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/androidpublisher": {
+          "description": "View and manage your Google Play Developer account"
+        }
+      }
+    }
+  },
+  "basePath": "/androidpublisher/v2/applications/",
+  "baseUrl": "https://www.googleapis.com/androidpublisher/v2/applications/",
+  "batchPath": "batch/androidpublisher/v2",
+  "canonicalName": "Android Publisher",
+  "description": "Accesses Android application developers' Google Play accounts.",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://developers.google.com/android-publisher",
+  "etag": "\"u9GIe6H63LSGq-9_t39K2Zx_EAc/ry3Wzo7q_Cbb0sesBVF_0Z_jfxQ\"",
+  "icons": {
+    "x16": "https://www.google.com/images/icons/product/android-16.png",
+    "x32": "https://www.google.com/images/icons/product/android-32.png"
+  },
+  "id": "androidpublisher:v2",
+  "kind": "discovery#restDescription",
+  "name": "androidpublisher",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "alt": {
+      "default": "json",
+      "description": "Data format for the response.",
+      "enum": [
+        "json"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "An opaque string that represents a user for quota purposes. Must not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "userIp": {
+      "description": "Deprecated. Please use quotaUser instead.",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "purchases": {
+      "resources": {
+        "products": {
+          "methods": {
+            "get": {
+              "description": "Checks the purchase and consumption status of an inapp item.",
+              "httpMethod": "GET",
+              "id": "androidpublisher.purchases.products.get",
+              "parameterOrder": [
+                "packageName",
+                "productId",
+                "token"
+              ],
+              "parameters": {
+                "packageName": {
+                  "description": "The package name of the application the inapp product was sold in (for example, 'com.some.thing').",
+                  "location": "path",
+                  "required": true,
+                  "type": "string"
+                },
+                "productId": {
+                  "description": "The inapp product SKU (for example, 'com.some.thing.inapp1').",
+                  "location": "path",
+                  "required": true,
+                  "type": "string"
+                },
+                "token": {
+                  "description": "The token provided to the user's device when the inapp product was purchased.",
+                  "location": "path",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "{packageName}/purchases/products/{productId}/tokens/{token}",
+              "response": {
+                "$ref": "ProductPurchase"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/androidpublisher"
+              ]
+            }
+          }
+        },
+        "voidedpurchases": {
+          "methods": {
+            "list": {
+              "description": "Lists the purchases that were canceled, refunded or charged-back.",
+              "httpMethod": "GET",
+              "id": "androidpublisher.purchases.voidedpurchases.list",
+              "parameterOrder": [
+                "packageName"
+              ],
+              "parameters": {
+                "endTime": {
+                  "description": "The time, in milliseconds since the Epoch, of the newest voided purchase that you want to see in the response. The value of this parameter cannot be greater than the current time and is ignored if a pagination token is set. Default value is current time. Note: This filter is applied on the time at which the record is seen as voided by our systems and not the actual voided time returned in the response.",
+                  "format": "int64",
+                  "location": "query",
+                  "type": "string"
+                },
+                "maxResults": {
+                  "format": "uint32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "packageName": {
+                  "description": "The package name of the application for which voided purchases need to be returned (for example, 'com.some.thing').",
+                  "location": "path",
+                  "required": true,
+                  "type": "string"
+                },
+                "startIndex": {
+                  "format": "uint32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "startTime": {
+                  "description": "The time, in milliseconds since the Epoch, of the oldest voided purchase that you want to see in the response. The value of this parameter cannot be older than 30 days and is ignored if a pagination token is set. Default value is current time minus 30 days. Note: This filter is applied on the time at which the record is seen as voided by our systems and not the actual voided time returned in the response.",
+                  "format": "int64",
+                  "location": "query",
+                  "type": "string"
+                },
+                "token": {
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "{packageName}/purchases/voidedpurchases",
+              "response": {
+                "$ref": "VoidedPurchasesListResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/androidpublisher"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20200428",
+  "rootUrl": "https://www.googleapis.com/",
+  "schemas": {
+    "PageInfo": {
+      "id": "PageInfo",
+      "properties": {
+        "resultPerPage": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "startIndex": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "totalResults": {
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "ProductPurchase": {
+      "description": "A ProductPurchase resource indicates the status of a user's inapp product purchase.",
+      "id": "ProductPurchase",
+      "properties": {
+        "consumptionState": {
+          "description": "The consumption state of the inapp product. Possible values are:  \n- Yet to be consumed \n- Consumed",
+          "format": "int32",
+          "type": "integer"
+        },
+        "developerPayload": {
+          "description": "A developer-specified string that contains supplemental information about an order.",
+          "type": "string"
+        },
+        "kind": {
+          "default": "androidpublisher#productPurchase",
+          "description": "This kind represents an inappPurchase object in the androidpublisher service.",
+          "type": "string"
+        },
+        "orderId": {
+          "description": "The order id associated with the purchase of the inapp product.",
+          "type": "string"
+        },
+        "purchaseState": {
+          "description": "The purchase state of the order. Possible values are:  \n- Purchased \n- Canceled \n- Pending",
+          "format": "int32",
+          "type": "integer"
+        },
+        "purchaseTimeMillis": {
+          "description": "The time the product was purchased, in milliseconds since the epoch (Jan 1, 1970).",
+          "format": "int64",
+          "type": "string"
+        },
+        "purchaseType": {
+          "description": "The type of purchase of the inapp product. This field is only set if this purchase was not made using the standard in-app billing flow. Possible values are:  \n- Test (i.e. purchased from a license testing account) \n- Promo (i.e. purchased using a promo code) \n- Rewarded (i.e. from watching a video ad instead of paying)",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "TokenPagination": {
+      "id": "TokenPagination",
+      "properties": {
+        "nextPageToken": {
+          "type": "string"
+        },
+        "previousPageToken": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "VoidedPurchase": {
+      "description": "A VoidedPurchase resource indicates a purchase that was either canceled/refunded/charged-back.",
+      "id": "VoidedPurchase",
+      "properties": {
+        "kind": {
+          "default": "androidpublisher#voidedPurchase",
+          "description": "This kind represents a voided purchase object in the androidpublisher service.",
+          "type": "string"
+        },
+        "purchaseTimeMillis": {
+          "description": "The time at which the purchase was made, in milliseconds since the epoch (Jan 1, 1970).",
+          "format": "int64",
+          "type": "string"
+        },
+        "purchaseToken": {
+          "description": "The token which uniquely identifies a one-time purchase or subscription. To uniquely identify subscription renewals use order_id (available starting from version 3 of the API).",
+          "type": "string"
+        },
+        "voidedTimeMillis": {
+          "description": "The time at which the purchase was canceled/refunded/charged-back, in milliseconds since the epoch (Jan 1, 1970).",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "VoidedPurchasesListResponse": {
+      "id": "VoidedPurchasesListResponse",
+      "properties": {
+        "pageInfo": {
+          "$ref": "PageInfo"
+        },
+        "tokenPagination": {
+          "$ref": "TokenPagination"
+        },
+        "voidedPurchases": {
+          "items": {
+            "$ref": "VoidedPurchase"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "androidpublisher/v2/applications/",
+  "title": "Google Play Developer API",
+  "version": "v2"
+}

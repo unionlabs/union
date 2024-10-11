@@ -1,0 +1,395 @@
+# Test a scenario that should NOT result in defragmentation.
+
+define
+a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+c-d:{(#4,RANGEKEYSET,@3,bananas)}
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+----
+
+iter
+first
+next
+next
+last
+prev
+prev
+----
+a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+c-d:{(#4,RANGEKEYSET,@3,bananas)}
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+c-d:{(#4,RANGEKEYSET,@3,bananas)}
+a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+
+iter
+first
+next
+next
+next
+last
+prev
+prev
+prev
+----
+a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+c-d:{(#4,RANGEKEYSET,@3,bananas)}
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+<nil>
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+c-d:{(#4,RANGEKEYSET,@3,bananas)}
+a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+<nil>
+
+# Test a scenario that SHOULD result in internal defragmentation ([a,c) and
+# [c,d) should be merged.
+
+define
+a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+c-d:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+d-e:{(#1,RANGEKEYSET,@3,bananas)}
+----
+
+iter
+first
+next
+next
+----
+a-d:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+d-e:{(#1,RANGEKEYSET,@3,bananas)}
+<nil>
+
+# Test defragmenting in both directions at seek keys.
+
+define
+a-f:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+f-h:{(#3,RANGEKEYSET,@3,bananas)}
+h-p:{(#3,RANGEKEYSET,@3,bananas)}
+p-t:{(#3,RANGEKEYSET,@3,bananas)}
+----
+
+iter
+seekge b
+prev
+seekge b
+next
+seeklt d
+next
+seeklt d
+prev
+----
+a-f:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+<nil>
+a-f:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+f-t:{(#3,RANGEKEYSET,@3,bananas)}
+a-f:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+f-t:{(#3,RANGEKEYSET,@3,bananas)}
+a-f:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+<nil>
+
+iter
+seeklt d
+next
+prev
+----
+a-f:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+f-t:{(#3,RANGEKEYSET,@3,bananas)}
+a-f:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+
+# Test next-ing and prev-ing around seek keys.
+
+define
+a-f:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+f-h:{(#3,RANGEKEYSET,@3,bananas)}
+h-p:{(#3,RANGEKEYSET,@3,bananas)}
+p-t:{(#3,RANGEKEYSET,@3,bananas)}
+t-z:{(#4,RANGEKEYSET,@2,oranges)}
+----
+
+iter
+seekge r
+prev
+next
+next
+----
+f-t:{(#3,RANGEKEYSET,@3,bananas)}
+a-f:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+f-t:{(#3,RANGEKEYSET,@3,bananas)}
+t-z:{(#4,RANGEKEYSET,@2,oranges)}
+
+iter
+seekge f
+seekge h
+seekge p
+seekge t
+seekge u
+seekge v
+seekge z
+----
+f-t:{(#3,RANGEKEYSET,@3,bananas)}
+f-t:{(#3,RANGEKEYSET,@3,bananas)}
+f-t:{(#3,RANGEKEYSET,@3,bananas)}
+t-z:{(#4,RANGEKEYSET,@2,oranges)}
+t-z:{(#4,RANGEKEYSET,@2,oranges)}
+t-z:{(#4,RANGEKEYSET,@2,oranges)}
+<nil>
+
+iter
+seeklt f
+seeklt h
+seeklt p
+seeklt t
+seeklt u
+seeklt z
+----
+a-f:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+f-t:{(#3,RANGEKEYSET,@3,bananas)}
+f-t:{(#3,RANGEKEYSET,@3,bananas)}
+f-t:{(#3,RANGEKEYSET,@3,bananas)}
+t-z:{(#4,RANGEKEYSET,@2,oranges)}
+t-z:{(#4,RANGEKEYSET,@2,oranges)}
+
+# Test iteration with a reducer that collects keys across all spans that
+# constitute a defragmented span. Abutting spans are always combined.
+
+define
+a-b:{(#3,RANGEDEL) (#2,RANGEDEL)}
+b-c:{(#4,RANGEDEL) (#1,RANGEDEL)}
+c-d:{(#5,RANGEDEL)}
+e-f:{(#1,RANGEDEL)}
+f-g:{(#2,RANGEDEL)}
+----
+
+iter equal=always reducer=collect
+first
+next
+next
+last
+prev
+prev
+----
+a-d:{(#5,RANGEDEL) (#4,RANGEDEL) (#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+e-g:{(#2,RANGEDEL) (#1,RANGEDEL)}
+<nil>
+e-g:{(#2,RANGEDEL) (#1,RANGEDEL)}
+a-d:{(#5,RANGEDEL) (#4,RANGEDEL) (#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+<nil>
+
+# Test defragmentation of non-empty (i.e. more than one value) fragments, while
+# empty fragments are left untouched.
+
+define
+a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+c-d:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+d-e:{}
+e-f:{}
+g-h:{(#1,RANGEKEYSET,@3,bananas)}
+----
+
+iter
+first
+next
+next
+next
+next
+----
+a-d:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+d-e:{}
+e-f:{}
+g-h:{(#1,RANGEKEYSET,@3,bananas)}
+<nil>
+
+iter
+last
+prev
+prev
+prev
+prev
+----
+g-h:{(#1,RANGEKEYSET,@3,bananas)}
+e-f:{}
+d-e:{}
+a-d:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+<nil>
+
+iter
+seekge d
+next
+prev
+seekge e
+next
+prev
+prev
+prev
+----
+d-e:{}
+e-f:{}
+d-e:{}
+e-f:{}
+g-h:{(#1,RANGEKEYSET,@3,bananas)}
+e-f:{}
+d-e:{}
+a-d:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+
+iter
+seeklt e
+next
+prev
+seeklt f
+next
+prev
+prev
+prev
+----
+d-e:{}
+e-f:{}
+d-e:{}
+e-f:{}
+g-h:{(#1,RANGEKEYSET,@3,bananas)}
+e-f:{}
+d-e:{}
+a-d:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+
+# Test that the defragmenting iterator does yield errors in cases that do not
+# need to defragment.
+
+define
+a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+c-d:{(#4,RANGEKEYSET,@3,bananas)}
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+----
+
+iter probes=(ErrInjected)
+seek-ge b
+seek-lt d
+first
+last
+----
+<nil> err=<injected error>
+<nil> err=<injected error>
+<nil> err=<injected error>
+<nil> err=<injected error>
+
+# Next and Prev may only be called on positioned iterators, so to test
+# propagation of errors on Next or Prev, we must use a probe that injects errors
+# on Next or Prev but leaves seeks untouched.
+#
+# The situation is complicated by the fact that a seek on the defragmenting
+# iterator will result in Next/Prevs on the embedded iterator (in order to peek
+# ahead to see if anything needs to be defragmented).
+#
+# First we test the seeks too result in injected errors when they Next/Prev
+# ahead to determine if there's anything to defragment.
+
+iter probes=((If (Or OpNext OpPrev) ErrInjected noop), (Log "#  inner."))
+seek-ge b
+next
+seek-lt cat
+prev
+----
+#  inner.SeekGE("b") = a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+#  inner.Prev() = nil <err="injected error">
+<nil> err=<injected error>
+#  inner.Next() = nil <err="injected error">
+<nil> err=<injected error>
+#  inner.SeekLT("cat") = c-d:{(#4,RANGEKEYSET,@3,bananas)}
+#  inner.Next() = nil <err="injected error">
+<nil> err=<injected error>
+#  inner.Prev() = nil <err="injected error">
+<nil> err=<injected error>
+
+# Use a probe that injects errors whenever we otherwise would've returned the
+# c-d span. First and Last calls should both return errors because during
+# defragmenting they'll step the internal iterator on to the error position.
+
+iter probes=((If (Equal StartKey (Bytes "c")) ErrInjected noop), (Log "#  inner."))
+first
+last
+----
+#  inner.First() = a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+#  inner.Next() = nil <err="injected error">
+<nil> err=<injected error>
+#  inner.Last() = d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+#  inner.Prev() = nil <err="injected error">
+<nil> err=<injected error>
+
+# In order to test that errors are injected when Next-ing the top-level
+# iterator, define test data that includes 5 spans.
+
+define
+a-b:{(#3,RANGEKEYUNSET,@5)}
+b-c:{(#4,RANGEKEYSET,@5,apples)}
+c-d:{(#5,RANGEKEYSET,@3,bananas)}
+d-e:{(#6,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+e-f:{(#4,RANGEKEYSET,@1,pineapple)}
+----
+
+# Use a probe that injects errors whenever we would've otherwise returned the
+# c-d span. Our initial First/Last seeks should not step on to the error
+# position and should not error. The subsequent Next/Prev however should.
+
+iter probes=((If (Equal StartKey (Bytes "c")) ErrInjected noop), (Log "#  inner."))
+first
+next
+last
+prev
+----
+#  inner.First() = a-b:{(#3,RANGEKEYUNSET,@5)}
+#  inner.Next() = b-c:{(#4,RANGEKEYSET,@5,apples)}
+a-b:{(#3,RANGEKEYUNSET,@5)}
+#  inner.Next() = nil <err="injected error">
+<nil> err=<injected error>
+#  inner.Last() = e-f:{(#4,RANGEKEYSET,@1,pineapple)}
+#  inner.Prev() = d-e:{(#6,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+e-f:{(#4,RANGEKEYSET,@1,pineapple)}
+#  inner.Prev() = nil <err="injected error">
+<nil> err=<injected error>
+
+# When seeking, the defragmenting iterator needs to defragment in both
+# directions. A forward seek first defragments in the reverse direction, and
+# then in the forward direction. A backward seek does the inverse. If an error
+# is encountered while performing the first defragment scan, it must be
+# surfaced.
+#
+# To test this scenario we again inject errors instead of the c-d span.
+#   - The SeekGE('d') should land on d-e, try to defragment backward first and
+#     encounter the error.
+#   - The SeekLT('c') should land on b-c, try to defragment forward first and
+#     encounter the error.
+iter probes=((If (Equal StartKey (Bytes "c")) ErrInjected noop), (Log "#  inner."))
+seek-ge d
+seek-lt c
+----
+#  inner.SeekGE("d") = d-e:{(#6,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+#  inner.Prev() = nil <err="injected error">
+<nil> err=<injected error>
+#  inner.SeekLT("c") = b-c:{(#4,RANGEKEYSET,@5,apples)}
+#  inner.Next() = nil <err="injected error">
+<nil> err=<injected error>
+
+# When changing directions in some circumstances we step an iterator and then
+# defragment twice; once to skip over the current span and once to construct the
+# next defragmented span in the new iteration direction. If the first step of
+# the iterator surfaces an error, ensure that it's still propagated.
+iter probes=((If (And OpPrev (Equal StartKey (Bytes "c"))) ErrInjected noop), (Log "#  inner."))
+seek-ge c
+prev
+----
+#  inner.SeekGE("c") = c-d:{(#5,RANGEKEYSET,@3,bananas)}
+#  inner.Prev() = b-c:{(#4,RANGEKEYSET,@5,apples)}
+#  inner.Next() = c-d:{(#5,RANGEKEYSET,@3,bananas)}
+#  inner.Next() = d-e:{(#6,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+c-d:{(#5,RANGEKEYSET,@3,bananas)}
+#  inner.Prev() = nil <err="injected error">
+<nil> err=<injected error>
+
+iter probes=((If (And OpNext (Equal StartKey (Bytes "c"))) ErrInjected noop), (Log "#  inner."))
+seek-lt d
+next
+----
+#  inner.SeekLT("d") = c-d:{(#5,RANGEKEYSET,@3,bananas)}
+#  inner.Next() = d-e:{(#6,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+#  inner.Prev() = c-d:{(#5,RANGEKEYSET,@3,bananas)}
+#  inner.Prev() = b-c:{(#4,RANGEKEYSET,@5,apples)}
+c-d:{(#5,RANGEKEYSET,@3,bananas)}
+#  inner.Next() = nil <err="injected error">
+<nil> err=<injected error>

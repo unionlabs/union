@@ -1,0 +1,167 @@
+build block-size=28 collectors=(suffix)
+a@5.SET.1:15
+b@2.SET.2:86
+c@9.SET.3:72
+d@3.SET.4:21
+e@2.SET.5:47
+f@0.SET.6:54
+g@8.SET.7:63
+h@3.SET.8:38
+----
+point:    [a@5#1,1,h@3#8,1]
+rangedel: [#0,0,#0,0]
+rangekey: [#0,0,#0,0]
+seqnums:  [1,8]
+
+collectors
+----
+0: suffix
+
+table-props
+----
+0: [0, 10)
+
+block-props
+----
+c#72057594037927935,17:
+  0: [2, 6)
+e#72057594037927935,17:
+  0: [3, 10)
+g#72057594037927935,17:
+  0: [0, 3)
+i#72057594037927935,17:
+  0: [3, 9)
+
+# Test an interator with a bound-limited filter that has a filtering criteria
+# too narrow to exclude any blocks.
+
+iter filter=(suffix,1,20)
+first
+next
+next
+next
+next
+next
+next
+next
+next
+----
+    filter.Intersects([2, 6)) = (true, <nil>)
+<a@5:1> MaybeFilteredKeys()=false
+<b@2:2> MaybeFilteredKeys()=false
+    filter.Intersects([3, 10)) = (true, <nil>)
+<c@9:3> MaybeFilteredKeys()=false
+<d@3:4> MaybeFilteredKeys()=false
+    filter.Intersects([0, 3)) = (true, <nil>)
+<e@2:5> MaybeFilteredKeys()=false
+<f@0:6> MaybeFilteredKeys()=false
+    filter.Intersects([3, 9)) = (true, <nil>)
+<g@8:7> MaybeFilteredKeys()=false
+<h@3:8> MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=false
+
+# Test an interator with a bound-limited filter that excludes one block, the
+# third block.
+
+iter filter=(suffix,3,20)
+first
+next
+next
+next
+next
+next
+next
+----
+    filter.Intersects([2, 6)) = (true, <nil>)
+<a@5:1> MaybeFilteredKeys()=false
+<b@2:2> MaybeFilteredKeys()=false
+    filter.Intersects([3, 10)) = (true, <nil>)
+<c@9:3> MaybeFilteredKeys()=false
+<d@3:4> MaybeFilteredKeys()=false
+    filter.Intersects([0, 3)) = (false, <nil>)
+    filter.KeyIsWithinUpperBound(g) = true
+    filter.Intersects([3, 9)) = (true, <nil>)
+<g@8:7> MaybeFilteredKeys()=true
+<h@3:8> MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=false
+
+# Test the same case but with an upper bound set that prevents skipping the
+# block.
+
+iter filter=(suffix,3,20) filter-upper=f@9
+first
+next
+next
+next
+next
+next
+next
+next
+next
+----
+    filter.Intersects([2, 6)) = (true, <nil>)
+<a@5:1> MaybeFilteredKeys()=false
+<b@2:2> MaybeFilteredKeys()=false
+    filter.Intersects([3, 10)) = (true, <nil>)
+<c@9:3> MaybeFilteredKeys()=false
+<d@3:4> MaybeFilteredKeys()=false
+    filter.Intersects([0, 3)) = (false, <nil>)
+    filter.KeyIsWithinUpperBound(g) = false
+<e@2:5> MaybeFilteredKeys()=false
+<f@0:6> MaybeFilteredKeys()=false
+    filter.Intersects([3, 9)) = (true, <nil>)
+<g@8:7> MaybeFilteredKeys()=false
+<h@3:8> MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=false
+
+# Test a case that filters the first two blocks. The third block is not filtered
+# due to block-property intersection. The fourth block is not filtered due to
+# the upper bound.
+
+iter filter=(suffix,0,1) filter-upper=h@6
+first
+next
+next
+next
+next
+----
+    filter.Intersects([2, 6)) = (false, <nil>)
+    filter.KeyIsWithinUpperBound(c) = true
+    filter.Intersects([3, 10)) = (false, <nil>)
+    filter.KeyIsWithinUpperBound(e) = true
+    filter.Intersects([0, 3)) = (true, <nil>)
+<e@2:5> MaybeFilteredKeys()=true
+<f@0:6> MaybeFilteredKeys()=false
+    filter.Intersects([3, 9)) = (false, <nil>)
+    filter.KeyIsWithinUpperBound(i) = false
+<g@8:7> MaybeFilteredKeys()=false
+<h@3:8> MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=false
+
+# Test a similar case in reverse. In reverse if the very first block is reached,
+# we do not know whether or not it's actually within the bounds because we don't
+# have another index separator to bound the block. As such, there's no call to
+# KeyIsWithinLowerBound for the first block of the sstable [ie, the last one
+# visited by the iterator].
+
+iter filter=(suffix,9,10) filter-lower=a@0
+last
+prev
+prev
+prev
+prev
+----
+    filter.Intersects([3, 9)) = (false, <nil>)
+    filter.KeyIsWithinLowerBound(g) = true
+    filter.Intersects([0, 3)) = (false, <nil>)
+    filter.KeyIsWithinLowerBound(e) = true
+    filter.Intersects([3, 10)) = (true, <nil>)
+<d@3:4> MaybeFilteredKeys()=true
+<c@9:3> MaybeFilteredKeys()=false
+    filter.Intersects([2, 6)) = (false, <nil>)
+<b@2:2> MaybeFilteredKeys()=false
+<a@5:1> MaybeFilteredKeys()=false
+. MaybeFilteredKeys()=false
+
+# Add tests with other non-limited filters set, including one with the same
+# Name.

@@ -1,0 +1,15 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["node_client_factory.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/validator/client/node-client-factory",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//config/features:go_default_library",
+        "//validator/client/beacon-api:go_default_library",
+        "//validator/client/grpc-api:go_default_library",
+        "//validator/client/iface:go_default_library",
+        "//validator/helpers:go_default_library",
+    ],
+)

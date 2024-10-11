@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+// Echo Service
+//
+// Echo Service API consists of a single service which returns
+// a message.
+package grpc.gateway.examples.internal.proto.examplepb;
+
+import "google/api/annotations.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/grpc-ecosystem/grpc-gateway/v2/examples/internal/proto/examplepb";
+
+// Embedded represents a message embedded in SimpleMessage.
+message Embedded {
+  oneof mark {
+    int64 progress = 1;
+    string note = 2;
+  }
+}
+
+// SimpleMessage represents a simple message sent to the Echo service.
+message SimpleMessage {
+  // Id represents the message identifier.
+  string id = 1;
+  int64 num = 2;
+  oneof code {
+    int64 line_num = 3;
+    string lang = 4;
+  }
+  Embedded status = 5;
+  oneof ext {
+    int64 en = 6;
+    Embedded no = 7;
+  }
+  string resource_id = 8;
+}
+
+// DynamicMessage represents a message which can have its structure
+// built dynamically using Struct and Values.
+message DynamicMessage {
+  google.protobuf.Struct struct_field = 1;
+  google.protobuf.Value value_field = 2;
+}
+
+message DynamicMessageUpdate {
+  DynamicMessage body = 1;
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+// Echo service responds to incoming echo requests.
+service EchoService {
+  // Echo method receives a simple message and returns it.
+  //
+  // The message posted as the id parameter will also be
+  // returned.
+  rpc Echo(SimpleMessage) returns (SimpleMessage) {
+    option (google.api.http) = {
+      post: "/v1/example/echo/{id}"
+      additional_bindings {get: "/v1/example/echo/{id}/{num}"}
+      additional_bindings {get: "/v1/example/echo/{id}/{num}/{lang}"}
+      additional_bindings {get: "/v1/example/echo1/{id}/{line_num}/{status.note}"}
+      additional_bindings {get: "/v1/example/echo2/{no.note}"}
+      additional_bindings {get: "/v1/example/echo/resource/{resource_id}"}
+    };
+  }
+  // EchoBody method receives a simple message and returns it.
+  rpc EchoBody(SimpleMessage) returns (SimpleMessage) {
+    option (google.api.http) = {
+      post: "/v1/example/echo_body"
+      body: "*"
+      additional_bindings {
+        put: "/v1/example/echo_body/{id}"
+        body: "no"
+      }
+      additional_bindings {
+        put: "/v1/example/echo_body2/{id}"
+        body: "resource_id"
+      }
+    };
+  }
+  // EchoDelete method receives a simple message and returns it.
+  rpc EchoDelete(SimpleMessage) returns (SimpleMessage) {
+    option (google.api.http) = {delete: "/v1/example/echo_delete"};
+  }
+  // EchoPatch method receives a NonStandardUpdateRequest and returns it.
+  rpc EchoPatch(DynamicMessageUpdate) returns (DynamicMessageUpdate) {
+    option (google.api.http) = {
+      patch: "/v1/example/echo_patch"
+      body: "body"
+    };
+  }
+  // EchoUnauthorized method receives a simple message and returns it. It must
+  // always return a google.rpc.Code of `UNAUTHENTICATED` and a HTTP Status code
+  // of 401.
+  rpc EchoUnauthorized(SimpleMessage) returns (SimpleMessage) {
+    option (google.api.http) = {get: "/v1/example/echo_unauthorized"};
+  }
+}

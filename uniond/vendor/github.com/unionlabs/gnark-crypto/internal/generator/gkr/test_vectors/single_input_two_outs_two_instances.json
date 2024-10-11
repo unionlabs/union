@@ -1,0 +1,57 @@
+{
+	"hash": {
+		"type": "const",
+		"val": -1
+	},
+	"circuit": "resources/single_input_two_outs.json",
+	"input": [
+		[
+			1,
+			2
+		]
+	],
+	"output": [
+		[
+			1,
+			4
+		],
+		[
+			1,
+			2
+		]
+	],
+	"proof": [
+		{
+			"finalEvalProof": [],
+			"partialSumPolys": [
+				[
+					0,
+					0
+				]
+			]
+		},
+		{
+			"finalEvalProof": [
+				0
+			],
+			"partialSumPolys": [
+				[
+					-4,
+					-36,
+					-112
+				]
+			]
+		},
+		{
+			"finalEvalProof": [
+				0
+			],
+			"partialSumPolys": [
+				[
+					-2,
+					-12
+				]
+			]
+		}
+	]
+}

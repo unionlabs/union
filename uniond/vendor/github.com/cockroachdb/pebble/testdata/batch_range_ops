@@ -1,0 +1,140 @@
+define
+set a 1
+set b 2
+merge c 3
+del-range a c
+del d
+range-key-set b c @4 value
+----
+
+scan
+----
+a#12,1:1
+b#17,1:2
+c#22,2:3
+d#32,0:
+
+scan range-del
+----
+a-c:{(#27,RANGEDEL)}
+
+scan range-key
+----
+b-c:{(#35,RANGEKEYSET,@4,value)}
+
+clear
+----
+
+define
+del-range a b
+del-range b c
+del-range a c
+del-range b d
+----
+
+scan range-del
+----
+a-b:{(#22,RANGEDEL) (#12,RANGEDEL)}
+b-c:{(#27,RANGEDEL) (#22,RANGEDEL) (#17,RANGEDEL)}
+c-d:{(#27,RANGEDEL)}
+
+clear
+----
+
+define
+range-key-del a b
+range-key-del b c
+range-key-del a c
+range-key-del b d
+----
+
+scan range-key
+----
+a-b:{(#22,RANGEKEYDEL) (#12,RANGEKEYDEL)}
+b-c:{(#27,RANGEKEYDEL) (#22,RANGEKEYDEL) (#17,RANGEKEYDEL)}
+c-d:{(#27,RANGEKEYDEL)}
+
+clear
+----
+
+define
+del-range a b
+----
+
+scan range-del
+----
+a-b:{(#12,RANGEDEL)}
+
+define
+del-range b c
+----
+
+scan range-del
+----
+a-b:{(#12,RANGEDEL)}
+b-c:{(#17,RANGEDEL)}
+
+define
+del-range a c
+----
+
+scan range-del
+----
+a-b:{(#22,RANGEDEL) (#12,RANGEDEL)}
+b-c:{(#22,RANGEDEL) (#17,RANGEDEL)}
+
+define
+del-range b d
+----
+
+scan range-del
+----
+a-b:{(#22,RANGEDEL) (#12,RANGEDEL)}
+b-c:{(#27,RANGEDEL) (#22,RANGEDEL) (#17,RANGEDEL)}
+c-d:{(#27,RANGEDEL)}
+
+# Verify that adding a range tombstone via Batch.Apply invalidates the
+# cached fragmented tombstones.
+
+clear
+----
+
+define
+del-range a b
+----
+
+scan range-del
+----
+a-b:{(#12,RANGEDEL)}
+
+apply
+del-range c d
+----
+
+scan range-del
+----
+a-b:{(#12,RANGEDEL)}
+c-d:{(#17,RANGEDEL)}
+
+# Verify that adding a range key via Batch.Apply invalidates the
+# cached fragmented range keys.
+
+clear
+----
+
+define
+range-key-set a c @2 v
+----
+
+scan range-key
+----
+a-c:{(#12,RANGEKEYSET,@2,v)}
+
+apply
+range-key-unset a b @2
+----
+
+scan range-key
+----
+a-b:{(#23,RANGEKEYUNSET,@2) (#12,RANGEKEYSET,@2,v)}
+b-c:{(#12,RANGEKEYSET,@2,v)}

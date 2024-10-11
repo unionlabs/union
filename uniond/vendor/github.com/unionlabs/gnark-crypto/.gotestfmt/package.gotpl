@@ -1,0 +1,42 @@
+{{- /*gotype: github.com/gotesttools/gotestfmt/v2/parser.Package*/ -}}
+
+{{- $settings := .Settings -}}
+{{- if and (or (not $settings.HideSuccessfulPackages) (ne .Result "PASS")) (or (not $settings.HideEmptyPackages) (ne .Result "SKIP") (ne (len .TestCases) 0)) -}}
+    📦 `{{ .Name }}`
+    {{- with .Coverage -}}
+       ({{ . }}% coverage)
+    {{- end -}}
+    {{- "\n" -}}
+    {{- with .Reason -}}
+        {{- "  " -}}🛑 {{ . -}}{{- "\n" -}}
+    {{- end -}}
+    {{- with .Output -}}
+    ```{{- "\n" -}}
+        {{- . -}}{{- "\n" -}}
+    ```{{- "\n" -}}
+    {{- end -}}
+    {{- with .TestCases -}}
+        {{- range . -}}
+            {{- if or (not $settings.HideSuccessfulTests) (ne .Result "PASS") -}}
+                {{- if eq .Result "PASS" -}}
+                    ✅
+                {{- else if eq .Result "SKIP" -}}
+                    🚧
+                {{- else -}}
+                    ❌
+                {{- end -}}
+                {{ " " }}`{{- .Name -}}` {{ .Duration -}}
+                {{- "\n" -}}
+
+                {{- with .Output -}}
+                    ```{{- "\n" -}}
+                    {{- formatTestOutput . $settings -}}{{- "\n" -}}
+                    ```{{- "\n" -}}
+                {{- end -}}
+
+                {{- "\n" -}}
+            {{- end -}}
+        {{- end -}}
+    {{- end -}}
+    {{- "\n" -}}
+{{- end -}}

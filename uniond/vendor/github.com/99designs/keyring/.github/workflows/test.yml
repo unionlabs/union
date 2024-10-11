@@ -1,0 +1,21 @@
+name: Continuous Integration
+on: push
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.19
+      - run: sudo apt-get install pass gnome-keyring dbus-x11
+      - uses: actions/checkout@v2
+      - run: go test -race ./...
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.19
+      - run: brew install pass gnupg
+      - uses: actions/checkout@v2
+      - run: go test -race ./...

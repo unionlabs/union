@@ -1,0 +1,59 @@
+# The following flags enable the remote cache so action results can be shared
+# across machines, developers, and workspaces.
+# 
+# This config is loaded from https://github.com/bazelbuild/bazel-toolchains/blob/master/bazelrc/latest.bazelrc
+#build:remote-cache --remote_timeout=3600
+#build:remote-cache --spawn_strategy=standalone
+#build:remote-cache --strategy=Javac=standalone
+#build:remote-cache --strategy=Closure=standalone
+#build:remote-cache --strategy=Genrule=standalone
+
+# Prysm specific remote-cache properties.
+build:remote-cache --remote_download_minimal
+build:remote-cache --remote_build_event_upload=minimal
+build:remote-cache --remote_cache=grpc://bazel-remote-cache:9092
+# Does not work with rules_oci. See https://github.com/bazel-contrib/rules_oci/issues/292
+#build:remote-cache --experimental_remote_downloader=grpc://bazel-remote-cache:9092
+build:remote-cache --remote_local_fallback
+build:remote-cache --experimental_remote_cache_async
+build:remote-cache --experimental_remote_merkle_tree_cache
+build:remote-cache --experimental_action_cache_store_output_metadata
+build:remote-cache --experimental_remote_cache_compression
+# Enforce stricter environment rules, which eliminates some non-hermetic
+# behavior and therefore improves both the remote cache hit rate and the
+# correctness and repeatability of the build.
+build:remote-cache --incompatible_strict_action_env=true
+
+build --experimental_use_hermetic_linux_sandbox
+
+# Import workspace options.
+import %workspace%/.bazelrc
+
+# Enable blake3 once it is supported in remote cache. See: https://github.com/buchgr/bazel-remote/issues/710
+# startup --digest_function=blake3
+
+startup --host_jvm_args=-Xmx8g --host_jvm_args=-Xms4g
+build --experimental_strict_action_env
+build --sandbox_tmpfs_path=/tmp
+build --verbose_failures
+build --announce_rc
+build --show_progress_rate_limit=5
+build --curses=no --color=no
+build --keep_going
+build --test_output=errors
+build --flaky_test_attempts=5
+build --build_runfile_links=false # Only build runfile symlink forest when required by local action, test, or run command.
+# Disabled race detection due to unstable test results under constrained environment build kite
+# build --features=race
+
+# Better caching
+build:nostamp --nostamp
+
+# Build metadata
+build --build_metadata=ROLE=CI
+build --build_metadata=REPO_URL=https://github.com/prysmaticlabs/prysm.git
+build --workspace_status_command=./hack/workspace_status_ci.sh
+
+# Buildbuddy
+build --bes_results_url=https://app.buildbuddy.io/invocation/
+build --bes_backend=grpcs://remote.buildbuddy.io

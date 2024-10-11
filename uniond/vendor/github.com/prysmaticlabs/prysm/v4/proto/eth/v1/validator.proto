@@ -1,0 +1,97 @@
+// Copyright 2020 Prysmatic Labs.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+
+package ethereum.eth.v1;
+
+import "google/protobuf/descriptor.proto";
+
+import "proto/eth/ext/options.proto";
+import "proto/eth/v1/beacon_block.proto";
+
+option csharp_namespace = "Ethereum.Eth.V1";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/eth/v1";
+option java_multiple_files = true;
+option java_outer_classname = "ValidatorProto";
+option java_package = "org.ethereum.eth.v1";
+option php_namespace = "Ethereum\\Eth\\v1";
+
+// An Ethereum validator.
+message Validator {
+    // 48 byte BLS public key used for the validator's activities.
+    bytes pubkey = 1 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+
+    // 32 byte hash of the withdrawal destination public key.
+    bytes withdrawal_credentials = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+
+    // The validators current effective balance in gwei.
+    uint64 effective_balance = 3;
+
+    // Whether or not the validator has been slashed.
+    bool slashed = 4;
+
+    // Epoch when the validator became eligible for activation. This field may
+    // be zero if the validator was present in the Ethereum proof of stake genesis. This
+    // field is FAR_FUTURE_EPOCH if the validator has not been activated.
+    uint64 activation_eligibility_epoch = 5 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // Epoch when the validator was activated. This field may be zero if the
+    // validator was present in the Ethereum proof of stake genesis. This field is
+    // FAR_FUTURE_EPOCH if the validator has not been activated.
+    uint64 activation_epoch = 6 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // Epoch when the validator was exited. This field is FAR_FUTURE_EPOCH if
+    // the validator has not exited.
+    // FAR_FUTURE_EPOCH is a constant defined by the official Ethereum Beacon Chain specification:
+    // https://github.com/ethereum/consensus-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#constants
+    uint64 exit_epoch = 7 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // Epoch when the validator is eligible to withdraw their funds. This field
+    // is FAR_FUTURE_EPOCH if the validator has not exited.
+    // FAR_FUTURE_EPOCH is a constant defined by the official Ethereum Beacon Chain specification:
+    // https://github.com/ethereum/consensus-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#constants
+    uint64 withdrawable_epoch = 8 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+}
+
+enum ValidatorStatus {
+    PENDING_INITIALIZED  = 0;
+    PENDING_QUEUED = 1;
+    ACTIVE_ONGOING = 2;
+    ACTIVE_EXITING = 3;
+    ACTIVE_SLASHED = 4;
+    EXITED_UNSLASHED = 5;
+    EXITED_SLASHED = 6;
+    WITHDRAWAL_POSSIBLE = 7;
+    WITHDRAWAL_DONE = 8;
+    ACTIVE = 9;
+    PENDING = 10;
+    EXITED = 11;
+    WITHDRAWAL = 12;
+}
+
+message ProduceBlockRequest {
+    // The slot to request a block for.
+    uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+    // The validators RANDAO reveal 96 byte value.
+    bytes randao_reveal = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+
+    // 32 byte field of arbitrary data. This field may contain any data and
+    // is not used for anything other than a fun message.
+    optional bytes graffiti = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+message ProduceBlockResponse {
+    BeaconBlock data = 1;
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "gate": null,
+    "inputs": []
+  },
+  {
+    "gate": "identity",
+    "inputs": [0]
+  }
+]

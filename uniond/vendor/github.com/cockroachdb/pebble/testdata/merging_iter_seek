@@ -1,0 +1,303 @@
+define
+a0.SET.0:0
+a1.SET.1:1
+a2.SET.2:2
+----
+
+iter
+seek-ge a0
+next
+next
+next
+----
+a0:0
+a1:1
+a2:2
+.
+
+iter
+seek-ge a1
+next
+next
+----
+a1:1
+a2:2
+.
+
+iter
+seek-ge a2
+next
+----
+a2:2
+.
+
+iter
+seek-ge a3
+----
+.
+
+iter
+seek-lt a0
+----
+.
+
+iter
+seek-lt a1
+prev
+----
+a0:0
+.
+
+iter
+seek-lt a2
+prev
+prev
+----
+a1:1
+a0:0
+.
+
+iter
+seek-lt a3
+prev
+prev
+prev
+----
+a2:2
+a1:1
+a0:0
+.
+
+iter
+seek-prefix-ge a0
+next
+----
+a0:0
+a1:1
+
+iter
+seek-prefix-ge a0
+prev
+----
+a0:0
+err=pebble: unsupported reverse prefix iteration
+
+iter
+seek-prefix-ge a0
+first
+next
+next
+next
+----
+a0:0
+a0:0
+a1:1
+a2:2
+.
+
+iter
+seek-prefix-ge a0
+last
+next
+----
+a0:0
+a2:2
+.
+
+iter
+seek-prefix-ge a0
+seek-ge a0
+next
+next
+next
+----
+a0:0
+a0:0
+a1:1
+a2:2
+.
+
+iter
+seek-prefix-ge a0
+seek-lt a2
+next
+next
+----
+a0:0
+a1:1
+a2:2
+.
+
+iter
+seek-prefix-ge a1
+last
+prev
+prev
+prev
+----
+a1:1
+a2:2
+a1:1
+a0:0
+.
+
+iter
+seek-prefix-ge a1
+first
+prev
+----
+a1:1
+a0:0
+.
+
+define
+a0.SET.0:0 b3.SET.3:3
+a1.SET.1:1
+a2.SET.2:2
+----
+
+iter
+seek-ge a2
+next
+next
+----
+a2:2
+b3:3
+.
+
+iter
+seek-lt a2
+prev
+prev
+----
+a1:1
+a0:0
+.
+
+define
+a.SET.0:0 b.SET.3:3
+aa.SET.1:1
+aaa.SET.2:2
+----
+
+iter
+seek-prefix-ge a
+next
+seek-prefix-ge aaa
+next
+----
+a:0
+aa:1
+aaa:2
+b:3
+
+iter
+seek-prefix-ge aa
+prev
+----
+aa:1
+err=pebble: unsupported reverse prefix iteration
+
+iter
+seek-prefix-ge aa
+next
+prev
+----
+aa:1
+aaa:2
+err=pebble: unsupported reverse prefix iteration
+
+iter
+seek-prefix-ge aa
+next
+prev
+----
+aa:1
+aaa:2
+err=pebble: unsupported reverse prefix iteration
+
+iter
+seek-prefix-ge aaa
+next
+----
+aaa:2
+b:3
+
+iter
+seek-prefix-ge aaa
+prev
+----
+aaa:2
+err=pebble: unsupported reverse prefix iteration
+
+iter
+seek-prefix-ge b
+prev
+----
+b:3
+err=pebble: unsupported reverse prefix iteration
+
+iter
+seek-prefix-ge b
+next
+----
+b:3
+.
+
+iter
+seek-prefix-ge aa
+last
+prev
+prev
+prev
+prev
+----
+aa:1
+b:3
+aaa:2
+aa:1
+a:0
+.
+
+iter
+seek-prefix-ge aa
+first
+next
+next
+next
+next
+----
+aa:1
+a:0
+aa:1
+aaa:2
+b:3
+.
+
+iter
+seek-prefix-ge aa
+seek-ge a
+next
+next
+next
+next
+----
+aa:1
+a:0
+aa:1
+aaa:2
+b:3
+.
+
+iter
+seek-prefix-ge aa
+seek-lt aaa
+next
+next
+next
+----
+aa:1
+aa:1
+aaa:2
+b:3
+.

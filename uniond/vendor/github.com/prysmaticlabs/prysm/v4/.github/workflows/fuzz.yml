@@ -1,0 +1,45 @@
+name: "fuzz"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 12 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.5'
+      - id: list
+        uses: shogo82148/actions-go-fuzz/list@v0
+        with:
+          tags: fuzz,develop
+    outputs:
+      fuzz-tests: ${{steps.list.outputs.fuzz-tests}}
+
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    needs: list
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{fromJson(needs.list.outputs.fuzz-tests)}}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.5'
+      - uses: shogo82148/actions-go-fuzz/run@v0
+        with:
+          packages: ${{ matrix.package }}
+          fuzz-regexp: ${{ matrix.func }}
+          fuzz-time: "20m"
+          tags: fuzz,develop

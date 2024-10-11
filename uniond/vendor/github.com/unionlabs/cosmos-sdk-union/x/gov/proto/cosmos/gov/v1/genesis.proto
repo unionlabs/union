@@ -1,0 +1,37 @@
+// Since: cosmos-sdk 0.46
+syntax = "proto3";
+
+package cosmos.gov.v1;
+
+import "cosmos/gov/v1/gov.proto";
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "cosmossdk.io/x/gov/types/v1";
+
+// GenesisState defines the gov module's genesis state.
+message GenesisState {
+  // starting_proposal_id is the ID of the starting proposal.
+  uint64 starting_proposal_id = 1;
+  // deposits defines all the deposits present at genesis.
+  repeated Deposit deposits = 2;
+  // votes defines all the votes present at genesis.
+  repeated Vote votes = 3;
+  // proposals defines all the proposals present at genesis.
+  repeated Proposal proposals = 4;
+  // Deprecated: Prefer to use `params` instead.
+  // deposit_params defines all the parameters of related to deposit.
+  DepositParams deposit_params = 5 [deprecated = true];
+  // Deprecated: Prefer to use `params` instead.
+  // voting_params defines all the parameters of related to voting.
+  VotingParams voting_params = 6 [deprecated = true];
+  // Deprecated: Prefer to use `params` instead.
+  // tally_params defines all the parameters of related to tally.
+  TallyParams tally_params = 7 [deprecated = true];
+  // params defines all the parameters of x/gov module.
+  Params params = 8 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+  // The constitution allows builders to lay a foundation and define purpose.
+  // This is an immutable string set in genesis.
+  // There are no amendments, to go outside of scope, just fork.
+  // constitution is an immutable string in genesis for a chain builder to lay out their vision, ideas and ideals.
+  string constitution = 9 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.50"];
+}

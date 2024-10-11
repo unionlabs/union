@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+
+OSXCROSS_REPO=tpoechtrager/osxcross
+OSXCROSS_SHA1=17bb5e2d0a46533c1dd525cf4e9a80d88bd9f00e
+OSX_SDK=MacOSX12.3.sdk
+OSX_SDK_SUM=ae92043c991873bbecd716f8a3ea1d1623698dc556843d590d7ca9be76f28414

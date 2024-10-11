@@ -85,8 +85,8 @@ $code.=<<___;
 .align	6
 ${pre}sha256_block_armv8:
 .Lv8_entry:
-	stp		x29,x30,[sp,#-16]!
-	add		x29,sp,#0
+	stp		c29,c30,[csp,#-2*__SIZEOF_POINTER__]!
+	add		c29,csp,#0
 
 	ld1.32		{$ABCD,$EFGH},[$ctx]
 	adr		$Ktbl,.LK256
@@ -146,7 +146,7 @@ $code.=<<___;
 
 	st1.32		{$ABCD,$EFGH},[$ctx]
 
-	ldr		x29,[sp],#16
+	ldr		c29,[csp],#2*__SIZEOF_POINTER__
 	ret
 .size	${pre}sha256_block_armv8,.-${pre}sha256_block_armv8
 ___
@@ -344,14 +344,14 @@ $code.=<<___;
 .type	${pre}sha256_block_data_order,%function
 .align	4
 ${pre}sha256_block_data_order:
-	adrp	x16,__blst_platform_cap
-	ldr	w16,[x16,#:lo12:__blst_platform_cap]
+	adrp	c16,__blst_platform_cap
+	ldr	w16,[c16,#:lo12:__blst_platform_cap]
 	tst	w16,#1
 	b.ne	.Lv8_entry
 
-	stp	x29, x30, [sp, #-16]!
-	mov	x29, sp
-	sub	sp,sp,#16*4
+	stp	c29, c30, [csp, #-2*__SIZEOF_POINTER__]!
+	mov	c29, csp
+	sub	csp,csp,#16*4
 
 	adr	$Ktbl,.LK256
 	add	$num,$inp,$num,lsl#6	// len to point at the end of inp
@@ -368,14 +368,14 @@ ${pre}sha256_block_data_order:
 	rev32	@X[1],@X[1]		// big-endian
 	rev32	@X[2],@X[2]
 	rev32	@X[3],@X[3]
-	mov	$Xfer,sp
+	cmov	$Xfer,sp
 	add.32	$T0,$T0,@X[0]
 	add.32	$T1,$T1,@X[1]
 	add.32	$T2,$T2,@X[2]
 	st1.32	{$T0-$T1},[$Xfer], #32
 	add.32	$T3,$T3,@X[3]
 	st1.32	{$T2-$T3},[$Xfer]
-	sub	$Xfer,$Xfer,#32
+	csub	$Xfer,$Xfer,#32
 
 	ldp	$A,$B,[$ctx]
 	ldp	$C,$D,[$ctx,#8]
@@ -397,15 +397,15 @@ ___
 $code.=<<___;
 	cmp	$t1,#0				// check for K256 terminator
 	ldr	$t1,[sp,#0]
-	sub	$Xfer,$Xfer,#64
+	csub	$Xfer,$Xfer,#64
 	bne	.L_00_48
 
-	sub	$Ktbl,$Ktbl,#256		// rewind $Ktbl
+	csub	$Ktbl,$Ktbl,#256		// rewind $Ktbl
 	cmp	$inp,$num
-	mov	$Xfer, #64
+	mov	$Xfer, #-64
 	csel	$Xfer, $Xfer, xzr, eq
-	sub	$inp,$inp,$Xfer			// avoid SEGV
-	mov	$Xfer,sp
+	cadd	$inp,$inp,$Xfer			// avoid SEGV
+	cmov	$Xfer,sp
 ___
 	&Xpreload(\&body_00_15);
 	&Xpreload(\&body_00_15);
@@ -434,11 +434,11 @@ $code.=<<___;
 	 eor	$t3,$B,$C
 	stp	$G,$H,[$ctx,#24]
 	 mov	$t4,wzr
-	 mov	$Xfer,sp
+	 cmov	$Xfer,sp
 	b.ne	.L_00_48
 
-	ldr	x29,[x29]
-	add	sp,sp,#16*4+16
+	ldr	c29,[c29]
+	add	csp,csp,#16*4+2*__SIZEOF_POINTER__
 	ret
 .size	${pre}sha256_block_data_order,.-${pre}sha256_block_data_order
 ___

@@ -1,0 +1,199 @@
+# The example used in the documentation for tableRangedDeletionIter. An iterator
+# over the following table:
+#
+#
+#         |---------|     |---------|         |-------| RANGEKEYDELs
+#   |-----------|-------------|           |-----|       RANGEDELs
+# __________________________________________________________
+#   a b c d e f g h i j k l m n o p q r s t u v w x y z
+#
+# yields the following spans:
+#
+#      1       3       1    3    2          1  3   2
+#   |-----|---------|-----|---|-----|     |---|-|-----|
+# __________________________________________________________
+#   a b c d e f g h i j k l m n o p q r s t u v w x y z
+#
+# where:
+# - 1: homogenous span with range dels only
+# - 2: homogenous span with range key dels only
+# - 3: heterogeneous span with range dels and range key dels
+
+build
+a-g:{(#0,RANGEDEL)}
+g-n:{(#0,RANGEDEL)}
+t-w:{(#0,RANGEDEL)}
+d-i:{(#0,RANGEKEYDEL)}
+l-q:{(#0,RANGEKEYDEL)}
+v-z:{(#0,RANGEKEYDEL)}
+----
+000000:[a#0,RANGEDEL-z#inf,RANGEKEYDEL]
+
+spans
+----
+a-d:{(#0,RANGEDEL)}
+d-i:{(#0,RANGEKEYDEL) (#0,RANGEDEL)}
+i-l:{(#0,RANGEDEL)}
+l-n:{(#0,RANGEKEYDEL) (#0,RANGEDEL)}
+n-q:{(#0,RANGEKEYDEL)}
+t-v:{(#0,RANGEDEL)}
+v-w:{(#0,RANGEKEYDEL) (#0,RANGEDEL)}
+w-z:{(#0,RANGEKEYDEL)}
+
+# The iterator elides anything other than range deletes and range key deletes.
+
+#   |---------------RANGEKEYUNSET----------------------|
+#   |---------------RANGEKEYSET------------------------|
+#   |---------------RANGEKEYDEL------------------------|
+# __________________________________________________________
+#   a b c d e f g h i j k l m n o p q r s t u v w x y z
+#
+# Becomes:
+#   |---------------RANGEKEYDEL------------------------|
+# __________________________________________________________
+#   a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+build
+a-z:{(#0,RANGEKEYDEL) (#0,RANGEKEYSET,@1,foo) (#0,RANGEKEYUNSET,@2)}
+----
+000000:[a#0,RANGEKEYSET-z#inf,RANGEKEYDEL]
+
+spans
+----
+a-z:{(#0,RANGEKEYDEL)}
+
+# The same as the above, except that the RANGEKEYDEL is at a lower sequence
+# number than the SET and UNSET. The three keys exist at different sequence
+# numbers, with the DEL at the bottom to avoid the perceived affects of
+# shadowing.
+
+build
+a-z:{(#3,RANGEKEYSET,@1,foo) (#2,RANGEKEYUNSET,@2) (#1,RANGEKEYDEL)}
+----
+000000:[a#3,RANGEKEYSET-z#inf,RANGEKEYDEL]
+
+spans
+----
+a-z:{(#1,RANGEKEYDEL)}
+
+#   |-RANGEKEYSET-|-RANGEKEYUNSET-|-RANGEKEYDEL--------|
+# __________________________________________________________
+#   a b c d e f g h i j k l m n o p q r s t u v w x y z
+#
+# Becomes:
+#                                 |-RANGEKEYDEL-------|
+# __________________________________________________________
+#   a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+build
+a-h:{(#0,RANGEKEYSET,@1,foo)}
+h-p:{(#0,RANGEKEYUNSET,@1)}
+p-z:{(#0,RANGEKEYDEL)}
+----
+000000:[a#0,RANGEKEYSET-z#inf,RANGEKEYDEL]
+
+spans
+----
+p-z:{(#0,RANGEKEYDEL)}
+
+#   |-RANGEKEYSET-|-RANGEKEYUNSET-|-RANGEKEYDEL--------|
+#   |--RANGEDEL-----------------------------|
+# __________________________________________________________
+#   a b c d e f g h i j k l m n o p q r s t u v w x y z
+#
+# Becomes:
+#
+#   |---------------1-------------|----3----|----2----|
+# __________________________________________________________
+#   a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+build
+a-u:{(#0,RANGEDEL)}
+a-h:{(#0,RANGEKEYSET,@1,foo)}
+h-p:{(#0,RANGEKEYUNSET,@1)}
+p-z:{(#0,RANGEKEYDEL)}
+----
+000000:[a#0,RANGEKEYSET-z#inf,RANGEKEYDEL]
+
+spans
+----
+a-p:{(#0,RANGEDEL)}
+p-u:{(#0,RANGEKEYDEL) (#0,RANGEDEL)}
+u-z:{(#0,RANGEKEYDEL)}
+
+# An iterator over a table with neither range dels or range key dels present
+# yields no spans.
+
+build
+a-m:{(#0,RANGEKEYSET,@1,foo)}
+m-z:{(#0,RANGEKEYUNSET,@1)}
+----
+000000:[a#0,RANGEKEYSET-z#inf,RANGEKEYUNSET]
+
+spans
+----
+(none)
+
+# Abutting spans that are merged emit only the largest and smallest key.
+
+build
+a-c:{(#4,RANGEDEL) (#3,RANGEDEL) (#1,RANGEDEL)}
+c-d:{(#9,RANGEDEL) (#7,RANGEDEL) (#6,RANGEDEL) (#2,RANGEDEL)}
+----
+000000:[a#4,RANGEDEL-d#inf,RANGEDEL]
+
+spans
+----
+a-d:{(#9,RANGEDEL) (#1,RANGEDEL)}
+
+# The same as above, but for range key dels.
+
+build
+a-c:{(#4,RANGEKEYDEL) (#3,RANGEKEYDEL) (#1,RANGEKEYDEL)}
+c-d:{(#9,RANGEKEYDEL) (#7,RANGEKEYDEL) (#6,RANGEKEYDEL) (#2,RANGEKEYDEL)}
+----
+000000:[a#4,RANGEKEYDEL-d#inf,RANGEKEYDEL]
+
+spans
+----
+a-d:{(#9,RANGEKEYDEL) (#1,RANGEKEYDEL)}
+
+# The same as above, but for mixed key kinds. The resulting span has four keys,
+# given the respective largest / smallest keys from the range del and range key
+# del spans are interleaved.
+
+build
+a-c:{(#4,RANGEDEL) (#2,RANGEDEL)}
+a-c:{(#3,RANGEKEYDEL) (#1,RANGEKEYDEL)}
+----
+000000:[a#4,RANGEDEL-c#inf,RANGEDEL]
+
+spans
+----
+a-c:{(#4,RANGEDEL) (#3,RANGEKEYDEL) (#2,RANGEDEL) (#1,RANGEKEYDEL)}
+
+# "Hetrogenous spans" (i.e. spans containing both range dels and range key dels)
+# are preserved when abutting spans are merged. This tests that the reducing
+# function does not "lose information" of the merged spans, effectively
+# resulting in the span switching types from a heterogeneous span to a
+# homogenous span.
+
+# 10 |-------|---|---| RANGEDELs
+# 5  |-------|---|     RANGEKEYDELs
+# 3  |-------|---|---| RANGEDELs
+# _____________________
+#    a   b   c   d   e
+
+build
+a-c:{(#10,RANGEDEL) (#3,RANGEDEL)}
+c-d:{(#10,RANGEDEL) (#3,RANGEDEL)}
+d-e:{(#10,RANGEDEL) (#3,RANGEDEL)}
+a-c:{(#5,RANGEKEYDEL)}
+c-d:{(#5,RANGEKEYDEL)}
+----
+000000:[a#10,RANGEDEL-e#inf,RANGEDEL]
+
+spans
+----
+a-d:{(#10,RANGEDEL) (#5,RANGEKEYDEL) (#3,RANGEDEL)}
+d-e:{(#10,RANGEDEL) (#3,RANGEDEL)}

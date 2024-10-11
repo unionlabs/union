@@ -1,0 +1,26 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["setup_db.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/validator/db/testing",
+    visibility = [
+        "//cmd:__subpackages__",
+        "//validator:__subpackages__",
+    ],
+    deps = [
+        "//config/fieldparams:go_default_library",
+        "//validator/db/iface:go_default_library",
+        "//validator/db/kv:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["setup_db_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//testing/require:go_default_library",
+        "//validator/db/kv:go_default_library",
+    ],
+)

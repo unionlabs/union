@@ -1,0 +1,50 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+          - "1.18"
+          - "1.19"
+          - "1.20"
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go (${{ matrix.go }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Build (${{ matrix.go }})
+        run: go build ./...
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+          - "1.20"
+          - "1.21"
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go (${{ matrix.go }}
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Build (${{ matrix.go }})
+      run: go build ./...
+
+    - name: Test (${{ matrix.go }})
+      run: go test ./...
+
+    - name: Tidy (${{ matrix.go }})
+      run: go mod tidy

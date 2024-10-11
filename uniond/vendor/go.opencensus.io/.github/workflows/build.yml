@@ -1,0 +1,23 @@
+name: Build
+
+on: 
+  pull_request:
+      branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    env:
+      GO11MODULE: 'on'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          fetch-depth: 0 # we want all tags for version check.
+          lfs: true
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.11.0'
+      - name: Build and test
+        run: make install-tools && make travis-ci && go run internal/check/version.go

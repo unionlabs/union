@@ -1,0 +1,152 @@
+syntax = "proto3";
+package cometbft.types.v1beta1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/types/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "cometbft/crypto/v1/proof.proto";
+import "cometbft/version/v1/types.proto";
+import "cometbft/types/v1beta1/validator.proto";
+
+// SignedMsgType is a type of signed message in the consensus.
+enum SignedMsgType {
+  option (gogoproto.goproto_enum_stringer) = true;
+  option (gogoproto.goproto_enum_prefix)   = false;
+
+  // Unknown
+  SIGNED_MSG_TYPE_UNKNOWN = 0 [(gogoproto.enumvalue_customname) = "UnknownType"];
+  // Prevote
+  SIGNED_MSG_TYPE_PREVOTE = 1 [(gogoproto.enumvalue_customname) = "PrevoteType"];
+  // Precommit
+  SIGNED_MSG_TYPE_PRECOMMIT = 2 [(gogoproto.enumvalue_customname) = "PrecommitType"];
+  // Proposal
+  SIGNED_MSG_TYPE_PROPOSAL = 32 [(gogoproto.enumvalue_customname) = "ProposalType"];
+}
+
+// Header of the parts set for a block.
+message PartSetHeader {
+  uint32 total = 1;
+  bytes  hash  = 2;
+}
+
+// Part of the block.
+message Part {
+  uint32                   index = 1;
+  bytes                    bytes = 2;
+  cometbft.crypto.v1.Proof proof = 3 [(gogoproto.nullable) = false];
+}
+
+// BlockID defines the unique ID of a block as its hash and its `PartSetHeader`.
+message BlockID {
+  bytes         hash            = 1;
+  PartSetHeader part_set_header = 2 [(gogoproto.nullable) = false];
+}
+
+// --------------------------------
+
+// Header defines the structure of a block header.
+message Header {
+  // basic block info
+  cometbft.version.v1.Consensus version  = 1 [(gogoproto.nullable) = false];
+  string                        chain_id = 2 [(gogoproto.customname) = "ChainID"];
+  int64                         height   = 3;
+  google.protobuf.Timestamp     time     = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // prev block info
+  BlockID last_block_id = 5 [(gogoproto.nullable) = false];
+
+  // hashes of block data
+  bytes last_commit_hash = 6;  // commit from validators from the last block
+  bytes data_hash        = 7;  // transactions
+
+  // hashes from the app output from the prev block
+  bytes validators_hash      = 8;   // validators for the current block
+  bytes next_validators_hash = 9;   // validators for the next block
+  bytes consensus_hash       = 10;  // consensus params for current block
+  bytes app_hash             = 11;  // state after txs from the previous block
+  bytes last_results_hash    = 12;  // root hash of all results from the txs from the previous block
+
+  // consensus info
+  bytes evidence_hash    = 13;  // evidence included in the block
+  bytes proposer_address = 14;  // original proposer of the block
+}
+
+// Data contains the set of transactions included in the block
+message Data {
+  // Txs that will be applied by state @ block.Height+1.
+  // NOTE: not all txs here are valid.  We're just agreeing on the order first.
+  // This means that block.AppHash does not include these txs.
+  repeated bytes txs = 1;
+}
+
+// Vote represents a prevote or precommit vote from validators for
+// consensus.
+message Vote {
+  SignedMsgType type     = 1;
+  int64         height   = 2;
+  int32         round    = 3;
+  BlockID       block_id = 4
+      [(gogoproto.nullable) = false, (gogoproto.customname) = "BlockID"];  // zero if vote is nil.
+  google.protobuf.Timestamp timestamp = 5
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes validator_address = 6;
+  int32 validator_index   = 7;
+  bytes signature         = 8;
+}
+
+// Commit contains the evidence that a block was committed by a set of validators.
+message Commit {
+  int64              height     = 1;
+  int32              round      = 2;
+  BlockID            block_id   = 3 [(gogoproto.nullable) = false, (gogoproto.customname) = "BlockID"];
+  repeated CommitSig signatures = 4 [(gogoproto.nullable) = false];
+}
+
+// CommitSig is a part of the Vote included in a Commit.
+message CommitSig {
+  BlockIDFlag               block_id_flag     = 1;
+  bytes                     validator_address = 2;
+  google.protobuf.Timestamp timestamp         = 3
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes signature = 4;
+}
+
+// Block proposal.
+message Proposal {
+  SignedMsgType             type      = 1;
+  int64                     height    = 2;
+  int32                     round     = 3;
+  int32                     pol_round = 4;
+  BlockID                   block_id  = 5 [(gogoproto.customname) = "BlockID", (gogoproto.nullable) = false];
+  google.protobuf.Timestamp timestamp = 6
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes signature = 7;
+}
+
+// SignedHeader contains a Header(H) and Commit(H+1) with signatures of validators who signed it.
+message SignedHeader {
+  Header header = 1;
+  Commit commit = 2;
+}
+
+// LightBlock is a combination of SignedHeader and ValidatorSet. It is used by light clients.
+message LightBlock {
+  SignedHeader                        signed_header = 1;
+  cometbft.types.v1beta1.ValidatorSet validator_set = 2;
+}
+
+// BlockMeta contains meta information about a block.
+message BlockMeta {
+  BlockID block_id   = 1 [(gogoproto.customname) = "BlockID", (gogoproto.nullable) = false];
+  int64   block_size = 2;
+  Header  header     = 3 [(gogoproto.nullable) = false];
+  int64   num_txs    = 4;
+}
+
+// TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.
+message TxProof {
+  bytes                    root_hash = 1;
+  bytes                    data      = 2;
+  cometbft.crypto.v1.Proof proof     = 3;
+}

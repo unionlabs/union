@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package ibc.applications.interchain_accounts.controller.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types";
+
+import "gogoproto/gogo.proto";
+import "ibc/applications/interchain_accounts/v1/packet.proto";
+import "ibc/applications/interchain_accounts/controller/v1/controller.proto";
+import "cosmos/msg/v1/msg.proto";
+import "ibc/core/channel/v1/channel.proto";
+
+// Msg defines the 27-interchain-accounts/controller Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // RegisterInterchainAccount defines a rpc handler for MsgRegisterInterchainAccount.
+  rpc RegisterInterchainAccount(MsgRegisterInterchainAccount) returns (MsgRegisterInterchainAccountResponse);
+  // SendTx defines a rpc handler for MsgSendTx.
+  rpc SendTx(MsgSendTx) returns (MsgSendTxResponse);
+  // UpdateParams defines a rpc handler for MsgUpdateParams.
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgRegisterInterchainAccount defines the payload for Msg/RegisterAccount
+message MsgRegisterInterchainAccount {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string                    owner         = 1;
+  string                    connection_id = 2;
+  string                    version       = 3;
+  ibc.core.channel.v1.Order ordering      = 4;
+}
+
+// MsgRegisterInterchainAccountResponse defines the response for Msg/RegisterAccount
+message MsgRegisterInterchainAccountResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  string channel_id = 1;
+  string port_id    = 2;
+}
+
+// MsgSendTx defines the payload for Msg/SendTx
+message MsgSendTx {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string                                                              owner         = 1;
+  string                                                              connection_id = 2;
+  ibc.applications.interchain_accounts.v1.InterchainAccountPacketData packet_data   = 3 [(gogoproto.nullable) = false];
+  // Relative timeout timestamp provided will be added to the current block time during transaction execution.
+  // The timeout timestamp must be non-zero.
+  uint64 relative_timeout = 4;
+}
+
+// MsgSendTxResponse defines the response for MsgSendTx
+message MsgSendTxResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  uint64 sequence = 1;
+}
+
+// MsgUpdateParams defines the payload for Msg/UpdateParams
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // signer address
+  string signer = 1;
+
+  // params defines the 27-interchain-accounts/controller parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+// MsgUpdateParamsResponse defines the response for Msg/UpdateParams
+message MsgUpdateParamsResponse {}

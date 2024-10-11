@@ -1,0 +1,59 @@
+load("@rules_pkg//pkg:pkg.bzl", "pkg_tar")
+load("@rules_distroless//distroless:defs.bzl", "passwd")
+
+passwd(
+    name = "passwd",
+    passwds = [
+        dict(
+            gecos = ["root"],
+            gid = 0,
+            home = "/root",
+            shell = "/bin/bash",
+            uid = 0,
+            username = "root",
+        ),
+        dict(
+            gecos = ["nonroot"],
+            gid = 1001,
+            home = "/home/nonroot",
+            shell = "/bin/bash",
+            uid = 1001,
+            username = "nonroot",
+        ),
+    ],
+)
+
+# Create a tar file containing the created passwd file
+pkg_tar(
+    name = "passwd_tar",
+    srcs = [":passwd"],
+    mode = "0o644",
+    package_dir = "etc",
+    tags = ["manual"],
+    visibility = ["//visibility:public"],
+)
+
+# Create a bash tar layer for docker images. This allows docker images to have access to the "bash"
+# command and improves debugging abilities on the image.
+genrule(
+    name = "bash_tar",
+    srcs = select({
+        "@platforms//cpu:x86_64": ["@bash_amd64//file"],
+        "@platforms//cpu:arm64": ["@bash_arm64//file"],
+    }),
+    outs = ["bash.tar"],
+    cmd = "ar x $< && xz -d data.tar.xz -c >> $@",
+    visibility = ["//visibility:public"],
+)
+
+# libtinfo6 is required for terminal activity and contains terminfo library.
+genrule(
+    name = "libtinfo6_tar",
+    srcs = select({
+        "@platforms//cpu:x86_64": ["@libtinfo6_amd64//file"],
+        "@platforms//cpu:arm64": ["@libtinfo6_arm64//file"],
+    }),
+    outs = ["libtinfo6.tar"],
+    cmd = "ar x $< && xz -d data.tar.xz -c >> $@",
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,40 @@
+{
+    "contexts": {
+        "trace": {
+            "description": "description",
+            "op": "http.GET",
+            "span_id": "f7f3fd754a9040eb",
+            "status": "ok",
+            "trace_id": "90d57511038845dcb4164a70fc3a7fdb"
+        }
+    },
+    "sdk": {},
+    "user": {},
+    "type": "transaction",
+    "spans": [
+        {
+            "trace_id": "d6c4f03650bd47699ec65c84352b6208",
+            "span_id": "1cc4b26ab9094ef0",
+            "op": "db.sql",
+            "description": "SELECT * FROM user WHERE \"user\".\"id\" = {id}",
+            "status": "ok",
+            "tags": {
+                "function_name": "get_users",
+                "status_message": "MYSQL OK"
+            },
+            "start_timestamp": "1970-01-01T00:00:00Z",
+            "timestamp": "1970-01-01T00:00:05Z",
+            "data": {
+                "aws_instance": "ca-central-1",
+                "related_ids": [
+                    12312342,
+                    76572,
+                    4123485
+                ]
+            },
+            "parent_span_id": "442bd97bbe564317"
+        }
+    ],
+    "start_timestamp": "1970-01-01T00:00:03Z",
+    "timestamp": "1970-01-01T00:00:05Z"
+}

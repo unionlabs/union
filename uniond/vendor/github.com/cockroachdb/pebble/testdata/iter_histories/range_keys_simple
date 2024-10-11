@@ -1,0 +1,508 @@
+reset
+----
+
+# Use the key string as the value so that it's easy to tell when we surface the
+# wrong value.
+
+batch commit
+set a a
+set b b
+set c c
+set d d
+range-key-set b   c   @5 boop
+range-key-set cat dog @3 beep
+----
+committed 6 keys
+
+# Scan forward
+
+combined-iter
+seek-ge a
+next
+next
+next
+next
+next
+----
+a: (a, .)
+b: (b, [b-c) @5=boop UPDATED)
+c: (c, . UPDATED)
+cat: (., [cat-dog) @3=beep UPDATED)
+d: (d, [cat-dog) @3=beep)
+.
+
+# Do the above forward iteration but with a mask suffix. The results should be
+# identical despite range keys serving as masks, because none of the point keys
+# have suffixes.
+
+combined-iter mask-suffix=@9
+seek-ge a
+next
+next
+next
+next
+next
+----
+a: (a, .)
+b: (b, [b-c) @5=boop UPDATED)
+c: (c, . UPDATED)
+cat: (., [cat-dog) @3=beep UPDATED)
+d: (d, [cat-dog) @3=beep)
+.
+
+# Scan backward
+
+combined-iter
+seek-lt z
+prev
+prev
+prev
+prev
+prev
+----
+d: (d, [cat-dog) @3=beep UPDATED)
+cat: (., [cat-dog) @3=beep)
+c: (c, . UPDATED)
+b: (b, [b-c) @5=boop UPDATED)
+a: (a, . UPDATED)
+.
+
+combined-iter
+seek-ge ace
+seek-ge b
+seek-ge c
+seek-ge cab
+seek-ge cat
+seek-ge d
+seek-ge day
+seek-ge dog
+----
+b: (b, [b-c) @5=boop UPDATED)
+b: (b, [b-c) @5=boop)
+c: (c, . UPDATED)
+cat: (., [cat-dog) @3=beep UPDATED)
+cat: (., [cat-dog) @3=beep)
+d: (d, [cat-dog) @3=beep)
+day: (., [cat-dog) @3=beep)
+.
+
+combined-iter
+seek-lt 1
+seek-lt ace
+seek-lt b
+seek-lt c
+seek-lt cab
+seek-lt cat
+seek-lt d
+seek-lt day
+seek-lt dog
+seek-lt zebra
+----
+.
+a: (a, .)
+a: (a, .)
+b: (b, [b-c) @5=boop UPDATED)
+c: (c, . UPDATED)
+c: (c, .)
+cat: (., [cat-dog) @3=beep UPDATED)
+d: (d, [cat-dog) @3=beep)
+d: (d, [cat-dog) @3=beep)
+d: (d, [cat-dog) @3=beep)
+
+rangekey-iter
+first
+next
+next
+set-bounds lower=bat upper=catatonic
+first
+next
+next
+----
+b [b-c) @5=boop UPDATED
+cat [cat-dog) @3=beep UPDATED
+.
+.
+bat [bat-c) @5=boop UPDATED
+cat [cat-catatonic) @3=beep UPDATED
+.
+
+rangekey-iter
+seek-ge bat
+----
+bat [b-c) @5=boop UPDATED
+
+# Delete 'b': The Iterator should still stop at b because of the range key
+# with a start boundary at b.
+
+batch commit
+del b
+----
+committed 1 keys
+
+combined-iter
+seek-ge b
+seek-ge ace
+----
+b: (., [b-c) @5=boop UPDATED)
+b: (., [b-c) @5=boop)
+
+rangekey-iter
+seek-ge b
+seek-ge ace
+----
+b [b-c) @5=boop UPDATED
+b [b-c) @5=boop
+
+# Delete the b-c range key and the beginning of the cat-dog range key,
+# truncating it to now begin at 'd'.
+
+batch name=indexed
+range-key-del b d
+----
+wrote 1 keys to batch "indexed"
+
+# Reading through the indexed batch, we should see the beginning of the cat-dog
+# range key now beginning at 'd'.
+
+combined-iter reader=indexed
+seek-ge b
+next
+----
+c: (c, .)
+d: (d, [d-dog) @3=beep UPDATED)
+
+commit batch=indexed
+----
+committed 1 keys
+
+# Reading through the database after applying the batch, we should still see the
+# beginning of the cat-dog range key now beginning at 'd'.
+
+combined-iter
+seek-ge b
+next
+----
+c: (c, .)
+d: (d, [d-dog) @3=beep UPDATED)
+
+# Reading through the database after flushing, we should still see the
+# beginning of the cat-dog range key now beginning at 'd'.
+
+flush
+----
+
+combined-iter
+seek-ge b
+next
+----
+c: (c, .)
+d: (d, [d-dog) @3=beep UPDATED)
+
+
+reset
+----
+
+batch commit
+range-key-set c d @1 boop
+range-key-set apple c @3 beep
+range-key-set ace apple @3 beep
+set a a1
+set b b1
+set c c1
+del a
+set b b2
+set c c2
+----
+committed 9 keys
+
+# Test that reverse iteration surfaces range key start boundaries alongside
+# point keys at the same key, and defragments logically equivalent ranges.
+
+combined-iter
+last
+prev
+prev
+prev
+----
+c: (c2, [c-d) @1=boop UPDATED)
+b: (b2, [ace-c) @3=beep UPDATED)
+ace: (., [ace-c) @3=beep)
+.
+
+# Test that forward iteration surfaces range key start boundaries alongside
+# point keys at the same key, and defragments logically equivalent ranges.
+
+combined-iter
+first
+next
+next
+next
+----
+ace: (., [ace-c) @3=beep UPDATED)
+b: (b2, [ace-c) @3=beep)
+c: (c2, [c-d) @1=boop UPDATED)
+.
+
+# NB: seek-prefix-ge truncates bounds to the prefix.
+
+combined-iter
+seek-prefix-ge b
+next
+----
+b: (b2, [b-"b\x00") @3=beep UPDATED)
+.
+
+reset
+----
+
+# For all prefixes a, aa, ab, ... zz, write 3 keys at timestamps @1, @10, @100.
+# This populates a total of (26**2 + 26) * 3 = 2106 keys.
+
+populate keylen=2 timestamps=(1, 10, 100)
+----
+wrote 2106 keys
+
+batch commit
+range-key-set   b c @5 beep
+range-key-unset c d @1
+range-key-del   d e
+----
+committed 3 keys
+
+flush
+----
+
+metrics
+----
+Metrics.Keys.RangeKeySetsCount = 1
+
+combined-iter
+seek-ge az
+next
+next
+next
+next
+next
+seek-ge bz@10
+next
+next
+----
+az@100: (az@100, .)
+az@10: (az@10, .)
+az@1: (az@1, .)
+b: (., [b-c) @5=beep UPDATED)
+b@100: (b@100, [b-c) @5=beep)
+b@10: (b@10, [b-c) @5=beep)
+bz@10: (bz@10, [b-c) @5=beep)
+bz@1: (bz@1, [b-c) @5=beep)
+c@100: (c@100, . UPDATED)
+
+# Perform the same iteration with all range keys serving as masks. The bz@1
+# point key should be elided.
+
+combined-iter mask-suffix=@100
+seek-ge az
+next
+next
+next
+next
+next
+seek-ge bz@10
+next
+next
+----
+az@100: (az@100, .)
+az@10: (az@10, .)
+az@1: (az@1, .)
+b: (., [b-c) @5=beep UPDATED)
+b@100: (b@100, [b-c) @5=beep)
+b@10: (b@10, [b-c) @5=beep)
+bz@10: (bz@10, [b-c) @5=beep)
+c@100: (c@100, . UPDATED)
+c@10: (c@10, .)
+
+# Ensure that a cloned iterator includes range keys.
+
+combined-iter
+seek-ge bz@10
+clone
+seek-ge bz@10
+----
+bz@10: (bz@10, [b-c) @5=beep UPDATED)
+.
+bz@10: (bz@10, [b-c) @5=beep UPDATED)
+
+# Within a batch, later writes overwrite earlier writes. Here, the range-key-del
+# of [bat, bus) overwrites the earlier writes of [b,c) and [b,e).
+
+batch commit
+range-key-set   b c @5 beep
+range-key-set   b e @1 bop
+range-key-set   c z @1000 boop
+range-key-del   bat bus
+----
+committed 4 keys
+
+flush
+----
+
+lsm
+----
+0.1:
+  000008:[b#2120,RANGEKEYSET-z#inf,RANGEKEYSET]
+0.0:
+  000006:[a@100#12,SET-zz@1#2113,SET]
+
+scan-rangekeys
+----
+[b, bat)
+ @5=beep, @1=bop
+[bus, c)
+ @5=beep, @1=bop
+[c, e)
+ @1000=boop, @1=bop
+[e, z)
+ @1000=boop
+
+# NB: There are now 8 range key sets in the database. See the 7 range keys in
+# the above scan-rangekeys. Additionally, the sstable flushed earlier up above
+# included a rangekeyset [b,c) @5=beep.
+
+metrics
+----
+Metrics.Keys.RangeKeySetsCount = 8
+
+
+combined-iter
+seek-prefix-ge ca
+next
+seek-prefix-ge ca@100
+----
+ca: (., [ca-"ca\x00") @1000=boop, @1=bop UPDATED)
+ca@100: (ca@100, [ca-"ca\x00") @1000=boop, @1=bop)
+ca@100: (ca@100, [ca-"ca\x00") @1000=boop, @1=bop)
+
+
+# Perform the same iteration as above, but with @1000 range-key masking. The
+# previously encountered point keys should be elided.
+
+combined-iter mask-suffix=@1000
+seek-prefix-ge ca
+next
+seek-prefix-ge ca@100
+----
+ca: (., [ca-"ca\x00") @1000=boop, @1=bop UPDATED)
+.
+ca@100: (., [ca-"ca\x00") @1000=boop, @1=bop UPDATED)
+
+# Test masked, non-prefixed iteration. We should see the range keys, but all the
+# points should be masked except those beginning with z which were excluded by
+# the range key's exclusive z end bound.
+
+combined-iter mask-suffix=@1000
+seek-ge ca
+next
+next
+next
+next
+next
+----
+ca: (., [c-e) @1000=boop, @1=bop UPDATED)
+e: (., [e-z) @1000=boop UPDATED)
+z@100: (z@100, . UPDATED)
+z@10: (z@10, .)
+z@1: (z@1, .)
+za@100: (za@100, .)
+
+# Applying range keys to a DB running with a version that doesn't support them
+# results in an error. Range keys were added in version 7.
+reset format-major-version=6
+----
+
+batch commit
+range-key-set a   z   @5 boop
+----
+pebble: batch requires at least format major version 8 (current: 6)
+
+# Constructing iterator over range keys on a DB that doesn't support them
+# results in an error.
+
+reset format-major-version=6
+----
+
+combined-iter
+----
+pebble: range keys require at least format major version 8 (current: 6)
+
+# Test Prev-ing back over a synthetic range key marker. Synthetic range-key
+# markers (the keys interleaved at 'c' during a SeekGE(c) when there's a
+# straddling range key) are ephemeral, and Prev-ing back must move back the
+# appropriate number of times.
+
+reset
+----
+
+batch commit
+set a a
+range-key-set b e @1 foo
+----
+committed 2 keys
+
+flush
+----
+
+combined-iter
+seek-ge b
+prev
+seek-ge c
+prev
+----
+b: (., [b-e) @1=foo UPDATED)
+a: (a, . UPDATED)
+c: (., [b-e) @1=foo UPDATED)
+b: (., [b-e) @1=foo)
+
+define
+L6
+a.RANGEDEL.3:z
+rangekey:b-d:{(#5,RANGEKEYSET,@2,foo)}
+----
+6:
+  000004:[a#3,RANGEDEL-z#inf,RANGEDEL]
+
+combined-iter
+seek-lt apple
+----
+.
+
+combined-iter
+seek-ge apple
+seek-ge z
+seek-lt apple
+seek-lt z
+first
+last
+----
+b: (., [b-d) @2=foo UPDATED)
+.
+.
+b: (., [b-d) @2=foo UPDATED)
+b: (., [b-d) @2=foo)
+b: (., [b-d) @2=foo)
+
+combined-iter
+seek-ge apple
+prev
+last
+next
+prev
+seek-lt c
+prev
+----
+b: (., [b-d) @2=foo UPDATED)
+.
+b: (., [b-d) @2=foo UPDATED)
+.
+b: (., [b-d) @2=foo UPDATED)
+b: (., [b-d) @2=foo)
+.

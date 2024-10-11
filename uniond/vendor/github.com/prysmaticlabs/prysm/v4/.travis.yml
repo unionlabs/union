@@ -1,0 +1,24 @@
+language: go
+go_import_path: github.com/prysmaticlabs/prysm
+sudo: false
+matrix:
+  include:
+    - os: linux
+      dist: xenial
+      go: 1.12.x
+      env:
+        - lint
+      install:
+        - go get ${gobuild_args} -t ./...
+        - go get ${gobuild_args} github.com/golangci/golangci-lint/cmd/golangci-lint
+      script:
+        - golangci-lint run --skip-dirs ./proto
+      email: false
+      after_success:
+        - wget https://raw.githubusercontent.com/k3rn31p4nic/travis-ci-discord-webhook/master/send.sh
+        - chmod +x send.sh
+        - ./send.sh success $WEBHOOK_URL
+      after_failure:
+        - wget https://raw.githubusercontent.com/k3rn31p4nic/travis-ci-discord-webhook/master/send.sh
+        - chmod +x send.sh
+        - ./send.sh failure $WEBHOOK_URL

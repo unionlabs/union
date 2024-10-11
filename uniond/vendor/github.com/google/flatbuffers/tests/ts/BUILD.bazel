@@ -1,0 +1,78 @@
+load("@aspect_rules_js//js:defs.bzl", "js_test")
+load("//:typescript.bzl", "flatbuffer_ts_library")
+
+package(default_visibility = ["//visibility:private"])
+
+flatbuffer_ts_library(
+    name = "typescript_ts_fbs",
+    srcs = ["typescript_keywords.fbs"],
+    deps = [
+        "//tests/ts/test_dir:include_ts_fbs",
+        "//tests/ts/test_dir:typescript_transitive_ts_fbs",
+    ],
+)
+
+TEST_DATA = glob([
+    "my-game/*.js",
+    "my-game/example/*.js",
+    "my-game/example2/*.js",
+])
+
+TEST_UNION_VECTOR_DATA = glob([
+    "union_vector/*.js",
+])
+
+TEST_COMPLEX_ARRAYS_DATA = glob([
+    "arrays_test_complex/**/*.js",
+])
+
+# Here we're running the tests against the checked-in generated files. These
+# are kept up-to-date with a CI-based mechanism. The intent of running these
+# tests here via bazel is not to validate that they're up-to-date. Instead, we
+# just want to make it easy to run these tests while making other changes. For
+# example, this is useful when making changes to the rules_js setup to validate
+# that the basic infrastructure is still working.
+[js_test(
+    name = "%s_test" % test,
+    chdir = package_name(),
+    data = data + [
+        "package.json",
+        "//:node_modules/flatbuffers",
+        "//tests:test_data_copied_to_bin",
+    ],
+    entry_point = "%s.js" % test,
+) for test, data in (
+    ("JavaScriptTest", TEST_DATA),
+    ("JavaScriptUnionVectorTest", TEST_UNION_VECTOR_DATA),
+    # TODO(philsc): Figure out how to run this test with flexbuffers available.
+    # At the moment the flexbuffer library is not exposed as a bazel target.
+    #("JavaScriptFlexBuffersTest", TBD_DATA)
+    ("JavaScriptComplexArraysTest", TEST_COMPLEX_ARRAYS_DATA),
+)]
+
+sh_test(
+    name = "bazel_repository_test",
+    srcs = ["bazel_repository_test.sh"],
+    data = [
+        "//:distribution",
+        "@bazel_linux_x86_64//file",
+    ] + glob(
+        [
+            "bazel_repository_test_dir/**/*",
+        ],
+        exclude = [
+            "bazel_repository_test_dir/bazel-*/**",
+        ],
+    ),
+    tags = [
+        # Since we have bazel downloading external repositories inside this
+        # test, we need to give it access to the internet.
+        "requires-network",
+    ],
+    # We only have x86_64 Linux bazel exposed so restrict the test to that.
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
+)

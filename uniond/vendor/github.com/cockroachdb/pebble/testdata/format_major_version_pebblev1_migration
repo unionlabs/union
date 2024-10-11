@@ -1,0 +1,170 @@
+# Open the DB at one version prior to the version that enforces Pebblev1 tables.
+open version=8
+----
+
+format-major-version
+----
+008
+
+# Confirm the allowable range of table formats.
+
+min-table-format
+----
+(LevelDB)
+
+max-table-format
+----
+(Pebble,v2)
+
+# Disable automatic compactions while we create the tables.
+
+disable-automatic-compactions true
+----
+
+# Create and flush a table. The table is created at the max format version for
+# this DB version (i.e. Pebblev2).
+
+batch
+set a a
+----
+
+flush
+----
+
+# Ingest an external table written at the max table format for the current
+# version (i.e. Pebblev2).
+
+ingest a format=pebblev2
+set pebblev2 pebblev2
+----
+
+# Ingest some external table written at earlier versions (i.e. Pebblev1,
+# RocksDBv2, LevelDB).
+
+ingest b format=pebblev1
+set pebblev1 pebblev1
+----
+
+ingest c format=rocksdbv2
+set rocksdbv2 rockdbv2
+----
+
+ingest d format=leveldb
+set leveldb leveldb
+----
+
+lsm
+----
+0.0:
+  000005:[a#10,SET-a#10,SET]
+6:
+  000009:[leveldb#14,SET-leveldb#14,SET]
+  000007:[pebblev1#12,SET-pebblev1#12,SET]
+  000006:[pebblev2#11,SET-pebblev2#11,SET]
+  000008:[rocksdbv2#13,SET-rocksdbv2#13,SET]
+
+tally-table-formats
+----
+(LevelDB): 1
+(RocksDB,v2): 1
+(Pebble,v1): 1
+(Pebble,v2): 2
+(Pebble,v3): 0
+(Pebble,v4): 0
+
+# Upgrade the DB to FormatMinTableFormatPebblev1.
+
+ratchet-format-major-version 009
+----
+
+format-major-version
+----
+009
+
+# The min table format version has been raised to Pebblev1.
+
+min-table-format
+----
+(Pebble,v1)
+
+max-table-format
+----
+(Pebble,v2)
+
+# Ingesting a table with a format prior to this version fails.
+
+ingest e format=rocksdbv2
+set rocksdbv2 rockdbv2
+----
+pebble: table format (RocksDB,v2) is not within range supported at DB format major version 9, ((Pebble,v1),(Pebble,v2))
+
+# Upgrade the DB to FormatPrePebblev1Marked. The marked count increases to the
+# count of tables at versions pre-Pebblev1 (i.e. two tables).
+
+ratchet-format-major-version 010
+----
+
+format-major-version
+----
+010
+
+min-table-format
+----
+(Pebble,v1)
+
+max-table-format
+----
+(Pebble,v2)
+
+marked-file-count
+----
+2 files marked for compaction
+
+# Upgrade the DB to FormatPrePebblev1MarkedCompacted. The marked count returns
+# to zero.
+
+disable-automatic-compactions false
+----
+
+ratchet-format-major-version 014
+----
+
+format-major-version
+----
+014
+
+min-table-format
+----
+(Pebble,v1)
+
+max-table-format
+----
+(Pebble,v3)
+
+marked-file-count
+----
+0 files marked for compaction
+
+# The two tables with older table formats were rewritten with newer table format
+# versions (note updated table numbers for the leveldb and rocksdb2 tables).
+
+lsm
+----
+0.0:
+  000005:[a#10,SET-a#10,SET]
+6:
+  000013:[leveldb#0,SET-leveldb#0,SET]
+  000007:[pebblev1#12,SET-pebblev1#12,SET]
+  000006:[pebblev2#11,SET-pebblev2#11,SET]
+  000012:[rocksdbv2#0,SET-rocksdbv2#0,SET]
+
+# Confirm all tables are at least the minimum supported table format version.
+
+tally-table-formats
+----
+(LevelDB): 0
+(RocksDB,v2): 0
+(Pebble,v1): 1
+(Pebble,v2): 4
+(Pebble,v3): 0
+(Pebble,v4): 0

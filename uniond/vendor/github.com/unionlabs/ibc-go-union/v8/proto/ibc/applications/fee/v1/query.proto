@@ -1,0 +1,218 @@
+syntax = "proto3";
+
+package ibc.applications.fee.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/types";
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "ibc/applications/fee/v1/fee.proto";
+import "ibc/applications/fee/v1/genesis.proto";
+import "ibc/core/channel/v1/channel.proto";
+
+// Query defines the ICS29 gRPC querier service.
+service Query {
+  // IncentivizedPackets returns all incentivized packets and their associated fees
+  rpc IncentivizedPackets(QueryIncentivizedPacketsRequest) returns (QueryIncentivizedPacketsResponse) {
+    option (google.api.http).get = "/ibc/apps/fee/v1/incentivized_packets";
+  }
+
+  // IncentivizedPacket returns all packet fees for a packet given its identifier
+  rpc IncentivizedPacket(QueryIncentivizedPacketRequest) returns (QueryIncentivizedPacketResponse) {
+    option (google.api.http).get =
+        "/ibc/apps/fee/v1/channels/{packet_id.channel_id}/ports/{packet_id.port_id}/sequences/"
+        "{packet_id.sequence}/incentivized_packet";
+  }
+
+  // Gets all incentivized packets for a specific channel
+  rpc IncentivizedPacketsForChannel(QueryIncentivizedPacketsForChannelRequest)
+      returns (QueryIncentivizedPacketsForChannelResponse) {
+    option (google.api.http).get = "/ibc/apps/fee/v1/channels/{channel_id}/ports/{port_id}/incentivized_packets";
+  }
+
+  // TotalRecvFees returns the total receive fees for a packet given its identifier
+  rpc TotalRecvFees(QueryTotalRecvFeesRequest) returns (QueryTotalRecvFeesResponse) {
+    option (google.api.http).get = "/ibc/apps/fee/v1/channels/{packet_id.channel_id}/ports/{packet_id.port_id}/"
+                                   "sequences/{packet_id.sequence}/total_recv_fees";
+  }
+
+  // TotalAckFees returns the total acknowledgement fees for a packet given its identifier
+  rpc TotalAckFees(QueryTotalAckFeesRequest) returns (QueryTotalAckFeesResponse) {
+    option (google.api.http).get = "/ibc/apps/fee/v1/channels/{packet_id.channel_id}/ports/{packet_id.port_id}/"
+                                   "sequences/{packet_id.sequence}/total_ack_fees";
+  }
+
+  // TotalTimeoutFees returns the total timeout fees for a packet given its identifier
+  rpc TotalTimeoutFees(QueryTotalTimeoutFeesRequest) returns (QueryTotalTimeoutFeesResponse) {
+    option (google.api.http).get = "/ibc/apps/fee/v1/channels/{packet_id.channel_id}/ports/{packet_id.port_id}/"
+                                   "sequences/{packet_id.sequence}/total_timeout_fees";
+  }
+
+  // Payee returns the registered payee address for a specific channel given the relayer address
+  rpc Payee(QueryPayeeRequest) returns (QueryPayeeResponse) {
+    option (google.api.http).get = "/ibc/apps/fee/v1/channels/{channel_id}/relayers/{relayer}/payee";
+  }
+
+  // CounterpartyPayee returns the registered counterparty payee for forward relaying
+  rpc CounterpartyPayee(QueryCounterpartyPayeeRequest) returns (QueryCounterpartyPayeeResponse) {
+    option (google.api.http).get = "/ibc/apps/fee/v1/channels/{channel_id}/relayers/{relayer}/counterparty_payee";
+  }
+
+  // FeeEnabledChannels returns a list of all fee enabled channels
+  rpc FeeEnabledChannels(QueryFeeEnabledChannelsRequest) returns (QueryFeeEnabledChannelsResponse) {
+    option (google.api.http).get = "/ibc/apps/fee/v1/fee_enabled";
+  }
+
+  // FeeEnabledChannel returns true if the provided port and channel identifiers belong to a fee enabled channel
+  rpc FeeEnabledChannel(QueryFeeEnabledChannelRequest) returns (QueryFeeEnabledChannelResponse) {
+    option (google.api.http).get = "/ibc/apps/fee/v1/channels/{channel_id}/ports/{port_id}/fee_enabled";
+  }
+}
+
+// QueryIncentivizedPacketsRequest defines the request type for the IncentivizedPackets rpc
+message QueryIncentivizedPacketsRequest {
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  // block height at which to query
+  uint64 query_height = 2;
+}
+
+// QueryIncentivizedPacketsResponse defines the response type for the IncentivizedPackets rpc
+message QueryIncentivizedPacketsResponse {
+  // list of identified fees for incentivized packets
+  repeated ibc.applications.fee.v1.IdentifiedPacketFees incentivized_packets = 1 [(gogoproto.nullable) = false];
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryIncentivizedPacketRequest defines the request type for the IncentivizedPacket rpc
+message QueryIncentivizedPacketRequest {
+  // unique packet identifier comprised of channel ID, port ID and sequence
+  ibc.core.channel.v1.PacketId packet_id = 1 [(gogoproto.nullable) = false];
+  // block height at which to query
+  uint64 query_height = 2;
+}
+
+// QueryIncentivizedPacketsResponse defines the response type for the IncentivizedPacket rpc
+message QueryIncentivizedPacketResponse {
+  // the identified fees for the incentivized packet
+  ibc.applications.fee.v1.IdentifiedPacketFees incentivized_packet = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryIncentivizedPacketsForChannelRequest defines the request type for querying for all incentivized packets
+// for a specific channel
+message QueryIncentivizedPacketsForChannelRequest {
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  string                                port_id    = 2;
+  string                                channel_id = 3;
+  // Height to query at
+  uint64 query_height = 4;
+}
+
+// QueryIncentivizedPacketsResponse defines the response type for the incentivized packets RPC
+message QueryIncentivizedPacketsForChannelResponse {
+  // Map of all incentivized_packets
+  repeated ibc.applications.fee.v1.IdentifiedPacketFees incentivized_packets = 1;
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryTotalRecvFeesRequest defines the request type for the TotalRecvFees rpc
+message QueryTotalRecvFeesRequest {
+  // the packet identifier for the associated fees
+  ibc.core.channel.v1.PacketId packet_id = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryTotalRecvFeesResponse defines the response type for the TotalRecvFees rpc
+message QueryTotalRecvFeesResponse {
+  // the total packet receive fees
+  repeated cosmos.base.v1beta1.Coin recv_fees = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
+
+// QueryTotalAckFeesRequest defines the request type for the TotalAckFees rpc
+message QueryTotalAckFeesRequest {
+  // the packet identifier for the associated fees
+  ibc.core.channel.v1.PacketId packet_id = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryTotalAckFeesResponse defines the response type for the TotalAckFees rpc
+message QueryTotalAckFeesResponse {
+  // the total packet acknowledgement fees
+  repeated cosmos.base.v1beta1.Coin ack_fees = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
+
+// QueryTotalTimeoutFeesRequest defines the request type for the TotalTimeoutFees rpc
+message QueryTotalTimeoutFeesRequest {
+  // the packet identifier for the associated fees
+  ibc.core.channel.v1.PacketId packet_id = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryTotalTimeoutFeesResponse defines the response type for the TotalTimeoutFees rpc
+message QueryTotalTimeoutFeesResponse {
+  // the total packet timeout fees
+  repeated cosmos.base.v1beta1.Coin timeout_fees = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
+
+// QueryPayeeRequest defines the request type for the Payee rpc
+message QueryPayeeRequest {
+  // unique channel identifier
+  string channel_id = 1;
+  // the relayer address to which the distribution address is registered
+  string relayer = 2;
+}
+
+// QueryPayeeResponse defines the response type for the Payee rpc
+message QueryPayeeResponse {
+  // the payee address to which packet fees are paid out
+  string payee_address = 1;
+}
+
+// QueryCounterpartyPayeeRequest defines the request type for the CounterpartyPayee rpc
+message QueryCounterpartyPayeeRequest {
+  // unique channel identifier
+  string channel_id = 1;
+  // the relayer address to which the counterparty is registered
+  string relayer = 2;
+}
+
+// QueryCounterpartyPayeeResponse defines the response type for the CounterpartyPayee rpc
+message QueryCounterpartyPayeeResponse {
+  // the counterparty payee address used to compensate forward relaying
+  string counterparty_payee = 1;
+}
+
+// QueryFeeEnabledChannelsRequest defines the request type for the FeeEnabledChannels rpc
+message QueryFeeEnabledChannelsRequest {
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  // block height at which to query
+  uint64 query_height = 2;
+}
+
+// QueryFeeEnabledChannelsResponse defines the response type for the FeeEnabledChannels rpc
+message QueryFeeEnabledChannelsResponse {
+  // list of fee enabled channels
+  repeated ibc.applications.fee.v1.FeeEnabledChannel fee_enabled_channels = 1 [(gogoproto.nullable) = false];
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryFeeEnabledChannelRequest defines the request type for the FeeEnabledChannel rpc
+message QueryFeeEnabledChannelRequest {
+  // unique port identifier
+  string port_id = 1;
+  // unique channel identifier
+  string channel_id = 2;
+}
+
+// QueryFeeEnabledChannelResponse defines the response type for the FeeEnabledChannel rpc
+message QueryFeeEnabledChannelResponse {
+  // boolean flag representing the fee enabled channel status
+  bool fee_enabled = 1;
+}

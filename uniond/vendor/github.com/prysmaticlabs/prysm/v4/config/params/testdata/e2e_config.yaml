@@ -1,0 +1,121 @@
+# e2e config
+
+# Extends the minimal preset
+PRESET_BASE: 'minimal'
+
+
+
+# Transition
+# ---------------------------------------------------------------
+# TBD, 2**256-2**10 is a placeholder, e2e is 480
+TERMINAL_TOTAL_DIFFICULTY: 480
+# By default, don't use these params
+#TERMINAL_BLOCK_HASH: 0x0000000000000000000000000000000000000000000000000000000000000000
+#TERMINAL_BLOCK_HASH_ACTIVATION_EPOCH: 18446744073709551615
+
+
+
+# Genesis
+# ---------------------------------------------------------------
+# [customized]
+MIN_GENESIS_ACTIVE_VALIDATOR_COUNT: 256 # Override for e2e tests
+# Jan 3, 2020
+MIN_GENESIS_TIME: 1578009600
+# Highest byte set to 0x01 to avoid collisions with mainnet versioning
+GENESIS_FORK_VERSION: 0x000000fd
+# [customized] Faster to spin up testnets, but does not give validator reasonable warning time for genesis
+GENESIS_DELAY: 10 # Override for e2e tests
+
+
+# Forking
+# ---------------------------------------------------------------
+# Values provided for illustrative purposes.
+# Individual tests/testnets may set different values.
+
+# Altair
+ALTAIR_FORK_VERSION: 0x010000fd
+ALTAIR_FORK_EPOCH: 6 # Override for e2e
+# Bellatrix
+BELLATRIX_FORK_VERSION: 0x020000fd
+BELLATRIX_FORK_EPOCH: 8
+# Capella
+CAPELLA_FORK_VERSION: 0x030000fd
+CAPELLA_FORK_EPOCH: 10
+# Deneb
+DENEB_FORK_VERSION: 0x040000fd
+DENEB_FORK_EPOCH: 12
+
+
+# Time parameters
+# ---------------------------------------------------------------
+# [customized] Faster for testing purposes
+SECONDS_PER_SLOT: 10 # Override for e2e tests
+# 14 (estimate from Eth1 mainnet)
+SECONDS_PER_ETH1_BLOCK: 2 # Override for e2e tests
+# [customized] faster time for withdrawals
+MIN_VALIDATOR_WITHDRAWABILITY_DELAY: 1
+# [customized] higher frequency of committee turnover and faster time to acceptable voluntary exit
+SHARD_COMMITTEE_PERIOD: 4 # Override for e2e tests
+# [customized] process deposits more quickly, but insecure
+ETH1_FOLLOW_DISTANCE: 8 # Override for e2e tests
+
+
+# Validator cycle
+# ---------------------------------------------------------------
+# 2**2 (= 4)
+INACTIVITY_SCORE_BIAS: 4
+# 2**4 (= 16)
+INACTIVITY_SCORE_RECOVERY_RATE: 16
+# 2**4 * 10**9 (= 16,000,000,000) Gwei
+EJECTION_BALANCE: 16000000000
+# 2**1 (= 2)
+MIN_PER_EPOCH_CHURN_LIMIT: 2
+# [customized] scale queue churn at much lower validator counts for testing
+CHURN_LIMIT_QUOTIENT: 65536
+
+
+# Fork choice
+# ---------------------------------------------------------------
+# 40%
+PROPOSER_SCORE_BOOST: 40
+
+
+# Deposit contract
+# ---------------------------------------------------------------
+# Ethereum Goerli testnet
+DEPOSIT_CHAIN_ID: 1337 # Override for e2e tests
+DEPOSIT_NETWORK_ID: 1337 # Override for e2e tests
+# Configured on a per testnet basis
+DEPOSIT_CONTRACT_ADDRESS: 0x4242424242424242424242424242424242424242
+
+# Updated penalty values
+# ---------------------------------------------------------------
+# 3 * 2**24 (= 50,331,648)
+INACTIVITY_PENALTY_QUOTIENT_ALTAIR: 50331648
+# 2**6 (= 64)
+MIN_SLASHING_PENALTY_QUOTIENT_ALTAIR: 64
+# 2
+PROPORTIONAL_SLASHING_MULTIPLIER_ALTAIR: 2
+
+
+# Sync committee
+# ---------------------------------------------------------------
+# [customized]
+SYNC_COMMITTEE_SIZE: 32
+# [customized]
+EPOCHS_PER_SYNC_COMMITTEE_PERIOD: 8
+
+
+# Sync protocol
+# ---------------------------------------------------------------
+# 1
+MIN_SYNC_COMMITTEE_PARTICIPANTS: 1
+
+# Other e2e overrides
+# ---------------------------------------------------------------
+CONFIG_NAME: "end-to-end"
+SLOTS_PER_EPOCH: 6
+EPOCHS_PER_ETH1_VOTING_PERIOD: 2
+MAX_SEED_LOOKAHEAD: 1
+
+

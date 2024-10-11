@@ -591,7 +591,7 @@ func file_google_protobuf_compiler_plugin_proto_rawDescGZIP() []byte {
 
 var file_google_protobuf_compiler_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_google_protobuf_compiler_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_google_protobuf_compiler_plugin_proto_goTypes = []interface{}{
+var file_google_protobuf_compiler_plugin_proto_goTypes = []any{
 	(CodeGeneratorResponse_Feature)(0),       // 0: google.protobuf.compiler.CodeGeneratorResponse.Feature
 	(*Version)(nil),                          // 1: google.protobuf.compiler.Version
 	(*CodeGeneratorRequest)(nil),             // 2: google.protobuf.compiler.CodeGeneratorRequest
@@ -619,7 +619,7 @@ func file_google_protobuf_compiler_plugin_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_google_protobuf_compiler_plugin_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_google_protobuf_compiler_plugin_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*Version); i {
 			case 0:
 				return &v.state
@@ -631,7 +631,7 @@ func file_google_protobuf_compiler_plugin_proto_init() {
 				return nil
 			}
 		}
-		file_google_protobuf_compiler_plugin_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_google_protobuf_compiler_plugin_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*CodeGeneratorRequest); i {
 			case 0:
 				return &v.state
@@ -643,7 +643,7 @@ func file_google_protobuf_compiler_plugin_proto_init() {
 				return nil
 			}
 		}
-		file_google_protobuf_compiler_plugin_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_google_protobuf_compiler_plugin_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*CodeGeneratorResponse); i {
 			case 0:
 				return &v.state
@@ -655,7 +655,7 @@ func file_google_protobuf_compiler_plugin_proto_init() {
 				return nil
 			}
 		}
-		file_google_protobuf_compiler_plugin_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_google_protobuf_compiler_plugin_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*CodeGeneratorResponse_File); i {
 			case 0:
 				return &v.state

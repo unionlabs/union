@@ -1,0 +1,42 @@
+{
+    "kind": "discovery#restDescription",
+    "etag": "\"kEk3sFj6Ef5_yR1-H3bAO6qw9mI/3m5rB86FE5KuW1K3jAl88AxCreg\"",
+    "discoveryVersion": "v1",
+    "id": "mapprotostruct:v1",
+    "name": "mapprotostruct",
+    "version": "v1",
+    "title": "Example API",
+    "description": "The Example API demonstrates handling structpb.Struct.",
+    "ownerDomain": "google.com",
+    "ownerName": "Google",
+    "protocol": "rest",
+    "schemas": {
+        "GoogleProtobufStruct": {
+            "id": "GoogleProtobufStruct",
+            "description": "`Struct` represents a structured data value, consisting of fields which map to dynamically typed values. In some languages, `Struct` might be supported by a native representation. For example, in scripting languages like JS a struct is represented as an object. The details of that representation are described together with the proto support for the language. The JSON representation for `Struct` is JSON object.",
+            "type": "object",
+            "additionalProperties": {
+                "type": "any",
+                "description": "Properties of the object."
+            }
+        }
+    },
+    "resources": {
+        "atlas": {
+            "methods": {
+                "getMap": {
+                    "id": "mapprotostruct.getMap",
+                    "path": "map",
+                    "httpMethod": "GET",
+                    "description": "Get a map.",
+                    "request": {
+                        "$ref": "GoogleProtobufStruct"
+                    },
+                    "response": {
+                        "$ref": "GoogleProtobufStruct"
+                    }
+                }
+            }
+        }
+    }
+}

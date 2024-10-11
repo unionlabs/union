@@ -1,0 +1,306 @@
+# Block size is 1, so each block contains one key, and two level index is used
+# since the lower index blocks have only one key.
+
+# Build a table with a single interval collector with id=2 and 2 character
+# suffix. The keys in the table are in the interval [1,7).
+build id_offset=(2,0)
+set a01 a
+set b02 b
+set c03 c
+set d04 d
+set e05 e
+set f06 f
+----
+0.0:
+  000005:[a01#10,SET-f06#15,SET]
+
+# Iterate without a filter.
+iter
+first
+next
+next
+next
+next
+next
+next
+----
+a01: (a, .)
+b02: (b, .)
+c03: (c, .)
+d04: (d, .)
+e05: (e, .)
+f06: (f, .)
+.
+
+# Iterate with a filter interval [1,2) that selects a key at the beginning of
+# the file.
+iter id_lower_upper=(2,1,2)
+first
+next
+prev
+prev
+next
+next
+last
+seek-lt f
+seek-ge a
+seek-ge b
+prev
+----
+a01: (a, .)
+.
+a01: (a, .)
+.
+a01: (a, .)
+.
+a01: (a, .)
+a01: (a, .)
+a01: (a, .)
+.
+a01: (a, .)
+
+# Iterate with a filter interval [3,5) that selects keys in the middle of the
+# file.
+iter id_lower_upper=(2,3,5)
+first
+next
+next
+last
+prev
+prev
+seek-lt f
+prev
+next
+prev
+prev
+last
+seek-ge c
+seek-ge d
+next
+prev
+prev
+prev
+----
+c03: (c, .)
+d04: (d, .)
+.
+d04: (d, .)
+c03: (c, .)
+.
+d04: (d, .)
+c03: (c, .)
+d04: (d, .)
+c03: (c, .)
+.
+d04: (d, .)
+c03: (c, .)
+d04: (d, .)
+.
+d04: (d, .)
+c03: (c, .)
+.
+
+# Iterate with a filter interval [6,8) that selects a key at the end of the
+# file.
+iter id_lower_upper=(2,6,8)
+first
+next
+prev
+prev
+next
+last
+prev
+seek-lt g
+seek-ge b
+----
+f06: (f, .)
+.
+f06: (f, .)
+.
+f06: (f, .)
+f06: (f, .)
+.
+f06: (f, .)
+f06: (f, .)
+
+iter id_lower_upper=(2,2,2)
+first
+last
+seek-ge a
+seek-lt g
+----
+.
+.
+.
+.
+
+# Iterate with a filter interval [7,9) that is after the interval in the file.
+iter id_lower_upper=(2, 7, 9)
+first
+last
+seek-ge a
+seek-lt g
+----
+.
+.
+.
+.
+
+# Iterate with a filter interval [0,1) that is before the interval in the
+# file.
+iter id_lower_upper=(2, 0, 1)
+first
+last
+seek-ge a
+seek-lt g
+----
+.
+.
+.
+.
+
+# Iterate with a filter id=3, which is unknown to the file, so all blocks are
+# visible.
+iter id_lower_upper=(3, 1, 2)
+first
+next
+next
+next
+next
+next
+next
+----
+a01: (a, .)
+b02: (b, .)
+c03: (c, .)
+d04: (d, .)
+e05: (e, .)
+f06: (f, .)
+.
+
+# Build a table with two interval collectors:
+# - id=3 and 2 character suffix. The keys in the table are in the interval
+#   [1,6).
+# - id=5 and 2 characters offset by 2 from the suffix. The keys in the table
+#   are in the interval [6,11).
+build id_offset=(3,0) id_offset=(5,2)
+set a1001 a
+set b0902 b
+set c0803 c
+set d0704 d
+set e0605 e
+----
+0.0:
+  000005:[a1001#10,SET-e0605#14,SET]
+
+# Iterate without a filter.
+iter
+first
+next
+next
+next
+next
+next
+----
+a1001: (a, .)
+b0902: (b, .)
+c0803: (c, .)
+d0704: (d, .)
+e0605: (e, .)
+.
+
+# Iterate with filter id=5, interval [7,9).
+iter id_lower_upper=(5,7,9)
+first
+next
+next
+prev
+prev
+----
+c0803: (c, .)
+d0704: (d, .)
+.
+d0704: (d, .)
+c0803: (c, .)
+
+# Iterate with filter id=5, interval [7,9), and an unknown filter id. The
+# result should only be affected by the filter id=5.
+iter id_lower_upper=(5,7,9) id_lower_upper=(10,0,1)
+first
+next
+next
+prev
+prev
+----
+c0803: (c, .)
+d0704: (d, .)
+.
+d0704: (d, .)
+c0803: (c, .)
+
+# Iterate with filter id=3, interval [4,5) and filter id=5, interval [7,9).
+# The set of blocks admitted by these two filters are intersecting, but not
+# identical. Key c0803, which is allowed by the latter is not allowed by the
+# former, and hence omitted.
+iter id_lower_upper=(3,4,5) id_lower_upper=(5,7,9)
+first
+next
+prev
+prev
+----
+d0704: (d, .)
+.
+d0704: (d, .)
+.
+
+# Repeat the above test, but calling set-options before iteration to set the
+# same filter. The results should be identical.
+iter id_lower_upper=(3,4,5) id_lower_upper=(5,7,9)
+set-options point-filters=reuse
+first
+next
+prev
+prev
+----
+.
+d0704: (d, .)
+.
+d0704: (d, .)
+.
+
+# Repeat the above test, but calling set-options before iteration to remove the
+# filter.
+iter id_lower_upper=(3,4,5) id_lower_upper=(5,7,9)
+set-options point-filters=none
+first
+next
+prev
+prev
+----
+.
+a1001: (a, .)
+b0902: (b, .)
+a1001: (a, .)
+.
+
+
+# Iterate with filter id=3 and id=5, where the two admitted sets are
+# non-empty, but the intersection is empty.
+iter id_lower_upper=(3,4,5) id_lower_upper=(5,8,9)
+first
+----
+.
+
+# Iterate with filter id=3 and id=5, where filter id=5 set is empty, so the
+# intersection is empty.
+iter id_lower_upper=(3,4,5) id_lower_upper=(5,11,12)
+first
+----
+.
+
+# Iterate with filter id=3 and id=5, where filter id=3 set is empty, so the
+# intersection is empty.
+iter id_lower_upper=(3,6,7) id_lower_upper=(5,7,9)
+first
+----
+.

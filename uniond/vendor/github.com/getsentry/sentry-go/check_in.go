@@ -87,6 +87,10 @@ type MonitorConfig struct { //nolint: maligned // prefer readability over optima
 	// A tz database string representing the timezone which the monitor's execution schedule is in.
 	// See: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 	Timezone string `json:"timezone,omitempty"`
+	// The number of consecutive failed check-ins it takes before an issue is created.
+	FailureIssueThreshold int64 `json:"failure_issue_threshold,omitempty"`
+	// The number of consecutive OK check-ins it takes before an issue is resolved.
+	RecoveryThreshold int64 `json:"recovery_threshold,omitempty"`
 }
 
 type CheckIn struct { //nolint: maligned // prefer readability over optimal memory layout

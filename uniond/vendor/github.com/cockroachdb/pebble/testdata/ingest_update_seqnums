@@ -1,0 +1,142 @@
+# Starting sequence number. Each file increments the sequence number.
+
+starting-seqnum
+42
+----
+
+# Point keys only (no range dels).
+
+load
+a.SET.0:
+b.SET.0:
+c.SET.0:
+----
+file 0
+
+# Point keys only (range del lower bound).
+
+load
+a.RANGEDEL.0:b
+c.SET.0:
+----
+file 1
+
+# Point keys only (range del upper bound).
+
+load
+a.SET.0:
+b.RANGEDEL.0:c
+----
+file 2
+
+# Update the sequence numbers across all three files.
+# NB: the sequence numbers are expected to increment by one from the starting
+# sequence number, for each file.
+
+update-files
+----
+file 0:
+  combined: a#42,1-c#42,1
+    points: a#42,1-c#42,1
+    ranges: #0,0-#0,0
+file 1:
+  combined: a#43,15-c#43,1
+    points: a#43,15-c#43,1
+    ranges: #0,0-#0,0
+file 2:
+  combined: a#44,1-c#72057594037927935,15
+    points: a#44,1-c#72057594037927935,15
+    ranges: #0,0-#0,0
+
+# Reset to the starting sequence number and reset the slice of files. The
+# following tests consider a single file at a time.
+
+# Range keys only.
+
+reset
+----
+
+load
+rangekey: a-c:{#0,RANGEKEYSET,@1,foo)}
+----
+file 0
+
+update-files
+----
+file 0:
+  combined: a#42,21-c#72057594037927935,21
+    points: #0,0-#0,0
+    ranges: a#42,21-c#72057594037927935,21
+
+# Combined point and range keys (point key lower and upper bound).
+
+reset
+----
+
+load
+a.SET.0:
+rangekey: b-c:{#0,RANGEKEYSET,@1,foo)}
+d.SET.0:
+----
+file 0
+
+update-files
+----
+file 0:
+  combined: a#42,1-d#42,1
+    points: a#42,1-d#42,1
+    ranges: b#42,21-c#72057594037927935,21
+
+# Combined point and range keys (point key lower and range key upper bound).
+
+reset
+----
+
+load
+a.SET.0:
+rangekey: b-c:{(#0,RANGEKEYSET,@1,foo)}
+----
+file 0
+
+update-files
+----
+file 0:
+  combined: a#42,1-c#72057594037927935,21
+    points: a#42,1-a#42,1
+    ranges: b#42,21-c#72057594037927935,21
+
+# Combined point and range keys (range key lower and point key upper bound).
+
+reset
+----
+
+load
+rangekey: a-c:{#0,RANGEKEYSET,@1,foo)}
+d.SET.0:
+----
+file 0
+
+update-files
+----
+file 0:
+  combined: a#42,21-d#42,1
+    points: d#42,1-d#42,1
+    ranges: a#42,21-c#72057594037927935,21
+
+# Combined point and range keys (range key lower and upper bound).
+
+reset
+----
+
+load
+rangekey: a-d:{#0,RANGEKEYSET,@1,foo)}
+c.SET.0:
+----
+file 0
+
+update-files
+----
+file 0:
+  combined: a#42,21-d#72057594037927935,21
+    points: c#42,1-c#42,1
+    ranges: a#42,21-d#72057594037927935,21

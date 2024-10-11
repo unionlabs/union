@@ -1,0 +1,7 @@
+{
+  "cert_configs": {
+    "workload": {
+      "key_path": "testdata/workload_key.pem"
+    }
+  }
+}

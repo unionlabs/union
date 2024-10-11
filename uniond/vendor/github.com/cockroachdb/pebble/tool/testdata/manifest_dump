@@ -1,0 +1,381 @@
+manifest dump
+----
+requires at least 1 arg(s), only received 0
+
+manifest dump
+../testdata/db-stage-2/MANIFEST-000001
+----
+MANIFEST-000001
+0/0
+  next-file-num: 2
+EOF
+
+manifest dump
+../testdata/db-stage-4/MANIFEST-000005
+----
+MANIFEST-000005
+0/0
+  comparer:     leveldb.BytewiseComparator
+35/1
+  <empty>
+44/2
+  log-num:       4
+  next-file-num: 6
+  last-seq-num:  5
+  added:         L0 000004:986<#3-#5>[bar#5,DEL-foo#4,SET]
+EOF
+--- L0.0 ---
+  000004:986<#3-#5>[bar#5,DEL-foo#4,SET]
+--- L1 ---
+--- L2 ---
+--- L3 ---
+--- L4 ---
+--- L5 ---
+--- L6 ---
+
+manifest dump --filter-start=zoo
+../testdata/db-stage-4/MANIFEST-000005
+----
+MANIFEST-000005
+0/0
+  comparer:     leveldb.BytewiseComparator
+EOF
+--- L0.0 ---
+--- L1 ---
+--- L2 ---
+--- L3 ---
+--- L4 ---
+--- L5 ---
+--- L6 ---
+
+manifest dump --filter-end=a
+../testdata/db-stage-4/MANIFEST-000005
+----
+MANIFEST-000005
+0/0
+  comparer:     leveldb.BytewiseComparator
+EOF
+--- L0.0 ---
+--- L1 ---
+--- L2 ---
+--- L3 ---
+--- L4 ---
+--- L5 ---
+--- L6 ---
+
+manifest dump --filter-start=a --filter-end=d
+../testdata/db-stage-4/MANIFEST-000005
+----
+MANIFEST-000005
+0/0
+  comparer:     leveldb.BytewiseComparator
+44/1
+  log-num:       4
+  next-file-num: 6
+  last-seq-num:  5
+  added:         L0 000004:986<#3-#5>[bar#5,DEL-foo#4,SET]
+EOF
+--- L0.0 ---
+  000004:986<#3-#5>[bar#5,DEL-foo#4,SET]
+--- L1 ---
+--- L2 ---
+--- L3 ---
+--- L4 ---
+--- L5 ---
+--- L6 ---
+
+manifest dump
+../testdata/db-stage-4/MANIFEST-000005
+--key=%x
+----
+MANIFEST-000005
+0/0
+  comparer:     leveldb.BytewiseComparator
+35/1
+  <empty>
+44/2
+  log-num:       4
+  next-file-num: 6
+  last-seq-num:  5
+  added:         L0 000004:986<#3-#5>[626172#5,DEL-666f6f#4,SET]
+EOF
+--- L0.0 ---
+  000004:986<#3-#5>[626172#5,DEL-666f6f#4,SET]
+--- L1 ---
+--- L2 ---
+--- L3 ---
+--- L4 ---
+--- L5 ---
+--- L6 ---
+
+manifest dump
+../testdata/db-stage-4/MANIFEST-000005
+--key=null
+----
+MANIFEST-000005
+0/0
+  comparer:     leveldb.BytewiseComparator
+35/1
+  <empty>
+44/2
+  log-num:       4
+  next-file-num: 6
+  last-seq-num:  5
+  added:         L0 000004:986<#3-#5>
+EOF
+--- L0.0 ---
+  000004:986<#3-#5>
+--- L1 ---
+--- L2 ---
+--- L3 ---
+--- L4 ---
+--- L5 ---
+--- L6 ---
+
+manifest dump
+../testdata/db-stage-4/MANIFEST-000005
+--key=pretty
+----
+MANIFEST-000005
+0/0
+  comparer:     leveldb.BytewiseComparator
+35/1
+  <empty>
+44/2
+  log-num:       4
+  next-file-num: 6
+  last-seq-num:  5
+  added:         L0 000004:986<#3-#5>[bar#5,DEL-foo#4,SET]
+EOF
+--- L0.0 ---
+  000004:986<#3-#5>[bar#5,DEL-foo#4,SET]
+--- L1 ---
+--- L2 ---
+--- L3 ---
+--- L4 ---
+--- L5 ---
+--- L6 ---
+
+manifest dump
+../testdata/db-stage-4/MANIFEST-000005
+--key=pretty:test-comparer
+----
+MANIFEST-000005
+0/0
+  comparer:     leveldb.BytewiseComparator
+35/1
+  <empty>
+44/2
+  log-num:       4
+  next-file-num: 6
+  last-seq-num:  5
+  added:         L0 000004:986<#3-#5>[test formatter: bar#5,DEL-test formatter: foo#4,SET]
+EOF
+--- L0.0 ---
+  000004:986<#3-#5>[test formatter: bar#5,DEL-test formatter: foo#4,SET]
+--- L1 ---
+--- L2 ---
+--- L3 ---
+--- L4 ---
+--- L5 ---
+--- L6 ---
+
+manifest check
+----
+requires at least 1 arg(s), only received 0
+
+manifest check
+../testdata/db-stage-1/MANIFEST-000001
+----
+OK
+
+manifest check
+../testdata/db-stage-2/MANIFEST-000001
+----
+OK
+
+manifest check
+../testdata/db-stage-3/MANIFEST-000005
+----
+OK
+
+manifest check
+../testdata/db-stage-4/MANIFEST-000005
+----
+OK
+
+manifest dump
+./testdata/MANIFEST-invalid
+----
+MANIFEST-invalid
+0/0
+  comparer:     leveldb.BytewiseComparator
+  log-num:       2
+  next-file-num: 5
+  last-seq-num:  20
+  added:         L6 000001:0<#2-#5>[#0,DEL-#0,DEL]
+65/1
+  comparer:     leveldb.BytewiseComparator
+  log-num:       3
+  next-file-num: 5
+  last-seq-num:  20
+  added:         L6 000002:0<#1-#4>[#0,DEL-#0,DEL]
+EOF
+pebble: files 000002 and 000001 collided on sort keys
+
+manifest check
+./testdata/MANIFEST-invalid
+----
+MANIFEST-invalid: offset: 65 err: pebble: files 000002 and 000001 collided on sort keys
+Version state before failed Apply
+--- L0 ---
+--- L1 ---
+--- L2 ---
+--- L3 ---
+--- L4 ---
+--- L5 ---
+--- L6 ---
+  000001:0<#2-#5>[#0,DEL-#0,DEL]
+Version edit that failed
+  added: L6 000002:0<#1-#4>[#0,DEL-#0,DEL]
+
+manifest dump
+./testdata/find-db/MANIFEST-000001
+----
+MANIFEST-000001
+0/0
+  comparer:     alt-comparer
+  next-file-num: 2
+25/1
+  log-num:       2
+  next-file-num: 3
+36/2
+  log-num:       4
+  next-file-num: 6
+  last-seq-num:  5
+  added:         L0 000005:784<#1-#5>[aaa#1,SET-ccc#5,MERGE] (2021-04-01T20:24:02Z)
+88/3
+  next-file-num: 6
+  last-seq-num:  5
+  deleted:       L0 000005
+  added:         L6 000005:784<#1-#5>[aaa#1,SET-ccc#5,MERGE] (2021-04-01T20:24:02Z)
+141/4
+  next-file-num: 7
+  last-seq-num:  6
+  added:         L0 000006:817<#6-#6>[bbb#6,SET-ccc#6,SET] (2021-04-01T20:24:02Z)
+191/5
+  next-file-num: 8
+  last-seq-num:  7
+  added:         L6 000007:808<#7-#7>[ddd#7,SET-ddd#7,SET] (2021-04-01T20:24:02Z)
+241/6
+  next-file-num: 9
+  last-seq-num:  7
+  deleted:       L0 000006
+  deleted:       L6 000005
+  added:         L6 000008:791<#0-#6>[aaa#0,SET-ccc#0,MERGE] (2021-04-01T20:24:02Z)
+297/7
+  log-num:       9
+  next-file-num: 11
+  last-seq-num:  10
+  added:         L0 000010:834<#8-#10>[aaa#8,DEL-eee#inf,RANGEDEL] (2021-04-01T20:24:02Z)
+349/8
+  next-file-num: 12
+  last-seq-num:  10
+  deleted:       L0 000010
+  deleted:       L6 000007
+  deleted:       L6 000008
+  added:         L6 000011:898<#0-#10>[aaa#8,DEL-eee#inf,RANGEDEL] (2021-04-01T20:24:02Z)
+408/9
+  next-file-num: 12
+  last-seq-num:  10
+  deleted:       L6 000011
+EOF
+--- L0 ---
+--- L1 ---
+--- L2 ---
+--- L3 ---
+--- L4 ---
+--- L5 ---
+--- L6 ---
+
+manifest dump --filter-start=bat --filter-end=cat
+./testdata/find-db/MANIFEST-000001
+----
+MANIFEST-000001
+0/0
+  comparer:     alt-comparer
+  next-file-num: 2
+36/1
+  log-num:       4
+  next-file-num: 6
+  last-seq-num:  5
+  added:         L0 000005:784<#1-#5>[aaa#1,SET-ccc#5,MERGE] (2021-04-01T20:24:02Z)
+88/2
+  next-file-num: 6
+  last-seq-num:  5
+  deleted:       L0 000005
+  added:         L6 000005:784<#1-#5>[aaa#1,SET-ccc#5,MERGE] (2021-04-01T20:24:02Z)
+141/3
+  next-file-num: 7
+  last-seq-num:  6
+  added:         L0 000006:817<#6-#6>[bbb#6,SET-ccc#6,SET] (2021-04-01T20:24:02Z)
+241/4
+  next-file-num: 9
+  last-seq-num:  7
+  deleted:       L0 000006
+  deleted:       L6 000005
+  added:         L6 000008:791<#0-#6>[aaa#0,SET-ccc#0,MERGE] (2021-04-01T20:24:02Z)
+297/5
+  log-num:       9
+  next-file-num: 11
+  last-seq-num:  10
+  added:         L0 000010:834<#8-#10>[aaa#8,DEL-eee#inf,RANGEDEL] (2021-04-01T20:24:02Z)
+349/6
+  next-file-num: 12
+  last-seq-num:  10
+  deleted:       L0 000010
+  deleted:       L6 000007
+  deleted:       L6 000008
+  added:         L6 000011:898<#0-#10>[aaa#8,DEL-eee#inf,RANGEDEL] (2021-04-01T20:24:02Z)
+408/7
+  next-file-num: 12
+  last-seq-num:  10
+  deleted:       L6 000011
+EOF
+--- L0 ---
+--- L1 ---
+--- L2 ---
+--- L3 ---
+--- L4 ---
+--- L5 ---
+--- L6 ---
+
+manifest check
+./testdata/mixed/MANIFEST-000001
+----
+OK
+
+manifest dump
+./testdata/mixed/MANIFEST-000001
+----
+MANIFEST-000001
+0/0
+  comparer:     pebble.internal.testkeys
+  next-file-num: 2
+37/1
+  log-num:       2
+  next-file-num: 3
+48/2
+  log-num:       4
+  next-file-num: 6
+  last-seq-num:  29
+  added:         L0 000005:1166<#1-#29>[a#29,RANGEKEYDEL-z@1#26,SET] (2022-08-12T23:21:28Z)
+EOF
+--- L0.0 ---
+  000005:1166<#1-#29>[a#29,RANGEKEYDEL-z@1#26,SET]
+--- L1 ---
+--- L2 ---
+--- L3 ---
+--- L4 ---
+--- L5 ---
+--- L6 ---

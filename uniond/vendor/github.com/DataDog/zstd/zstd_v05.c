@@ -3601,6 +3601,7 @@ size_t ZSTDv05_decompressContinue(ZSTDv05_DCtx* dctx, void* dst, size_t maxDstSi
             }
             dctx->stage = ZSTDv05ds_decodeBlockHeader;
             dctx->expected = ZSTDv05_blockHeaderSize;
+            if (ZSTDv05_isError(rSize)) return rSize;
             dctx->previousDstEnd = (char*)dst + rSize;
             return rSize;
         }

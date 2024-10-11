@@ -1,0 +1,10 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = ["password_reader_mock.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/cmd/mock",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_golang_mock//gomock:go_default_library"],
+)

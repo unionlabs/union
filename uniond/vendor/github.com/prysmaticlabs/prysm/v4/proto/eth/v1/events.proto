@@ -1,0 +1,101 @@
+// Copyright 2021 Prysmatic Labs.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+
+package ethereum.eth.v1;
+
+import "google/protobuf/descriptor.proto";
+import "proto/eth/ext/options.proto";
+import "proto/engine/v1/execution_engine.proto";
+
+option csharp_namespace = "Ethereum.Eth.V1";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/eth/v1";
+option java_multiple_files = true;
+option java_outer_classname = "BeaconEventsProto";
+option java_package = "org.ethereum.eth.v1";
+option php_namespace = "Ethereum\\Eth\\v1";
+
+message EventHead {
+  // Slot of the new chain head.
+  uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+  // Block root of the new chain head.
+  bytes block = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // State root of the new chain head.
+  bytes state = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // Whether or not the new chain head is at an epoch transition.
+  bool epoch_transition = 4;
+
+  // The previous dependent root.
+  bytes previous_duty_dependent_root = 5 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // The current dependent root.
+  bytes current_duty_dependent_root = 6 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // Information about optimistic sync.
+  bool execution_optimistic = 7;
+}
+
+message EventBlock {
+  // The slot of the observed block.
+  uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+  // The root of the observed block.
+  bytes block = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // Information about optimistic sync.
+  bool execution_optimistic = 3;
+}
+
+message EventChainReorg {
+  // The slot of the observed reorg.
+  uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+  // Depth of the reorg in slots.
+  uint64 depth = 2;
+
+  // Block root of the old head.
+  bytes old_head_block = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // Block root of the new head.
+  bytes new_head_block = 4 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // State root of the old state.
+  bytes old_head_state = 5 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // State root of the new state.
+  bytes new_head_state = 6 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // Epoch of the observed reorg.
+  uint64 epoch = 7 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+  // Information about optimistic sync.
+  bool execution_optimistic = 8;
+}
+
+message EventFinalizedCheckpoint {
+  // Block root of the finalized checkpoint.
+  bytes block = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // State root of the finalized checkpoint.
+  bytes state = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // Epoch the checkpoint references.
+  uint64 epoch = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+  // Information about optimistic sync.
+  bool execution_optimistic = 4;
+}

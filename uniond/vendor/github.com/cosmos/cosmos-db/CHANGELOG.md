@@ -1,5 +1,10 @@
 # Changelog
 
+## UNRELEASED
+
+* Allow full control in rocksdb opening
+* Make `Iteractor` and `Batch` interfaces more flexible by a type alias
+
 ## [v1.0.2] - 2024-02-26
 
 * Downgrade Go version in go.mod to 1.19

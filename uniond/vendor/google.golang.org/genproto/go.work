@@ -1,0 +1,13 @@
+go 1.20
+
+use (
+	.
+	./googleapis/api
+	./googleapis/api/apikeys
+	./googleapis/api/servicecontrol
+	./googleapis/api/servicemanagement
+	./googleapis/api/serviceusage
+	./googleapis/bytestream
+	./googleapis/rpc
+	./internal/actions
+)

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package ibc.core.connection.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types";
+
+import "gogoproto/gogo.proto";
+import "ibc/core/connection/v1/connection.proto";
+
+// GenesisState defines the ibc connection submodule's genesis state.
+message GenesisState {
+  repeated IdentifiedConnection connections             = 1 [(gogoproto.nullable) = false];
+  repeated ConnectionPaths      client_connection_paths = 2 [(gogoproto.nullable) = false];
+  // the sequence for the next generated connection identifier
+  uint64 next_connection_sequence = 3;
+  Params params                   = 4 [(gogoproto.nullable) = false];
+}

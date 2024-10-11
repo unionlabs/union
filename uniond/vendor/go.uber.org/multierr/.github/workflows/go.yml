@@ -1,0 +1,52 @@
+name: Go
+
+on:
+  push:
+    branches: ['*']
+    tags: ['v*']
+  pull_request:
+    branches: ['*']
+
+permissions:
+  contents: read
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ["1.19.x", "1.20.x"]
+        include:
+        - go: 1.20.x
+          latest: true
+
+    steps:
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Load cached dependencies
+      uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download Dependencies
+      run: go mod download
+
+    - name: Lint
+      if: matrix.latest
+      run: make lint
+
+    - name: Test
+      run: make cover
+
+    - name: Upload coverage to codecov.io
+      uses: codecov/codecov-action@v1

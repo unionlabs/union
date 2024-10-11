@@ -1,0 +1,275 @@
+open test
+----
+
+list test
+----
+
+batch
+add 1 10 100
+----
+create: test/REMOTE-OBJ-CATALOG-000001
+sync: test/REMOTE-OBJ-CATALOG-000001
+create: test/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+close: test/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+sync: test
+sync: test/REMOTE-OBJ-CATALOG-000001
+
+list test
+----
+REMOTE-OBJ-CATALOG-000001
+marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+
+batch
+add 2 20 200
+add 3 30 300
+----
+sync: test/REMOTE-OBJ-CATALOG-000001
+
+batch
+delete 1
+----
+sync: test/REMOTE-OBJ-CATALOG-000001
+
+list test
+----
+REMOTE-OBJ-CATALOG-000001
+marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+
+set-creator-id 5
+----
+sync: test/REMOTE-OBJ-CATALOG-000001
+
+set-creator-id 5
+----
+
+set-creator-id 6
+----
+error setting creator ID: attempt to change CreatorID from 5 to 6
+
+# Bad batches.
+batch
+add 3 1 1
+----
+error applying batch: adding existing object 000003
+
+batch
+delete 1000
+----
+error applying batch: deleting non-existent object 001000
+
+close
+----
+close: test/REMOTE-OBJ-CATALOG-000001
+
+open test
+----
+creator-id: 5
+000002: 20/000200
+000003: 30/000300
+
+set-creator-id 6
+----
+error setting creator ID: attempt to change CreatorID from 5 to 6
+
+batch
+add 4 40 40
+delete 3
+add 8 80 80
+----
+create: test/REMOTE-OBJ-CATALOG-000002
+sync: test/REMOTE-OBJ-CATALOG-000002
+create: test/marker.remote-obj-catalog.000002.REMOTE-OBJ-CATALOG-000002
+close: test/marker.remote-obj-catalog.000002.REMOTE-OBJ-CATALOG-000002
+remove: test/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+sync: test
+remove: test/REMOTE-OBJ-CATALOG-000001
+sync: test/REMOTE-OBJ-CATALOG-000002
+
+list test
+----
+REMOTE-OBJ-CATALOG-000002
+marker.remote-obj-catalog.000002.REMOTE-OBJ-CATALOG-000002
+
+close
+----
+close: test/REMOTE-OBJ-CATALOG-000002
+
+open test
+----
+creator-id: 5
+000002: 20/000200
+000004: 40/000040
+000008: 80/000080
+
+close
+----
+
+open other-path
+----
+
+batch
+add 5 50 500
+----
+create: other-path/REMOTE-OBJ-CATALOG-000001
+sync: other-path/REMOTE-OBJ-CATALOG-000001
+create: other-path/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+close: other-path/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+sync: other-path
+sync: other-path/REMOTE-OBJ-CATALOG-000001
+
+# Adding and deleting objects in the same batch is allowed.
+
+batch
+add 9 50 501
+delete 9
+----
+sync: other-path/REMOTE-OBJ-CATALOG-000001
+
+list other-path
+----
+REMOTE-OBJ-CATALOG-000001
+marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+
+list test
+----
+REMOTE-OBJ-CATALOG-000002
+marker.remote-obj-catalog.000002.REMOTE-OBJ-CATALOG-000002
+
+close
+----
+close: other-path/REMOTE-OBJ-CATALOG-000001
+
+open test
+----
+creator-id: 5
+000002: 20/000200
+000004: 40/000040
+000008: 80/000080
+
+# Test rotation.
+list test
+----
+REMOTE-OBJ-CATALOG-000002
+marker.remote-obj-catalog.000002.REMOTE-OBJ-CATALOG-000002
+
+random-batches n=20 size=2000
+----
+create: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+create: test/marker.remote-obj-catalog.000003.REMOTE-OBJ-CATALOG-000003
+close: test/marker.remote-obj-catalog.000003.REMOTE-OBJ-CATALOG-000003
+remove: test/marker.remote-obj-catalog.000002.REMOTE-OBJ-CATALOG-000002
+sync: test
+remove: test/REMOTE-OBJ-CATALOG-000002
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000003
+close: test/REMOTE-OBJ-CATALOG-000003
+create: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+create: test/marker.remote-obj-catalog.000004.REMOTE-OBJ-CATALOG-000004
+close: test/marker.remote-obj-catalog.000004.REMOTE-OBJ-CATALOG-000004
+remove: test/marker.remote-obj-catalog.000003.REMOTE-OBJ-CATALOG-000003
+sync: test
+remove: test/REMOTE-OBJ-CATALOG-000003
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+
+list test
+----
+REMOTE-OBJ-CATALOG-000004
+marker.remote-obj-catalog.000004.REMOTE-OBJ-CATALOG-000004
+
+random-batches n=20 size=2000
+----
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000004
+close: test/REMOTE-OBJ-CATALOG-000004
+create: test/REMOTE-OBJ-CATALOG-000005
+sync: test/REMOTE-OBJ-CATALOG-000005
+create: test/marker.remote-obj-catalog.000005.REMOTE-OBJ-CATALOG-000005
+close: test/marker.remote-obj-catalog.000005.REMOTE-OBJ-CATALOG-000005
+remove: test/marker.remote-obj-catalog.000004.REMOTE-OBJ-CATALOG-000004
+sync: test
+remove: test/REMOTE-OBJ-CATALOG-000004
+sync: test/REMOTE-OBJ-CATALOG-000005
+sync: test/REMOTE-OBJ-CATALOG-000005
+sync: test/REMOTE-OBJ-CATALOG-000005
+sync: test/REMOTE-OBJ-CATALOG-000005
+sync: test/REMOTE-OBJ-CATALOG-000005
+sync: test/REMOTE-OBJ-CATALOG-000005
+
+list test
+----
+REMOTE-OBJ-CATALOG-000005
+marker.remote-obj-catalog.000005.REMOTE-OBJ-CATALOG-000005
+
+# Even with huge batches, we don't rotate on each batch.
+random-batches n=10 size=50000
+----
+sync: test/REMOTE-OBJ-CATALOG-000005
+close: test/REMOTE-OBJ-CATALOG-000005
+create: test/REMOTE-OBJ-CATALOG-000006
+sync: test/REMOTE-OBJ-CATALOG-000006
+create: test/marker.remote-obj-catalog.000006.REMOTE-OBJ-CATALOG-000006
+close: test/marker.remote-obj-catalog.000006.REMOTE-OBJ-CATALOG-000006
+remove: test/marker.remote-obj-catalog.000005.REMOTE-OBJ-CATALOG-000005
+sync: test
+remove: test/REMOTE-OBJ-CATALOG-000005
+sync: test/REMOTE-OBJ-CATALOG-000006
+sync: test/REMOTE-OBJ-CATALOG-000006
+close: test/REMOTE-OBJ-CATALOG-000006
+create: test/REMOTE-OBJ-CATALOG-000007
+sync: test/REMOTE-OBJ-CATALOG-000007
+create: test/marker.remote-obj-catalog.000007.REMOTE-OBJ-CATALOG-000007
+close: test/marker.remote-obj-catalog.000007.REMOTE-OBJ-CATALOG-000007
+remove: test/marker.remote-obj-catalog.000006.REMOTE-OBJ-CATALOG-000006
+sync: test
+remove: test/REMOTE-OBJ-CATALOG-000006
+sync: test/REMOTE-OBJ-CATALOG-000007
+sync: test/REMOTE-OBJ-CATALOG-000007
+sync: test/REMOTE-OBJ-CATALOG-000007
+sync: test/REMOTE-OBJ-CATALOG-000007
+close: test/REMOTE-OBJ-CATALOG-000007
+create: test/REMOTE-OBJ-CATALOG-000008
+sync: test/REMOTE-OBJ-CATALOG-000008
+create: test/marker.remote-obj-catalog.000008.REMOTE-OBJ-CATALOG-000008
+close: test/marker.remote-obj-catalog.000008.REMOTE-OBJ-CATALOG-000008
+remove: test/marker.remote-obj-catalog.000007.REMOTE-OBJ-CATALOG-000007
+sync: test
+remove: test/REMOTE-OBJ-CATALOG-000007
+sync: test/REMOTE-OBJ-CATALOG-000008
+sync: test/REMOTE-OBJ-CATALOG-000008
+sync: test/REMOTE-OBJ-CATALOG-000008
+
+list test
+----
+REMOTE-OBJ-CATALOG-000008
+marker.remote-obj-catalog.000008.REMOTE-OBJ-CATALOG-000008

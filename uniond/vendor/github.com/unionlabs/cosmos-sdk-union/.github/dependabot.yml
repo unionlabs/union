@@ -1,0 +1,367 @@
+# Please see the documentation for all configuration options:
+# https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "01:00"
+
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "01:05"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/simapp"
+    schedule:
+      interval: daily
+      time: "01:10"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/tests"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "01:15"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/api"
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "01:20"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/orm"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "01:25"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/core"
+    schedule:
+      interval: weekly
+      day: thursday
+      time: "01:30"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/core/testing"
+    schedule:
+      interval: weekly
+      day: thursday
+      time: "01:30"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/depinject"
+    schedule:
+      interval: weekly
+      day: friday
+      time: "01:35"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/errors"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "01:40"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/math"
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "01:45"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/client/v2"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "01:50"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/indexer/postgres"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "01:53"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/indexer/postgres/tests"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "01:53"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/schema"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "01:53"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/x/tx"
+    schedule:
+      interval: weekly
+      day: thursday
+      time: "01:55"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/tools/cosmovisor"
+    schedule:
+      interval: weekly
+      day: friday
+      time: "02:00"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/tools/confix"
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "02:10"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/tools/hubl"
+    schedule:
+      interval: weekly
+      day: thursday
+      time: "02:15"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/collections"
+    schedule:
+      interval: weekly
+      day: friday
+      time: "02:20"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "x/accounts"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "02:35"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "x/accounts/defaults/base"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "02:45"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "x/accounts/defaults/multisig"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "02:45"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "x/accounts/defaults/lockup"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "02:55"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/x/nft"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "02:25"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/x/circuit"
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "02:30"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "x/feegrant"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "02:35"
+    labels:
+      - "A:automerge"
+      - dependencies
+
+  - package-ecosystem: gomod
+    directory: "/x/evidence"
+    schedule:
+      interval: weekly
+      day: thursday
+      time: "02:40"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/store"
+    schedule:
+      interval: weekly
+      day: friday
+      time: "02:45"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "x/upgrade"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "02:50"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "log"
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "02:55"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/x/protocolpool"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "03:00"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/x/params"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "03:05"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/x/auth"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "03:10"
+    labels:
+      - "A:automerge"
+      - dependencies
+  - package-ecosystem: gomod
+    directory: "/x/epochs"
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "03:15"
+    labels:
+      - "A:automerge"
+      - dependencies
+
+  # Dependencies should be up to date on release branch
+  - package-ecosystem: gomod
+    directory: "/"
+    target-branch: "release/v0.47.x"
+    schedule:
+      interval: daily
+      time: "03:00"
+    labels:
+      - "A:automerge"
+      - dependencies
+      - "testing-required"
+    allow:
+      - dependency-name: "github.com/cosmos/cosmos-sdk/*"
+        dependency-type: "all"
+      - dependency-name: "github.com/cosmos/*"
+        dependency-type: "all"
+      - dependency-name: "cosmossdk.io/*"
+        dependency-type: "all"
+      - dependency-name: "github.com/cometbft/*"
+        dependency-type: "all"
+    ignore:
+      - dependency-name: "github.com/cometbft/cometbft"
+        # cometbft 0.37 is not semver, but we want to only update "patch" versions for 0.37.x
+        update-types:
+          ["version-update:semver-major", "version-update:semver-minor"]
+
+  - package-ecosystem: gomod
+    directory: "/"
+    target-branch: "release/v0.50.x"
+    schedule:
+      interval: daily
+      time: "03:00"
+    labels:
+      - "A:automerge"
+      - dependencies
+      - "testing-required"
+    allow:
+      - dependency-name: "github.com/cosmos/cosmos-sdk/*"
+        dependency-type: "all"
+      - dependency-name: "github.com/cosmos/*"
+        dependency-type: "all"
+      - dependency-name: "cosmossdk.io/*"
+        dependency-type: "all"
+      - dependency-name: "github.com/cometbft/*"
+        dependency-type: "all"
+    ignore:
+      - dependency-name: "github.com/cometbft/cometbft"
+        # cometbft 0.38 is not semver, but we want to only update "patch" versions for 0.38.x
+        update-types:
+          ["version-update:semver-major", "version-update:semver-minor"]

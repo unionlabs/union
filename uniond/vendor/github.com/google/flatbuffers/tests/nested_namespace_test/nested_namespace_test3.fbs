@@ -1,0 +1,7 @@
+include "nested_namespace_test1.fbs";
+
+namespace NamespaceA.NamespaceB;
+
+table ColorTestTable {
+  color:NamespaceB.Color = Blue;
+}

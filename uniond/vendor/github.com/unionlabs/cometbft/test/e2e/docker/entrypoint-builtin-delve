@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# Forcibly remove any stray UNIX sockets left behind from previous runs
+rm -rf /var/run/privval.sock /var/run/app.sock
+
+dlv --headless --listen=:2345 --log --log-output=debugger,debuglineerr,gdbwire,lldbout,rpc --accept-multiclient --api-version=2 exec /usr/bin/app -- /cometbft/config/app.toml

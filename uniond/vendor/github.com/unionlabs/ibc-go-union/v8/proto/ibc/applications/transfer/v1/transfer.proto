@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package ibc.applications.transfer.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types";
+
+// DenomTrace contains the base denomination for ICS20 fungible tokens and the
+// source tracing information path.
+message DenomTrace {
+  // path defines the chain of port/channel identifiers used for tracing the
+  // source of the fungible token.
+  string path = 1;
+  // base denomination of the relayed fungible token.
+  string base_denom = 2;
+}
+
+// Params defines the set of IBC transfer parameters.
+// NOTE: To prevent a single token from being transferred, set the
+// TransfersEnabled parameter to true and then set the bank module's SendEnabled
+// parameter for the denomination to false.
+message Params {
+  // send_enabled enables or disables all cross-chain token transfers from this
+  // chain.
+  bool send_enabled = 1;
+  // receive_enabled enables or disables all cross-chain token transfers to this
+  // chain.
+  bool receive_enabled = 2;
+}

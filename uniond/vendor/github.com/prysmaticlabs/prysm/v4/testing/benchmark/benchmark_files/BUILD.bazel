@@ -1,0 +1,10 @@
+filegroup(
+    name = "benchmark_data",
+    srcs = glob([
+        "*.ssz",
+    ]),
+    visibility = [
+        "//beacon-chain/core/transition:__pkg__",
+        "//testing/benchmark:__subpackages__",
+    ],
+)

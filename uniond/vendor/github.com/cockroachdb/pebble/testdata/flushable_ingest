@@ -1,0 +1,627 @@
+# We create multiple SSTs, one of which overlaps with the memtable (scheduling a flush).
+# Check that the SSTs get ingested to the lowest levels possible.
+
+batch
+set a 0
+----
+
+# The SST below overlaps with memtable and thus should be placed in L0
+# post flush.
+build ext1
+set a 1
+----
+
+# The SST below overlaps with nothing and thus should be placed in L6 post
+# flush.
+build ext2
+set b 1
+----
+
+# The SST below doesn't overlap with any SSTs in the LSM and thus can be placed
+# in L6 post-flush.
+build ext3
+set d 1
+----
+
+# We block the flush, so the SSTs should still be in the flushable queue.
+blockFlush
+----
+
+ingest ext1 ext2 ext3
+----
+
+allowFlush
+----
+
+lsm
+----
+
+get
+a
+b
+d
+----
+a:1
+b:1
+d:1
+
+# We expect 1 WAL for an immutable memtable, 1 file for the ingested ssts,
+# one for the mutable memtable. We also expect 3 ssts corresponding to the
+# ingested files.
+ls
+----
+000002.log
+000004.sst
+000005.sst
+000006.sst
+000007.log
+000008.log
+CURRENT
+LOCK
+MANIFEST-000001
+OPTIONS-000003
+ext
+marker.format-version.000015.016
+marker.manifest.000001.MANIFEST-000001
+
+# Test basic WAL replay
+close
+----
+
+# In this case only the flushable was holding a reference to the sstables. Even
+# after the DB is closed, those sstables should still be hanging around.
+ls
+----
+000002.log
+000004.sst
+000005.sst
+000006.sst
+000007.log
+000008.log
+CURRENT
+LOCK
+MANIFEST-000001
+OPTIONS-000003
+ext
+marker.format-version.000015.016
+marker.manifest.000001.MANIFEST-000001
+
+open
+----
+
+# Make sure that the sstables got flushed in the correct order on a WAL replay.
+lsm
+----
+0.1:
+  000004:[a#11,SET-a#11,SET]
+0.0:
+  000009:[a#10,SET-a#10,SET]
+  000005:[b#12,SET-b#12,SET]
+  000006:[d#13,SET-d#13,SET]
+
+get
+a
+b
+d
+----
+a:1
+b:1
+d:1
+
+reset
+----
+
+# Repeat the steps above without closing Pebble. Note that the final lsm state
+# will be different because WAL replay just placed the files in L0.
+batch
+set a 0
+----
+
+build ext1
+set a 1
+----
+
+build ext2
+set b 1
+----
+
+build ext3
+set d 1
+----
+
+ingest ext1 ext2 ext3
+----
+
+lsm
+----
+0.1:
+  000004:[a#11,SET-a#11,SET]
+0.0:
+  000009:[a#10,SET-a#10,SET]
+6:
+  000005:[b#12,SET-b#12,SET]
+  000006:[d#13,SET-d#13,SET]
+
+reset
+----
+
+# Test multiple overlapping ingests interleaving batch sets, and then flushing.
+batch
+set a 0
+----
+
+build ext4
+set a 1
+----
+
+build ext5
+set a 2
+----
+
+blockFlush
+----
+
+ingest ext4
+----
+
+allowFlush
+----
+
+get
+a
+----
+a:1
+
+batch
+set b 1
+----
+
+get
+a
+b
+----
+a:1
+b:1
+
+# Should get ingested into L0 above the memtable flush.
+blockFlush
+----
+
+ingest ext5
+----
+
+allowFlush
+----
+
+get
+a
+b
+----
+a:2
+b:1
+
+batch
+set c 1
+----
+
+flush
+----
+
+lsm
+----
+0.2:
+  000007:[a#13,SET-a#13,SET]
+0.1:
+  000004:[a#11,SET-a#11,SET]
+0.0:
+  000010:[a#10,SET-a#10,SET]
+  000011:[b#12,SET-b#12,SET]
+
+# Value of a should be the value of a in the second ingested SST.
+get
+a
+b
+c
+----
+a:2
+b:1
+c:1
+
+# Test that non-overlapping ingest still works normally.
+reset
+----
+
+batch
+set a 0
+----
+
+build ext1
+set b 1
+----
+
+build ext2
+set d 1
+----
+
+ingest ext1 ext2
+----
+
+lsm
+----
+6:
+  000004:[b#11,SET-b#11,SET]
+  000005:[d#12,SET-d#12,SET]
+
+
+# Verify target level of ingestedFlushable.
+reset
+----
+
+batch
+set a 0
+----
+
+build ext1
+set a 1
+----
+
+build ext2
+set b 1
+----
+
+build ext3
+set d 1
+----
+
+ingest ext1 ext2 ext3
+----
+
+lsm
+----
+0.1:
+  000004:[a#11,SET-a#11,SET]
+0.0:
+  000009:[a#10,SET-a#10,SET]
+6:
+  000005:[b#12,SET-b#12,SET]
+  000006:[d#13,SET-d#13,SET]
+
+
+batch
+set a 3
+----
+
+build ext4
+set a 4
+----
+
+build ext5
+set b 5
+----
+
+ingest ext4 ext5
+----
+
+# Looking for the sstable with the key a to go into 0.3, and the sstable with
+# key b to go into 0.0. The sstable doesn't go into L5, because L5 isn't open
+# yet.
+lsm
+----
+0.3:
+  000010:[a#15,SET-a#15,SET]
+0.2:
+  000014:[a#14,SET-a#14,SET]
+0.1:
+  000004:[a#11,SET-a#11,SET]
+0.0:
+  000009:[a#10,SET-a#10,SET]
+  000011:[b#16,SET-b#16,SET]
+6:
+  000005:[b#12,SET-b#12,SET]
+  000006:[d#13,SET-d#13,SET]
+
+# Testing whether the new mutable memtable with data is flushed correctly during
+# WAL replay.
+reset
+----
+
+batch
+set a 0
+----
+
+# The SST below overlaps with memtable and thus should be placed in L0
+# post flush.
+build ext1
+set a 1
+----
+
+# The SST below overlaps with nothing and thus should be placed in L6 post
+# flush.
+build ext2
+set b 1
+----
+
+# The SST below doesn't overlap with any SSTs in the LSM and thus can be placed
+# in L6 post-flush.
+build ext3
+set d 1
+----
+
+# We block the flush, so the SSTs should still be in the flushable queue.
+blockFlush
+----
+
+ingest ext1 ext2 ext3
+----
+
+# Add another write which should go to the new mutable memtable.
+batch
+set f 1
+----
+
+allowFlush
+----
+
+lsm
+----
+
+get
+a
+b
+d
+f
+----
+a:1
+b:1
+d:1
+f:1
+
+# We expect 1 WAL for an immutable memtable, 1 file for the ingested ssts,
+# one for the mutable memtable. We also expect 3 ssts corresponding to the
+# ingested files.
+ls
+----
+000002.log
+000004.sst
+000005.sst
+000006.sst
+000007.log
+000008.log
+CURRENT
+LOCK
+MANIFEST-000001
+OPTIONS-000003
+ext
+marker.format-version.000015.016
+marker.manifest.000001.MANIFEST-000001
+
+close
+----
+
+# In this case only the memtable was holding a reference to the sstables. Even
+# after the DB is closed, those memtables should still be hanging around.
+ls
+----
+000002.log
+000004.sst
+000005.sst
+000006.sst
+000007.log
+000008.log
+CURRENT
+LOCK
+MANIFEST-000001
+OPTIONS-000003
+ext
+marker.format-version.000015.016
+marker.manifest.000001.MANIFEST-000001
+
+open
+----
+
+# Make sure that the sstables got flushed in the correct order on a WAL replay.
+lsm
+----
+0.1:
+  000004:[a#11,SET-a#11,SET]
+0.0:
+  000009:[a#10,SET-a#10,SET]
+  000005:[b#12,SET-b#12,SET]
+  000006:[d#13,SET-d#13,SET]
+  000010:[f#14,SET-f#14,SET]
+
+# Check if the new mutable memtable is using a new log file, and that the
+# previous log files have been deleted appropriately after the flush.
+ls
+----
+000004.sst
+000005.sst
+000006.sst
+000009.sst
+000010.sst
+000011.log
+CURRENT
+LOCK
+MANIFEST-000001
+MANIFEST-000012
+OPTIONS-000013
+ext
+marker.format-version.000015.016
+marker.manifest.000002.MANIFEST-000012
+
+# Make sure that the new mutable memtable can accept writes.
+batch
+set h 2
+----
+
+get
+h
+----
+h:2
+
+# Test correct WAL replay with read only mode. We essentially want to make sure
+# that once a flushable is added to the queue, we create a new mutable memtable
+# on top of the flushable. Otherwise, we can invert sequence number invariants.
+reset
+----
+
+batch
+set a 0
+----
+
+# The SST below overlaps with memtable and thus should be placed in L0
+# post flush.
+build ext1
+set a 1
+----
+
+# The SST below overlaps with nothing and thus should be placed in L6 post
+# flush.
+build ext2
+set b 1
+----
+
+# The SST below doesn't overlap with any SSTs in the LSM and thus can be placed
+# in L6 post-flush.
+build ext3
+set d 1
+----
+
+# We block the flush, so the SSTs should still be in the flushable queue.
+blockFlush
+----
+
+ingest ext1 ext2 ext3
+----
+
+# Add another write which should go to the new mutable memtable.
+batch
+set a 3
+----
+
+allowFlush
+----
+
+lsm
+----
+
+get
+a
+b
+d
+----
+a:3
+b:1
+d:1
+
+close
+----
+
+open readOnly
+----
+
+get
+a
+b
+d
+----
+a:3
+b:1
+d:1
+
+# Test with StrictFS
+reset strictMem
+----
+
+batch
+set a 1
+set b 1
+----
+
+build ext1
+set a 2
+set b 2
+----
+
+blockFlush
+----
+
+ingest ext1
+----
+
+get
+a
+b
+----
+a:2
+b:2
+
+ignoreSyncs true
+----
+
+lsm
+----
+
+allowFlush
+----
+
+flush
+----
+
+# The ingested file is placed above the sstable generated by memtable flush. The
+# ingested file has a lower file number, but a higher sequence number as
+# expected.
+lsm
+----
+0.1:
+  000004:[a#12,SET-b#12,SET]
+0.0:
+  000007:[a#10,SET-b#11,SET]
+
+ls
+----
+000002.log
+000004.sst
+000005.log
+000006.log
+000007.sst
+CURRENT
+LOCK
+MANIFEST-000001
+OPTIONS-000003
+ext
+marker.format-version.000015.016
+marker.manifest.000001.MANIFEST-000001
+
+close
+----
+
+# At this point, the changes to the manifest should be lost. Note that 7.sst
+# is gone because that file was never synced.
+resetToSynced
+----
+000002.log
+000004.sst
+000005.log
+000006.log
+CURRENT
+LOCK
+MANIFEST-000001
+OPTIONS-000003
+ext
+ext1
+marker.format-version.000015.016
+marker.manifest.000001.MANIFEST-000001
+
+ignoreSyncs false
+----
+
+open
+----
+
+lsm
+----
+0.1:
+  000004:[a#12,SET-b#12,SET]
+0.0:
+  000007:[a#10,SET-b#11,SET]

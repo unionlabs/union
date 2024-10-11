@@ -49,7 +49,7 @@ func (k KeySizeError) Error() string {
 
 // newRekeyAEAD creates a new instance of aes128gcm with rekeying.
 // The key argument should be 44 bytes, the first 32 bytes are used as a key
-// for HKDF-expand and the remainining 12 bytes are used as a random mask for
+// for HKDF-expand and the remaining 12 bytes are used as a random mask for
 // the counter.
 func newRekeyAEAD(key []byte) (*rekeyAEAD, error) {
 	k := len(key)

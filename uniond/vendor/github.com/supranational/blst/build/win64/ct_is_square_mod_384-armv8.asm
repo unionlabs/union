@@ -1,3 +1,5 @@
+ GBLA __SIZEOF_POINTER__
+__SIZEOF_POINTER__ SETA 64/8
 	AREA	|.text|,CODE,ALIGN=8,ARM64
 
 
@@ -6,35 +8,38 @@
 	ALIGN	32
 |ct_is_square_mod_384| PROC
 	DCDU	3573752639
-	stp	x29, x30, [sp,#-128]!
+	stp	x29, x30, [sp,#-16*__SIZEOF_POINTER__]!
 	add	x29, sp, #0
-	stp	x19, x20, [sp,#16]
-	stp	x21, x22, [sp,#32]
-	stp	x23, x24, [sp,#48]
-	stp	x25, x26, [sp,#64]
-	stp	x27, x28, [sp,#80]
+	stp	x19, x20, [sp,#2*__SIZEOF_POINTER__]
+	stp	x21, x22, [sp,#4*__SIZEOF_POINTER__]
+	stp	x23, x24, [sp,#6*__SIZEOF_POINTER__]
+	stp	x25, x26, [sp,#8*__SIZEOF_POINTER__]
+	stp	x27, x28, [sp,#10*__SIZEOF_POINTER__]
 	sub	sp, sp, #512
 
-	ldp	x3, x4, [x0,#8*0]		// load input
+	ldp	x3, x4, [x0,#8*0]
 	ldp	x5, x6, [x0,#8*2]
 	ldp	x7, x8, [x0,#8*4]
 
-	add	x0, sp, #255	// find closest 256-byte-aligned spot
-	and	x0, x0, #-256	// in the frame...
+	add	x0, sp, #255
+	and	x0, x0, #-256
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
 
-	ldp	x9, x10, [x1,#8*0]		// load modulus
+	ldp	x9, x10, [x1,#8*0]
 	ldp	x11, x12, [x1,#8*2]
 	ldp	x13, x14, [x1,#8*4]
 
-	stp	x3, x4, [x0,#8*6]	// copy input to |a|
+	stp	x3, x4, [x0,#8*6]
 	stp	x5, x6, [x0,#8*8]
 	stp	x7, x8, [x0,#8*10]
-	stp	x9, x10, [x0,#8*0]	// copy modulus to |b|
+	stp	x9, x10, [x0,#8*0]
 	stp	x11, x12, [x0,#8*2]
 	stp	x13, x14, [x0,#8*4]
 
-	eor	x2, x2, x2			// init the |$Legendre| symbol
-	mov	x15, #24			// 24 is 768/30-1
+	eor	x2, x2, x2
+	mov	x15, #24
 	b	|$Loop_is_square|
 
 	ALIGN	16
@@ -42,39 +47,45 @@
 	bl	__ab_approximation_30
 	sub	x15, x15, #1
 
-	eor	x1, x0, #128		// pointer to dst |b|
+	eor	x1, x0, #128
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c1,csp,x1
+ endif
 	bl	__smul_384_n_shift_by_30
 
-	mov	x19, x16			// |f0|
-	mov	x20, x17			// |g0|
-	add	x1, x1, #8*6	// pointer to dst |a|
+	mov	x19, x16
+	mov	x20, x17
+	add	x1,x1,#8*6
 	bl	__smul_384_n_shift_by_30
 
 	ldp	x9, x10, [x1,#-8*6]
-	eor	x0, x0, #128		// flip-flop src |a|b|
-	and	x27, x27, x9		// if |a| was negative,
-	add	x2, x2, x27, lsr#1		// adjust |L|
+	eor	x0, x0, #128
+ if :def:	__CHERI_PURE_CAPABILITY__
+	scvalue	c0,csp,x0
+ endif
+	and	x27, x27, x9
+	add	x2, x2, x27, lsr#1
 
 	cbnz	x15, |$Loop_is_square|
 
-	////////////////////////////////////////// last iteration
-	//bl	__ab_approximation_30		// |a| and |b| are exact,
-	//ldr	x8, [x0,#8*6]		// and loaded
-	//ldr	x14, [x0,#8*0]
-	mov	x15, #48			// 48 is 768%30 + 30
+
+
+
+
+	mov	x15, #48
 	bl	__inner_loop_48
-	ldr	x30, [x29,#8]
+	ldr	x30, [x29,#__SIZEOF_POINTER__]
 
 	and	x0, x2, #1
 	eor	x0, x0, #1
 
 	add	sp, sp, #512
-	ldp	x19, x20, [x29,#16]
-	ldp	x21, x22, [x29,#32]
-	ldp	x23, x24, [x29,#48]
-	ldp	x25, x26, [x29,#64]
-	ldp	x27, x28, [x29,#80]
-	ldr	x29, [sp],#128
+	ldp	x19, x20, [x29,#2*__SIZEOF_POINTER__]
+	ldp	x21, x22, [x29,#4*__SIZEOF_POINTER__]
+	ldp	x23, x24, [x29,#6*__SIZEOF_POINTER__]
+	ldp	x25, x26, [x29,#8*__SIZEOF_POINTER__]
+	ldp	x27, x28, [x29,#10*__SIZEOF_POINTER__]
+	ldr	x29, [sp],#16*__SIZEOF_POINTER__
 	DCDU	3573752767
 	ret
 	ENDP
@@ -82,13 +93,13 @@
 
 	ALIGN	32
 |__smul_384_n_shift_by_30| PROC
-	ldp	x3, x4, [x0,#8*0+0]	// load |b| (or |a|)
-	asr	x27, x20, #63		// |g1|'s sign as mask (or |f1|'s)
+	ldp	x3, x4, [x0,#8*0+0]
+	asr	x27, x20, #63
 	ldp	x5, x6, [x0,#8*2+0]
-	eor	x20, x20, x27		// conditionally negate |g1| (or |f1|)
+	eor	x20, x20, x27
 	ldp	x7, x8, [x0,#8*4+0]
 
-	eor	x3, x3, x27	// conditionally negate |b| (or |a|)
+	eor	x3, x3, x27
 	sub	x20, x20, x27
 	eor	x4, x4, x27
 	adds	x3, x3, x27, lsr#63
@@ -122,13 +133,13 @@
 	adcs	x7, x7, x24
 	adcs	x8, x8 ,x25
 	adc	x26, x26, x28
-	ldp	x9, x10, [x0,#8*0+48]	// load |b| (or |a|)
-	asr	x27, x19, #63		// |g1|'s sign as mask (or |f1|'s)
+	ldp	x9, x10, [x0,#8*0+48]
+	asr	x27, x19, #63
 	ldp	x11, x12, [x0,#8*2+48]
-	eor	x19, x19, x27		// conditionally negate |g1| (or |f1|)
+	eor	x19, x19, x27
 	ldp	x13, x14, [x0,#8*4+48]
 
-	eor	x9, x9, x27	// conditionally negate |b| (or |a|)
+	eor	x9, x9, x27
 	sub	x19, x19, x27
 	eor	x10, x10, x27
 	adds	x9, x9, x27, lsr#63
@@ -199,29 +210,29 @@
 
 	ALIGN	16
 |__ab_approximation_30| PROC
-	ldp	x13, x14, [x0,#8*4]	// |a| is still in registers
+	ldp	x13, x14, [x0,#8*4]
 	ldp	x11, x12, [x0,#8*2]
 
-	orr	x21, x8, x14	// check top-most limbs, ...
+	orr	x21, x8, x14
 	cmp	x21, #0
 	cselne	x8,x8,x7
 	cselne	x14,x14,x13
 	cselne	x7,x7,x6
-	orr	x21, x8, x14	// ... ones before top-most, ...
+	orr	x21, x8, x14
 	cselne	x13,x13,x12
 
 	cmp	x21, #0
 	cselne	x8,x8,x7
 	cselne	x14,x14,x13
 	cselne	x7,x7,x5
-	orr	x21, x8, x14	// ... and ones before that ...
+	orr	x21, x8, x14
 	cselne	x13,x13,x11
 
 	cmp	x21, #0
 	cselne	x8,x8,x7
 	cselne	x14,x14,x13
 	cselne	x7,x7,x4
-	orr	x21, x8, x14	// and one more, ...
+	orr	x21, x8, x14
 	cselne	x13,x13,x10
 
 	cmp	x21, #0
@@ -238,7 +249,7 @@
 	cselne	x14,x14,x13
 	neg	x22, x21
 
-	lslv	x8, x8, x21	// align high limbs to the left
+	lslv	x8, x8, x21
 	lslv	x14, x14, x21
 	lsrv	x7, x7, x22
 	lsrv	x13, x13, x22
@@ -258,19 +269,19 @@
 	ALIGN	16
 |__inner_loop_30| PROC
 	mov	x28, #30
-	mov	x17, #0x7FFFFFFF80000000	// |f0|=1, |g0|=0
-	mov	x20, #0x800000007FFFFFFF	// |f1|=0, |g1|=1
+	mov	x17, #0x7FFFFFFF80000000
+	mov	x20, #0x800000007FFFFFFF
 	mov	x27,#0x7FFFFFFF7FFFFFFF
 
 |$Loop_30|
-	sbfx	x24, x8, #0, #1	// if |a_| is odd, then we'll be subtracting
+	sbfx	x24, x8, #0, #1
 	and	x25, x8, x14
 	sub	x28, x28, #1
 	and	x21, x14, x24
 
-	sub	x22, x14, x8		// |b_|-|a_|
-	subs	x23, x8, x21	// |a_|-|b_| (or |a_|-0 if |a_| was even)
-	add	x25, x2, x25, lsr#1	// L + (a_ & b_) >> 1
+	sub	x22, x14, x8
+	subs	x23, x8, x21
+	add	x25, x2, x25, lsr#1
 	mov	x21, x20
 	cselhs	x14,x14,x8
 	cselhs	x8,x23,x22
@@ -281,9 +292,9 @@
 	and	x21, x20, x24
 	and	x22, x27, x24
 	add	x23, x14, #2
-	sub	x17, x17, x21	// |f0|-=|f1| (or |f0-=0| if |a_| was even)
-	add	x20, x20, x20	// |f1|<<=1
-	add	x2, x2, x23, lsr#2	// "negate" |L| if |b|%8 is 3 or 5
+	sub	x17, x17, x21
+	add	x20, x20, x20
+	add	x2, x2, x23, lsr#2
 	add	x17, x17, x22
 	sub	x20, x20, x27
 
@@ -294,7 +305,7 @@
 	ubfx	x17, x17, #32, #32
 	ubfx	x19, x20, #0, #32
 	ubfx	x20, x20, #32, #32
-	sub	x16, x16, x27		// remove the bias
+	sub	x16, x16, x27
 	sub	x17, x17, x27
 	sub	x19, x19, x27
 	sub	x20, x20, x27
@@ -305,19 +316,19 @@
 	ALIGN	16
 |__inner_loop_48| PROC
 |$Loop_48|
-	sbfx	x24, x3, #0, #1	// if |a_| is odd, then we'll be subtracting
+	sbfx	x24, x3, #0, #1
 	and	x25, x3, x9
 	sub	x15, x15, #1
 	and	x21, x9, x24
-	sub	x22, x9, x3		// |b_|-|a_|
-	subs	x23, x3, x21	// |a_|-|b_| (or |a_|-0 if |a_| was even)
+	sub	x22, x9, x3
+	subs	x23, x3, x21
 	add	x25, x2, x25, lsr#1
 	cselhs	x9,x9,x3
 	cselhs	x3,x23,x22
 	cselhs	x2,x2,x25
 	add	x23, x9, #2
 	lsr	x3, x3, #1
-	add	x2, x2, x23, lsr#2	// "negate" |L| if |b|%8 is 3 or 5
+	add	x2, x2, x23, lsr#2
 
 	cbnz	x15, |$Loop_48|
 

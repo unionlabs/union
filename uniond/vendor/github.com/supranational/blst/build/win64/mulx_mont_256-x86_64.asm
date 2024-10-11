@@ -41,6 +41,9 @@ $L$SEH_body_mulx_mont_sparse_256::
 
 
 	mov	rbx,rdx
+ifdef	__SGX_LVI_HARDENING__
+	lfence
+endif
 	mov	rdx,QWORD PTR[rdx]
 	mov	r14,QWORD PTR[rsi]
 	mov	r15,QWORD PTR[8+rsi]
@@ -70,7 +73,15 @@ $L$SEH_epilogue_mulx_mont_sparse_256::
 	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD PTR[16+rsp]
 
-	DB	0F3h,0C3h		;repret
+	
+ifdef	__SGX_LVI_HARDENING__
+	pop	rdx
+	lfence
+	jmp	rdx
+	ud2
+else
+	DB	0F3h,0C3h
+endif
 
 $L$SEH_end_mulx_mont_sparse_256::
 mulx_mont_sparse_256	ENDP
@@ -112,6 +123,9 @@ $L$SEH_body_sqrx_mont_sparse_256::
 	mov	rbx,rsi
 	mov	r8,rcx
 	mov	rcx,rdx
+ifdef	__SGX_LVI_HARDENING__
+	lfence
+endif
 	mov	rdx,QWORD PTR[rsi]
 	mov	r15,QWORD PTR[8+rsi]
 	mov	rbp,QWORD PTR[16+rsi]
@@ -140,7 +154,15 @@ $L$SEH_epilogue_sqrx_mont_sparse_256::
 	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD PTR[16+rsp]
 
-	DB	0F3h,0C3h		;repret
+	
+ifdef	__SGX_LVI_HARDENING__
+	pop	rdx
+	lfence
+	jmp	rdx
+	ud2
+else
+	DB	0F3h,0C3h
+endif
 
 $L$SEH_end_sqrx_mont_sparse_256::
 sqrx_mont_sparse_256	ENDP
@@ -339,7 +361,15 @@ __mulx_mont_sparse_256	PROC PRIVATE
 	mov	QWORD PTR[16+rdi],r10
 	mov	QWORD PTR[24+rdi],r11
 
-	DB	0F3h,0C3h		;repret
+	
+ifdef	__SGX_LVI_HARDENING__
+	pop	rdx
+	lfence
+	jmp	rdx
+	ud2
+else
+	DB	0F3h,0C3h
+endif
 __mulx_mont_sparse_256	ENDP
 PUBLIC	fromx_mont_256
 
@@ -418,7 +448,15 @@ $L$SEH_epilogue_fromx_mont_256::
 	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD PTR[16+rsp]
 
-	DB	0F3h,0C3h		;repret
+	
+ifdef	__SGX_LVI_HARDENING__
+	pop	rdx
+	lfence
+	jmp	rdx
+	ud2
+else
+	DB	0F3h,0C3h
+endif
 
 $L$SEH_end_fromx_mont_256::
 fromx_mont_256	ENDP
@@ -506,7 +544,15 @@ $L$SEH_epilogue_redcx_mont_256::
 	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD PTR[16+rsp]
 
-	DB	0F3h,0C3h		;repret
+	
+ifdef	__SGX_LVI_HARDENING__
+	pop	rdx
+	lfence
+	jmp	rdx
+	ud2
+else
+	DB	0F3h,0C3h
+endif
 
 $L$SEH_end_redcx_mont_256::
 redcx_mont_256	ENDP
@@ -515,6 +561,9 @@ ALIGN	32
 __mulx_by_1_mont_256	PROC PRIVATE
 	DB	243,15,30,250
 
+ifdef	__SGX_LVI_HARDENING__
+	lfence
+endif
 	mov	rax,QWORD PTR[rsi]
 	mov	r11,QWORD PTR[8+rsi]
 	mov	r12,QWORD PTR[16+rsi]
@@ -645,7 +694,15 @@ __mulx_by_1_mont_256	PROC PRIVATE
 	add	r10,r11
 	adc	rdx,0
 	mov	r11,rdx
-	DB	0F3h,0C3h		;repret
+	
+ifdef	__SGX_LVI_HARDENING__
+	pop	rdx
+	lfence
+	jmp	rdx
+	ud2
+else
+	DB	0F3h,0C3h
+endif
 __mulx_by_1_mont_256	ENDP
 .text$	ENDS
 .pdata	SEGMENT READONLY ALIGN(4)

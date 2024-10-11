@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package grpc.gateway.runtime.internal.examplepb;
+
+option go_package = "github.com/grpc-ecosystem/grpc-gateway/v2/runtime/internal/examplepb";
+
+message Proto2Message {
+  optional float float_value = 42;
+  optional double double_value = 43;
+  optional int64 int64_value = 3;
+  optional int32 int32_value = 4;
+  optional uint64 uint64_value = 5;
+  optional uint32 uint32_value = 6;
+  optional bool bool_value = 7;
+  optional string string_value = 8;
+  optional bytes bytes_value = 9;
+  repeated string repeated_value = 10;
+}

@@ -1,0 +1,80 @@
+// Copyright 2024 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+syntax = "proto2";
+
+package lazy_extension_test;
+
+import "internal/testprotos/messageset/messagesetpb/message_set.proto";
+
+option go_package = "google.golang.org/protobuf/internal/testprotos/lazy";
+
+// This message contains a message set.
+message Holder {
+  optional goproto.proto.messageset.MessageSet data = 1;
+}
+
+// This message may be inserted into a message set.
+message Rabbit {
+  extend goproto.proto.messageset.MessageSet {
+    optional Rabbit message_set_extension = 345570595;
+  }
+  optional string name = 1;
+}
+
+enum FlyingFoxSpecies {
+  FLYING_FOX_UNDEFINED = 0;
+  GREY_HEADED = 1;
+  BLACK = 2;
+  SPECTACLED = 3;
+  LARGE_EARED = 4;
+  DUSKY = 5;
+  TORRESIAN = 6;
+  BARE_BACKED = 7;
+}
+
+enum PipistrelleSpecies {
+  PIPISTRELLE_UNDEFINED = 0;
+  FOREST = 1;
+  INDIAN = 2;
+  EGYPTIAN = 3;
+  RUSTY = 4;
+  LEAST = 5;
+}
+
+message FlyingFox {
+  optional FlyingFoxSpecies species = 1;
+}
+
+message Tree {
+  optional bool eucalyptus = 1;
+  extensions 10000 to max;
+}
+
+extend Tree {
+  optional FlyingFox bat = 345570595;
+}
+
+extend Tree {
+  optional FlyingFox bat_pup = 345570596;
+}
+
+extend Tree {
+  repeated FlyingFox bat_posse = 345570597;
+  optional bytes binary_bat = 345570598;
+  optional uint32 integer_bat = 345570599;
+  optional group Pipistrelle = 345570600 {
+    optional PipistrelleSpecies species = 1;
+  }
+  repeated group Pipistrelles = 345570601 {
+    optional PipistrelleSpecies species = 1;
+  }
+}
+
+// And the ugly version that is not encouraged
+message BatNest {
+  extend Tree {
+    optional FlyingFox bat = 345570602;
+  }
+}

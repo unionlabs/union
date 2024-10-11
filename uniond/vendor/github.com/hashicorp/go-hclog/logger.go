@@ -233,6 +233,7 @@ type StandardLoggerOptions struct {
 	// [DEBUG] and strip it off before reapplying it.
 	// The timestamp detection may result in false positives and incomplete
 	// string outputs.
+	// InferLevelsWithTimestamp is only relevant if InferLevels is true.
 	InferLevelsWithTimestamp bool
 
 	// ForceLevel is used to force all output from the standard logger to be at
@@ -262,6 +263,9 @@ type LoggerOptions struct {
 
 	// Control if the output should be in JSON.
 	JSONFormat bool
+
+	// Control the escape switch of json.Encoder
+	JSONEscapeDisabled bool
 
 	// Include file and line information in each log line
 	IncludeLocation bool
@@ -302,6 +306,24 @@ type LoggerOptions struct {
 	// logger will not affect any subloggers, and SetLevel on any subloggers
 	// will not affect the parent or sibling loggers.
 	IndependentLevels bool
+
+	// When set, changing the level of a logger effects only it's direct sub-loggers
+	// rather than all sub-loggers. For example:
+	// a := logger.Named("a")
+	// a.SetLevel(Error)
+	// b := a.Named("b")
+	// c := a.Named("c")
+	// b.GetLevel() => Error
+	// c.GetLevel() => Error
+	// b.SetLevel(Info)
+	// a.GetLevel() => Error
+	// b.GetLevel() => Info
+	// c.GetLevel() => Error
+	// a.SetLevel(Warn)
+	// a.GetLevel() => Warn
+	// b.GetLevel() => Warn
+	// c.GetLevel() => Warn
+	SyncParentLevel bool
 
 	// SubloggerHook registers a function that is called when a sublogger via
 	// Named, With, or ResetNamed is created. If defined, the function is passed

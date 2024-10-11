@@ -1,0 +1,65 @@
+name: ci-dgraph-tests
+on:
+  push:
+    branches:
+      - main
+jobs:
+  dgraph-tests:
+    runs-on: warp-ubuntu-latest-x64-16x
+    steps:
+      - name: Checkout Dgraph repo
+        uses: actions/checkout@v4
+        with:
+          repository: dgraph-io/dgraph
+          ref: main
+      - name: Get Go Version
+        run: |
+          #!/bin/bash
+          GOVERSION=$({ [ -f .go-version ] && cat .go-version; })
+          echo "GOVERSION=$GOVERSION" >> $GITHUB_ENV
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GOVERSION }}
+      - name: Fetch latest Badger version
+        run: |
+          go get github.com/dgraph-io/badger/v4@main
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 16
+      - name: Install protobuf-compiler
+        run: sudo apt-get install -y protobuf-compiler
+      - name: Check protobuf
+        run: |
+          cd ./protos
+          go mod tidy
+          make regenerate
+          git diff --exit-code -- .
+      - name: Make Linux Build and Docker Image
+        run: make docker-image
+      - name: Build Test Binary
+        run: |
+          #!/bin/bash
+          # build the test binary
+          cd t; go build .
+      - name: Clean Up Environment
+        run: |
+          #!/bin/bash
+          # clean cache
+          go clean -testcache
+          # clean up docker containers before test execution
+          cd t; ./t -r
+      - name: Run Unit Tests
+        run: |
+          #!/bin/bash
+          # go env settings
+          export GOPATH=~/go
+          # move the binary
+          cp dgraph/dgraph ~/go/bin/dgraph
+          # run the tests
+          cd t; ./t
+          # clean up docker containers after test execution
+          ./t -r
+          # sleep
+          sleep 5

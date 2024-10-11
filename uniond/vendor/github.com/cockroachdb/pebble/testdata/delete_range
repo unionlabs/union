@@ -1,0 +1,89 @@
+define
+set a 1
+set b 2
+merge c 3
+del-range a c
+del d
+----
+
+scan
+----
+a#0,1:1
+b#1,1:2
+c#2,2:3
+d#4,0:
+
+scan range-del
+----
+a-c:{(#3,RANGEDEL)}
+
+clear
+----
+
+define
+del-range a b
+del-range b c
+del-range a c
+del-range b d
+----
+
+scan range-del
+----
+a-b:{(#2,RANGEDEL) (#0,RANGEDEL)}
+b-c:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+c-d:{(#3,RANGEDEL)}
+
+clear
+----
+
+define
+del-range a b
+----
+
+scan range-del
+----
+a-b:{(#0,RANGEDEL)}
+
+define
+del-range b c
+----
+
+scan range-del
+----
+a-b:{(#0,RANGEDEL)}
+b-c:{(#1,RANGEDEL)}
+
+define
+del-range a c
+----
+
+scan range-del
+----
+a-b:{(#2,RANGEDEL) (#0,RANGEDEL)}
+b-c:{(#2,RANGEDEL) (#1,RANGEDEL)}
+
+define
+del-range b d
+----
+
+scan range-del
+----
+a-b:{(#2,RANGEDEL) (#0,RANGEDEL)}
+b-c:{(#3,RANGEDEL) (#2,RANGEDEL) (#1,RANGEDEL)}
+c-d:{(#3,RANGEDEL)}
+
+clear
+----
+
+define
+set <nil> 1
+del-range <nil> d
+----
+
+scan
+----
+#0,1:1
+
+scan range-del
+----
+-d:{(#1,RANGEDEL)}

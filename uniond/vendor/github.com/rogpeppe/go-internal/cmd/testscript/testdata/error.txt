@@ -1,0 +1,14 @@
+# should support skip
+unquote file.txt
+
+# stdin
+stdin file.txt
+! testscript -v
+stdout 'FAIL: <stdin>:1: unexpected command failure'
+
+# file-based
+! testscript -v file.txt
+stdout 'FAIL: file.txt:1: unexpected command failure'
+
+-- file.txt --
+>exec false

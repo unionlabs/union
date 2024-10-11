@@ -1,0 +1,54 @@
+---
+name: Tests
+on: [push, pull_request]
+jobs:
+  test-windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - windows-amd64-unit-test-4-cpu
+        # FIXME(fuweid):
+        #
+        # The windows will throws the following error when enable race.
+        # We skip it until we have solution.
+        #
+        #   ThreadSanitizer failed to allocate 0x000200000000 (8589934592) bytes at 0x0400c0000000 (error code: 1455)
+        #
+        # - windows-amd64-unit-test-4-cpu-race
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: goversion
+        run: echo "goversion=$(cat .go-version)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ steps.goversion.outputs.goversion }}
+      - run: make fmt
+      - env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          case "${TARGET}" in
+            windows-amd64-unit-test-4-cpu)
+              CPU=4 make test
+              ;;
+            *)
+              echo "Failed to find target"
+              exit 1
+              ;;
+          esac
+        shell: bash
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@82d40c283aeb1f2b6595839195e95c2d6a49081b # v5.0.0
+
+  coverage:
+    needs: ["test-windows"]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: goversion
+        run: echo "goversion=$(cat .go-version)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ steps.goversion.outputs.goversion }}
+      - run: make coverage

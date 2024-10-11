@@ -1,0 +1,18 @@
+name: Unit tests
+on: [pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Go test
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup go
+        uses: actions/setup-go@v1
+        with:
+          go-version: '1.15.10'
+      - name: Validate spec
+        run: ./scripts/ci-validate-specs.sh
+      - name: Download spec tests
+        run: make get-spec-tests
+      - name: Unit tests
+        run: go test -v ./...

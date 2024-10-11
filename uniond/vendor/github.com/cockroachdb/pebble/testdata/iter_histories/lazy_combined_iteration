@@ -1,0 +1,279 @@
+# Test a lazy-combined iteration edge case. Consider the LSM:
+#
+#   L5:  000003:[bar.DEL.3, foo.RANGEKEYSET.4]
+#   L6:  000001:[bar.SET.1] 000002:[bax.RANGEKEYSET.2]
+#
+# A call to First() seeks the levels to files L5.000003 and L6.000001.
+# The L5 levelIter observes that L5.000003 contains the range key with
+# start key `foo`, and triggers a switch to combined iteration, setting
+# `combinedIterState.key` = `foo`. While switching to combined iteration, the
+# iterator must recognize that `foo` > `bar`, and there may yet exist range keys
+# that begin before `foo` (in this case `bax`).
+
+reset
+----
+
+batch commit
+set bar bar
+----
+committed 1 keys
+
+flush
+----
+
+batch commit
+range-key-set bax zoo @1 foo
+----
+committed 1 keys
+
+flush
+----
+
+batch commit
+del bar
+range-key-set foo zoo @2 bar
+----
+committed 2 keys
+
+flush
+----
+
+lsm
+----
+0.1:
+  000009:[bar#12,DEL-zoo#inf,RANGEKEYSET]
+0.0:
+  000005:[bar#10,SET-bar#10,SET]
+  000007:[bax#11,RANGEKEYSET-zoo#inf,RANGEKEYSET]
+
+# Assert that First correctly finds [bax,zoo), despite the discovery of
+# [foo,zoo) triggering the switch to combined iteration.
+
+combined-iter
+first
+next
+----
+bax: (., [bax-foo) @1=foo UPDATED)
+foo: (., [foo-zoo) @2=bar, @1=foo UPDATED)
+
+# Test seeking into the middle of a range key during lazy-combined iteration.
+# The iterator should surface Key() = the seek key.
+
+combined-iter
+seek-ge bop
+----
+bop: (., [bax-foo) @1=foo UPDATED)
+
+combined-iter
+last
+----
+foo: (., [foo-zoo) @2=bar, @1=foo UPDATED)
+
+# Test a lazy combined iterator that must next/prev through fileMetdata when
+# skipping through a RANGEDEL.
+#
+# L5
+#     b-----------------------y RANGEDEL
+# L6
+#  [a]   [[d,e)@1]  [[l,m)@1]   [z]
+#
+# A SeekGE(k) must surface [l,m)@1 and a SeekLT(k) must surface [d,e)@1.
+
+reset
+----
+
+batch commit
+set a a
+----
+committed 1 keys
+
+flush
+----
+
+batch commit
+set z z
+----
+committed 1 keys
+
+flush
+----
+
+batch commit
+range-key-set d e @1 foo
+----
+committed 1 keys
+
+flush
+----
+
+batch commit
+range-key-set l m @1 foo
+----
+committed 1 keys
+
+flush
+----
+
+batch commit
+del-range b y
+----
+committed 1 keys
+
+flush
+----
+
+lsm
+----
+0.1:
+  000013:[b#14,RANGEDEL-y#inf,RANGEDEL]
+0.0:
+  000005:[a#10,SET-a#10,SET]
+  000009:[d#12,RANGEKEYSET-e#inf,RANGEKEYSET]
+  000011:[l#13,RANGEKEYSET-m#inf,RANGEKEYSET]
+  000007:[z#11,SET-z#11,SET]
+
+combined-iter
+seek-ge k
+next
+----
+l: (., [l-m) @1=foo UPDATED)
+z: (z, . UPDATED)
+
+combined-iter
+seek-lt k
+prev
+----
+d: (., [d-e) @1=foo UPDATED)
+a: (a, . UPDATED)
+
+
+reset
+----
+
+batch commit
+set a a
+set b b
+set c c
+set e e
+range-key-del a f
+range-key-unset a f @5
+----
+committed 6 keys
+
+flush
+----
+
+wait-table-stats
+----
+
+# The lazy iterator shouldn't switch to combined iteration when it encounters a
+# file that is known to only contain RANGEKEYDELs and RANGEKEYUNSETs.
+
+combined-iter
+is-using-combined
+seek-ge a
+seek-ge b
+is-using-combined
+----
+using lazy iterator
+a: (a, .)
+b: (b, .)
+using lazy iterator
+
+# Write a range key to the memtable. The combined iterator should be forced to
+# use non-lazy iteration.
+
+batch commit
+range-key-set m z @5 foo
+set s s
+----
+committed 2 keys
+
+combined-iter
+is-using-combined
+seek-ge a
+is-using-combined
+seek-ge n
+is-using-combined
+----
+using combined (non-lazy) iterator
+a: (a, .)
+using combined (non-lazy) iterator
+n: (., [m-z) @5=foo UPDATED)
+using combined (non-lazy) iterator
+
+flush
+----
+
+# Now that the range key is flushed, a switch to combined iteration should only
+# happen once the sstable containing the set is encountered.
+
+combined-iter
+is-using-combined
+seek-ge a
+is-using-combined
+seek-ge n
+is-using-combined
+----
+using lazy iterator
+a: (a, .)
+using lazy iterator
+n: (., [m-z) @5=foo UPDATED)
+using combined (non-lazy) iterator
+
+# Regression tests for #2210 metamorphic test failure.
+#
+# Lazy-combined iteration depends on individual point level iterators triggering
+# a switch to combined iteration when they observe a file containing relevant
+# range keys. Previously, this switch did not happen if the observed range
+# keys all lied outside the current iteration prefix.
+#
+# This made it possible for a level to become positioned beyond the file
+# containing range keys, without ever triggering the switch to combined
+# iteration. A subsequent seek that made use of the TrySeekUsingNext
+# optimization would never observe the file containing range keys, and omit the
+# range keys.
+
+define
+L6
+  bax.DEL.9:
+L6
+  rangekey:c-d:{(#0,RANGEKEYSET,@1,foo)}
+L6
+  d@2.SET.2:v
+----
+6:
+  000004:[bax#9,DEL-bax#9,DEL]
+  000005:[c#0,RANGEKEYSET-d#inf,RANGEKEYSET]
+  000006:[d@2#2,SET-d@2#2,SET]
+
+combined-iter
+seek-prefix-ge bax
+seek-prefix-ge cat
+----
+.
+cat: (., [cat-"cat\x00") @1=foo UPDATED)
+
+# Another regression test for the #2210 metamorphic test failure, this one using
+# a MERGE key to force the Iterator to step the internal iterator beyond the
+# range key file.
+
+define
+L6
+  bax.MERGE.9:v
+L6
+  rangekey:c-d:{(#0,RANGEKEYSET,@1,foo)}
+L6
+  d@2.SET.2:v
+----
+6:
+  000004:[bax#9,MERGE-bax#9,MERGE]
+  000005:[c#0,RANGEKEYSET-d#inf,RANGEKEYSET]
+  000006:[d@2#2,SET-d@2#2,SET]
+
+combined-iter
+seek-prefix-ge bax
+seek-prefix-ge cat
+----
+bax: (v, .)
+cat: (., [cat-"cat\x00") @1=foo UPDATED)

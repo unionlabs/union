@@ -1,0 +1,45 @@
+syntax = "proto3";
+package cometbft.types.v1beta1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/types/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "cometbft/crypto/v1/keys.proto";
+
+// BlockIdFlag indicates which BlockID the signature is for
+enum BlockIDFlag {
+  option (gogoproto.goproto_enum_stringer) = true;
+  option (gogoproto.goproto_enum_prefix)   = false;
+
+  // Indicates an error condition
+  BLOCK_ID_FLAG_UNKNOWN = 0 [(gogoproto.enumvalue_customname) = "BlockIDFlagUnknown"];
+  // The vote was not received
+  BLOCK_ID_FLAG_ABSENT = 1 [(gogoproto.enumvalue_customname) = "BlockIDFlagAbsent"];
+  // Voted for the block that received the majority
+  BLOCK_ID_FLAG_COMMIT = 2 [(gogoproto.enumvalue_customname) = "BlockIDFlagCommit"];
+  // Voted for nil
+  BLOCK_ID_FLAG_NIL = 3 [(gogoproto.enumvalue_customname) = "BlockIDFlagNil"];
+}
+
+// ValidatorSet defines a set of validators.
+message ValidatorSet {
+  repeated Validator validators         = 1;
+  Validator          proposer           = 2;
+  int64              total_voting_power = 3;
+}
+
+// Validator represents a node participating in the consensus protocol.
+message Validator {
+  bytes                        address           = 1;
+  cometbft.crypto.v1.PublicKey pub_key           = 2 [(gogoproto.nullable) = false];
+  int64                        voting_power      = 3;
+  int64                        proposer_priority = 4;
+}
+
+// SimpleValidator is a Validator, which is serialized and hashed in consensus.
+// Address is removed because it's redundant with the pubkey.
+// Proposer priority is removed because it changes every round.
+message SimpleValidator {
+  cometbft.crypto.v1.PublicKey pub_key      = 1;
+  int64                        voting_power = 2;
+}

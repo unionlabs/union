@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ['1.19', '1.20', '1.21']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+
+      - name: Set up Nix
+        uses: cachix/install-nix-action@6a9a9e84a173d90b3ffb42c5ddaf9ea033fad011 # v23
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up magic Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@8a218f9e264e9c3803c9a1ee1c30d8e4ab55be63 # v2
+
+      - name: Shell name
+        id: shell
+        run: echo "value=ci_$(echo "${{ matrix.go }}" | sed 's/\./_/')" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare Nix shell
+        run: nix develop --impure .#${{ steps.shell.outputs.value }}
+
+      - name: Test
+        run: nix develop --impure .#${{ steps.shell.outputs.value }} -c go test -race -v ./...

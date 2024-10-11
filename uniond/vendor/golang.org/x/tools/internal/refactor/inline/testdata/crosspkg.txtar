@@ -1,0 +1,105 @@
+Test of cross-package inlining.
+The first case creates a new import,
+the second reuses an existing one.
+
+-- go.mod --
+module testdata
+go 1.12
+
+-- a/a.go --
+package a
+
+// This comment does not migrate.
+
+import (
+	"fmt"
+	"testdata/b"
+)
+
+// Nor this one.
+
+func A() {
+	fmt.Println()
+	b.B1() //@ inline(re"B1", b1result)
+	b.B2() //@ inline(re"B2", b2result)
+	b.B3() //@ inline(re"B3", b3result)
+}
+
+-- b/b.go --
+package b
+
+import "testdata/c"
+import "testdata/d"
+import "fmt"
+
+func B1() { c.C() }
+func B2() { fmt.Println() }
+func B3() { e.E() } // (note that "testdata/d" points to package e)
+
+-- c/c.go --
+package c
+
+func C() {}
+
+-- d/d.go --
+package e // <- this package name intentionally mismatches the path
+
+func E() {}
+
+-- b1result --
+package a
+
+// This comment does not migrate.
+
+import (
+	"fmt"
+	"testdata/b"
+	"testdata/c"
+)
+
+// Nor this one.
+
+func A() {
+	fmt.Println()
+	c.C()  //@ inline(re"B1", b1result)
+	b.B2() //@ inline(re"B2", b2result)
+	b.B3() //@ inline(re"B3", b3result)
+}
+
+-- b2result --
+package a
+
+// This comment does not migrate.
+
+import (
+	"fmt"
+	"testdata/b"
+)
+
+// Nor this one.
+
+func A() {
+	fmt.Println()
+	b.B1()        //@ inline(re"B1", b1result)
+	fmt.Println() //@ inline(re"B2", b2result)
+	b.B3()        //@ inline(re"B3", b3result)
+}
+-- b3result --
+package a
+
+// This comment does not migrate.
+
+import (
+	"fmt"
+	"testdata/b"
+	e "testdata/d"
+)
+
+// Nor this one.
+
+func A() {
+	fmt.Println()
+	b.B1() //@ inline(re"B1", b1result)
+	b.B2() //@ inline(re"B2", b2result)
+	e.E()  //@ inline(re"B3", b3result)
+}

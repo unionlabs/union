@@ -13,3 +13,6 @@
 /demo
 tmp
 a.out
+
+# macOS
+.DS_Store

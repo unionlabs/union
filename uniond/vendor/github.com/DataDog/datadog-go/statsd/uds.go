@@ -1,3 +1,5 @@
+// +build !windows
+
 package statsd
 
 import (
@@ -10,7 +12,7 @@ import (
 UDSTimeout holds the default timeout for UDS socket writes, as they can get
 blocking when the receiving buffer is full.
 */
-const defaultUDSTimeout = 1 * time.Millisecond
+const defaultUDSTimeout = 100 * time.Millisecond
 
 // udsWriter is an internal class wrapping around management of UDS connection
 type udsWriter struct {
@@ -51,7 +53,7 @@ func (w *udsWriter) Write(data []byte) (int, error) {
 	conn.SetWriteDeadline(time.Now().Add(w.writeTimeout))
 	n, e := conn.Write(data)
 
-	if err, isNetworkErr := e.(net.Error); !isNetworkErr || !err.Temporary() {
+	if err, isNetworkErr := e.(net.Error); err != nil && (!isNetworkErr || !err.Temporary()) {
 		// Statsd server disconnected, retry connecting at next packet
 		w.unsetConnection()
 		return 0, e

@@ -1,0 +1,70 @@
+build
+000001:10
+000002:20
+000003:30
+----
+open test/000001.sst: file does not exist
+
+check-consistency
+----
+OK
+
+check-consistency
+L0
+  000005:10
+----
+L0: 000005: file 000005 (type 2) unknown to the objstorage provider: file does not exist
+
+check-consistency
+L0
+  000001:10
+----
+L0: 000001: file 000001 (type 2) unknown to the objstorage provider: file does not exist
+
+check-consistency
+L0
+  000001:11
+----
+L0: 000001: file 000001 (type 2) unknown to the objstorage provider: file does not exist
+
+check-consistency redact
+L0
+  000001:11
+----
+L0: 000001: file 000001 (type 2) unknown to the objstorage provider: file does not exist
+
+check-consistency
+L0
+  000001:10
+L1
+  000002:20
+L2
+  000003:30
+----
+L0: 000001: file 000001 (type 2) unknown to the objstorage provider: file does not exist
+L1: 000002: file 000002 (type 2) unknown to the objstorage provider: file does not exist
+L2: 000003: file 000003 (type 2) unknown to the objstorage provider: file does not exist
+
+check-consistency
+L0
+  000001:11
+L1
+  000002:22
+L2
+  000003:33
+----
+L0: 000001: file 000001 (type 2) unknown to the objstorage provider: file does not exist
+L1: 000002: file 000002 (type 2) unknown to the objstorage provider: file does not exist
+L2: 000003: file 000003 (type 2) unknown to the objstorage provider: file does not exist
+
+check-consistency redact
+L0
+  000001:11
+L1
+  000002:22
+L2
+  000004:30
+----
+L0: 000001: file 000001 (type 2) unknown to the objstorage provider: file does not exist
+L1: 000002: file 000002 (type 2) unknown to the objstorage provider: file does not exist
+L2: 000004: file 000004 (type 2) unknown to the objstorage provider: file does not exist

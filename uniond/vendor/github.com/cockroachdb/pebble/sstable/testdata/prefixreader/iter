@@ -1,0 +1,270 @@
+build
+a.SET.1:A
+aa.SET.2:AA
+c.SET.3:C
+d.SET.4:D
+----
+
+iter
+seek-prefix-ge a
+next
+next
+----
+<a:1>:A
+<aa:2>:AA
+.
+
+iter
+seek-prefix-ge aa
+next
+----
+<aa:2>:AA
+.
+
+iter
+seek-prefix-ge aa
+prev
+----
+<aa:2>:AA
+.
+
+iter
+seek-prefix-ge c
+prev
+----
+<c:3>:C
+.
+
+iter
+seek-prefix-ge b
+----
+.
+
+iter
+seek-prefix-ge c
+next
+----
+<c:3>:C
+.
+
+iter
+seek-prefix-ge d
+next
+----
+<d:4>:D
+.
+
+iter
+seek-prefix-ge e
+----
+.
+
+iter
+seek-prefix-ge c
+seek-prefix-ge d
+seek-prefix-ge e
+----
+<c:3>:C
+<d:4>:D
+.
+
+iter
+seek-prefix-ge c
+next
+seek-prefix-ge a
+next
+next
+----
+<c:3>:C
+.
+<a:1>:A
+<aa:2>:AA
+.
+
+iter
+seek-prefix-ge aa
+next
+seek-prefix-ge a
+next
+next
+seek-prefix-ge c
+next
+----
+<aa:2>:AA
+.
+<a:1>:A
+<aa:2>:AA
+.
+<c:3>:C
+.
+
+iter
+seek-prefix-ge c
+next
+seek-prefix-ge aa
+next
+seek-prefix-ge a
+next
+next
+----
+<c:3>:C
+.
+<aa:2>:AA
+.
+<a:1>:A
+<aa:2>:AA
+.
+
+iter
+seek-prefix-ge a
+next
+next
+----
+<a:1>:A
+<aa:2>:AA
+.
+
+iter
+seek-prefix-ge a
+next
+prev
+prev
+----
+<a:1>:A
+<aa:2>:AA
+<a:1>:A
+.
+
+iter
+seek-prefix-ge a
+prev
+----
+<a:1>:A
+.
+
+iter
+seek-prefix-ge a
+seek-ge a
+next
+next
+next
+next
+----
+<a:1>:A
+<a:1>:A
+<aa:2>:AA
+<c:3>:C
+<d:4>:D
+.
+
+iter
+seek-prefix-ge a
+seek-ge aa
+next
+next
+next
+----
+<a:1>:A
+<aa:2>:AA
+<c:3>:C
+<d:4>:D
+.
+
+iter
+seek-prefix-ge aa
+seek-ge c
+next
+next
+----
+<aa:2>:AA
+<c:3>:C
+<d:4>:D
+.
+
+iter
+seek-prefix-ge aa
+seek-lt c
+next
+next
+next
+----
+<aa:2>:AA
+<aa:2>:AA
+<c:3>:C
+<d:4>:D
+.
+
+iter
+seek-prefix-ge aa
+seek-lt c
+prev
+prev
+----
+<aa:2>:AA
+<aa:2>:AA
+<a:1>:A
+.
+
+iter
+seek-lt c
+seek-prefix-ge aa
+prev
+----
+<aa:2>:AA
+<aa:2>:AA
+.
+
+iter
+seek-lt c
+seek-prefix-ge a
+next
+next
+
+----
+<aa:2>:AA
+<a:1>:A
+<aa:2>:AA
+.
+
+iter
+seek-ge aa
+seek-prefix-ge a
+next
+next
+
+----
+<aa:2>:AA
+<a:1>:A
+<aa:2>:AA
+.
+
+iter
+seek-prefix-ge 1
+----
+.
+
+get
+a
+aa
+f
+d
+c
+----
+A
+AA
+<err: pebble: not found>
+D
+C
+
+iter
+seek-prefix-ge a false
+seek-prefix-ge a true
+seek-prefix-ge aa true
+seek-prefix-ge d true
+seek-prefix-ge c false
+----
+<a:1>:A
+<a:1>:A
+<aa:2>:AA
+<d:4>:D
+<c:3>:C

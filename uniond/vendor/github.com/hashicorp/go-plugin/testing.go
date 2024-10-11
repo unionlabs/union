@@ -11,7 +11,7 @@ import (
 	"net/rpc"
 
 	hclog "github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-plugin/internal/plugin"
+	"github.com/hashicorp/go-plugin/internal/grpcmux"
 	"github.com/mitchellh/go-testing-interface"
 	"google.golang.org/grpc"
 )
@@ -135,49 +135,51 @@ func TestGRPCConn(t testing.T, register func(*grpc.Server)) (*grpc.ClientConn, *
 
 // TestPluginGRPCConn returns a plugin gRPC client and server that are connected
 // together and configured. This is used to test gRPC connections.
-func TestPluginGRPCConn(t testing.T, ps map[string]Plugin) (*GRPCClient, *GRPCServer) {
+func TestPluginGRPCConn(t testing.T, multiplex bool, ps map[string]Plugin) (*GRPCClient, *GRPCServer) {
 	// Create a listener
-	l, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := serverListener(UnixSocketConfig{})
 	if err != nil {
-		t.Fatalf("err: %s", err)
+		t.Fatal(err)
 	}
 
+	logger := hclog.New(&hclog.LoggerOptions{
+		Level: hclog.Debug,
+	})
+
 	// Start up the server
+	var muxer *grpcmux.GRPCServerMuxer
+	if multiplex {
+		muxer = grpcmux.NewGRPCServerMuxer(logger, ln)
+		ln = muxer
+	}
 	server := &GRPCServer{
 		Plugins: ps,
 		DoneCh:  make(chan struct{}),
 		Server:  DefaultGRPCServer,
 		Stdout:  new(bytes.Buffer),
 		Stderr:  new(bytes.Buffer),
-		logger:  hclog.Default(),
+		logger:  logger,
+		muxer:   muxer,
 	}
 	if err := server.Init(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
-	go server.Serve(l)
+	go server.Serve(ln)
 
-	// Connect to the server
-	conn, err := grpc.Dial(
-		l.Addr().String(),
-		grpc.WithBlock(),
-		grpc.WithInsecure())
+	client := &Client{
+		address:  ln.Addr(),
+		protocol: ProtocolGRPC,
+		config: &ClientConfig{
+			Plugins:             ps,
+			GRPCBrokerMultiplex: multiplex,
+		},
+		logger: logger,
+	}
+
+	grpcClient, err := newGRPCClient(context.Background(), client)
 	if err != nil {
-		t.Fatalf("err: %s", err)
+		t.Fatal(err)
 	}
 
-	brokerGRPCClient := newGRPCBrokerClient(conn)
-	broker := newGRPCBroker(brokerGRPCClient, nil, UnixSocketConfig{}, nil)
-	go broker.Run()
-	go brokerGRPCClient.StartStream()
-
-	// Create the client
-	client := &GRPCClient{
-		Conn:       conn,
-		Plugins:    ps,
-		broker:     broker,
-		doneCtx:    context.Background(),
-		controller: plugin.NewGRPCControllerClient(conn),
-	}
-
-	return client, server
+	return grpcClient, server
 }

@@ -1,0 +1,326 @@
+syntax = "proto3";
+package cometbft.abci.v1beta2;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/abci/v1beta2";
+
+// For more information on gogo.proto, see:
+// https://github.com/cosmos/gogoproto/blob/master/extensions.md
+import "gogoproto/gogo.proto";
+import "cometbft/abci/v1beta1/types.proto";
+import "cometbft/types/v1beta1/types.proto";
+import "cometbft/types/v1beta2/params.proto";
+import "google/protobuf/timestamp.proto";
+
+// NOTE: When using custom types, mind the warnings.
+// https://github.com/cosmos/gogoproto/blob/master/custom_types.md#warnings-and-issues
+
+// ----------------------------------------
+// Request types
+
+// Request represents a request to the ABCI application.
+message Request {
+  // Sum of all possible messages.
+  oneof value {
+    v1beta1.RequestEcho               echo                 = 1;
+    v1beta1.RequestFlush              flush                = 2;
+    RequestInfo                       info                 = 3;
+    RequestInitChain                  init_chain           = 5;
+    v1beta1.RequestQuery              query                = 6;
+    RequestBeginBlock                 begin_block          = 7;
+    v1beta1.RequestCheckTx            check_tx             = 8;
+    v1beta1.RequestDeliverTx          deliver_tx           = 9;
+    v1beta1.RequestEndBlock           end_block            = 10;
+    v1beta1.RequestCommit             commit               = 11;
+    v1beta1.RequestListSnapshots      list_snapshots       = 12;
+    v1beta1.RequestOfferSnapshot      offer_snapshot       = 13;
+    v1beta1.RequestLoadSnapshotChunk  load_snapshot_chunk  = 14;
+    v1beta1.RequestApplySnapshotChunk apply_snapshot_chunk = 15;
+    RequestPrepareProposal            prepare_proposal     = 16;
+    RequestProcessProposal            process_proposal     = 17;
+  }
+  reserved 4;
+}
+
+// RequestInfo is a request for the ABCI application version.
+message RequestInfo {
+  string version       = 1;
+  uint64 block_version = 2;
+  uint64 p2p_version   = 3;
+  string abci_version  = 4;
+}
+
+// RequestInitChain is a request to initialize the blockchain.
+message RequestInitChain {
+  google.protobuf.Timestamp time = 1
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  string                                 chain_id         = 2;
+  cometbft.types.v1beta2.ConsensusParams consensus_params = 3;
+  repeated v1beta1.ValidatorUpdate validators             = 4 [(gogoproto.nullable) = false];
+  bytes                            app_state_bytes        = 5;
+  int64                            initial_height         = 6;
+}
+
+// RequestBeginBlock indicates the beginning of committing the block.
+message RequestBeginBlock {
+  bytes                         hash                 = 1;
+  cometbft.types.v1beta1.Header header               = 2 [(gogoproto.nullable) = false];
+  CommitInfo                    last_commit_info     = 3 [(gogoproto.nullable) = false];
+  repeated Misbehavior          byzantine_validators = 4 [(gogoproto.nullable) = false];
+}
+
+// RequestPrepareProposal is a request for the ABCI application to prepare a new
+// block proposal.
+message RequestPrepareProposal {
+  // the modified transactions cannot exceed this size.
+  int64 max_tx_bytes = 1;
+  // txs is an array of transactions that will be included in a block,
+  // sent to the app for possible modifications.
+  repeated bytes            txs                  = 2;
+  ExtendedCommitInfo        local_last_commit    = 3 [(gogoproto.nullable) = false];
+  repeated Misbehavior      misbehavior          = 4 [(gogoproto.nullable) = false];
+  int64                     height               = 5;
+  google.protobuf.Timestamp time                 = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes                     next_validators_hash = 7;
+  // address of the public key of the validator proposing the block.
+  bytes proposer_address = 8;
+}
+
+// RequestProcessProposal is a request for the ABCI application to process proposal.
+message RequestProcessProposal {
+  repeated bytes       txs                  = 1;
+  CommitInfo           proposed_last_commit = 2 [(gogoproto.nullable) = false];
+  repeated Misbehavior misbehavior          = 3 [(gogoproto.nullable) = false];
+  // hash is the merkle root hash of the fields of the proposed block.
+  bytes                     hash                 = 4;
+  int64                     height               = 5;
+  google.protobuf.Timestamp time                 = 6 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  bytes                     next_validators_hash = 7;
+  // address of the public key of the original proposer of the block.
+  bytes proposer_address = 8;
+}
+
+// ----------------------------------------
+// Response types
+
+// Response represents a response from the ABCI application.
+message Response {
+  // Sum of all possible messages.
+  oneof value {
+    v1beta1.ResponseException          exception            = 1;
+    v1beta1.ResponseEcho               echo                 = 2;
+    v1beta1.ResponseFlush              flush                = 3;
+    v1beta1.ResponseInfo               info                 = 4;
+    ResponseInitChain                  init_chain           = 6;
+    v1beta1.ResponseQuery              query                = 7;
+    ResponseBeginBlock                 begin_block          = 8;
+    ResponseCheckTx                    check_tx             = 9;
+    ResponseDeliverTx                  deliver_tx           = 10;
+    ResponseEndBlock                   end_block            = 11;
+    v1beta1.ResponseCommit             commit               = 12;
+    v1beta1.ResponseListSnapshots      list_snapshots       = 13;
+    v1beta1.ResponseOfferSnapshot      offer_snapshot       = 14;
+    v1beta1.ResponseLoadSnapshotChunk  load_snapshot_chunk  = 15;
+    v1beta1.ResponseApplySnapshotChunk apply_snapshot_chunk = 16;
+    ResponsePrepareProposal            prepare_proposal     = 17;
+    ResponseProcessProposal            process_proposal     = 18;
+  }
+  reserved 5;
+}
+
+// ResponseInitChain contains the ABCI application's hash and updates to the
+// validator set and/or the consensus params, if any.
+message ResponseInitChain {
+  cometbft.types.v1beta2.ConsensusParams consensus_params = 1;
+  repeated v1beta1.ValidatorUpdate validators             = 2 [(gogoproto.nullable) = false];
+  bytes                            app_hash               = 3;
+}
+
+// ResponseBeginBlock contains a list of block-level events.
+message ResponseBeginBlock {
+  repeated Event events = 1
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+}
+
+// ResponseCheckTx shows if the transaction was deemed valid by the ABCI
+// application.
+message ResponseCheckTx {
+  uint32         code       = 1;
+  bytes          data       = 2;
+  string         log        = 3;  // nondeterministic
+  string         info       = 4;  // nondeterministic
+  int64          gas_wanted = 5 [json_name = "gas_wanted"];
+  int64          gas_used   = 6 [json_name = "gas_used"];
+  repeated Event events     = 7
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+  string codespace = 8;
+  string sender    = 9;
+  int64  priority  = 10;
+
+  // mempool_error is set by CometBFT.
+  // ABCI applications creating a ResponseCheckTX should not set mempool_error.
+  string mempool_error = 11;
+}
+
+// ResponseDeliverTx contains a result of committing the given transaction and a
+// list of events.
+message ResponseDeliverTx {
+  uint32         code       = 1;
+  bytes          data       = 2;
+  string         log        = 3;  // nondeterministic
+  string         info       = 4;  // nondeterministic
+  int64          gas_wanted = 5 [json_name = "gas_wanted"];
+  int64          gas_used   = 6 [json_name = "gas_used"];
+  repeated Event events     = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag)  = "events,omitempty"
+  ];  // nondeterministic
+  string codespace = 8;
+}
+
+// ResponseEndBlock contains updates to consensus params and/or validator set changes, if any.
+message ResponseEndBlock {
+  repeated v1beta1.ValidatorUpdate       validator_updates       = 1 [(gogoproto.nullable) = false];
+  cometbft.types.v1beta2.ConsensusParams consensus_param_updates = 2;
+  repeated Event                         events                  = 3
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+}
+
+// ResponsePrepareProposal contains the list of transactions that will be included in the proposal.
+message ResponsePrepareProposal {
+  repeated bytes txs = 1;
+}
+
+// ResponseProcessProposal contains the result of processing a proposal.
+message ResponseProcessProposal {
+  ProposalStatus status = 1;
+
+  // The status.
+  enum ProposalStatus {
+    // Unknown
+    UNKNOWN = 0;
+    // Accepted
+    ACCEPT = 1;
+    // Rejected
+    REJECT = 2;
+  }
+}
+
+// ----------------------------------------
+// Misc.
+
+// CommitInfo contains votes for the particular round.
+message CommitInfo {
+  int32    round                  = 1;
+  repeated v1beta1.VoteInfo votes = 2 [(gogoproto.nullable) = false];
+}
+
+// ExtendedCommitInfo is similar to CommitInfo except that it is only used in
+// the PrepareProposal request such that Tendermint can provide vote extensions
+// to the application.
+message ExtendedCommitInfo {
+  // The round at which the block proposer decided in the previous height.
+  int32 round = 1;
+  // List of validators' addresses in the last validator set with their voting
+  // information, including vote extensions.
+  repeated ExtendedVoteInfo votes = 2 [(gogoproto.nullable) = false];
+}
+
+// Event allows application developers to attach additional information to
+// ResponseFinalizeBlock (defined in .v1beta3) and ResponseCheckTx.
+// Up to 0.37, this could also be used in ResponseBeginBlock, ResponseEndBlock,
+// and ResponseDeliverTx.
+// Later, transactions may be queried using these events.
+message Event {
+  string                  type       = 1;
+  repeated EventAttribute attributes = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag)  = "attributes,omitempty"
+  ];
+}
+
+// EventAttribute is a single key-value pair, associated with an event.
+message EventAttribute {
+  string key   = 1;
+  string value = 2;
+  bool   index = 3;  // nondeterministic
+}
+
+// ----------------------------------------
+// Blockchain Types
+
+// ExtendedVoteInfo extends VoteInfo with the vote extensions (non-deterministic).
+message ExtendedVoteInfo {
+  // The validator that sent the vote.
+  v1beta1.Validator validator = 1 [(gogoproto.nullable) = false];
+  // Indicates whether the validator signed the last block, allowing for rewards based on validator availability.
+  bool signed_last_block = 2;
+  // Non-deterministic extension provided by the sending validator's application.
+  bytes vote_extension = 3;
+}
+
+// The type of misbehavior committed by a validator.
+enum MisbehaviorType {
+  // Unknown
+  UNKNOWN = 0;
+  // Duplicate vote
+  DUPLICATE_VOTE = 1;
+  // Light client attack
+  LIGHT_CLIENT_ATTACK = 2;
+}
+
+// Misbehavior is a type of misbehavior committed by a validator.
+message Misbehavior {
+  MisbehaviorType type = 1;
+  // The offending validator
+  v1beta1.Validator validator = 2 [(gogoproto.nullable) = false];
+  // The height when the offense occurred
+  int64 height = 3;
+  // The corresponding time where the offense occurred
+  google.protobuf.Timestamp time = 4
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  // Total voting power of the validator set in case the ABCI application does
+  // not store historical validators.
+  // https://github.com/tendermint/tendermint/issues/4581
+  int64 total_voting_power = 5;
+}
+
+// ----------------------------------------
+// Service Definition
+
+// ABCIApplication is a service for an ABCI application.
+service ABCIApplication {
+  // Echo returns back the same message it is sent.
+  rpc Echo(v1beta1.RequestEcho) returns (v1beta1.ResponseEcho);
+  // Flush flushes the write buffer.
+  rpc Flush(v1beta1.RequestFlush) returns (v1beta1.ResponseFlush);
+  // Info returns information about the application state.
+  rpc Info(RequestInfo) returns (v1beta1.ResponseInfo);
+  // DeliverTx applies a transaction.
+  rpc DeliverTx(v1beta1.RequestDeliverTx) returns (ResponseDeliverTx);
+  // CheckTx validates a transaction.
+  rpc CheckTx(v1beta1.RequestCheckTx) returns (ResponseCheckTx);
+  // Query queries the application state.
+  rpc Query(v1beta1.RequestQuery) returns (v1beta1.ResponseQuery);
+  // Commit commits a block of transactions.
+  rpc Commit(v1beta1.RequestCommit) returns (v1beta1.ResponseCommit);
+  // InitChain initializes the blockchain.
+  rpc InitChain(RequestInitChain) returns (ResponseInitChain);
+  // BeginBlock signals the beginning of a block.
+  rpc BeginBlock(RequestBeginBlock) returns (ResponseBeginBlock);
+  // EndBlock signals the end of a block, returns changes to the validator set.
+  rpc EndBlock(v1beta1.RequestEndBlock) returns (ResponseEndBlock);
+  // ListSnapshots lists all the available snapshots.
+  rpc ListSnapshots(v1beta1.RequestListSnapshots) returns (v1beta1.ResponseListSnapshots);
+  // OfferSnapshot sends a snapshot offer.
+  rpc OfferSnapshot(v1beta1.RequestOfferSnapshot) returns (v1beta1.ResponseOfferSnapshot);
+  // LoadSnapshotChunk returns a chunk of snapshot.
+  rpc LoadSnapshotChunk(v1beta1.RequestLoadSnapshotChunk)
+      returns (v1beta1.ResponseLoadSnapshotChunk);
+  // ApplySnapshotChunk applies a chunk of snapshot.
+  rpc ApplySnapshotChunk(v1beta1.RequestApplySnapshotChunk)
+      returns (v1beta1.ResponseApplySnapshotChunk);
+  // PrepareProposal returns a proposal for the next block.
+  rpc PrepareProposal(RequestPrepareProposal) returns (ResponsePrepareProposal);
+  // ProcessProposal validates a proposal.
+  rpc ProcessProposal(RequestProcessProposal) returns (ResponseProcessProposal);
+}

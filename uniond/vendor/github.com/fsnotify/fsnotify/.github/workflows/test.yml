@@ -1,0 +1,176 @@
+name: 'test'
+on:
+  pull_request:
+    paths: ['**.go', 'go.mod', '.github/workflows/*']
+  push:
+    branches: ['main', 'aix']
+
+jobs:
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest']
+        go: ['1.17', '1.21']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: 'actions/checkout@v3'
+      - uses: 'actions/setup-go@v4'
+        with:
+          go-version: ${{ matrix.go }}
+      - name: test
+        run: |
+          FSNOTIFY_BUFFER=4096 go test -parallel 1 -race ./...
+                               go test -parallel 1 -race ./...
+
+  windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['windows-latest']
+        go: ['1.17', '1.21']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: 'actions/checkout@v3'
+      - uses: 'actions/setup-go@v4'
+        with:
+          go-version: ${{ matrix.go }}
+      - name: test
+        run: |
+          go test -parallel 1 -race ./...
+          set "FSNOTIFY_BUFFER=4096"
+          go test -parallel 1 -race ./...
+
+  # Test gccgo
+  gcc:
+    runs-on: 'ubuntu-22.04'
+    name:    'test (ubuntu-22.04, gccgo 12.1)'
+    steps:
+      - uses: 'actions/checkout@v3'
+      - name: test
+        run: |
+          sudo apt-get -y install gccgo-12
+          FSNOTIFY_BUFFER=4096 go-12 test -parallel 1 ./...
+                               go-12 test -parallel 1 ./...
+
+  # Test only the latest Go version on macOS; we use the macOS builders for BSD
+  # and illumos, and GitHub doesn't allow many of them to run concurrently. If
+  # it works on Windows and Linux with Go 1.17, then it probably does on macOS
+  # too.
+  macos:
+    name: test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['macos-11', 'macos-13']
+        go: ['1.21']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: 'actions/checkout@v3'
+      - uses: 'actions/setup-go@v4'
+        with:
+          go-version: ${{ matrix.go }}
+      - name: test
+        run: |
+          FSNOTIFY_BUFFER=4096 go test -parallel 1 -race ./...
+                               go test -parallel 1 -race ./...
+
+  # OpenBSD; no -race as the VM doesn't include the comp set.
+  #
+  # TODO: should probably add this, but on my local machine the tests time out
+  #       with -race as the waits aren't long enough (OpenBSD is kind of slow),
+  #       so should probably look into that first. Go 1.19 is supposed to have a
+  #       much faster race detector, so maybe waiting until we have that is
+  #       enough.
+  openbsd:
+    runs-on: 'macos-12'
+    timeout-minutes: 30
+    name: 'test (openbsd, 1.17)'
+    steps:
+      - uses: 'actions/checkout@v3'
+      - name: 'test (openbsd, 1.17)'
+        id:   'openbsd'
+        uses: 'vmactions/openbsd-vm@v0'
+        with:
+          prepare: pkg_add go
+          run: |
+            useradd -mG wheel action
+            FSNOTIFY_BUFFER=4096 su action -c 'go test -parallel 1 ./...'
+                                 su action -c 'go test -parallel 1 ./...'
+
+  # NetBSD
+  netbsd:
+    runs-on: macos-12
+    timeout-minutes: 30
+    name: test (netbsd, 1.20)
+    steps:
+      - uses: 'actions/checkout@v3'
+      - name: 'test (netbsd, 1.20)'
+        id:   'netbsd'
+        uses: 'vmactions/netbsd-vm@v0'
+        with:
+          prepare: pkg_add go
+          # TODO: no -race for the same reason as OpenBSD (the timing; it does run).
+          run: |
+            useradd -mG wheel action
+            FSNOTIFY_BUFFER=4096 su action -c 'go120 test -parallel 1 ./...'
+                                 su action -c 'go120 test -parallel 1 ./...'
+
+  # illumos
+  illumos:
+    runs-on: macos-12
+    timeout-minutes: 30
+    name: test (illumos, 1.19)
+    steps:
+    - uses: 'actions/checkout@v3'
+    - name: 'test (illumos, 1.19)'
+      id:   'illumos'
+      uses: 'papertigers/illumos-vm@r38'
+      with:
+        prepare: |
+          pkg install go-119
+        run: |
+          useradd action
+          export GOCACHE=/tmp/go-cache
+          export GOPATH=/tmp/go-path
+          FSNOTIFY_BUFFER=4096 su action -c '/opt/ooce/go-1.19/bin/go test -parallel 1 ./...'
+                               su action -c '/opt/ooce/go-1.19/bin/go test -parallel 1 ./...'
+
+  # Older Debian 6, for old Linux kernels.
+  debian6:
+    runs-on: macos-12
+    timeout-minutes: 30
+    name: test (debian6, 1.19)
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache Vagrant boxes
+        uses: actions/cache@v3
+        with:
+          path: ~/.vagrant.d/boxes
+          key: ${{ runner.os }}-vagrant-${{ hashFiles('Vagrantfile') }}
+          restore-keys: |
+            ${{ runner.os }}-vagrant-
+
+      - name: setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.19'
+
+      - name: 'test (debian6, 1.19)'
+        id:   'debian6'
+        run: |
+          cp -f .github/workflows/Vagrantfile.debian6 Vagrantfile
+          export GOOS=linux
+          export GOARCH=amd64
+          for p in $(go list ./...); do
+            FSNOTIFY_BUFFER=4096 go test -c -o ${p//\//-}.test $p
+                                 go test -c -o ${p//\//-}.test $p
+          done
+          vagrant up
+          for t in *.test; do
+            FSNOTIFY_BUFFER=4096 vagrant ssh -c "/vagrant/$t -test.parallel 1"
+                                 vagrant ssh -c "/vagrant/$t -test.parallel 1"
+          done

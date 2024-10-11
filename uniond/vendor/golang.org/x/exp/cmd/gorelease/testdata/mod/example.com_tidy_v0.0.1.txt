@@ -1,0 +1,6 @@
+-- go.mod --
+module example.com/tidy
+
+go 1.12
+-- tidy.go --
+package tidy

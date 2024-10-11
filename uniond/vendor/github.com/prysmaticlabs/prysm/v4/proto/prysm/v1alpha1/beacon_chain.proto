@@ -1,0 +1,907 @@
+// Copyright 2020 Prysmatic Labs.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+
+package ethereum.eth.v1alpha1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+import "proto/eth/ext/options.proto";
+import "proto/prysm/v1alpha1/attestation.proto";
+import "proto/prysm/v1alpha1/beacon_block.proto";
+import "proto/prysm/v1alpha1/validator.proto";
+
+option csharp_namespace = "Ethereum.Eth.v1alpha1";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1;eth";
+option java_multiple_files = true;
+option java_outer_classname = "BeaconChainProto";
+option java_package = "org.ethereum.eth.v1alpha1";
+option php_namespace = "Ethereum\\Eth\\v1alpha1";
+
+// Beacon chain API
+//
+// The beacon chain API can be used to access data relevant to the Ethereum Beacon Chain.
+service BeaconChain {
+
+    // Retrieve attestations by block root, slot, or epoch.
+    //
+    // The server may return an empty list when no attestations match the given
+    // filter criteria. This RPC should not return NOT_FOUND. Only one filter
+    // criteria should be used. This endpoint allows for retrieval of genesis
+    // information via a boolean query filter.
+    rpc ListAttestations(ListAttestationsRequest) returns (ListAttestationsResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/attestations"
+        };
+    }
+
+    // Retrieve indexed attestations by block root, slot, or epoch.
+    //
+    // The server may return an empty list when no indexed attestations match the given
+    // filter criteria. This RPC should not return NOT_FOUND. Only one filter
+    // criteria should be used. This endpoint allows for retrieval of genesis
+    // information via a boolean query filter.
+    rpc ListIndexedAttestations(ListIndexedAttestationsRequest) returns (ListIndexedAttestationsResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/attestations/indexed"
+        };
+    }
+
+    // Server-side stream of attestations as they are received by
+    // the beacon chain node.
+    // DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
+    rpc StreamAttestations(google.protobuf.Empty) returns (stream Attestation) {
+        option deprecated = true;
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/attestations/stream"
+        };
+    }
+
+    // Server-side stream of indexed attestations as they are received by
+    // the beacon chain node.
+    // DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
+    rpc StreamIndexedAttestations(google.protobuf.Empty) returns (stream IndexedAttestation) {
+        option deprecated = true;
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/attestations/indexed/stream"
+        };
+    }
+
+    // Retrieve attestations from pool.
+    //
+    // The server returns a list of attestations that have been seen but not
+    // yet processed. Pool attestations eventually expire as the slot
+    // advances, so an attestation missing from this request does not imply
+    // that it was included in a block. The attestation may have expired.
+    // Refer to the Ethereum Beacon Chain specification for more details on how
+    // attestations are processed and when they are no longer valid.
+    // https://github.com/ethereum/consensus-specs/blob/dev/specs/core/0_beacon-chain.md#attestations
+    rpc AttestationPool(AttestationPoolRequest) returns (AttestationPoolResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/attestations/pool"
+        };
+    }
+
+    // Retrieve blocks by root, slot, or epoch.
+    //
+    // The server may return multiple blocks in the case that a slot or epoch is
+    // provided as the filter criteria. The server may return an empty list when
+    // no blocks in their database match the filter criteria. This RPC should
+    // not return NOT_FOUND. Only one filter criteria should be used. This endpoint
+    // allows for retrieval of genesis information via a boolean query filter.
+    rpc ListBeaconBlocks(ListBlocksRequest) returns (ListBeaconBlocksResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha2/beacon/blocks"
+        };
+    }
+
+    // Server-side stream of all signed blocks as they are received by
+    // the beacon chain node.
+    // DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
+    rpc StreamBlocks(StreamBlocksRequest) returns (stream SignedBeaconBlock) {
+        option deprecated = true;
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/blocks/stream"
+        };
+    }
+
+    // Server-side stream of information about the head of the beacon chain
+    // from the view of the beacon chain node.
+    //
+    // This includes the head block slot and root as well as information about
+    // the most recent finalized and justified slots.
+    // DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
+    rpc StreamChainHead(google.protobuf.Empty) returns (stream ChainHead) {
+        option deprecated = true;
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/chainhead/stream"
+        };
+    }
+
+    // Retrieve information about the head of the beacon chain from the view of
+    // the beacon chain node.
+    //
+    // This includes the head block slot and root as well as information about
+    // the most recent finalized and justified slots.
+    // DEPRECATED: This endpoint is superseded by the /eth/v1/beacon Beacon API endpoint
+    rpc GetChainHead(google.protobuf.Empty) returns (ChainHead) {
+        option deprecated = true;
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/chainhead"
+        };
+    }
+
+    // Retrieve the beacon chain committees for a given epoch.
+    //
+    // If no filter criteria is specified, the response returns
+    // all beacon committees for the current epoch. The results are paginated by default.
+    // This endpoint allows for retrieval of genesis information via a boolean query filter.
+    rpc ListBeaconCommittees(ListCommitteesRequest) returns (BeaconCommittees) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/committees"
+        };
+    }
+
+    // Retrieve validator balances for a given set of public keys at a specific
+    // epoch in time. This endpoint allows for retrieval of genesis information
+    // via a boolean query filter.
+    rpc ListValidatorBalances(ListValidatorBalancesRequest) returns (ValidatorBalances) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validators/balances"
+        };
+    }
+
+    // Retrieve the current validator registry.
+    //
+    // The request may include an optional historical epoch to retrieve a
+    // specific validator set in time. This endpoint allows for retrieval of genesis
+    // information via a boolean query filter.
+    rpc ListValidators(ListValidatorsRequest) returns (Validators) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validators"
+        };
+    }
+
+    // Retrieve information about a specific validator in the registry.
+    //
+    // This request may query by validator index or public key.
+    rpc GetValidator(GetValidatorRequest) returns (Validator) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator"
+        };
+    }
+
+    // Retrieve the active set changes for a given epoch.
+    //
+    // This data includes any activations, voluntary exits, and involuntary
+    // ejections. This endpoint allows for retrieval of genesis
+    // information via a boolean query filter.
+    rpc GetValidatorActiveSetChanges(GetValidatorActiveSetChangesRequest) returns (ActiveSetChanges) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validators/activesetchanges"
+        };
+    }
+
+    // Retrieve the current validator queue information.
+    rpc GetValidatorQueue(google.protobuf.Empty) returns (ValidatorQueue) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validators/queue"
+        };
+    }
+
+    // GetValidatorPerformance reports a validator's latest balance along with other important
+    // metrics on rewards and penalties throughout its lifecycle in the beacon chain.
+    // The request takes in a list of validator public keys and returns a performance report
+    // for all of them respectively.
+    rpc GetValidatorPerformance(ValidatorPerformanceRequest) returns (ValidatorPerformanceResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validators/performance"
+        };
+    }
+
+    // Retrieve the validator assignments for a given epoch.
+    //
+    // This request may specify optional validator indices or public keys to
+    // filter validator assignments. This endpoint allows for retrieval of genesis
+    // information via a boolean query filter.
+    rpc ListValidatorAssignments(ListValidatorAssignmentsRequest) returns (ValidatorAssignments) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validators/assignments"
+        };
+    }
+
+    // Retrieve the validator participation information for a given epoch.
+    //
+    // This method returns information about the global participation of
+    // validator attestations. This endpoint allows for retrieval of genesis
+    // information via a boolean query filter.
+    rpc GetValidatorParticipation(GetValidatorParticipationRequest) returns (ValidatorParticipationResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validators/participation"
+        };
+    }
+
+    // Retrieve the current configuration parameters of the beacon chain.
+    rpc GetBeaconConfig(google.protobuf.Empty) returns (BeaconConfig) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/config"
+        };
+    }
+
+    // Server-side stream of validator information at each epoch.
+    // DEPRECATED: Streaming Validator Info is no longer supported.
+    // The Beacon API /eth/v1/beacon/states/{state_id}/validators will provide validator info in unstreamed format.
+    rpc StreamValidatorsInfo(stream ValidatorChangeSet) returns (stream ValidatorInfo) {
+        option deprecated = true;
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/validators/info/stream"
+        };
+    }
+
+    // Submit an attester slashing object to the beacon node.
+    rpc SubmitAttesterSlashing(AttesterSlashing) returns (SubmitSlashingResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/slashings/attester/submit"
+        };
+    }
+
+    // Submit a proposer slashing object to the beacon node.
+    rpc SubmitProposerSlashing(ProposerSlashing) returns (SubmitSlashingResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/slashings/proposer/submit"
+        };
+    }
+
+    // Returns a list of validators individual vote status of a given epoch.
+    rpc GetIndividualVotes(IndividualVotesRequest) returns (IndividualVotesRespond) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/beacon/individual_votes"
+        };
+    }
+}
+
+// SetAction defines the type of action that should be applied to the keys in a validator change set.
+enum SetAction {
+    // ADD_VALIDATOR_KEYS adds to the existing keys.
+    ADD_VALIDATOR_KEYS = 0;
+    // REMOVE_VALIDATOR_KEYS removes from the existing keys.
+    REMOVE_VALIDATOR_KEYS = 1;
+    // SET_VALIDATOR_KEYS overwrites the existing keys.
+    SET_VALIDATOR_KEYS = 2;
+}
+
+// ValidatorChangeSet updates the server's list of keys on which to operate.
+// DEPRECATED: This message's endpoint is superseded by the /eth/v1/events Beacon API endpoint
+message ValidatorChangeSet {
+    option deprecated = true;
+    // Action (add/remove/set).
+    SetAction action = 1;
+
+    // 48 byte BLS public keys of validators on which the operation occurs.
+    repeated bytes public_keys = 2;
+}
+
+// Request for indexed attestations by target epoch.
+message ListIndexedAttestationsRequest {
+    oneof query_filter {
+        // Retrieve attestations by epoch processed.
+        uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+        // Optional criteria to retrieve genesis epoch attestations.
+        bool genesis_epoch = 2;
+    }
+
+    // The maximum number of IndexedAttestations to return in the response.
+    // This field is optional.
+    int32 page_size = 3;
+
+    // A pagination token returned from a previous call to `ListIndexedAttestations`
+    // that indicates where this listing should continue from.
+    // This field is optional.
+    string page_token = 4;
+}
+
+// Request for attestations.
+message ListAttestationsRequest {
+    // TODO(preston): Test oneof with gRPC gateway.
+
+    oneof query_filter {
+        // Filter attestations by epoch processed.
+        uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+        // Optional criteria to retrieve attestations from 0 epoch.
+        bool genesis_epoch = 2;
+    }
+
+    // The maximum number of Attestations to return in the response.
+    // This field is optional.
+    int32 page_size = 3;
+
+    // A pagination token returned from a previous call to `ListAttestations`
+    // that indicates where this listing should continue from.
+    // This field is optional.
+    string page_token = 4;
+}
+
+message ListAttestationsResponse {
+    repeated Attestation attestations = 1;
+
+    // A pagination token returned from a previous call to `ListAttestations`
+    // that indicates from where listing should continue.
+    // This field is optional.
+    string next_page_token = 2;
+
+    // Total count of Attestations matching the request filter.
+    int32 total_size = 3;
+}
+
+message ListIndexedAttestationsResponse {
+    repeated IndexedAttestation indexed_attestations = 1;
+
+    // A pagination token returned from a previous call to `ListIndexedAttestations`
+    // that indicates from where listing should continue.
+    // This field is optional.
+    string next_page_token = 2;
+
+    // Total count of Attestations matching the request filter.
+    int32 total_size = 3;
+}
+
+message ListBlocksRequest {
+    oneof query_filter {
+        // Block root filter to return a single block.
+        bytes root = 1;
+
+        // Slot to lookup a block. If the slot is not yet finalized, this
+        // criteria may yield multiple valid blocks if the node has seen blocks
+        // from another fork.
+        uint64 slot = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+        // The epoch number for which to retrieve blocks. If specified, this
+        // will return all blocks found within the span of the specified epoch.
+        uint64 epoch = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+        // Optional criteria to retrieve genesis block.
+        bool genesis = 4;
+    }
+
+    // The maximum number of Blocks to return in the response.
+    // This field is optional.
+    int32 page_size = 5;
+
+    // A pagination token returned from a previous call to `ListBlocks`
+    // that indicates where this listing should continue from.
+    // This field is optional.
+    string page_token = 6;
+}
+
+message ListBeaconBlocksResponse {
+    repeated BeaconBlockContainer block_containers = 1;
+
+    // A pagination token returned from a previous call to `ListBeaconBlocks`
+    // that indicates from where listing should continue.
+    // This field is optional.
+    string next_page_token = 2;
+
+    // Total count of Blocks matching the request filter.
+    int32 total_size = 3;
+}
+
+// A container that contains both the beacon block, its corresponding root, and
+// whether or not it is canonical in the chain. This message returns a oneof field
+// representing either a phase 0 beacon block or an Altair beacon block.
+message BeaconBlockContainer {
+    // 32 byte merkle tree root of contained beacon block.
+    bytes block_root = 1;
+
+    // Boolean indicating whether the block is canonical.
+    bool canonical = 2;
+
+    // The desired block to be returned.
+    oneof block {
+        // Representing a phase 0 block.
+        SignedBeaconBlock phase0_block = 3;
+
+        // Representing an altair block.
+        SignedBeaconBlockAltair altair_block = 4;
+
+        // Representing a bellatrix block.
+        SignedBeaconBlockBellatrix bellatrix_block = 5;
+
+        // Representing a blinded bellatrix block.
+        SignedBlindedBeaconBlockBellatrix blinded_bellatrix_block = 6;
+
+        // Representing a capella block.
+        SignedBeaconBlockCapella capella_block = 7;
+
+        // Representing a blinded capella block.
+        SignedBlindedBeaconBlockCapella blinded_capella_block = 8;
+
+        SignedBeaconBlockDeneb deneb_block = 9;
+
+        SignedBlindedBeaconBlockDeneb blinded_deneb_block = 10;
+    }
+}
+
+// Information about the head of the beacon chain.
+message ChainHead {
+    // Slot of the head block.
+    uint64 head_slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+    // Epoch of the head block.
+    uint64 head_epoch = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // 32 byte merkle tree root of the canonical head block in the beacon node.
+    bytes head_block_root = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+
+    // Most recent slot that contains the finalized block.
+    uint64 finalized_slot = 4 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+    // Epoch of the finalized block.
+    uint64 finalized_epoch = 5 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // Most recent 32 byte finalized block root.
+    bytes finalized_block_root = 6 [(ethereum.eth.ext.ssz_size) = "32"];
+
+    // Most recent slot that contains the justified block.
+    uint64 justified_slot = 7 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+    // Epoch of the justified block.
+    uint64 justified_epoch = 8 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // Most recent 32 byte justified block root.
+    bytes justified_block_root = 9 [(ethereum.eth.ext.ssz_size) = "32"];
+
+    // Most recent slot that contains the previous justified block.
+    uint64 previous_justified_slot = 10 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+    // Epoch of the previous justified block.
+    uint64 previous_justified_epoch = 11 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // Previous 32 byte justified block root.
+    bytes previous_justified_block_root = 12 [(ethereum.eth.ext.ssz_size) = "32"];
+
+    // Optimistic status of the current head
+    bool optimistic_status = 13;
+}
+
+message ListCommitteesRequest {
+    oneof query_filter {
+        // Optional criteria to retrieve data at a specific epoch.
+        uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+        // Optional criteria to retrieve genesis data.
+        bool genesis = 2;
+    }
+}
+
+message BeaconCommittees {
+    message CommitteeItem {
+        // A committee is a list of validator indices participating in consensus at a slot.
+        repeated uint64 validator_indices = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+    }
+
+    message CommitteesList {
+        // A list of committees.
+        repeated CommitteeItem committees = 1;
+    }
+
+    // The epoch for which the committees in the response belong to.
+    uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // A map of validator committees by slot.
+    map<uint64, CommitteesList> committees = 2;
+
+    // The number of active validators at the given epoch.
+    uint64 active_validator_count = 3;
+}
+
+message ListValidatorBalancesRequest {
+    oneof query_filter {
+        // Optional criteria to retrieve balances at a specific epoch.
+        uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+        // Optional criteria to retrieve the genesis list of balances.
+        bool genesis = 2;
+    }
+
+    // Validator 48 byte BLS public keys to filter validators for the given
+    // epoch.
+    repeated bytes public_keys = 3 [(ethereum.eth.ext.ssz_size) = "?,48"];
+    // Validator indices to filter validators for the given epoch.
+    repeated uint64 indices = 4 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+    // The maximum number of Validators to return in the response.
+    // This field is optional.
+    int32 page_size = 5;
+
+    // A pagination token returned from a previous call to `GetValidators`
+    // that indicates where this listing should continue from.
+    // This field is optional.
+    string page_token = 6;
+}
+
+message ValidatorBalances {
+    // Epoch which the state was considered to determine the validator balances.
+    uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    message Balance {
+        // Validator's 48 byte BLS public key.
+        bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48"];
+
+        // Validator's index in the validator set.
+        uint64 index = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+        // Validator's balance in gwei.
+        uint64 balance = 3;
+
+        // Validator's status, UNKNOWN if not found.
+        string status = 4;
+    }
+
+    repeated Balance balances = 2;
+
+    // A pagination token returned from a previous call to `GetListValidatorBalances`
+    // that indicates from where listing should continue.
+    string next_page_token = 3;
+
+    // Total count of items matching the request filter.
+    int32 total_size = 4;
+}
+
+message ListValidatorsRequest {
+    oneof query_filter {
+        // Optional criteria to retrieve validators at a specific epoch.
+        // Omitting this field or setting it to zero will retrieve a response
+        // with the current active validator set.
+        uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+        // Optional criteria to retrieve the genesis set of validators.
+        bool genesis = 2;
+    }
+
+    // Specify whether or not you want to retrieve only active validators.
+    bool active = 3;
+
+    // The maximum number of Validators to return in the response.
+    // This field is optional.
+    int32 page_size = 4;
+
+    // A pagination token returned from a previous call to `GetValidators`
+    // that indicates where this listing should continue from.
+    // This field is optional.
+    string page_token = 5;
+
+    // Specify which validators you would like to retrieve by their public keys.
+    // This field is optional.
+    repeated bytes public_keys = 6;
+
+    // Specify which validators you would like to retrieve by their indices.
+    // This field is optional.
+    repeated uint64 indices = 7 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+}
+
+message GetValidatorRequest {
+    oneof query_filter {
+        // Validator index in the registry.
+        uint64 index = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+        // 48 byte validator public key.
+        bytes public_key = 2 [(ethereum.eth.ext.ssz_size) = "48"];
+    }
+}
+
+message Validators {
+    // Epoch which the state was considered to determine the active validator
+    // set. This field is not optional. Zero value epoch indicates the validator
+    // set is from the Ethereum proof of stake genesis set.
+    uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    message ValidatorContainer {
+        uint64 index = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+        Validator validator = 2;
+    }
+
+    repeated ValidatorContainer validator_list = 2;
+
+    // A pagination token returned from a previous call to `GetValidators`
+    // that indicates from where listing should continue.
+    // This field is optional.
+    string next_page_token = 3;
+
+    // Total count of Validators matching the request filter.
+    int32 total_size = 4;
+}
+
+message GetValidatorActiveSetChangesRequest {
+    oneof query_filter {
+        // Optional criteria to retrieve balances at a specific epoch.
+        uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+        // Optional criteria to retrieve the genesis list of balances.
+        bool genesis = 2;
+    }
+}
+
+message ActiveSetChanges {
+    // Epoch which the state was considered to determine the active validator
+    // set.
+    uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // 48 byte validator public keys that have been activated in the given epoch.
+    repeated bytes activated_public_keys = 2 [(ethereum.eth.ext.ssz_size) = "?,48"];
+
+    // Indices of validators activated in the given epoch.
+    repeated uint64 activated_indices = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+    // 48 byte validator public keys that have been voluntarily exited in the given epoch.
+    repeated bytes exited_public_keys = 4 [(ethereum.eth.ext.ssz_size) = "?,48"];
+
+    // Indices of validators exited in the given epoch.
+    repeated uint64 exited_indices = 5 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+    // 48 byte validator public keys that have been slashed in the given epoch.
+    repeated bytes slashed_public_keys = 6 [(ethereum.eth.ext.ssz_size) = "?,48"];
+
+    // Indices of validators slashed in the given epoch.
+    repeated uint64 slashed_indices = 7 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+    // 48 byte validator public keys that have been involuntarily ejected in this epoch.
+    repeated bytes ejected_public_keys = 8 [(ethereum.eth.ext.ssz_size) = "?,48"];
+
+    // Indices of validators ejected in the given epoch.
+    repeated uint64 ejected_indices = 9 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+}
+
+message ValidatorPerformanceRequest {
+    // A list of 48 byte validator public keys.
+    repeated bytes public_keys = 1 [deprecated = true];
+    // A list of validator indices to retrieve performance by their indices.
+    repeated uint64 indices = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+}
+
+message ValidatorPerformanceResponse {
+    // A list of validator effective balances mapped 1-to-1 with the request's
+    // public keys.
+    repeated uint64 current_effective_balances = 1;
+    // The slot of when validator's attestation got included in the chain at previous epoch, the slot
+    // is mapped 1-to-1 with the request's public keys.
+    // Deprecated: This field can no longer be fetched from the beacon state after the Altair hard fork.
+    repeated uint64 inclusion_slots = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot", deprecated = true];
+    // The distance of when validator submitted and got included in the chain, the distance
+    // is mapped 1-to-1 with the request's public keys.
+    // Deprecated: This field can no longer be fetched from the beacon state after the Altair hard fork.
+    repeated uint64 inclusion_distances = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot", deprecated = true];
+    // Whether the list of validator recently correctly voted for source at previous epoch, the result
+    // is mapped 1-to-1 with the request's public keys.
+    repeated bool correctly_voted_source = 4;
+    // Whether the list of validator recently correctly voted for target at previous epoch, the result
+    // is mapped 1-to-1 with the request's public keys.
+    repeated bool correctly_voted_target = 5;
+    // Whether the list of validator recently correctly voted for head at previous epoch, the result
+    // is mapped 1-to-1 with the request's public keys.
+    repeated bool correctly_voted_head = 6;
+    // The balance of validators before epoch transition, the balance is mapped 1-to-1 with the requests'
+    // public keys.
+    repeated uint64 balances_before_epoch_transition = 7;
+    // The balance of validators after epoch transition, the balance is mapped 1-to-1 with the requests'
+    // public keys.
+    repeated uint64 balances_after_epoch_transition = 8;
+    // The total number of validators from the request not found in
+    // in the beacon chain.
+    repeated bytes missing_validators = 9;
+    // The average active validator balance in the beacon chain.
+    float average_active_validator_balance = 10;
+    // The public keys in the order they are in of the response.
+    repeated bytes public_keys = 11 [(ethereum.eth.ext.ssz_size) = "?,48"];
+    // The inactivity score of the validator tracks validator participation. [New in Altair]
+    repeated uint64 inactivity_scores = 12;
+}
+
+// DEPRECATED: Prysm Web UI and associated endpoints will be fully removed in a future hard fork.
+message ValidatorQueue {
+    option deprecated = true;
+    // The amount of ether in gwei allowed to enter or exit the active
+    // validator set.
+    uint64 churn_limit = 1;
+
+    // Ordered list of 48 byte public keys awaiting activation. 0th index is the
+    // next key to be processed.
+    repeated bytes activation_public_keys = 2 [(ethereum.eth.ext.ssz_size) = "?,48", deprecated = true];
+
+    // Ordered list of public keys awaiting exit. 0th index is the next key to
+    // be processed.
+    repeated bytes exit_public_keys = 3 [(ethereum.eth.ext.ssz_size) = "?,48", deprecated = true];
+
+    // Ordered list of validator indices awaiting activation. 0th item in the list is the
+    // next validator index to be processed.
+    repeated uint64 activation_validator_indices = 4 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+    // Ordered list of validator indices awaiting exit. 0th item in the list is the
+    // next validator index to be processed.
+    repeated uint64 exit_validator_indices = 5 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+}
+
+message ListValidatorAssignmentsRequest {
+    oneof query_filter {
+        // Epoch to validator assignments for.
+        uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+        // Whether or not to query for the genesis information.
+        bool genesis = 2;
+    }
+    // 48 byte validator public keys to filter assignments for the given epoch.
+    repeated bytes public_keys = 3 [(ethereum.eth.ext.ssz_size) = "?,48"];
+    // Validator indices to filter assignments for the given epoch.
+    repeated uint64 indices = 4 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+    // The maximum number of ValidatorAssignments to return in the response.
+    // This field is optional.
+    int32 page_size = 5;
+
+    // A pagination token returned from a previous call to `ListValidatorAssignments`
+    // that indicates where this listing should continue from.
+    // This field is optional.
+    string page_token = 6;
+}
+
+message ValidatorAssignments {
+    message CommitteeAssignment {
+        // Beacon committees are responsible for crosslinking committee data back to the beacon chain,
+        // they also attest and produce beacon chain blocks. This is a list of validator indices that
+        // are in the same committee as requested validator, everyone in the committee is assigned to the
+        // same slot and same committee.
+        repeated uint64 beacon_committees = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+        // Committee index represents the committee of validator that's in.
+        uint64 committee_index = 2  [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.CommitteeIndex"];
+
+        // Beacon chain slot in which the validator must perform its assigned
+        // duty as an attester.
+        uint64 attester_slot = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+        // Beacon chain slots in which the validator must perform its assigned
+        // duty as a proposer.
+        repeated uint64 proposer_slots = 4 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+        // 48 byte BLS public key.
+        bytes public_key = 5 [(ethereum.eth.ext.ssz_size) = "48", deprecated = true];
+
+        // Validator index in the beacon state.
+        uint64 validator_index = 6 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+    }
+
+    // The epoch for which this set of validator assignments is valid.
+    uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    repeated CommitteeAssignment assignments = 2;
+
+    // A pagination token returned from a previous call to `ListValidatorAssignmentsRequest`
+    // that indicates where this listing should continue from.
+    // This field is optional.
+    string next_page_token = 3;
+
+    // Total count of CommitteeAssignments matching the request filter.
+    int32 total_size = 4;
+}
+
+// DEPRECATED: Prysm Web UI and associated endpoints will be fully removed in a future hard fork.
+message GetValidatorParticipationRequest {
+    option deprecated = true;
+    oneof query_filter {
+        // Epoch to request participation information.
+        uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+        // Whether or not to query for the genesis information.
+        bool genesis = 2;
+    }
+}
+
+// DEPRECATED: Prysm Web UI and associated endpoints will be fully removed in a future hard fork.
+message ValidatorParticipationResponse {
+    option deprecated = true;
+    // Epoch which this message is applicable.
+    uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // Whether or not epoch has been finalized.
+    bool finalized = 2;
+
+    // The actual validator participation metrics.
+    ValidatorParticipation participation = 3;
+}
+
+message AttestationPoolRequest {
+    // The maximum number of objects to return in the response.
+    // This field is optional.
+    int32 page_size = 1;
+
+    // A pagination token returned from a previous call
+    // that indicates where this listing should continue from.
+    // This field is optional.
+    string page_token = 2;
+}
+
+message AttestationPoolResponse {
+    // List of attestations currently in the pool of the beacon chain.
+    repeated Attestation attestations = 1;
+
+    // A pagination token returned from a previous call
+    // that indicates where this listing should continue from.
+    // This field is optional.
+    string next_page_token = 2;
+
+    // Total count of objects matching the request filter.
+    int32 total_size = 3;
+}
+
+// Information about the configuration parameters of the beacon node, such
+// as the slots per epoch, slots per eth1 voting period, and more.
+message BeaconConfig {
+    map<string, string> config = 1;
+}
+
+message SubmitSlashingResponse {
+    // Indices of the validators to be slashed by the submitted
+    // proposer/attester slashing object.
+    repeated uint64 slashed_indices = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+}
+
+message IndividualVotesRequest {
+    // Epoch of the request.
+    uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+    // Validator 48 byte BLS public keys to filter validators for the given epoch.
+    repeated bytes public_keys = 2;
+    // Validator indices to filter validators for the given epoch.
+    repeated uint64 indices = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+}
+
+message IndividualVotesRespond {
+    message IndividualVote {
+        // The epoch of the vote status request.
+        uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+        // The public key of the vote status request.
+        bytes public_key = 2;
+        // The validator index of the request.
+        uint64 validator_index = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+        // Has the validator been slashed.
+        bool is_slashed = 4;
+        // Is the validator withdrawable.
+        bool is_withdrawable_in_current_epoch = 5;
+        // Is the validator active in current epoch.
+        bool is_active_in_current_epoch = 6;
+        // Was the validator active in previous epoch.
+        bool is_active_in_previous_epoch = 7;
+        // Did validator attest for current epoch.
+        bool is_current_epoch_attester = 8;
+        // Did validator attest target for current epoch.
+        bool is_current_epoch_target_attester = 9;
+        // Did validator attest for previous epoch.
+        bool is_previous_epoch_attester = 10;
+        // Did validator attest target for previous epoch.
+        bool is_previous_epoch_target_attester = 11;
+        // Did validator attest head for previous epoch.
+        bool is_previous_epoch_head_attester = 12;
+        // The current effective balance of the validator.
+        uint64 current_epoch_effective_balance_gwei = 13;
+        // The slots of when the validator's attestation got included in the block. Only available in phase0.
+        uint64 inclusion_slot = 14 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot", deprecated = true];
+        // How many slots have passed until the validator's attestation got included in the block. Only available in phase0.
+        uint64 inclusion_distance = 15 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot", deprecated = true];
+        // The inactivity score of the validator tracks validator participation. [New in Altair]
+        uint64 inactivity_score = 16;
+    }
+
+    repeated IndividualVote individual_votes = 1;
+}

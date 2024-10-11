@@ -1,0 +1,19 @@
+# From Bazel's perspective, this is almost equivalent to always specifying
+# --extra_toolchains on every bazel <...> command-line invocation. It also
+# means there is no way to disable the toolchain with the command line. This is
+# useful if you find bazel-hermetic-cc useful enough to compile for all of your
+# targets and tools.
+#
+# With BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1 Bazel stops detecting the default
+# host toolchain. Configuring toolchains is complicated enough, and the
+# auto-detection (read: fallback to non-hermetic toolchain) is a footgun best
+# avoided. This option is not documented in bazel, so may break. If you intend
+# to use the hermetic toolchain exclusively, it won't hurt.
+build --action_env BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+
+# This snippet instructs Bazel to use the registered "new kinds of toolchains".
+# This flag not needed after this issue is closed https://github.com/bazelbuild/bazel/issues/7260
+build --incompatible_enable_cc_toolchain_resolution
+
+# Add a no-op warning for users still using --config=llvm
+build:llvm --unconditional_warning="llvm config is no longer used as clang is now the default compiler"

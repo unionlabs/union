@@ -1,0 +1,17 @@
+load("@prysm//tools/go:def.bzl", "go_test")
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = ["finality_test.go"],
+    data = glob(["*.yaml"]) + [
+        "@consensus_spec_tests_minimal//:test_data",
+    ],
+    eth_network = "minimal",
+    shard_count = 4,
+    tags = [
+        "minimal",
+        "spectest",
+    ],
+    deps = ["//testing/spectest/shared/phase0/finality:go_default_library"],
+)

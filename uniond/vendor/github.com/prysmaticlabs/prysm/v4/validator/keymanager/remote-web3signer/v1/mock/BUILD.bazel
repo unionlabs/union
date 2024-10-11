@@ -1,0 +1,18 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = ["mocks.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/validator/keymanager/remote-web3signer/v1/mock",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//config/fieldparams:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/prysm/v1alpha1/validator-client:go_default_library",
+        "//testing/util:go_default_library",
+        "//validator/keymanager/remote-web3signer/v1:go_default_library",
+        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+    ],
+)

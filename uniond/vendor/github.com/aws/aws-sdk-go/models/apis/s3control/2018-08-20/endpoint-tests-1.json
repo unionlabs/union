@@ -1,0 +1,3778 @@
+{
+    "testCases": [
+        {
+            "documentation": "Vanilla outposts without ARN region + access point ARN@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-west-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Vanilla outposts with ARN region + access point ARN@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "accept an access point ARN@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-west-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "vanilla outposts china@cn-north-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "cn-north-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.cn-north-1.amazonaws.com.cn"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "cn-north-1"
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws-cn:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "cn-north-1"
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws-cn:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws-cn:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "cn-north-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "gov region@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-west-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "gov cloud with fips@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-west-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "govcloud with fips + arn region@us-gov-west-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-gov-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-gov-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-gov-west-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-gov-west-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-gov-west-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "gov region@cn-north-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "cn-north-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.cn-north-1.amazonaws.com.cn"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "cn-north-1"
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws-cn:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "cn-north-1"
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws-cn:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws-cn:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "cn-north-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "gov cloud with fips@cn-north-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "cn-north-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.cn-north-1.amazonaws.com.cn"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "cn-north-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws-cn:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "cn-north-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws-cn:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws-cn:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "cn-north-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "govcloud with fips + arn region@us-gov-west-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-gov-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-gov-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-gov-west-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-gov-west-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-gov-west-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "gov region@af-south-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "af-south-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.af-south-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "af-south-1"
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "af-south-1"
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "af-south-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "gov cloud with fips@af-south-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "af-south-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.af-south-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "af-south-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "af-south-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "af-south-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "govcloud with fips + arn region@us-gov-west-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-gov-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-gov-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-gov-west-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-gov-west-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-gov-west-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "CreateBucket + OutpostId = outposts endpoint@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-east-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2"
+                    },
+                    "operationName": "CreateBucket",
+                    "operationParams": {
+                        "Bucket": "blah",
+                        "OutpostId": "123"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "blah",
+                "OutpostId": "123",
+                "Region": "us-east-2",
+                "RequiresAccountId": false,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "CreateBucket + OutpostId with fips = outposts endpoint@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-east-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "CreateBucket",
+                    "operationParams": {
+                        "Bucket": "blah",
+                        "OutpostId": "123"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "blah",
+                "OutpostId": "123",
+                "Region": "us-east-2",
+                "RequiresAccountId": false,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "CreateBucket without OutpostId = regular endpoint@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-control.us-east-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2"
+                    },
+                    "operationName": "CreateBucket",
+                    "operationParams": {
+                        "Bucket": "blah"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "blah",
+                "Region": "us-east-2",
+                "RequiresAccountId": false,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "ListRegionalBuckets + OutpostId = outposts endpoint@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-east-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2"
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "123456789012",
+                        "OutpostId": "op-123"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "123456789012",
+                "OutpostId": "op-123",
+                "Region": "us-east-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "ListRegionalBuckets without OutpostId = regular endpoint@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://123456789012.s3-control.us-east-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2"
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "123456789012",
+                "Region": "us-east-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "ListRegionalBucket + OutpostId with fips = outposts endpoint@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-east-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "123456789012",
+                        "OutpostId": "op-123"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "123456789012",
+                "OutpostId": "op-123",
+                "Region": "us-east-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "outpost access points support dualstack@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-west-2.api.aws"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::UseDualStack": true
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::UseDualStack": true
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": true,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "outpost access points support dualstack@af-south-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "af-south-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.af-south-1.api.aws"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "af-south-1",
+                        "AWS::UseDualStack": true
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "af-south-1",
+                        "AWS::UseDualStack": true
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "af-south-1",
+                "RequiresAccountId": true,
+                "UseDualStack": true,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "outpost access points support fips + dualstack@af-south-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "af-south-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.af-south-1.api.aws"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "af-south-1",
+                        "AWS::UseFIPS": true,
+                        "AWS::UseDualStack": true
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "af-south-1",
+                        "AWS::UseFIPS": true,
+                        "AWS::UseDualStack": true
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "af-south-1",
+                "RequiresAccountId": true,
+                "UseDualStack": true,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "invalid ARN: must be include outpost ID@us-west-2",
+            "expect": {
+                "error": "Invalid ARN: The Outpost Id was not set"
+            },
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "invalid ARN: must specify access point@us-west-2",
+            "expect": {
+                "error": "Invalid ARN: Expected a 4-component resource"
+            },
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "invalid ARN@us-west-2",
+            "expect": {
+                "error": "Invalid ARN: Expected a 4-component resource"
+            },
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:myaccesspoint",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "when set, AccountId drives AP construction@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://myid-1234.s3-control.us-west-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "AccessPointName": "myaccesspoint",
+                "AccountId": "myid-1234",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Account ID set inline and in ARN but they both match@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-west-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::S3Control::UseArnRegion": false
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "AccountId": "123456789012",
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseArnRegion": false,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Account ID set inline and in ARN and they do not match@us-west-2",
+            "expect": {
+                "error": "Invalid ARN: the accountId specified in the ARN (`123456789012`) does not match the parameter (`999999999999`)"
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::S3Control::UseArnRegion": false
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "AccountId": "999999999999",
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "999999999999",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseArnRegion": false,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "get access point prefixed with account id using endpoint url@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://123456789012.control.vpce-1a2b3c4d-5e6f.s3.us-west-2.vpce.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "SDK::Endpoint": "https://control.vpce-1a2b3c4d-5e6f.s3.us-west-2.vpce.amazonaws.com"
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "AccountId": "123456789012",
+                        "Name": "apname"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "apname",
+                "AccountId": "123456789012",
+                "Endpoint": "https://control.vpce-1a2b3c4d-5e6f.s3.us-west-2.vpce.amazonaws.com",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "endpoint url with s3-outposts@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://beta.example.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "SDK::Endpoint": "https://beta.example.com"
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Endpoint": "https://beta.example.com",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "access point name with a bucket arn@us-west-2",
+            "expect": {
+                "error": "Expected an outpost type `accesspoint`, found `bucket`"
+            },
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Endpoint": "beta.example.com",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "bucket arn with access point name@us-west-2",
+            "expect": {
+                "error": "Invalid ARN: Expected an outpost type `bucket`, found `accesspoint`"
+            },
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "Endpoint": "beta.example.com",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "create bucket with outposts@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://beta.example.com"
+                }
+            },
+            "params": {
+                "Bucket": "bucketname",
+                "Endpoint": "https://beta.example.com",
+                "OutpostId": "op-123",
+                "Region": "us-west-2",
+                "RequiresAccountId": false,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "get bucket with endpoint_url@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://beta.example.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "SDK::Endpoint": "https://beta.example.com"
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Endpoint": "https://beta.example.com",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "ListRegionalBucket + OutpostId endpoint url@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://beta.example.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2",
+                        "SDK::Endpoint": "https://beta.example.com"
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "123456789012",
+                        "OutpostId": "op-123"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "123456789012",
+                "Endpoint": "https://beta.example.com",
+                "OutpostId": "op-123",
+                "Region": "us-east-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "ListRegionalBucket + OutpostId + fips + endpoint url@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://beta.example.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2",
+                        "AWS::UseFIPS": true,
+                        "SDK::Endpoint": "https://beta.example.com"
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "123456789012",
+                        "OutpostId": "op-123"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "123456789012",
+                "Endpoint": "https://beta.example.com",
+                "OutpostId": "op-123",
+                "Region": "us-east-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "ListRegionalBucket + OutpostId + fips + dualstack@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-east-2.api.aws"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2",
+                        "AWS::UseFIPS": true,
+                        "AWS::UseDualStack": true
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "123456789012",
+                        "OutpostId": "op-123"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "123456789012",
+                "OutpostId": "op-123",
+                "Region": "us-east-2",
+                "RequiresAccountId": true,
+                "UseDualStack": true,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "CreateBucket + OutpostId endpoint url@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://beta.example.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2",
+                        "AWS::UseFIPS": true,
+                        "SDK::Endpoint": "https://beta.example.com"
+                    },
+                    "operationName": "CreateBucket",
+                    "operationParams": {
+                        "Bucket": "blah",
+                        "OutpostId": "123"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "blah",
+                "Endpoint": "https://beta.example.com",
+                "OutpostId": "123",
+                "Region": "us-east-2",
+                "RequiresAccountId": false,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "dualstack cannot be used with outposts when an endpoint URL is set@us-west-2.",
+            "expect": {
+                "error": "Invalid Configuration: DualStack and custom endpoint are not supported"
+            },
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "Endpoint": "https://s3-outposts.us-west-2.api.aws",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": true,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "vanilla bucket arn requires account id@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-west-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "CreateAccessPoint",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "Name": "apname",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "bucket arn with UseArnRegion = true (arn region supercedes client configured region)@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "bucket ARN in gov partition (non-fips)@us-gov-east-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-gov-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-gov-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-gov-east-1"
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-gov-east-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "bucket ARN in gov partition with FIPS@us-gov-west-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-gov-west-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-gov-west-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-gov-west-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws-us-gov:s3-outposts:us-gov-west-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws-us-gov:s3-outposts:us-gov-west-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-gov-west-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "bucket ARN in aws partition with FIPS@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-east-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-east-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-east-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-east-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "bucket ARN in aws partition with fips + dualstack@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-east-2.api.aws"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2",
+                        "AWS::UseFIPS": true,
+                        "AWS::UseDualStack": true
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-east-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-east-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-east-2",
+                "RequiresAccountId": true,
+                "UseDualStack": true,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "vanilla bucket arn requires account id@cn-north-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "cn-north-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.cn-north-1.amazonaws.com.cn"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "cn-north-1"
+                    },
+                    "operationName": "CreateAccessPoint",
+                    "operationParams": {
+                        "Bucket": "arn:aws-cn:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "Name": "apname",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws-cn:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "cn-north-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "bucket arn with UseArnRegion = true (arn region supercedes client configured region)@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "bucket ARN in gov partition (non-fips)@us-gov-east-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-gov-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-gov-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-gov-east-1"
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-gov-east-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "bucket ARN in gov partition with FIPS@us-gov-west-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-gov-west-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-gov-west-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-gov-west-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws-us-gov:s3-outposts:us-gov-west-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws-us-gov:s3-outposts:us-gov-west-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-gov-west-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "bucket ARN in aws partition with FIPS@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-east-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-east-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-east-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-east-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "Outposts support dualstack @us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-west-2.api.aws"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::UseDualStack": true
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": true,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "vanilla bucket arn requires account id@af-south-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "af-south-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.af-south-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "af-south-1"
+                    },
+                    "operationName": "CreateAccessPoint",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "Name": "apname",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:af-south-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "af-south-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "bucket arn with UseArnRegion = true (arn region supercedes client configured region)@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "bucket ARN in gov partition (non-fips)@us-gov-east-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-gov-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-gov-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-gov-east-1"
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws-us-gov:s3-outposts:us-gov-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-gov-east-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "bucket ARN in gov partition with FIPS@us-gov-west-1",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-gov-west-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-gov-west-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-gov-west-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws-us-gov:s3-outposts:us-gov-west-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws-us-gov:s3-outposts:us-gov-west-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-gov-west-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "bucket ARN in aws partition with FIPS@us-east-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts-fips.us-east-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-east-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-east-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-east-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "Invalid ARN: missing outpost id and bucket@us-west-2",
+            "expect": {
+                "error": "Invalid ARN: The Outpost Id was not set"
+            },
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Invalid ARN: missing bucket@us-west-2",
+            "expect": {
+                "error": "Invalid ARN: Expected a 4-component resource"
+            },
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Invalid ARN: missing outpost and bucket ids@us-west-2",
+            "expect": {
+                "error": "Invalid ARN: Expected a 4-component resource"
+            },
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:bucket",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Invalid ARN: missing bucket id@us-west-2",
+            "expect": {
+                "error": "Invalid ARN: expected a bucket name"
+            },
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "account id inserted into hostname@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://1234567890.s3-control.us-west-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "AccountId": "1234567890",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "account id prefix with dualstack@us-east-1",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://1234567890.s3-control.dualstack.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "AccountId": "1234567890",
+                "Region": "us-east-1",
+                "RequiresAccountId": true,
+                "UseDualStack": true,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "account id prefix with fips@us-east-1",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://1234567890.s3-control-fips.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "AccountId": "1234567890",
+                "Region": "us-east-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "custom account id prefix with fips@us-east-1",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://123456789012.s3-control-fips.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "AccountId": "123456789012",
+                "Region": "us-east-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "standard url @ us-east-1",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-control.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-east-1"
+            }
+        },
+        {
+            "documentation": "fips url @ us-east-1",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-control-fips.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "dualstack url @ us-east-1",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-control.dualstack.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseDualStack": true
+            }
+        },
+        {
+            "documentation": "fips,dualstack url @ us-east-1",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-control-fips.dualstack.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseDualStack": true,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "standard url @ cn-north-1",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "cn-north-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-control.cn-north-1.amazonaws.com.cn"
+                }
+            },
+            "params": {
+                "Region": "cn-north-1"
+            }
+        },
+        {
+            "documentation": "fips @ cn-north-1",
+            "expect": {
+                "error": "Partition does not support FIPS"
+            },
+            "params": {
+                "Region": "cn-north-1",
+                "UseDualStack": true,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "custom account id prefix @us-east-1",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://123456789012.s3-control.us-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-1"
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "123456789012",
+                "Region": "us-east-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "invalid account id prefix @us-east-1",
+            "expect": {
+                "error": "AccountId must only contain a-z, A-Z, 0-9 and `-`."
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-1"
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "/?invalid&not-host*label"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "/?invalid&not-host*label",
+                "Region": "us-east-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "custom account id prefix with fips@us-east-1",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://123456789012.s3-control-fips.us-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "123456789012",
+                "Region": "us-east-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "custom account id prefix with dualstack,fips@us-east-1",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://123456789012.s3-control-fips.dualstack.us-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-1",
+                        "AWS::UseFIPS": true,
+                        "AWS::UseDualStack": true
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "123456789012",
+                "Region": "us-east-1",
+                "RequiresAccountId": true,
+                "UseDualStack": true,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "custom account id with custom endpoint",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://123456789012.example.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-1",
+                        "SDK::Endpoint": "https://example.com"
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "123456789012",
+                "Region": "us-east-1",
+                "RequiresAccountId": true,
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "RequiresAccountId with AccountId unset",
+            "expect": {
+                "error": "AccountId is required but not set"
+            },
+            "params": {
+                "Region": "us-east-1",
+                "RequiresAccountId": true
+            }
+        },
+        {
+            "documentation": "RequiresAccountId with AccountId unset and custom endpoint",
+            "expect": {
+                "error": "AccountId is required but not set"
+            },
+            "params": {
+                "Region": "us-east-1",
+                "Endpoint": "https://beta.example.com",
+                "RequiresAccountId": true
+            }
+        },
+        {
+            "documentation": "RequiresAccountId with invalid AccountId and custom endpoint",
+            "expect": {
+                "error": "AccountId must only contain a-z, A-Z, 0-9 and `-`."
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-1",
+                        "SDK::Endpoint": "https://beta.example.com"
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "/?invalid&not-host*label"
+                    }
+                }
+            ],
+            "params": {
+                "Region": "us-east-1",
+                "Endpoint": "https://beta.example.com",
+                "AccountId": "/?invalid&not-host*label",
+                "RequiresAccountId": true
+            }
+        },
+        {
+            "documentation": "account id with custom endpoint, fips",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://123456789012.example.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-1",
+                        "AWS::UseFIPS": true,
+                        "SDK::Endpoint": "https://example.com"
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "123456789012",
+                "Region": "us-east-1",
+                "RequiresAccountId": true,
+                "Endpoint": "https://example.com",
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "custom endpoint, fips",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://example.com"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "Endpoint": "https://example.com",
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "custom endpoint, fips",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://example.com"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "Endpoint": "https://example.com",
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "custom endpoint, DualStack",
+            "expect": {
+                "error": "Invalid Configuration: DualStack and custom endpoint are not supported"
+            },
+            "params": {
+                "Region": "us-east-1",
+                "Endpoint": "https://example.com",
+                "UseFIPS": false,
+                "UseDualStack": true
+            }
+        },
+        {
+            "documentation": "region not set",
+            "expect": {
+                "error": "Region must be set"
+            }
+        },
+        {
+            "documentation": "invalid partition",
+            "expect": {
+                "error": "Invalid region: region was not a valid DNS name."
+            },
+            "params": {
+                "Region": "invalid-region 42"
+            }
+        },
+        {
+            "documentation": "ListRegionalBuckets + OutpostId without accountId set.",
+            "expect": {
+                "error": "AccountId is required but not set"
+            },
+            "params": {
+                "OutpostId": "op-123",
+                "Region": "us-east-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "ListRegionalBuckets + OutpostId with invalid accountId set.",
+            "expect": {
+                "error": "AccountId must only contain a-z, A-Z, 0-9 and `-`."
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-east-2"
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "OutpostId": "op-123",
+                        "AccountId": "/?invalid&not-host*label"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "/?invalid&not-host*label",
+                "OutpostId": "op-123",
+                "Region": "us-east-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "accesspoint set but missing accountId",
+            "expect": {
+                "error": "AccountId is required but not set"
+            },
+            "params": {
+                "AccessPointName": "myaccesspoint",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "outpost accesspoint ARN with missing accountId",
+            "expect": {
+                "error": "Invalid ARN: missing account ID"
+            },
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2::outpost:op-01234567890123456:outpost:op1",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "bucket ARN with missing accountId",
+            "expect": {
+                "error": "Invalid ARN: missing account ID"
+            },
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2::outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "endpoint url with accesspoint (non-arn)",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://123456789012.beta.example.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "SDK::Endpoint": "https://beta.example.com"
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "apname",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "apname",
+                "Endpoint": "https://beta.example.com",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "access point name with an accesspoint arn@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://beta.example.com"
+                }
+            },
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "Endpoint": "https://beta.example.com",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "DualStack + Custom endpoint is not supported(non-arn)",
+            "expect": {
+                "error": "Invalid Configuration: DualStack and custom endpoint are not supported"
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::UseDualStack": true,
+                        "SDK::Endpoint": "https://beta.example.com"
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "apname",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "apname",
+                "Endpoint": "https://beta.example.com",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": true,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "get bucket with custom endpoint and dualstack is not supported@us-west-2",
+            "expect": {
+                "error": "Invalid Configuration: DualStack and custom endpoint are not supported"
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::UseDualStack": true,
+                        "SDK::Endpoint": "https://s3-outposts.us-west-2.api.aws"
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Endpoint": "https://s3-outposts.us-west-2.api.aws",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": true,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "ListRegionalBuckets + OutpostId with fips in CN.",
+            "expect": {
+                "error": "Partition does not support FIPS"
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "cn-north-1",
+                        "AWS::UseFIPS": true
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "OutpostId": "op-123",
+                        "AccountId": "0123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "0123456789012",
+                "OutpostId": "op-123",
+                "Region": "cn-north-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "ListRegionalBuckets + invalid OutpostId.",
+            "expect": {
+                "error": "OutpostId must only contain a-z, A-Z, 0-9 and `-`."
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-1"
+                    },
+                    "operationName": "ListRegionalBuckets",
+                    "operationParams": {
+                        "OutpostId": "?outpost/invalid+",
+                        "AccountId": "0123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccountId": "0123456789012",
+                "OutpostId": "?outpost/invalid+",
+                "Region": "us-west-1",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "bucket ARN with mismatched accountId",
+            "expect": {
+                "error": "Invalid ARN: the accountId specified in the ARN (`999999`) does not match the parameter (`0123456789012`)"
+            },
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-west-2:999999:outpost:op-01234567890123456:bucket:mybucket",
+                "AccountId": "0123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "OutpostId with invalid region",
+            "expect": {
+                "error": "Invalid region: region was not a valid DNS name."
+            },
+            "params": {
+                "OutpostId": "op-123",
+                "Region": "invalid-region 42",
+                "AccountId": "0123456",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "OutpostId with RequireAccountId unset",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-west-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "OutpostId": "op-123",
+                "Region": "us-west-2",
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Outpost Accesspoint ARN with arn region and client region mismatch with UseArnRegion=false",
+            "expect": {
+                "error": "Invalid configuration: region from ARN `us-east-1` does not match client region `us-west-2` and UseArnRegion is `false`"
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::S3Control::UseArnRegion": false
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::S3Control::UseArnRegion": false
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseArnRegion": false,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Outpost Bucket ARN with arn region and client region mismatch with UseArnRegion=false",
+            "expect": {
+                "error": "Invalid configuration: region from ARN `us-east-1` does not match client region `us-west-2` and UseArnRegion is `false`"
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "SDK::Endpoint": "https://beta.example.com",
+                        "AWS::S3Control::UseArnRegion": false
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Endpoint": "https://beta.example.com",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseArnRegion": false,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Accesspoint ARN with region mismatch and UseArnRegion unset",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Bucket ARN with region mismatch and UseArnRegion unset",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-east-1",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-east-1.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-east-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Outpost Bucket ARN with partition mismatch with UseArnRegion=true",
+            "expect": {
+                "error": "Client was configured for partition `aws` but ARN has `aws-cn`"
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::S3Control::UseArnRegion": true
+                    },
+                    "operationName": "GetBucket",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseArnRegion": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Accesspoint ARN with partition mismatch and UseArnRegion=true",
+            "expect": {
+                "error": "Client was configured for partition `aws` but ARN has `aws-cn`"
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::S3Control::UseArnRegion": true
+                    },
+                    "operationName": "GetAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2",
+                        "AWS::S3Control::UseArnRegion": true
+                    },
+                    "operationName": "DeleteAccessPoint",
+                    "operationParams": {
+                        "Name": "arn:aws:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                        "AccountId": "123456789012"
+                    }
+                }
+            ],
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "AccountId": "123456789012",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseArnRegion": true,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "Accesspoint ARN with region mismatch, UseArnRegion=false and custom endpoint",
+            "expect": {
+                "error": "Invalid configuration: region from ARN `cn-north-1` does not match client region `us-west-2` and UseArnRegion is `false`"
+            },
+            "params": {
+                "AccessPointName": "arn:aws:s3-outposts:cn-north-1:123456789012:outpost:op-01234567890123456:accesspoint:myaccesspoint",
+                "Region": "us-west-2",
+                "Endpoint": "https://example.com",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseArnRegion": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "outpost bucket arn@us-west-2",
+            "expect": {
+                "endpoint": {
+                    "headers": {
+                        "x-amz-account-id": [
+                            "123456789012"
+                        ],
+                        "x-amz-outpost-id": [
+                            "op-01234567890123456"
+                        ]
+                    },
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3-outposts",
+                                "signingRegion": "us-west-2",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://s3-outposts.us-west-2.amazonaws.com"
+                }
+            },
+            "operationInputs": [
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "GetBucketVersioning",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012"
+                    }
+                },
+                {
+                    "builtInParams": {
+                        "AWS::Region": "us-west-2"
+                    },
+                    "operationName": "PutBucketVersioning",
+                    "operationParams": {
+                        "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                        "AccountId": "123456789012",
+                        "VersioningConfiguration": {
+                            "Status": "Enabled"
+                        }
+                    }
+                }
+            ],
+            "params": {
+                "Bucket": "arn:aws:s3-outposts:us-west-2:123456789012:outpost:op-01234567890123456:bucket:mybucket",
+                "Region": "us-west-2",
+                "RequiresAccountId": true,
+                "UseDualStack": false,
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "S3 Snow Control with bucket",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "snow",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://10.0.1.12:433"
+                }
+            },
+            "params": {
+                "Region": "snow",
+                "Bucket": "bucketName",
+                "Endpoint": "https://10.0.1.12:433",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "S3 Snow Control without bucket",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "snow",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://10.0.1.12:433"
+                }
+            },
+            "params": {
+                "Region": "snow",
+                "Endpoint": "https://10.0.1.12:433",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "S3 Snow Control with bucket and without port",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "snow",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "https://10.0.1.12"
+                }
+            },
+            "params": {
+                "Region": "snow",
+                "Bucket": "bucketName",
+                "Endpoint": "https://10.0.1.12",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "S3 Snow Control with bucket and with DNS",
+            "expect": {
+                "endpoint": {
+                    "properties": {
+                        "authSchemes": [
+                            {
+                                "name": "sigv4",
+                                "signingName": "s3",
+                                "signingRegion": "snow",
+                                "disableDoubleEncoding": true
+                            }
+                        ]
+                    },
+                    "url": "http://s3snow.com"
+                }
+            },
+            "params": {
+                "Region": "snow",
+                "Bucket": "bucketName",
+                "Endpoint": "http://s3snow.com",
+                "UseFIPS": false,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "S3 Snow Control with FIPS enabled",
+            "expect": {
+                "error": "S3 Snow does not support FIPS"
+            },
+            "params": {
+                "Region": "snow",
+                "Bucket": "bucketName",
+                "Endpoint": "https://10.0.1.12:433",
+                "UseFIPS": true,
+                "UseDualStack": false
+            }
+        },
+        {
+            "documentation": "S3 Snow Control with Dualstack enabled",
+            "expect": {
+                "error": "S3 Snow does not support DualStack"
+            },
+            "params": {
+                "Region": "snow",
+                "Bucket": "bucketName",
+                "Endpoint": "https://10.0.1.12:433",
+                "UseFIPS": false,
+                "UseDualStack": true
+            }
+        }
+    ],
+    "version": "1.0"
+}

@@ -1,0 +1,39 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("//tools:prysm_image.bzl", "prysm_image_upload")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/tools/http-request-sink",
+    visibility = ["//visibility:private"],
+    deps = ["//config/params:go_default_library"],
+)
+
+go_binary(
+    name = "http-request-sink",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["main_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//config/params:go_default_library",
+        "//testing/require:go_default_library",
+    ],
+)
+
+prysm_image_upload(
+    name = "push_images",
+    binary = ":http-request-sink",
+    entrypoint = ["/http-request-sink"],
+    repository = "gcr.io/prysmaticlabs/prysm/http-request-sink",
+    symlinks = {
+        # Backwards compatibility for images that depended on the old filepath.
+        "/app/tools/http-request-sink/http-request-sink": "/http-request-sink",
+    },
+    tags = ["manual"],
+)

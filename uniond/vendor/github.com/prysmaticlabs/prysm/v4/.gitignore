@@ -1,0 +1,43 @@
+# Ignore bazel directories
+bazel-*
+
+.DS_Store
+.swp
+
+# Ignore VI/Vim swapfiles
+.*.sw?
+
+# IntelliJ
+.idea
+.ijwb
+
+# delve debugger output (not sure how to get rid of these)
+**/debug.test
+
+# Coverage outputs
+coverage.txt
+profile.out
+profile.grind
+
+# Nodejs
+node_modules
+yarn-error.log
+.vscode/
+
+# Ignore password file
+password.txt
+
+# Dist files
+dist
+
+# deepsource cli
+bin
+
+# p2p metaData
+metaData
+
+# execution API authentication
+jwt.hex
+
+# manual testing
+tmp

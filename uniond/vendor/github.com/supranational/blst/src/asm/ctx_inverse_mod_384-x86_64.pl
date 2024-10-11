@@ -119,6 +119,9 @@ ct_inverse_mod_383\$1:
 	mov	$out_ptr, 8*4(%rsp)
 	mov	$nx_ptr, 8*5(%rsp)
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($in_ptr), @acc[0]	# load input
 	mov	8*1($in_ptr), @acc[1]
 	mov	8*2($in_ptr), @acc[2]
@@ -312,6 +315,9 @@ $code.=<<___;
 	mov	%rax, @acc[0]		# mask |modulus|
 	mov	%rax, @acc[1]
 	mov	%rax, @acc[2]
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	and	8*0($in_ptr), @acc[0]
 	and	8*1($in_ptr), @acc[1]
 	mov	%rax, @acc[3]
@@ -532,7 +538,7 @@ $code.=<<___;
 	mov	@acc[10], 8*10(%rdx)
 	mov	%rax,     8*11(%rdx)
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=@acc[0]
 .size	__smulx_767x63,.-__smulx_767x63
 ___
 }
@@ -614,7 +620,7 @@ $code.=<<___;
 	mov	@acc[4], 8*4($out_ptr)
 	mov	@acc[5], 8*5($out_ptr)
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=@acc[0]
 .size	__smulx_383x63,.-__smulx_383x63
 ___
 ########################################################################
@@ -742,7 +748,7 @@ $code.=<<___;
 	add	$fx, %rdx
 	add	$fx, $g0
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=@acc[0]
 .size	__smulx_383_n_shift_by_31,.-__smulx_383_n_shift_by_31
 ___
 } {
@@ -821,7 +827,7 @@ $code.=<<___;
 	add	$fx, %rdx
 	add	$fx, $g0
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=@acc[0]
 .size	__smulx_191_n_shift_by_31,.-__smulx_191_n_shift_by_31
 ___
 } }
@@ -952,7 +958,7 @@ __inner_loop_31:		################# by Thomas Pornin
 	sub	$bias, $f1
 	sub	$bias, $g1
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=$a_lo
 .size	__inner_loop_31,.-__inner_loop_31
 
 .type	__tail_loop_53,\@abi-omnipotent
@@ -992,7 +998,7 @@ __tail_loop_53:
 	sub	\$1, $cnt
 	jnz	.Loop_53
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=$a_lo
 .size	__tail_loop_53,.-__tail_loop_53
 ___
 }

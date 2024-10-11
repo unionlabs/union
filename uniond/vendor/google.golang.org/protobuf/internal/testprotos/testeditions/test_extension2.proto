@@ -1,0 +1,26 @@
+// Copyright 2024 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+edition = "2023";
+
+package goproto.proto.testeditions;
+
+import "internal/testprotos/testeditions/test_extension.proto";
+
+option go_package = "google.golang.org/protobuf/internal/testprotos/testeditions";
+option features.repeated_field_encoding = PACKED;
+
+extend TestFeatureResolution {
+  repeated int32 other_file_global_expanded_extension_overriden = 6
+      [features.repeated_field_encoding = EXPANDED];
+  repeated int32 other_file_global_packed_extension = 7;
+}
+
+message OtherRepeatedFieldEncoding {
+  extend TestFeatureResolution {
+    repeated int32 other_file_message_expanded_extension_overriden = 8
+        [features.repeated_field_encoding = EXPANDED];
+    repeated int32 other_file_message_packed_extension = 9;
+  }
+}

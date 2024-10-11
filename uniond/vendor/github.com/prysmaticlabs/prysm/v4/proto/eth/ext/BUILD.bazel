@@ -1,0 +1,59 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+##############################################################################
+# Common
+##############################################################################
+
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+# gazelle:ignore
+proto_library(
+    name = "proto",
+    srcs = [
+        "options.proto",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["@com_google_protobuf//:descriptor_proto"],
+)
+
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("//tools:ssz.bzl", "SSZ_DEPS", "ssz_gen_marshal")
+
+go_proto_library(
+    name = "go_proto",
+    compilers = [
+        "@com_github_prysmaticlabs_protoc_gen_go_cast//:go_cast",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/proto/eth/ext",
+    proto = ":proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@googleapis//google/api:annotations_go_proto",
+        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
+        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
+        "@org_golang_google_protobuf//runtime/protoimpl:go_default_library",
+        "@org_golang_google_protobuf//types/descriptorpb:go_default_library",
+    ],
+)
+
+go_library(
+    name = "go_default_library",
+    embed = [":ext_go_proto"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/proto/eth/ext",
+    visibility = ["//visibility:public"],
+    deps = SSZ_DEPS + [
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
+        "@io_bazel_rules_go//proto/wkt:empty_go_proto",
+        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
+        "@org_golang_google_protobuf//runtime/protoimpl:go_default_library",
+    ],  # keep
+)
+
+go_proto_library(
+    name = "ext_go_proto",
+    importpath = "github.com/prysmaticlabs/prysm/v4/proto/eth/ext",
+    proto = ":proto",
+    visibility = ["//visibility:public"],
+)

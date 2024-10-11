@@ -1,0 +1,35 @@
+name: Build Callbacks Simd Image
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The tag of the image to build'
+        required: true
+        type: string
+
+env:
+   REGISTRY: ghcr.io
+   ORG: cosmos
+   IMAGE_NAME: ibc-go-callbacks-simd
+   GIT_TAG: "${{ inputs.tag }}"
+
+jobs:
+   build-image-at-tag:
+      runs-on: ubuntu-latest
+      steps:
+         - uses: actions/checkout@v4
+           with:
+            ref: "${{ env.GIT_TAG }}"
+            fetch-depth: 0
+         - name: Log in to the Container registry
+           uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d
+           with:
+              registry: ${{ env.REGISTRY }}
+              username: ${{ github.actor }}
+              password: ${{ secrets.GITHUB_TOKEN }}
+         - name: Build image
+           run: |
+            # remove any `/` characters from the docker tag and replace them with a -
+            docker_tag="$(echo $GIT_TAG | sed 's/\//-/')"
+            docker build . -t "${REGISTRY}/${ORG}/${IMAGE_NAME}:${docker_tag}" -f modules/apps/callbacks/Dockerfile
+            docker push "${REGISTRY}/${ORG}/${IMAGE_NAME}:${docker_tag}"

@@ -1,0 +1,8 @@
+{
+  "cert_configs": {
+    "workload": {
+      "cert_path": "testdata/workload_cert_invalid.txt",
+      "key_path": "testdata/workload_key.pem"
+    }
+  }
+}

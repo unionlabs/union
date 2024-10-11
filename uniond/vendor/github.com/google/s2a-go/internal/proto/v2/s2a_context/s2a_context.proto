@@ -1,0 +1,58 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package s2a.proto.v2;
+
+option go_package = "github.com/google/s2a/internal/proto/v2/s2a_context_go_proto";
+
+import "internal/proto/common/common.proto";
+
+message S2AContext {
+  // The SPIFFE ID from the peer leaf certificate, if present.
+  //
+  // This field is only populated if the leaf certificate is a valid SPIFFE
+  // SVID; in particular, there is a unique URI SAN and this URI SAN is a valid
+  // SPIFFE ID.
+  string leaf_cert_spiffe_id = 1;
+
+  // The URIs that are present in the SubjectAltName extension of the peer leaf
+  // certificate.
+  //
+  // Note that the extracted URIs are not validated and may not be properly
+  // formatted.
+  repeated string leaf_cert_uris = 2;
+
+  // The DNSNames that are present in the SubjectAltName extension of the peer
+  // leaf certificate.
+  repeated string leaf_cert_dnsnames = 3;
+
+  // The (ordered) list of fingerprints in the certificate chain used to verify
+  // the given leaf certificate. The order MUST be from leaf certificate
+  // fingerprint to root certificate fingerprint.
+  //
+  // A fingerprint is the base-64 encoding of the SHA256 hash of the
+  // DER-encoding of a certificate. The list MAY be populated even if the peer
+  // certificate chain was NOT validated successfully.
+  repeated string peer_certificate_chain_fingerprints = 4;
+
+  // The local identity used during session setup.
+  s2a.proto.Identity local_identity = 5;
+
+  // The SHA256 hash of the DER-encoding of the local leaf certificate used in
+  // the handshake.
+  bytes local_leaf_cert_fingerprint = 6;
+}
+

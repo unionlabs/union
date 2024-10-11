@@ -1,0 +1,44 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "doc.go",
+        "network_encoding.go",
+        "ssz.go",
+        "varint.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/encoder",
+    visibility = [
+        "//beacon-chain:__subpackages__",
+        "//cmd:__subpackages__",
+    ],
+    deps = [
+        "//config/params:go_default_library",
+        "//math:go_default_library",
+        "@com_github_gogo_protobuf//proto:go_default_library",
+        "@com_github_golang_snappy//:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_prysmaticlabs_fastssz//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "snappy_test.go",
+        "ssz_test.go",
+        "varint_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//config/params:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/util:go_default_library",
+        "@com_github_gogo_protobuf//proto:go_default_library",
+        "@com_github_golang_snappy//:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
+    ],
+)

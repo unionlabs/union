@@ -1,0 +1,379 @@
+{
+  "version": "1.0",
+  "examples": {
+    "DeleteScalingPolicy": [
+      {
+        "input": {
+          "PolicyName": "web-app-cpu-lt-25",
+          "ResourceId": "service/default/web-app",
+          "ScalableDimension": "ecs:service:DesiredCount",
+          "ServiceNamespace": "ecs"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example deletes a scaling policy for the Amazon ECS service called web-app, which is running in the default cluster.",
+        "id": "to-delete-a-scaling-policy-1470863892689",
+        "title": "To delete a scaling policy"
+      }
+    ],
+    "DeleteScheduledAction": [
+      {
+        "input": {
+          "ResourceId": "fleet/sample-fleet",
+          "ScalableDimension": "appstream:fleet:DesiredCapacity",
+          "ScheduledActionName": "my-recurring-action",
+          "ServiceNamespace": "appstream"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example deletes a scheduled action for the AppStream 2.0 fleet called sample-fleet.",
+        "id": "to-delete-a-scheduled-action-1677963329606",
+        "title": "To delete a scheduled action"
+      }
+    ],
+    "DeregisterScalableTarget": [
+      {
+        "input": {
+          "ResourceId": "service/default/web-app",
+          "ScalableDimension": "ecs:service:DesiredCount",
+          "ServiceNamespace": "ecs"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example deregisters a scalable target for an Amazon ECS service called web-app that is running in the default cluster.",
+        "id": "to-deregister-a-scalable-target-1470864164895",
+        "title": "To deregister a scalable target"
+      }
+    ],
+    "DescribeScalableTargets": [
+      {
+        "input": {
+          "ServiceNamespace": "ecs"
+        },
+        "output": {
+          "ScalableTargets": [
+            {
+              "CreationTime": "2019-05-06T11:21:46.199Z",
+              "MaxCapacity": 10,
+              "MinCapacity": 1,
+              "ResourceId": "service/default/web-app",
+              "RoleARN": "arn:aws:iam::012345678910:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService",
+              "ScalableDimension": "ecs:service:DesiredCount",
+              "ServiceNamespace": "ecs",
+              "SuspendedState": {
+                "DynamicScalingInSuspended": false,
+                "DynamicScalingOutSuspended": false,
+                "ScheduledScalingSuspended": false
+              }
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example describes the scalable targets for the ECS service namespace.",
+        "id": "to-describe-scalable-targets-1470864286961",
+        "title": "To describe scalable targets"
+      }
+    ],
+    "DescribeScalingActivities": [
+      {
+        "input": {
+          "ResourceId": "service/default/web-app",
+          "ScalableDimension": "ecs:service:DesiredCount",
+          "ServiceNamespace": "ecs"
+        },
+        "output": {
+          "ScalingActivities": [
+            {
+              "ActivityId": "e6c5f7d1-dbbb-4a3f-89b2-51f33e766399",
+              "Cause": "monitor alarm web-app-cpu-lt-25 in state ALARM triggered policy web-app-cpu-lt-25",
+              "Description": "Setting desired count to 1.",
+              "EndTime": "2019-05-06T16:04:32.111Z",
+              "ResourceId": "service/default/web-app",
+              "ScalableDimension": "ecs:service:DesiredCount",
+              "ServiceNamespace": "ecs",
+              "StartTime": "2019-05-06T16:03:58.171Z",
+              "StatusCode": "Successful",
+              "StatusMessage": "Successfully set desired count to 1. Change successfully fulfilled by ecs."
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example describes the scaling activities for an Amazon ECS service called web-app that is running in the default cluster.",
+        "id": "to-describe-scaling-activities-for-a-scalable-target-1470864398629",
+        "title": "To describe scaling activities for a scalable target"
+      }
+    ],
+    "DescribeScalingPolicies": [
+      {
+        "input": {
+          "ServiceNamespace": "ecs"
+        },
+        "output": {
+          "NextToken": "",
+          "ScalingPolicies": [
+            {
+              "Alarms": [
+                {
+                  "AlarmARN": "arn:aws:cloudwatch:us-west-2:012345678910:alarm:web-app-cpu-gt-75",
+                  "AlarmName": "web-app-cpu-gt-75"
+                }
+              ],
+              "CreationTime": "2019-05-06T12:11:39.230Z",
+              "PolicyARN": "arn:aws:autoscaling:us-west-2:012345678910:scalingPolicy:6d8972f3-efc8-437c-92d1-6270f29a66e7:resource/ecs/service/default/web-app:policyName/web-app-cpu-gt-75",
+              "PolicyName": "web-app-cpu-gt-75",
+              "PolicyType": "StepScaling",
+              "ResourceId": "service/default/web-app",
+              "ScalableDimension": "ecs:service:DesiredCount",
+              "ServiceNamespace": "ecs",
+              "StepScalingPolicyConfiguration": {
+                "AdjustmentType": "PercentChangeInCapacity",
+                "Cooldown": 60,
+                "StepAdjustments": [
+                  {
+                    "MetricIntervalLowerBound": 0,
+                    "ScalingAdjustment": 200
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example describes the scaling policies for the ECS service namespace.",
+        "id": "to-describe-scaling-policies-1470864609734",
+        "title": "To describe scaling policies"
+      }
+    ],
+    "DescribeScheduledActions": [
+      {
+        "input": {
+          "ServiceNamespace": "dynamodb"
+        },
+        "output": {
+          "ScheduledActions": [
+            {
+              "CreationTime": 1561571888.361,
+              "ResourceId": "table/my-table",
+              "ScalableDimension": "dynamodb:table:WriteCapacityUnits",
+              "ScalableTargetAction": {
+                "MaxCapacity": 20,
+                "MinCapacity": 15
+              },
+              "Schedule": "at(2019-05-20T18:35:00)",
+              "ScheduledActionARN": "arn:aws:autoscaling:us-west-2:123456789012:scheduledAction:2d36aa3b-cdf9-4565-b290-81db519b227d:resource/dynamodb/table/my-table:scheduledActionName/my-first-scheduled-action",
+              "ScheduledActionName": "my-first-scheduled-action",
+              "ServiceNamespace": "dynamodb"
+            },
+            {
+              "CreationTime": 1561571946.021,
+              "ResourceId": "table/my-table",
+              "ScalableDimension": "dynamodb:table:WriteCapacityUnits",
+              "ScalableTargetAction": {
+                "MaxCapacity": 10,
+                "MinCapacity": 5
+              },
+              "Schedule": "at(2019-05-20T18:40:00)",
+              "ScheduledActionARN": "arn:aws:autoscaling:us-west-2:123456789012:scheduledAction:2d36aa3b-cdf9-4565-b290-81db519b227d:resource/dynamodb/table/my-table:scheduledActionName/my-second-scheduled-action",
+              "ScheduledActionName": "my-second-scheduled-action",
+              "ServiceNamespace": "dynamodb"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example describes the scheduled actions for the dynamodb service namespace.",
+        "id": "to-describe-scheduled-actions-1677965249349",
+        "title": "To describe scheduled actions"
+      }
+    ],
+    "ListTagsForResource": [
+      {
+        "input": {
+          "ResourceARN": "arn:aws:application-autoscaling:us-west-2:123456789012:scalable-target/1234abcd56ab78cd901ef1234567890ab123"
+        },
+        "output": {
+          "Tags": {
+            "environment": "production"
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example lists the tag key names and values that are attached to the scalable target specified by its ARN.",
+        "id": "to-list-tags-for-a-scalable-target-1677971474903",
+        "title": "To list tags for a scalable target"
+      }
+    ],
+    "PutScalingPolicy": [
+      {
+        "input": {
+          "PolicyName": "cpu75-target-tracking-scaling-policy",
+          "PolicyType": "TargetTrackingScaling",
+          "ResourceId": "service/default/web-app",
+          "ScalableDimension": "ecs:service:DesiredCount",
+          "ServiceNamespace": "ecs",
+          "TargetTrackingScalingPolicyConfiguration": {
+            "PredefinedMetricSpecification": {
+              "PredefinedMetricType": "ECSServiceAverageCPUUtilization"
+            },
+            "ScaleInCooldown": 60,
+            "ScaleOutCooldown": 60,
+            "TargetValue": 75
+          }
+        },
+        "output": {
+          "Alarms": [
+            {
+              "AlarmARN": "arn:aws:cloudwatch:us-west-2:012345678910:alarm:TargetTracking-service/default/web-app-AlarmHigh-d4f0770c-b46e-434a-a60f-3b36d653feca",
+              "AlarmName": "TargetTracking-service/default/web-app-AlarmHigh-d4f0770c-b46e-434a-a60f-3b36d653feca"
+            },
+            {
+              "AlarmARN": "arn:aws:cloudwatch:us-west-2:012345678910:alarm:TargetTracking-service/default/web-app-AlarmLow-1b437334-d19b-4a63-a812-6c67aaf2910d",
+              "AlarmName": "TargetTracking-service/default/web-app-AlarmLow-1b437334-d19b-4a63-a812-6c67aaf2910d"
+            }
+          ],
+          "PolicyARN": "arn:aws:autoscaling:us-west-2:012345678910:scalingPolicy:6d8972f3-efc8-437c-92d1-6270f29a66e7:resource/ecs/service/default/web-app:policyName/cpu75-target-tracking-scaling-policy"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example applies a target tracking scaling policy with a predefined metric specification to an Amazon ECS service called web-app in the default cluster. The policy keeps the average CPU utilization of the service at 75 percent, with scale-out and scale-in cooldown periods of 60 seconds.",
+        "id": "to-apply-a-target-tracking-scaling-policy-with-a-predefined-metric-specification-1569364247984",
+        "title": "To apply a target tracking scaling policy with a predefined metric specification"
+      }
+    ],
+    "PutScheduledAction": [
+      {
+        "input": {
+          "ResourceId": "table/TestTable",
+          "ScalableDimension": "dynamodb:table:WriteCapacityUnits",
+          "ScalableTargetAction": {
+            "MinCapacity": 6
+          },
+          "Schedule": "cron(15 12 * * ? *)",
+          "ScheduledActionName": "my-recurring-action",
+          "ServiceNamespace": "dynamodb"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example adds a scheduled action to a DynamoDB table called TestTable to scale out on a recurring schedule. On the specified schedule (every day at 12:15pm UTC), if the current capacity is below the value specified for MinCapacity, Application Auto Scaling scales out to the value specified by MinCapacity.",
+        "id": "to-create-a-recurring-scheduled-action-1677970068621",
+        "title": "To create a recurring scheduled action"
+      }
+    ],
+    "RegisterScalableTarget": [
+      {
+        "input": {
+          "MaxCapacity": 10,
+          "MinCapacity": 1,
+          "ResourceId": "service/default/web-app",
+          "ScalableDimension": "ecs:service:DesiredCount",
+          "ServiceNamespace": "ecs"
+        },
+        "output": {
+          "ScalableTargetARN": "arn:aws:application-autoscaling:us-east-1:123456789012:scalable-target/1234abcd56ab78cd901ef1234567890ab123"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example registers a scalable target from an Amazon ECS service called web-app that is running on the default cluster, with a minimum desired count of 1 task and a maximum desired count of 10 tasks.",
+        "id": "to-register-a-new-scalable-target-1470864910380",
+        "title": "To register an ECS service as a scalable target"
+      }
+    ],
+    "TagResource": [
+      {
+        "input": {
+          "ResourceARN": "arn:aws:application-autoscaling:us-west-2:123456789012:scalable-target/1234abcd56ab78cd901ef1234567890ab123",
+          "Tags": {
+            "environment": "production"
+          }
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example adds a tag with the key name \"environment\" and the value \"production\" to the scalable target specified by its ARN.",
+        "id": "to-add-a-tag-to-a-scalable-target-1677970764620",
+        "title": "To add a tag to a scalable target"
+      }
+    ],
+    "UntagResource": [
+      {
+        "input": {
+          "ResourceARN": "arn:aws:application-autoscaling:us-west-2:123456789012:scalable-target/1234abcd56ab78cd901ef1234567890ab123",
+          "TagKeys": [
+            "environment"
+          ]
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example removes the tag pair with the key name \"environment\" from the scalable target specified by its ARN.",
+        "id": "to-remove-a-tag-from-a-scalable-target-1677971117168",
+        "title": "To remove a tag from a scalable target"
+      }
+    ]
+  }
+}

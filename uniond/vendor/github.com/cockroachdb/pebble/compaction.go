@@ -2142,7 +2142,6 @@ func (d *DB) flush1() (bytesFlushed uint64, err error) {
 				// calculation even when the WAL is disabled.
 				metrics.BytesIn = metrics.BytesFlushed
 			} else {
-				metrics := c.metrics[0]
 				for i := 0; i < n; i++ {
 					metrics.BytesIn += d.mu.mem.queue[i].logSize
 				}

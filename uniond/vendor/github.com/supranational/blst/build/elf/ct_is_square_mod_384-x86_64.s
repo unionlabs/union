@@ -34,6 +34,9 @@ ct_is_square_mod_384:
 	leaq	24+255(%rsp),%rax
 	andq	$-256,%rax
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rdi),%r8
 	movq	8(%rdi),%r9
 	movq	16(%rdi),%r10
@@ -120,7 +123,15 @@ ct_is_square_mod_384:
 	leaq	48(%r8),%rsp
 .cfi_adjust_cfa_offset	-536-8*6
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 .size	ct_is_square_mod_384,.-ct_is_square_mod_384
 
@@ -296,7 +307,15 @@ __smulq_384_n_shift_by_30:
 	movq	%r12,32(%rdi)
 	movq	%r13,40(%rdi)
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	__smulq_384_n_shift_by_30,.-__smulq_384_n_shift_by_30
 .type	__ab_approximation_30,@function
@@ -363,7 +382,15 @@ __ab_approximation_30:
 
 	jmp	__inner_loop_30
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	__ab_approximation_30,.-__ab_approximation_30
 .type	__inner_loop_30,@function
@@ -426,7 +453,15 @@ __inner_loop_30:
 	subq	%r15,%rdx
 	subq	%r15,%rcx
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%r8
+	lfence
+	jmpq	*%r8
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	__inner_loop_30,.-__inner_loop_30
 
@@ -467,14 +502,24 @@ __inner_loop_48:
 	subl	$1,%edi
 	jnz	.Loop_48
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 .size	__inner_loop_48,.-__inner_loop_48
 
 .section	.note.GNU-stack,"",@progbits
+#ifndef	__SGX_LVI_HARDENING__
 .section	.note.gnu.property,"a",@note
 	.long	4,2f-1f,5
 	.byte	0x47,0x4E,0x55,0
 1:	.long	0xc0000002,4,3
 .align	8
 2:
+#endif

@@ -1,0 +1,20 @@
+name: FOSSA Analysis
+on: push
+
+permissions:
+  contents: read
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'uber-go'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: FOSSA analysis
+        uses: fossas/fossa-action@v1
+        with:
+          api-key: ${{ secrets.FOSSA_API_KEY }}
+

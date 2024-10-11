@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 1s
+
+scrape_configs:
+{{- range .Nodes }}
+  - job_name: '{{ .Name }}'
+    static_configs:
+      - targets: ['localhost:{{ .PrometheusProxyPort }}']
+{{end}}

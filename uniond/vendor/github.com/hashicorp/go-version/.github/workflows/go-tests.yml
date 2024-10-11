@@ -1,0 +1,74 @@
+name: go-tests
+
+on: [push]
+
+env:
+  TEST_RESULTS: /tmp/test-results
+
+jobs:
+
+  go-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [ 1.15.3, 1.19 ]
+    
+    steps:
+      - name: Setup go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: ${{ matrix.go-version }}
+      
+      - name: Checkout code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+
+      - name: Create test directory
+        run: |
+          mkdir -p ${{ env.TEST_RESULTS }}
+
+      - name: Download go modules
+        run: go mod download
+      
+      - name: Cache / restore go modules
+        uses: actions/cache@69d9d449aced6a2ede0bc19182fadc3a0a42d2b0 # v3.2.6
+        with:
+          path: |
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      
+      # Check go fmt output because it does not report non-zero when there are fmt changes
+      - name: Run gofmt
+        run: |
+          go fmt ./...
+          files=$(go fmt ./...)
+            if [ -n "$files" ]; then
+              echo "The following file(s) do not conform to go fmt:"
+              echo "$files"
+              exit 1
+            fi
+        
+      # Install gotestsum with go get for 1.15.3; otherwise default to go install 
+      - name: Install gotestsum
+        run: |
+          GTS="gotest.tools/gotestsum@v1.8.2"
+          # We use the same error message prefix in either failure case, so just define it once here.
+          ERROR="Failed to install $GTS"
+          # First try to 'go install', if that fails try 'go get'...
+          go install "$GTS" || go get "$GTS" || { echo "$ERROR: both 'go install' and 'go get' failed"; exit 1; }
+          # Check that the gotestsum command was actually installed in the path...
+          command -v gotestsum > /dev/null 2>&1 || { echo "$ERROR: gotestsum command not installed"; exit 1; }
+          echo "OK: Command 'gotestsum' installed ($GTS)"
+      
+      - name: Run go tests
+        run: |
+          PACKAGE_NAMES=$(go list ./...)
+          gotestsum --format=short-verbose --junitfile $TEST_RESULTS/gotestsum-report.xml -- $PACKAGE_NAMES
+      
+      # Save coverage report parts
+      - name: Upload and save artifacts
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+        with:
+          name: Test Results
+          path: ${{ env.TEST_RESULTS }}

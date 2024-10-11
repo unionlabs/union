@@ -1,0 +1,911 @@
+batch
+set a 1
+set b 2
+del c
+----
+
+flush
+----
+0.0:
+  000005:[a#10,SET-c#12,DEL]
+
+wait-pending-table-stats
+000005
+----
+num-entries: 3
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 64
+range-deletions-bytes-estimate: 0
+
+compact a-c
+----
+6:
+  000005:[a#10,SET-c#12,DEL]
+
+batch
+del-range a c
+----
+
+flush
+----
+0.0:
+  000007:[a#13,RANGEDEL-c#inf,RANGEDEL]
+6:
+  000005:[a#10,SET-c#12,DEL]
+
+wait-pending-table-stats
+000007
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 51
+
+reopen
+----
+
+# After re-opening the database, the table stats collector should eventually
+# load 000007's stats.
+
+wait-loaded-initial
+----
+[JOB 2] all initial table stats loaded
+
+wait-pending-table-stats
+000007
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 51
+
+compact a-c
+----
+
+# Test a file that is moved by a compaction before its table stats are
+# collected. The stats collector should silently skip the first pending file,
+# but the second entry from the move compaction should cause the file's stats
+# to be loaded.
+
+disable
+----
+
+batch
+set a 1
+set b 2
+----
+
+flush
+----
+0.0:
+  000012:[a#14,SET-b#15,SET]
+
+compact a-c
+----
+6:
+  000012:[a#14,SET-b#15,SET]
+
+enable
+----
+
+wait-pending-table-stats
+000012
+----
+num-entries: 2
+num-deletions: 0
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+# Test a file that is deleted by a compaction before its table stats are
+# collected. The stats collector should just silently skip the pending file.
+
+disable
+----
+
+batch
+del-range a c
+----
+
+flush
+----
+0.0:
+  000014:[a#16,RANGEDEL-c#inf,RANGEDEL]
+6:
+  000012:[a#14,SET-b#15,SET]
+
+compact a-c
+----
+
+enable
+----
+
+wait-pending-table-stats
+000014
+----
+(not found)
+
+# Test range tombstones that need to be truncated to file bounds. The
+# grandparent limit and small target file size ensures that our manual
+# compaction of L4->L5 will split the range tombstone across several files.
+
+define target-file-sizes=(100, 1)
+L4
+  a.RANGEDEL.8:f
+L5
+  b.SET.7:v
+L6
+  a.SET.1:v
+L6
+  b.SET.2:v
+L6
+  c.SET.3:v
+L6
+  d.SET.4:v
+L6
+  e.SET.5:v
+----
+4:
+  000004:[a#8,RANGEDEL-f#inf,RANGEDEL]
+5:
+  000005:[b#7,SET-b#7,SET]
+6:
+  000006:[a#1,SET-a#1,SET]
+  000007:[b#2,SET-b#2,SET]
+  000008:[c#3,SET-c#3,SET]
+  000009:[d#4,SET-d#4,SET]
+  000010:[e#5,SET-e#5,SET]
+
+compact a-b L4
+----
+5:
+  000011:[a#8,RANGEDEL-b#inf,RANGEDEL]
+  000012:[b#8,RANGEDEL-c#inf,RANGEDEL]
+  000013:[c#8,RANGEDEL-d#inf,RANGEDEL]
+  000014:[d#8,RANGEDEL-e#inf,RANGEDEL]
+  000015:[e#8,RANGEDEL-f#inf,RANGEDEL]
+6:
+  000006:[a#1,SET-a#1,SET]
+  000007:[b#2,SET-b#2,SET]
+  000008:[c#3,SET-c#3,SET]
+  000009:[d#4,SET-d#4,SET]
+  000010:[e#5,SET-e#5,SET]
+
+wait-pending-table-stats
+000011
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 632
+
+wait-pending-table-stats
+000012
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 632
+
+# A table in L6 with two point keys blocks, each covered by distinct range dels.
+# The deletion estimate takes into account the contribution from both deleted
+# blocks. Note that the snapshot is required to allow the hint to be computed.
+define block-size=1 snapshots=(10)
+L6
+  e.SET.5:e a.RANGEDEL.15:f m.SET.5:m g.RANGEDEL.15:z
+----
+6:
+  000004:[a#15,RANGEDEL-z#inf,RANGEDEL]
+
+wait-pending-table-stats
+000004
+----
+num-entries: 4
+num-deletions: 2
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 68
+
+# Hints that partially overlap tables in lower levels only count blocks that are
+# contained within the hint.
+#
+#  L0 |-|              000004: a.RANGEDEL:b
+#  L1        |---|     000005: d.RANGEDEL:f
+#  L2  x     x         000006: Two blocks [a, d]
+#  L2          x     x 000007: Two blocks [e, h]
+#  -------------------
+#      a b c d e f g h
+
+define block-size=1
+L0
+  a.RANGEDEL.2:b
+L1
+  d.RANGEDEL.1:f
+L2
+  a.SET.0:a d.SET.0:d
+L2
+  e.SET.0:e h.SET.0:h
+----
+0.0:
+  000004:[a#2,RANGEDEL-b#inf,RANGEDEL]
+1:
+  000005:[d#1,RANGEDEL-f#inf,RANGEDEL]
+2:
+  000006:[a#0,SET-d#0,SET]
+  000007:[e#0,SET-h#0,SET]
+
+# Table 000004 deletes the first block in table 000006.
+wait-pending-table-stats
+000004
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 33
+
+# Table 000005 deletes the second block in table 000006 (containing 'd') and the
+# first block in table 000007 (containing 'e').
+wait-pending-table-stats
+000005
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 66
+
+# Test the interaction between point and range key deletions.
+
+define
+----
+
+# Start with a table that contains point and range keys, but no range dels or
+# range key dels.
+batch
+set a a
+range-key-set a b @1 foo
+range-key-unset a b @2
+----
+
+flush
+----
+0.0:
+  000005:[a#12,RANGEKEYUNSET-b#inf,RANGEKEYSET]
+
+# Add a table that contains only point keys, to the right of the existing table.
+batch
+set c c
+----
+
+flush
+----
+0.0:
+  000005:[a#12,RANGEKEYUNSET-b#inf,RANGEKEYSET]
+  000007:[c#13,SET-c#13,SET]
+
+compact a-c
+----
+6:
+  000008:[a#11,RANGEKEYSET-b#inf,RANGEKEYSET]
+  000009:[c#0,SET-c#0,SET]
+
+# Add a table that contains a RANGEKEYDEL covering the first table in L6.
+batch
+range-key-del a b
+----
+
+flush
+----
+0.0:
+  000011:[a#14,RANGEKEYDEL-b#inf,RANGEKEYDEL]
+6:
+  000008:[a#11,RANGEKEYSET-b#inf,RANGEKEYSET]
+  000009:[c#0,SET-c#0,SET]
+
+# Add one more table containing a RANGEDEL.
+batch
+del-range a c
+----
+
+flush
+----
+0.1:
+  000013:[a#15,RANGEDEL-c#inf,RANGEDEL]
+0.0:
+  000011:[a#14,RANGEKEYDEL-b#inf,RANGEKEYDEL]
+6:
+  000008:[a#11,RANGEKEYSET-b#inf,RANGEKEYSET]
+  000009:[c#0,SET-c#0,SET]
+
+# Compute stats on the table containing range key del. It should not show an
+# estimate for deleted point keys as there are no tables below it that contain
+# only range keys.
+wait-pending-table-stats
+000011
+----
+num-entries: 0
+num-deletions: 0
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+# Compute stats on the table containing the range del. It should show an
+# estimate for deleted point keys, as a table below it (000008) contains point
+# keys. Note that even though table 000008 contains range keys, the range del
+# estimates are non-zero, as this number is agnostic of range keys.
+wait-pending-table-stats
+000013
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 778
+
+# Drop a range del and a range key del over the entire keyspace. This table can
+# delete everything underneath it.
+ingest ext1
+del-range a z
+range-key-del a z
+----
+0.2:
+  000014:[a#16,RANGEKEYDEL-z#inf,RANGEDEL]
+0.1:
+  000013:[a#15,RANGEDEL-c#inf,RANGEDEL]
+0.0:
+  000011:[a#14,RANGEKEYDEL-b#inf,RANGEKEYDEL]
+6:
+  000008:[a#11,RANGEKEYSET-b#inf,RANGEKEYSET]
+  000009:[c#0,SET-c#0,SET]
+
+compact a-z
+----
+
+# Ingest another sstable with range tombstones again, but this time into an
+# empty LSM. The table should ingest into L6. Its table stats should reflect
+# that its range tombstones cannot delete any of the data contained within the
+# file itself.
+ingest ext1
+del-range a z
+range-key-del a z
+set d d
+set e e
+set f f
+----
+6:
+  000015:[a#17,RANGEKEYDEL-z#inf,RANGEDEL]
+
+wait-pending-table-stats
+000015
+----
+num-entries: 4
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+# A hint for exclusively range key deletions that covers a table with point keys
+# should not contain an estimate for point keys.
+
+define
+----
+
+# A table with point keys.
+batch
+set b b
+----
+
+flush
+----
+0.0:
+  000005:[b#10,SET-b#10,SET]
+
+# A table with a mixture of point and range keys.
+batch
+set c c
+range-key-set d d @1 foo
+----
+
+flush
+----
+0.0:
+  000005:[b#10,SET-b#10,SET]
+  000007:[c#11,SET-c#11,SET]
+
+compact a-z
+----
+6:
+  000008:[b#0,SET-b#0,SET]
+  000009:[c#0,SET-c#0,SET]
+
+# The table with the range key del, that spans the previous two tables.
+batch
+range-key-del a z
+----
+
+flush
+----
+0.0:
+  000011:[a#13,RANGEKEYDEL-z#inf,RANGEKEYDEL]
+6:
+  000008:[b#0,SET-b#0,SET]
+  000009:[c#0,SET-c#0,SET]
+
+# The hint on table 000011 does estimates zero size for range deleted point
+# keys.
+wait-pending-table-stats
+000011
+----
+num-entries: 0
+num-deletions: 0
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+# A hint from a range del that covers a table with only range keys should not
+# contain an estimate for the range keys.
+
+define
+L4
+  a.RANGEDEL.4:c
+L5
+  a.RANGEDEL.2:e
+  b.SET.3:b
+L6
+  rangekey:c-d:{(#1,RANGEKEYSET,@1,foo)}
+----
+4:
+  000004:[a#4,RANGEDEL-c#inf,RANGEDEL]
+5:
+  000005:[a#2,RANGEDEL-e#inf,RANGEDEL]
+6:
+  000006:[c#1,RANGEKEYSET-d#inf,RANGEKEYSET]
+
+# The table in L5 should not contain an estimate for the table below it, which
+# contains only range keys.
+wait-pending-table-stats
+000005
+----
+num-entries: 2
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+# The table in L4 can delete the table in L5, which contains point keys. The
+# estimate is only partial, as the range del does not fully overlap the table.
+wait-pending-table-stats
+000004
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 26
+
+# Test point tombstone compensation that uses DELSIZED keys.
+
+define format-major-version=15
+L6
+  bar.SET.0:<rand-bytes=10>
+  bax.SET.0:<rand-bytes=10>
+  foo.SET.0:<rand-bytes=100000>
+  moo.SET.0:<rand-bytes=1>
+----
+6:
+  000004:[bar#0,SET-moo#0,SET]
+
+batch
+set a apple
+set b banana
+set c coconut
+del-sized foo 100000
+del moo
+----
+
+flush
+----
+0.0:
+  000006:[a#10,SET-moo#14,DEL]
+6:
+  000004:[bar#0,SET-moo#0,SET]
+
+metric keys.missized-tombstones-count
+----
+keys.missized-tombstones-count: 0
+
+# The foo DELSIZED tombstone should cause the
+# `pebble.raw.point-tombstone.value.size` property to be 100000 + len(foo) =
+# 100003.
+
+properties file=000006
+num.deletions
+deleted.keys
+raw.point-tombstone
+----
+num.deletions:
+  pebble.num.deletions.sized: 1
+deleted.keys:
+  rocksdb.deleted.keys: 2
+raw.point-tombstone:
+  pebble.raw.point-tombstone.key.size: 6
+  pebble.raw.point-tombstone.value.size: 100003
+
+# And the size hint should then appear in the point-deletions-bytes-estimate,
+# scaled according to the computed 'compression ratio'.
+
+wait-pending-table-stats
+000006
+----
+num-entries: 5
+num-deletions: 2
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 112732
+range-deletions-bytes-estimate: 0
+
+# Try a missized point tombstone. It should appear in the Metrics after the
+# flush that will elide the a.SET.
+
+batch
+set a boop
+del-sized a 10000
+----
+
+flush
+----
+0.1:
+  000008:[a#16,DEL-a#16,DEL]
+0.0:
+  000006:[a#10,SET-moo#14,DEL]
+6:
+  000004:[bar#0,SET-moo#0,SET]
+
+metric keys.missized-tombstones-count
+----
+keys.missized-tombstones-count: 1
+
+# Virtual sstables tests. Note that these tests are just for sanity checking
+# purposes. Small sstables lead to inaccurate values during extrapolation.
+define format-major-version=16
+----
+
+batch
+set a 1
+set b 2
+del d
+----
+
+flush
+----
+0.0:
+  000005:[a#10,SET-d#12,DEL]
+
+metadata-stats file=5
+----
+size: 726
+
+# Just grab the physical sstable properties as these are used to construct the
+# virtual sstable properties.
+properties file=5
+rocksdb
+pebble
+----
+rocksdb:
+  rocksdb.num.entries: 3
+  rocksdb.raw.key.size: 27
+  rocksdb.raw.value.size: 2
+  rocksdb.deleted.keys: 1
+  rocksdb.num.range-deletions: 0
+  rocksdb.comparator: pebble.internal.testkeys
+  rocksdb.compression: Snappy
+  rocksdb.compression_options: window_bits=-14; level=32767; strategy=0; max_dict_bytes=0; zstd_max_train_bytes=0; enabled=0; 
+  rocksdb.data.size: 53
+  rocksdb.filter.size: 0
+  rocksdb.index.size: 27
+  rocksdb.block.based.table.index.type: 0
+  rocksdb.merge.operator: pebble.concatenate
+  rocksdb.num.data.blocks: 1
+  rocksdb.merge.operands: 0
+  rocksdb.prefix.extractor.name: nullptr
+  rocksdb.block.based.table.prefix.filtering: false
+  rocksdb.property.collectors: [obsolete-key]
+  rocksdb.block.based.table.whole.key.filtering: false
+pebble:
+  pebble.raw.point-tombstone.key.size: 1
+  rocksdb.comparator: pebble.internal.testkeys
+  rocksdb.merge.operator: pebble.concatenate
+
+build ext1
+set f f
+----
+
+ingest-and-excise ext1 excise=b-c
+----
+
+lsm
+----
+0.0:
+  000007:[a#10,SET-a#10,SET]
+  000008:[d#12,DEL-d#12,DEL]
+6:
+  000006:[f#13,SET-f#13,SET]
+
+metadata-stats file=7
+----
+size: 53
+
+metadata-stats file=8
+----
+size: 53
+
+# Note that the backing file size is much larger than the virtual file sizes.
+# For tiny sstables, the metadata contained in the sstable is much larger than
+# the actual sizes.
+
+# While sstable 8 has no point tombstones, because of the nature of extrapolation
+# both file 7 and file 8 will have a point tombstone key size property. Because
+# of this both the files have a point deletion bytes estimate.
+properties file=7
+----
+rocksdb.num.entries: 1
+rocksdb.raw.key.size: 2
+rocksdb.raw.value.size: 1
+pebble.raw.point-tombstone.key.size: 1
+rocksdb.deleted.keys: 1
+
+properties file=8
+----
+rocksdb.num.entries: 1
+rocksdb.raw.key.size: 2
+rocksdb.raw.value.size: 1
+pebble.raw.point-tombstone.key.size: 1
+rocksdb.deleted.keys: 1
+
+wait-pending-table-stats
+000007
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 53
+range-deletions-bytes-estimate: 0
+
+wait-pending-table-stats
+000008
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 53
+range-deletions-bytes-estimate: 0
+
+# Create an sstable with a range key set.
+batch
+set a a
+set b b
+set d d
+range-key-set e ee @1 foo
+----
+
+flush
+----
+0.1:
+  000010:[a#14,SET-ee#inf,RANGEKEYSET]
+0.0:
+  000007:[a#10,SET-a#10,SET]
+  000008:[d#12,DEL-d#12,DEL]
+6:
+  000006:[f#13,SET-f#13,SET]
+
+properties file=10
+rocksdb
+pebble
+----
+rocksdb:
+  rocksdb.num.entries: 3
+  rocksdb.raw.key.size: 27
+  rocksdb.raw.value.size: 3
+  rocksdb.deleted.keys: 0
+  rocksdb.num.range-deletions: 0
+  rocksdb.comparator: pebble.internal.testkeys
+  rocksdb.compression: Snappy
+  rocksdb.compression_options: window_bits=-14; level=32767; strategy=0; max_dict_bytes=0; zstd_max_train_bytes=0; enabled=0; 
+  rocksdb.data.size: 47
+  rocksdb.filter.size: 0
+  rocksdb.index.size: 27
+  rocksdb.block.based.table.index.type: 0
+  rocksdb.merge.operator: pebble.concatenate
+  rocksdb.num.data.blocks: 1
+  rocksdb.merge.operands: 0
+  rocksdb.prefix.extractor.name: nullptr
+  rocksdb.block.based.table.prefix.filtering: false
+  rocksdb.property.collectors: [obsolete-key]
+  rocksdb.block.based.table.whole.key.filtering: false
+pebble:
+  pebble.num.range-key-dels: 0
+  pebble.num.range-key-sets: 1
+  rocksdb.comparator: pebble.internal.testkeys
+  rocksdb.merge.operator: pebble.concatenate
+  pebble.num.range-key-unsets: 0
+  pebble.raw.range-key.key.size: 9
+  pebble.raw.range-key.value.size: 10
+
+metadata-stats file=10
+----
+size: 828
+
+build ext2
+set z z
+----
+
+ingest-and-excise ext2 excise=b-c
+----
+
+lsm
+----
+0.1:
+  000012:[a#14,SET-a#14,SET]
+  000013:[d#16,SET-ee#inf,RANGEKEYSET]
+0.0:
+  000007:[a#10,SET-a#10,SET]
+  000008:[d#12,DEL-d#12,DEL]
+6:
+  000006:[f#13,SET-f#13,SET]
+  000011:[z#18,SET-z#18,SET]
+
+metadata-stats file=12
+----
+size: 47
+
+metadata-stats file=13
+----
+size: 47
+
+# range key sets shows up for both files. This is expected.
+properties file=12
+----
+rocksdb.num.entries: 1
+rocksdb.raw.key.size: 2
+rocksdb.raw.value.size: 1
+pebble.num.range-key-sets: 1
+
+properties file=13
+----
+rocksdb.num.entries: 1
+rocksdb.raw.key.size: 2
+rocksdb.raw.value.size: 1
+pebble.num.range-key-sets: 1
+
+wait-pending-table-stats
+000012
+----
+num-entries: 1
+num-deletions: 0
+num-range-key-sets: 1
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+wait-pending-table-stats
+000013
+----
+num-entries: 1
+num-deletions: 0
+num-range-key-sets: 1
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 0
+
+# Create an sstable with range deletes to view the range delete byte estimates.
+
+# Compact everything to L6. Range deletion bytes estimate doesn't account for
+# bytes in L0.
+compact a-z
+----
+6:
+  000014:[a#0,SET-a#0,SET]
+  000015:[d#0,SETWITHDEL-d#0,SETWITHDEL]
+  000016:[e#17,RANGEKEYSET-ee#inf,RANGEKEYSET]
+  000006:[f#13,SET-f#13,SET]
+  000011:[z#18,SET-z#18,SET]
+
+batch
+del-range a e
+----
+
+flush
+----
+0.0:
+  000018:[a#19,RANGEDEL-e#inf,RANGEDEL]
+6:
+  000014:[a#0,SET-a#0,SET]
+  000015:[d#0,SETWITHDEL-d#0,SETWITHDEL]
+  000016:[e#17,RANGEKEYSET-ee#inf,RANGEKEYSET]
+  000006:[f#13,SET-f#13,SET]
+  000011:[z#18,SET-z#18,SET]
+
+properties file=18
+rocksdb
+pebble
+----
+rocksdb:
+  rocksdb.num.entries: 1
+  rocksdb.raw.key.size: 9
+  rocksdb.raw.value.size: 1
+  rocksdb.deleted.keys: 1
+  rocksdb.num.range-deletions: 1
+  rocksdb.comparator: pebble.internal.testkeys
+  rocksdb.compression: Snappy
+  rocksdb.compression_options: window_bits=-14; level=32767; strategy=0; max_dict_bytes=0; zstd_max_train_bytes=0; enabled=0; 
+  rocksdb.data.size: 13
+  rocksdb.filter.size: 0
+  rocksdb.index.size: 29
+  rocksdb.block.based.table.index.type: 0
+  rocksdb.merge.operator: pebble.concatenate
+  rocksdb.num.data.blocks: 1
+  rocksdb.merge.operands: 0
+  rocksdb.prefix.extractor.name: nullptr
+  rocksdb.block.based.table.prefix.filtering: false
+  rocksdb.property.collectors: [obsolete-key]
+  rocksdb.block.based.table.whole.key.filtering: false
+pebble:
+  rocksdb.comparator: pebble.internal.testkeys
+  rocksdb.merge.operator: pebble.concatenate
+
+build ext3
+set zz zz
+----
+
+ingest-and-excise ext3 excise=b-c
+----
+
+lsm
+----
+0.0:
+  000020:[a#19,RANGEDEL-b#inf,RANGEDEL]
+  000021:[c#19,RANGEDEL-e#inf,RANGEDEL]
+6:
+  000014:[a#0,SET-a#0,SET]
+  000015:[d#0,SETWITHDEL-d#0,SETWITHDEL]
+  000016:[e#17,RANGEKEYSET-ee#inf,RANGEKEYSET]
+  000006:[f#13,SET-f#13,SET]
+  000011:[z#18,SET-z#18,SET]
+  000019:[zz#20,SET-zz#20,SET]
+
+properties file=20
+----
+rocksdb.num.entries: 1
+rocksdb.raw.key.size: 1
+rocksdb.raw.value.size: 1
+rocksdb.deleted.keys: 1
+rocksdb.num.range-deletions: 1
+
+properties file=21
+----
+rocksdb.num.entries: 1
+rocksdb.raw.key.size: 1
+rocksdb.raw.value.size: 1
+rocksdb.deleted.keys: 1
+rocksdb.num.range-deletions: 1
+
+wait-pending-table-stats
+000020
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 661
+
+wait-pending-table-stats
+000021
+----
+num-entries: 1
+num-deletions: 1
+num-range-key-sets: 0
+point-deletions-bytes-estimate: 0
+range-deletions-bytes-estimate: 660

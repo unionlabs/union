@@ -1,0 +1,150 @@
+{{$isogenyNeeded := notNil .Isogeny}}
+{{$CoordType := .Point.CoordType}}
+{{$CurveName := .Point.PointName}}
+{{$CurveTitle := toTitle $CurveName}}
+{{$TowerDegree := .Field.Degree}}
+{{$AffineType := print $CurveTitle "Affine"}}
+{{$JacType := print $CurveTitle "Jac"}}
+{{$IsG1 := eq $CurveTitle "G1"}}
+{{$CurveIndex := "2"}}
+{{if $IsG1}}{{$CurveIndex = "1"}}{{end}}
+
+import(
+    "github.com/consensys/gnark-crypto/ecc/{{.Name}}/fp"
+    {{- if not (eq $TowerDegree 1) }}
+        "github.com/consensys/gnark-crypto/ecc/{{.Name}}/internal/fptower"
+    {{- end}}
+
+{{if eq $.MappingAlgorithm "SSWU"}}
+    {{template "sswu" .}}
+{{end}}
+{{if eq $.MappingAlgorithm "SVDW"}}
+    {{template "svdw" .}}
+{{end}}
+
+// {{$CurveName}}Sgn0 is an algebraic substitute for the notion of sign in ordered fields
+// Namely, every non-zero quadratic residue in a finite field of characteristic =/= 2 has exactly two square roots, one of each sign
+// https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-16.html#name-the-sgn0-function
+// The sign of an element is not obviously related to that of its Montgomery form
+func {{$CurveName}}Sgn0(z *{{$CoordType}}) uint64 {
+
+    nonMont := z.Bits()
+    
+	{{if eq $TowerDegree 1}}    // m == 1
+        return nonMont[0]%2
+	{{else}}
+        sign := uint64(0)   // 1. sign = 0
+        zero := uint64(1)   // 2. zero = 1
+        var signI uint64
+        var zeroI uint64
+        {{ range $i := interval 0 $TowerDegree}}
+		// 3. i = {{add $i 1}}
+            signI = nonMont.{{$.FieldCoordName}}{{$i}}[0] % 2   // 4.   sign_i = x_i mod 2
+            {{- $notLast := not (eq $i (sub $TowerDegree 1))}}
+			{{- if $notLast}}
+                zeroI = g1NotZero(&nonMont.{{$.FieldCoordName}}{{$i}})
+                zeroI = 1 ^ (zeroI|-zeroI)>>63  // 5.   zero_i = x_i == 0
+			{{- else}}
+                // 5.   zero_i = x_i == 0
+            {{- end}}
+            sign = sign | (zero & signI)    // 6.   sign = sign OR (zero AND sign_i) # Avoid short-circuit logic ops
+			{{- if $notLast}}
+			    zero = zero & zeroI // 7.   zero = zero AND zero_i
+			{{- else}}
+                // 7.   zero = zero AND zero_i
+            {{- end}}
+        {{- end}}
+        return sign
+    {{end}}
+}
+
+
+// MapTo{{$CurveTitle}} invokes the {{.MappingAlgorithm}} map, and guarantees that the result is in {{$CurveName}}
+func MapTo{{$CurveTitle}}(u {{$CoordType}}) {{$AffineType}} {
+    res := MapToCurve{{$CurveIndex}}(&u)
+    {{- if $isogenyNeeded }}
+    //this is in an isogenous curve
+        {{$CurveName}}Isogeny(&res)
+    {{- end }}
+    {{- if .Point.CofactorCleaning}}
+        res.ClearCofactor(&res)
+    {{- end }}
+	return res
+}
+
+// EncodeTo{{$CurveTitle}} hashes a message to a point on the {{$CurveTitle}} curve using the {{.MappingAlgorithm}} map.
+// It is faster than HashTo{{$CurveTitle}}, but the result is not uniformly distributed. Unsuitable as a random oracle.
+// dst stands for "domain separation tag", a string unique to the construction using the hash function
+//https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-16.html#roadmap
+func EncodeTo{{$CurveTitle}}(msg, dst []byte) ({{$AffineType}}, error) {
+
+	var res {{$AffineType}}
+	u, err := fp.Hash(msg, dst, {{$TowerDegree}})
+	if err != nil {
+		return res, err
+	}
+
+    {{if eq $TowerDegree 1}}
+    res = MapToCurve{{$CurveIndex}}(&u[0])
+    {{else}}
+    res = MapToCurve{{$CurveIndex}}( &{{$CoordType}} {
+        {{range $i := interval 0 $TowerDegree }} {{if eq $TowerDegree 2}}A{{end}}{{$i}}: u[{{$i}}],
+    {{end}} })
+    {{end}}
+
+    {{- if $isogenyNeeded }}
+        //this is in an isogenous curve
+        {{$CurveName}}Isogeny(&res)
+    {{- end }}
+    {{- if .Point.CofactorCleaning}}
+ 	    res.ClearCofactor(&res)
+ 	{{- end }}
+ 	return res, nil
+}
+
+// HashTo{{$CurveTitle}} hashes a message to a point on the {{$CurveTitle}} curve using the {{.MappingAlgorithm}} map.
+// Slower than EncodeTo{{$CurveTitle}}, but usable as a random oracle.
+// dst stands for "domain separation tag", a string unique to the construction using the hash function
+//https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-16.html#roadmap
+func HashTo{{$CurveTitle}}(msg, dst []byte) ({{$AffineType}}, error) {
+	u, err := fp.Hash(msg, dst, 2 * {{$TowerDegree}})
+	if err != nil {
+		return {{$AffineType}}{}, err
+	}
+
+	{{if eq $TowerDegree 1}}
+	Q0 := MapToCurve{{$CurveIndex}}(&u[0])
+	Q1 := MapToCurve{{$CurveIndex}}(&u[1])
+	{{else}}
+	Q0 := MapToCurve{{$CurveIndex}}( &{{$CoordType}} {
+		{{range $i := interval 0 $TowerDegree }} {{if eq $TowerDegree 2}}A{{end}}{{$i}}: u[{{$i}}],
+		{{end}} })
+	Q1 := MapToCurve{{$CurveIndex}}( &{{$CoordType}} {
+        {{range $i := interval 0 $TowerDegree }} {{if eq $TowerDegree 2}}A{{end}}{{$i}}: u[{{$TowerDegree}} + {{$i}}],
+        {{end}} })
+	{{end}}
+
+{{ if $isogenyNeeded }}
+	//TODO (perf): Add in E' first, then apply isogeny
+    {{$CurveName}}Isogeny(&Q0)
+    {{$CurveName}}Isogeny(&Q1)
+{{ end }}
+
+	var _Q0, _Q1 {{$JacType}}
+	_Q0.FromAffine(&Q0)
+	_Q1.FromAffine(&Q1).AddAssign(&_Q0)
+	{{ if .Point.CofactorCleaning}}
+	    _Q1.ClearCofactor(&_Q1)
+	{{ end }}
+
+    Q1.FromJacobian(&_Q1)
+    return Q1, nil
+}
+
+func {{$CurveName}}NotZero(x *{{$CoordType}}) uint64 {
+	{{if eq $TowerDegree 1}}
+    return x[0] {{ range $i := $.Field.Base.NbWordsIndexesNoZero}} | x[{{$i}}] {{ end}}
+	{{else}}    //Assuming G1 is over Fp and that if hashing is available for G2, it also is for G1
+	return g1NotZero(&x.A0) {{ range $i := interval 1 $TowerDegree }} | g1NotZero(&x.{{$.FieldCoordName}}{{$i}}) {{end}}
+	{{end}}
+}

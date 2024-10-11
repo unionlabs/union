@@ -1,0 +1,146 @@
+
+reset
+----
+
+batch commit
+set b d
+set e foo
+----
+committed 2 keys
+
+scan-statistics lower=b upper=f keys=(SET)
+----
+Aggregate:
+  SET key count: 2
+  SET latest count: 2
+
+flush
+----
+
+scan-statistics lower=b upper=e keys=(SET) levels=(0)
+----
+Level 0:
+  SET key count: 1
+  SET latest count: 1
+Aggregate:
+  SET key count: 1
+  SET latest count: 1
+
+scan-statistics lower=b upper=f keys=(SET) levels=(0)
+----
+Level 0:
+  SET key count: 2
+  SET latest count: 2
+Aggregate:
+  SET key count: 2
+  SET latest count: 2
+
+scan-statistics lower=f upper=l keys=(SET)
+----
+Aggregate:
+  SET key count: 0
+
+batch commit
+del b
+del e
+----
+committed 2 keys
+
+flush
+----
+
+scan-statistics lower=b upper=f keys=(SET, DEL) levels=(0)
+----
+Level 0:
+  SET key count: 2
+  DEL key count: 2
+  DEL latest count: 2
+Aggregate:
+  SET key count: 2
+  DEL key count: 2
+  DEL latest count: 2
+
+reset
+----
+
+batch commit
+set b hi
+----
+committed 1 keys
+
+flush
+----
+
+batch commit
+set b hello
+----
+committed 1 keys
+
+flush
+----
+
+compact a-z
+----
+6:
+  000008:[b#0,SET-b#0,SET]
+
+scan-statistics lower=b upper=f keys=(SET) levels=(6)
+----
+Level 6:
+  SET key count: 1
+  SET latest count: 1
+Aggregate:
+  SET key count: 1
+  SET latest count: 1
+
+batch commit
+set c a
+----
+committed 1 keys
+
+flush
+----
+
+scan-statistics lower=b upper=f keys=(SET) levels=(0, 6)
+----
+Level 0:
+  SET key count: 1
+  SET latest count: 1
+Level 6:
+  SET key count: 1
+  SET latest count: 1
+Aggregate:
+  SET key count: 2
+  SET latest count: 2
+
+reset
+----
+
+batch commit
+set a b
+----
+committed 1 keys
+
+flush
+----
+
+snapshot name=first
+----
+
+batch commit
+set a c
+----
+committed 1 keys
+
+flush
+----
+
+compact a-z
+----
+6:
+  000008:[a#11,SET-a#0,SET]
+
+scan-statistics lower=a upper=z show-snapshot-pinned
+----
+Aggregate:
+  snapshot pinned count: 1

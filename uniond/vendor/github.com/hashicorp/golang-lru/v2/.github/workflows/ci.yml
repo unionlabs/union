@@ -1,0 +1,42 @@
+name: build
+
+on:
+  push:
+    branches:
+    tags:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: set up go 1.19
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
+        with:
+          go-version: 1.19
+        id: go
+
+      - name: checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+
+      - name: build and test
+        run: |
+          go test -timeout=60s -race ./...
+          go build -race ./...
+
+      - name: build and test ARC
+        working-directory: ./arc
+        run: |
+          go test -timeout=60s -race
+          go build -race
+
+      - name: install golangci-lint
+        run: curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $GITHUB_WORKSPACE v1.53.3
+
+      - name: run golangci-lint
+        run: $GITHUB_WORKSPACE/golangci-lint run --out-format=github-actions ./... ./simplelru/... ./expirable/...
+
+      - name: run golangci-lint on ARC
+        working-directory: ./arc
+        run: $GITHUB_WORKSPACE/golangci-lint run --out-format=github-actions ./...

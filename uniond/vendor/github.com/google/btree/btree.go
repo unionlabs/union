@@ -479,7 +479,7 @@ func (n *node) growChildAndRemove(i int, item Item, minItems int, typ toRemove) 
 		child := n.mutableChild(i)
 		// merge with right child
 		mergeItem := n.items.removeAt(i)
-		mergeChild := n.children.removeAt(i + 1)
+		mergeChild := n.children.removeAt(i + 1).mutableFor(n.cow)
 		child.items = append(child.items, mergeItem)
 		child.items = append(child.items, mergeChild.items...)
 		child.children = append(child.children, mergeChild.children...)

@@ -1,0 +1,9 @@
+{
+  "cert_configs": {
+    "test": {
+      "issuer": "Test Issuer"
+    }
+  },
+  "libs": {
+  }
+}

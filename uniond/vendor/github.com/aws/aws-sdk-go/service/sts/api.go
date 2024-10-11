@@ -85,9 +85,9 @@ func (c *STS) AssumeRoleRequest(input *AssumeRoleInput) (req *request.Request, o
 // assumed. For more information, see Session Policies (https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#policies_session)
 // in the IAM User Guide.
 //
-// When you create a role, you create two policies: A role trust policy that
-// specifies who can assume the role and a permissions policy that specifies
-// what can be done with the role. You specify the trusted principal who is
+// When you create a role, you create two policies: a role trust policy that
+// specifies who can assume the role, and a permissions policy that specifies
+// what can be done with the role. You specify the trusted principal that is
 // allowed to assume the role in the role trust policy.
 //
 // To assume a role from a different account, your Amazon Web Services account
@@ -96,9 +96,9 @@ func (c *STS) AssumeRoleRequest(input *AssumeRoleInput) (req *request.Request, o
 // are allowed to delegate that access to users in the account.
 //
 // A user who wants to access a role in a different account must also have permissions
-// that are delegated from the user account administrator. The administrator
-// must attach a policy that allows the user to call AssumeRole for the ARN
-// of the role in the other account.
+// that are delegated from the account administrator. The administrator must
+// attach a policy that allows the user to call AssumeRole for the ARN of the
+// role in the other account.
 //
 // To allow a user to assume a role in the same account, you can do either of
 // the following:
@@ -517,10 +517,8 @@ func (c *STS) AssumeRoleWithWebIdentityRequest(input *AssumeRoleWithWebIdentityI
 // a user. You can also supply the user with a consistent identity throughout
 // the lifetime of an application.
 //
-// To learn more about Amazon Cognito, see Amazon Cognito Overview (https://docs.aws.amazon.com/mobile/sdkforandroid/developerguide/cognito-auth.html#d0e840)
-// in Amazon Web Services SDK for Android Developer Guide and Amazon Cognito
-// Overview (https://docs.aws.amazon.com/mobile/sdkforios/developerguide/cognito-auth.html#d0e664)
-// in the Amazon Web Services SDK for iOS Developer Guide.
+// To learn more about Amazon Cognito, see Amazon Cognito identity pools (https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-identity.html)
+// in Amazon Cognito Developer Guide.
 //
 // Calling AssumeRoleWithWebIdentity does not require the use of Amazon Web
 // Services security credentials. Therefore, you can distribute an application
@@ -984,11 +982,11 @@ func (c *STS) GetCallerIdentityRequest(input *GetCallerIdentityInput) (req *requ
 // call the operation.
 //
 // No permissions are required to perform this operation. If an administrator
-// adds a policy to your IAM user or role that explicitly denies access to the
-// sts:GetCallerIdentity action, you can still perform this operation. Permissions
-// are not required because the same information is returned when an IAM user
-// or role is denied access. To view an example response, see I Am Not Authorized
-// to Perform: iam:DeleteVirtualMFADevice (https://docs.aws.amazon.com/IAM/latest/UserGuide/troubleshoot_general.html#troubleshoot_general_access-denied-delete-mfa)
+// attaches a policy to your identity that explicitly denies access to the sts:GetCallerIdentity
+// action, you can still perform this operation. Permissions are not required
+// because the same information is returned when access is denied. To view an
+// example response, see I Am Not Authorized to Perform: iam:DeleteVirtualMFADevice
+// (https://docs.aws.amazon.com/IAM/latest/UserGuide/troubleshoot_general.html#troubleshoot_general_access-denied-delete-mfa)
 // in the IAM User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -1063,16 +1061,24 @@ func (c *STS) GetFederationTokenRequest(input *GetFederationTokenInput) (req *re
 // GetFederationToken API operation for AWS Security Token Service.
 //
 // Returns a set of temporary security credentials (consisting of an access
-// key ID, a secret access key, and a security token) for a federated user.
-// A typical use is in a proxy application that gets temporary security credentials
-// on behalf of distributed applications inside a corporate network. You must
-// call the GetFederationToken operation using the long-term security credentials
-// of an IAM user. As a result, this call is appropriate in contexts where those
-// credentials can be safely stored, usually in a server-based application.
+// key ID, a secret access key, and a security token) for a user. A typical
+// use is in a proxy application that gets temporary security credentials on
+// behalf of distributed applications inside a corporate network.
+//
+// You must call the GetFederationToken operation using the long-term security
+// credentials of an IAM user. As a result, this call is appropriate in contexts
+// where those credentials can be safeguarded, usually in a server-based application.
 // For a comparison of GetFederationToken with the other API operations that
 // produce temporary credentials, see Requesting Temporary Security Credentials
 // (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html)
 // and Comparing the Amazon Web Services STS API operations (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#stsapi_comparison)
+// in the IAM User Guide.
+//
+// Although it is possible to call GetFederationToken using the security credentials
+// of an Amazon Web Services account root user rather than an IAM user that
+// you create for the purpose of a proxy application, we do not recommend it.
+// For more information, see Safeguard your root user credentials and don't
+// use them for everyday tasks (https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#lock-away-credentials)
 // in the IAM User Guide.
 //
 // You can create a mobile-based or browser-based app that can authenticate
@@ -1083,21 +1089,13 @@ func (c *STS) GetFederationTokenRequest(input *GetFederationTokenInput) (req *re
 // (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_assumerolewithwebidentity)
 // in the IAM User Guide.
 //
-// You can also call GetFederationToken using the security credentials of an
-// Amazon Web Services account root user, but we do not recommend it. Instead,
-// we recommend that you create an IAM user for the purpose of the proxy application.
-// Then attach a policy to the IAM user that limits federated users to only
-// the actions and resources that they need to access. For more information,
-// see IAM Best Practices (https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
-// in the IAM User Guide.
-//
 // # Session duration
 //
 // The temporary credentials are valid for the specified duration, from 900
 // seconds (15 minutes) up to a maximum of 129,600 seconds (36 hours). The default
 // session duration is 43,200 seconds (12 hours). Temporary credentials obtained
-// by using the Amazon Web Services account root user credentials have a maximum
-// duration of 3,600 seconds (1 hour).
+// by using the root user credentials have a maximum duration of 3,600 seconds
+// (1 hour).
 //
 // # Permissions
 //
@@ -1267,12 +1265,13 @@ func (c *STS) GetSessionTokenRequest(input *GetSessionTokenInput) (req *request.
 // or IAM user. The credentials consist of an access key ID, a secret access
 // key, and a security token. Typically, you use GetSessionToken if you want
 // to use MFA to protect programmatic calls to specific Amazon Web Services
-// API operations like Amazon EC2 StopInstances. MFA-enabled IAM users would
-// need to call GetSessionToken and submit an MFA code that is associated with
-// their MFA device. Using the temporary security credentials that are returned
-// from the call, IAM users can then make programmatic calls to API operations
-// that require MFA authentication. If you do not supply a correct MFA code,
-// then the API returns an access denied error. For a comparison of GetSessionToken
+// API operations like Amazon EC2 StopInstances.
+//
+// MFA-enabled IAM users must call GetSessionToken and submit an MFA code that
+// is associated with their MFA device. Using the temporary security credentials
+// that the call returns, IAM users can then make programmatic calls to API
+// operations that require MFA authentication. An incorrect MFA code causes
+// the API to return an access denied error. For a comparison of GetSessionToken
 // with the other API operations that produce temporary credentials, see Requesting
 // Temporary Security Credentials (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html)
 // and Comparing the Amazon Web Services STS API operations (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#stsapi_comparison)
@@ -1287,13 +1286,12 @@ func (c *STS) GetSessionTokenRequest(input *GetSessionTokenInput) (req *request.
 // # Session Duration
 //
 // The GetSessionToken operation must be called by using the long-term Amazon
-// Web Services security credentials of the Amazon Web Services account root
-// user or an IAM user. Credentials that are created by IAM users are valid
-// for the duration that you specify. This duration can range from 900 seconds
-// (15 minutes) up to a maximum of 129,600 seconds (36 hours), with a default
-// of 43,200 seconds (12 hours). Credentials based on account credentials can
-// range from 900 seconds (15 minutes) up to 3,600 seconds (1 hour), with a
-// default of 1 hour.
+// Web Services security credentials of an IAM user. Credentials that are created
+// by IAM users are valid for the duration that you specify. This duration can
+// range from 900 seconds (15 minutes) up to a maximum of 129,600 seconds (36
+// hours), with a default of 43,200 seconds (12 hours). Credentials based on
+// account credentials can range from 900 seconds (15 minutes) up to 3,600 seconds
+// (1 hour), with a default of 1 hour.
 //
 // # Permissions
 //
@@ -1305,20 +1303,20 @@ func (c *STS) GetSessionTokenRequest(input *GetSessionTokenInput) (req *request.
 //
 //   - You cannot call any STS API except AssumeRole or GetCallerIdentity.
 //
-// We recommend that you do not call GetSessionToken with Amazon Web Services
-// account root user credentials. Instead, follow our best practices (https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#create-iam-users)
-// by creating one or more IAM users, giving them the necessary permissions,
-// and using IAM users for everyday interaction with Amazon Web Services.
+// The credentials that GetSessionToken returns are based on permissions associated
+// with the IAM user whose credentials were used to call the operation. The
+// temporary credentials have the same permissions as the IAM user.
 //
-// The credentials that are returned by GetSessionToken are based on permissions
-// associated with the user whose credentials were used to call the operation.
-// If GetSessionToken is called using Amazon Web Services account root user
-// credentials, the temporary credentials have root user permissions. Similarly,
-// if GetSessionToken is called using the credentials of an IAM user, the temporary
-// credentials have the same permissions as the IAM user.
+// Although it is possible to call GetSessionToken using the security credentials
+// of an Amazon Web Services account root user rather than an IAM user, we do
+// not recommend it. If GetSessionToken is called using root user credentials,
+// the temporary credentials have root user permissions. For more information,
+// see Safeguard your root user credentials and don't use them for everyday
+// tasks (https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#lock-away-credentials)
+// in the IAM User Guide
 //
 // For more information about using GetSessionToken to create temporary credentials,
-// go to Temporary Credentials for Users in Untrusted Environments (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_getsessiontoken)
+// see Temporary Credentials for Users in Untrusted Environments (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#api_getsessiontoken)
 // in the IAM User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -1461,6 +1459,17 @@ type AssumeRoleInput struct {
 	// assumed. For more information, see Session Policies (https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#policies_session)
 	// in the IAM User Guide.
 	PolicyArns []*PolicyDescriptorType `type:"list"`
+
+	// A list of previously acquired trusted context assertions in the format of
+	// a JSON array. The trusted context assertion is signed and encrypted by Amazon
+	// Web Services STS.
+	//
+	// The following is an example of a ProvidedContext value that includes a single
+	// trusted context assertion and the ARN of the context provider from which
+	// the trusted context assertion was generated.
+	//
+	// [{"ProviderArn":"arn:aws:iam::aws:contextProvider/IdentityCenter","ContextAssertion":"trusted-context-assertion"}]
+	ProvidedContexts []*ProvidedContext `type:"list"`
 
 	// The Amazon Resource Name (ARN) of the role to assume.
 	//
@@ -1635,6 +1644,16 @@ func (s *AssumeRoleInput) Validate() error {
 			}
 		}
 	}
+	if s.ProvidedContexts != nil {
+		for i, v := range s.ProvidedContexts {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "ProvidedContexts", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
 	if s.Tags != nil {
 		for i, v := range s.Tags {
 			if v == nil {
@@ -1673,6 +1692,12 @@ func (s *AssumeRoleInput) SetPolicy(v string) *AssumeRoleInput {
 // SetPolicyArns sets the PolicyArns field's value.
 func (s *AssumeRoleInput) SetPolicyArns(v []*PolicyDescriptorType) *AssumeRoleInput {
 	s.PolicyArns = v
+	return s
+}
+
+// SetProvidedContexts sets the ProvidedContexts field's value.
+func (s *AssumeRoleInput) SetProvidedContexts(v []*ProvidedContext) *AssumeRoleInput {
+	s.ProvidedContexts = v
 	return s
 }
 
@@ -1900,8 +1925,12 @@ type AssumeRoleWithSAMLInput struct {
 	// For more information, see Configuring a Relying Party and Adding Claims (https://docs.aws.amazon.com/IAM/latest/UserGuide/create-role-saml-IdP-tasks.html)
 	// in the IAM User Guide.
 	//
+	// SAMLAssertion is a sensitive parameter and its value will be
+	// replaced with "sensitive" in string returned by AssumeRoleWithSAMLInput's
+	// String and GoString methods.
+	//
 	// SAMLAssertion is a required field
-	SAMLAssertion *string `min:"4" type:"string" required:"true"`
+	SAMLAssertion *string `min:"4" type:"string" required:"true" sensitive:"true"`
 }
 
 // String returns the string representation.
@@ -2036,7 +2065,7 @@ type AssumeRoleWithSAMLOutput struct {
 	//    IAM.
 	//
 	// The combination of NameQualifier and Subject can be used to uniquely identify
-	// a federated user.
+	// a user.
 	//
 	// The following pseudocode shows how the hash value is calculated:
 	//
@@ -2264,10 +2293,15 @@ type AssumeRoleWithWebIdentityInput struct {
 	// The OAuth 2.0 access token or OpenID Connect ID token that is provided by
 	// the identity provider. Your application must get this token by authenticating
 	// the user who is using your application with a web identity provider before
-	// the application makes an AssumeRoleWithWebIdentity call.
+	// the application makes an AssumeRoleWithWebIdentity call. Only tokens with
+	// RSA algorithms (RS256) are supported.
+	//
+	// WebIdentityToken is a sensitive parameter and its value will be
+	// replaced with "sensitive" in string returned by AssumeRoleWithWebIdentityInput's
+	// String and GoString methods.
 	//
 	// WebIdentityToken is a required field
-	WebIdentityToken *string `min:"4" type:"string" required:"true"`
+	WebIdentityToken *string `min:"4" type:"string" required:"true" sensitive:"true"`
 }
 
 // String returns the string representation.
@@ -2573,8 +2607,12 @@ type Credentials struct {
 
 	// The secret access key that can be used to sign requests.
 	//
+	// SecretAccessKey is a sensitive parameter and its value will be
+	// replaced with "sensitive" in string returned by Credentials's
+	// String and GoString methods.
+	//
 	// SecretAccessKey is a required field
-	SecretAccessKey *string `type:"string" required:"true"`
+	SecretAccessKey *string `type:"string" required:"true" sensitive:"true"`
 
 	// The token that users must pass to the service API to use the temporary credentials.
 	//
@@ -2922,10 +2960,9 @@ type GetFederationTokenInput struct {
 	// The duration, in seconds, that the session should last. Acceptable durations
 	// for federation sessions range from 900 seconds (15 minutes) to 129,600 seconds
 	// (36 hours), with 43,200 seconds (12 hours) as the default. Sessions obtained
-	// using Amazon Web Services account root user credentials are restricted to
-	// a maximum of 3,600 seconds (one hour). If the specified duration is longer
-	// than one hour, the session obtained by using root user credentials defaults
-	// to one hour.
+	// using root user credentials are restricted to a maximum of 3,600 seconds
+	// (one hour). If the specified duration is longer than one hour, the session
+	// obtained by using root user credentials defaults to one hour.
 	DurationSeconds *int64 `min:"900" type:"integer"`
 
 	// The name of the federated user. The name is used as an identifier for the
@@ -3373,6 +3410,67 @@ func (s *PolicyDescriptorType) Validate() error {
 // SetArn sets the Arn field's value.
 func (s *PolicyDescriptorType) SetArn(v string) *PolicyDescriptorType {
 	s.Arn = &v
+	return s
+}
+
+// Contains information about the provided context. This includes the signed
+// and encrypted trusted context assertion and the context provider ARN from
+// which the trusted context assertion was generated.
+type ProvidedContext struct {
+	_ struct{} `type:"structure"`
+
+	// The signed and encrypted trusted context assertion generated by the context
+	// provider. The trusted context assertion is signed and encrypted by Amazon
+	// Web Services STS.
+	ContextAssertion *string `min:"4" type:"string"`
+
+	// The context provider ARN from which the trusted context assertion was generated.
+	ProviderArn *string `min:"20" type:"string"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ProvidedContext) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ProvidedContext) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ProvidedContext) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ProvidedContext"}
+	if s.ContextAssertion != nil && len(*s.ContextAssertion) < 4 {
+		invalidParams.Add(request.NewErrParamMinLen("ContextAssertion", 4))
+	}
+	if s.ProviderArn != nil && len(*s.ProviderArn) < 20 {
+		invalidParams.Add(request.NewErrParamMinLen("ProviderArn", 20))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetContextAssertion sets the ContextAssertion field's value.
+func (s *ProvidedContext) SetContextAssertion(v string) *ProvidedContext {
+	s.ContextAssertion = &v
+	return s
+}
+
+// SetProviderArn sets the ProviderArn field's value.
+func (s *ProvidedContext) SetProviderArn(v string) *ProvidedContext {
+	s.ProviderArn = &v
 	return s
 }
 

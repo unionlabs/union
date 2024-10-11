@@ -1,0 +1,8 @@
+{
+  "name": "bazel_repository_test",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/node": "18.15.11"
+  }
+}

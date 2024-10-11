@@ -1,0 +1,14 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["mock.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/eth/rewards/testing",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/rpc/eth/rewards:go_default_library",
+        "//beacon-chain/state:go_default_library",
+        "//consensus-types/interfaces:go_default_library",
+        "//network/httputil:go_default_library",
+    ],
+)

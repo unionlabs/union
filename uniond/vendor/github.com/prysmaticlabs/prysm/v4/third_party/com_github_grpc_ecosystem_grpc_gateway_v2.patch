@@ -1,0 +1,12 @@
+diff --git a/internal/descriptor/apiconfig/BUILD.bazel b/internal/descriptor/apiconfig/BUILD.bazel
+index 80dc57a2..76d4374f 100644
+--- a/internal/descriptor/apiconfig/BUILD.bazel
++++ b/internal/descriptor/apiconfig/BUILD.bazel
+@@ -11,6 +11,7 @@ proto_library(
+     ],
+     deps = [
+         "@go_googleapis//google/api:annotations_proto",
++        "@go_googleapis//google/api:http_proto",
+     ],
+ )
+ 

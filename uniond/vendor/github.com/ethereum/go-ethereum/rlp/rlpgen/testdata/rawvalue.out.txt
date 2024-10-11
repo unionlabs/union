@@ -1,0 +1,64 @@
+package test
+
+import "github.com/ethereum/go-ethereum/rlp"
+import "io"
+
+func (obj *Test) EncodeRLP(_w io.Writer) error {
+	w := rlp.NewEncoderBuffer(_w)
+	_tmp0 := w.List()
+	w.Write(obj.RawValue)
+	if obj.PointerToRawValue == nil {
+		w.Write([]byte{0x80})
+	} else {
+		w.Write((*obj.PointerToRawValue))
+	}
+	_tmp1 := w.List()
+	for _, _tmp2 := range obj.SliceOfRawValue {
+		w.Write(_tmp2)
+	}
+	w.ListEnd(_tmp1)
+	w.ListEnd(_tmp0)
+	return w.Flush()
+}
+
+func (obj *Test) DecodeRLP(dec *rlp.Stream) error {
+	var _tmp0 Test
+	{
+		if _, err := dec.List(); err != nil {
+			return err
+		}
+		// RawValue:
+		_tmp1, err := dec.Raw()
+		if err != nil {
+			return err
+		}
+		_tmp0.RawValue = _tmp1
+		// PointerToRawValue:
+		_tmp2, err := dec.Raw()
+		if err != nil {
+			return err
+		}
+		_tmp0.PointerToRawValue = &_tmp2
+		// SliceOfRawValue:
+		var _tmp3 []rlp.RawValue
+		if _, err := dec.List(); err != nil {
+			return err
+		}
+		for dec.MoreDataInList() {
+			_tmp4, err := dec.Raw()
+			if err != nil {
+				return err
+			}
+			_tmp3 = append(_tmp3, _tmp4)
+		}
+		if err := dec.ListEnd(); err != nil {
+			return err
+		}
+		_tmp0.SliceOfRawValue = _tmp3
+		if err := dec.ListEnd(); err != nil {
+			return err
+		}
+	}
+	*obj = _tmp0
+	return nil
+}

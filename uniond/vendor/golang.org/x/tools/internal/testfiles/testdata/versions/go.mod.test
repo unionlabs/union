@@ -1,0 +1,5 @@
+// File is versions/go.mod after expansion with TestDir()
+
+module golang.org/fake/versions
+
+go 1.22

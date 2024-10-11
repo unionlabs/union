@@ -38,7 +38,7 @@ type TokenSource struct {
 }
 
 // GetRequestMetadata gets the request metadata as a map from a TokenSource.
-func (ts TokenSource) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (ts TokenSource) GetRequestMetadata(ctx context.Context, _ ...string) (map[string]string, error) {
 	token, err := ts.Token()
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func NewOauthAccess(token *oauth2.Token) credentials.PerRPCCredentials {
 	return oauthAccess{token: *token}
 }
 
-func (oa oauthAccess) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (oa oauthAccess) GetRequestMetadata(ctx context.Context, _ ...string) (map[string]string, error) {
 	ri, _ := credentials.RequestInfoFromContext(ctx)
 	if err := credentials.CheckSecurityLevel(ri.AuthInfo, credentials.PrivacyAndIntegrity); err != nil {
 		return nil, fmt.Errorf("unable to transfer oauthAccess PerRPCCredentials: %v", err)
@@ -156,7 +156,7 @@ type serviceAccount struct {
 	t      *oauth2.Token
 }
 
-func (s *serviceAccount) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (s *serviceAccount) GetRequestMetadata(ctx context.Context, _ ...string) (map[string]string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.t.Valid() {

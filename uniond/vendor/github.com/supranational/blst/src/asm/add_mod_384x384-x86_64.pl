@@ -37,9 +37,31 @@ my @acc=(@acc,"%rax","%rbx","%rbp",$a_ptr);	# all registers are affected
 $code.=<<___;
 .text
 
-.type	__add_mod_384x384,\@abi-omnipotent
+.globl	add_mod_384x384
+.hidden	add_mod_384x384
+.type	add_mod_384x384,\@function,4,"unwind"
 .align	32
-__add_mod_384x384:
+add_mod_384x384:
+.cfi_startproc
+	push	%rbp
+.cfi_push	%rbp
+	push	%rbx
+.cfi_push	%rbx
+	push	%r12
+.cfi_push	%r12
+	push	%r13
+.cfi_push	%r13
+	push	%r14
+.cfi_push	%r14
+	push	%r15
+.cfi_push	%r15
+	sub	\$8, %rsp
+.cfi_adjust_cfa_offset	8
+.cfi_end_prologue
+
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -100,12 +122,50 @@ __add_mod_384x384:
 	mov	@acc[10], 8*10($r_ptr)
 	mov	@acc[11], 8*11($r_ptr)
 
+	mov	8(%rsp),%r15
+.cfi_restore	%r15
+	mov	16(%rsp),%r14
+.cfi_restore	%r14
+	mov	24(%rsp),%r13
+.cfi_restore	%r13
+	mov	32(%rsp),%r12
+.cfi_restore	%r12
+	mov	40(%rsp),%rbx
+.cfi_restore	%rbx
+	mov	48(%rsp),%rbp
+.cfi_restore	%rbp
+	lea	56(%rsp),%rsp
+.cfi_adjust_cfa_offset	-56
+.cfi_epilogue
 	ret
-.size	__add_mod_384x384,.-__add_mod_384x384
+.cfi_endproc
+.size	add_mod_384x384,.-add_mod_384x384
 
-.type	__sub_mod_384x384,\@abi-omnipotent
+.globl	sub_mod_384x384
+.hidden	sub_mod_384x384
+.type	sub_mod_384x384,\@function,4,"unwind"
 .align	32
-__sub_mod_384x384:
+sub_mod_384x384:
+.cfi_startproc
+	push	%rbp
+.cfi_push	%rbp
+	push	%rbx
+.cfi_push	%rbx
+	push	%r12
+.cfi_push	%r12
+	push	%r13
+.cfi_push	%r13
+	push	%r14
+.cfi_push	%r14
+	push	%r15
+.cfi_push	%r15
+	sub	\$8, %rsp
+.cfi_adjust_cfa_offset	8
+.cfi_end_prologue
+
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -164,76 +224,6 @@ __sub_mod_384x384:
 	adc	@acc[5], @acc[11]
 	mov	@acc[10], 8*10($r_ptr)
 	mov	@acc[11], 8*11($r_ptr)
-
-	ret
-.size	__sub_mod_384x384,.-__sub_mod_384x384
-
-.globl	add_mod_384x384
-.hidden	add_mod_384x384
-.type	add_mod_384x384,\@function,4,"unwind"
-.align	32
-add_mod_384x384:
-.cfi_startproc
-	push	%rbp
-.cfi_push	%rbp
-	push	%rbx
-.cfi_push	%rbx
-	push	%r12
-.cfi_push	%r12
-	push	%r13
-.cfi_push	%r13
-	push	%r14
-.cfi_push	%r14
-	push	%r15
-.cfi_push	%r15
-	sub	\$8, %rsp
-.cfi_adjust_cfa_offset	8
-.cfi_end_prologue
-
-	call	__add_mod_384x384
-
-	mov	8(%rsp),%r15
-.cfi_restore	%r15
-	mov	16(%rsp),%r14
-.cfi_restore	%r14
-	mov	24(%rsp),%r13
-.cfi_restore	%r13
-	mov	32(%rsp),%r12
-.cfi_restore	%r12
-	mov	40(%rsp),%rbx
-.cfi_restore	%rbx
-	mov	48(%rsp),%rbp
-.cfi_restore	%rbp
-	lea	56(%rsp),%rsp
-.cfi_adjust_cfa_offset	-56
-.cfi_epilogue
-	ret
-.cfi_endproc
-.size	add_mod_384x384,.-add_mod_384x384
-
-.globl	sub_mod_384x384
-.hidden	sub_mod_384x384
-.type	sub_mod_384x384,\@function,4,"unwind"
-.align	32
-sub_mod_384x384:
-.cfi_startproc
-	push	%rbp
-.cfi_push	%rbp
-	push	%rbx
-.cfi_push	%rbx
-	push	%r12
-.cfi_push	%r12
-	push	%r13
-.cfi_push	%r13
-	push	%r14
-.cfi_push	%r14
-	push	%r15
-.cfi_push	%r15
-	sub	\$8, %rsp
-.cfi_adjust_cfa_offset	8
-.cfi_end_prologue
-
-	call	__sub_mod_384x384
 
 	mov	8(%rsp),%r15
 .cfi_restore	%r15

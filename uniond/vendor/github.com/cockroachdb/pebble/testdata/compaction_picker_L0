@@ -1,0 +1,432 @@
+# 1 L0 file.
+define
+L0
+   000100:i.SET.101-j.SET.102
+----
+0.0:
+  000100:[i#101,SET-j#102,SET]
+
+pick-auto l0_compaction_threshold=1
+----
+L0 -> L6
+L0: 000100
+
+pick-auto l0_compaction_file_threshold=1
+----
+L0 -> L6
+L0: 000100
+
+pick-auto l0_compaction_threshold=4 l0_compaction_file_threshold=2
+----
+nil
+
+# 1 L0 file, 1 Lbase file.
+
+define
+L0
+   000100:i.SET.101-j.SET.102
+L6
+   000200:f.SET.51-l.SET.52
+----
+0.0:
+  000100:[i#101,SET-j#102,SET]
+6:
+  000200:[f#51,SET-l#52,SET]
+
+pick-auto l0_compaction_threshold=1
+----
+L0 -> L6
+L0: 000100
+L6: 000200
+
+pick-auto l0_compaction_threshold=2
+----
+L0 -> L6
+L0: 000100
+L6: 000200
+
+pick-auto l0_compaction_threshold=3
+----
+nil
+
+# 2 L0 files, no overlaps.
+
+define
+L0
+   000100:i.SET.101-j.SET.102
+   000110:k.SET.111-l.SET.112
+L6
+   000200:f.SET.51-l.SET.52
+----
+0.0:
+  000100:[i#101,SET-j#102,SET]
+  000110:[k#111,SET-l#112,SET]
+6:
+  000200:[f#51,SET-l#52,SET]
+
+pick-auto l0_compaction_threshold=1
+----
+L0 -> L6
+L0: 000100,000110
+L6: 000200
+
+pick-auto l0_compaction_threshold=2
+----
+L0 -> L6
+L0: 000100,000110
+L6: 000200
+
+pick-auto l0_compaction_threshold=3 l0_compaction_file_threshold=512
+----
+nil
+
+pick-auto l0_compaction_threshold=3 l0_compaction_file_threshold=3
+----
+nil
+
+pick-auto l0_compaction_threshold=3 l0_compaction_file_threshold=2
+----
+L0 -> L6
+L0: 000100,000110
+L6: 000200
+
+# 2 L0 files, with ikey overlap.
+
+define
+L0
+   000100:i.SET.101-p.SET.102
+   000110:j.SET.111-q.SET.112
+L6
+   000200:f.SET.51-s.SET.52
+----
+0.1:
+  000110:[j#111,SET-q#112,SET]
+0.0:
+  000100:[i#101,SET-p#102,SET]
+6:
+  000200:[f#51,SET-s#52,SET]
+
+pick-auto l0_compaction_threshold=2
+----
+L0 -> L6
+L0: 000100,000110
+L6: 000200
+
+define
+L0
+   000100:i.SET.101-p.SET.102
+   000110:j.SET.111-q.SET.112
+L6
+   000200:f.SET.51-s.SET.52
+----
+0.1:
+  000110:[j#111,SET-q#112,SET]
+0.0:
+  000100:[i#101,SET-p#102,SET]
+6:
+  000200:[f#51,SET-s#52,SET]
+
+pick-auto l0_compaction_threshold=2
+----
+L0 -> L6
+L0: 000100,000110
+L6: 000200
+
+# 2 L0 files, with ukey overlap.
+
+define
+L0
+   000100:i.SET.101-i.SET.102
+   000110:i.SET.111-i.SET.112
+L6
+   000200:f.SET.51-l.SET.52
+----
+0.1:
+  000110:[i#111,SET-i#112,SET]
+0.0:
+  000100:[i#101,SET-i#102,SET]
+6:
+  000200:[f#51,SET-l#52,SET]
+
+pick-auto l0_compaction_threshold=2
+----
+L0 -> L6
+L0: 000100,000110
+L6: 000200
+
+# 3 L0 files (1 overlap).
+
+define
+L0
+   000100:i.SET.101-p.SET.102
+   000110:j.SET.111-q.SET.112
+   000120:r.SET.113-s.SET.114
+L6
+   000200:f.SET.51-s.SET.52
+----
+0.1:
+  000110:[j#111,SET-q#112,SET]
+0.0:
+  000100:[i#101,SET-p#102,SET]
+  000120:[r#113,SET-s#114,SET]
+6:
+  000200:[f#51,SET-s#52,SET]
+
+pick-auto l0_compaction_threshold=2
+----
+L0 -> L6
+L0: 000100,000110,000120
+L6: 000200
+
+pick-auto l0_compaction_threshold=3
+----
+L0 -> L6
+L0: 000100,000110,000120
+L6: 000200
+
+pick-auto l0_compaction_threshold=4
+----
+L0 -> L6
+L0: 000100,000110,000120
+L6: 000200
+
+pick-auto l0_compaction_threshold=6 l0_compaction_file_threshold=512
+----
+nil
+
+# 3 L0 files (1 overlap, 1 intra-L0 compacting). Should avoid the compacting
+# file.
+
+define
+L0
+   000100:i.SET.101-p.SET.102
+   000110:j.SET.111-q.SET.112
+   000120:r.SET.113-s.SET.114
+L6
+   000200:f.SET.51-s.SET.52
+compactions
+  L0 000120 -> L0
+----
+0.1:
+  000110:[j#111,SET-q#112,SET]
+0.0:
+  000100:[i#101,SET-p#102,SET]
+  000120:[r#113,SET-s#114,SET]
+6:
+  000200:[f#51,SET-s#52,SET]
+compactions
+  L0 000120 -> L0
+
+pick-auto l0_compaction_threshold=2
+----
+L0 -> L6
+L0: 000100,000110
+L6: 000200
+
+# 3 L0 files (1 overlap), Lbase compacting.
+# Should choose an intra-L0 compaction. Note that intra-L0 compactions
+# don't follow l0_compaction_threshold, but rather a minIntraL0Count constant
+# in compaction_picker.go
+
+define
+L0
+   000100:i.SET.101-p.SET.102
+   000110:j.SET.111-q.SET.112
+   000120:r.SET.113-s.SET.114
+   000130:i.SET.110-p.SET.110
+   000140:i.SET.120-p.SET.120
+L6
+   000200:f.SET.51-s.SET.52
+compactions
+  L6 000200 -> L6
+----
+0.3:
+  000140:[i#120,SET-p#120,SET]
+0.2:
+  000130:[i#110,SET-p#110,SET]
+0.1:
+  000110:[j#111,SET-q#112,SET]
+0.0:
+  000100:[i#101,SET-p#102,SET]
+  000120:[r#113,SET-s#114,SET]
+6:
+  000200:[f#51,SET-s#52,SET]
+compactions
+  L6 000200 -> L6
+
+pick-auto
+----
+L0 -> L0
+L0: 000100,000110,000130,000140
+
+max-output-file-size
+----
+2097152
+
+max-overlap-bytes
+----
+20971520
+
+# 1 L0 file. Should not choose any compaction, as an intra-L0 compaction
+# with one input is unhelpful.
+
+define
+L0
+   000100:i.SET.101-p.SET.102
+L6
+   000200:f.SET.51-s.SET.52
+compactions
+  L6 000200 -> L6
+----
+0.0:
+  000100:[i#101,SET-p#102,SET]
+6:
+  000200:[f#51,SET-s#52,SET]
+compactions
+  L6 000200 -> L6
+
+pick-auto l0_compaction_threshold=1
+----
+nil
+
+# Test an in-progress L0->Lbase compaction with another L0 file that does not
+# overlap any of the compacting files in L0 or Lbase, but does overlap the
+# compaction's range. No new compaction should be picked because the
+# in-progress compaction's output tables could overlap the non-compacting
+# file.
+
+define
+L0
+  000010:a.SET.11-b.SET.12
+  000013:k.SET.23-n.SET.24
+  000011:x.SET.13-z.SET.25
+L1
+  000101:a.SET.1-f.SET.2
+  000102:w.SET.3-z.SET.4
+compactions
+  L0 000010 000011 -> L1 000101 000102
+----
+0.0:
+  000010:[a#11,SET-b#12,SET]
+  000013:[k#23,SET-n#24,SET]
+  000011:[x#13,SET-z#25,SET]
+1:
+  000101:[a#1,SET-f#2,SET]
+  000102:[w#3,SET-z#4,SET]
+compactions
+  L0 000010 000011 -> L1 000101 000102
+
+pick-auto l0_compaction_threshold=2
+----
+nil
+
+define
+L0
+  001621:b.MERGE.1261-b.MERGE.1261
+  001603:d.DEL.1248-d.DEL.1248
+  001609:e.DEL.1253-e.DEL.1253
+L6
+  001615:a.RANGEDEL.1254-c.RANGEDEL.72057594037927935
+  001619:c.SET.0-c.SET.0
+----
+0.0:
+  001621:[b#1261,MERGE-b#1261,MERGE]
+  001603:[d#1248,DEL-d#1248,DEL]
+  001609:[e#1253,DEL-e#1253,DEL]
+6:
+  001615:[a#1254,RANGEDEL-c#inf,RANGEDEL]
+  001619:[c#0,SET-c#0,SET]
+
+pick-auto
+----
+L0 -> L6
+L0: 001621
+L6: 001615
+
+define
+L0
+  001445:b.RANGEDEL.528-e.RANGEDEL.72057594037927935
+  001448:g.RANGEDEL.529-h.RANGEDEL.72057594037927935
+L6
+  001428:a.MERGE.486-c.RANGEDEL.72057594037927935
+  001424:c.MERGE.479-d.RANGEDEL.72057594037927935
+  001442:f.MERGE.0-i.SET.0
+----
+0.0:
+  001445:[b#528,RANGEDEL-e#inf,RANGEDEL]
+  001448:[g#529,RANGEDEL-h#inf,RANGEDEL]
+6:
+  001428:[a#486,MERGE-c#inf,RANGEDEL]
+  001424:[c#479,MERGE-d#inf,RANGEDEL]
+  001442:[f#0,MERGE-i#0,SET]
+
+pick-auto
+----
+L0 -> L6
+L0: 001445
+L6: 001424,001428
+
+define
+L0
+  000002:b.SET.12-b.SET.12
+  000003:c.SET.13-c.SET.13
+L6
+  000603:c.SET.03-c.SET.03
+----
+0.0:
+  000002:[b#12,SET-b#12,SET]
+  000003:[c#13,SET-c#13,SET]
+6:
+  000603:[c#3,SET-c#3,SET]
+
+pick-auto
+----
+L0 -> L6
+L0: 000002
+
+define
+L0
+  000053:e.SET.24-e.SET.24
+  000055:x.SET.25-x.SET.25
+  000051:e.DEL.23-e.DEL.23
+  000049:t.SET.22-t.SET.22
+  000046:x.MERGE.21-x.MERGE.21
+L6
+  000045:f.SET.0-x.SET.0
+----
+0.1:
+  000051:[e#23,DEL-e#23,DEL]
+  000046:[x#21,MERGE-x#21,MERGE]
+0.0:
+  000053:[e#24,SET-e#24,SET]
+  000049:[t#22,SET-t#22,SET]
+  000055:[x#25,SET-x#25,SET]
+6:
+  000045:[f#0,SET-x#0,SET]
+
+pick-auto
+----
+L0 -> L6
+L0: 000051,000053
+
+# At low priority, find and compact marked-for-compaction files.
+
+define
+L0
+  000049:t.SET.22-t.SET.22
+L6
+  000045:f.SET.0-x.SET.0
+----
+0.0:
+  000049:[t#22,SET-t#22,SET]
+6:
+  000045:[f#0,SET-x#0,SET]
+
+mark-for-compaction file=000049
+----
+marked L0.000049
+
+pick-auto l0_compaction_threshold=1000
+----
+L0 -> L0
+L0: 000049

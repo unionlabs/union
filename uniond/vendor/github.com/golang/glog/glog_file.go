@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -68,9 +67,8 @@ func init() {
 		host = shortHostname(h)
 	}
 
-	current, err := user.Current()
-	if err == nil {
-		userName = current.Username
+	if u := lookupUser(); u != "" {
+		userName = u
 	}
 	// Sanitize userName since it is used to construct file paths.
 	userName = strings.Map(func(r rune) rune {
@@ -369,9 +367,6 @@ func (s *fileSink) Flush() error {
 
 // flush flushes all logs of severity threshold or greater.
 func (s *fileSink) flush(threshold logsink.Severity) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	var firstErr error
 	updateErr := func(err error) {
 		if err != nil && firstErr == nil {
@@ -379,13 +374,23 @@ func (s *fileSink) flush(threshold logsink.Severity) error {
 		}
 	}
 
-	// Flush from fatal down, in case there's trouble flushing.
-	for sev := logsink.Fatal; sev >= threshold; sev-- {
-		file := s.file[sev]
-		if file != nil {
-			updateErr(file.Flush())
-			updateErr(file.Sync())
+	// Remember where we flushed, so we can call sync without holding
+	// the lock.
+	var files []flushSyncWriter
+	func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		// Flush from fatal down, in case there's trouble flushing.
+		for sev := logsink.Fatal; sev >= threshold; sev-- {
+			if file := s.file[sev]; file != nil {
+				updateErr(file.Flush())
+				files = append(files, file)
+			}
 		}
+	}()
+
+	for _, file := range files {
+		updateErr(file.Sync())
 	}
 
 	return firstErr

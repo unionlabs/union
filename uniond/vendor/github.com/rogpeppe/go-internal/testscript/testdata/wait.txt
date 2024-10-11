@@ -1,0 +1,41 @@
+[!exec:echo] skip
+[!exec:false] skip
+
+# TODO: the '\n' below doesn't work on Windows on Github Actions, which does
+# have coreutils like "echo" installed. Perhaps they emit CRLF?
+[windows] skip
+
+exec echo foo
+stdout foo
+
+exec echo foo &
+exec echo bar &
+! exec false &
+
+# Starting a background process should clear previous output.
+! stdout foo
+
+# Wait should set the output to the concatenated outputs of the background
+# programs, in the order in which they were started.
+wait
+stdout 'foo\nbar'
+
+exec echo bg1 &b1&
+exec echo bg2 &b2&
+exec echo bg3 &b3&
+exec echo bg4 &b4&
+
+wait b3
+stdout bg3
+wait b2
+stdout bg2
+wait
+stdout 'bg1\nbg4'
+
+# We should be able to start several background processes and wait for them
+# individually.
+
+# The end of the test should interrupt or kill any remaining background
+# programs.
+[!exec:sleep] skip
+! exec sleep 86400 &

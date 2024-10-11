@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package test.issue270.a;
+
+import "gogoproto/gogo.proto";
+import "test/issue270/b/b.proto";
+
+option (gogoproto.populate_all) = true;
+
+message A2 { optional test.issue270.b.B b = 1; }
