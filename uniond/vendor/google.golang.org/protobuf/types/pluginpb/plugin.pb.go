@@ -107,11 +107,9 @@ type Version struct {
 
 func (x *Version) Reset() {
 	*x = Version{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_google_protobuf_compiler_plugin_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_google_protobuf_compiler_plugin_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *Version) String() string {
@@ -122,7 +120,7 @@ func (*Version) ProtoMessage() {}
 
 func (x *Version) ProtoReflect() protoreflect.Message {
 	mi := &file_google_protobuf_compiler_plugin_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -207,11 +205,9 @@ type CodeGeneratorRequest struct {
 
 func (x *CodeGeneratorRequest) Reset() {
 	*x = CodeGeneratorRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_google_protobuf_compiler_plugin_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_google_protobuf_compiler_plugin_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *CodeGeneratorRequest) String() string {
@@ -222,7 +218,7 @@ func (*CodeGeneratorRequest) ProtoMessage() {}
 
 func (x *CodeGeneratorRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_google_protobuf_compiler_plugin_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -305,11 +301,9 @@ type CodeGeneratorResponse struct {
 
 func (x *CodeGeneratorResponse) Reset() {
 	*x = CodeGeneratorResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_google_protobuf_compiler_plugin_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_google_protobuf_compiler_plugin_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *CodeGeneratorResponse) String() string {
@@ -320,7 +314,7 @@ func (*CodeGeneratorResponse) ProtoMessage() {}
 
 func (x *CodeGeneratorResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_google_protobuf_compiler_plugin_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -440,11 +434,9 @@ type CodeGeneratorResponse_File struct {
 
 func (x *CodeGeneratorResponse_File) Reset() {
 	*x = CodeGeneratorResponse_File{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_google_protobuf_compiler_plugin_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_google_protobuf_compiler_plugin_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *CodeGeneratorResponse_File) String() string {
@@ -455,7 +447,7 @@ func (*CodeGeneratorResponse_File) ProtoMessage() {}
 
 func (x *CodeGeneratorResponse_File) ProtoReflect() protoreflect.Message {
 	mi := &file_google_protobuf_compiler_plugin_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -617,56 +609,6 @@ func init() { file_google_protobuf_compiler_plugin_proto_init() }
 func file_google_protobuf_compiler_plugin_proto_init() {
 	if File_google_protobuf_compiler_plugin_proto != nil {
 		return
-	}
-	if !protoimpl.UnsafeEnabled {
-		file_google_protobuf_compiler_plugin_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*Version); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_google_protobuf_compiler_plugin_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*CodeGeneratorRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_google_protobuf_compiler_plugin_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*CodeGeneratorResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_google_protobuf_compiler_plugin_proto_msgTypes[3].Exporter = func(v any, i int) any {
-			switch v := v.(*CodeGeneratorResponse_File); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

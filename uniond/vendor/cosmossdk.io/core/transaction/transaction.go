@@ -10,6 +10,14 @@ type (
 	Identity = []byte
 )
 
+// GenericMsg defines a generic version of a Msg.
+// The GenericMsg refers to the non pointer version of Msg,
+// and is required to allow its instantiations in generic contexts.
+type GenericMsg[T any] interface {
+	*T
+	Msg
+}
+
 // Codec defines the TX codec, which converts a TX from bytes to its concrete representation.
 type Codec[T Tx] interface {
 	// Decode decodes the tx bytes into a DecodedTx, containing

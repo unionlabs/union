@@ -43,7 +43,7 @@ halt-time = 0
 # It has no bearing on application state pruning which is determined by the
 # "pruning-*" configurations.
 #
-# Note: Tendermint block pruning is dependant on this parameter in conjunction
+# Note: Tendermint block pruning is dependent on this parameter in conjunction
 # with the unbonding (safety threshold) period, state pruning and state sync
 # snapshot parameters to determine the correct minimum value of
 # ResponseCommit.RetainHeight.
@@ -172,7 +172,7 @@ enable-fee-suggestion = false
 # GasToSuggest defines gas limit when calculating the fee
 gas-to-suggest = 200000
 
-# DenomToSuggest defines the defult denom for fee suggestion.
+# DenomToSuggest defines the default denom for fee suggestion.
 # Price must be in minimum-gas-prices.
 denom-to-suggest = "uatom"
 

@@ -163,27 +163,6 @@ func genReflectFileDescriptor(gen *protogen.Plugin, g *protogen.GeneratedFile, f
 	}
 
 	if len(f.allMessages) > 0 {
-		// Populate MessageInfo.Exporters.
-		g.P("if !", protoimplPackage.Ident("UnsafeEnabled"), " {")
-		for _, message := range f.allMessages {
-			if sf := f.allMessageFieldsByPtr[message]; len(sf.unexported) > 0 {
-				idx := f.allMessagesByPtr[message]
-				typesVar := messageTypesVarName(f)
-
-				g.P(typesVar, "[", idx, "].Exporter = func(v any, i int) any {")
-				g.P("switch v := v.(*", message.GoIdent, "); i {")
-				for i := 0; i < sf.count; i++ {
-					if name := sf.unexported[i]; name != "" {
-						g.P("case ", i, ": return &v.", name)
-					}
-				}
-				g.P("default: return nil")
-				g.P("}")
-				g.P("}")
-			}
-		}
-		g.P("}")
-
 		// Populate MessageInfo.OneofWrappers.
 		for _, message := range f.allMessages {
 			if len(message.Oneofs) > 0 {
@@ -331,7 +310,7 @@ func genMessageReflectMethods(g *protogen.GeneratedFile, f *fileInfo, m *message
 	// ProtoReflect method.
 	g.P("func (x *", m.GoIdent, ") ProtoReflect() ", protoreflectPackage.Ident("Message"), " {")
 	g.P("mi := &", typesVar, "[", idx, "]")
-	g.P("if ", protoimplPackage.Ident("UnsafeEnabled"), " && x != nil {")
+	g.P("if x != nil {")
 	g.P("ms := ", protoimplPackage.Ident("X"), ".MessageStateOf(", protoimplPackage.Ident("Pointer"), "(x))")
 	g.P("if ms.LoadMessageInfo() == nil {")
 	g.P("ms.StoreMessageInfo(mi)")

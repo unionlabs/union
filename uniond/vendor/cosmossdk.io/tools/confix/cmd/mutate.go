@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/creachadair/tomledit"
@@ -19,7 +20,7 @@ import (
 // SetCommand returns a CLI command to interactively update an application config value.
 func SetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "set [config] [key] [value]",
+		Use:   "set <config> <key> <value>",
 		Short: "Set an application config value",
 		Long:  "Set an application config value. The [config] argument must be the path of the file when using the `confix` tool standalone, otherwise it must be the name of the config file without the .toml extension.",
 		Args:  cobra.ExactArgs(3),
@@ -30,7 +31,7 @@ func SetCommand() *cobra.Command {
 
 			clientCtx := client.GetClientContextFromCmd(cmd)
 			if clientCtx.HomeDir != "" {
-				filename = fmt.Sprintf("%s/config/%s.toml", clientCtx.HomeDir, filename)
+				filename = filepath.Join(clientCtx.HomeDir, "config", filename+tomlSuffix)
 			}
 
 			plan := transform.Plan{
@@ -72,7 +73,12 @@ func SetCommand() *cobra.Command {
 				ctx = confix.WithLogWriter(ctx, cmd.ErrOrStderr())
 			}
 
-			return confix.Upgrade(ctx, plan, filename, outputPath, FlagSkipValidate)
+			doc, err := confix.LoadConfig(filename)
+			if err != nil {
+				return err
+			}
+
+			return confix.Upgrade(ctx, plan, doc, filename, outputPath, FlagSkipValidate)
 		},
 	}
 
@@ -86,7 +92,7 @@ func SetCommand() *cobra.Command {
 // GetCommand returns a CLI command to interactively get an application config value.
 func GetCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get [config] [key]",
+		Use:   "get <config> <key>",
 		Short: "Get an application config value",
 		Long:  "Get an application config value. The [config] argument must be the path of the file when using the `confix` tool standalone, otherwise it must be the name of the config file without the .toml extension.",
 		Args:  cobra.ExactArgs(2),
@@ -97,7 +103,7 @@ func GetCommand() *cobra.Command {
 
 			clientCtx := client.GetClientContextFromCmd(cmd)
 			if clientCtx.HomeDir != "" {
-				filename = fmt.Sprintf("%s/config/%s.toml", clientCtx.HomeDir, filename)
+				filename = filepath.Join(clientCtx.HomeDir, "config", filename+tomlSuffix)
 			}
 
 			doc, err := confix.LoadConfig(filename)

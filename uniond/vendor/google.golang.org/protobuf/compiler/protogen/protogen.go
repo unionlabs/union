@@ -152,6 +152,18 @@ type Options struct {
 	// imported by a generated file. It returns the import path to use
 	// for this package.
 	ImportRewriteFunc func(GoImportPath) GoImportPath
+
+	// StripForEditionsDiff true means that the plugin will not emit certain
+	// parts of the generated code in order to make it possible to compare a
+	// proto2/proto3 file with its equivalent (according to proto spec)
+	// editions file. Primarily, this is the encoded descriptor.
+	//
+	// This must be a registered flag that is initialized by ParamFunc. It will
+	// be used by Options.New after it has parsed the flags.
+	//
+	// This struct field is for internal use by Go Protobuf only. Do not use it,
+	// we might remove it at any time.
+	InternalStripForEditionsDiff *bool
 }
 
 // New returns a new Plugin.
@@ -344,6 +356,15 @@ func (opts Options) New(req *pluginpb.CodeGeneratorRequest) (*Plugin, error) {
 	return gen, nil
 }
 
+// InternalStripForEditionsDiff returns whether or not to strip non-functional
+// codegen for editions diff testing.
+//
+// This function is for internal use by Go Protobuf only. Do not use it, we
+// might remove it at any time.
+func (gen *Plugin) InternalStripForEditionsDiff() bool {
+	return gen.opts.InternalStripForEditionsDiff != nil && *gen.opts.InternalStripForEditionsDiff
+}
+
 // Error records an error in code generation. The generator will report the
 // error back to protoc and will not produce output.
 func (gen *Plugin) Error(err error) {
@@ -355,6 +376,20 @@ func (gen *Plugin) Error(err error) {
 // Response returns the generator output.
 func (gen *Plugin) Response() *pluginpb.CodeGeneratorResponse {
 	resp := &pluginpb.CodeGeneratorResponse{}
+	// Always report the support for editions. Otherwise protoc might obfuscate
+	// the error by saying editions are not supported by the plugin.
+	// It is arguable if protoc should handle this but it is possible that the
+	// error only exists because the plugin does not support editions and thus
+	// it is not unreasonable for protoc to suspect it is the lack of editions
+	// support that led to this error.
+	if gen.SupportedFeatures > 0 {
+		resp.SupportedFeatures = proto.Uint64(gen.SupportedFeatures)
+	}
+	if gen.SupportedEditionsMinimum != descriptorpb.Edition_EDITION_UNKNOWN && gen.SupportedEditionsMaximum != descriptorpb.Edition_EDITION_UNKNOWN {
+		resp.MinimumEdition = proto.Int32(int32(gen.SupportedEditionsMinimum))
+		resp.MaximumEdition = proto.Int32(int32(gen.SupportedEditionsMaximum))
+	}
+
 	if gen.err != nil {
 		resp.Error = proto.String(gen.err.Error())
 		return resp
@@ -395,13 +430,6 @@ func (gen *Plugin) Response() *pluginpb.CodeGeneratorResponse {
 				Content: proto.String(meta),
 			})
 		}
-	}
-	if gen.SupportedFeatures > 0 {
-		resp.SupportedFeatures = proto.Uint64(gen.SupportedFeatures)
-	}
-	if gen.SupportedEditionsMinimum != descriptorpb.Edition_EDITION_UNKNOWN && gen.SupportedEditionsMaximum != descriptorpb.Edition_EDITION_UNKNOWN {
-		resp.MinimumEdition = proto.Int32(int32(gen.SupportedEditionsMinimum))
-		resp.MaximumEdition = proto.Int32(int32(gen.SupportedEditionsMaximum))
 	}
 	return resp
 }
@@ -531,7 +559,7 @@ func newEnum(gen *Plugin, f *File, parent *Message, desc protoreflect.EnumDescri
 		Desc:     desc,
 		GoIdent:  newGoIdent(f, desc),
 		Location: loc,
-		Comments: makeCommentSet(f.Desc.SourceLocations().ByDescriptor(desc)),
+		Comments: makeCommentSet(gen, f.Desc.SourceLocations().ByDescriptor(desc)),
 	}
 	gen.enumsByName[desc.FullName()] = enum
 	for i, vds := 0, enum.Desc.Values(); i < vds.Len(); i++ {
@@ -568,7 +596,7 @@ func newEnumValue(gen *Plugin, f *File, message *Message, enum *Enum, desc proto
 		GoIdent:  f.GoImportPath.Ident(name),
 		Parent:   enum,
 		Location: loc,
-		Comments: makeCommentSet(f.Desc.SourceLocations().ByDescriptor(desc)),
+		Comments: makeCommentSet(gen, f.Desc.SourceLocations().ByDescriptor(desc)),
 	}
 }
 
@@ -600,7 +628,7 @@ func newMessage(gen *Plugin, f *File, parent *Message, desc protoreflect.Message
 		Desc:     desc,
 		GoIdent:  newGoIdent(f, desc),
 		Location: loc,
-		Comments: makeCommentSet(f.Desc.SourceLocations().ByDescriptor(desc)),
+		Comments: makeCommentSet(gen, f.Desc.SourceLocations().ByDescriptor(desc)),
 	}
 	gen.messagesByName[desc.FullName()] = message
 	for i, eds := 0, desc.Enums(); i < eds.Len(); i++ {
@@ -770,7 +798,7 @@ func newField(gen *Plugin, f *File, message *Message, desc protoreflect.FieldDes
 		},
 		Parent:   message,
 		Location: loc,
-		Comments: makeCommentSet(f.Desc.SourceLocations().ByDescriptor(desc)),
+		Comments: makeCommentSet(gen, f.Desc.SourceLocations().ByDescriptor(desc)),
 	}
 	return field
 }
@@ -837,7 +865,7 @@ func newOneof(gen *Plugin, f *File, message *Message, desc protoreflect.OneofDes
 			GoName:       parentPrefix + camelCased,
 		},
 		Location: loc,
-		Comments: makeCommentSet(f.Desc.SourceLocations().ByDescriptor(desc)),
+		Comments: makeCommentSet(gen, f.Desc.SourceLocations().ByDescriptor(desc)),
 	}
 }
 
@@ -862,7 +890,7 @@ func newService(gen *Plugin, f *File, desc protoreflect.ServiceDescriptor) *Serv
 		Desc:     desc,
 		GoName:   strs.GoCamelCase(string(desc.Name())),
 		Location: loc,
-		Comments: makeCommentSet(f.Desc.SourceLocations().ByDescriptor(desc)),
+		Comments: makeCommentSet(gen, f.Desc.SourceLocations().ByDescriptor(desc)),
 	}
 	for i, mds := 0, desc.Methods(); i < mds.Len(); i++ {
 		service.Methods = append(service.Methods, newMethod(gen, f, service, mds.Get(i)))
@@ -892,7 +920,7 @@ func newMethod(gen *Plugin, f *File, service *Service, desc protoreflect.MethodD
 		GoName:   strs.GoCamelCase(string(desc.Name())),
 		Parent:   service,
 		Location: loc,
-		Comments: makeCommentSet(f.Desc.SourceLocations().ByDescriptor(desc)),
+		Comments: makeCommentSet(gen, f.Desc.SourceLocations().ByDescriptor(desc)),
 	}
 	return method
 }
@@ -919,28 +947,30 @@ func (method *Method) resolveDependencies(gen *Plugin) error {
 
 // A GeneratedFile is a generated file.
 type GeneratedFile struct {
-	gen              *Plugin
-	skip             bool
-	filename         string
-	goImportPath     GoImportPath
-	buf              bytes.Buffer
-	packageNames     map[GoImportPath]GoPackageName
-	usedPackageNames map[GoPackageName]bool
-	manualImports    map[GoImportPath]bool
-	annotations      map[string][]Annotation
+	gen                  *Plugin
+	skip                 bool
+	filename             string
+	goImportPath         GoImportPath
+	buf                  bytes.Buffer
+	packageNames         map[GoImportPath]GoPackageName
+	usedPackageNames     map[GoPackageName]bool
+	manualImports        map[GoImportPath]bool
+	annotations          map[string][]Annotation
+	stripForEditionsDiff bool
 }
 
 // NewGeneratedFile creates a new generated file with the given filename
 // and import path.
 func (gen *Plugin) NewGeneratedFile(filename string, goImportPath GoImportPath) *GeneratedFile {
 	g := &GeneratedFile{
-		gen:              gen,
-		filename:         filename,
-		goImportPath:     goImportPath,
-		packageNames:     make(map[GoImportPath]GoPackageName),
-		usedPackageNames: make(map[GoPackageName]bool),
-		manualImports:    make(map[GoImportPath]bool),
-		annotations:      make(map[string][]Annotation),
+		gen:                  gen,
+		filename:             filename,
+		goImportPath:         goImportPath,
+		packageNames:         make(map[GoImportPath]GoPackageName),
+		usedPackageNames:     make(map[GoPackageName]bool),
+		manualImports:        make(map[GoImportPath]bool),
+		annotations:          make(map[string][]Annotation),
+		stripForEditionsDiff: gen.InternalStripForEditionsDiff(),
 	}
 
 	// All predeclared identifiers in Go are already used.
@@ -1011,6 +1041,17 @@ func (g *GeneratedFile) Skip() {
 // re-including the generated file in the plugin output.
 func (g *GeneratedFile) Unskip() {
 	g.skip = false
+}
+
+// InternalStripForEditionsDiff returns true if the plugin should not emit certain
+// parts of the generated code in order to make it possible to compare a
+// proto2/proto3 file with its equivalent (according to proto spec) editions
+// file. Primarily, this is the encoded descriptor.
+//
+// This function is for internal use by Go Protobuf only. Do not use it, we
+// might remove it at any time.
+func (g *GeneratedFile) InternalStripForEditionsDiff() bool {
+	return g.stripForEditionsDiff
 }
 
 // Annotate associates a symbol in a generated Go file with a location in a
@@ -1291,7 +1332,10 @@ type CommentSet struct {
 	Trailing        Comments
 }
 
-func makeCommentSet(loc protoreflect.SourceLocation) CommentSet {
+func makeCommentSet(gen *Plugin, loc protoreflect.SourceLocation) CommentSet {
+	if gen.InternalStripForEditionsDiff() {
+		return CommentSet{}
+	}
 	var leadingDetached []Comments
 	for _, s := range loc.LeadingDetachedComments {
 		leadingDetached = append(leadingDetached, Comments(s))
