@@ -1,6 +1,7 @@
 package bindings
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -14,8 +15,8 @@ import (
 )
 
 // CustomQuerier dispatches custom CosmWasm bindings queries.
-func CustomQuerier(qp *QueryPlugin) func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
-	return func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
+func CustomQuerier(qp *QueryPlugin) func(ctx context.Context, request json.RawMessage) ([]byte, error) {
+	return func(ctx context.Context, request json.RawMessage) ([]byte, error) {
 		var contractQuery bindingstypes.TokenFactoryQuery
 		if err := json.Unmarshal(request, &contractQuery); err != nil {
 			return nil, errorsmod.Wrap(err, "tokenfactory query")

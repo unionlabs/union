@@ -59,8 +59,8 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 }
 
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgCreateDenom{}, createTFDenom, nil)
-	cdc.RegisterConcrete(&MsgMint{}, mintTFDenom, nil)
-	cdc.RegisterConcrete(&MsgBurn{}, burnTFDenom, nil)
-	cdc.RegisterConcrete(&MsgChangeAdmin{}, changeAdminTFDenom, nil)
+	cdc.RegisterConcrete(&MsgCreateDenom{}, createTFDenom)
+	cdc.RegisterConcrete(&MsgMint{}, mintTFDenom)
+	cdc.RegisterConcrete(&MsgBurn{}, burnTFDenom)
+	cdc.RegisterConcrete(&MsgChangeAdmin{}, changeAdminTFDenom)
 }

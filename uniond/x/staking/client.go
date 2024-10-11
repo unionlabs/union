@@ -7,11 +7,11 @@ import (
 	"fmt"
 
 	"cosmossdk.io/core/address"
+	stakingcli "cosmossdk.io/x/staking/client/cli"
+	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
-	stakingcli "cosmossdk.io/x/staking/client/cli"
-	stakingtypes "cosmossdk.io/x/staking/types"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +27,7 @@ func NewTxCmd(ac address.Codec) *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	createValidatorCmd := stakingcli.NewCreateValidatorCmd(ac)
+	createValidatorCmd := stakingcli.NewCreateValidatorCmd()
 	createUnionValidatorCmd := &cobra.Command{
 		Use:   "create-union-validator [/path/to/validator.json] [proof_of_possession]",
 		Short: "",

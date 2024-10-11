@@ -33,8 +33,8 @@ import (
 )
 
 var (
-	_ module.AppModule      = AppModule{}
-	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.AppModule = AppModule{}
+	_ module.AppModule = AppModuleBasic{}
 )
 
 // ConsensusVersion defines the current x/tokenfactory module consensus version.
