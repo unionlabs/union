@@ -26,8 +26,8 @@ _: {
       solady = pkgs.fetchFromGitHub {
         owner = "vectorized";
         repo = "solady";
-        rev = "v0.0.162";
-        hash = "sha256-9lgXwW2YQABfaklGdDYIXU8qFBapszoB4+mAatKV9bs=";
+        rev = "v0.0.253";
+        hash = "sha256-P8joH3RZvA2GijTVlRE6CmSSP730Q3zY8k9jiWflyDk=";
       };
       forge-std = pkgs.fetchFromGitHub {
         owner = "foundry-rs";
@@ -449,33 +449,35 @@ _: {
             }
           );
 
-          # NOTE: currently unable to build the tests with coverage, tried many different combination of the optimizer though...
-          # solidity-coverage =
-          #   pkgs.runCommand "solidity-coverage"
-          #     {
-          #       buildInputs = [ self'.packages.forge pkgs.lcov ];
-          #     } ''
-          #     FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
-          #     lcov --remove ./lcov.info -o ./lcov.info.pruned \
-          #       '${evmSources}/contracts/proto/*' \
-          #       '${evmSources}/contracts/clients/MockClient.sol' \
-          #       '${evmSources}/contracts/clients/Verifier.sol' \
-          #       '${evmSources}/contracts/apps/ucs/00-pingpong/*' \
-          #       '${evmSources}/contracts/core/DevnetIBCHandlerInit.sol' \
-          #       '${evmSources}/contracts/core/DevnetOwnableIBCHandler.sol' \
-          #       '${evmSources}/contracts/core/OwnableIBCHandler.sol' \
-          #       '${evmSources}/contracts/core/24-host/IBCCommitment.sol' \
-          #       '${evmSources}/tests/*'
-          #     genhtml lcov.info.pruned -o $out --branch-coverage
-          #     mv lcov.info.pruned $out/lcov.info
-          #   '';
-          # show-solidity-coverage = pkgs.writeShellApplication {
-          #   name = "show-solidity-coverage";
-          #   runtimeInputs = [ ];
-          #   text = ''
-          #     xdg-open ${self'.packages.solidity-coverage}/index.html
-          #   '';
-          # };
+          solidity-coverage =
+            pkgs.runCommand "solidity-coverage"
+              {
+                buildInputs = [
+                  self'.packages.forge
+                  pkgs.lcov
+                ];
+              }
+              ''
+                cp --no-preserve=mode -r ${evmSources}/* .
+                FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
+                lcov --remove ./lcov.info -o ./lcov.info.pruned \
+                  'contracts/Multicall.sol' \
+                  'contracts/clients/Verifier.sol' \
+                  'contracts/apps/ucs/00-pingpong/*' \
+                  'contracts/core/OwnableIBCHandler.sol' \
+                  'contracts/core/24-host/IBCCommitment.sol' \
+                  'contracts/core/25-handler/IBCHandler.sol' \
+                  'tests/*'
+                genhtml lcov.info.pruned -o $out --branch-coverage
+                mv lcov.info.pruned $out/lcov.info
+              '';
+          show-solidity-coverage = pkgs.writeShellApplication {
+            name = "show-solidity-coverage";
+            runtimeInputs = [ ];
+            text = ''
+              xdg-open ${self'.packages.solidity-coverage}/index.html
+            '';
+          };
 
           hubble-abis =
             let

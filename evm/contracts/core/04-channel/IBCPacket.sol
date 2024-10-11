@@ -195,19 +195,14 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         uint32 destinationChannel,
         uint64 receivedSequence
     ) internal {
-        uint64 expectedRecvSequence = uint64(
-            uint256(
-                commitments[IBCCommitment.nextSequenceRecvCommitmentKey(
-                    destinationChannel
-                )]
-            )
-        );
+        bytes32 nextSeqRecvKey =
+            IBCCommitment.nextSequenceRecvCommitmentKey(destinationChannel);
+        uint64 expectedRecvSequence =
+            uint64(uint256(commitments[nextSeqRecvKey]));
         if (expectedRecvSequence != receivedSequence) {
             revert IBCErrors.ErrPacketSequenceNextSequenceMismatch();
         }
-        commitments[IBCCommitment.nextSequenceRecvCommitmentKey(
-            destinationChannel
-        )] = bytes32(uint256(expectedRecvSequence + 1));
+        commitments[nextSeqRecvKey] = bytes32(uint256(expectedRecvSequence + 1));
     }
 
     function processReceive(
@@ -370,18 +365,13 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         uint32 sourceChannel,
         uint64 ackSequence
     ) internal {
-        uint64 expectedAckSequence = uint64(
-            uint256(
-                commitments[IBCCommitment.nextSequenceAckCommitmentKey(
-                    sourceChannel
-                )]
-            )
-        );
+        bytes32 commitmentKey =
+            IBCCommitment.nextSequenceAckCommitmentKey(sourceChannel);
+        uint64 expectedAckSequence = uint64(uint256(commitments[commitmentKey]));
         if (expectedAckSequence != ackSequence) {
             revert IBCErrors.ErrPacketSequenceAckSequenceMismatch();
         }
-        commitments[IBCCommitment.nextSequenceAckCommitmentKey(sourceChannel)] =
-            bytes32(uint256(expectedAckSequence + 1));
+        commitments[commitmentKey] = bytes32(uint256(expectedAckSequence + 1));
     }
 
     function acknowledgePacket(
@@ -529,15 +519,10 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
     function generatePacketSequence(
         uint32 channelId
     ) internal returns (uint64) {
-        uint64 seq = uint64(
-            uint256(
-                commitments[IBCCommitment.nextSequenceSendCommitmentKey(
-                    channelId
-                )]
-            )
-        );
-        commitments[IBCCommitment.nextSequenceSendCommitmentKey(channelId)] =
-            bytes32(uint256(seq + 1));
+        bytes32 commitmentKey =
+            IBCCommitment.nextSequenceSendCommitmentKey(channelId);
+        uint64 seq = uint64(uint256(commitments[commitmentKey]));
+        commitments[commitmentKey] = bytes32(uint256(seq + 1));
         return seq;
     }
 
