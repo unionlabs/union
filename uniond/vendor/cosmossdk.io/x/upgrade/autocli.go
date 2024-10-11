@@ -18,7 +18,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 				{
 					RpcMethod: "AppliedPlan",
-					Use:       "applied [upgrade-name]",
+					Use:       "applied <upgrade-name>",
 					Short:     "Query the block header for height at which a completed upgrade was applied",
 					Long:      "If upgrade-name was previously executed on the chain, this returns the header for the block at which it was applied. This helps a client determine which binary was valid over a given range of blocks, as well as more context to understand past migrations.",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
@@ -50,14 +50,17 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: upgradev1beta1.Msg_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
+					RpcMethod:   "CancelUpgrade",
+					Use:         "cancel-upgrade-proposal",
+					Short:       "Submit a proposal to cancel a planned chain upgrade.",
+					GovProposal: true,
+				},
+				{
 					RpcMethod: "SoftwareUpgrade",
 					Skip:      true, // skipped because authority gated
 				},
-				{
-					RpcMethod: "CancelUpgrade",
-					Skip:      true, // skipped because authority gated
-				},
 			},
+			EnhanceCustomCommand: true,
 		},
 	}
 }

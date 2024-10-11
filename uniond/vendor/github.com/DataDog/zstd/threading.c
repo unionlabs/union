@@ -74,10 +74,12 @@ int ZSTD_pthread_create(ZSTD_pthread_t* thread, const void* unused,
     ZSTD_thread_params_t thread_param;
     (void)unused;
 
+    if (thread==NULL) return -1;
+    *thread = NULL;
+
     thread_param.start_routine = start_routine;
     thread_param.arg = arg;
     thread_param.initialized = 0;
-    *thread = NULL;
 
     /* Setup thread initialization synchronization */
     if(ZSTD_pthread_cond_init(&thread_param.initialized_cond, NULL)) {
@@ -92,7 +94,7 @@ int ZSTD_pthread_create(ZSTD_pthread_t* thread, const void* unused,
 
     /* Spawn thread */
     *thread = (HANDLE)_beginthreadex(NULL, 0, worker, &thread_param, 0, NULL);
-    if (!thread) {
+    if (*thread==NULL) {
         ZSTD_pthread_mutex_destroy(&thread_param.initialized_mutex);
         ZSTD_pthread_cond_destroy(&thread_param.initialized_cond);
         return errno;
@@ -138,6 +140,7 @@ int ZSTD_pthread_join(ZSTD_pthread_t thread)
 
 int ZSTD_pthread_mutex_init(ZSTD_pthread_mutex_t* mutex, pthread_mutexattr_t const* attr)
 {
+    assert(mutex != NULL);
     *mutex = (pthread_mutex_t*)ZSTD_malloc(sizeof(pthread_mutex_t));
     if (!*mutex)
         return 1;
@@ -146,6 +149,7 @@ int ZSTD_pthread_mutex_init(ZSTD_pthread_mutex_t* mutex, pthread_mutexattr_t con
 
 int ZSTD_pthread_mutex_destroy(ZSTD_pthread_mutex_t* mutex)
 {
+    assert(mutex != NULL);
     if (!*mutex)
         return 0;
     {
@@ -157,6 +161,7 @@ int ZSTD_pthread_mutex_destroy(ZSTD_pthread_mutex_t* mutex)
 
 int ZSTD_pthread_cond_init(ZSTD_pthread_cond_t* cond, pthread_condattr_t const* attr)
 {
+    assert(cond != NULL);
     *cond = (pthread_cond_t*)ZSTD_malloc(sizeof(pthread_cond_t));
     if (!*cond)
         return 1;
@@ -165,6 +170,7 @@ int ZSTD_pthread_cond_init(ZSTD_pthread_cond_t* cond, pthread_condattr_t const* 
 
 int ZSTD_pthread_cond_destroy(ZSTD_pthread_cond_t* cond)
 {
+    assert(cond != NULL);
     if (!*cond)
         return 0;
     {

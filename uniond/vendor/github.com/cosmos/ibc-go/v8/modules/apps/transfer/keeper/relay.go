@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -53,7 +54,7 @@ import (
 // 5. C -> B : sender chain is sink zone. Denom upon receiving: 'B/denom'
 // 6. B -> A : sender chain is sink zone. Denom upon receiving: 'denom'
 func (k Keeper) sendTransfer(
-	ctx sdk.Context,
+	ctx context.Context,
 	sourcePort,
 	sourceChannel string,
 	token sdk.Coin,
@@ -97,6 +98,11 @@ func (k Keeper) sendTransfer(
 		telemetry.NewLabel(coretypes.LabelDestinationChannel, destinationChannel),
 	}
 
+	// Using types.UnboundedSpendLimit allows us to send the entire balance of a given denom.
+	if token.Amount.Equal(types.UnboundedSpendLimit()) {
+		token.Amount = k.bankKeeper.GetBalance(ctx, sender, token.Denom).Amount
+	}
+
 	// NOTE: SendTransfer simply sends the denomination as it exists on its own
 	// chain inside the packet data. The receiving chain will perform denom
 	// prefixing as necessary.
@@ -121,7 +127,7 @@ func (k Keeper) sendTransfer(
 		}
 
 		if err := k.bankKeeper.BurnCoins(
-			ctx, types.ModuleName, sdk.NewCoins(token),
+			ctx, k.authKeeper.GetModuleAddress(types.ModuleName), sdk.NewCoins(token),
 		); err != nil {
 			// NOTE: should not happen as the module account was
 			// retrieved on the step above and it has enough balace
@@ -163,7 +169,7 @@ func (k Keeper) sendTransfer(
 // and sent to the receiving address. Otherwise if the sender chain is sending
 // back tokens this chain originally transferred to it, the tokens are
 // unescrowed and sent to the receiving address.
-func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data types.FungibleTokenPacketData) error {
+func (k Keeper) OnRecvPacket(ctx context.Context, packet channeltypes.Packet, data types.FungibleTokenPacketData) error {
 	// validate packet data upon receiving
 	if err := data.ValidateBasic(); err != nil {
 		return errorsmod.Wrapf(err, "error validating ICS-20 transfer packet data")
@@ -265,7 +271,8 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data t
 		k.setDenomMetadata(ctx, denomTrace)
 	}
 
-	ctx.EventManager().EmitEvent(
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/5917
+	sdkCtx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeDenomTrace,
 			sdk.NewAttribute(types.AttributeKeyTraceHash, traceHash.String()),
@@ -313,7 +320,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, data t
 // acknowledgement written on the receiving chain. If the acknowledgement
 // was a success then nothing occurs. If the acknowledgement failed, then
 // the sender is refunded their tokens using the refundPacketToken function.
-func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data types.FungibleTokenPacketData, ack channeltypes.Acknowledgement) error {
+func (k Keeper) OnAcknowledgementPacket(ctx context.Context, packet channeltypes.Packet, data types.FungibleTokenPacketData, ack channeltypes.Acknowledgement) error {
 	switch ack.Response.(type) {
 	case *channeltypes.Acknowledgement_Error:
 		return k.refundPacketToken(ctx, packet, data)
@@ -326,7 +333,7 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 
 // OnTimeoutPacket refunds the sender since the original packet sent was
 // never received and has been timed out.
-func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, data types.FungibleTokenPacketData) error {
+func (k Keeper) OnTimeoutPacket(ctx context.Context, packet channeltypes.Packet, data types.FungibleTokenPacketData) error {
 	return k.refundPacketToken(ctx, packet, data)
 }
 
@@ -334,7 +341,7 @@ func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, dat
 // if the sending chain was the source chain. Otherwise, the sent tokens
 // were burnt in the original send so new tokens are minted and sent to
 // the sending address.
-func (k Keeper) refundPacketToken(ctx sdk.Context, packet channeltypes.Packet, data types.FungibleTokenPacketData) error {
+func (k Keeper) refundPacketToken(ctx context.Context, packet channeltypes.Packet, data types.FungibleTokenPacketData) error {
 	// NOTE: packet data type already checked in handler.go
 
 	// parse the denomination from the full denom path
@@ -375,7 +382,7 @@ func (k Keeper) refundPacketToken(ctx sdk.Context, packet channeltypes.Packet, d
 
 // escrowToken will send the given token from the provided sender to the escrow address. It will also
 // update the total escrowed amount by adding the escrowed token to the current total escrow.
-func (k Keeper) escrowToken(ctx sdk.Context, sender, escrowAddress sdk.AccAddress, token sdk.Coin) error {
+func (k Keeper) escrowToken(ctx context.Context, sender, escrowAddress sdk.AccAddress, token sdk.Coin) error {
 	if err := k.bankKeeper.SendCoins(ctx, sender, escrowAddress, sdk.NewCoins(token)); err != nil {
 		// failure is expected for insufficient balances
 		return err
@@ -391,7 +398,7 @@ func (k Keeper) escrowToken(ctx sdk.Context, sender, escrowAddress sdk.AccAddres
 
 // unescrowToken will send the given token from the escrow address to the provided receiver. It will also
 // update the total escrow by deducting the unescrowed token from the current total escrow.
-func (k Keeper) unescrowToken(ctx sdk.Context, escrowAddress, receiver sdk.AccAddress, token sdk.Coin) error {
+func (k Keeper) unescrowToken(ctx context.Context, escrowAddress, receiver sdk.AccAddress, token sdk.Coin) error {
 	if err := k.bankKeeper.SendCoins(ctx, escrowAddress, receiver, sdk.NewCoins(token)); err != nil {
 		// NOTE: this error is only expected to occur given an unexpected bug or a malicious
 		// counterparty module. The bug may occur in bank or any part of the code that allows
@@ -410,7 +417,7 @@ func (k Keeper) unescrowToken(ctx sdk.Context, escrowAddress, receiver sdk.AccAd
 
 // DenomPathFromHash returns the full denomination path prefix from an ibc denom with a hash
 // component.
-func (k Keeper) DenomPathFromHash(ctx sdk.Context, denom string) (string, error) {
+func (k Keeper) DenomPathFromHash(ctx context.Context, denom string) (string, error) {
 	// trim the denomination prefix, by default "ibc/"
 	hexHash := denom[len(types.DenomPrefix+"/"):]
 

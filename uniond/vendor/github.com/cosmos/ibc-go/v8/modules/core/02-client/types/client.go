@@ -1,31 +1,32 @@
 package types
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"sort"
 	"strings"
 
 	proto "github.com/cosmos/gogoproto/proto"
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
 
 	errorsmod "cosmossdk.io/errors"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 var (
-	_ codectypes.UnpackInterfacesMessage = (*IdentifiedClientState)(nil)
-	_ codectypes.UnpackInterfacesMessage = (*ConsensusStateWithHeight)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*IdentifiedClientState)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*ConsensusStateWithHeight)(nil)
 )
 
 // ConsensusHost defines an interface used to validate an IBC ClientState and ConsensusState against the host chain's underlying consensus parameters.
 type ConsensusHost interface {
-	GetSelfConsensusState(ctx sdk.Context, height exported.Height) (exported.ConsensusState, error)
-	ValidateSelfClient(ctx sdk.Context, clientState exported.ClientState) error
+	GetSelfConsensusState(ctx context.Context, height exported.Height) (exported.ConsensusState, error)
+	ValidateSelfClient(ctx context.Context, clientState exported.ClientState) error
 }
 
 // NewIdentifiedClientState creates a new IdentifiedClientState instance
@@ -47,7 +48,7 @@ func NewIdentifiedClientState(clientID string, clientState exported.ClientState)
 }
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnpackInterfaces
-func (ics IdentifiedClientState) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (ics IdentifiedClientState) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return unpacker.UnpackAny(ics.ClientState, new(exported.ClientState))
 }
 
@@ -90,7 +91,7 @@ func NewConsensusStateWithHeight(height Height, consensusState exported.Consensu
 }
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnpackInterfaces
-func (cswh ConsensusStateWithHeight) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (cswh ConsensusStateWithHeight) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return unpacker.UnpackAny(cswh.ConsensusState, new(exported.ConsensusState))
 }
 

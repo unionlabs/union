@@ -6,7 +6,7 @@ package tendermint
 import (
 	fmt "fmt"
 	github_com_cometbft_cometbft_libs_bytes "github.com/cometbft/cometbft/libs/bytes"
-	types2 "github.com/cometbft/cometbft/proto/tendermint/types"
+	types2 "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"

@@ -33,6 +33,8 @@
 //		https://github.com/KDE/kwallet
 //	pass	This backend uses the pass command line utility to store and retrieve keys:
 //		https://www.passwordstore.org/
+//	keyctl  This backend leverages the Linux's kernel security key management system
+//		to store cryptographic keys securely in memory. This is available on Linux only.
 //	test	This backend stores keys insecurely to disk. It does not prompt for a password to
 //		be unlocked and it should be used only for testing purposes.
 //	memory	Same instance as returned by NewInMemory. This backend uses a transient storage. Keys

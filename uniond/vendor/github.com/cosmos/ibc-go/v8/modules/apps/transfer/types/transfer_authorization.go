@@ -2,18 +2,16 @@ package types
 
 import (
 	"context"
-	"encoding/json"
-	"math/big"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/cosmos/gogoproto/proto"
 
 	errorsmod "cosmossdk.io/errors"
-	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/x/authz"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/authz"
+	authztypes "github.com/cosmos/cosmos-sdk/types/authz"
 
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
@@ -21,9 +19,6 @@ import (
 )
 
 var _ authz.Authorization = (*TransferAuthorization)(nil)
-
-// maxUint256 is the maximum value for a 256 bit unsigned integer.
-var maxUint256 = new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(1))
 
 // NewTransferAuthorization creates a new TransferAuthorization object.
 func NewTransferAuthorization(allocations ...Allocation) *TransferAuthorization {
@@ -38,10 +33,10 @@ func (TransferAuthorization) MsgTypeURL() string {
 }
 
 // Accept implements Authorization.Accept.
-func (a TransferAuthorization) Accept(ctx context.Context, msg proto.Message) (authz.AcceptResponse, error) {
+func (a TransferAuthorization) Accept(ctx context.Context, msg proto.Message) (authztypes.AcceptResponse, error) {
 	msgTransfer, ok := msg.(*MsgTransfer)
 	if !ok {
-		return authz.AcceptResponse{}, errorsmod.Wrap(ibcerrors.ErrInvalidType, "type mismatch")
+		return authztypes.AcceptResponse{}, errorsmod.Wrap(ibcerrors.ErrInvalidType, "type mismatch")
 	}
 
 	for index, allocation := range a.Allocations {
@@ -50,30 +45,30 @@ func (a TransferAuthorization) Accept(ctx context.Context, msg proto.Message) (a
 		}
 
 		if !isAllowedAddress(sdk.UnwrapSDKContext(ctx), msgTransfer.Receiver, allocation.AllowList) {
-			return authz.AcceptResponse{}, errorsmod.Wrap(ibcerrors.ErrInvalidAddress, "not allowed receiver address for transfer")
+			return authztypes.AcceptResponse{}, errorsmod.Wrap(ibcerrors.ErrInvalidAddress, "not allowed receiver address for transfer")
 		}
 
 		err := validateMemo(sdk.UnwrapSDKContext(ctx), msgTransfer.Memo, allocation.AllowedPacketData)
 		if err != nil {
-			return authz.AcceptResponse{}, err
+			return authztypes.AcceptResponse{}, err
 		}
 
 		// If the spend limit is set to the MaxUint256 sentinel value, do not subtract the amount from the spend limit.
 		if allocation.SpendLimit.AmountOf(msgTransfer.Token.Denom).Equal(UnboundedSpendLimit()) {
-			return authz.AcceptResponse{Accept: true, Delete: false, Updated: nil}, nil
+			return authztypes.AcceptResponse{Accept: true, Delete: false, Updated: nil}, nil
 		}
 
 		limitLeft, isNegative := allocation.SpendLimit.SafeSub(msgTransfer.Token)
 		if isNegative {
-			return authz.AcceptResponse{}, errorsmod.Wrapf(ibcerrors.ErrInsufficientFunds, "requested amount is more than spend limit")
+			return authztypes.AcceptResponse{}, errorsmod.Wrapf(ibcerrors.ErrInsufficientFunds, "requested amount is more than spend limit")
 		}
 
 		if limitLeft.IsZero() {
 			a.Allocations = append(a.Allocations[:index], a.Allocations[index+1:]...)
 			if len(a.Allocations) == 0 {
-				return authz.AcceptResponse{Accept: true, Delete: true}, nil
+				return authztypes.AcceptResponse{Accept: true, Delete: true}, nil
 			}
-			return authz.AcceptResponse{Accept: true, Delete: false, Updated: &TransferAuthorization{
+			return authztypes.AcceptResponse{Accept: true, Delete: false, Updated: &TransferAuthorization{
 				Allocations: a.Allocations,
 			}}, nil
 		}
@@ -85,12 +80,12 @@ func (a TransferAuthorization) Accept(ctx context.Context, msg proto.Message) (a
 			AllowedPacketData: allocation.AllowedPacketData,
 		}
 
-		return authz.AcceptResponse{Accept: true, Delete: false, Updated: &TransferAuthorization{
+		return authztypes.AcceptResponse{Accept: true, Delete: false, Updated: &TransferAuthorization{
 			Allocations: a.Allocations,
 		}}, nil
 	}
 
-	return authz.AcceptResponse{}, errorsmod.Wrapf(ibcerrors.ErrNotFound, "requested port and channel allocation does not exist")
+	return authztypes.AcceptResponse{}, errorsmod.Wrapf(ibcerrors.ErrNotFound, "requested port and channel allocation does not exist")
 }
 
 // ValidateBasic implements Authorization.ValidateBasic.
@@ -155,9 +150,9 @@ func isAllowedAddress(ctx sdk.Context, receiver string, allowedAddrs []string) b
 }
 
 // validateMemo returns a nil error indicating if the memo is valid for transfer.
-func validateMemo(ctx sdk.Context, memo string, allowedPacketDataList []string) error {
+func validateMemo(ctx sdk.Context, memo string, allowedMemos []string) error {
 	// if the allow list is empty, then the memo must be an empty string
-	if len(allowedPacketDataList) == 0 {
+	if len(allowedMemos) == 0 {
 		if len(strings.TrimSpace(memo)) != 0 {
 			return errorsmod.Wrapf(ErrInvalidAuthorization, "memo must be empty because allowed packet data in allocation is empty")
 		}
@@ -166,46 +161,21 @@ func validateMemo(ctx sdk.Context, memo string, allowedPacketDataList []string) 
 	}
 
 	// if allowedPacketDataList has only 1 element and it equals AllowAllPacketDataKeys
-	// then accept all the packet data keys
-	if len(allowedPacketDataList) == 1 && allowedPacketDataList[0] == AllowAllPacketDataKeys {
+	// then accept all the memo strings
+	if len(allowedMemos) == 1 && allowedMemos[0] == AllowAllPacketDataKeys {
 		return nil
 	}
 
-	jsonObject := make(map[string]interface{})
-	err := json.Unmarshal([]byte(memo), &jsonObject)
-	if err != nil {
-		return err
-	}
-
 	gasCostPerIteration := ctx.KVGasConfig().IterNextCostFlat
-
-	for _, key := range allowedPacketDataList {
+	isMemoAllowed := slices.ContainsFunc(allowedMemos, func(allowedMemo string) bool {
 		ctx.GasMeter().ConsumeGas(gasCostPerIteration, "transfer authorization")
 
-		_, ok := jsonObject[key]
-		if ok {
-			delete(jsonObject, key)
-		}
-	}
+		return strings.TrimSpace(memo) == strings.TrimSpace(allowedMemo)
+	})
 
-	var keys []string
-	for k := range jsonObject {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	if len(jsonObject) != 0 {
-		return errorsmod.Wrapf(ErrInvalidAuthorization, "not allowed packet data keys: %s", keys)
+	if !isMemoAllowed {
+		return errorsmod.Wrapf(ErrInvalidAuthorization, "not allowed memo: %s", memo)
 	}
 
 	return nil
-}
-
-// UnboundedSpendLimit returns the sentinel value that can be used
-// as the amount for a denomination's spend limit for which spend limit updating
-// should be disabled. Please note that using this sentinel value means that a grantee
-// will be granted the privilege to do ICS20 token transfers for the total amount
-// of the denomination available at the granter's account.
-func UnboundedSpendLimit() sdkmath.Int {
-	return sdkmath.NewIntFromBigInt(maxUint256)
 }

@@ -13,14 +13,14 @@ import (
 var VersionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show version info",
-	Run: func(cmd *cobra.Command, args []string) {
-		cmtVersion := version.TMCoreSemVer
-		if version.TMGitCommitHash != "" {
-			cmtVersion += "+" + version.TMGitCommitHash
+	Run: func(_ *cobra.Command, _ []string) {
+		cmtVersion := version.CMTSemVer
+		if version.CMTGitCommitHash != "" {
+			cmtVersion += "+" + version.CMTGitCommitHash
 		}
 
 		if verbose {
-			values, _ := json.MarshalIndent(struct {
+			values, err := json.MarshalIndent(struct {
 				CometBFT      string `json:"cometbft"`
 				ABCI          string `json:"abci"`
 				BlockProtocol uint64 `json:"block_protocol"`
@@ -31,6 +31,9 @@ var VersionCmd = &cobra.Command{
 				BlockProtocol: version.BlockProtocol,
 				P2PProtocol:   version.P2PProtocol,
 			}, "", "  ")
+			if err != nil {
+				panic(fmt.Sprintf("failed to marshal version info: %v", err))
+			}
 			fmt.Println(string(values))
 		} else {
 			fmt.Println(cmtVersion)

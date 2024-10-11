@@ -4,7 +4,7 @@ import (
 	gocontext "context"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
 	"google.golang.org/grpc"
 
@@ -45,7 +45,7 @@ func (q *QueryServiceTestHelper) Invoke(_ gocontext.Context, method string, args
 		return err
 	}
 
-	res, err := querier(q.Ctx, &abci.RequestQuery{Data: reqBz})
+	res, err := querier(q.Ctx, &abci.QueryRequest{Data: reqBz})
 	if err != nil {
 		return err
 	}

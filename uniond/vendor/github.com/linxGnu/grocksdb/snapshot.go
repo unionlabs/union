@@ -14,6 +14,11 @@ func newNativeSnapshot(c *C.rocksdb_snapshot_t) *Snapshot {
 	return &Snapshot{c: c}
 }
 
+// GetSequenceNumber gets sequence number of the Snapshot.
+func (snapshot *Snapshot) GetSequenceNumber() uint64 {
+	return uint64(C.rocksdb_snapshot_get_sequence_number(snapshot.c))
+}
+
 // Destroy deallocates the Snapshot object.
 func (snapshot *Snapshot) Destroy() {
 	C.rocksdb_free(unsafe.Pointer(snapshot.c))

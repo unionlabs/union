@@ -59,6 +59,16 @@ func NewSignature(r, s *secp256k1.ModNScalar) *Signature {
 	return &Signature{*r, *s}
 }
 
+// R returns the r value of the signature.
+func (sig *Signature) R() secp256k1.ModNScalar {
+	return sig.r
+}
+
+// S returns the s value of the signature.
+func (sig *Signature) S() secp256k1.ModNScalar {
+	return sig.s
+}
+
 // Serialize returns the ECDSA signature in the Distinguished Encoding Rules
 // (DER) format per section 10 of [ISO/IEC 8825-1] and such that the S component
 // of the signature is less than or equal to the half order of the group.

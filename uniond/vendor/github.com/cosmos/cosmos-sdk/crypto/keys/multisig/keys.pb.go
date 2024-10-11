@@ -5,10 +5,10 @@ package multisig
 
 import (
 	fmt "fmt"
-	types "github.com/cosmos/cosmos-sdk/codec/types"
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
+	any "github.com/cosmos/gogoproto/types/any"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -29,8 +29,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // which nests multiple public keys and a threshold,
 // it uses legacy amino address rules.
 type LegacyAminoPubKey struct {
-	Threshold uint32       `protobuf:"varint,1,opt,name=threshold,proto3" json:"threshold,omitempty"`
-	PubKeys   []*types.Any `protobuf:"bytes,2,rep,name=public_keys,json=publicKeys,proto3" json:"public_keys,omitempty"`
+	Threshold uint32     `protobuf:"varint,1,opt,name=threshold,proto3" json:"threshold,omitempty"`
+	PubKeys   []*any.Any `protobuf:"bytes,2,rep,name=public_keys,json=publicKeys,proto3" json:"public_keys,omitempty"`
 }
 
 func (m *LegacyAminoPubKey) Reset()         { *m = LegacyAminoPubKey{} }
@@ -250,7 +250,7 @@ func (m *LegacyAminoPubKey) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PubKeys = append(m.PubKeys, &types.Any{})
+			m.PubKeys = append(m.PubKeys, &any.Any{})
 			if err := m.PubKeys[len(m.PubKeys)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

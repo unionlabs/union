@@ -65,7 +65,7 @@
 
         # Statically link on Linux using `pkgsStatic`, dynamically link on Darwin using normal `pkgs`.
         uniond =
-          (if pkgs.stdenv.isLinux then goPkgs.pkgsStatic.buildGo121Module else goPkgs.buildGo121Module)
+          (if pkgs.stdenv.isLinux then goPkgs.pkgsStatic.buildGo123Module else goPkgs.buildGo123Module)
             (
               {
                 name = "uniond";

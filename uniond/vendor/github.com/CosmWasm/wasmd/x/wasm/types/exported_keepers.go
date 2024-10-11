@@ -5,6 +5,7 @@ import (
 
 	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -31,11 +32,11 @@ type ViewKeeper interface {
 // ContractOpsKeeper contains mutable operations on a contract.
 type ContractOpsKeeper interface {
 	// Create uploads and compiles a WASM contract, returning a short identifier for the contract
-	Create(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *AccessConfig) (codeID uint64, checksum []byte, err error)
+	Create(ctx context.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *AccessConfig) (codeID uint64, checksum []byte, err error)
 
 	// Instantiate creates an instance of a WASM contract using the classic sequence based address generator
 	Instantiate(
-		ctx sdk.Context,
+		ctx context.Context,
 		codeID uint64,
 		creator, admin sdk.AccAddress,
 		initMsg []byte,
@@ -45,7 +46,7 @@ type ContractOpsKeeper interface {
 
 	// Instantiate2 creates an instance of a WASM contract using the predictable address generator
 	Instantiate2(
-		ctx sdk.Context,
+		ctx context.Context,
 		codeID uint64,
 		creator, admin sdk.AccAddress,
 		initMsg []byte,
@@ -56,68 +57,88 @@ type ContractOpsKeeper interface {
 	) (sdk.AccAddress, []byte, error)
 
 	// Execute executes the contract instance
-	Execute(ctx sdk.Context, contractAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error)
+	Execute(ctx context.Context, contractAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error)
 
 	// Migrate allows to upgrade a contract to a new code with data migration.
-	Migrate(ctx sdk.Context, contractAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte) ([]byte, error)
+	Migrate(ctx context.Context, contractAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte) ([]byte, error)
 
 	// Sudo allows to call privileged entry point of a contract.
-	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
+	Sudo(ctx context.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
 
 	// UpdateContractAdmin sets the admin value on the ContractInfo. It must be a valid address (use ClearContractAdmin to remove it)
-	UpdateContractAdmin(ctx sdk.Context, contractAddress, caller, newAdmin sdk.AccAddress) error
+	UpdateContractAdmin(ctx context.Context, contractAddress, caller, newAdmin sdk.AccAddress) error
 
 	// ClearContractAdmin sets the admin value on the ContractInfo to nil, to disable further migrations/ updates.
-	ClearContractAdmin(ctx sdk.Context, contractAddress, caller sdk.AccAddress) error
+	ClearContractAdmin(ctx context.Context, contractAddress, caller sdk.AccAddress) error
 
 	// PinCode pins the wasm contract in wasmvm cache
-	PinCode(ctx sdk.Context, codeID uint64) error
+	PinCode(ctx context.Context, codeID uint64) error
 
 	// UnpinCode removes the wasm contract from wasmvm cache
-	UnpinCode(ctx sdk.Context, codeID uint64) error
+	UnpinCode(ctx context.Context, codeID uint64) error
 
 	// SetContractInfoExtension updates the extension point data that is stored with the contract info
-	SetContractInfoExtension(ctx sdk.Context, contract sdk.AccAddress, extra ContractInfoExtension) error
+	SetContractInfoExtension(ctx context.Context, contract sdk.AccAddress, extra ContractInfoExtension) error
 
 	// SetAccessConfig updates the access config of a code id.
-	SetAccessConfig(ctx sdk.Context, codeID uint64, caller sdk.AccAddress, newConfig AccessConfig) error
+	SetAccessConfig(ctx context.Context, codeID uint64, caller sdk.AccAddress, newConfig AccessConfig) error
 }
 
 // IBCContractKeeper IBC lifecycle event handler
 type IBCContractKeeper interface {
 	OnOpenChannel(
-		ctx sdk.Context,
+		ctx context.Context,
 		contractAddr sdk.AccAddress,
 		msg wasmvmtypes.IBCChannelOpenMsg,
 	) (string, error)
 	OnConnectChannel(
-		ctx sdk.Context,
+		ctx context.Context,
 		contractAddr sdk.AccAddress,
 		msg wasmvmtypes.IBCChannelConnectMsg,
 	) error
 	OnCloseChannel(
-		ctx sdk.Context,
+		ctx context.Context,
 		contractAddr sdk.AccAddress,
 		msg wasmvmtypes.IBCChannelCloseMsg,
 	) error
 	OnRecvPacket(
-		ctx sdk.Context,
+		ctx context.Context,
 		contractAddr sdk.AccAddress,
 		msg wasmvmtypes.IBCPacketReceiveMsg,
 	) (ibcexported.Acknowledgement, error)
 	OnAckPacket(
-		ctx sdk.Context,
+		ctx context.Context,
 		contractAddr sdk.AccAddress,
 		acknowledgement wasmvmtypes.IBCPacketAckMsg,
 	) error
 	OnTimeoutPacket(
-		ctx sdk.Context,
+		ctx context.Context,
 		contractAddr sdk.AccAddress,
 		msg wasmvmtypes.IBCPacketTimeoutMsg,
 	) error
+	IBCSourceCallback(
+		ctx context.Context,
+		contractAddr sdk.AccAddress,
+		msg wasmvmtypes.IBCSourceCallbackMsg,
+	) error
+	IBCDestinationCallback(
+		ctx context.Context,
+		contractAddr sdk.AccAddress,
+		msg wasmvmtypes.IBCDestinationCallbackMsg,
+	) error
 	// ClaimCapability allows the transfer module to claim a capability
 	// that IBC module passes to it
-	ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error
+	ClaimCapability(ctx context.Context, cap *capabilitytypes.Capability, name string) error
 	// AuthenticateCapability wraps the scopedKeeper's AuthenticateCapability function
-	AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) bool
+	AuthenticateCapability(ctx context.Context, cap *capabilitytypes.Capability, name string) bool
+
+	// LoadAsyncAckPacket loads a previously stored packet. See StoreAsyncAckPacket for more details.
+	// Both the portID and channelID are the ones on the destination chain (the chain that this is executed on).
+	LoadAsyncAckPacket(ctx context.Context, portID, channelID string, sequence uint64) (channeltypes.Packet, error)
+	// StoreAsyncAckPacket stores a packet to be acknowledged later. These are packets that were
+	// received and processed by the contract, but the contract did not want to acknowledge them immediately.
+	// They are stored in the keeper until the contract calls "WriteAcknowledgement" to acknowledge them.
+	StoreAsyncAckPacket(ctx context.Context, packet channeltypes.Packet) error
+	// DeleteAsyncAckPacket deletes a previously stored packet. See StoreAsyncAckPacket for more details.
+	DeleteAsyncAckPacket(ctx context.Context, portID, channelID string, sequence uint64)
 }

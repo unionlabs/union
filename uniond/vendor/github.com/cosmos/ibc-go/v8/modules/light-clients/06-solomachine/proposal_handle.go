@@ -1,13 +1,13 @@
 package solomachine
 
 import (
+	"context"
 	"reflect"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -21,7 +21,7 @@ import (
 // the substitute is not a solo machine, or the current public key equals
 // the new public key.
 func (cs ClientState) CheckSubstituteAndUpdateState(
-	ctx sdk.Context, cdc codec.BinaryCodec, subjectClientStore,
+	ctx context.Context, cdc codec.BinaryCodec, subjectClientStore,
 	_ storetypes.KVStore, substituteClient exported.ClientState,
 ) error {
 	substituteClientState, ok := substituteClient.(*ClientState)

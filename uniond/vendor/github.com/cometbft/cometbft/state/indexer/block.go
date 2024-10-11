@@ -17,11 +17,17 @@ type BlockIndexer interface {
 	Has(height int64) (bool, error)
 
 	// Index indexes FinalizeBlock events for a given block by its height.
-	Index(types.EventDataNewBlockEvents) error
+	Index(events types.EventDataNewBlockEvents) error
 
 	// Search performs a query for block heights that match a given FinalizeBlock
 	// event search criteria.
 	Search(ctx context.Context, q *query.Query) ([]int64, error)
 
 	SetLogger(l log.Logger)
+
+	Prune(retainHeight int64) (int64, int64, error)
+
+	SetRetainHeight(retainHeight int64) error
+
+	GetRetainHeight() (int64, error)
 }

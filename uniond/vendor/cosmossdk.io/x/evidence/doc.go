@@ -15,11 +15,6 @@ flexibility in designing evidence handling.
 
 A full setup of the evidence module may look something as follows:
 
-	ModuleBasics = module.NewBasicManager(
-	  // ...,
-	  evidence.AppModuleBasic{},
-	)
-
 	// First, create the keeper
 	evidenceKeeper := evidence.NewKeeper(
 	  appCodec, runtime.NewKVStoreService(keys[evidencetypes.StoreKey]),

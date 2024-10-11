@@ -1,6 +1,7 @@
 package pruning
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	"cosmossdk.io/store/rootmulti"
@@ -15,13 +17,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	"github.com/cosmos/cosmos-sdk/version"
 )
 
 const FlagAppDBBackend = "app-db-backend"
 
 // Cmd prunes the sdk root multi store history versions based on the pruning options
 // specified by command flags.
-func Cmd(appCreator servertypes.AppCreator, defaultNodeHome string) *cobra.Command {
+func Cmd[T servertypes.Application](appCreator servertypes.AppCreator[T]) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "prune [pruning-method]",
 		Short: "Prune app history states by keeping the recent heights and deleting old heights",
@@ -35,12 +38,15 @@ The pruning option is provided via the 'pruning' argument or alternatively with 
 
 Note: When the --app-db-backend flag is not specified, the default backend type is 'goleveldb'.
 Supported app-db-backend types include 'goleveldb', 'rocksdb', 'pebbledb'.`,
-		Example: "prune custom --pruning-keep-recent 100 --app-db-backend 'goleveldb'",
+		Example: fmt.Sprintf("%s prune custom --pruning-keep-recent 100 --app-db-backend 'goleveldb'", version.AppName),
 		Args:    cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// bind flags to the Context's Viper so we can get pruning options.
 			vp := viper.New()
 			if err := vp.BindPFlags(cmd.Flags()); err != nil {
+				return err
+			}
+			if err := vp.BindPFlags(cmd.PersistentFlags()); err != nil {
 				return err
 			}
 
@@ -61,10 +67,6 @@ Supported app-db-backend types include 'goleveldb', 'rocksdb', 'pebbledb'.`,
 			)
 
 			home := vp.GetString(flags.FlagHome)
-			if home == "" {
-				home = defaultNodeHome
-			}
-
 			db, err := openDB(home, server.GetAppDBBackend(vp))
 			if err != nil {
 				return err
@@ -76,7 +78,7 @@ Supported app-db-backend types include 'goleveldb', 'rocksdb', 'pebbledb'.`,
 
 			rootMultiStore, ok := cms.(*rootmulti.Store)
 			if !ok {
-				return fmt.Errorf("currently only support the pruning of rootmulti.Store type")
+				return errors.New("currently only support the pruning of rootmulti.Store type")
 			}
 			latestHeight := rootmulti.GetLatestVersion(db)
 			// valid heights should be greater than 0.
@@ -97,7 +99,6 @@ Supported app-db-backend types include 'goleveldb', 'rocksdb', 'pebbledb'.`,
 		},
 	}
 
-	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
 	cmd.Flags().String(FlagAppDBBackend, "", "The type of database for application and snapshots databases")
 	cmd.Flags().Uint64(server.FlagPruningKeepRecent, 0, "Number of recent heights to keep on disk (ignored if pruning is not 'custom')")
 	cmd.Flags().Uint64(server.FlagPruningInterval, 10,
@@ -107,7 +108,7 @@ Supported app-db-backend types include 'goleveldb', 'rocksdb', 'pebbledb'.`,
 	return cmd
 }
 
-func openDB(rootDir string, backendType dbm.BackendType) (dbm.DB, error) {
+func openDB(rootDir string, backendType dbm.BackendType) (corestore.KVStoreWithBatch, error) {
 	dataDir := filepath.Join(rootDir, "data")
 	return dbm.NewDB("application", backendType, dataDir)
 }

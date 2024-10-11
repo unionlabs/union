@@ -55,11 +55,9 @@ type Empty struct {
 
 func (x *Empty) Reset() {
 	*x = Empty{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_google_protobuf_empty_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_google_protobuf_empty_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *Empty) String() string {
@@ -70,7 +68,7 @@ func (*Empty) ProtoMessage() {}
 
 func (x *Empty) ProtoReflect() protoreflect.Message {
 	mi := &file_google_protobuf_empty_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -115,7 +113,7 @@ func file_google_protobuf_empty_proto_rawDescGZIP() []byte {
 }
 
 var file_google_protobuf_empty_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_google_protobuf_empty_proto_goTypes = []interface{}{
+var file_google_protobuf_empty_proto_goTypes = []any{
 	(*Empty)(nil), // 0: google.protobuf.Empty
 }
 var file_google_protobuf_empty_proto_depIdxs = []int32{
@@ -130,20 +128,6 @@ func init() { file_google_protobuf_empty_proto_init() }
 func file_google_protobuf_empty_proto_init() {
 	if File_google_protobuf_empty_proto != nil {
 		return
-	}
-	if !protoimpl.UnsafeEnabled {
-		file_google_protobuf_empty_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Empty); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

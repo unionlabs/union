@@ -39,7 +39,7 @@ type AppDescriptor struct {
 	Codec *CodecDescriptor `protobuf:"bytes,3,opt,name=codec,proto3" json:"codec,omitempty"`
 	// configuration provides metadata information regarding the sdk.Config type
 	Configuration *ConfigurationDescriptor `protobuf:"bytes,4,opt,name=configuration,proto3" json:"configuration,omitempty"`
-	// query_services provides metadata information regarding the available queriable endpoints
+	// query_services provides metadata information regarding the available queryable endpoints
 	QueryServices *QueryServicesDescriptor `protobuf:"bytes,5,opt,name=query_services,json=queryServices,proto3" json:"query_services,omitempty"`
 	// tx provides metadata information regarding how to send transactions to the given application
 	Tx *TxDescriptor `protobuf:"bytes,6,opt,name=tx,proto3" json:"tx,omitempty"`
@@ -1156,7 +1156,7 @@ func (m *GetTxDescriptorResponse) GetTx() *TxDescriptor {
 	return nil
 }
 
-// QueryServicesDescriptor contains the list of cosmos-sdk queriable services
+// QueryServicesDescriptor contains the list of cosmos-sdk queryable services
 type QueryServicesDescriptor struct {
 	// query_services is a list of cosmos-sdk QueryServiceDescriptor
 	QueryServices []*QueryServiceDescriptor `protobuf:"bytes,1,rep,name=query_services,json=queryServices,proto3" json:"query_services,omitempty"`

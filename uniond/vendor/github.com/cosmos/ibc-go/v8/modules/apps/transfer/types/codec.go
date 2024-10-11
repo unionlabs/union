@@ -6,23 +6,25 @@ import (
 	"github.com/cosmos/gogoproto/jsonpb"
 	"github.com/cosmos/gogoproto/proto"
 
+	coreregistry "cosmossdk.io/core/registry"
+	"cosmossdk.io/x/authz"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	"github.com/cosmos/cosmos-sdk/x/authz"
 )
 
 // RegisterLegacyAminoCodec registers the necessary x/ibc transfer interfaces and concrete types
 // on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
-func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+func RegisterLegacyAminoCodec(cdc coreregistry.AminoRegistrar) {
 	legacy.RegisterAminoMsg(cdc, &MsgTransfer{}, "cosmos-sdk/MsgTransfer")
 }
 
 // RegisterInterfaces register the ibc transfer module interfaces to protobuf
 // Any.
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterInterfaces(registry coreregistry.InterfaceRegistrar) {
 	registry.RegisterImplementations((*sdk.Msg)(nil), &MsgTransfer{}, &MsgUpdateParams{})
 
 	registry.RegisterImplementations(

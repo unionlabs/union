@@ -34,9 +34,6 @@ var (
 )
 
 func humanizeAddress(canon []byte) (string, uint64, error) {
-	if err := sdk.VerifyAddressFormat(canon); err != nil {
-		return "", costHumanize, err
-	}
 	return sdk.AccAddress(canon).String(), costHumanize, nil
 }
 

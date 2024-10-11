@@ -3,12 +3,12 @@ package types
 import (
 	"context"
 
+	paramtypes "cosmossdk.io/x/params/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 // AccountKeeper defines the expected account keeper
@@ -22,16 +22,16 @@ type AccountKeeper interface {
 
 // ChannelKeeper defines the expected IBC channel keeper
 type ChannelKeeper interface {
-	GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool)
-	GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool)
-	GetConnection(ctx sdk.Context, connectionID string) (ibcexported.ConnectionI, error)
-	GetAllChannelsWithPortPrefix(ctx sdk.Context, portPrefix string) []channeltypes.IdentifiedChannel
+	GetChannel(ctx context.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool)
+	GetNextSequenceSend(ctx context.Context, portID, channelID string) (uint64, bool)
+	GetConnection(ctx context.Context, connectionID string) (connectiontypes.ConnectionEnd, error)
+	GetAllChannelsWithPortPrefix(ctx context.Context, portPrefix string) []channeltypes.IdentifiedChannel
 }
 
 // PortKeeper defines the expected IBC port keeper
 type PortKeeper interface {
-	BindPort(ctx sdk.Context, portID string) *capabilitytypes.Capability
-	IsBound(ctx sdk.Context, portID string) bool
+	BindPort(ctx context.Context, portID string) *capabilitytypes.Capability
+	IsBound(ctx context.Context, portID string) bool
 }
 
 // ParamSubspace defines the expected Subspace interface for module parameters.

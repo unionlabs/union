@@ -3,8 +3,8 @@ package mem
 import (
 	"io"
 
-	dbm "github.com/cosmos/cosmos-db"
-
+	corestore "cosmossdk.io/core/store"
+	coretesting "cosmossdk.io/core/testing"
 	"cosmossdk.io/store/cachekv"
 	"cosmossdk.io/store/dbadapter"
 	pruningtypes "cosmossdk.io/store/pruning/types"
@@ -24,10 +24,10 @@ type Store struct {
 }
 
 func NewStore() *Store {
-	return NewStoreWithDB(dbm.NewMemDB())
+	return NewStoreWithDB(coretesting.NewMemDB())
 }
 
-func NewStoreWithDB(db *dbm.MemDB) *Store { //nolint: interfacer // Concrete return type is fine here.
+func NewStoreWithDB(db corestore.KVStoreWithBatch) *Store { //nolint: interfacer // Concrete return type is fine here.
 	return &Store{Store: dbadapter.Store{DB: db}}
 }
 

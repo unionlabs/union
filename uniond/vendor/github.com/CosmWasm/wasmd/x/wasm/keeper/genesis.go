@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	"cosmossdk.io/core/appmodule"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -14,13 +14,13 @@ import (
 
 // ValidatorSetSource is a subset of the staking keeper
 type ValidatorSetSource interface {
-	ApplyAndReturnValidatorSetUpdates(context.Context) (updates []abci.ValidatorUpdate, err error)
+	ApplyAndReturnValidatorSetUpdates(context.Context) (updates []appmodule.ValidatorUpdate, err error)
 }
 
 // InitGenesis sets supply information for genesis.
 //
 // CONTRACT: all types of accounts must have been already initialized/created
-func InitGenesis(ctx sdk.Context, keeper *Keeper, data types.GenesisState) ([]abci.ValidatorUpdate, error) {
+func InitGenesis(ctx sdk.Context, keeper *Keeper, data types.GenesisState) ([]appmodule.ValidatorUpdate, error) {
 	contractKeeper := NewGovPermissionKeeper(keeper)
 	err := keeper.SetParams(ctx, data.Params)
 	if err != nil {

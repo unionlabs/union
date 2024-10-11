@@ -11,14 +11,15 @@ import (
 )
 
 // NetInfo returns network info.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/net_info
+// More: https://docs.cometbft.com/main/rpc/#/Info/net_info
 func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error) {
-	peersList := env.P2PPeers.Peers().List()
-	peers := make([]ctypes.Peer, 0, len(peersList))
-	for _, peer := range peersList {
+	peers := make([]ctypes.Peer, 0)
+	var err error
+	env.P2PPeers.Peers().ForEach(func(peer p2p.Peer) {
 		nodeInfo, ok := peer.NodeInfo().(p2p.DefaultNodeInfo)
 		if !ok {
-			return nil, fmt.Errorf("peer.NodeInfo() is not DefaultNodeInfo")
+			err = fmt.Errorf("peer %v has the invalid node info type: %T ", peer.ID(), peer.NodeInfo())
+			return
 		}
 		peers = append(peers, ctypes.Peer{
 			NodeInfo:         nodeInfo,
@@ -26,6 +27,9 @@ func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error
 			ConnectionStatus: peer.Status(),
 			RemoteIP:         peer.RemoteIP().String(),
 		})
+	})
+	if err != nil {
+		return nil, err
 	}
 	// TODO: Should we include PersistentPeers and Seeds in here?
 	// PRO: useful info
@@ -95,7 +99,7 @@ func (env *Environment) UnsafeDialPeers(
 }
 
 // Genesis returns genesis file.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/genesis
+// More: https://docs.cometbft.com/main/rpc/#/Info/genesis
 func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error) {
 	if len(env.genChunks) > 1 {
 		return nil, errors.New("genesis response is large, please use the genesis_chunked API instead")
@@ -106,11 +110,11 @@ func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error
 
 func (env *Environment) GenesisChunked(_ *rpctypes.Context, chunk uint) (*ctypes.ResultGenesisChunk, error) {
 	if env.genChunks == nil {
-		return nil, fmt.Errorf("service configuration error, genesis chunks are not initialized")
+		return nil, errors.New("service configuration error, genesis chunks are not initialized")
 	}
 
 	if len(env.genChunks) == 0 {
-		return nil, fmt.Errorf("service configuration error, there are no chunks")
+		return nil, errors.New("service configuration error, there are no chunks")
 	}
 
 	id := int(chunk)
@@ -130,13 +134,11 @@ func getIDs(peers []string) ([]string, error) {
 	ids := make([]string, 0, len(peers))
 
 	for _, peer := range peers {
-
 		spl := strings.Split(peer, "@")
 		if len(spl) != 2 {
 			return nil, p2p.ErrNetAddressNoID{Addr: peer}
 		}
 		ids = append(ids, spl[0])
-
 	}
 	return ids, nil
 }

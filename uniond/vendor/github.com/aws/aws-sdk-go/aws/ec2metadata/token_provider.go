@@ -2,6 +2,7 @@ package ec2metadata
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -65,7 +66,9 @@ func (t *tokenProvider) fetchTokenHandler(r *request.Request) {
 			switch requestFailureError.StatusCode() {
 			case http.StatusForbidden, http.StatusNotFound, http.StatusMethodNotAllowed:
 				atomic.StoreUint32(&t.disabled, 1)
-				t.client.Config.Logger.Log(fmt.Sprintf("WARN: failed to get session token, falling back to IMDSv1: %v", requestFailureError))
+				if t.client.Config.LogLevel.Matches(aws.LogDebugWithDeprecated) {
+					t.client.Config.Logger.Log(fmt.Sprintf("WARN: failed to get session token, falling back to IMDSv1: %v", requestFailureError))
+				}
 			case http.StatusBadRequest:
 				r.Error = requestFailureError
 			}

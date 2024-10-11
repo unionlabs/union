@@ -6,20 +6,20 @@ import (
 	"fmt"
 
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"google.golang.org/grpc"
 
-	modulev1 "cosmossdk.io/api/cosmos/auth/module/v1"
-	"cosmossdk.io/core/address"
 	"cosmossdk.io/core/appmodule"
-	"cosmossdk.io/core/store"
-	"cosmossdk.io/depinject"
+	appmodulev2 "cosmossdk.io/core/appmodule/v2"
+	"cosmossdk.io/core/registry"
+	"cosmossdk.io/core/transaction"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/simsx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/auth/exported"
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	"github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -32,124 +32,154 @@ const (
 )
 
 var (
-	_ module.AppModuleBasic      = AppModule{}
 	_ module.AppModuleSimulation = AppModule{}
-	_ module.HasGenesis          = AppModule{}
-	_ module.HasServices         = AppModule{}
 
-	_ appmodule.AppModule = AppModule{}
+	_ appmodulev2.HasGenesis    = AppModule{}
+	_ appmodulev2.AppModule     = AppModule{}
+	_ appmodulev2.HasMigrations = AppModule{}
 )
 
-// AppModuleBasic defines the basic application module used by the auth module.
-type AppModuleBasic struct {
-	ac address.Codec
+// AppModule implements an application module for the auth module.
+type AppModule struct {
+	accountKeeper     keeper.AccountKeeper
+	randGenAccountsFn types.RandomGenesisAccountsFn
+	accountsModKeeper types.AccountsModKeeper
+	cdc               codec.Codec
+	extOptChecker     ante.ExtensionOptionChecker
 }
 
-// Name returns the auth module's name.
-func (AppModuleBasic) Name() string {
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// NewAppModule creates a new AppModule object.
+func NewAppModule(
+	cdc codec.Codec,
+	accountKeeper keeper.AccountKeeper,
+	ak types.AccountsModKeeper,
+	randGenAccountsFn types.RandomGenesisAccountsFn,
+	extOptChecker ante.ExtensionOptionChecker,
+) AppModule {
+	return AppModule{
+		accountKeeper:     accountKeeper,
+		randGenAccountsFn: randGenAccountsFn,
+		accountsModKeeper: ak,
+		cdc:               cdc,
+		extOptChecker:     extOptChecker,
+	}
+}
+
+// Name returns the module's name.
+// Deprecated: kept for legacy reasons.
+func (AppModule) Name() string {
 	return types.ModuleName
 }
 
 // RegisterLegacyAminoCodec registers the auth module's types for the given codec.
-func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	types.RegisterLegacyAminoCodec(cdc)
-}
-
-// DefaultGenesis returns default genesis state as raw bytes for the auth
-// module.
-func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(types.DefaultGenesisState())
-}
-
-// ValidateGenesis performs genesis state validation for the auth module.
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
-	var data types.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
-		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
-	}
-
-	return types.ValidateGenesis(data)
+func (AppModule) RegisterLegacyAminoCodec(registrar registry.AminoRegistrar) {
+	types.RegisterLegacyAminoCodec(registrar)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the auth module.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
+func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
 	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
 		panic(err)
 	}
 }
 
 // RegisterInterfaces registers interfaces and implementations of the auth module.
-func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	types.RegisterInterfaces(registry)
+func (AppModule) RegisterInterfaces(registrar registry.InterfaceRegistrar) {
+	types.RegisterInterfaces(registrar)
 }
 
-// AppModule implements an application module for the auth module.
-type AppModule struct {
-	AppModuleBasic
+// RegisterServices registers module services.
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
+	types.RegisterMsgServer(registrar, keeper.NewMsgServerImpl(am.accountKeeper))
+	types.RegisterQueryServer(registrar, keeper.NewQueryServer(am.accountKeeper))
 
-	accountKeeper     keeper.AccountKeeper
-	randGenAccountsFn types.RandomGenesisAccountsFn
-
-	// legacySubspace is used solely for migration of x/params managed parameters
-	legacySubspace exported.Subspace
+	return nil
 }
 
-// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
-func (am AppModule) IsOnePerModuleType() {}
-
-// IsAppModule implements the appmodule.AppModule interface.
-func (am AppModule) IsAppModule() {}
-
-// NewAppModule creates a new AppModule object
-func NewAppModule(cdc codec.Codec, accountKeeper keeper.AccountKeeper, randGenAccountsFn types.RandomGenesisAccountsFn, ss exported.Subspace) AppModule {
-	return AppModule{
-		AppModuleBasic:    AppModuleBasic{ac: accountKeeper.AddressCodec()},
-		accountKeeper:     accountKeeper,
-		randGenAccountsFn: randGenAccountsFn,
-		legacySubspace:    ss,
+// RegisterMigrations registers module migrations
+func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {
+	m := keeper.NewMigrator(am.accountKeeper)
+	if err := mr.Register(types.ModuleName, 1, m.Migrate1to2); err != nil {
+		return fmt.Errorf("failed to migrate x/%s from version 1 to 2: %w", types.ModuleName, err)
 	}
+
+	if err := mr.Register(types.ModuleName, 2, m.Migrate2to3); err != nil {
+		return fmt.Errorf("failed to migrate x/%s from version 2 to 3: %w", types.ModuleName, err)
+	}
+	if err := mr.Register(types.ModuleName, 3, m.Migrate3to4); err != nil {
+		return fmt.Errorf("failed to migrate x/%s from version 3 to 4: %w", types.ModuleName, err)
+	}
+	if err := mr.Register(types.ModuleName, 4, m.Migrate4To5); err != nil {
+		return fmt.Errorf("failed to migrate x/%s from version 4 to 5: %w", types.ModuleName, err)
+	}
+
+	return nil
 }
 
-// RegisterServices registers a GRPC query service to respond to the
-// module-specific GRPC queries.
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.accountKeeper))
-	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.accountKeeper))
-
-	m := keeper.NewMigrator(am.accountKeeper, cfg.QueryServer(), am.legacySubspace)
-	if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/%s from version 1 to 2: %v", types.ModuleName, err))
-	}
-
-	if err := cfg.RegisterMigration(types.ModuleName, 2, m.Migrate2to3); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/%s from version 2 to 3: %v", types.ModuleName, err))
-	}
-
-	if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/%s from version 3 to 4: %v", types.ModuleName, err))
-	}
-
-	if err := cfg.RegisterMigration(types.ModuleName, 4, m.Migrate4To5); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/%s from version 4 to 5", types.ModuleName))
-	}
+// DefaultGenesis returns default genesis state as raw bytes for the auth module.
+func (am AppModule) DefaultGenesis() json.RawMessage {
+	return am.cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
-// InitGenesis performs genesis initialization for the auth module. It returns
-// no validator updates.
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
+// ValidateGenesis performs genesis state validation for the auth module.
+func (am AppModule) ValidateGenesis(bz json.RawMessage) error {
+	var data types.GenesisState
+	if err := am.cdc.UnmarshalJSON(bz, &data); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+	}
+
+	return types.ValidateGenesis(data)
+}
+
+// InitGenesis performs genesis initialization for the auth module.
+func (am AppModule) InitGenesis(ctx context.Context, data json.RawMessage) error {
 	var genesisState types.GenesisState
-	cdc.MustUnmarshalJSON(data, &genesisState)
-	am.accountKeeper.InitGenesis(ctx, genesisState)
+	if err := am.cdc.UnmarshalJSON(data, &genesisState); err != nil {
+		return err
+	}
+	return am.accountKeeper.InitGenesis(ctx, genesisState)
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the auth
 // module.
-func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := am.accountKeeper.ExportGenesis(ctx)
-	return cdc.MustMarshalJSON(gs)
+func (am AppModule) ExportGenesis(ctx context.Context) (json.RawMessage, error) {
+	gs, err := am.accountKeeper.ExportGenesis(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return am.cdc.MarshalJSON(gs)
 }
 
-// ConsensusVersion implements AppModule/ConsensusVersion.
+// TxValidator implements appmodulev2.HasTxValidator.
+// It replaces auth ante handlers for server/v2
+func (am AppModule) TxValidator(ctx context.Context, tx transaction.Tx) error {
+	validators := []appmodulev2.TxValidator[sdk.Tx]{
+		ante.NewValidateBasicDecorator(am.accountKeeper.GetEnvironment()),
+		ante.NewTxTimeoutHeightDecorator(am.accountKeeper.GetEnvironment()),
+		ante.NewValidateMemoDecorator(am.accountKeeper),
+		ante.NewConsumeGasForTxSizeDecorator(am.accountKeeper),
+		ante.NewValidateSigCountDecorator(am.accountKeeper),
+		ante.NewExtensionOptionsDecorator(am.extOptChecker),
+	}
+
+	sdkTx, ok := tx.(sdk.Tx)
+	if !ok {
+		return fmt.Errorf("invalid tx type %T, expected sdk.Tx", tx)
+	}
+
+	for _, validator := range validators {
+		if err := validator.ValidateTx(ctx, sdkTx); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ConsensusVersion implements appmodule.HasConsensusVersion
 func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
 // AppModuleSimulation functions
@@ -159,75 +189,12 @@ func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {
 	simulation.RandomizedGenState(simState, am.randGenAccountsFn)
 }
 
-// ProposalMsgs returns msgs used for governance proposals for simulations.
-func (AppModule) ProposalMsgs(simState module.SimulationState) []simtypes.WeightedProposalMsg {
-	return simulation.ProposalMsgs()
+// ProposalMsgsX returns msgs used for governance proposals for simulations.
+func (AppModule) ProposalMsgsX(weights simsx.WeightSource, reg simsx.Registry) {
+	reg.Add(weights.Get("msg_update_params", 100), simulation.MsgUpdateParamsFactory())
 }
 
 // RegisterStoreDecoder registers a decoder for auth module's types
 func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
 	sdr[types.StoreKey] = simtypes.NewStoreDecoderFuncFromCollectionsSchema(am.accountKeeper.Schema)
-}
-
-// WeightedOperations doesn't return any auth module operation.
-func (AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
-	return nil
-}
-
-//
-// App Wiring Setup
-//
-
-func init() {
-	appmodule.Register(&modulev1.Module{},
-		appmodule.Provide(ProvideModule),
-	)
-}
-
-type ModuleInputs struct {
-	depinject.In
-
-	Config       *modulev1.Module
-	StoreService store.KVStoreService
-	Cdc          codec.Codec
-
-	AddressCodec            address.Codec
-	RandomGenesisAccountsFn types.RandomGenesisAccountsFn `optional:"true"`
-	AccountI                func() sdk.AccountI           `optional:"true"`
-
-	// LegacySubspace is used solely for migration of x/params managed parameters
-	LegacySubspace exported.Subspace `optional:"true"`
-}
-
-type ModuleOutputs struct {
-	depinject.Out
-
-	AccountKeeper keeper.AccountKeeper
-	Module        appmodule.AppModule
-}
-
-func ProvideModule(in ModuleInputs) ModuleOutputs {
-	maccPerms := map[string][]string{}
-	for _, permission := range in.Config.ModuleAccountPermissions {
-		maccPerms[permission.Account] = permission.Permissions
-	}
-
-	// default to governance authority if not provided
-	authority := types.NewModuleAddress(GovModuleName)
-	if in.Config.Authority != "" {
-		authority = types.NewModuleAddressOrBech32Address(in.Config.Authority)
-	}
-
-	if in.RandomGenesisAccountsFn == nil {
-		in.RandomGenesisAccountsFn = simulation.RandomGenesisAccounts
-	}
-
-	if in.AccountI == nil {
-		in.AccountI = types.ProtoBaseAccount
-	}
-
-	k := keeper.NewAccountKeeper(in.Cdc, in.StoreService, in.AccountI, maccPerms, in.AddressCodec, in.Config.Bech32Prefix, authority.String())
-	m := NewAppModule(in.Cdc, k, in.RandomGenesisAccountsFn, in.LegacySubspace)
-
-	return ModuleOutputs{AccountKeeper: k, Module: m}
 }

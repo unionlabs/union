@@ -1,12 +1,13 @@
 package keeper
 
 import (
+	"context"
+
 	metrics "github.com/hashicorp/go-metrics"
 
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -16,7 +17,7 @@ import (
 // The client state is responsible for setting any client-specific data in the store via the Initialize method.
 // This includes the client state, initial consensus state and any associated metadata.
 func (k Keeper) CreateClient(
-	ctx sdk.Context, clientState exported.ClientState, consensusState exported.ConsensusState,
+	ctx context.Context, clientState exported.ClientState, consensusState exported.ConsensusState,
 ) (string, error) {
 	if clientState.ClientType() == exported.Localhost {
 		return "", errorsmod.Wrapf(types.ErrInvalidClientType, "cannot create client of type: %s", clientState.ClientType())
@@ -55,7 +56,7 @@ func (k Keeper) CreateClient(
 }
 
 // UpdateClient updates the consensus state and the state root from a provided header.
-func (k Keeper) UpdateClient(ctx sdk.Context, clientID string, clientMsg exported.ClientMessage) error {
+func (k Keeper) UpdateClient(ctx context.Context, clientID string, clientMsg exported.ClientMessage) error {
 	clientState, found := k.GetClientState(ctx, clientID)
 	if !found {
 		return errorsmod.Wrapf(types.ErrClientNotFound, "cannot update client with ID %s", clientID)
@@ -114,7 +115,7 @@ func (k Keeper) UpdateClient(ctx sdk.Context, clientID string, clientMsg exporte
 
 // UpgradeClient upgrades the client to a new client state if this new client was committed to
 // by the old client at the specified upgrade height
-func (k Keeper) UpgradeClient(ctx sdk.Context, clientID string, upgradedClient exported.ClientState, upgradedConsState exported.ConsensusState,
+func (k Keeper) UpgradeClient(ctx context.Context, clientID string, upgradedClient exported.ClientState, upgradedConsState exported.ConsensusState,
 	upgradeClientProof, upgradeConsensusStateProof []byte,
 ) error {
 	clientState, found := k.GetClientState(ctx, clientID)
@@ -157,7 +158,7 @@ func (k Keeper) UpgradeClient(ctx sdk.Context, clientID string, upgradedClient e
 // substitute (ensuring they match the subject's parameters) as well as copying
 // the necessary consensus states from the substitute to the subject client
 // store. The substitute must be Active and the subject must not be Active.
-func (k Keeper) RecoverClient(ctx sdk.Context, subjectClientID, substituteClientID string) error {
+func (k Keeper) RecoverClient(ctx context.Context, subjectClientID, substituteClientID string) error {
 	subjectClientState, found := k.GetClientState(ctx, subjectClientID)
 	if !found {
 		return errorsmod.Wrapf(types.ErrClientNotFound, "subject client with ID %s", subjectClientID)

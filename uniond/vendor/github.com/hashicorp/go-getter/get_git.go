@@ -125,7 +125,7 @@ func (g *GitGetter) Get(dst string, u *url.URL) error {
 		return err
 	}
 	if err == nil {
-		err = g.update(ctx, dst, sshKeyFile, ref, depth)
+		err = g.update(ctx, dst, sshKeyFile, u, ref, depth)
 	} else {
 		err = g.clone(ctx, dst, sshKeyFile, u, ref, depth)
 	}
@@ -200,7 +200,7 @@ func (g *GitGetter) clone(ctx context.Context, dst, sshKeyFile string, u *url.UR
 		args = append(args, "--depth", strconv.Itoa(depth))
 		args = append(args, "--branch", ref)
 	}
-	args = append(args, u.String(), dst)
+	args = append(args, "--", u.String(), dst)
 
 	cmd := exec.CommandContext(ctx, "git", args...)
 	setupGitEnv(cmd, sshKeyFile)
@@ -228,28 +228,64 @@ func (g *GitGetter) clone(ctx context.Context, dst, sshKeyFile string, u *url.UR
 	return nil
 }
 
-func (g *GitGetter) update(ctx context.Context, dst, sshKeyFile, ref string, depth int) error {
-	// Determine if we're a branch. If we're NOT a branch, then we just
-	// switch to master prior to checking out
-	cmd := exec.CommandContext(ctx, "git", "show-ref", "-q", "--verify", "refs/heads/"+ref)
-	cmd.Dir = dst
-
-	if getRunCommand(cmd) != nil {
-		// Not a branch, switch to default branch. This will also catch
-		// non-existent branches, in which case we want to switch to default
-		// and then checkout the proper branch later.
-		ref = findDefaultBranch(ctx, dst)
-	}
-
-	// We have to be on a branch to pull
-	if err := g.checkout(ctx, dst, ref); err != nil {
+func (g *GitGetter) update(ctx context.Context, dst, sshKeyFile string, u *url.URL, ref string, depth int) error {
+	// Remove all variations of .git directories
+	err := removeCaseInsensitiveGitDirectory(dst)
+	if err != nil {
 		return err
 	}
 
+	// Initialize the git repository
+	cmd := exec.CommandContext(ctx, "git", "init")
+	cmd.Dir = dst
+	err = getRunCommand(cmd)
+	if err != nil {
+		return err
+	}
+
+	// Add the git remote
+	cmd = exec.CommandContext(ctx, "git", "remote", "add", "origin", "--", u.String())
+	cmd.Dir = dst
+	err = getRunCommand(cmd)
+	if err != nil {
+		return err
+	}
+
+	// Fetch the remote ref
+	cmd = exec.CommandContext(ctx, "git", "fetch", "--tags")
+	cmd.Dir = dst
+	err = getRunCommand(cmd)
+	if err != nil {
+		return err
+	}
+
+	// Fetch the remote ref
+	cmd = exec.CommandContext(ctx, "git", "fetch", "origin", "--", ref)
+	cmd.Dir = dst
+	err = getRunCommand(cmd)
+	if err != nil {
+		return err
+	}
+
+	// Reset the branch to the fetched ref
+	cmd = exec.CommandContext(ctx, "git", "reset", "--hard", "FETCH_HEAD")
+	cmd.Dir = dst
+	err = getRunCommand(cmd)
+	if err != nil {
+		return err
+	}
+
+	// Checkout ref branch
+	err = g.checkout(ctx, dst, ref)
+	if err != nil {
+		return err
+	}
+
+	// Pull the latest changes from the ref branch
 	if depth > 0 {
-		cmd = exec.CommandContext(ctx, "git", "pull", "--depth", strconv.Itoa(depth), "--ff-only")
+		cmd = exec.CommandContext(ctx, "git", "pull", "origin", "--depth", strconv.Itoa(depth), "--ff-only", "--", ref)
 	} else {
-		cmd = exec.CommandContext(ctx, "git", "pull", "--ff-only")
+		cmd = exec.CommandContext(ctx, "git", "pull", "origin", "--ff-only", "--", ref)
 	}
 
 	cmd.Dir = dst
@@ -289,7 +325,7 @@ func findDefaultBranch(ctx context.Context, dst string) string {
 // default branch. "master" is returned if no HEAD symref exists.
 func findRemoteDefaultBranch(ctx context.Context, u *url.URL) string {
 	var stdoutbuf bytes.Buffer
-	cmd := exec.CommandContext(ctx, "git", "ls-remote", "--symref", u.String(), "HEAD")
+	cmd := exec.CommandContext(ctx, "git", "ls-remote", "--symref", "--", u.String(), "HEAD")
 	cmd.Stdout = &stdoutbuf
 	err := cmd.Run()
 	matches := lsRemoteSymRefRegexp.FindStringSubmatch(stdoutbuf.String())
@@ -375,5 +411,22 @@ func checkGitVersion(ctx context.Context, min string) error {
 		return fmt.Errorf("Required git version = %s, have %s", want, have)
 	}
 
+	return nil
+}
+
+// removeCaseInsensitiveGitDirectory removes all .git directory variations
+func removeCaseInsensitiveGitDirectory(dst string) error {
+	files, err := os.ReadDir(dst)
+	if err != nil {
+		return fmt.Errorf("Failed to read the destination directory %s during git update", dst)
+	}
+	for _, f := range files {
+		if strings.EqualFold(f.Name(), ".git") && f.IsDir() {
+			err := os.RemoveAll(filepath.Join(dst, f.Name()))
+			if err != nil {
+				return fmt.Errorf("Failed to remove the .git directory in the destination directory %s during git update", dst)
+			}
+		}
+	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"time"
 
+	"cosmossdk.io/core/address"
 	"cosmossdk.io/math"
 	"cosmossdk.io/x/feegrant"
 
@@ -13,17 +14,23 @@ import (
 )
 
 // genFeeGrants returns a slice of randomly generated allowances.
-func genFeeGrants(r *rand.Rand, accounts []simtypes.Account) []feegrant.Grant {
+func genFeeGrants(r *rand.Rand, accounts []simtypes.Account, addressCodec address.Codec) ([]feegrant.Grant, error) {
 	allowances := make([]feegrant.Grant, len(accounts)-1)
 	for i := 0; i < len(accounts)-1; i++ {
-		granter := accounts[i].Address
-		grantee := accounts[i+1].Address
+		granter, err := addressCodec.BytesToString(accounts[i].Address)
+		if err != nil {
+			return allowances, err
+		}
+		grantee, err := addressCodec.BytesToString(accounts[i+1].Address)
+		if err != nil {
+			return allowances, err
+		}
 		allowances[i] = generateRandomAllowances(granter, grantee, r)
 	}
-	return allowances
+	return allowances, nil
 }
 
-func generateRandomAllowances(granter, grantee sdk.AccAddress, r *rand.Rand) feegrant.Grant {
+func generateRandomAllowances(granter, grantee string, r *rand.Rand) feegrant.Grant {
 	allowances := make([]feegrant.Grant, 3)
 	spendLimit := sdk.NewCoins(sdk.NewCoin("stake", math.NewInt(100)))
 	periodSpendLimit := sdk.NewCoins(sdk.NewCoin("stake", math.NewInt(10)))
@@ -63,11 +70,15 @@ func generateRandomAllowances(granter, grantee sdk.AccAddress, r *rand.Rand) fee
 // RandomizedGenState generates a random GenesisState for feegrant
 func RandomizedGenState(simState *module.SimulationState) {
 	var feegrants []feegrant.Grant
+	var err error
 
 	simState.AppParams.GetOrGenerate(
 		"feegrant", &feegrants, simState.Rand,
-		func(r *rand.Rand) { feegrants = genFeeGrants(r, simState.Accounts) },
+		func(r *rand.Rand) { feegrants, err = genFeeGrants(r, simState.Accounts, simState.AddressCodec) },
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	feegrantGenesis := feegrant.NewGenesisState(feegrants)
 	bz, err := simState.Cdc.MarshalJSON(feegrantGenesis)

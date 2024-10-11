@@ -1,14 +1,10 @@
 package types
 
 import (
-	"time"
-
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
@@ -37,7 +33,7 @@ func (cs ClientState) ExportMetadata(store storetypes.KVStore) []exported.Genesi
 		ExportMetadata: &ExportMetadataMsg{},
 	}
 
-	ctx := sdk.NewContext(nil, tmproto.Header{Height: 1, Time: time.Now()}, true, nil) // context with infinite gas meter
+	ctx := sdk.NewContext(nil, true, nil) // context with infinite gas meter
 	result, err := wasmQuery[ExportMetadataResult](ctx, store, &cs, payload)
 	if err != nil {
 		panic(err)

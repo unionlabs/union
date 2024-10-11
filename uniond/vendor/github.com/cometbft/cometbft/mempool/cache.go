@@ -53,11 +53,12 @@ func (c *LRUTxCache) GetList() *list.List {
 	return c.list
 }
 
+// Reset resets the cache to an empty state.
 func (c *LRUTxCache) Reset() {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	c.cacheMap = make(map[types.TxKey]*list.Element, c.size)
+	clear(c.cacheMap)
 	c.list.Init()
 }
 

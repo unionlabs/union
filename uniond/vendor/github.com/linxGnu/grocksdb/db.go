@@ -1017,7 +1017,7 @@ func (db *DB) SingleDeleteCFWithTS(opts *WriteOptions, cf *ColumnFamilyHandle, k
 }
 
 // DeleteRangeCF deletes keys that are between [startKey, endKey)
-func (db *DB) DeleteRangeCF(opts *WriteOptions, cf *ColumnFamilyHandle, startKey []byte, endKey []byte) (err error) {
+func (db *DB) DeleteRangeCF(opts *WriteOptions, cf *ColumnFamilyHandle, startKey, endKey []byte) (err error) {
 	var (
 		cErr      *C.char
 		cStartKey = refGoBytes(startKey)
@@ -1087,7 +1087,7 @@ func (db *DB) SingleDeleteCF(opts *WriteOptions, cf *ColumnFamilyHandle, key []b
 }
 
 // Merge merges the data associated with the key with the actual data in the database.
-func (db *DB) Merge(opts *WriteOptions, key []byte, value []byte) (err error) {
+func (db *DB) Merge(opts *WriteOptions, key, value []byte) (err error) {
 	var (
 		cErr   *C.char
 		cKey   = refGoBytes(key)
@@ -1102,7 +1102,7 @@ func (db *DB) Merge(opts *WriteOptions, key []byte, value []byte) (err error) {
 
 // MergeCF merges the data associated with the key with the actual data in the
 // database and column family.
-func (db *DB) MergeCF(opts *WriteOptions, cf *ColumnFamilyHandle, key []byte, value []byte) (err error) {
+func (db *DB) MergeCF(opts *WriteOptions, cf *ColumnFamilyHandle, key, value []byte) (err error) {
 	var (
 		cErr   *C.char
 		cKey   = refGoBytes(key)
@@ -1662,10 +1662,10 @@ func (db *DB) DisableFileDeletions() (err error) {
 }
 
 // EnableFileDeletions enables file deletions for the database.
-func (db *DB) EnableFileDeletions(force bool) (err error) {
+func (db *DB) EnableFileDeletions() (err error) {
 	var cErr *C.char
 
-	C.rocksdb_enable_file_deletions(db.c, boolToChar(force), &cErr)
+	C.rocksdb_enable_file_deletions(db.c, &cErr)
 	err = fromCError(cErr)
 
 	return

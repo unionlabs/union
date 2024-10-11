@@ -18,7 +18,7 @@ type timeoutError interface {
 	Timeout() bool
 }
 
-//------------------------------------------------------------------
+// ------------------------------------------------------------------
 // TCP Listener
 
 // TCPListenerOption sets an optional parameter on the tcpListener.
@@ -84,7 +84,7 @@ func (ln *TCPListener) Accept() (net.Conn, error) {
 	return secretConn, nil
 }
 
-//------------------------------------------------------------------
+// ------------------------------------------------------------------
 // Unix Listener
 
 // unixListener implements net.Listener.
@@ -145,7 +145,7 @@ func (ln *UnixListener) Accept() (net.Conn, error) {
 	return conn, nil
 }
 
-//------------------------------------------------------------------
+// ------------------------------------------------------------------
 // Connection
 
 // timeoutConn implements net.Conn.
@@ -171,7 +171,7 @@ func (c timeoutConn) Read(b []byte) (n int, err error) {
 	deadline := time.Now().Add(c.timeout)
 	err = c.Conn.SetReadDeadline(deadline)
 	if err != nil {
-		return
+		return 0, err
 	}
 
 	return c.Conn.Read(b)
@@ -183,7 +183,7 @@ func (c timeoutConn) Write(b []byte) (n int, err error) {
 	deadline := time.Now().Add(c.timeout)
 	err = c.Conn.SetWriteDeadline(deadline)
 	if err != nil {
-		return
+		return 0, err
 	}
 
 	return c.Conn.Write(b)

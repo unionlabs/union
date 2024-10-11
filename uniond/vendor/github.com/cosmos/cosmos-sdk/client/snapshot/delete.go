@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
 )
 
@@ -14,7 +15,7 @@ func DeleteSnapshotCmd() *cobra.Command {
 		Short: "Delete a local snapshot",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := server.GetServerContextFromCmd(cmd)
+			viper := client.GetViperFromCmd(cmd)
 
 			height, err := strconv.ParseUint(args[0], 10, 64)
 			if err != nil {
@@ -25,7 +26,7 @@ func DeleteSnapshotCmd() *cobra.Command {
 				return err
 			}
 
-			snapshotStore, err := server.GetSnapshotStore(ctx.Viper)
+			snapshotStore, err := server.GetSnapshotStore(viper)
 			if err != nil {
 				return err
 			}

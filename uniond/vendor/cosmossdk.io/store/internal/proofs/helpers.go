@@ -3,7 +3,7 @@ package proofs
 import (
 	"sort"
 
-	cmtprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	cmtprotocrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	"golang.org/x/exp/maps"
 
 	"cosmossdk.io/math/unsafe"

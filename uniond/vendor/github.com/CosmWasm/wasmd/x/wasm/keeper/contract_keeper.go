@@ -53,13 +53,13 @@ func NewDefaultPermissionKeeper(nested decoratedKeeper) *PermissionedKeeper {
 	return NewPermissionedKeeper(nested, DefaultAuthorizationPolicy{})
 }
 
-func (p PermissionedKeeper) Create(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *types.AccessConfig) (codeID uint64, checksum []byte, err error) {
+func (p PermissionedKeeper) Create(ctx context.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *types.AccessConfig) (codeID uint64, checksum []byte, err error) {
 	return p.nested.create(ctx, creator, wasmCode, instantiateAccess, p.authZPolicy)
 }
 
 // Instantiate creates an instance of a WASM contract using the classic sequence based address generator
 func (p PermissionedKeeper) Instantiate(
-	ctx sdk.Context,
+	ctx context.Context,
 	codeID uint64,
 	creator, admin sdk.AccAddress,
 	initMsg []byte,
@@ -71,7 +71,7 @@ func (p PermissionedKeeper) Instantiate(
 
 // Instantiate2 creates an instance of a WASM contract using the predictable address generator
 func (p PermissionedKeeper) Instantiate2(
-	ctx sdk.Context,
+	ctx context.Context,
 	codeID uint64,
 	creator, admin sdk.AccAddress,
 	initMsg []byte,
@@ -88,45 +88,45 @@ func (p PermissionedKeeper) Instantiate2(
 		initMsg,
 		label,
 		deposit,
-		PredicableAddressGenerator(creator, salt, initMsg, fixMsg),
+		PredictableAddressGenerator(creator, salt, initMsg, fixMsg),
 		p.authZPolicy,
 	)
 }
 
-func (p PermissionedKeeper) Execute(ctx sdk.Context, contractAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error) {
+func (p PermissionedKeeper) Execute(ctx context.Context, contractAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error) {
 	return p.nested.execute(ctx, contractAddress, caller, msg, coins)
 }
 
-func (p PermissionedKeeper) Migrate(ctx sdk.Context, contractAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte) ([]byte, error) {
+func (p PermissionedKeeper) Migrate(ctx context.Context, contractAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte) ([]byte, error) {
 	return p.nested.migrate(ctx, contractAddress, caller, newCodeID, msg, p.authZPolicy)
 }
 
-func (p PermissionedKeeper) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
+func (p PermissionedKeeper) Sudo(ctx context.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 	return p.nested.Sudo(ctx, contractAddress, msg)
 }
 
-func (p PermissionedKeeper) UpdateContractAdmin(ctx sdk.Context, contractAddress, caller, newAdmin sdk.AccAddress) error {
+func (p PermissionedKeeper) UpdateContractAdmin(ctx context.Context, contractAddress, caller, newAdmin sdk.AccAddress) error {
 	return p.nested.setContractAdmin(ctx, contractAddress, caller, newAdmin, p.authZPolicy)
 }
 
-func (p PermissionedKeeper) ClearContractAdmin(ctx sdk.Context, contractAddress, caller sdk.AccAddress) error {
+func (p PermissionedKeeper) ClearContractAdmin(ctx context.Context, contractAddress, caller sdk.AccAddress) error {
 	return p.nested.setContractAdmin(ctx, contractAddress, caller, nil, p.authZPolicy)
 }
 
-func (p PermissionedKeeper) PinCode(ctx sdk.Context, codeID uint64) error {
+func (p PermissionedKeeper) PinCode(ctx context.Context, codeID uint64) error {
 	return p.nested.pinCode(ctx, codeID)
 }
 
-func (p PermissionedKeeper) UnpinCode(ctx sdk.Context, codeID uint64) error {
+func (p PermissionedKeeper) UnpinCode(ctx context.Context, codeID uint64) error {
 	return p.nested.unpinCode(ctx, codeID)
 }
 
 // SetContractInfoExtension updates the extra attributes that can be stored with the contract info
-func (p PermissionedKeeper) SetContractInfoExtension(ctx sdk.Context, contract sdk.AccAddress, extra types.ContractInfoExtension) error {
+func (p PermissionedKeeper) SetContractInfoExtension(ctx context.Context, contract sdk.AccAddress, extra types.ContractInfoExtension) error {
 	return p.nested.setContractInfoExtension(ctx, contract, extra)
 }
 
 // SetAccessConfig updates the access config of a code id.
-func (p PermissionedKeeper) SetAccessConfig(ctx sdk.Context, codeID uint64, caller sdk.AccAddress, newConfig types.AccessConfig) error {
+func (p PermissionedKeeper) SetAccessConfig(ctx context.Context, codeID uint64, caller sdk.AccAddress, newConfig types.AccessConfig) error {
 	return p.nested.setAccessConfig(ctx, codeID, caller, newConfig, p.authZPolicy)
 }

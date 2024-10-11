@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha512"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"math/big"
 	"path/filepath"
@@ -88,7 +89,7 @@ func NewParamsFromPath(path string) (*BIP44Params, error) {
 	}
 
 	if !(change == 0 || change == 1) {
-		return nil, fmt.Errorf("change field can only be 0 or 1")
+		return nil, errors.New("change field can only be 0 or 1")
 	}
 
 	return &BIP44Params{
@@ -262,7 +263,7 @@ func uint32ToBytes(i uint32) []byte {
 	return b[:]
 }
 
-// i64 returns the two halfs of the SHA512 HMAC of key and data.
+// i64 returns the two halves of the SHA512 HMAC of key and data.
 func i64(key, data []byte) (il, ir [32]byte) {
 	mac := hmac.New(sha512.New, key)
 	// sha512 does not err

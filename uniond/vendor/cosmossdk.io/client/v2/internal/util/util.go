@@ -5,6 +5,8 @@ import (
 	"runtime/debug"
 	"strings"
 
+	cosmos_proto "github.com/cosmos/cosmos-proto"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"
@@ -17,15 +19,9 @@ import (
 // later versions unsupported by the current version can be added
 var buildInfo, _ = debug.ReadBuildInfo()
 
-// DescriptorName returns the name of the descriptor in kebab case.
+// DescriptorKebabName returns the name of the descriptor in kebab case.
 func DescriptorKebabName(descriptor protoreflect.Descriptor) string {
 	return strcase.ToKebab(string(descriptor.Name()))
-}
-
-// DescriptorDocs returns the leading comments of the descriptor.
-// TODO this does not work, to fix.
-func DescriptorDocs(descriptor protoreflect.Descriptor) string {
-	return descriptor.ParentFile().SourceLocations().ByDescriptor(descriptor).LeadingComments
 }
 
 func ResolveMessageType(resolver protoregistry.MessageTypeResolver, descriptor protoreflect.MessageDescriptor) protoreflect.MessageType {
@@ -39,19 +35,27 @@ func ResolveMessageType(resolver protoregistry.MessageTypeResolver, descriptor p
 
 // IsSupportedVersion is used to determine in which version of a module / sdk a rpc was introduced.
 // It returns false if the rpc has comment for an higher version than the current one.
-func IsSupportedVersion(input string) bool {
-	return isSupportedVersion(input, buildInfo)
+// It returns true if the method descriptor contains no annotation.
+func IsSupportedVersion(methodDesc protoreflect.MethodDescriptor) bool {
+	return isSupportedVersion(methodDesc, buildInfo)
 }
 
 // isSupportedVersion is used to determine in which version of a module / sdk a rpc was introduced.
 // It returns false if the rpc has comment for an higher version than the current one.
+// It returns true if the method descriptor contains no annotation.
 // It takes a buildInfo as argument to be able to test it.
-func isSupportedVersion(input string, buildInfo *debug.BuildInfo) bool {
-	if input == "" || buildInfo == nil {
+func isSupportedVersion(methodDesc protoreflect.MethodDescriptor, buildInfo *debug.BuildInfo) bool {
+	hasVersion := proto.HasExtension(methodDesc.Options(), cosmos_proto.E_MethodAddedIn)
+	if !hasVersion || buildInfo == nil || len(buildInfo.Deps) == 0 {
 		return true
 	}
 
-	moduleName, version := parseSinceComment(input)
+	version := proto.GetExtension(methodDesc.Options(), cosmos_proto.E_MethodAddedIn).(string)
+	moduleName, version := parseVersion(version)
+	if moduleName == "" || version == "" {
+		return true // if no comment consider it's supported
+	}
+
 	for _, dep := range buildInfo.Deps {
 		if !strings.Contains(dep.Path, moduleName) {
 			continue
@@ -60,13 +64,17 @@ func isSupportedVersion(input string, buildInfo *debug.BuildInfo) bool {
 		return version <= dep.Version
 	}
 
-	return true // if cannot find the module consider it's supported
+	// if cannot find the module consider it isn't supported
+	// for instance the x/gov module wasn't extracted in v0.50
+	// so it isn't present in the build info, however, that means
+	// it isn't supported in v0.50.
+	return false
 }
 
-var sinceCommentRegex = regexp.MustCompile(`\/\/\s*since: (\S+) (\S+)`)
+var sinceCommentRegex = regexp.MustCompile(`(\S+) (\S+)`)
 
-// parseSinceComment parses the `// Since: cosmos-sdk v0.xx` comment on rpc.
-func parseSinceComment(input string) (string, string) {
+// parseVersion parses the `cosmos-sdk v0.xx` comment on rpc.
+func parseVersion(input string) (string, string) {
 	var (
 		moduleName string
 		version    string
@@ -77,7 +85,7 @@ func parseSinceComment(input string) (string, string) {
 
 	matches := sinceCommentRegex.FindStringSubmatch(input)
 	if len(matches) >= 3 {
-		moduleName, version = matches[1], matches[2]
+		moduleName, version = strings.TrimPrefix(matches[1], "x/"), matches[2]
 
 		if !strings.HasPrefix(version, "v") {
 			version = "v" + version

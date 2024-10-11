@@ -1,6 +1,6 @@
 package types
 
-// UNSTABLE
+// UNSTABLE.
 var (
 	PeerStateKey = "ConsensusReactor.peerState"
 )

@@ -520,7 +520,6 @@ func (cs *awsCredentialSource) getMetadataSecurityCredentials(roleName string, h
 	if err != nil {
 		return result, err
 	}
-	req.Header.Add("Content-Type", "application/json")
 
 	for name, value := range headers {
 		req.Header.Add(name, value)

@@ -69,7 +69,7 @@ type BaseConfig struct {
 	// It has no bearing on application state pruning which is determined by the
 	// "pruning-*" configurations.
 	//
-	// Note: CometBFT block pruning is dependant on this parameter in conjunction
+	// Note: CometBFT block pruning is dependent on this parameter in conjunction
 	// with the unbonding (safety threshold) period, state pruning and state sync
 	// snapshot parameters to determine the correct minimum value of
 	// ResponseCommit.RetainHeight.
@@ -141,12 +141,6 @@ type GRPCConfig struct {
 	MaxSendMsgSize int `mapstructure:"max-send-msg-size"`
 }
 
-// GRPCWebConfig defines configuration for the gRPC-web server.
-type GRPCWebConfig struct {
-	// Enable defines if the gRPC-web should be enabled.
-	Enable bool `mapstructure:"enable"`
-}
-
 // StateSyncConfig defines the state sync snapshot configuration.
 type StateSyncConfig struct {
 	// SnapshotInterval sets the interval at which state sync snapshots are taken.
@@ -190,7 +184,6 @@ type Config struct {
 	Telemetry telemetry.Config `mapstructure:"telemetry"`
 	API       APIConfig        `mapstructure:"api"`
 	GRPC      GRPCConfig       `mapstructure:"grpc"`
-	GRPCWeb   GRPCWebConfig    `mapstructure:"grpc-web"`
 	StateSync StateSyncConfig  `mapstructure:"state-sync"`
 	Streaming StreamingConfig  `mapstructure:"streaming"`
 	Mempool   MempoolConfig    `mapstructure:"mempool"`
@@ -249,9 +242,6 @@ func DefaultConfig() *Config {
 			MaxRecvMsgSize: DefaultGRPCMaxRecvMsgSize,
 			MaxSendMsgSize: DefaultGRPCMaxSendMsgSize,
 		},
-		GRPCWeb: GRPCWebConfig{
-			Enable: true,
-		},
 		StateSync: StateSyncConfig{
 			SnapshotInterval:   0,
 			SnapshotKeepRecent: 2,
@@ -263,7 +253,7 @@ func DefaultConfig() *Config {
 			},
 		},
 		Mempool: MempoolConfig{
-			MaxTxs: 5_000,
+			MaxTxs: -1,
 		},
 	}
 }

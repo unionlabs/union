@@ -14,7 +14,7 @@ import (
 // unwrapper unwraps the value to the underlying value.
 // This is implemented by List and Map.
 type unwrapper interface {
-	protoUnwrap() interface{}
+	protoUnwrap() any
 }
 
 // A Converter coverts to/from Go reflect.Value types and protobuf protoreflect.Value types.
@@ -322,7 +322,7 @@ func (c *stringConverter) PBValueOf(v reflect.Value) protoreflect.Value {
 	return protoreflect.ValueOfString(v.Convert(stringType).String())
 }
 func (c *stringConverter) GoValueOf(v protoreflect.Value) reflect.Value {
-	// pref.Value.String never panics, so we go through an interface
+	// protoreflect.Value.String never panics, so we go through an interface
 	// conversion here to check the type.
 	s := v.Interface().(string)
 	if c.goType.Kind() == reflect.Slice && s == "" {

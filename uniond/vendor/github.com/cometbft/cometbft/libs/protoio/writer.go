@@ -42,7 +42,7 @@ import (
 // equivalent to the gogoproto NewDelimitedWriter, except WriteMsg() also returns the
 // number of bytes written, which is necessary in the p2p package.
 func NewDelimitedWriter(w io.Writer) WriteCloser {
-	return &varintWriter{w, make([]byte, binary.MaxVarintLen64), nil}
+	return &varintWriter{w, nil, nil}
 }
 
 type varintWriter struct {
@@ -69,6 +69,9 @@ func (w *varintWriter) WriteMsg(msg proto.Message) (int, error) {
 	}
 
 	// fallback
+	if w.lenBuf == nil {
+		w.lenBuf = make([]byte, binary.MaxVarintLen64)
+	}
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return 0, err

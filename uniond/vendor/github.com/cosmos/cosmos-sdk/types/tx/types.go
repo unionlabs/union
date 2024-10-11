@@ -1,14 +1,15 @@
 package tx
 
 import (
-	"fmt"
+	"errors"
 
-	protov2 "google.golang.org/protobuf/proto"
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
+	"cosmossdk.io/core/registry"
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -19,7 +20,7 @@ const MaxGasWanted = uint64((1 << 63) - 1)
 
 // Interface implementation checks.
 var (
-	_, _, _, _ codectypes.UnpackInterfacesMessage = &Tx{}, &TxBody{}, &AuthInfo{}, &SignerInfo{}
+	_, _, _, _ gogoprotoany.UnpackInterfacesMessage = &Tx{}, &TxBody{}, &AuthInfo{}, &SignerInfo{}
 )
 
 // GetMsgs implements the GetMsgs method on sdk.Tx.
@@ -39,22 +40,22 @@ func (t *Tx) GetMsgs() []sdk.Msg {
 // ValidateBasic implements the ValidateBasic method on sdk.Tx.
 func (t *Tx) ValidateBasic() error {
 	if t == nil {
-		return fmt.Errorf("bad Tx")
+		return errors.New("bad Tx")
 	}
 
 	body := t.Body
 	if body == nil {
-		return fmt.Errorf("missing TxBody")
+		return errors.New("missing TxBody")
 	}
 
 	authInfo := t.AuthInfo
 	if authInfo == nil {
-		return fmt.Errorf("missing AuthInfo")
+		return errors.New("missing AuthInfo")
 	}
 
 	fee := authInfo.Fee
 	if fee == nil {
-		return fmt.Errorf("missing fee")
+		return errors.New("missing fee")
 	}
 
 	if fee.GasLimit > MaxGasWanted {
@@ -97,18 +98,18 @@ func (t *Tx) ValidateBasic() error {
 // GetSigners retrieves all the signers of a tx.
 // This includes all unique signers of the messages (in order),
 // as well as the FeePayer (if specified and not already included).
-func (t *Tx) GetSigners(cdc codec.Codec) ([][]byte, []protov2.Message, error) {
+func (t *Tx) GetSigners(cdc codec.Codec) ([][]byte, []protoreflect.Message, error) {
 	var signers [][]byte
 	seen := map[string]bool{}
 
-	var msgsv2 []protov2.Message
+	var reflectMsgs []protoreflect.Message
 	for _, msg := range t.Body.Messages {
-		xs, msgv2, err := cdc.GetMsgAnySigners(msg)
+		xs, reflectMsg, err := cdc.GetMsgAnySigners(msg)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		msgsv2 = append(msgsv2, msgv2)
+		reflectMsgs = append(reflectMsgs, reflectMsg)
 
 		for _, signer := range xs {
 			if !seen[string(signer)] {
@@ -133,7 +134,7 @@ func (t *Tx) GetSigners(cdc codec.Codec) ([][]byte, []protov2.Message, error) {
 		seen[string(feePayerAddr)] = true
 	}
 
-	return signers, msgsv2, nil
+	return signers, reflectMsgs, nil
 }
 
 func (t *Tx) GetGas() uint64 {
@@ -176,7 +177,7 @@ func (t *Tx) FeeGranter(cdc codec.Codec) []byte {
 }
 
 // UnpackInterfaces implements the UnpackInterfaceMessages.UnpackInterfaces method
-func (t *Tx) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (t *Tx) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	if t.Body != nil {
 		if err := t.Body.UnpackInterfaces(unpacker); err != nil {
 			return err
@@ -191,7 +192,7 @@ func (t *Tx) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 }
 
 // UnpackInterfaces implements the UnpackInterfaceMessages.UnpackInterfaces method
-func (m *TxBody) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (m *TxBody) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	if err := UnpackInterfaces(unpacker, m.Messages); err != nil {
 		return err
 	}
@@ -208,7 +209,7 @@ func (m *TxBody) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 }
 
 // UnpackInterfaces implements the UnpackInterfaceMessages.UnpackInterfaces method
-func (m *AuthInfo) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (m *AuthInfo) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	for _, signerInfo := range m.SignerInfos {
 		err := signerInfo.UnpackInterfaces(unpacker)
 		if err != nil {
@@ -219,14 +220,14 @@ func (m *AuthInfo) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 }
 
 // UnpackInterfaces implements the UnpackInterfaceMessages.UnpackInterfaces method
-func (m *SignerInfo) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (m *SignerInfo) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return unpacker.UnpackAny(m.PublicKey, new(cryptotypes.PubKey))
 }
 
 // RegisterInterfaces registers the sdk.Tx and MsgResponse interfaces.
 // Note: the registration of sdk.Msg is done in sdk.RegisterInterfaces, but it
 // could be moved inside this function.
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterInterface(msgResponseInterfaceProtoName, (*MsgResponse)(nil))
 
 	registry.RegisterInterface("cosmos.tx.v1beta1.Tx", (*sdk.HasMsgs)(nil))

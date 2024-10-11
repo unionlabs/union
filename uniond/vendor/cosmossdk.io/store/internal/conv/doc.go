@@ -1,2 +1,2 @@
-// Package conv provides internal functions for convertions and data manipulation
+// Package conv provides internal functions for conversions and data manipulation
 package conv

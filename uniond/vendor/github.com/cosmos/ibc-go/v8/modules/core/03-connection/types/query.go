@@ -1,6 +1,8 @@
 package types
 
 import (
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -8,8 +10,8 @@ import (
 )
 
 var (
-	_ codectypes.UnpackInterfacesMessage = (*QueryConnectionClientStateResponse)(nil)
-	_ codectypes.UnpackInterfacesMessage = (*QueryConnectionConsensusStateResponse)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*QueryConnectionClientStateResponse)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*QueryConnectionConsensusStateResponse)(nil)
 )
 
 // NewQueryConnectionResponse creates a new QueryConnectionResponse instance
@@ -51,7 +53,7 @@ func NewQueryConnectionClientStateResponse(identifiedClientState clienttypes.Ide
 }
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnpackInterfaces
-func (qccsr QueryConnectionClientStateResponse) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (qccsr QueryConnectionClientStateResponse) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return qccsr.IdentifiedClientState.UnpackInterfaces(unpacker)
 }
 
@@ -66,6 +68,6 @@ func NewQueryConnectionConsensusStateResponse(clientID string, anyConsensusState
 }
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnpackInterfaces
-func (qccsr QueryConnectionConsensusStateResponse) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (qccsr QueryConnectionConsensusStateResponse) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return unpacker.UnpackAny(qccsr.ConsensusState, new(exported.ConsensusState))
 }

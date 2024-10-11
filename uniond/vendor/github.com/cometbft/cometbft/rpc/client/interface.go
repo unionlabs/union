@@ -50,15 +50,15 @@ type Client interface {
 // is easier to mock.
 type ABCIClient interface {
 	// Reading from abci app
-	ABCIInfo(context.Context) (*ctypes.ResultABCIInfo, error)
+	ABCIInfo(ctx context.Context) (*ctypes.ResultABCIInfo, error)
 	ABCIQuery(ctx context.Context, path string, data bytes.HexBytes) (*ctypes.ResultABCIQuery, error)
 	ABCIQueryWithOptions(ctx context.Context, path string, data bytes.HexBytes,
 		opts ABCIQueryOptions) (*ctypes.ResultABCIQuery, error)
 
 	// Writing to abci app
-	BroadcastTxCommit(context.Context, types.Tx) (*ctypes.ResultBroadcastTxCommit, error)
-	BroadcastTxAsync(context.Context, types.Tx) (*ctypes.ResultBroadcastTx, error)
-	BroadcastTxSync(context.Context, types.Tx) (*ctypes.ResultBroadcastTx, error)
+	BroadcastTxCommit(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTxCommit, error)
+	BroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error)
+	BroadcastTxSync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error)
 }
 
 // SignClient groups together the functionality needed to get valid signatures
@@ -95,28 +95,28 @@ type SignClient interface {
 
 // HistoryClient provides access to data from genesis to now in large chunks.
 type HistoryClient interface {
-	Genesis(context.Context) (*ctypes.ResultGenesis, error)
-	GenesisChunked(context.Context, uint) (*ctypes.ResultGenesisChunk, error)
+	Genesis(ctx context.Context) (*ctypes.ResultGenesis, error)
+	GenesisChunked(ctx context.Context, id uint) (*ctypes.ResultGenesisChunk, error)
 	BlockchainInfo(ctx context.Context, minHeight, maxHeight int64) (*ctypes.ResultBlockchainInfo, error)
 }
 
 // StatusClient provides access to general chain info.
 type StatusClient interface {
-	Status(context.Context) (*ctypes.ResultStatus, error)
+	Status(ctx context.Context) (*ctypes.ResultStatus, error)
 }
 
 // NetworkClient is general info about the network state. May not be needed
 // usually.
 type NetworkClient interface {
-	NetInfo(context.Context) (*ctypes.ResultNetInfo, error)
-	DumpConsensusState(context.Context) (*ctypes.ResultDumpConsensusState, error)
-	ConsensusState(context.Context) (*ctypes.ResultConsensusState, error)
+	NetInfo(ctx context.Context) (*ctypes.ResultNetInfo, error)
+	DumpConsensusState(ctx context.Context) (*ctypes.ResultDumpConsensusState, error)
+	ConsensusState(ctx context.Context) (*ctypes.ResultConsensusState, error)
 	ConsensusParams(ctx context.Context, height *int64) (*ctypes.ResultConsensusParams, error)
-	Health(context.Context) (*ctypes.ResultHealth, error)
+	Health(ctx context.Context) (*ctypes.ResultHealth, error)
 }
 
 // EventsClient is reactive, you can subscribe to any message, given the proper
-// string. see cometbft/types/events.go
+// string. see cometbft/types/events.go.
 type EventsClient interface {
 	// Subscribe subscribes given subscriber to query. Returns a channel with
 	// cap=1 onto which events are published. An error is returned if it fails to
@@ -135,14 +135,14 @@ type EventsClient interface {
 // MempoolClient shows us data about current mempool state.
 type MempoolClient interface {
 	UnconfirmedTxs(ctx context.Context, limit *int) (*ctypes.ResultUnconfirmedTxs, error)
-	NumUnconfirmedTxs(context.Context) (*ctypes.ResultUnconfirmedTxs, error)
-	CheckTx(context.Context, types.Tx) (*ctypes.ResultCheckTx, error)
+	NumUnconfirmedTxs(ctx context.Context) (*ctypes.ResultUnconfirmedTxs, error)
+	CheckTx(ctx context.Context, tx types.Tx) (*ctypes.ResultCheckTx, error)
 }
 
 // EvidenceClient is used for submitting an evidence of the malicious
 // behavior.
 type EvidenceClient interface {
-	BroadcastEvidence(context.Context, types.Evidence) (*ctypes.ResultBroadcastEvidence, error)
+	BroadcastEvidence(ctx context.Context, ev types.Evidence) (*ctypes.ResultBroadcastEvidence, error)
 }
 
 // RemoteClient is a Client, which can also return the remote network address.

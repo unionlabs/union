@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 
 	"github.com/google/go-cmp/cmp"
-	"golang.org/x/exp/slices"
 	protov2 "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -257,8 +257,8 @@ func (p *descriptorProcessor) collectFDs() {
 		p.fds = append(p.fds, fd)
 	}
 
-	slices.SortFunc(p.fds, func(x, y *descriptorpb.FileDescriptorProto) int {
-		return strings.Compare(*x.Name, *y.Name)
+	sort.Slice(p.fds, func(x, y int) bool {
+		return *p.fds[x].Name < *p.fds[y].Name
 	})
 }
 

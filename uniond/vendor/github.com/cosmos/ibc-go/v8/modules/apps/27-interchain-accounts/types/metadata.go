@@ -1,11 +1,10 @@
 package types
 
 import (
+	"context"
 	"slices"
 
 	errorsmod "cosmossdk.io/errors"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 )
@@ -80,7 +79,7 @@ func IsPreviousMetadataEqual(previousVersion string, metadata Metadata) bool {
 
 // ValidateControllerMetadata performs validation of the provided ICS27 controller metadata parameters as well
 // as the connection params against the provided metadata
-func ValidateControllerMetadata(ctx sdk.Context, channelKeeper ChannelKeeper, connectionHops []string, metadata Metadata) error {
+func ValidateControllerMetadata(ctx context.Context, channelKeeper ChannelKeeper, connectionHops []string, metadata Metadata) error {
 	if !isSupportedEncoding(metadata.Encoding) {
 		return errorsmod.Wrapf(ErrInvalidCodec, "unsupported encoding format %s", metadata.Encoding)
 	}
@@ -112,7 +111,7 @@ func ValidateControllerMetadata(ctx sdk.Context, channelKeeper ChannelKeeper, co
 }
 
 // ValidateHostMetadata performs validation of the provided ICS27 host metadata parameters
-func ValidateHostMetadata(ctx sdk.Context, channelKeeper ChannelKeeper, connectionHops []string, metadata Metadata) error {
+func ValidateHostMetadata(ctx context.Context, channelKeeper ChannelKeeper, connectionHops []string, metadata Metadata) error {
 	if !isSupportedEncoding(metadata.Encoding) {
 		return errorsmod.Wrapf(ErrInvalidCodec, "unsupported encoding format %s", metadata.Encoding)
 	}

@@ -2,11 +2,11 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/cockroachdb/errors"
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -52,7 +52,7 @@ func (ctx Context) QueryStore(key []byte, storeName string) ([]byte, int64, erro
 // It returns the ResultQuery obtained from the query. The height used to perform
 // the query is the RequestQuery Height if it is non-zero, otherwise the context
 // height is used.
-func (ctx Context) QueryABCI(req abci.RequestQuery) (abci.ResponseQuery, error) {
+func (ctx Context) QueryABCI(req abci.QueryRequest) (abci.QueryResponse, error) {
 	return ctx.queryABCI(req)
 }
 
@@ -61,25 +61,10 @@ func (ctx Context) GetFromAddress() sdk.AccAddress {
 	return ctx.FromAddress
 }
 
-// GetFeePayerAddress returns the fee granter address from the context
-func (ctx Context) GetFeePayerAddress() sdk.AccAddress {
-	return ctx.FeePayer
-}
-
-// GetFeeGranterAddress returns the fee granter address from the context
-func (ctx Context) GetFeeGranterAddress() sdk.AccAddress {
-	return ctx.FeeGranter
-}
-
-// GetFromName returns the key name for the current context.
-func (ctx Context) GetFromName() string {
-	return ctx.FromName
-}
-
-func (ctx Context) queryABCI(req abci.RequestQuery) (abci.ResponseQuery, error) {
+func (ctx Context) queryABCI(req abci.QueryRequest) (abci.QueryResponse, error) {
 	node, err := ctx.GetNode()
 	if err != nil {
-		return abci.ResponseQuery{}, err
+		return abci.QueryResponse{}, err
 	}
 
 	var queryHeight int64
@@ -97,11 +82,11 @@ func (ctx Context) queryABCI(req abci.RequestQuery) (abci.ResponseQuery, error) 
 
 	result, err := node.ABCIQueryWithOptions(context.Background(), req.Path, req.Data, opts)
 	if err != nil {
-		return abci.ResponseQuery{}, err
+		return abci.QueryResponse{}, err
 	}
 
 	if !result.Response.IsOK() {
-		return abci.ResponseQuery{}, sdkErrorToGRPCError(result.Response)
+		return abci.QueryResponse{}, sdkErrorToGRPCError(result.Response)
 	}
 
 	// data from trusted node or subspace query doesn't need verification
@@ -112,7 +97,7 @@ func (ctx Context) queryABCI(req abci.RequestQuery) (abci.ResponseQuery, error) 
 	return result.Response, nil
 }
 
-func sdkErrorToGRPCError(resp abci.ResponseQuery) error {
+func sdkErrorToGRPCError(resp abci.QueryResponse) error {
 	switch resp.Code {
 	case sdkerrors.ErrInvalidRequest.ABCICode():
 		return status.Error(codes.InvalidArgument, resp.Log)
@@ -129,7 +114,7 @@ func sdkErrorToGRPCError(resp abci.ResponseQuery) error {
 // and path. It returns the result and height of the query upon success
 // or an error if the query fails.
 func (ctx Context) query(path string, key []byte) ([]byte, int64, error) {
-	resp, err := ctx.queryABCI(abci.RequestQuery{
+	resp, err := ctx.queryABCI(abci.QueryRequest{
 		Path:   path,
 		Data:   key,
 		Height: ctx.Height,

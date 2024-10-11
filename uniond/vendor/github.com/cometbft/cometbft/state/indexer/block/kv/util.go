@@ -2,6 +2,7 @@ package kv
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -49,6 +50,53 @@ func heightKey(height int64) ([]byte, error) {
 		types.BlockHeightKey,
 		height,
 	)
+}
+
+// keyBelongsToHeightRange checks whether the passed key  belongs to the specified height range.
+// That might not be the case for two reasons: the key belongs to the height out of the specified range,
+// or the key doesn't belong to any height, meaning it's neither heightKey nor eventKey.
+func keyBelongsToHeightRange(key []byte, left, right int64) bool {
+	// left included, right excluded
+	eventHeight, err := parseHeightFromEventKey(key)
+	if err == nil {
+		return left <= eventHeight && eventHeight < right
+	}
+
+	var (
+		blockHeightKeyPrefix string
+		possibleHeight       int64
+	)
+	remaining, err := orderedcode.Parse(string(key), &blockHeightKeyPrefix, &possibleHeight)
+	if err != nil {
+		return false
+	}
+	return len(remaining) == 0 &&
+		blockHeightKeyPrefix == types.BlockHeightKey &&
+		left <= possibleHeight &&
+		possibleHeight < right
+}
+
+// getHeightFromKey requires its argument key to be the key with height (either heightKey or eventKey).
+// Provided that, it extracts the height.
+func getHeightFromKey(key []byte) int64 {
+	// Must be called with either heightKey or eventKey
+	eventHeight, err := parseHeightFromEventKey(key)
+	if err == nil {
+		return eventHeight
+	}
+
+	var (
+		blockHeightKeyPrefix string
+		possibleHeight       int64
+	)
+	remaining, err := orderedcode.Parse(string(key), &blockHeightKeyPrefix, &possibleHeight)
+	if err != nil {
+		panic(err)
+	}
+	if len(remaining) == 0 && blockHeightKeyPrefix == types.BlockHeightKey {
+		return possibleHeight
+	}
+	panic(errors.New("key must be either heightKey or eventKey"))
 }
 
 func eventKey(compositeKey, eventValue string, height int64, eventSeq int64) ([]byte, error) {
@@ -127,7 +175,7 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 	// function_type = 'being_block_event' | 'end_block_event'
 
 	if len(remaining) == 0 { // The event was not properly indexed
-		return 0, fmt.Errorf("failed to parse event sequence, invalid event format")
+		return 0, errors.New("failed to parse event sequence, invalid event format")
 	}
 	var typ string
 	remaining2, err := orderedcode.Parse(remaining, &typ) // Check if we have scenarios 2. or 3. (described above).
@@ -150,7 +198,7 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 // Remove all occurrences of height equality queries except one. While we are traversing the conditions, check whether the only condition in
 // addition to match events is the height equality or height range query. At the same time, if we do have a height range condition
 // ignore the height equality condition. If a height equality exists, place the condition index in the query and the desired height
-// into the heightInfo struct
+// into the heightInfo struct.
 func dedupHeight(conditions []syntax.Condition) (dedupConditions []syntax.Condition, heightInfo HeightInfo, found bool) {
 	heightInfo.heightEqIdx = -1
 	heightRangeExists := false
@@ -202,10 +250,9 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error)
 		if err != nil || !withinBounds {
 			return false, err
 		}
-	} else {
-		if heightInfo.height != 0 && keyHeight != heightInfo.height {
-			return false, nil
-		}
+	} else if heightInfo.height != 0 && keyHeight != heightInfo.height {
+		return false, nil
 	}
+
 	return true, nil
 }

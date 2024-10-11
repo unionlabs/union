@@ -142,4 +142,8 @@ var (
 
 	// ErrPanic should only be set when we recovering from a panic
 	ErrPanic = errorsmod.ErrPanic
+
+	// ErrTxTimeout defines an error for when a tx is rejected out due to an
+	// explicitly set timeout timestamp.
+	ErrTxTimeout = errorsmod.Register(RootCodespace, 42, "tx timeout")
 )

@@ -6,29 +6,31 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
 
-	"github.com/cometbft/cometbft/node"
-	cmtclient "github.com/cometbft/cometbft/rpc/client"
-	dbm "github.com/cosmos/cosmos-db"
+	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
+	"github.com/spf13/viper"
 
+	"cosmossdk.io/core/address"
+	"cosmossdk.io/core/registry"
+	coretesting "cosmossdk.io/core/testing"
 	"cosmossdk.io/depinject"
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/math/unsafe"
 	pruningtypes "cosmossdk.io/store/pruning/types"
+	banktypes "cosmossdk.io/x/bank/types"
+	stakingtypes "cosmossdk.io/x/staking/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -36,30 +38,22 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
+	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/server/api"
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/testutil"
-	"github.com/cosmos/cosmos-sdk/testutil/configurator"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
-	_ "github.com/cosmos/cosmos-sdk/x/auth"           // import auth as a blank
-	_ "github.com/cosmos/cosmos-sdk/x/auth/tx/config" // import auth tx config as a blank
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	_ "github.com/cosmos/cosmos-sdk/x/bank" // import bank as a blank
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	_ "github.com/cosmos/cosmos-sdk/x/consensus" // import consensus as a blank
 	"github.com/cosmos/cosmos-sdk/x/genutil"
-	_ "github.com/cosmos/cosmos-sdk/x/params"  // import params as a blank
-	_ "github.com/cosmos/cosmos-sdk/x/staking" // import staking as a blank
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // package-wide network lock to only allow one test network at a time
@@ -112,6 +106,7 @@ type Config struct {
 	AccountRetriever client.AccountRetriever
 	AppConstructor   AppConstructor             // the ABCI application constructor
 	GenesisState     map[string]json.RawMessage // custom genesis state to provide
+	GenesisTime      time.Time                  // the genesis time
 	TimeoutCommit    time.Duration              // the consensus commitment timeout
 	ChainID          string                     // the network chain-id
 	NumValidators    int                        // the total number of validators to create and bond
@@ -130,6 +125,11 @@ type Config struct {
 	APIAddress       string                     // REST API listen address (including port)
 	GRPCAddress      string                     // GRPC server listen address (including port)
 	PrintMnemonic    bool                       // print the mnemonic of first validator as log output for testing
+
+	// Address codecs
+	AddressCodec          address.Codec                 // address codec
+	ValidatorAddressCodec address.ValidatorAddressCodec // validator address codec
+	ConsensusAddressCodec address.ConsensusAddressCodec // consensus address codec
 }
 
 // DefaultConfig returns a sane default configuration suitable for nearly all
@@ -138,49 +138,42 @@ func DefaultConfig(factory TestFixtureFactory) Config {
 	fixture := factory()
 
 	return Config{
-		Codec:             fixture.EncodingConfig.Codec,
-		TxConfig:          fixture.EncodingConfig.TxConfig,
-		LegacyAmino:       fixture.EncodingConfig.Amino,
-		InterfaceRegistry: fixture.EncodingConfig.InterfaceRegistry,
-		AccountRetriever:  authtypes.AccountRetriever{},
-		AppConstructor:    fixture.AppConstructor,
-		GenesisState:      fixture.GenesisState,
-		TimeoutCommit:     2 * time.Second,
-		ChainID:           "chain-" + unsafe.Str(6),
-		NumValidators:     4,
-		BondDenom:         sdk.DefaultBondDenom,
-		MinGasPrices:      fmt.Sprintf("0.000006%s", sdk.DefaultBondDenom),
-		AccountTokens:     sdk.TokensFromConsensusPower(1000, sdk.DefaultPowerReduction),
-		StakingTokens:     sdk.TokensFromConsensusPower(500, sdk.DefaultPowerReduction),
-		BondedTokens:      sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction),
-		PruningStrategy:   pruningtypes.PruningOptionNothing,
-		CleanupDir:        true,
-		SigningAlgo:       string(hd.Secp256k1Type),
-		KeyringOptions:    []keyring.Option{},
-		PrintMnemonic:     false,
+		Codec:                 fixture.EncodingConfig.Codec,
+		TxConfig:              fixture.EncodingConfig.TxConfig,
+		LegacyAmino:           fixture.EncodingConfig.Amino,
+		InterfaceRegistry:     fixture.EncodingConfig.InterfaceRegistry,
+		AccountRetriever:      authtypes.AccountRetriever{},
+		AppConstructor:        fixture.AppConstructor,
+		GenesisState:          fixture.GenesisState,
+		TimeoutCommit:         2 * time.Second,
+		ChainID:               "chain-" + unsafe.Str(6),
+		NumValidators:         4,
+		BondDenom:             sdk.DefaultBondDenom,
+		MinGasPrices:          fmt.Sprintf("0.000006%s", sdk.DefaultBondDenom),
+		AccountTokens:         sdk.TokensFromConsensusPower(1000, sdk.DefaultPowerReduction),
+		StakingTokens:         sdk.TokensFromConsensusPower(500, sdk.DefaultPowerReduction),
+		BondedTokens:          sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction),
+		PruningStrategy:       pruningtypes.PruningOptionNothing,
+		CleanupDir:            true,
+		SigningAlgo:           string(hd.Secp256k1Type),
+		KeyringOptions:        []keyring.Option{},
+		PrintMnemonic:         false,
+		AddressCodec:          addresscodec.NewBech32Codec("cosmos"),
+		ValidatorAddressCodec: addresscodec.NewBech32Codec("cosmosvaloper"),
+		ConsensusAddressCodec: addresscodec.NewBech32Codec("cosmosvalcons"),
 	}
 }
 
-// MinimumAppConfig defines the minimum of modules required for a call to New to succeed
-func MinimumAppConfig() depinject.Config {
-	return configurator.NewAppConfig(
-		configurator.AuthModule(),
-		configurator.ParamsModule(),
-		configurator.BankModule(),
-		configurator.GenutilModule(),
-		configurator.StakingModule(),
-		configurator.ConsensusModule(),
-		configurator.TxModule(),
-	)
-}
-
-func DefaultConfigWithAppConfig(appConfig depinject.Config) (Config, error) {
+func DefaultConfigWithAppConfig(appConfig depinject.Config, baseappOpts ...func(*baseapp.BaseApp)) (Config, error) {
 	var (
-		appBuilder        *runtime.AppBuilder
-		txConfig          client.TxConfig
-		legacyAmino       *codec.LegacyAmino
-		cdc               codec.Codec
-		interfaceRegistry codectypes.InterfaceRegistry
+		appBuilder            *runtime.AppBuilder
+		txConfig              client.TxConfig
+		legacyAmino           registry.AminoRegistrar
+		cdc                   codec.Codec
+		interfaceRegistry     codectypes.InterfaceRegistry
+		addressCodec          address.Codec
+		validatorAddressCodec address.ValidatorAddressCodec
+		consensusAddressCodec address.ConsensusAddressCodec
 	)
 
 	if err := depinject.Inject(
@@ -193,6 +186,9 @@ func DefaultConfigWithAppConfig(appConfig depinject.Config) (Config, error) {
 		&cdc,
 		&legacyAmino,
 		&interfaceRegistry,
+		&addressCodec,
+		&validatorAddressCodec,
+		&consensusAddressCodec,
 	); err != nil {
 		return Config{}, err
 	}
@@ -202,7 +198,11 @@ func DefaultConfigWithAppConfig(appConfig depinject.Config) (Config, error) {
 	})
 	cfg.Codec = cdc
 	cfg.TxConfig = txConfig
-	cfg.LegacyAmino = legacyAmino
+	amino, ok := legacyAmino.(*codec.LegacyAmino)
+	if !ok {
+		return Config{}, errors.New("legacyAmino must be a *codec.LegacyAmino")
+	}
+	cfg.LegacyAmino = amino
 	cfg.InterfaceRegistry = interfaceRegistry
 	cfg.GenesisState = appBuilder.DefaultGenesis()
 	cfg.AppConstructor = func(val ValidatorI) servertypes.Application {
@@ -211,17 +211,22 @@ func DefaultConfigWithAppConfig(appConfig depinject.Config) (Config, error) {
 		if err := depinject.Inject(
 			depinject.Configs(
 				appConfig,
-				depinject.Supply(val.GetCtx().Logger),
+				depinject.Supply(
+					val.GetLogger(),
+					simtestutil.NewAppOptionsWithFlagHome(val.GetViper().GetString(flags.FlagHome)),
+				),
 			),
 			&appBuilder); err != nil {
 			panic(err)
 		}
 		app := appBuilder.Build(
-			dbm.NewMemDB(),
+			coretesting.NewMemDB(),
 			nil,
-			baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.GetAppConfig().Pruning)),
-			baseapp.SetMinGasPrices(val.GetAppConfig().MinGasPrices),
-			baseapp.SetChainID(cfg.ChainID),
+			append(baseappOpts,
+				baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.GetAppConfig().Pruning)),
+				baseapp.SetMinGasPrices(val.GetAppConfig().MinGasPrices),
+				baseapp.SetChainID(cfg.ChainID),
+			)...,
 		)
 
 		testdata.RegisterQueryServer(app.GRPCQueryRouter(), testdata.QueryImpl{})
@@ -232,6 +237,10 @@ func DefaultConfigWithAppConfig(appConfig depinject.Config) (Config, error) {
 
 		return app
 	}
+
+	cfg.AddressCodec = addressCodec
+	cfg.ValidatorAddressCodec = validatorAddressCodec
+	cfg.ConsensusAddressCodec = consensusAddressCodec
 
 	return cfg, nil
 }
@@ -255,39 +264,6 @@ type (
 		Config Config
 	}
 
-	// Validator defines an in-process CometBFT validator node. Through this object,
-	// a client can make RPC and API calls and interact with any client command
-	// or handler.
-	Validator struct {
-		AppConfig  *srvconfig.Config
-		ClientCtx  client.Context
-		Ctx        *server.Context
-		Dir        string
-		NodeID     string
-		PubKey     cryptotypes.PubKey
-		Moniker    string
-		APIAddress string
-		RPCAddress string
-		P2PAddress string
-		Address    sdk.AccAddress
-		ValAddress sdk.ValAddress
-		RPCClient  cmtclient.Client
-
-		app      servertypes.Application
-		tmNode   *node.Node
-		api      *api.Server
-		grpc     *grpc.Server
-		grpcWeb  *http.Server
-		errGroup *errgroup.Group
-		cancelFn context.CancelFunc
-	}
-
-	// ValidatorI expose a validator's context and configuration
-	ValidatorI interface {
-		GetCtx() *server.Context
-		GetAppConfig() *srvconfig.Config
-	}
-
 	// Logger is a network logger interface that exposes testnet-level Log() methods for an in-process testing network
 	// This is not to be confused with logging that may happen at an individual node or validator level
 	Logger interface {
@@ -297,18 +273,9 @@ type (
 )
 
 var (
-	_ Logger     = (*testing.T)(nil)
-	_ Logger     = (*CLILogger)(nil)
-	_ ValidatorI = Validator{}
+	_ Logger = (*testing.T)(nil)
+	_ Logger = (*CLILogger)(nil)
 )
-
-func (v Validator) GetCtx() *server.Context {
-	return v.Ctx
-}
-
-func (v Validator) GetAppConfig() *srvconfig.Config {
-	return v.AppConfig
-}
 
 // CLILogger wraps a cobra.Command and provides command logging methods.
 type CLILogger struct {
@@ -331,7 +298,7 @@ func NewCLILogger(cmd *cobra.Command) CLILogger {
 }
 
 // New creates a new Network for integration tests or in-process testnets run via the CLI
-func New(l Logger, baseDir string, cfg Config) (*Network, error) {
+func New(l Logger, baseDir string, cfg Config) (NetworkI, error) {
 	// only one caller/test can create and use a network at a time
 	l.Log("acquiring test network lock")
 	lock.Lock()
@@ -348,6 +315,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 	monikers := make([]string, cfg.NumValidators)
 	nodeIDs := make([]string, cfg.NumValidators)
 	valPubKeys := make([]cryptotypes.PubKey, cfg.NumValidators)
+	cmtConfigs := make([]*cmtcfg.Config, cfg.NumValidators)
 
 	var (
 		genAccounts []authtypes.GenesisAccount
@@ -366,8 +334,10 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		appCfg.API.Swagger = false
 		appCfg.Telemetry.Enabled = false
 
-		ctx := server.NewDefaultContext()
-		cmtCfg := ctx.Config
+		viper := viper.New()
+		// Create default cometbft config for each validator
+		cmtCfg := client.GetConfigFromViper(viper)
+
 		cmtCfg.Consensus.TimeoutCommit = cfg.TimeoutCommit
 
 		// Only allow the first validator to expose an RPC, API and gRPC
@@ -375,7 +345,6 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		apiAddr := ""
 		cmtCfg.RPC.ListenAddress = ""
 		appCfg.GRPC.Enable = false
-		appCfg.GRPCWeb.Enable = false
 		apiListenAddr := ""
 		if i == 0 {
 			if cfg.APIAddress != "" {
@@ -385,7 +354,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 					return nil, fmt.Errorf("failed to get port for API server")
 				}
 				port := <-portPool
-				apiListenAddr = fmt.Sprintf("tcp://0.0.0.0:%s", port)
+				apiListenAddr = fmt.Sprintf("tcp://127.0.0.1:%s", port)
 			}
 
 			appCfg.API.Address = apiListenAddr
@@ -402,7 +371,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 					return nil, fmt.Errorf("failed to get port for RPC server")
 				}
 				port := <-portPool
-				cmtCfg.RPC.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%s", port)
+				cmtCfg.RPC.ListenAddress = fmt.Sprintf("tcp://127.0.0.1:%s", port)
 			}
 
 			if cfg.GRPCAddress != "" {
@@ -412,18 +381,15 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 					return nil, fmt.Errorf("failed to get port for GRPC server")
 				}
 				port := <-portPool
-				appCfg.GRPC.Address = fmt.Sprintf("0.0.0.0:%s", port)
+				appCfg.GRPC.Address = fmt.Sprintf("127.0.0.1:%s", port)
 			}
 			appCfg.GRPC.Enable = true
-			appCfg.GRPCWeb.Enable = true
 		}
 
 		logger := log.NewNopLogger()
 		if cfg.EnableLogging {
 			logger = log.NewLogger(os.Stdout) // TODO(mr): enable selection of log destination.
 		}
-
-		ctx.Logger = logger
 
 		nodeDirName := fmt.Sprintf("node%d", i)
 		nodeDir := filepath.Join(network.BaseDir, nodeDirName, "simd")
@@ -448,19 +414,26 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			return nil, fmt.Errorf("failed to get port for Proxy server")
 		}
 		port := <-portPool
-		proxyAddr := fmt.Sprintf("tcp://0.0.0.0:%s", port)
+		proxyAddr := fmt.Sprintf("tcp://127.0.0.1:%s", port)
 		cmtCfg.ProxyApp = proxyAddr
 
 		if len(portPool) == 0 {
 			return nil, fmt.Errorf("failed to get port for Proxy server")
 		}
 		port = <-portPool
-		p2pAddr := fmt.Sprintf("tcp://0.0.0.0:%s", port)
+		p2pAddr := fmt.Sprintf("tcp://127.0.0.1:%s", port)
 		cmtCfg.P2P.ListenAddress = p2pAddr
 		cmtCfg.P2P.AddrBookStrict = false
 		cmtCfg.P2P.AllowDuplicateIP = true
 
-		nodeID, pubKey, err := genutil.InitializeNodeValidatorFilesCustom(cmtCfg, "bn254")
+		cmtConfigs[i] = cmtCfg
+
+		var mnemonic string
+		if i < len(cfg.Mnemonics) {
+			mnemonic = cfg.Mnemonics[i]
+		}
+
+		nodeID, pubKey, err := genutil.InitializeNodeValidatorFilesFromMnemonic(cmtCfg, mnemonic, ed25519.PrivKeyName)
 		if err != nil {
 			return nil, err
 		}
@@ -479,12 +452,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			return nil, err
 		}
 
-		var mnemonic string
-		if i < len(cfg.Mnemonics) {
-			mnemonic = cfg.Mnemonics[i]
-		}
-
-		addr, secret, err := testutil.GenerateSaveCoinKey(kb, nodeDirName, mnemonic, true, algo)
+		addr, secret, err := testutil.GenerateSaveCoinKey(kb, nodeDirName, mnemonic, true, algo, sdk.GetFullBIP44Path())
 		if err != nil {
 			return nil, err
 		}
@@ -556,8 +524,23 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			WithKeybase(kb).
 			WithTxConfig(cfg.TxConfig)
 
-		err = tx.Sign(context.Background(), txFactory, nodeDirName, txBuilder, true)
-		if err != nil {
+		clientCtx := client.Context{}.
+			WithKeyringDir(clientDir).
+			WithKeyring(kb).
+			WithHomeDir(cmtCfg.RootDir).
+			WithChainID(cfg.ChainID).
+			WithInterfaceRegistry(cfg.InterfaceRegistry).
+			WithCodec(cfg.Codec).
+			WithLegacyAmino(cfg.LegacyAmino).
+			WithTxConfig(cfg.TxConfig).
+			WithAccountRetriever(cfg.AccountRetriever).
+			WithAddressCodec(cfg.AddressCodec).
+			WithValidatorAddressCodec(cfg.ValidatorAddressCodec).
+			WithConsensusAddressCodec(cfg.ConsensusAddressCodec).
+			WithNodeURI(cmtCfg.RPC.ListenAddress).
+			WithCmdContext(context.TODO())
+
+		if err := tx.Sign(clientCtx, txFactory, nodeDirName, txBuilder, true); err != nil {
 			return nil, err
 		}
 
@@ -569,36 +552,28 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		if err != nil {
 			return nil, err
 		}
-		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config", "app.toml"), appCfg)
-
-		clientCtx := client.Context{}.
-			WithKeyringDir(clientDir).
-			WithKeyring(kb).
-			WithHomeDir(cmtCfg.RootDir).
-			WithChainID(cfg.ChainID).
-			WithInterfaceRegistry(cfg.InterfaceRegistry).
-			WithCodec(cfg.Codec).
-			WithLegacyAmino(cfg.LegacyAmino).
-			WithTxConfig(cfg.TxConfig).
-			WithAccountRetriever(cfg.AccountRetriever).
-			WithNodeURI(cmtCfg.RPC.ListenAddress)
+		err = srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config", "app.toml"), appCfg)
+		if err != nil {
+			return nil, err
+		}
 
 		// Provide ChainID here since we can't modify it in the Comet config.
-		ctx.Viper.Set(flags.FlagChainID, cfg.ChainID)
+		viper.Set(flags.FlagChainID, cfg.ChainID)
 
 		network.Validators[i] = &Validator{
 			AppConfig:  appCfg,
-			ClientCtx:  clientCtx,
-			Ctx:        ctx,
-			Dir:        filepath.Join(network.BaseDir, nodeDirName),
-			NodeID:     nodeID,
-			PubKey:     pubKey,
-			Moniker:    nodeDirName,
-			RPCAddress: cmtCfg.RPC.ListenAddress,
-			P2PAddress: cmtCfg.P2P.ListenAddress,
-			APIAddress: apiAddr,
-			Address:    addr,
-			ValAddress: sdk.ValAddress(addr),
+			clientCtx:  clientCtx,
+			viper:      viper,
+			logger:     logger,
+			dir:        filepath.Join(network.BaseDir, nodeDirName),
+			nodeID:     nodeID,
+			pubKey:     pubKey,
+			moniker:    nodeDirName,
+			rPCAddress: cmtCfg.RPC.ListenAddress,
+			p2PAddress: cmtCfg.P2P.ListenAddress,
+			aPIAddress: apiAddr,
+			address:    addr,
+			valAddress: sdk.ValAddress(addr),
 		}
 	}
 
@@ -606,7 +581,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = collectGenFiles(cfg, network.Validators, network.BaseDir)
+	err = collectGenFiles(cfg, network.Validators, cmtConfigs, network.BaseDir)
 	if err != nil {
 		return nil, err
 	}
@@ -626,7 +601,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 
 	l.Log("started test network at height:", height)
 
-	// Ensure we cleanup incase any test was abruptly halted (e.g. SIGINT) as any
+	// Ensure we cleanup in case any test was abruptly halted (e.g. SIGINT) as any
 	// defer in a test would not be called.
 	trapSignal(network.Cleanup)
 
@@ -670,29 +645,29 @@ func (n *Network) LatestHeight() (int64, error) {
 	timeout := time.NewTimer(time.Second * 5)
 	defer timeout.Stop()
 
-	var latestHeight int64
+	var latestHeight atomic.Int64
 	val := n.Validators[0]
-	queryClient := cmtservice.NewServiceClient(val.ClientCtx)
+	queryClient := cmtservice.NewServiceClient(val.clientCtx)
 
 	for {
 		select {
 		case <-timeout.C:
-			return latestHeight, errors.New("timeout exceeded waiting for block")
+			return latestHeight.Load(), errors.New("timeout exceeded waiting for block")
 		case <-ticker.C:
 			done := make(chan struct{})
 			go func() {
 				res, err := queryClient.GetLatestBlock(context.Background(), &cmtservice.GetLatestBlockRequest{})
 				if err == nil && res != nil {
-					latestHeight = res.SdkBlock.Header.Height
+					latestHeight.Store(res.SdkBlock.Header.Height)
 				}
 				done <- struct{}{}
 			}()
 			select {
 			case <-timeout.C:
-				return latestHeight, errors.New("timeout exceeded waiting for block")
+				return latestHeight.Load(), errors.New("timeout exceeded waiting for block")
 			case <-done:
-				if latestHeight != 0 {
-					return latestHeight, nil
+				if latestHeight.Load() != 0 {
+					return latestHeight.Load(), nil
 				}
 			}
 		}
@@ -704,6 +679,14 @@ func (n *Network) LatestHeight() (int64, error) {
 // an error is returned. Regardless, the latest height queried is returned.
 func (n *Network) WaitForHeight(h int64) (int64, error) {
 	return n.WaitForHeightWithTimeout(h, 10*time.Second)
+}
+
+func (n *Network) GetValidators() []ValidatorI {
+	var vals []ValidatorI
+	for _, val := range n.Validators {
+		vals = append(vals, val)
+	}
+	return vals
 }
 
 // WaitForHeightWithTimeout is the same as WaitForHeight except the caller can
@@ -721,7 +704,7 @@ func (n *Network) WaitForHeightWithTimeout(h int64, t time.Duration) (int64, err
 
 	var latestHeight int64
 	val := n.Validators[0]
-	queryClient := cmtservice.NewServiceClient(val.ClientCtx)
+	queryClient := cmtservice.NewServiceClient(val.clientCtx)
 
 	for {
 		select {
@@ -745,7 +728,7 @@ func (n *Network) WaitForHeightWithTimeout(h int64, t time.Duration) (int64, err
 // blocks has been reached.
 func (n *Network) RetryForBlocks(retryFunc func() error, blocks int) error {
 	for i := 0; i < blocks; i++ {
-		n.WaitForNextBlock()
+		_ = n.WaitForNextBlock()
 		err := retryFunc()
 		if err == nil {
 			return nil

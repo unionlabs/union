@@ -77,7 +77,7 @@ func DiffKeys(lhs, rhs *tomledit.Document) []Diff {
 	return diff
 }
 
-// DiffKeys diffs the keyspaces with different values of the TOML documents in files lhs and rhs.
+// DiffValues diffs the keyspaces with different values of the TOML documents in files lhs and rhs.
 func DiffValues(lhs, rhs *tomledit.Document) []Diff {
 	diff := diffDocs(allKVs(lhs.Global), allKVs(rhs.Global), true)
 

@@ -42,6 +42,17 @@ type Credentials struct {
 	// running on Google Cloud Platform.
 	JSON []byte
 
+	// UniverseDomainProvider returns the default service domain for a given
+	// Cloud universe. Optional.
+	//
+	// On GCE, UniverseDomainProvider should return the universe domain value
+	// from Google Compute Engine (GCE)'s metadata server. See also [The attached service
+	// account](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa).
+	// If the GCE metadata server returns a 404 error, the default universe
+	// domain value should be returned. If the GCE metadata server returns an
+	// error other than 404, the error should be returned.
+	UniverseDomainProvider func() (string, error)
+
 	udMu sync.Mutex // guards universeDomain
 	// universeDomain is the default service domain for a given Cloud universe.
 	universeDomain string
@@ -64,52 +75,30 @@ func (c *Credentials) UniverseDomain() string {
 }
 
 // GetUniverseDomain returns the default service domain for a given Cloud
-// universe.
+// universe. If present, UniverseDomainProvider will be invoked and its return
+// value will be cached.
 //
 // The default value is "googleapis.com".
-//
-// It obtains the universe domain from the attached service account on GCE when
-// authenticating via the GCE metadata server. See also [The attached service
-// account](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa).
-// If the GCE metadata server returns a 404 error, the default value is
-// returned. If the GCE metadata server returns an error other than 404, the
-// error is returned.
 func (c *Credentials) GetUniverseDomain() (string, error) {
 	c.udMu.Lock()
 	defer c.udMu.Unlock()
-	if c.universeDomain == "" && metadata.OnGCE() {
-		// If we're on Google Compute Engine, an App Engine standard second
-		// generation runtime, or App Engine flexible, use the metadata server.
-		err := c.computeUniverseDomain()
+	if c.universeDomain == "" && c.UniverseDomainProvider != nil {
+		// On Google Compute Engine, an App Engine standard second generation
+		// runtime, or App Engine flexible, use an externally provided function
+		// to request the universe domain from the metadata server.
+		ud, err := c.UniverseDomainProvider()
 		if err != nil {
 			return "", err
 		}
+		c.universeDomain = ud
 	}
-	// If not on Google Compute Engine, or in case of any non-error path in
-	// computeUniverseDomain that did not set universeDomain, set the default
-	// universe domain.
+	// If no UniverseDomainProvider (meaning not on Google Compute Engine), or
+	// in case of any (non-error) empty return value from
+	// UniverseDomainProvider, set the default universe domain.
 	if c.universeDomain == "" {
 		c.universeDomain = defaultUniverseDomain
 	}
 	return c.universeDomain, nil
-}
-
-// computeUniverseDomain fetches the default service domain for a given Cloud
-// universe from Google Compute Engine (GCE)'s metadata server. It's only valid
-// to use this method if your program is running on a GCE instance.
-func (c *Credentials) computeUniverseDomain() error {
-	var err error
-	c.universeDomain, err = metadata.Get("universe/universe_domain")
-	if err != nil {
-		if _, ok := err.(metadata.NotDefinedError); ok {
-			// http.StatusNotFound (404)
-			c.universeDomain = defaultUniverseDomain
-			return nil
-		} else {
-			return err
-		}
-	}
-	return nil
 }
 
 // DefaultCredentials is the old name of Credentials.
@@ -199,9 +188,7 @@ func DefaultTokenSource(ctx context.Context, scope ...string) (oauth2.TokenSourc
 //  2. A JSON file in a location known to the gcloud command-line tool.
 //     On Windows, this is %APPDATA%/gcloud/application_default_credentials.json.
 //     On other systems, $HOME/.config/gcloud/application_default_credentials.json.
-//  3. On Google App Engine standard first generation runtimes (<= Go 1.9) it uses
-//     the appengine.AccessToken function.
-//  4. On Google Compute Engine, Google App Engine standard second generation runtimes
+//  3. On Google Compute Engine, Google App Engine standard second generation runtimes
 //     (>= Go 1.11), and Google App Engine flexible environment, it fetches
 //     credentials from the metadata server.
 func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsParams) (*Credentials, error) {
@@ -224,24 +211,27 @@ func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsPar
 		return CredentialsFromJSONWithParams(ctx, b, params)
 	}
 
-	// Third, if we're on a Google App Engine standard first generation runtime (<= Go 1.9)
-	// use those credentials. App Engine standard second generation runtimes (>= Go 1.11)
-	// and App Engine flexible use ComputeTokenSource and the metadata server.
-	if appengineTokenFunc != nil {
-		return &Credentials{
-			ProjectID:   appengineAppIDFunc(ctx),
-			TokenSource: AppEngineTokenSource(ctx, params.Scopes...),
-		}, nil
-	}
-
-	// Fourth, if we're on Google Compute Engine, an App Engine standard second generation runtime,
+	// Third, if we're on Google Compute Engine, an App Engine standard second generation runtime,
 	// or App Engine flexible, use the metadata server.
 	if metadata.OnGCE() {
 		id, _ := metadata.ProjectID()
+		universeDomainProvider := func() (string, error) {
+			universeDomain, err := metadata.Get("universe/universe_domain")
+			if err != nil {
+				if _, ok := err.(metadata.NotDefinedError); ok {
+					// http.StatusNotFound (404)
+					return defaultUniverseDomain, nil
+				} else {
+					return "", err
+				}
+			}
+			return universeDomain, nil
+		}
 		return &Credentials{
-			ProjectID:      id,
-			TokenSource:    computeTokenSource("", params.EarlyTokenRefresh, params.Scopes...),
-			universeDomain: params.UniverseDomain,
+			ProjectID:              id,
+			TokenSource:            computeTokenSource("", params.EarlyTokenRefresh, params.Scopes...),
+			UniverseDomainProvider: universeDomainProvider,
+			universeDomain:         params.UniverseDomain,
 		}, nil
 	}
 

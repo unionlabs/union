@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/cometbft/cometbft/libs/log"
-
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/pubsub/query"
 )
 
@@ -27,16 +26,32 @@ type TxIndexer interface {
 	Get(hash []byte) (*abci.TxResult, error)
 
 	// Search allows you to query for transactions.
-	Search(ctx context.Context, q *query.Query) ([]*abci.TxResult, error)
+	Search(ctx context.Context, q *query.Query, pagSettings Pagination) ([]*abci.TxResult, int, error)
 
-	//Set Logger
+	// Set Logger
 	SetLogger(l log.Logger)
+
+	Prune(retainHeight int64) (int64, int64, error)
+
+	GetRetainHeight() (int64, error)
+
+	SetRetainHeight(retainHeight int64) error
 }
 
 // Batch groups together multiple Index operations to be performed at the same time.
 // NOTE: Batch is NOT thread-safe and must not be modified after starting its execution.
 type Batch struct {
 	Ops []*abci.TxResult
+}
+
+// Pagination provides pagination information for queries.
+// This allows us to use the same TxSearch API for pruning to return all relevant data,
+// while still limiting public queries to pagination.
+type Pagination struct {
+	OrderDesc   bool
+	IsPaginated bool
+	Page        int
+	PerPage     int
 }
 
 // NewBatch creates a new Batch.
@@ -57,5 +72,5 @@ func (b *Batch) Size() int {
 	return len(b.Ops)
 }
 
-// ErrorEmptyHash indicates empty hash
+// ErrorEmptyHash indicates empty hash.
 var ErrorEmptyHash = errors.New("transaction hash cannot be empty")

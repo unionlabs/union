@@ -4,15 +4,15 @@ import (
 	"context"
 
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types" //nolint:staticcheck
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	banktypes "cosmossdk.io/x/bank/types"
+	distrtypes "cosmossdk.io/x/distribution/types"
+	stakingtypes "cosmossdk.io/x/staking/types"
 )
 
 // BankViewKeeper defines a subset of methods implemented by the cosmos-sdk bank keeper
@@ -26,7 +26,7 @@ type BankViewKeeper interface {
 
 // Burner is a subset of the sdk bank keeper methods
 type Burner interface {
-	BurnCoins(ctx context.Context, moduleName string, amt sdk.Coins) error
+	BurnCoins(ctx context.Context, moduleName []byte, amt sdk.Coins) error
 	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 }
 
@@ -68,8 +68,8 @@ type StakingKeeper interface {
 	// GetAllDelegatorDelegations return all delegations for a delegator
 	GetAllDelegatorDelegations(ctx context.Context, delegator sdk.AccAddress) ([]stakingtypes.Delegation, error)
 	// GetDelegation return a specific delegation
-	GetDelegation(ctx context.Context,
-		delAddr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.Delegation, error)
+	Delegation(ctx context.Context,
+		delAddr sdk.AccAddress, valAddr sdk.ValAddress) (sdk.DelegationI, error)
 	// HasReceivingRedelegation check if validator is receiving a redelegation
 	HasReceivingRedelegation(ctx context.Context,
 		delAddr sdk.AccAddress, valDstAddr sdk.ValAddress) (bool, error)
@@ -77,12 +77,12 @@ type StakingKeeper interface {
 
 // ChannelKeeper defines the expected IBC channel keeper
 type ChannelKeeper interface {
-	GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool)
-	GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool)
-	ChanCloseInit(ctx sdk.Context, portID, channelID string, chanCap *capabilitytypes.Capability) error
-	GetAllChannels(ctx sdk.Context) (channels []channeltypes.IdentifiedChannel)
-	SetChannel(ctx sdk.Context, portID, channelID string, channel channeltypes.Channel)
-	GetAllChannelsWithPortPrefix(ctx sdk.Context, portPrefix string) []channeltypes.IdentifiedChannel
+	GetChannel(ctx context.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool)
+	GetNextSequenceSend(ctx context.Context, portID, channelID string) (uint64, bool)
+	ChanCloseInit(ctx context.Context, portID, channelID string, chanCap *capabilitytypes.Capability) error
+	GetAllChannels(ctx context.Context) (channels []channeltypes.IdentifiedChannel)
+	SetChannel(ctx context.Context, portID, channelID string, channel channeltypes.Channel)
+	GetAllChannelsWithPortPrefix(ctx context.Context, portPrefix string) []channeltypes.IdentifiedChannel
 }
 
 // ICS4Wrapper defines the method for an IBC data package to be submitted.
@@ -97,7 +97,7 @@ type ICS4Wrapper interface {
 	// The packet sequence generated for the packet to be sent is returned. An error
 	// is returned if one occurs.
 	SendPacket(
-		ctx sdk.Context,
+		ctx context.Context,
 		channelCap *capabilitytypes.Capability,
 		sourcePort string,
 		sourceChannel string,
@@ -105,30 +105,37 @@ type ICS4Wrapper interface {
 		timeoutTimestamp uint64,
 		data []byte,
 	) (uint64, error)
+
+	WriteAcknowledgement(
+		ctx context.Context,
+		chanCap *capabilitytypes.Capability,
+		packet ibcexported.PacketI,
+		acknowledgement ibcexported.Acknowledgement,
+	) error
 }
 
 // ClientKeeper defines the expected IBC client keeper
 type ClientKeeper interface {
-	GetClientConsensusState(ctx sdk.Context, clientID string) (connection ibcexported.ConsensusState, found bool)
+	GetClientConsensusState(ctx context.Context, clientID string) (connection ibcexported.ConsensusState, found bool)
 }
 
 // ConnectionKeeper defines the expected IBC connection keeper
 type ConnectionKeeper interface {
-	GetConnection(ctx sdk.Context, connectionID string) (connection connectiontypes.ConnectionEnd, found bool)
+	GetConnection(ctx context.Context, connectionID string) (connection connectiontypes.ConnectionEnd, found bool)
 }
 
 // PortKeeper defines the expected IBC port keeper
 type PortKeeper interface {
-	BindPort(ctx sdk.Context, portID string) *capabilitytypes.Capability
+	BindPort(ctx context.Context, portID string) *capabilitytypes.Capability
 }
 
 type CapabilityKeeper interface {
-	GetCapability(ctx sdk.Context, name string) (*capabilitytypes.Capability, bool)
-	ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error
-	AuthenticateCapability(ctx sdk.Context, capability *capabilitytypes.Capability, name string) bool
+	GetCapability(ctx context.Context, name string) (*capabilitytypes.Capability, bool)
+	ClaimCapability(ctx context.Context, cap *capabilitytypes.Capability, name string) error
+	AuthenticateCapability(ctx context.Context, capability *capabilitytypes.Capability, name string) bool
 }
 
 // ICS20TransferPortSource is a subset of the ibc transfer keeper.
 type ICS20TransferPortSource interface {
-	GetPort(ctx sdk.Context) string
+	GetPort(ctx context.Context) string
 }

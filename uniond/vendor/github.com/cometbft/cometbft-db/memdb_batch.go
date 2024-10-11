@@ -2,7 +2,7 @@ package db
 
 import "fmt"
 
-// memDBBatch operations
+// memDBBatch operations.
 type opType int
 
 const (
@@ -24,7 +24,7 @@ type memDBBatch struct {
 
 var _ Batch = (*memDBBatch)(nil)
 
-// newMemDBBatch creates a new memDBBatch
+// newMemDBBatch creates a new memDBBatch.
 func newMemDBBatch(db *MemDB) *memDBBatch {
 	return &memDBBatch{
 		db:  db,

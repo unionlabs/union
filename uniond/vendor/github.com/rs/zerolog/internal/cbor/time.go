@@ -29,7 +29,7 @@ func (e Encoder) appendFloatTimestamp(dst []byte, t time.Time) []byte {
 	nanos := t.Nanosecond()
 	var val float64
 	val = float64(secs)*1.0 + float64(nanos)*1e-9
-	return e.AppendFloat64(dst, val)
+	return e.AppendFloat64(dst, val, -1)
 }
 
 // AppendTime encodes and adds a timestamp to the dst byte array.
@@ -64,17 +64,17 @@ func (e Encoder) AppendTimes(dst []byte, vals []time.Time, unused string) []byte
 // AppendDuration encodes and adds a duration to the dst byte array.
 // useInt field indicates whether to store the duration as seconds (integer) or
 // as seconds+nanoseconds (float).
-func (e Encoder) AppendDuration(dst []byte, d time.Duration, unit time.Duration, useInt bool) []byte {
+func (e Encoder) AppendDuration(dst []byte, d time.Duration, unit time.Duration, useInt bool, unused int) []byte {
 	if useInt {
 		return e.AppendInt64(dst, int64(d/unit))
 	}
-	return e.AppendFloat64(dst, float64(d)/float64(unit))
+	return e.AppendFloat64(dst, float64(d)/float64(unit), unused)
 }
 
 // AppendDurations encodes and adds an array of durations to the dst byte array.
 // useInt field indicates whether to store the duration as seconds (integer) or
 // as seconds+nanoseconds (float).
-func (e Encoder) AppendDurations(dst []byte, vals []time.Duration, unit time.Duration, useInt bool) []byte {
+func (e Encoder) AppendDurations(dst []byte, vals []time.Duration, unit time.Duration, useInt bool, unused int) []byte {
 	major := majorTypeArray
 	l := len(vals)
 	if l == 0 {
@@ -87,7 +87,7 @@ func (e Encoder) AppendDurations(dst []byte, vals []time.Duration, unit time.Dur
 		dst = appendCborTypePrefix(dst, major, uint64(l))
 	}
 	for _, d := range vals {
-		dst = e.AppendDuration(dst, d, unit, useInt)
+		dst = e.AppendDuration(dst, d, unit, useInt, unused)
 	}
 	return dst
 }

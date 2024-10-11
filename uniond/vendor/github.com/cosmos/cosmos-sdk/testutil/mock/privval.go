@@ -1,12 +1,12 @@
 package mock
 
 import (
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/bn254"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 )
 
@@ -19,7 +19,7 @@ type PV struct {
 }
 
 func NewPV() PV {
-	return PV{bn254.GenPrivKey()}
+	return PV{ed25519.GenPrivKey()}
 }
 
 // GetPubKey implements PrivValidator interface
@@ -28,7 +28,7 @@ func (pv PV) GetPubKey() (crypto.PubKey, error) {
 }
 
 // SignVote implements PrivValidator interface
-func (pv PV) SignVote(chainID string, vote *cmtproto.Vote) error {
+func (pv PV) SignVote(chainID string, vote *cmtproto.Vote, _ bool) error {
 	signBytes := cmttypes.VoteSignBytes(chainID, vote)
 	sig, err := pv.PrivKey.Sign(signBytes)
 	if err != nil {
@@ -47,4 +47,8 @@ func (pv PV) SignProposal(chainID string, proposal *cmtproto.Proposal) error {
 	}
 	proposal.Signature = sig
 	return nil
+}
+
+func (pv PV) SignBytes(bytes []byte) ([]byte, error) {
+	return pv.PrivKey.Sign(bytes)
 }

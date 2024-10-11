@@ -15,7 +15,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
 	reflection "github.com/cosmos/cosmos-sdk/server/grpc/reflection/v2alpha1"
 	"github.com/cosmos/cosmos-sdk/server/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino" // Import amino.proto file for reflection
 )
 
@@ -54,7 +53,6 @@ func NewGRPCServer(clientCtx client.Context, app types.Application, cfg config.G
 			return modes
 		}(),
 		ChainID:           clientCtx.ChainID,
-		SdkConfig:         sdk.GetConfig(),
 		InterfaceRegistry: clientCtx.InterfaceRegistry,
 	})
 	if err != nil {

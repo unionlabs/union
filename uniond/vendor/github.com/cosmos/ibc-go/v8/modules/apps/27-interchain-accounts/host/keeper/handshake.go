@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -21,7 +22,7 @@ import (
 // The version returned will include the registered interchain
 // account address.
 func (k Keeper) OnChanOpenTry(
-	ctx sdk.Context,
+	ctx context.Context,
 	order channeltypes.Order,
 	connectionHops []string,
 	portID,
@@ -36,7 +37,14 @@ func (k Keeper) OnChanOpenTry(
 
 	metadata, err := icatypes.MetadataFromVersion(counterpartyVersion)
 	if err != nil {
-		return "", err
+		// Propose the default metadata if the counterparty version is invalid
+		connection, err := k.channelKeeper.GetConnection(ctx, connectionHops[0])
+		if err != nil {
+			return "", errorsmod.Wrapf(err, "failed to retrieve connection %s", connectionHops[0])
+		}
+
+		k.Logger(ctx).Debug("counterparty version is invalid, proposing default metadata")
+		metadata = icatypes.NewDefaultMetadata(connection.GetCounterparty().GetConnectionID(), connectionHops[0])
 	}
 
 	if err = icatypes.ValidateHostMetadata(ctx, k.channelKeeper, connectionHops, metadata); err != nil {
@@ -95,7 +103,7 @@ func (k Keeper) OnChanOpenTry(
 
 // OnChanOpenConfirm completes the handshake process by setting the active channel in state on the host chain
 func (k Keeper) OnChanOpenConfirm(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 ) error {
@@ -115,7 +123,7 @@ func (k Keeper) OnChanOpenConfirm(
 
 // OnChanCloseConfirm removes the active channel stored in state
 func (Keeper) OnChanCloseConfirm(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 ) error {
@@ -136,7 +144,7 @@ func (Keeper) OnChanCloseConfirm(
 // - connectionHops (and subsequently host/controller connectionIDs)
 // - interchain account address
 // - ICS27 protocol version
-func (k Keeper) OnChanUpgradeTry(ctx sdk.Context, portID, channelID string, proposedOrder channeltypes.Order, proposedConnectionHops []string, counterpartyVersion string) (string, error) {
+func (k Keeper) OnChanUpgradeTry(ctx context.Context, portID, channelID string, proposedOrder channeltypes.Order, proposedConnectionHops []string, counterpartyVersion string) (string, error) {
 	if portID != icatypes.HostPortID {
 		return "", errorsmod.Wrapf(porttypes.ErrInvalidPort, "expected %s, got %s", icatypes.HostPortID, portID)
 	}

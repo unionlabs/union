@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	addresscodec "cosmossdk.io/core/address"
+	"cosmossdk.io/x/gov/client/cli"
 	"cosmossdk.io/x/upgrade/plan"
 	"cosmossdk.io/x/upgrade/types"
 
@@ -16,7 +16,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
-	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
 )
 
 const (
@@ -29,29 +28,29 @@ const (
 )
 
 // GetTxCmd returns the transaction commands for this module
-func GetTxCmd(ac addresscodec.Codec) *cobra.Command {
+func GetTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   types.ModuleName,
 		Short: "Upgrade transaction subcommands",
 	}
 
 	cmd.AddCommand(
-		NewCmdSubmitUpgradeProposal(ac),
-		NewCmdSubmitCancelUpgradeProposal(ac),
+		NewCmdSubmitUpgradeProposal(),
 	)
 
 	return cmd
 }
 
 // NewCmdSubmitUpgradeProposal implements a command handler for submitting a software upgrade proposal transaction.
-func NewCmdSubmitUpgradeProposal(ac addresscodec.Codec) *cobra.Command {
+// This commands is not migrated to autocli as it contains extra validation that is useful for submitting upgrade proposals.
+func NewCmdSubmitUpgradeProposal() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "software-upgrade [name] (--upgrade-height [height]) (--upgrade-info [info]) [flags]",
+		Use:   "software-upgrade <name> [--upgrade-height <height>] [--upgrade-info <info>] [flags]",
 		Args:  cobra.ExactArgs(1),
 		Short: "Submit a software upgrade proposal",
 		Long: "Submit a software upgrade along with an initial deposit.\n" +
 			"Please specify a unique name and height for the upgrade to take effect.\n" +
-			"You may include info to reference a binary download link, in a format compatible with: https://docs.cosmos.network/main/tooling/cosmovisor",
+			"You may include info to reference a binary download link, in a format compatible with: https://docs.cosmos.network/main/build/tooling/cosmovisor",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -97,11 +96,13 @@ func NewCmdSubmitUpgradeProposal(ac addresscodec.Codec) *cobra.Command {
 
 			authority, _ := cmd.Flags().GetString(FlagAuthority)
 			if authority != "" {
-				if _, err = ac.StringToBytes(authority); err != nil {
+				if _, err = clientCtx.AddressCodec.StringToBytes(authority); err != nil {
 					return fmt.Errorf("invalid authority address: %w", err)
 				}
 			} else {
-				authority = sdk.AccAddress(address.Module("gov")).String()
+				if authority, err = clientCtx.AddressCodec.BytesToString(address.Module("gov")); err != nil {
+					return fmt.Errorf("failed to convert authority address to string: %w", err)
+				}
 			}
 
 			if err := proposal.SetMsgs([]sdk.Msg{
@@ -127,56 +128,10 @@ func NewCmdSubmitUpgradeProposal(ac addresscodec.Codec) *cobra.Command {
 	// add common proposal flags
 	flags.AddTxFlagsToCmd(cmd)
 	cli.AddGovPropFlagsToCmd(cmd)
-	cmd.MarkFlagRequired(cli.FlagTitle)
-
-	return cmd
-}
-
-// NewCmdSubmitCancelUpgradeProposal implements a command handler for submitting a software upgrade cancel proposal transaction.
-func NewCmdSubmitCancelUpgradeProposal(ac addresscodec.Codec) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "cancel-software-upgrade [flags]",
-		Args:  cobra.ExactArgs(0),
-		Short: "Cancel the current software upgrade proposal",
-		Long:  "Cancel a software upgrade along with an initial deposit.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			proposal, err := cli.ReadGovPropFlags(clientCtx, cmd.Flags())
-			if err != nil {
-				return err
-			}
-
-			authority, _ := cmd.Flags().GetString(FlagAuthority)
-			if authority != "" {
-				if _, err = ac.StringToBytes(authority); err != nil {
-					return fmt.Errorf("invalid authority address: %w", err)
-				}
-			} else {
-				authority = sdk.AccAddress(address.Module("gov")).String()
-			}
-
-			if err := proposal.SetMsgs([]sdk.Msg{
-				&types.MsgCancelUpgrade{
-					Authority: authority,
-				},
-			}); err != nil {
-				return fmt.Errorf("failed to create cancel upgrade proposal message: %w", err)
-			}
-
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), proposal)
-		},
+	err := cmd.MarkFlagRequired(cli.FlagTitle)
+	if err != nil {
+		panic(err)
 	}
-
-	cmd.Flags().String(FlagAuthority, "", "The address of the upgrade module authority (defaults to gov)")
-
-	// add common proposal flags
-	flags.AddTxFlagsToCmd(cmd)
-	cli.AddGovPropFlagsToCmd(cmd)
-	cmd.MarkFlagRequired(cli.FlagTitle)
 
 	return cmd
 }

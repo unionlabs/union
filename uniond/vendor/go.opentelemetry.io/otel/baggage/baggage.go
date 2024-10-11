@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package baggage // import "go.opentelemetry.io/otel/baggage"
 
@@ -19,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/otel/internal/baggage"
 )
@@ -67,10 +57,10 @@ func NewKeyProperty(key string) (Property, error) {
 // NewKeyValueProperty returns a new Property for key with value.
 //
 // The passed key must be compliant with W3C Baggage specification.
-// The passed value must be precent-encoded as defined in W3C Baggage specification.
+// The passed value must be percent-encoded as defined in W3C Baggage specification.
 //
 // Notice: Consider using [NewKeyValuePropertyRaw] instead
-// that does not require precent-encoding of the value.
+// that does not require percent-encoding of the value.
 func NewKeyValueProperty(key, value string) (Property, error) {
 	if !validateValue(value) {
 		return newInvalidProperty(), fmt.Errorf("%w: %q", errInvalidValue, value)
@@ -232,13 +222,13 @@ type Member struct {
 	hasData bool
 }
 
-// NewMemberRaw returns a new Member from the passed arguments.
+// NewMember returns a new Member from the passed arguments.
 //
 // The passed key must be compliant with W3C Baggage specification.
-// The passed value must be precent-encoded as defined in W3C Baggage specification.
+// The passed value must be percent-encoded as defined in W3C Baggage specification.
 //
 // Notice: Consider using [NewMemberRaw] instead
-// that does not require precent-encoding of the value.
+// that does not require percent-encoding of the value.
 func NewMember(key, value string, props ...Property) (Member, error) {
 	if !validateValue(value) {
 		return newInvalidMember(), fmt.Errorf("%w: %q", errInvalidValue, value)
@@ -309,7 +299,7 @@ func parseMember(member string) (Member, error) {
 		return newInvalidMember(), fmt.Errorf("%w: %q", errInvalidValue, v)
 	}
 
-	// Decode a precent-encoded value.
+	// Decode a percent-encoded value.
 	value, err := url.PathUnescape(val)
 	if err != nil {
 		return newInvalidMember(), fmt.Errorf("%w: %v", errInvalidValue, err)
@@ -345,9 +335,9 @@ func (m Member) String() string {
 	// A key is just an ASCII string. A value is restricted to be
 	// US-ASCII characters excluding CTLs, whitespace,
 	// DQUOTE, comma, semicolon, and backslash.
-	s := fmt.Sprintf("%s%s%s", m.key, keyValueDelimiter, valueEscape(m.value))
+	s := m.key + keyValueDelimiter + valueEscape(m.value)
 	if len(m.properties) > 0 {
-		s = fmt.Sprintf("%s%s%s", s, propertyDelimiter, m.properties.String())
+		s += propertyDelimiter + m.properties.String()
 	}
 	return s
 }
@@ -616,7 +606,7 @@ func parsePropertyInternal(s string) (p Property, ok bool) {
 		return
 	}
 
-	// Decode a precent-encoded value.
+	// Decode a percent-encoded value.
 	value, err := url.PathUnescape(s[valueStart:valueEnd])
 	if err != nil {
 		return
@@ -641,6 +631,95 @@ func skipSpace(s string, offset int) int {
 	return i
 }
 
+var safeKeyCharset = [utf8.RuneSelf]bool{
+	// 0x23 to 0x27
+	'#':  true,
+	'$':  true,
+	'%':  true,
+	'&':  true,
+	'\'': true,
+
+	// 0x30 to 0x39
+	'0': true,
+	'1': true,
+	'2': true,
+	'3': true,
+	'4': true,
+	'5': true,
+	'6': true,
+	'7': true,
+	'8': true,
+	'9': true,
+
+	// 0x41 to 0x5a
+	'A': true,
+	'B': true,
+	'C': true,
+	'D': true,
+	'E': true,
+	'F': true,
+	'G': true,
+	'H': true,
+	'I': true,
+	'J': true,
+	'K': true,
+	'L': true,
+	'M': true,
+	'N': true,
+	'O': true,
+	'P': true,
+	'Q': true,
+	'R': true,
+	'S': true,
+	'T': true,
+	'U': true,
+	'V': true,
+	'W': true,
+	'X': true,
+	'Y': true,
+	'Z': true,
+
+	// 0x5e to 0x7a
+	'^': true,
+	'_': true,
+	'`': true,
+	'a': true,
+	'b': true,
+	'c': true,
+	'd': true,
+	'e': true,
+	'f': true,
+	'g': true,
+	'h': true,
+	'i': true,
+	'j': true,
+	'k': true,
+	'l': true,
+	'm': true,
+	'n': true,
+	'o': true,
+	'p': true,
+	'q': true,
+	'r': true,
+	's': true,
+	't': true,
+	'u': true,
+	'v': true,
+	'w': true,
+	'x': true,
+	'y': true,
+	'z': true,
+
+	// remainder
+	'!': true,
+	'*': true,
+	'+': true,
+	'-': true,
+	'.': true,
+	'|': true,
+	'~': true,
+}
+
 func validateKey(s string) bool {
 	if len(s) == 0 {
 		return false
@@ -656,17 +735,7 @@ func validateKey(s string) bool {
 }
 
 func validateKeyChar(c int32) bool {
-	return (c >= 0x23 && c <= 0x27) ||
-		(c >= 0x30 && c <= 0x39) ||
-		(c >= 0x41 && c <= 0x5a) ||
-		(c >= 0x5e && c <= 0x7a) ||
-		c == 0x21 ||
-		c == 0x2a ||
-		c == 0x2b ||
-		c == 0x2d ||
-		c == 0x2e ||
-		c == 0x7c ||
-		c == 0x7e
+	return c >= 0 && c <= int32(utf8.RuneSelf) && safeKeyCharset[c]
 }
 
 func validateValue(s string) bool {
@@ -679,12 +748,109 @@ func validateValue(s string) bool {
 	return true
 }
 
+var safeValueCharset = [utf8.RuneSelf]bool{
+	'!': true, // 0x21
+
+	// 0x23 to 0x2b
+	'#':  true,
+	'$':  true,
+	'%':  true,
+	'&':  true,
+	'\'': true,
+	'(':  true,
+	')':  true,
+	'*':  true,
+	'+':  true,
+
+	// 0x2d to 0x3a
+	'-': true,
+	'.': true,
+	'/': true,
+	'0': true,
+	'1': true,
+	'2': true,
+	'3': true,
+	'4': true,
+	'5': true,
+	'6': true,
+	'7': true,
+	'8': true,
+	'9': true,
+	':': true,
+
+	// 0x3c to 0x5b
+	'<': true, // 0x3C
+	'=': true, // 0x3D
+	'>': true, // 0x3E
+	'?': true, // 0x3F
+	'@': true, // 0x40
+	'A': true, // 0x41
+	'B': true, // 0x42
+	'C': true, // 0x43
+	'D': true, // 0x44
+	'E': true, // 0x45
+	'F': true, // 0x46
+	'G': true, // 0x47
+	'H': true, // 0x48
+	'I': true, // 0x49
+	'J': true, // 0x4A
+	'K': true, // 0x4B
+	'L': true, // 0x4C
+	'M': true, // 0x4D
+	'N': true, // 0x4E
+	'O': true, // 0x4F
+	'P': true, // 0x50
+	'Q': true, // 0x51
+	'R': true, // 0x52
+	'S': true, // 0x53
+	'T': true, // 0x54
+	'U': true, // 0x55
+	'V': true, // 0x56
+	'W': true, // 0x57
+	'X': true, // 0x58
+	'Y': true, // 0x59
+	'Z': true, // 0x5A
+	'[': true, // 0x5B
+
+	// 0x5d to 0x7e
+	']': true, // 0x5D
+	'^': true, // 0x5E
+	'_': true, // 0x5F
+	'`': true, // 0x60
+	'a': true, // 0x61
+	'b': true, // 0x62
+	'c': true, // 0x63
+	'd': true, // 0x64
+	'e': true, // 0x65
+	'f': true, // 0x66
+	'g': true, // 0x67
+	'h': true, // 0x68
+	'i': true, // 0x69
+	'j': true, // 0x6A
+	'k': true, // 0x6B
+	'l': true, // 0x6C
+	'm': true, // 0x6D
+	'n': true, // 0x6E
+	'o': true, // 0x6F
+	'p': true, // 0x70
+	'q': true, // 0x71
+	'r': true, // 0x72
+	's': true, // 0x73
+	't': true, // 0x74
+	'u': true, // 0x75
+	'v': true, // 0x76
+	'w': true, // 0x77
+	'x': true, // 0x78
+	'y': true, // 0x79
+	'z': true, // 0x7A
+	'{': true, // 0x7B
+	'|': true, // 0x7C
+	'}': true, // 0x7D
+	'~': true, // 0x7E
+}
+
 func validateValueChar(c int32) bool {
-	return c == 0x21 ||
-		(c >= 0x23 && c <= 0x2b) ||
-		(c >= 0x2d && c <= 0x3a) ||
-		(c >= 0x3c && c <= 0x5b) ||
-		(c >= 0x5d && c <= 0x7e)
+	return c >= 0 && c <= int32(utf8.RuneSelf) && safeValueCharset[c]
 }
 
 // valueEscape escapes the string so it can be safely placed inside a baggage value,

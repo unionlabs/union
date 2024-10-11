@@ -148,6 +148,47 @@ type IBCPacketTimeoutMsg struct {
 	Relayer string    `json:"relayer"`
 }
 
+// The type of IBC source callback that is being called.
+//
+// IBC source callbacks are needed for cases where your contract triggers the sending of an IBC packet through some other message (i.e. not through [`IbcMsg::SendPacket`]) and needs to know whether or not the packet was successfully received on the other chain. A prominent example is the [`IbcMsg::Transfer`] message. Without callbacks, you cannot know whether the transfer was successful or not.
+//
+// Note that there are some prerequisites that need to be fulfilled to receive source callbacks: - The contract must implement the `ibc_source_callback` entrypoint. - The IBC application in the source chain must have support for the callbacks middleware. - You have to add serialized [`IbcCallbackRequest`] to a specific field of the message. For `IbcMsg::Transfer`, this is the `memo` field and it needs to be json-encoded. - The receiver of the callback must also be the sender of the message.
+type IBCSourceCallbackMsg struct {
+	Acknowledgement *IBCAckCallbackMsg     `json:"acknowledgement,omitempty"`
+	Timeout         *IBCTimeoutCallbackMsg `json:"timeout,omitempty"`
+}
+
+type IBCAckCallbackMsg struct {
+	Acknowledgement IBCAcknowledgement `json:"acknowledgement"`
+	OriginalPacket  IBCPacket          `json:"original_packet"`
+	Relayer         string             `json:"relayer"`
+}
+
+type IBCTimeoutCallbackMsg struct {
+	Packet  IBCPacket `json:"packet"`
+	Relayer string    `json:"relayer"`
+}
+
+// The message type of the IBC destination callback.
+//
+// The IBC destination callback is needed for cases where someone triggers the sending of an
+// IBC packet through some other message (i.e. not through [`IbcMsg::SendPacket`]) and
+// your contract needs to know that it received this.
+// The callback is called after the packet was successfully acknowledged on the destination chain.
+// A prominent example is the [`IbcMsg::Transfer`] message. Without callbacks, you cannot know
+// that someone sent you IBC coins.
+//
+// Note that there are some prerequisites that need to be fulfilled to receive source callbacks:
+//   - The contract must implement the `ibc_destination_callback` entrypoint.
+//   - The module that receives the packet must be wrapped by an `IBCMiddleware`
+//     (i.e. the destination chain needs to support callbacks for the message you are being sent).
+//   - You have to add json-encoded [`IbcCallbackData`] to a specific field of the message.
+//     For `IbcMsg::Transfer`, this is the `memo` field.
+type IBCDestinationCallbackMsg struct {
+	Ack    IBCAcknowledgement `json:"ack"`
+	Packet IBCPacket          `json:"packet"`
+}
+
 // TODO: test what the sdk Order.String() represents and how to parse back
 // Proto files: https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/ibc/core/channel/v1/channel.proto#L69-L80
 // Auto-gen code: https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/x/ibc/core/04-channel/types/channel.pb.go#L70-L101

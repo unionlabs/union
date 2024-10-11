@@ -10,10 +10,12 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	authztypes "github.com/cosmos/cosmos-sdk/x/authz"
+	authz "cosmossdk.io/x/authz"
+	authztypes "github.com/cosmos/cosmos-sdk/types/authz"
 
 	"github.com/CosmWasm/wasmd/x/wasm/ioutils"
 )
@@ -25,11 +27,9 @@ const (
 )
 
 var (
-	_ authztypes.Authorization         = &StoreCodeAuthorization{}
-	_ authztypes.Authorization         = &ContractExecutionAuthorization{}
-	_ authztypes.Authorization         = &ContractMigrationAuthorization{}
-	_ cdctypes.UnpackInterfacesMessage = &ContractExecutionAuthorization{}
-	_ cdctypes.UnpackInterfacesMessage = &ContractMigrationAuthorization{}
+	_ authz.Authorization         = &StoreCodeAuthorization{}
+	_ authz.Authorization         = &ContractExecutionAuthorization{}
+	_ authz.Authorization         = &ContractMigrationAuthorization{}
 )
 
 // NewStoreCodeAuthorization constructor
@@ -160,7 +160,7 @@ func (a ContractExecutionAuthorization) MsgTypeURL() string {
 }
 
 // NewAuthz factory method to create an Authorization with updated grants
-func (a ContractExecutionAuthorization) NewAuthz(g []ContractGrant) authztypes.Authorization {
+func (a ContractExecutionAuthorization) NewAuthz(g []ContractGrant) authz.Authorization {
 	return NewContractExecutionAuthorization(g...)
 }
 
@@ -175,7 +175,7 @@ func (a ContractExecutionAuthorization) ValidateBasic() error {
 }
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (a ContractExecutionAuthorization) UnpackInterfaces(unpacker cdctypes.AnyUnpacker) error {
+func (a ContractExecutionAuthorization) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	for _, g := range a.Grants {
 		if err := g.UnpackInterfaces(unpacker); err != nil {
 			return err
@@ -202,7 +202,7 @@ func (a *ContractMigrationAuthorization) Accept(goCtx context.Context, msg sdk.M
 }
 
 // NewAuthz factory method to create an Authorization with updated grants
-func (a ContractMigrationAuthorization) NewAuthz(g []ContractGrant) authztypes.Authorization {
+func (a ContractMigrationAuthorization) NewAuthz(g []ContractGrant) authz.Authorization {
 	return NewContractMigrationAuthorization(g...)
 }
 
@@ -212,7 +212,7 @@ func (a ContractMigrationAuthorization) ValidateBasic() error {
 }
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (a ContractMigrationAuthorization) UnpackInterfaces(unpacker cdctypes.AnyUnpacker) error {
+func (a ContractMigrationAuthorization) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	for _, g := range a.Grants {
 		if err := g.UnpackInterfaces(unpacker); err != nil {
 			return err
@@ -237,7 +237,7 @@ func validateGrants(g []ContractGrant) error {
 
 // ContractAuthzFactory factory to create an updated Authorization object
 type ContractAuthzFactory interface {
-	NewAuthz([]ContractGrant) authztypes.Authorization
+	NewAuthz([]ContractGrant) authz.Authorization
 }
 
 // AcceptGrantedMessage determines whether this grant permits the provided sdk.Msg to be performed,
@@ -337,8 +337,6 @@ type ContractAuthzFilterX interface {
 	ValidateBasic() error
 }
 
-var _ cdctypes.UnpackInterfacesMessage = &ContractGrant{}
-
 // NewContractGrant constructor
 func NewContractGrant(contract sdk.AccAddress, limit ContractAuthzLimitX, filter ContractAuthzFilterX) (*ContractGrant, error) {
 	pFilter, ok := filter.(proto.Message)
@@ -374,7 +372,7 @@ func (g ContractGrant) WithNewLimits(limit ContractAuthzLimitX) (*ContractGrant,
 }
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (g ContractGrant) UnpackInterfaces(unpacker cdctypes.AnyUnpacker) error {
+func (g ContractGrant) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	var f ContractAuthzFilterX
 	if err := unpacker.UnpackAny(g.Filter, &f); err != nil {
 		return errorsmod.Wrap(err, "filter")

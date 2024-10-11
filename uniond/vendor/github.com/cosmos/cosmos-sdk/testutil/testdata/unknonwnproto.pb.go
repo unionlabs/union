@@ -6,10 +6,10 @@ package testdata
 import (
 	encoding_binary "encoding/binary"
 	fmt "fmt"
-	types "github.com/cosmos/cosmos-sdk/codec/types"
 	tx "github.com/cosmos/cosmos-sdk/types/tx"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
+	any "github.com/cosmos/gogoproto/types/any"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -135,7 +135,7 @@ type Customer2 struct {
 	Fewer         float32        `protobuf:"fixed32,4,opt,name=fewer,proto3" json:"fewer,omitempty"`
 	Reserved      int64          `protobuf:"varint,1047,opt,name=reserved,proto3" json:"reserved,omitempty"`
 	City          Customer2_City `protobuf:"varint,6,opt,name=city,proto3,enum=testpb.Customer2_City" json:"city,omitempty"`
-	Miscellaneous *types.Any     `protobuf:"bytes,10,opt,name=miscellaneous,proto3" json:"miscellaneous,omitempty"`
+	Miscellaneous *any.Any       `protobuf:"bytes,10,opt,name=miscellaneous,proto3" json:"miscellaneous,omitempty"`
 }
 
 func (m *Customer2) Reset()         { *m = Customer2{} }
@@ -213,7 +213,7 @@ func (m *Customer2) GetCity() Customer2_City {
 	return Customer2_Laos
 }
 
-func (m *Customer2) GetMiscellaneous() *types.Any {
+func (m *Customer2) GetMiscellaneous() *any.Any {
 	if m != nil {
 		return m.Miscellaneous
 	}
@@ -853,7 +853,7 @@ type TestVersion1 struct {
 	//	*TestVersion1_E
 	//	*TestVersion1_F
 	Sum isTestVersion1_Sum `protobuf_oneof:"sum"`
-	G   *types.Any         `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
+	G   *any.Any           `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
 	H   []*TestVersion1    `protobuf:"bytes,9,rep,name=h,proto3" json:"h,omitempty"`
 	// google.protobuf.Timestamp i = 10;
 	// google.protobuf.Timestamp j = 11; // [(gogoproto.stdtime) = true];
@@ -965,7 +965,7 @@ func (m *TestVersion1) GetF() *TestVersion1 {
 	return nil
 }
 
-func (m *TestVersion1) GetG() *types.Any {
+func (m *TestVersion1) GetG() *any.Any {
 	if m != nil {
 		return m.G
 	}
@@ -998,7 +998,7 @@ type TestVersion2 struct {
 	//	*TestVersion2_E
 	//	*TestVersion2_F
 	Sum isTestVersion2_Sum `protobuf_oneof:"sum"`
-	G   *types.Any         `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
+	G   *any.Any           `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
 	H   []*TestVersion1    `protobuf:"bytes,9,rep,name=h,proto3" json:"h,omitempty"`
 	// google.protobuf.Timestamp i = 10;
 	// google.protobuf.Timestamp j = 11; // [(gogoproto.stdtime) = true];
@@ -1111,7 +1111,7 @@ func (m *TestVersion2) GetF() *TestVersion2 {
 	return nil
 }
 
-func (m *TestVersion2) GetG() *types.Any {
+func (m *TestVersion2) GetG() *any.Any {
 	if m != nil {
 		return m.G
 	}
@@ -1151,7 +1151,7 @@ type TestVersion3 struct {
 	//	*TestVersion3_E
 	//	*TestVersion3_F
 	Sum isTestVersion3_Sum `protobuf_oneof:"sum"`
-	G   *types.Any         `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
+	G   *any.Any           `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
 	H   []*TestVersion1    `protobuf:"bytes,9,rep,name=h,proto3" json:"h,omitempty"`
 	// google.protobuf.Timestamp i = 10;
 	// google.protobuf.Timestamp j = 11; // [(gogoproto.stdtime) = true];
@@ -1264,7 +1264,7 @@ func (m *TestVersion3) GetF() *TestVersion3 {
 	return nil
 }
 
-func (m *TestVersion3) GetG() *types.Any {
+func (m *TestVersion3) GetG() *any.Any {
 	if m != nil {
 		return m.G
 	}
@@ -1303,7 +1303,7 @@ type TestVersion3LoneOneOfValue struct {
 	//
 	//	*TestVersion3LoneOneOfValue_E
 	Sum isTestVersion3LoneOneOfValue_Sum `protobuf_oneof:"sum"`
-	G   *types.Any                       `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
+	G   *any.Any                         `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
 	H   []*TestVersion1                  `protobuf:"bytes,9,rep,name=h,proto3" json:"h,omitempty"`
 	// google.protobuf.Timestamp i = 10;
 	// google.protobuf.Timestamp j = 11; // [(gogoproto.stdtime) = true];
@@ -1405,7 +1405,7 @@ func (m *TestVersion3LoneOneOfValue) GetE() int32 {
 	return 0
 }
 
-func (m *TestVersion3LoneOneOfValue) GetG() *types.Any {
+func (m *TestVersion3LoneOneOfValue) GetG() *any.Any {
 	if m != nil {
 		return m.G
 	}
@@ -1443,7 +1443,7 @@ type TestVersion3LoneNesting struct {
 	//
 	//	*TestVersion3LoneNesting_F
 	Sum isTestVersion3LoneNesting_Sum `protobuf_oneof:"sum"`
-	G   *types.Any                    `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
+	G   *any.Any                      `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
 	H   []*TestVersion1               `protobuf:"bytes,9,rep,name=h,proto3" json:"h,omitempty"`
 	// google.protobuf.Timestamp i = 10;
 	// google.protobuf.Timestamp j = 11; // [(gogoproto.stdtime) = true];
@@ -1547,7 +1547,7 @@ func (m *TestVersion3LoneNesting) GetF() *TestVersion3LoneNesting {
 	return nil
 }
 
-func (m *TestVersion3LoneNesting) GetG() *types.Any {
+func (m *TestVersion3LoneNesting) GetG() *any.Any {
 	if m != nil {
 		return m.G
 	}
@@ -1831,7 +1831,7 @@ type TestVersion4LoneNesting struct {
 	//
 	//	*TestVersion4LoneNesting_F
 	Sum isTestVersion4LoneNesting_Sum `protobuf_oneof:"sum"`
-	G   *types.Any                    `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
+	G   *any.Any                      `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
 	H   []*TestVersion1               `protobuf:"bytes,9,rep,name=h,proto3" json:"h,omitempty"`
 	// google.protobuf.Timestamp i = 10;
 	// google.protobuf.Timestamp j = 11; // [(gogoproto.stdtime) = true];
@@ -1935,7 +1935,7 @@ func (m *TestVersion4LoneNesting) GetF() *TestVersion3LoneNesting {
 	return nil
 }
 
-func (m *TestVersion4LoneNesting) GetG() *types.Any {
+func (m *TestVersion4LoneNesting) GetG() *any.Any {
 	if m != nil {
 		return m.G
 	}
@@ -2217,7 +2217,7 @@ type TestVersionFD1 struct {
 	//	*TestVersionFD1_E
 	//	*TestVersionFD1_F
 	Sum isTestVersionFD1_Sum `protobuf_oneof:"sum"`
-	G   *types.Any           `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
+	G   *any.Any             `protobuf:"bytes,8,opt,name=g,proto3" json:"g,omitempty"`
 	H   []*TestVersion1      `protobuf:"bytes,9,rep,name=h,proto3" json:"h,omitempty"`
 }
 
@@ -2305,7 +2305,7 @@ func (m *TestVersionFD1) GetF() *TestVersion1 {
 	return nil
 }
 
-func (m *TestVersionFD1) GetG() *types.Any {
+func (m *TestVersionFD1) GetG() *any.Any {
 	if m != nil {
 		return m.G
 	}
@@ -2446,9 +2446,9 @@ func (*TestVersionFD1WithExtraAny) XXX_OneofWrappers() []interface{} {
 }
 
 type AnyWithExtra struct {
-	*types.Any `protobuf:"bytes,1,opt,name=a,proto3,embedded=a" json:"a,omitempty"`
-	B          int64 `protobuf:"varint,3,opt,name=b,proto3" json:"b,omitempty"`
-	C          int64 `protobuf:"varint,4,opt,name=c,proto3" json:"c,omitempty"`
+	*any.Any `protobuf:"bytes,1,opt,name=a,proto3,embedded=a" json:"a,omitempty"`
+	B        int64 `protobuf:"varint,3,opt,name=b,proto3" json:"b,omitempty"`
+	C        int64 `protobuf:"varint,4,opt,name=c,proto3" json:"c,omitempty"`
 }
 
 func (m *AnyWithExtra) Reset()         { *m = AnyWithExtra{} }
@@ -2575,13 +2575,13 @@ func (m *TestUpdatedTxRaw) GetNewField_1024() []byte {
 }
 
 type TestUpdatedTxBody struct {
-	Messages                     []*types.Any `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
-	Memo                         string       `protobuf:"bytes,2,opt,name=memo,proto3" json:"memo,omitempty"`
-	TimeoutHeight                int64        `protobuf:"varint,3,opt,name=timeout_height,json=timeoutHeight,proto3" json:"timeout_height,omitempty"`
-	SomeNewField                 uint64       `protobuf:"varint,4,opt,name=some_new_field,json=someNewField,proto3" json:"some_new_field,omitempty"`
-	SomeNewFieldNonCriticalField string       `protobuf:"bytes,1050,opt,name=some_new_field_non_critical_field,json=someNewFieldNonCriticalField,proto3" json:"some_new_field_non_critical_field,omitempty"`
-	ExtensionOptions             []*types.Any `protobuf:"bytes,1023,rep,name=extension_options,json=extensionOptions,proto3" json:"extension_options,omitempty"`
-	NonCriticalExtensionOptions  []*types.Any `protobuf:"bytes,2047,rep,name=non_critical_extension_options,json=nonCriticalExtensionOptions,proto3" json:"non_critical_extension_options,omitempty"`
+	Messages                     []*any.Any `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+	Memo                         string     `protobuf:"bytes,2,opt,name=memo,proto3" json:"memo,omitempty"`
+	TimeoutHeight                int64      `protobuf:"varint,3,opt,name=timeout_height,json=timeoutHeight,proto3" json:"timeout_height,omitempty"`
+	SomeNewField                 uint64     `protobuf:"varint,5,opt,name=some_new_field,json=someNewField,proto3" json:"some_new_field,omitempty"`
+	SomeNewFieldNonCriticalField string     `protobuf:"bytes,1050,opt,name=some_new_field_non_critical_field,json=someNewFieldNonCriticalField,proto3" json:"some_new_field_non_critical_field,omitempty"`
+	ExtensionOptions             []*any.Any `protobuf:"bytes,1023,rep,name=extension_options,json=extensionOptions,proto3" json:"extension_options,omitempty"`
+	NonCriticalExtensionOptions  []*any.Any `protobuf:"bytes,2047,rep,name=non_critical_extension_options,json=nonCriticalExtensionOptions,proto3" json:"non_critical_extension_options,omitempty"`
 }
 
 func (m *TestUpdatedTxBody) Reset()         { *m = TestUpdatedTxBody{} }
@@ -2617,7 +2617,7 @@ func (m *TestUpdatedTxBody) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_TestUpdatedTxBody proto.InternalMessageInfo
 
-func (m *TestUpdatedTxBody) GetMessages() []*types.Any {
+func (m *TestUpdatedTxBody) GetMessages() []*any.Any {
 	if m != nil {
 		return m.Messages
 	}
@@ -2652,14 +2652,14 @@ func (m *TestUpdatedTxBody) GetSomeNewFieldNonCriticalField() string {
 	return ""
 }
 
-func (m *TestUpdatedTxBody) GetExtensionOptions() []*types.Any {
+func (m *TestUpdatedTxBody) GetExtensionOptions() []*any.Any {
 	if m != nil {
 		return m.ExtensionOptions
 	}
 	return nil
 }
 
-func (m *TestUpdatedTxBody) GetNonCriticalExtensionOptions() []*types.Any {
+func (m *TestUpdatedTxBody) GetNonCriticalExtensionOptions() []*any.Any {
 	if m != nil {
 		return m.NonCriticalExtensionOptions
 	}
@@ -2906,7 +2906,7 @@ var fileDescriptor_fe4560133be9209a = []byte{
 	0x1a, 0x5f, 0x6a, 0x70, 0x6d, 0xc5, 0x85, 0x3e, 0x73, 0x17, 0xf8, 0x0e, 0x14, 0x66, 0x84, 0x73,
 	0x7b, 0xac, 0x3c, 0xd0, 0x36, 0xa6, 0x56, 0x82, 0x92, 0xd5, 0x3c, 0x23, 0x33, 0x16, 0x57, 0xb3,
 	0x1c, 0x4b, 0x13, 0x84, 0x37, 0x23, 0x2c, 0x10, 0x83, 0x09, 0xf1, 0xc6, 0x13, 0x11, 0xf1, 0x78,
-	0x25, 0x92, 0x1e, 0x2a, 0x21, 0x7e, 0x1f, 0xca, 0x9c, 0xcd, 0xc8, 0x60, 0x79, 0x6d, 0xca, 0xaa,
+	0x25, 0x92, 0x1e, 0x2a, 0x21, 0x7e, 0x1f, 0xca, 0x9c, 0xcd, 0xc8, 0x60, 0x79, 0x6d, 0xca, 0xa9,
 	0x6b, 0x53, 0x49, 0x4a, 0x8f, 0x22, 0x63, 0xf1, 0x21, 0xfc, 0x60, 0x15, 0x35, 0x58, 0xd3, 0x82,
 	0x7f, 0x17, 0xb6, 0xe0, 0xf7, 0xd2, 0x3b, 0x8f, 0x5e, 0x6f, 0xc7, 0x7d, 0xb8, 0x46, 0xe6, 0x82,
 	0x50, 0x99, 0x23, 0x03, 0xa6, 0x3e, 0xe5, 0x72, 0xfd, 0xdf, 0xbb, 0xe7, 0xb8, 0x59, 0x49, 0xf0,
@@ -2921,7 +2921,7 @@ var fileDescriptor_fe4560133be9209a = []byte{
 	0x3c, 0x7f, 0x55, 0xdb, 0xf9, 0xeb, 0xab, 0xda, 0xce, 0x67, 0xcd, 0xb1, 0x27, 0x26, 0xc1, 0xb0,
 	0xe9, 0xb0, 0x59, 0x2b, 0xfa, 0xc8, 0x1f, 0xfe, 0xdd, 0xe6, 0xee, 0x71, 0x4b, 0x56, 0x7d, 0x20,
 	0xbc, 0xa9, 0x1a, 0xb8, 0xb6, 0xb0, 0x87, 0x79, 0x45, 0x74, 0xe7, 0x3f, 0x01, 0x00, 0x00, 0xff,
-	0xff, 0x3a, 0xea, 0x0d, 0xa7, 0x67, 0x18, 0x00, 0x00,
+	0xff, 0x33, 0x3d, 0xcf, 0x3a, 0x67, 0x18, 0x00, 0x00,
 }
 
 func (m *Customer1) Marshal() (dAtA []byte, err error) {
@@ -5261,7 +5261,7 @@ func (m *TestUpdatedTxBody) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	if m.SomeNewField != 0 {
 		i = encodeVarintUnknonwnproto(dAtA, i, uint64(m.SomeNewField))
 		i--
-		dAtA[i] = 0x20
+		dAtA[i] = 0x28
 	}
 	if m.TimeoutHeight != 0 {
 		i = encodeVarintUnknonwnproto(dAtA, i, uint64(m.TimeoutHeight))
@@ -6806,7 +6806,7 @@ func (m *Customer2) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Miscellaneous == nil {
-				m.Miscellaneous = &types.Any{}
+				m.Miscellaneous = &any.Any{}
 			}
 			if err := m.Miscellaneous.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -8519,7 +8519,7 @@ func (m *TestVersion1) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.G == nil {
-				m.G = &types.Any{}
+				m.G = &any.Any{}
 			}
 			if err := m.G.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -8889,7 +8889,7 @@ func (m *TestVersion2) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.G == nil {
-				m.G = &types.Any{}
+				m.G = &any.Any{}
 			}
 			if err := m.G.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -9278,7 +9278,7 @@ func (m *TestVersion3) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.G == nil {
-				m.G = &types.Any{}
+				m.G = &any.Any{}
 			}
 			if err := m.G.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -9645,7 +9645,7 @@ func (m *TestVersion3LoneOneOfValue) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.G == nil {
-				m.G = &types.Any{}
+				m.G = &any.Any{}
 			}
 			if err := m.G.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -10027,7 +10027,7 @@ func (m *TestVersion3LoneNesting) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.G == nil {
-				m.G = &types.Any{}
+				m.G = &any.Any{}
 			}
 			if err := m.G.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -10996,7 +10996,7 @@ func (m *TestVersion4LoneNesting) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.G == nil {
-				m.G = &types.Any{}
+				m.G = &any.Any{}
 			}
 			if err := m.G.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -11855,7 +11855,7 @@ func (m *TestVersionFD1) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.G == nil {
-				m.G = &types.Any{}
+				m.G = &any.Any{}
 			}
 			if err := m.G.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -12205,7 +12205,7 @@ func (m *AnyWithExtra) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Any == nil {
-				m.Any = &types.Any{}
+				m.Any = &any.Any{}
 			}
 			if err := m.Any.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -12546,7 +12546,7 @@ func (m *TestUpdatedTxBody) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Messages = append(m.Messages, &types.Any{})
+			m.Messages = append(m.Messages, &any.Any{})
 			if err := m.Messages[len(m.Messages)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -12602,7 +12602,7 @@ func (m *TestUpdatedTxBody) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 4:
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SomeNewField", wireType)
 			}
@@ -12650,7 +12650,7 @@ func (m *TestUpdatedTxBody) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ExtensionOptions = append(m.ExtensionOptions, &types.Any{})
+			m.ExtensionOptions = append(m.ExtensionOptions, &any.Any{})
 			if err := m.ExtensionOptions[len(m.ExtensionOptions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -12716,7 +12716,7 @@ func (m *TestUpdatedTxBody) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.NonCriticalExtensionOptions = append(m.NonCriticalExtensionOptions, &types.Any{})
+			m.NonCriticalExtensionOptions = append(m.NonCriticalExtensionOptions, &any.Any{})
 			if err := m.NonCriticalExtensionOptions[len(m.NonCriticalExtensionOptions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

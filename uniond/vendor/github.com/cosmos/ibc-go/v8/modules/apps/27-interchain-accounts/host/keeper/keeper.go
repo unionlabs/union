@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -11,11 +12,13 @@ import (
 
 	msgv1 "cosmossdk.io/api/cosmos/msg/v1"
 	queryv1 "cosmossdk.io/api/cosmos/query/v1"
+	corestore "cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
@@ -27,11 +30,12 @@ import (
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+	coretypes "github.com/cosmos/ibc-go/v8/modules/core/types"
 )
 
 // Keeper defines the IBC interchain accounts host keeper
 type Keeper struct {
-	storeKey       storetypes.StoreKey
+	storeService   corestore.KVStoreService
 	cdc            codec.Codec
 	legacySubspace icatypes.ParamSubspace
 
@@ -55,7 +59,7 @@ type Keeper struct {
 
 // NewKeeper creates a new interchain accounts host Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key storetypes.StoreKey, legacySubspace icatypes.ParamSubspace,
+	cdc codec.Codec, storeService corestore.KVStoreService, legacySubspace icatypes.ParamSubspace,
 	ics4Wrapper porttypes.ICS4Wrapper, channelKeeper icatypes.ChannelKeeper, portKeeper icatypes.PortKeeper,
 	accountKeeper icatypes.AccountKeeper, scopedKeeper exported.ScopedKeeper, msgRouter icatypes.MessageRouter,
 	authority string,
@@ -70,7 +74,7 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		storeKey:       key,
+		storeService:   storeService,
 		cdc:            cdc,
 		legacySubspace: legacySubspace,
 		ics4Wrapper:    ics4Wrapper,
@@ -104,12 +108,14 @@ func (k *Keeper) WithQueryRouter(queryRouter icatypes.QueryRouter) {
 }
 
 // Logger returns the application logger, scoped to the associated module
-func (Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", fmt.Sprintf("x/%s-%s", exported.ModuleName, icatypes.ModuleName))
+func (Keeper) Logger(ctx context.Context) log.Logger {
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: remove after context.Context is removed from core IBC
+
+	return sdkCtx.Logger().With("module", fmt.Sprintf("x/%s-%s", exported.ModuleName, icatypes.ModuleName))
 }
 
 // getConnectionID returns the connection id for the given port and channelIDs.
-func (k Keeper) getConnectionID(ctx sdk.Context, portID, channelID string) (string, error) {
+func (k Keeper) getConnectionID(ctx context.Context, portID, channelID string) (string, error) {
 	channel, found := k.channelKeeper.GetChannel(ctx, portID, channelID)
 	if !found {
 		return "", errorsmod.Wrapf(channeltypes.ErrChannelNotFound, "port ID (%s) channel ID (%s)", portID, channelID)
@@ -118,34 +124,34 @@ func (k Keeper) getConnectionID(ctx sdk.Context, portID, channelID string) (stri
 }
 
 // setPort sets the provided portID in state.
-func (k Keeper) setPort(ctx sdk.Context, portID string) {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) setPort(ctx context.Context, portID string) {
+	store := k.storeService.OpenKVStore(ctx)
 	store.Set(icatypes.KeyPort(portID), []byte{0x01})
 }
 
 // hasCapability checks if the interchain account host module owns the port capability for the desired port
-func (k Keeper) hasCapability(ctx sdk.Context, portID string) bool {
+func (k Keeper) hasCapability(ctx context.Context, portID string) bool {
 	_, ok := k.scopedKeeper.GetCapability(ctx, host.PortPath(portID))
 	return ok
 }
 
 // AuthenticateCapability wraps the scopedKeeper's AuthenticateCapability function
-func (k Keeper) AuthenticateCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) bool {
+func (k Keeper) AuthenticateCapability(ctx context.Context, cap *capabilitytypes.Capability, name string) bool {
 	return k.scopedKeeper.AuthenticateCapability(ctx, cap, name)
 }
 
 // ClaimCapability wraps the scopedKeeper's ClaimCapability function
-func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capabilitytypes.Capability, name string) error {
+func (k Keeper) ClaimCapability(ctx context.Context, cap *capabilitytypes.Capability, name string) error {
 	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
 }
 
 // GetAppVersion calls the ICS4Wrapper GetAppVersion function.
-func (k Keeper) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
+func (k Keeper) GetAppVersion(ctx context.Context, portID, channelID string) (string, bool) {
 	return k.ics4Wrapper.GetAppVersion(ctx, portID, channelID)
 }
 
 // getAppMetadata retrieves the interchain accounts channel metadata from the store associated with the provided portID and channelID
-func (k Keeper) getAppMetadata(ctx sdk.Context, portID, channelID string) (icatypes.Metadata, error) {
+func (k Keeper) getAppMetadata(ctx context.Context, portID, channelID string) (icatypes.Metadata, error) {
 	appVersion, found := k.GetAppVersion(ctx, portID, channelID)
 	if !found {
 		return icatypes.Metadata{}, errorsmod.Wrapf(ibcerrors.ErrNotFound, "app version not found for port %s and channel %s", portID, channelID)
@@ -155,19 +161,23 @@ func (k Keeper) getAppMetadata(ctx sdk.Context, portID, channelID string) (icaty
 }
 
 // GetActiveChannelID retrieves the active channelID from the store keyed by the provided connectionID and portID
-func (k Keeper) GetActiveChannelID(ctx sdk.Context, connectionID, portID string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) GetActiveChannelID(ctx context.Context, connectionID, portID string) (string, bool) {
+	store := k.storeService.OpenKVStore(ctx)
 	key := icatypes.KeyActiveChannel(portID, connectionID)
 
-	if !store.Has(key) {
+	bz, err := store.Get(key)
+	if err != nil {
+		panic(err)
+	}
+	if len(bz) == 0 {
 		return "", false
 	}
 
-	return string(store.Get(key)), true
+	return string(bz), true
 }
 
 // GetOpenActiveChannel retrieves the active channelID from the store, keyed by the provided connectionID and portID & checks if the channel in question is in state OPEN
-func (k Keeper) GetOpenActiveChannel(ctx sdk.Context, connectionID, portID string) (string, bool) {
+func (k Keeper) GetOpenActiveChannel(ctx context.Context, connectionID, portID string) (string, bool) {
 	channelID, found := k.GetActiveChannelID(ctx, connectionID, portID)
 	if !found {
 		return "", false
@@ -183,10 +193,10 @@ func (k Keeper) GetOpenActiveChannel(ctx sdk.Context, connectionID, portID strin
 }
 
 // GetAllActiveChannels returns a list of all active interchain accounts host channels and their associated connection and port identifiers
-func (k Keeper) GetAllActiveChannels(ctx sdk.Context) []genesistypes.ActiveChannel {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) GetAllActiveChannels(ctx context.Context) []genesistypes.ActiveChannel {
+	store := runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx))
 	iterator := storetypes.KVStorePrefixIterator(store, []byte(icatypes.ActiveChannelKeyPrefix))
-	defer sdk.LogDeferred(ctx.Logger(), func() error { return iterator.Close() })
+	defer coretypes.LogDeferred(k.Logger(ctx), func() error { return iterator.Close() })
 
 	var activeChannels []genesistypes.ActiveChannel
 	for ; iterator.Valid(); iterator.Next() {
@@ -205,32 +215,36 @@ func (k Keeper) GetAllActiveChannels(ctx sdk.Context) []genesistypes.ActiveChann
 }
 
 // SetActiveChannelID stores the active channelID, keyed by the provided connectionID and portID
-func (k Keeper) SetActiveChannelID(ctx sdk.Context, connectionID, portID, channelID string) {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) SetActiveChannelID(ctx context.Context, connectionID, portID, channelID string) {
+	store := k.storeService.OpenKVStore(ctx)
 	store.Set(icatypes.KeyActiveChannel(portID, connectionID), []byte(channelID))
 }
 
 // IsActiveChannel returns true if there exists an active channel for the provided connectionID and portID, otherwise false
-func (k Keeper) IsActiveChannel(ctx sdk.Context, connectionID, portID string) bool {
+func (k Keeper) IsActiveChannel(ctx context.Context, connectionID, portID string) bool {
 	_, ok := k.GetActiveChannelID(ctx, connectionID, portID)
 	return ok
 }
 
 // GetInterchainAccountAddress retrieves the InterchainAccount address from the store associated with the provided connectionID and portID
-func (k Keeper) GetInterchainAccountAddress(ctx sdk.Context, connectionID, portID string) (string, bool) {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) GetInterchainAccountAddress(ctx context.Context, connectionID, portID string) (string, bool) {
+	store := k.storeService.OpenKVStore(ctx)
 	key := icatypes.KeyOwnerAccount(portID, connectionID)
 
-	if !store.Has(key) {
+	bz, err := store.Get(key)
+	if len(bz) == 0 {
 		return "", false
 	}
+	if err != nil {
+		panic(err)
+	}
 
-	return string(store.Get(key)), true
+	return string(bz), true
 }
 
 // GetAllInterchainAccounts returns a list of all registered interchain account addresses and their associated connection and controller port identifiers
-func (k Keeper) GetAllInterchainAccounts(ctx sdk.Context) []genesistypes.RegisteredInterchainAccount {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) GetAllInterchainAccounts(ctx context.Context) []genesistypes.RegisteredInterchainAccount {
+	store := runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx))
 	iterator := storetypes.KVStorePrefixIterator(store, []byte(icatypes.OwnerKeyPrefix))
 
 	var interchainAccounts []genesistypes.RegisteredInterchainAccount
@@ -250,8 +264,8 @@ func (k Keeper) GetAllInterchainAccounts(ctx sdk.Context) []genesistypes.Registe
 }
 
 // SetInterchainAccountAddress stores the InterchainAccount address, keyed by the associated connectionID and portID
-func (k Keeper) SetInterchainAccountAddress(ctx sdk.Context, connectionID, portID, address string) {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) SetInterchainAccountAddress(ctx context.Context, connectionID, portID, address string) {
+	store := k.storeService.OpenKVStore(ctx)
 	store.Set(icatypes.KeyOwnerAccount(portID, connectionID), []byte(address))
 }
 
@@ -261,9 +275,12 @@ func (k Keeper) GetAuthority() string {
 }
 
 // GetParams returns the total set of the host submodule parameters.
-func (k Keeper) GetParams(ctx sdk.Context) types.Params {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get([]byte(types.ParamsKey))
+func (k Keeper) GetParams(ctx context.Context) types.Params {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get([]byte(types.ParamsKey))
+	if err != nil {
+		panic(err)
+	}
 	if bz == nil { // only panic on unset params and not on empty params
 		panic(errors.New("ica/host params are not set in store"))
 	}
@@ -274,21 +291,16 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 }
 
 // SetParams sets the total set of the host submodule parameters.
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) SetParams(ctx context.Context, params types.Params) {
+	store := k.storeService.OpenKVStore(ctx)
 	bz := k.cdc.MustMarshal(&params)
 	store.Set([]byte(types.ParamsKey), bz)
 }
 
 // newModuleQuerySafeAllowList returns a list of all query paths labeled with module_query_safe in the proto files.
 func newModuleQuerySafeAllowList() []string {
-	protoFiles, err := gogoproto.MergedRegistry()
-	if err != nil {
-		panic(err)
-	}
-
 	allowList := []string{}
-	protoFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+	gogoproto.GogoResolver.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
 		for i := 0; i < fd.Services().Len(); i++ {
 			// Get the service descriptor
 			sd := fd.Services().Get(i)

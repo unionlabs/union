@@ -25,7 +25,7 @@ import (
 // WithContextTags captures the k/v pairs stored in the context via the
 // `logtags` package and annotates them on the error.
 //
-// Only the stromg representation of values remains available. This is
+// Only the strong representation of values remains available. This is
 // because the library cannot guarantee that the underlying value is
 // preserved across the network. To avoid creating a stateful interface
 // (where the user code needs to know whether an error has traveled

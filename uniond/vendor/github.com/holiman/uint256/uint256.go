@@ -244,12 +244,10 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 
 		// final sub was unnecessary
 		if c1 == 0 && c2 != 0 {
-			copy((*z)[:], res[:])
-			return z
+			return z.Set(&res)
 		}
 
-		copy((*z)[:], tmp[:])
-		return z
+		return z.Set(&tmp)
 	}
 
 	if m.IsZero() {
@@ -261,7 +259,8 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 	if _, overflow := z.AddOverflow(x, y); overflow {
 		sum := [5]uint64{z[0], z[1], z[2], z[3], 1}
 		var quot [5]uint64
-		rem := udivrem(quot[:], sum[:], m)
+		var rem Int
+		udivrem(quot[:], sum[:], m, &rem)
 		return z.Set(&rem)
 	}
 	return z.Mod(z, m)
@@ -339,9 +338,8 @@ func umulHop(z, x, y uint64) (hi, lo uint64) {
 }
 
 // umul computes full 256 x 256 -> 512 multiplication.
-func umul(x, y *Int) [8]uint64 {
+func umul(x, y *Int, res *[8]uint64) {
 	var (
-		res                           [8]uint64
 		carry, carry4, carry5, carry6 uint64
 		res1, res2, res3, res4, res5  uint64
 	)
@@ -365,61 +363,56 @@ func umul(x, y *Int) [8]uint64 {
 	carry, res[4] = umulStep(res4, x[1], y[3], carry)
 	carry, res[5] = umulStep(res5, x[2], y[3], carry)
 	res[7], res[6] = umulStep(carry6, x[3], y[3], carry)
-
-	return res
 }
 
 // Mul sets z to the product x*y
 func (z *Int) Mul(x, y *Int) *Int {
 	var (
-		res              Int
-		carry            uint64
-		res1, res2, res3 uint64
+		carry0, carry1, carry2 uint64
+		res1, res2             uint64
+		x0, x1, x2, x3         = x[0], x[1], x[2], x[3]
+		y0, y1, y2, y3         = y[0], y[1], y[2], y[3]
 	)
 
-	carry, res[0] = bits.Mul64(x[0], y[0])
-	carry, res1 = umulHop(carry, x[1], y[0])
-	carry, res2 = umulHop(carry, x[2], y[0])
-	res3 = x[3]*y[0] + carry
+	carry0, z[0] = bits.Mul64(x0, y0)
+	carry0, res1 = umulHop(carry0, x1, y0)
+	carry0, res2 = umulHop(carry0, x2, y0)
 
-	carry, res[1] = umulHop(res1, x[0], y[1])
-	carry, res2 = umulStep(res2, x[1], y[1], carry)
-	res3 = res3 + x[2]*y[1] + carry
+	carry1, z[1] = umulHop(res1, x0, y1)
+	carry1, res2 = umulStep(res2, x1, y1, carry1)
 
-	carry, res[2] = umulHop(res2, x[0], y[2])
-	res3 = res3 + x[1]*y[2] + carry
+	carry2, z[2] = umulHop(res2, x0, y2)
 
-	res[3] = res3 + x[0]*y[3]
-
-	return z.Set(&res)
+	z[3] = x3*y0 + x2*y1 + x0*y3 + x1*y2 + carry0 + carry1 + carry2
+	return z
 }
 
 // MulOverflow sets z to the product x*y, and returns z and  whether overflow occurred
 func (z *Int) MulOverflow(x, y *Int) (*Int, bool) {
-	p := umul(x, y)
+	var p [8]uint64
+	umul(x, y, &p)
 	copy(z[:], p[:4])
 	return z, (p[4] | p[5] | p[6] | p[7]) != 0
 }
 
 func (z *Int) squared() {
 	var (
-		res                    Int
 		carry0, carry1, carry2 uint64
-		res1, res2             uint64
+		res0, res1, res2, res3 uint64
 	)
 
-	carry0, res[0] = bits.Mul64(z[0], z[0])
+	carry0, res0 = bits.Mul64(z[0], z[0])
 	carry0, res1 = umulHop(carry0, z[0], z[1])
 	carry0, res2 = umulHop(carry0, z[0], z[2])
 
-	carry1, res[1] = umulHop(res1, z[0], z[1])
+	carry1, res1 = umulHop(res1, z[0], z[1])
 	carry1, res2 = umulStep(res2, z[1], z[1], carry1)
 
-	carry2, res[2] = umulHop(res2, z[0], z[2])
+	carry2, res2 = umulHop(res2, z[0], z[2])
 
-	res[3] = 2*(z[0]*z[3]+z[1]*z[2]) + carry0 + carry1 + carry2
+	res3 = 2*(z[0]*z[3]+z[1]*z[2]) + carry0 + carry1 + carry2
 
-	z.Set(&res)
+	z[0], z[1], z[2], z[3] = res0, res1, res2, res3
 }
 
 // isBitSet returns true if bit n-th is set, where n = 0 is LSB.
@@ -429,9 +422,10 @@ func (z *Int) isBitSet(n uint) bool {
 }
 
 // addTo computes x += y.
-// Requires len(x) >= len(y).
+// Requires len(x) >= len(y) > 0.
 func addTo(x, y []uint64) uint64 {
 	var carry uint64
+	_ = x[len(y)-1] // bounds check hint to compiler; see golang.org/issue/14808
 	for i := 0; i < len(y); i++ {
 		x[i], carry = bits.Add64(x[i], y[i], carry)
 	}
@@ -439,10 +433,10 @@ func addTo(x, y []uint64) uint64 {
 }
 
 // subMulTo computes x -= y * multiplier.
-// Requires len(x) >= len(y).
+// Requires len(x) >= len(y) > 0.
 func subMulTo(x, y []uint64, multiplier uint64) uint64 {
-
 	var borrow uint64
+	_ = x[len(y)-1] // bounds check hint to compiler; see golang.org/issue/14808
 	for i := 0; i < len(y); i++ {
 		s, carry1 := bits.Sub64(x[i], borrow, 0)
 		ph, pl := bits.Mul64(y[i], multiplier)
@@ -506,7 +500,7 @@ func udivremKnuth(quot, u, d []uint64) {
 // The quotient is stored in provided quot - len(u)-len(d)+1 words.
 // It loosely follows the Knuth's division algorithm (sometimes referenced as "schoolbook" division) using 64-bit words.
 // See Knuth, Volume 2, section 4.3.1, Algorithm D.
-func udivrem(quot, u []uint64, d *Int) (rem Int) {
+func udivrem(quot, u []uint64, d, rem *Int) {
 	var dLen int
 	for i := len(d) - 1; i >= 0; i-- {
 		if d[i] != 0 {
@@ -533,8 +527,10 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 	}
 
 	if uLen < dLen {
-		copy(rem[:], u)
-		return rem
+		if rem != nil {
+			copy(rem[:], u)
+		}
+		return
 	}
 
 	var unStorage [9]uint64
@@ -549,18 +545,20 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 
 	if dLen == 1 {
 		r := udivremBy1(quot, un, dn[0])
-		rem.SetUint64(r >> shift)
-		return rem
+		if rem != nil {
+			rem.SetUint64(r >> shift)
+		}
+		return
 	}
 
 	udivremKnuth(quot, un, dn)
 
-	for i := 0; i < dLen-1; i++ {
-		rem[i] = (un[i] >> shift) | (un[i+1] << (64 - shift))
+	if rem != nil {
+		for i := 0; i < dLen-1; i++ {
+			rem[i] = (un[i] >> shift) | (un[i+1] << (64 - shift))
+		}
+		rem[dLen-1] = un[dLen-1] >> shift
 	}
-	rem[dLen-1] = un[dLen-1] >> shift
-
-	return rem
 }
 
 // Div sets z to the quotient x/y for returns z.
@@ -581,26 +579,19 @@ func (z *Int) Div(x, y *Int) *Int {
 	// x/y ; x > y > 0
 
 	var quot Int
-	udivrem(quot[:], x[:], y)
+	udivrem(quot[:], x[:], y, nil)
 	return z.Set(&quot)
 }
 
 // Mod sets z to the modulus x%y for y != 0 and returns z.
 // If y == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) Mod(x, y *Int) *Int {
-	if x.IsZero() || y.IsZero() {
+	if y.IsZero() || x.Eq(y) {
 		return z.Clear()
 	}
-	switch x.Cmp(y) {
-	case -1:
-		// x < y
-		copy(z[:], x[:])
-		return z
-	case 0:
-		// x == y
-		return z.Clear() // They are equal
+	if x.Lt(y) {
+		return z.Set(x)
 	}
-
 	// At this point:
 	// x != 0
 	// y != 0
@@ -611,21 +602,44 @@ func (z *Int) Mod(x, y *Int) *Int {
 		return z.SetUint64(x.Uint64() % y.Uint64())
 	}
 
-	var quot Int
-	*z = udivrem(quot[:], x[:], y)
-	return z
+	var quot, rem Int
+	udivrem(quot[:], x[:], y, &rem)
+	return z.Set(&rem)
 }
 
 // DivMod sets z to the quotient x div y and m to the modulus x mod y and returns the pair (z, m) for y != 0.
 // If y == 0, both z and m are set to 0 (OBS: differs from the big.Int)
 func (z *Int) DivMod(x, y, m *Int) (*Int, *Int) {
+	if z == m {
+		// We return both z and m as results, if they are aliased, we have to
+		// un-alias them to be able to return separate results.
+		m = new(Int).Set(m)
+	}
 	if y.IsZero() {
 		return z.Clear(), m.Clear()
 	}
-	var quot Int
-	*m = udivrem(quot[:], x[:], y)
-	*z = quot
-	return z, m
+	if x.Eq(y) {
+		return z.SetOne(), m.Clear()
+	}
+	if x.Lt(y) {
+		m.Set(x)
+		return z.Clear(), m
+	}
+
+	// At this point:
+	// x != 0
+	// y != 0
+	// x > y
+
+	// Shortcut trivial case
+	if x.IsUint64() {
+		x0, y0 := x.Uint64(), y.Uint64()
+		return z.SetUint64(x0 / y0), m.SetUint64(x0 % y0)
+	}
+
+	var quot, rem Int
+	udivrem(quot[:], x[:], y, &rem)
+	return z.Set(&quot), m.Set(&rem)
 }
 
 // SMod interprets x and y as two's complement signed integers,
@@ -658,19 +672,19 @@ func (z *Int) MulModWithReciprocal(x, y, m *Int, mu *[5]uint64) *Int {
 	if x.IsZero() || y.IsZero() || m.IsZero() {
 		return z.Clear()
 	}
-	p := umul(x, y)
+	var p [8]uint64
+	umul(x, y, &p)
 
 	if m[3] != 0 {
-		r := reduce4(p, m, *mu)
-		return z.Set(&r)
+		return z.reduce4(&p, m, mu)
 	}
 
 	var (
 		pl Int
 		ph Int
 	)
-	copy(pl[:], p[:4])
-	copy(ph[:], p[4:])
+	pl[0], pl[1], pl[2], pl[3] = p[0], p[1], p[2], p[3]
+	ph[0], ph[1], ph[2], ph[3] = p[4], p[5], p[6], p[7]
 
 	// If the multiplication is within 256 bits use Mod().
 	if ph.IsZero() {
@@ -678,7 +692,8 @@ func (z *Int) MulModWithReciprocal(x, y, m *Int, mu *[5]uint64) *Int {
 	}
 
 	var quot [8]uint64
-	rem := udivrem(quot[:], p[:], m)
+	var rem Int
+	udivrem(quot[:], p[:], m, &rem)
 	return z.Set(&rem)
 }
 
@@ -689,20 +704,20 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 	if x.IsZero() || y.IsZero() || m.IsZero() {
 		return z.Clear()
 	}
-	p := umul(x, y)
+	var p [8]uint64
+	umul(x, y, &p)
 
 	if m[3] != 0 {
 		mu := Reciprocal(m)
-		r := reduce4(p, m, mu)
-		return z.Set(&r)
+		return z.reduce4(&p, m, &mu)
 	}
 
 	var (
 		pl Int
 		ph Int
 	)
-	copy(pl[:], p[:4])
-	copy(ph[:], p[4:])
+	pl[0], pl[1], pl[2], pl[3] = p[0], p[1], p[2], p[3]
+	ph[0], ph[1], ph[2], ph[3] = p[4], p[5], p[6], p[7]
 
 	// If the multiplication is within 256 bits use Mod().
 	if ph.IsZero() {
@@ -710,7 +725,8 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 	}
 
 	var quot [8]uint64
-	rem := udivrem(quot[:], p[:], m)
+	var rem Int
+	udivrem(quot[:], p[:], m, &rem)
 	return z.Set(&rem)
 }
 
@@ -720,12 +736,13 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	if x.IsZero() || y.IsZero() || d.IsZero() {
 		return z.Clear(), false
 	}
-	p := umul(x, y)
+	var p [8]uint64
+	umul(x, y, &p)
 
 	var quot [8]uint64
-	udivrem(quot[:], p[:], d)
+	udivrem(quot[:], p[:], d, nil)
 
-	copy(z[:], quot[:4])
+	z[0], z[1], z[2], z[3] = quot[0], quot[1], quot[2], quot[3]
 
 	return z, (quot[4] | quot[5] | quot[6] | quot[7]) != 0
 }
@@ -1006,120 +1023,68 @@ func (z *Int) SetOne() *Int {
 
 // Lsh sets z = x << n and returns z.
 func (z *Int) Lsh(x *Int, n uint) *Int {
-	// n % 64 == 0
-	if n&0x3f == 0 {
-		switch n {
-		case 0:
-			return z.Set(x)
-		case 64:
-			return z.lsh64(x)
-		case 128:
-			return z.lsh128(x)
-		case 192:
-			return z.lsh192(x)
-		default:
-			return z.Clear()
-		}
-	}
-	var (
-		a, b uint64
-	)
-	// Big swaps first
 	switch {
-	case n > 192:
-		if n > 256 {
-			return z.Clear()
-		}
+	case n == 0:
+		return z.Set(x)
+	case n >= 192:
 		z.lsh192(x)
 		n -= 192
-		goto sh192
-	case n > 128:
+		z[3] <<= n
+		return z
+	case n >= 128:
 		z.lsh128(x)
 		n -= 128
-		goto sh128
-	case n > 64:
+		z[3] = (z[3] << n) | (z[2] >> (64 - n))
+		z[2] <<= n
+		return z
+	case n >= 64:
 		z.lsh64(x)
 		n -= 64
-		goto sh64
+		z[3] = (z[3] << n) | (z[2] >> (64 - n))
+		z[2] = (z[2] << n) | (z[1] >> (64 - n))
+		z[1] <<= n
+		return z
 	default:
 		z.Set(x)
+		z[3] = (z[3] << n) | (z[2] >> (64 - n))
+		z[2] = (z[2] << n) | (z[1] >> (64 - n))
+		z[1] = (z[1] << n) | (z[0] >> (64 - n))
+		z[0] <<= n
+		return z
 	}
-
-	// remaining shifts
-	a = z[0] >> (64 - n)
-	z[0] = z[0] << n
-
-sh64:
-	b = z[1] >> (64 - n)
-	z[1] = (z[1] << n) | a
-
-sh128:
-	a = z[2] >> (64 - n)
-	z[2] = (z[2] << n) | b
-
-sh192:
-	z[3] = (z[3] << n) | a
-
-	return z
 }
 
 // Rsh sets z = x >> n and returns z.
 func (z *Int) Rsh(x *Int, n uint) *Int {
-	// n % 64 == 0
-	if n&0x3f == 0 {
-		switch n {
-		case 0:
-			return z.Set(x)
-		case 64:
-			return z.rsh64(x)
-		case 128:
-			return z.rsh128(x)
-		case 192:
-			return z.rsh192(x)
-		default:
-			return z.Clear()
-		}
-	}
-	var (
-		a, b uint64
-	)
-	// Big swaps first
 	switch {
-	case n > 192:
-		if n > 256 {
-			return z.Clear()
-		}
+	case n == 0:
+		return z.Set(x)
+	case n >= 192:
 		z.rsh192(x)
 		n -= 192
-		goto sh192
-	case n > 128:
+		z[0] >>= n
+		return z
+	case n >= 128:
 		z.rsh128(x)
 		n -= 128
-		goto sh128
-	case n > 64:
+		z[0] = (z[0] >> n) | (z[1] << (64 - n))
+		z[1] >>= n
+		return z
+	case n >= 64:
 		z.rsh64(x)
 		n -= 64
-		goto sh64
+		z[0] = (z[0] >> n) | (z[1] << (64 - n))
+		z[1] = (z[1] >> n) | (z[2] << (64 - n))
+		z[2] >>= n
+		return z
 	default:
 		z.Set(x)
+		z[0] = (z[0] >> n) | (z[1] << (64 - n))
+		z[1] = (z[1] >> n) | (z[2] << (64 - n))
+		z[2] = (z[2] >> n) | (z[3] << (64 - n))
+		z[3] >>= n
+		return z
 	}
-
-	// remaining shifts
-	a = z[3] << (64 - n)
-	z[3] = z[3] >> n
-
-sh64:
-	b = z[2] << (64 - n)
-	z[2] = (z[2] >> n) | a
-
-sh128:
-	a = z[1] << (64 - n)
-	z[1] = (z[1] >> n) | b
-
-sh192:
-	z[0] = (z[0] >> n) | a
-
-	return z
 }
 
 // SRsh (Signed/Arithmetic right shift)
@@ -1130,62 +1095,44 @@ func (z *Int) SRsh(x *Int, n uint) *Int {
 	if !x.isBitSet(255) {
 		return z.Rsh(x, n)
 	}
-	if n%64 == 0 {
-		switch n {
-		case 0:
-			return z.Set(x)
-		case 64:
-			return z.srsh64(x)
-		case 128:
-			return z.srsh128(x)
-		case 192:
-			return z.srsh192(x)
-		default:
-			return z.SetAllOne()
-		}
-	}
-	var (
-		a uint64 = math.MaxUint64 << (64 - n%64)
-	)
-	// Big swaps first
+	var a uint64 = math.MaxUint64 << (64 - n%64)
+
 	switch {
-	case n > 192:
-		if n > 256 {
-			return z.SetAllOne()
-		}
+	case n == 0:
+		return z.Set(x)
+	case n >= 256:
+		return z.SetAllOne()
+	case n >= 192:
 		z.srsh192(x)
 		n -= 192
-		goto sh192
-	case n > 128:
+		z[0] = (z[0] >> n) | a
+		return z
+	case n >= 128:
 		z.srsh128(x)
 		n -= 128
-		goto sh128
-	case n > 64:
+		z[0] = (z[0] >> n) | (z[1] << (64 - n))
+		z[1] = (z[1] >> n) | a
+		return z
+	case n >= 64:
 		z.srsh64(x)
 		n -= 64
-		goto sh64
+		z[0] = (z[0] >> n) | (z[1] << (64 - n))
+		z[1] = (z[1] >> n) | (z[2] << (64 - n))
+		z[2] = (z[2] >> n) | a
+		return z
 	default:
 		z.Set(x)
+		z[0] = (z[0] >> n) | (z[1] << (64 - n))
+		z[1] = (z[1] >> n) | (z[2] << (64 - n))
+		z[2] = (z[2] >> n) | (z[3] << (64 - n))
+		z[3] = (z[3] >> n) | a
+		return z
 	}
-
-	// remaining shifts
-	z[3], a = (z[3]>>n)|a, z[3]<<(64-n)
-
-sh64:
-	z[2], a = (z[2]>>n)|a, z[2]<<(64-n)
-
-sh128:
-	z[1], a = (z[1]>>n)|a, z[1]<<(64-n)
-
-sh192:
-	z[0] = (z[0] >> n) | a
-
-	return z
 }
 
 // Set sets z to x and returns z.
 func (z *Int) Set(x *Int) *Int {
-	*z = *x
+	z[0], z[1], z[2], z[3] = x[0], x[1], x[2], x[3]
 	return z
 }
 
@@ -1217,22 +1164,20 @@ func (z *Int) Xor(x, y *Int) *Int {
 }
 
 // Byte sets z to the value of the byte at position n,
-// with 'z' considered as a big-endian 32-byte integer
-// if 'n' > 32, f is set to 0
-// Example: f = '5', n=31 => 5
+// with z considered as a big-endian 32-byte integer.
+// if n >= 32, z is set to 0
+// Example: z=5, n=31 => 5
 func (z *Int) Byte(n *Int) *Int {
-	// in z, z[0] is the least significant
-	//
-	if number, overflow := n.Uint64WithOverflow(); !overflow {
-		if number < 32 {
-			number := z[4-1-number/8]
-			offset := (n[0] & 0x7) << 3 // 8*(n.d % 8)
-			z[0] = (number & (0xff00000000000000 >> offset)) >> (56 - offset)
-			z[3], z[2], z[1] = 0, 0, 0
-			return z
-		}
+	index, overflow := n.Uint64WithOverflow()
+	if overflow || index >= 32 {
+		return z.Clear()
 	}
-	return z.Clear()
+	// in z, z[0] is the least significant
+	number := z[4-1-index/8]
+	offset := (index & 0x7) << 3 // 8 * (index % 8)
+	z[0] = (number >> (56 - offset)) & 0xff
+	z[3], z[2], z[1] = 0, 0, 0
+	return z
 }
 
 // Exp sets z = base**exponent mod 2**256, and returns z.
@@ -1282,109 +1227,137 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 
 // ExtendSign extends length of two’s complement signed integer,
 // sets z to
-//   - x if byteNum > 31
+//   - x if byteNum > 30
 //   - x interpreted as a signed number with sign-bit at (byteNum*8+7), extended to the full 256 bits
 //
 // and returns z.
 func (z *Int) ExtendSign(x, byteNum *Int) *Int {
-	if byteNum.GtUint64(31) {
+	// This implementation is based on evmone. See https://github.com/ethereum/evmone/pull/390
+	if byteNum.GtUint64(30) {
 		return z.Set(x)
 	}
-	bit := uint(byteNum.Uint64()*8 + 7)
 
-	mask := new(Int).SetOne()
-	mask.Lsh(mask, bit)
-	mask.SubUint64(mask, 1)
-	if x.isBitSet(bit) {
-		z.Or(x, mask.Not(mask))
-	} else {
-		z.And(x, mask)
+	e := byteNum.Uint64()
+	z.Set(x)
+	signWordIndex := e >> 3 // Index of the word with the sign bit.
+	signByteIndex := e & 7  // Index of the sign byte in the sign word.
+	signWord := z[signWordIndex]
+	signByteOffset := signByteIndex << 3
+	signByte := signWord >> signByteOffset // Move sign byte to position 0.
+
+	// Sign-extend the "sign" byte and move it to the right position. Value bits are zeros.
+	sextByte := uint64(int64(int8(signByte)))
+	sext := sextByte << signByteOffset
+	signMask := uint64(math.MaxUint64 << signByteOffset)
+	value := signWord & ^signMask // Reset extended bytes.
+
+	z[signWordIndex] = sext | value // Combine the result word.
+
+	// Produce bits (all zeros or ones) for extended words. This is done by SAR of
+	// the sign-extended byte. Shift by any value 7-63 would work.
+	signEx := uint64(int64(sextByte) >> 8)
+
+	switch signWordIndex {
+	case 2:
+		z[3] = signEx
+		return z
+	case 1:
+		z[3], z[2] = signEx, signEx
+		return z
+	case 0:
+		z[3], z[2], z[1] = signEx, signEx, signEx
+		return z
+	default:
+		return z
 	}
-	return z
 }
 
 // Sqrt sets z to ⌊√x⌋, the largest integer such that z² ≤ x, and returns z.
 func (z *Int) Sqrt(x *Int) *Int {
 	// This implementation of Sqrt is based on big.Int (see math/big/nat.go).
-	if x.LtUint64(2) {
-		return z.Set(x)
-	}
-	var (
-		z1 = &Int{1, 0, 0, 0}
-		z2 = &Int{}
-	)
-	// Start with value known to be too large and repeat "z = ⌊(z + ⌊x/z⌋)/2⌋" until it stops getting smaller.
-	z1 = z1.Lsh(z1, uint(x.BitLen()+1)/2) // must be ≥ √x
-	for {
-		z2 = z2.Div(x, z1)
-		z2 = z2.Add(z2, z1)
-		{ //z2 = z2.Rsh(z2, 1) -- the code below does a 1-bit rsh faster
-			a := z2[3] << 63
-			z2[3] = z2[3] >> 1
-			b := z2[2] << 63
-			z2[2] = (z2[2] >> 1) | a
-			a = z2[1] << 63
-			z2[1] = (z2[1] >> 1) | b
-			z2[0] = (z2[0] >> 1) | a
+	if x.IsUint64() {
+		var (
+			x0 uint64 = x.Uint64()
+			z1 uint64 = 1 << ((bits.Len64(x0) + 1) / 2)
+			z2 uint64
+		)
+		if x0 < 2 {
+			return z.SetUint64(x0)
 		}
-		// end of inlined bitshift
+		for {
+			z2 = (z1 + x0/z1) >> 1
+			if z2 >= z1 {
+				return z.SetUint64(z1)
+			}
+			z1 = z2
+		}
+	}
 
-		if z2.Cmp(z1) >= 0 {
-			// z1 is answer.
+	z1 := NewInt(1)
+	z2 := NewInt(0)
+
+	// Start with value known to be too large and repeat "z = ⌊(z + ⌊x/z⌋)/2⌋" until it stops getting smaller.
+	z1.Lsh(z1, uint(x.BitLen()+1)/2) // must be ≥ √x
+
+	// We can do the first division outside the loop
+	z2.Rsh(x, uint(x.BitLen()+1)/2) // The first div is equal to a right shift
+
+	for {
+		z2.Add(z2, z1)
+
+		// z2 = z2.Rsh(z2, 1) -- the code below does a 1-bit rsh faster
+		z2[0] = (z2[0] >> 1) | z2[1]<<63
+		z2[1] = (z2[1] >> 1) | z2[2]<<63
+		z2[2] = (z2[2] >> 1) | z2[3]<<63
+		z2[3] >>= 1
+
+		if !z2.Lt(z1) {
 			return z.Set(z1)
 		}
-		z1, z2 = z2, z1
+		z1.Set(z2)
+
+		// Next iteration of the loop
+		// z2.Div(x, z1) -- x > MaxUint64, x > z1 > 0
+		z2.Clear()
+		udivrem(z2[:], x[:], z1, nil)
 	}
 }
 
 var (
-	// lut is a lookuptable of bitlength -> log10, used in Log10().
-	lut = [257]int8{0, 0, 0, 0, -1, 1, 1, -2, 2, 2, -3, 3, 3, 3, -4, 4, 4, -5, 5, 5, -6, 6, 6, 6, -7, 7, 7, -8, 8, 8, -9, 9, 9, 9, -10, 10, 10, -11, 11, 11, -12, 12, 12, 12, -13, 13, 13, -14, 14, 14, -15, 15, 15, 15, -16, 16, 16, -17, 17, 17, -18, 18, 18, 18, -19, 19, 19, -20, 20, 20, -21, 21, 21, 21, -22, 22, 22, -23, 23, 23, -24, 24, 24, 24, -25, 25, 25, -26, 26, 26, -27, 27, 27, 27, -28, 28, 28, -29, 29, 29, -30, 30, 30, -31, 31, 31, 31, -32, 32, 32, -33, 33, 33, -34, 34, 34, 34, -35, 35, 35, -36, 36, 36, -37, 37, 37, 37, -38, 38, 38, -39, 39, 39, -40, 40, 40, 40, -41, 41, 41, -42, 42, 42, -43, 43, 43, 43, -44, 44, 44, -45, 45, 45, -46, 46, 46, 46, -47, 47, 47, -48, 48, 48, -49, 49, 49, 49, -50, 50, 50, -51, 51, 51, -52, 52, 52, 52, -53, 53, 53, -54, 54, 54, -55, 55, 55, 55, -56, 56, 56, -57, 57, 57, -58, 58, 58, -59, 59, 59, 59, -60, 60, 60, -61, 61, 61, -62, 62, 62, 62, -63, 63, 63, -64, 64, 64, -65, 65, 65, 65, -66, 66, 66, -67, 67, 67, -68, 68, 68, 68, -69, 69, 69, -70, 70, 70, -71, 71, 71, 71, -72, 72, 72, -73, 73, 73, -74, 74, 74, 74, -75, 75, 75, -76, 76, 76, -77}
-
 	// pows64 contains 10^0 ... 10^19
 	pows64 = [20]uint64{
 		1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
 	}
-	// pows contain 1 ** 20 ... 10 ** 80
+	// pows contain 10 ** 20 ... 10 ** 80
 	pows = [60]Int{
-		Int{7766279631452241920, 5, 0, 0}, Int{3875820019684212736, 54, 0, 0}, Int{1864712049423024128, 542, 0, 0}, Int{200376420520689664, 5421, 0, 0}, Int{2003764205206896640, 54210, 0, 0}, Int{1590897978359414784, 542101, 0, 0}, Int{15908979783594147840, 5421010, 0, 0}, Int{11515845246265065472, 54210108, 0, 0}, Int{4477988020393345024, 542101086, 0, 0}, Int{7886392056514347008, 5421010862, 0, 0}, Int{5076944270305263616, 54210108624, 0, 0}, Int{13875954555633532928, 542101086242, 0, 0}, Int{9632337040368467968, 5421010862427, 0, 0},
-		Int{4089650035136921600, 54210108624275, 0, 0}, Int{4003012203950112768, 542101086242752, 0, 0}, Int{3136633892082024448, 5421010862427522, 0, 0}, Int{12919594847110692864, 54210108624275221, 0, 0}, Int{68739955140067328, 542101086242752217, 0, 0}, Int{687399551400673280, 5421010862427522170, 0, 0}, Int{6873995514006732800, 17316620476856118468, 2, 0}, Int{13399722918938673152, 7145508105175220139, 29, 0}, Int{4870020673419870208, 16114848830623546549, 293, 0}, Int{11806718586779598848, 13574535716559052564, 2938, 0},
-		Int{7386721425538678784, 6618148649623664334, 29387, 0}, Int{80237960548581376, 10841254275107988496, 293873, 0}, Int{802379605485813760, 16178822382532126880, 2938735, 0}, Int{8023796054858137600, 14214271235644855872, 29387358, 0}, Int{6450984253743169536, 13015503840481697412, 293873587, 0}, Int{9169610316303040512, 1027829888850112811, 2938735877, 0}, Int{17909126868192198656, 10278298888501128114, 29387358770, 0}, Int{13070572018536022016, 10549268516463523069, 293873587705, 0}, Int{1578511669393358848, 13258964796087472617, 2938735877055, 0}, Int{15785116693933588480, 3462439444907864858, 29387358770557, 0},
-		Int{10277214349659471872, 16177650375369096972, 293873587705571, 0}, Int{10538423128046960640, 14202551164014556797, 2938735877055718, 0}, Int{13150510911921848320, 12898303124178706663, 29387358770557187, 0}, Int{2377900603251621888, 18302566799529756941, 293873587705571876, 0}, Int{5332261958806667264, 17004971331911604867, 2938735877055718769, 0}, Int{16429131440647569408, 4029016655730084128, 10940614696847636083, 1}, Int{16717361816799281152, 3396678409881738056, 17172426599928602752, 15}, Int{1152921504606846976, 15520040025107828953, 5703569335900062977, 159}, Int{11529215046068469760, 7626447661401876602, 1695461137871974930, 1593}, Int{4611686018427387904, 2477500319180559562, 16954611378719749304, 15930}, Int{9223372036854775808, 6328259118096044006, 3525417123811528497, 159309},
-		Int{0, 7942358959831785217, 16807427164405733357, 1593091}, Int{0, 5636613303479645706, 2053574980671369030, 15930919}, Int{0, 1025900813667802212, 2089005733004138687, 159309191}, Int{0, 10259008136678022120, 2443313256331835254, 1593091911}, Int{0, 10356360998232463120, 5986388489608800929, 15930919111}, Int{0, 11329889613776873120, 4523652674959354447, 159309191113}, Int{0, 2618431695511421504, 8343038602174441244, 1593091911132}, Int{0, 7737572881404663424, 9643409726906205977, 15930919111324}, Int{0, 3588752519208427776, 4200376900514301694, 159309191113245}, Int{0, 17440781118374726144, 5110280857723913709, 1593091911132452}, Int{0, 8387114520361296896, 14209320429820033867, 15930919111324522}, Int{0, 10084168908774762496, 12965995782233477362, 159309191113245227}, Int{0, 8607968719199866880, 532749306367912313, 1593091911132452277}, Int{0, 12292710897160462336, 5327493063679123134, 15930919111324522770}, Int{0, 12246644529347313664, 16381442489372128114, 11735238523568814774}, Int{0, 11785980851215826944, 16240472304044868218, 6671920793430838052},
+		{7766279631452241920, 5, 0, 0}, {3875820019684212736, 54, 0, 0}, {1864712049423024128, 542, 0, 0}, {200376420520689664, 5421, 0, 0}, {2003764205206896640, 54210, 0, 0}, {1590897978359414784, 542101, 0, 0}, {15908979783594147840, 5421010, 0, 0}, {11515845246265065472, 54210108, 0, 0}, {4477988020393345024, 542101086, 0, 0}, {7886392056514347008, 5421010862, 0, 0}, {5076944270305263616, 54210108624, 0, 0}, {13875954555633532928, 542101086242, 0, 0}, {9632337040368467968, 5421010862427, 0, 0},
+		{4089650035136921600, 54210108624275, 0, 0}, {4003012203950112768, 542101086242752, 0, 0}, {3136633892082024448, 5421010862427522, 0, 0}, {12919594847110692864, 54210108624275221, 0, 0}, {68739955140067328, 542101086242752217, 0, 0}, {687399551400673280, 5421010862427522170, 0, 0}, {6873995514006732800, 17316620476856118468, 2, 0}, {13399722918938673152, 7145508105175220139, 29, 0}, {4870020673419870208, 16114848830623546549, 293, 0}, {11806718586779598848, 13574535716559052564, 2938, 0},
+		{7386721425538678784, 6618148649623664334, 29387, 0}, {80237960548581376, 10841254275107988496, 293873, 0}, {802379605485813760, 16178822382532126880, 2938735, 0}, {8023796054858137600, 14214271235644855872, 29387358, 0}, {6450984253743169536, 13015503840481697412, 293873587, 0}, {9169610316303040512, 1027829888850112811, 2938735877, 0}, {17909126868192198656, 10278298888501128114, 29387358770, 0}, {13070572018536022016, 10549268516463523069, 293873587705, 0}, {1578511669393358848, 13258964796087472617, 2938735877055, 0}, {15785116693933588480, 3462439444907864858, 29387358770557, 0},
+		{10277214349659471872, 16177650375369096972, 293873587705571, 0}, {10538423128046960640, 14202551164014556797, 2938735877055718, 0}, {13150510911921848320, 12898303124178706663, 29387358770557187, 0}, {2377900603251621888, 18302566799529756941, 293873587705571876, 0}, {5332261958806667264, 17004971331911604867, 2938735877055718769, 0}, {16429131440647569408, 4029016655730084128, 10940614696847636083, 1}, {16717361816799281152, 3396678409881738056, 17172426599928602752, 15}, {1152921504606846976, 15520040025107828953, 5703569335900062977, 159}, {11529215046068469760, 7626447661401876602, 1695461137871974930, 1593}, {4611686018427387904, 2477500319180559562, 16954611378719749304, 15930}, {9223372036854775808, 6328259118096044006, 3525417123811528497, 159309},
+		{0, 7942358959831785217, 16807427164405733357, 1593091}, {0, 5636613303479645706, 2053574980671369030, 15930919}, {0, 1025900813667802212, 2089005733004138687, 159309191}, {0, 10259008136678022120, 2443313256331835254, 1593091911}, {0, 10356360998232463120, 5986388489608800929, 15930919111}, {0, 11329889613776873120, 4523652674959354447, 159309191113}, {0, 2618431695511421504, 8343038602174441244, 1593091911132}, {0, 7737572881404663424, 9643409726906205977, 15930919111324}, {0, 3588752519208427776, 4200376900514301694, 159309191113245}, {0, 17440781118374726144, 5110280857723913709, 1593091911132452}, {0, 8387114520361296896, 14209320429820033867, 15930919111324522}, {0, 10084168908774762496, 12965995782233477362, 159309191113245227}, {0, 8607968719199866880, 532749306367912313, 1593091911132452277}, {0, 12292710897160462336, 5327493063679123134, 15930919111324522770}, {0, 12246644529347313664, 16381442489372128114, 11735238523568814774}, {0, 11785980851215826944, 16240472304044868218, 6671920793430838052},
 	}
 )
 
 // Log10 returns the log in base 10, floored to nearest integer.
 // **OBS** This method returns '0' for '0', not `-Inf`.
 func (z *Int) Log10() uint {
-	// For some bit-lengths, there's only one possible value. Example:
-	// three bits can only represent [100 ... 111], or [4 ... 7]
-	// Ergo, bitlen:3 -> log10 == 0
-	res := lut[z.BitLen()%257]
-	if res >= 0 {
-		return uint(res)
-	}
-	// It was negative, which is a signal that we need to do one more check
-	// do determine which log it is. First remove the negation
-	res = -res
+	// The following algorithm is taken from "Bit twiddling hacks"
+	// https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog10
+	//
+	// The idea is that log10(z) = log2(z) / log2(10)
+	// log2(z) trivially is z.Bitlen()
+	// 1/log2(10) is a constant ~ 1233 / 4096. The approximation is correct up to 5 digit after
+	// the decimal point and it seems no further refinement is needed.
+	// Our tests check all boundary cases anyway.
 
-	// We now lookup via the power of tens. Example:
-	// bitlen 4, [1000 ... 1111], or [8 .. 15]
-	// In order to figure out if it is '0' or '1', we only need to do one comparison,
-	// is it larger or smaller than '10'?
+	bitlen := z.BitLen()
+	if bitlen == 0 {
+		return 0
+	}
 
-	// For bitlengths < 20, we can use the uint64-space
-	if res < 20 {
-		// Uint64-space
-		if z.CmpUint64(pows64[res]) < 0 {
-			return uint(res - 1)
-		}
-		return uint(res)
+	t := (bitlen + 1) * 1233 >> 12
+	if bitlen <= 64 && z[0] < pows64[t] || t >= 20 && z.Lt(&pows[t-20]) {
+		return uint(t - 1)
 	}
-	// Non-uint64 space
-	if z.Cmp(&pows[res-20]) < 0 {
-		return uint(res - 1)
-	}
-	return uint(res)
+	return uint(t)
 }

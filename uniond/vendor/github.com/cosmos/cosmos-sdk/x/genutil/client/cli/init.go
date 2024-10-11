@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -19,9 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/input"
-	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	"github.com/cosmos/cosmos-sdk/x/genutil/types"
@@ -36,6 +35,9 @@ const (
 
 	// FlagDefaultBondDenom defines the default denom to use in the genesis file.
 	FlagDefaultBondDenom = "default-denom"
+
+	// FlagConsensusKeyAlgo defines the algorithm to use for the consensus signing key.
+	FlagConsensusKeyAlgo = "consensus-key-algo"
 )
 
 type printInfo struct {
@@ -56,33 +58,29 @@ func newPrintInfo(moniker, chainID, nodeID, genTxsDir string, appMessage json.Ra
 	}
 }
 
-func displayInfo(info printInfo) error {
+func displayInfo(dst io.Writer, info printInfo) error {
 	out, err := json.MarshalIndent(info, "", " ")
 	if err != nil {
 		return err
 	}
 
-	_, err = fmt.Fprintf(os.Stderr, "%s\n", out)
+	_, err = fmt.Fprintf(dst, "%s\n", out)
 
 	return err
 }
 
 // InitCmd returns a command that initializes all files needed for Tendermint
 // and the respective application.
-func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
+func InitCmd(mm genesisMM) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init [moniker]",
+		Use:   "init <moniker>",
 		Short: "Initialize private validator, p2p, genesis, and application configuration files",
 		Long:  `Initialize validators's and node's configuration files.`,
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx := client.GetClientContextFromCmd(cmd)
-			cdc := clientCtx.Codec
 
-			serverCtx := server.GetServerContextFromCmd(cmd)
-			config := serverCtx.Config
-			config.SetRoot(clientCtx.HomeDir)
-
+			config := client.GetConfigFromCmd(cmd)
 			chainID, _ := cmd.Flags().GetString(flags.FlagChainID)
 			switch {
 			case chainID != "":
@@ -90,6 +88,9 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 				chainID = clientCtx.ChainID
 			default:
 				chainID = fmt.Sprintf("test-chain-%v", unsafe.Str(6))
+			}
+			if config.RootDir == "" {
+				config.RootDir = clientCtx.HomeDir
 			}
 
 			// Get bip39 mnemonic
@@ -114,9 +115,13 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 				initHeight = 1
 			}
 
-			keyType := "bn254"
+			consensusKey, err := cmd.Flags().GetString(FlagConsensusKeyAlgo)
+			print(consensusKey)
+			if err != nil {
+				return errorsmod.Wrap(err, "Failed to get consensus key algo")
+			}
 
-			nodeID, _, err := genutil.InitializeNodeValidatorFilesFromMnemonicCustom(config, mnemonic, keyType)
+			nodeID, _, err := genutil.InitializeNodeValidatorFilesFromMnemonic(config, mnemonic, consensusKey)
 			if err != nil {
 				return err
 			}
@@ -137,7 +142,7 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 			if defaultDenom != "" {
 				sdk.DefaultBondDenom = defaultDenom
 			}
-			appGenState := mbm.DefaultGenesis(cdc)
+			appGenState := mm.DefaultGenesis()
 
 			appState, err := json.MarshalIndent(appGenState, "", " ")
 			if err != nil {
@@ -163,9 +168,10 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 			appGenesis.InitialHeight = initHeight
 			appGenesis.Consensus = &types.ConsensusGenesis{
 				Validators: nil,
+				Params:     cmttypes.DefaultConsensusParams(),
 			}
-			appGenesis.Consensus.Params = cmttypes.DefaultConsensusParams()
-			appGenesis.Consensus.Params.Validator.PubKeyTypes = []string{keyType}
+
+			appGenesis.Consensus.Params.Validator.PubKeyTypes = []string{consensusKey}
 
 			if err = genutil.ExportGenesisFile(appGenesis, genFile); err != nil {
 				return errorsmod.Wrap(err, "Failed to export genesis file")
@@ -174,16 +180,16 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 			toPrint := newPrintInfo(config.Moniker, chainID, nodeID, "", appState)
 
 			cfg.WriteConfigFile(filepath.Join(config.RootDir, "config", "config.toml"), config)
-			return displayInfo(toPrint)
+			return displayInfo(cmd.ErrOrStderr(), toPrint)
 		},
 	}
 
-	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "node's home directory")
 	cmd.Flags().BoolP(FlagOverwrite, "o", false, "overwrite the genesis.json file")
 	cmd.Flags().Bool(FlagRecover, false, "provide seed phrase to recover existing key instead of creating")
 	cmd.Flags().String(flags.FlagChainID, "", "genesis file chain-id, if left blank will be randomly created")
 	cmd.Flags().String(FlagDefaultBondDenom, "", "genesis file default denomination, if left blank default value is 'stake'")
 	cmd.Flags().Int64(flags.FlagInitHeight, 1, "specify the initial block height at genesis")
+	cmd.Flags().String(FlagConsensusKeyAlgo, "ed25519", "algorithm to use for the consensus key")
 
 	return cmd
 }

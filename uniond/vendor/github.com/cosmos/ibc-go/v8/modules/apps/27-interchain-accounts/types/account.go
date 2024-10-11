@@ -1,6 +1,7 @@
 package types
 
 import (
+	"context"
 	"encoding/json"
 	"regexp"
 	"strings"
@@ -43,9 +44,10 @@ type interchainAccountPretty struct {
 
 // GenerateAddress returns an sdk.AccAddress derived using a host module account address, host connection ID, the controller portID,
 // the current block app hash, and the current block data hash. The sdk.AccAddress returned is a sub-address of the host module account.
-func GenerateAddress(ctx sdk.Context, connectionID, portID string) sdk.AccAddress {
+func GenerateAddress(ctx context.Context, connectionID, portID string) sdk.AccAddress {
 	hostModuleAcc := sdkaddress.Module(ModuleName, []byte(hostAccountsKey))
-	header := ctx.BlockHeader()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	header := sdkCtx.BlockHeader()
 
 	buf := []byte(connectionID + portID)
 	buf = append(buf, header.AppHash...)

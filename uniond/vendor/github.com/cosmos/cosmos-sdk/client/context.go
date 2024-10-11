@@ -7,11 +7,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
+	"strings"
 
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"sigs.k8s.io/yaml"
+
+	"cosmossdk.io/core/address"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -25,23 +29,28 @@ type PreprocessTxFn func(chainID string, key keyring.KeyType, tx TxBuilder) erro
 // Context implements a typical context created in SDK modules for transaction
 // handling and queries.
 type Context struct {
+	Client                CometRPC
+	GRPCClient            *grpc.ClientConn
+	ChainID               string
+	Codec                 codec.Codec
+	InterfaceRegistry     codectypes.InterfaceRegistry
+	Input                 io.Reader
+	Keyring               keyring.Keyring
+	KeyringOptions        []keyring.Option
+	KeyringDir            string
+	KeyringDefaultKeyName string
+	Output                io.Writer
+	OutputFormat          string
+	Height                int64
+	HomeDir               string
+	// From is a name or an address of a keyring account used to set FromName and FromAddress fields.
+	// Should be set by the "from" flag.
+	From string
+	// Name of a keyring account used to sign transactions.
+	FromName string
+	// Address of a keyring account used to sign transactions.
 	FromAddress       sdk.AccAddress
-	Client            CometRPC
-	GRPCClient        *grpc.ClientConn
-	ChainID           string
-	Codec             codec.Codec
-	InterfaceRegistry codectypes.InterfaceRegistry
-	Input             io.Reader
-	Keyring           keyring.Keyring
-	KeyringOptions    []keyring.Option
-	Output            io.Writer
-	OutputFormat      string
-	Height            int64
-	HomeDir           string
-	KeyringDir        string
-	From              string
 	BroadcastMode     string
-	FromName          string
 	SignModeStr       string
 	UseLedger         bool
 	Simulate          bool
@@ -65,6 +74,15 @@ type Context struct {
 
 	// CmdContext is the context.Context from the Cobra command.
 	CmdContext context.Context
+
+	// Address codecs
+	AddressCodec          address.Codec
+	ValidatorAddressCodec address.Codec
+	ConsensusAddressCodec address.Codec
+
+	// Bech32 address prefixes.
+	AddressPrefix   string
+	ValidatorPrefix string
 }
 
 // WithCmdContext returns a copy of the context with an updated context.Context,
@@ -89,7 +107,7 @@ func (ctx Context) WithKeyringOptions(opts ...keyring.Option) Context {
 // WithInput returns a copy of the context with an updated input.
 func (ctx Context) WithInput(r io.Reader) Context {
 	// convert to a bufio.Reader to have a shared buffer between the keyring and the
-	// the Commands, ensuring a read from one advance the read pointer for the other.
+	// Commands, ensuring a read from one advance the read pointer for the other.
 	// see https://github.com/cosmos/cosmos-sdk/issues/9566.
 	ctx.Input = bufio.NewReader(r)
 	return ctx
@@ -175,6 +193,12 @@ func (ctx Context) WithHomeDir(dir string) Context {
 // WithKeyringDir returns a copy of the Context with KeyringDir set.
 func (ctx Context) WithKeyringDir(dir string) Context {
 	ctx.KeyringDir = dir
+	return ctx
+}
+
+// WithKeyringDefaultKeyName returns a copy of the Context with KeyringDefaultKeyName set.
+func (ctx Context) WithKeyringDefaultKeyName(keyName string) Context {
+	ctx.KeyringDefaultKeyName = keyName
 	return ctx
 }
 
@@ -266,7 +290,14 @@ func (ctx Context) WithInterfaceRegistry(interfaceRegistry codectypes.InterfaceR
 // client-side config from the config file.
 func (ctx Context) WithViper(prefix string) Context {
 	v := viper.New()
+
+	if prefix == "" {
+		executableName, _ := os.Executable()
+		prefix = path.Base(executableName)
+	}
+
 	v.SetEnvPrefix(prefix)
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	v.AutomaticEnv()
 	ctx.Viper = v
 	return ctx
@@ -278,7 +309,7 @@ func (ctx Context) WithAux(isAux bool) Context {
 	return ctx
 }
 
-// WithLedgerHasProto returns the context with the provided boolean value, indicating
+// WithLedgerHasProtobuf returns the context with the provided boolean value, indicating
 // whether the target Ledger application can support Protobuf payloads.
 func (ctx Context) WithLedgerHasProtobuf(val bool) Context {
 	ctx.LedgerHasProtobuf = val
@@ -289,6 +320,36 @@ func (ctx Context) WithLedgerHasProtobuf(val bool) Context {
 // enables chains to preprocess the transaction using the builder.
 func (ctx Context) WithPreprocessTxHook(preprocessFn PreprocessTxFn) Context {
 	ctx.PreprocessTxHook = preprocessFn
+	return ctx
+}
+
+// WithAddressCodec returns the context with the provided address codec.
+func (ctx Context) WithAddressCodec(addressCodec address.Codec) Context {
+	ctx.AddressCodec = addressCodec
+	return ctx
+}
+
+// WithValidatorAddressCodec returns the context with the provided validator address codec.
+func (ctx Context) WithValidatorAddressCodec(validatorAddressCodec address.Codec) Context {
+	ctx.ValidatorAddressCodec = validatorAddressCodec
+	return ctx
+}
+
+// WithConsensusAddressCodec returns the context with the provided consensus address codec.
+func (ctx Context) WithConsensusAddressCodec(consensusAddressCodec address.Codec) Context {
+	ctx.ConsensusAddressCodec = consensusAddressCodec
+	return ctx
+}
+
+// WithAddressPrefix returns the context with the provided address bech32 prefix.
+func (ctx Context) WithAddressPrefix(addressPrefix string) Context {
+	ctx.AddressPrefix = addressPrefix
+	return ctx
+}
+
+// WithValidatorPrefix returns the context with the provided validator bech32 prefix.
+func (ctx Context) WithValidatorPrefix(validatorPrefix string) Context {
+	ctx.ValidatorPrefix = validatorPrefix
 	return ctx
 }
 
@@ -315,17 +376,6 @@ func (ctx Context) PrintBytes(o []byte) error {
 func (ctx Context) PrintProto(toPrint proto.Message) error {
 	// always serialize JSON initially because proto json can't be directly YAML encoded
 	out, err := ctx.Codec.MarshalJSON(toPrint)
-	if err != nil {
-		return err
-	}
-	return ctx.printOutput(out)
-}
-
-// PrintObjectLegacy is a variant of PrintProto that doesn't require a proto.Message type
-// and uses amino JSON encoding.
-// Deprecated: It will be removed in the near future!
-func (ctx Context) PrintObjectLegacy(toPrint interface{}) error {
-	out, err := ctx.LegacyAmino.MarshalJSON(toPrint)
 	if err != nil {
 		return err
 	}
@@ -371,16 +421,22 @@ func (ctx Context) printOutput(out []byte) error {
 // GetFromFields returns a from account address, account name and keyring type, given either an address or key name.
 // If clientCtx.Simulate is true the keystore is not accessed and a valid address must be provided
 // If clientCtx.GenerateOnly is true the keystore is only accessed if a key name is provided
+// If from is empty, the default key if specified in the context will be used
 func GetFromFields(clientCtx Context, kr keyring.Keyring, from string) (sdk.AccAddress, string, keyring.KeyType, error) {
+	if from == "" && clientCtx.KeyringDefaultKeyName != "" {
+		from = clientCtx.KeyringDefaultKeyName
+		_ = clientCtx.PrintString(fmt.Sprintf("No key name or address provided; using the default key: %s\n", clientCtx.KeyringDefaultKeyName))
+	}
+
 	if from == "" {
 		return nil, "", 0, nil
 	}
 
-	addr, err := sdk.AccAddressFromBech32(from)
+	addr, err := clientCtx.AddressCodec.StringToBytes(from)
 	switch {
 	case clientCtx.Simulate:
 		if err != nil {
-			return nil, "", 0, fmt.Errorf("a valid bech32 address must be provided in simulation mode: %w", err)
+			return nil, "", 0, fmt.Errorf("a valid address must be provided in simulation mode: %w", err)
 		}
 
 		return addr, "", 0, nil

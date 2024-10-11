@@ -2,7 +2,6 @@ package tx
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
@@ -59,7 +58,7 @@ func (s txServer) GetTxsEvent(ctx context.Context, req *txtypes.GetTxsEventReque
 	for i, tx := range result.Txs {
 		protoTx, ok := tx.Tx.GetCachedValue().(*txtypes.Tx)
 		if !ok {
-			return nil, status.Errorf(codes.Internal, "expected %T, got %T", txtypes.Tx{}, tx.Tx.GetCachedValue())
+			return nil, status.Errorf(codes.Internal, "getting cached value failed expected %T, got %T", txtypes.Tx{}, tx.Tx.GetCachedValue())
 		}
 
 		txsList[i] = protoTx
@@ -116,8 +115,6 @@ func (s txServer) GetTx(ctx context.Context, req *txtypes.GetTxRequest) (*txtype
 		return nil, status.Error(codes.InvalidArgument, "tx hash cannot be empty")
 	}
 
-	// TODO We should also check the proof flag in gRPC header.
-	// https://github.com/cosmos/cosmos-sdk/issues/7036.
 	result, err := QueryTx(s.clientCtx, req.Hash)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
@@ -138,13 +135,6 @@ func (s txServer) GetTx(ctx context.Context, req *txtypes.GetTxRequest) (*txtype
 	}, nil
 }
 
-// protoTxProvider is a type which can provide a proto transaction. It is a
-// workaround to get access to the wrapper TxBuilder's method GetProtoTx().
-// ref: https://github.com/cosmos/cosmos-sdk/issues/10347
-type protoTxProvider interface {
-	GetProtoTx() *txtypes.Tx
-}
-
 // GetBlockWithTxs returns a block with decoded txs.
 func (s txServer) GetBlockWithTxs(ctx context.Context, req *txtypes.GetBlockWithTxsRequest) (*txtypes.GetBlockWithTxsResponse, error) {
 	if req == nil {
@@ -159,7 +149,12 @@ func (s txServer) GetBlockWithTxs(ctx context.Context, req *txtypes.GetBlockWith
 			"or greater than the current height %d", req.Height, currentHeight)
 	}
 
-	blockID, block, err := cmtservice.GetProtoBlock(ctx, s.clientCtx, &req.Height)
+	node, err := s.clientCtx.GetNode()
+	if err != nil {
+		return nil, err
+	}
+
+	blockID, block, err := cmtservice.GetProtoBlock(ctx, node, &req.Height)
 	if err != nil {
 		return nil, err
 	}
@@ -185,23 +180,23 @@ func (s txServer) GetBlockWithTxs(ctx context.Context, req *txtypes.GetBlockWith
 		if err != nil {
 			return err
 		}
-		p, ok := txb.(protoTxProvider)
-		if !ok {
-			return sdkerrors.ErrTxDecode.Wrapf("could not cast %T to %T", txb, txtypes.Tx{})
+		p, err := txb.(interface{ AsTx() (*txtypes.Tx, error) }).AsTx()
+		if err != nil {
+			return err
 		}
-		txs = append(txs, p.GetProtoTx())
+		txs = append(txs, p)
 		return nil
 	}
 	if req.Pagination != nil && req.Pagination.Reverse {
 		for i, count := offset, uint64(0); i > 0 && count != limit; i, count = i-1, count+1 {
 			if err = decodeTxAt(i); err != nil {
-				return nil, err
+				sdkCtx.Logger().Error("failed to decode tx", "error", err)
 			}
 		}
 	} else {
 		for i, count := offset, uint64(0); i < blockTxsLn && count != limit; i, count = i+1, count+1 {
 			if err = decodeTxAt(i); err != nil {
-				return nil, err
+				sdkCtx.Logger().Error("failed to decode tx", "error", err)
 			}
 		}
 	}
@@ -222,14 +217,28 @@ func (s txServer) BroadcastTx(ctx context.Context, req *txtypes.BroadcastTxReque
 }
 
 // TxEncode implements the ServiceServer.TxEncode RPC method.
-func (s txServer) TxEncode(ctx context.Context, req *txtypes.TxEncodeRequest) (*txtypes.TxEncodeResponse, error) {
+func (s txServer) TxEncode(_ context.Context, req *txtypes.TxEncodeRequest) (*txtypes.TxEncodeResponse, error) {
 	if req.Tx == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid empty tx")
 	}
 
-	txBuilder := &wrapper{tx: req.Tx}
+	bodyBytes, err := s.clientCtx.Codec.Marshal(req.Tx.Body)
+	if err != nil {
+		return nil, err
+	}
 
-	encodedBytes, err := s.clientCtx.TxConfig.TxEncoder()(txBuilder)
+	authInfoBytes, err := s.clientCtx.Codec.Marshal(req.Tx.AuthInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	raw := &txtypes.TxRaw{
+		BodyBytes:     bodyBytes,
+		AuthInfoBytes: authInfoBytes,
+		Signatures:    req.Tx.Signatures,
+	}
+
+	encodedBytes, err := s.clientCtx.Codec.Marshal(raw)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +249,7 @@ func (s txServer) TxEncode(ctx context.Context, req *txtypes.TxEncodeRequest) (*
 }
 
 // TxEncodeAmino implements the ServiceServer.TxEncodeAmino RPC method.
-func (s txServer) TxEncodeAmino(ctx context.Context, req *txtypes.TxEncodeAminoRequest) (*txtypes.TxEncodeAminoResponse, error) {
+func (s txServer) TxEncodeAmino(_ context.Context, req *txtypes.TxEncodeAminoRequest) (*txtypes.TxEncodeAminoResponse, error) {
 	if req.AminoJson == "" {
 		return nil, status.Error(codes.InvalidArgument, "invalid empty tx json")
 	}
@@ -262,7 +271,7 @@ func (s txServer) TxEncodeAmino(ctx context.Context, req *txtypes.TxEncodeAminoR
 }
 
 // TxDecode implements the ServiceServer.TxDecode RPC method.
-func (s txServer) TxDecode(ctx context.Context, req *txtypes.TxDecodeRequest) (*txtypes.TxDecodeResponse, error) {
+func (s txServer) TxDecode(_ context.Context, req *txtypes.TxDecodeRequest) (*txtypes.TxDecodeResponse, error) {
 	if req.TxBytes == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid empty tx bytes")
 	}
@@ -272,18 +281,17 @@ func (s txServer) TxDecode(ctx context.Context, req *txtypes.TxDecodeRequest) (*
 		return nil, err
 	}
 
-	txWrapper, ok := txb.(*wrapper)
-	if ok {
-		return &txtypes.TxDecodeResponse{
-			Tx: txWrapper.tx,
-		}, nil
+	tx, err := txb.(interface{ AsTx() (*txtypes.Tx, error) }).AsTx() // TODO: maybe we can break the Tx interface to add this also
+	if err != nil {
+		return nil, err
 	}
-
-	return nil, fmt.Errorf("expected %T, got %T", &wrapper{}, txb)
+	return &txtypes.TxDecodeResponse{
+		Tx: tx,
+	}, nil
 }
 
 // TxDecodeAmino implements the ServiceServer.TxDecodeAmino RPC method.
-func (s txServer) TxDecodeAmino(ctx context.Context, req *txtypes.TxDecodeAminoRequest) (*txtypes.TxDecodeAminoResponse, error) {
+func (s txServer) TxDecodeAmino(_ context.Context, req *txtypes.TxDecodeAminoRequest) (*txtypes.TxDecodeAminoResponse, error) {
 	if req.AminoBinary == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid empty tx bytes")
 	}
@@ -320,7 +328,10 @@ func RegisterTxService(
 // RegisterGRPCGatewayRoutes mounts the tx service's GRPC-gateway routes on the
 // given Mux.
 func RegisterGRPCGatewayRoutes(clientConn gogogrpc.ClientConn, mux *runtime.ServeMux) {
-	txtypes.RegisterServiceHandlerClient(context.Background(), mux, txtypes.NewServiceClient(clientConn))
+	err := txtypes.RegisterServiceHandlerClient(context.Background(), mux, txtypes.NewServiceClient(clientConn))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func parseOrderBy(orderBy txtypes.OrderBy) string {

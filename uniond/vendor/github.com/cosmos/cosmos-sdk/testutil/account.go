@@ -17,6 +17,7 @@ type TestAccount struct {
 }
 
 func CreateKeyringAccounts(t *testing.T, kr keyring.Keyring, num int) []TestAccount {
+	t.Helper()
 	accounts := make([]TestAccount, num)
 	for i := range accounts {
 		record, _, err := kr.NewMnemonic(

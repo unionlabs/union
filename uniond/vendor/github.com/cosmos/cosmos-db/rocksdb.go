@@ -71,7 +71,17 @@ func NewRocksDBWithOptions(name string, dir string, opts *grocksdb.Options) (*Ro
 	wo := grocksdb.NewDefaultWriteOptions()
 	woSync := grocksdb.NewDefaultWriteOptions()
 	woSync.SetSync(true)
-	return NewRocksDBWithRaw(db, ro, wo, woSync), nil
+	return NewRocksDBWithRawDB(db, ro, wo, woSync), nil
+}
+
+// NewRocksDBWithRawDB lets caller has full control on how the db instance is constructed
+func NewRocksDBWithRawDB(
+	db *grocksdb.DB,
+	ro *grocksdb.ReadOptions,
+	wo *grocksdb.WriteOptions,
+	woSync *grocksdb.WriteOptions,
+) *RocksDB {
+	return NewRocksDBWithRaw(db, ro, wo, woSync)
 }
 
 // NewRocksDBWithRaw is useful if user want to create the db in read-only or seconday-standby mode,

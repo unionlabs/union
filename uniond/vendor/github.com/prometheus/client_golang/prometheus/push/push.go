@@ -109,7 +109,7 @@ func New(url, job string) *Pusher {
 		gatherers:  prometheus.Gatherers{reg},
 		registerer: reg,
 		client:     &http.Client{},
-		expfmt:     expfmt.FmtProtoDelim,
+		expfmt:     expfmt.NewFormat(expfmt.TypeProtoDelim),
 	}
 }
 

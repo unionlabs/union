@@ -8,16 +8,19 @@ import (
 	"filippo.io/edwards25519"
 )
 
-// BatchVerifier accumulates batch entries with Add, before performing batch verification with Verify.
+// BatchVerifier accumulates batch entries with Add, before performing batch
+// verification with Verify.
 type BatchVerifier struct {
 	entries []entry
 }
 
-// entry represents a batch entry with the public key, signature and scalar which the caller wants to verify
+// entry represents a batch entry with the public key, signature and scalar
+// which the caller wants to verify.
 type entry struct {
-	pubkey    ed25519.PublicKey
-	signature []byte
-	k         *edwards25519.Scalar
+	good      bool // good is true if the Add inputs were valid
+	pubkey    [ed25519.PublicKeySize]byte
+	signature [ed25519.SignatureSize]byte
+	digest    [64]byte
 }
 
 // NewBatchVerifier creates an empty BatchVerifier.
@@ -27,42 +30,39 @@ func NewBatchVerifier() BatchVerifier {
 	}
 }
 
-// Add adds a (public key, message, sig) triple to the current batch.
+// NewPreallocatedBatchVerifier creates a new BatchVerifier with
+// a preallocated capacity. If you know the size of the batch you plan
+// to create ahead of time, this can prevent needless memory copies.
+func NewPreallocatedBatchVerifier(size int) BatchVerifier {
+	return BatchVerifier{
+		entries: make([]entry, 0, size),
+	}
+}
+
+// Add adds a (public key, message, sig) triple to the current batch. It retains
+// no reference to the inputs.
 func (v *BatchVerifier) Add(publicKey ed25519.PublicKey, message, sig []byte) {
-	// Compute the challenge scalar for this entry upfront, so that we don't
-	// introduce a dependency on the lifetime of the message array. This doesn't
-	// matter so much for Go, which has garbage collection, but did matter for
-	// the Rust implementation this was ported from, but not keeping buffers
-	// alive for longer than they have to is nice to do anyways.
+	// Compute the challenge upfront to store it in the fixed-size entry
+	// structure that can get allocated on the caller stack and avoid heap
+	// allocations. Also, avoid holding any reference to the arguments.
+
+	v.entries = append(v.entries, entry{})
+	e := &v.entries[len(v.entries)-1]
+
+	if len(publicKey) != ed25519.PublicKeySize || len(sig) != ed25519.SignatureSize {
+		return
+	}
 
 	h := sha512.New()
-
-	// R_bytes is the first 32 bytes of the signature, but because the signature
-	// is passed as a variable-length array it could be too short. In that case
-	// we'll fail in Verify, so just avoid a panic here.
-	n := 32
-	if len(sig) < n {
-		n = len(sig)
-	}
-	h.Write(sig[:n])
-
+	h.Write(sig[:32])
 	h.Write(publicKey)
 	h.Write(message)
-	var digest [64]byte
-	h.Sum(digest[:0])
+	h.Sum(e.digest[:0])
 
-	k, err := new(edwards25519.Scalar).SetUniformBytes(digest[:])
-	if err != nil {
-		panic(err)
-	}
+	copy(e.pubkey[:], publicKey)
+	copy(e.signature[:], sig)
 
-	e := entry{
-		pubkey:    publicKey,
-		signature: sig,
-		k:         k,
-	}
-
-	v.entries = append(v.entries, e)
+	e.good = true
 }
 
 // Verify checks all entries in the current batch, returning true if all entries
@@ -97,7 +97,7 @@ func (v *BatchVerifier) Verify() bool {
 	}
 
 	Bcoeff := scalars[0]
-	Rcoeffs := scalars[1:][:int(vl)]
+	Rcoeffs := scalars[1 : 1+vl]
 	Acoeffs := scalars[1+vl:]
 
 	pvals := make([]edwards25519.Point, 1+vl+vl)
@@ -106,14 +106,13 @@ func (v *BatchVerifier) Verify() bool {
 		points[i] = &pvals[i]
 	}
 	B := points[0]
-	Rs := points[1:][:vl]
+	Rs := points[1 : 1+vl]
 	As := points[1+vl:]
 
+	buf := make([]byte, 32)
 	B.Set(edwards25519.NewGeneratorPoint())
 	for i, entry := range v.entries {
-		// Check that the signature is exactly 64 bytes upfront,
-		// so that we can slice it later without potential panics
-		if len(entry.signature) != 64 {
+		if !entry.good {
 			return false
 		}
 
@@ -121,14 +120,14 @@ func (v *BatchVerifier) Verify() bool {
 			return false
 		}
 
-		if _, err := As[i].SetBytes(entry.pubkey); err != nil {
+		if _, err := As[i].SetBytes(entry.pubkey[:]); err != nil {
 			return false
 		}
 
-		buf := make([]byte, 32)
-		rand.Read(buf[:16])
-		_, err := Rcoeffs[i].SetCanonicalBytes(buf)
-		if err != nil {
+		if _, err := rand.Read(buf[:16]); err != nil {
+			return false
+		}
+		if _, err := Rcoeffs[i].SetCanonicalBytes(buf); err != nil {
 			return false
 		}
 
@@ -138,7 +137,11 @@ func (v *BatchVerifier) Verify() bool {
 		}
 		Bcoeff.MultiplyAdd(Rcoeffs[i], s, Bcoeff)
 
-		Acoeffs[i].Multiply(Rcoeffs[i], entry.k)
+		k, err := new(edwards25519.Scalar).SetUniformBytes(entry.digest[:])
+		if err != nil {
+			return false
+		}
+		Acoeffs[i].Multiply(Rcoeffs[i], k)
 	}
 	Bcoeff.Negate(Bcoeff) // this term is subtracted in the summation
 

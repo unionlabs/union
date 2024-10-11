@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -32,11 +33,35 @@ var (
 	// IntValue represents a collections.ValueCodec to work with Int.
 	IntValue collcodec.ValueCodec[math.Int] = intValueCodec{}
 
+	// UintValue represents a collections.ValueCodec to work with Uint.
+	UintValue collcodec.ValueCodec[math.Uint] = uintValueCodec{}
+
+	// LegacyDecValue represents a collections.ValueCodec to work with LegacyDec.
+	LegacyDecValue collcodec.ValueCodec[math.LegacyDec] = legacyDecValueCodec{}
+
 	// TimeKey represents a collections.KeyCodec to work with time.Time
 	// Deprecated: exists only for state compatibility reasons, should not
 	// be used for new storage keys using time. Please use the time KeyCodec
 	// provided in the collections package.
 	TimeKey collcodec.KeyCodec[time.Time] = timeKeyCodec{}
+
+	// LEUint64Key is a collections KeyCodec that encodes uint64 using little endian.
+	// NOTE: it MUST NOT be used by other modules, distribution relies on this only for
+	// state backwards compatibility.
+	// Deprecated: use collections.Uint64Key instead.
+	LEUint64Key collcodec.KeyCodec[uint64] = leUint64Key{}
+
+	// LengthPrefixedBytesKey is a collections KeyCodec to work with []byte.
+	// Deprecated: exists only for state compatibility reasons, should not be
+	// used for new storage keys using []byte. Please use the BytesKey provided
+	// in the collections package.
+	LengthPrefixedBytesKey collcodec.KeyCodec[[]byte] = lengthPrefixedBytesKey{collections.BytesKey}
+)
+
+const (
+	Int       string = "math.Int"
+	Uint      string = "math.Uint"
+	LegacyDec string = "math.LegacyDec"
 )
 
 type addressUnion interface {
@@ -128,6 +153,28 @@ func LengthPrefixedAddressKey[T addressUnion](keyCodec collcodec.KeyCodec[T]) co
 	}
 }
 
+// Deprecated: lengthPrefixedBytesKey is a special key codec used to retain state backwards compatibility
+// when a bytes key is used as an index key.
+type lengthPrefixedBytesKey struct {
+	collcodec.KeyCodec[[]byte]
+}
+
+func (g lengthPrefixedBytesKey) Encode(buffer, key []byte) (int, error) {
+	return g.EncodeNonTerminal(buffer, key)
+}
+
+func (g lengthPrefixedBytesKey) Decode(buffer []byte) (int, []byte, error) {
+	return g.DecodeNonTerminal(buffer)
+}
+
+func (g lengthPrefixedBytesKey) Size(key []byte) int {
+	return g.SizeNonTerminal(key)
+}
+
+func (g lengthPrefixedBytesKey) KeyType() string {
+	return "index_key/" + g.KeyCodec.KeyType()
+}
+
 // Collection Codecs
 
 type intValueCodec struct{}
@@ -163,7 +210,79 @@ func (i intValueCodec) Stringify(value math.Int) string {
 }
 
 func (i intValueCodec) ValueType() string {
-	return "math.Int"
+	return Int
+}
+
+type uintValueCodec struct{}
+
+func (i uintValueCodec) Encode(value math.Uint) ([]byte, error) {
+	return value.Marshal()
+}
+
+func (i uintValueCodec) Decode(b []byte) (math.Uint, error) {
+	v := new(math.Uint)
+	err := v.Unmarshal(b)
+	if err != nil {
+		return math.Uint{}, err
+	}
+	return *v, nil
+}
+
+func (i uintValueCodec) EncodeJSON(value math.Uint) ([]byte, error) {
+	return value.MarshalJSON()
+}
+
+func (i uintValueCodec) DecodeJSON(b []byte) (math.Uint, error) {
+	v := new(math.Uint)
+	err := v.UnmarshalJSON(b)
+	if err != nil {
+		return math.Uint{}, err
+	}
+	return *v, nil
+}
+
+func (i uintValueCodec) Stringify(value math.Uint) string {
+	return value.String()
+}
+
+func (i uintValueCodec) ValueType() string {
+	return Uint
+}
+
+type legacyDecValueCodec struct{}
+
+func (i legacyDecValueCodec) Encode(value math.LegacyDec) ([]byte, error) {
+	return value.Marshal()
+}
+
+func (i legacyDecValueCodec) Decode(b []byte) (math.LegacyDec, error) {
+	v := new(math.LegacyDec)
+	err := v.Unmarshal(b)
+	if err != nil {
+		return math.LegacyDec{}, err
+	}
+	return *v, nil
+}
+
+func (i legacyDecValueCodec) EncodeJSON(value math.LegacyDec) ([]byte, error) {
+	return value.MarshalJSON()
+}
+
+func (i legacyDecValueCodec) DecodeJSON(b []byte) (math.LegacyDec, error) {
+	v := new(math.LegacyDec)
+	err := v.UnmarshalJSON(b)
+	if err != nil {
+		return math.LegacyDec{}, err
+	}
+	return *v, nil
+}
+
+func (i legacyDecValueCodec) Stringify(value math.LegacyDec) string {
+	return value.String()
+}
+
+func (i legacyDecValueCodec) ValueType() string {
+	return LegacyDec
 }
 
 type timeKeyCodec struct{}
@@ -176,7 +295,7 @@ var timeSize = len(FormatTimeBytes(time.Time{}))
 
 func (timeKeyCodec) Decode(buffer []byte) (int, time.Time, error) {
 	if len(buffer) != timeSize {
-		return 0, time.Time{}, fmt.Errorf("invalid time buffer buffer size")
+		return 0, time.Time{}, fmt.Errorf("invalid time buffer size")
 	}
 	t, err := ParseTimeBytes(buffer)
 	if err != nil {
@@ -208,3 +327,37 @@ func (t timeKeyCodec) DecodeNonTerminal(buffer []byte) (int, time.Time, error) {
 	return t.Decode(buffer[:timeSize])
 }
 func (t timeKeyCodec) SizeNonTerminal(key time.Time) int { return t.Size(key) }
+
+type leUint64Key struct{}
+
+func (l leUint64Key) Encode(buffer []byte, key uint64) (int, error) {
+	binary.LittleEndian.PutUint64(buffer, key)
+	return 8, nil
+}
+
+func (l leUint64Key) Decode(buffer []byte) (int, uint64, error) {
+	if size := len(buffer); size < 8 {
+		return 0, 0, fmt.Errorf("invalid buffer size, wanted 8 at least got %d", size)
+	}
+	return 8, binary.LittleEndian.Uint64(buffer), nil
+}
+
+func (l leUint64Key) Size(_ uint64) int { return 8 }
+
+func (l leUint64Key) EncodeJSON(value uint64) ([]byte, error) {
+	return collections.Uint64Key.EncodeJSON(value)
+}
+
+func (l leUint64Key) DecodeJSON(b []byte) (uint64, error) { return collections.Uint64Key.DecodeJSON(b) }
+
+func (l leUint64Key) Stringify(key uint64) string { return collections.Uint64Key.Stringify(key) }
+
+func (l leUint64Key) KeyType() string { return "little-endian-uint64" }
+
+func (l leUint64Key) EncodeNonTerminal(buffer []byte, key uint64) (int, error) {
+	return l.Encode(buffer, key)
+}
+
+func (l leUint64Key) DecodeNonTerminal(buffer []byte) (int, uint64, error) { return l.Decode(buffer) }
+
+func (l leUint64Key) SizeNonTerminal(_ uint64) int { return 8 }

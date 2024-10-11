@@ -15,7 +15,7 @@ import (
 // successful.
 func GetSimulateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "simulate /path/to/unsigned-tx.json --from keyname",
+		Use:   "simulate <path/to/unsigned-tx.json> --from <keyname>",
 		Short: "Simulate the gas usage of a transaction",
 		Long: strings.TrimSpace(`Simulate whether a transaction will be successful:
 

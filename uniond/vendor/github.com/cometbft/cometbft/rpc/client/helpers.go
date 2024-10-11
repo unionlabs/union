@@ -9,11 +9,11 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-// Waiter is informed of current height, decided whether to quit early
+// Waiter is informed of current height, decided whether to quit early.
 type Waiter func(delta int64) (abort error)
 
 // DefaultWaitStrategy is the standard backoff algorithm,
-// but you can plug in another one
+// but you can plug in another one.
 func DefaultWaitStrategy(delta int64) (abort error) {
 	if delta > 10 {
 		return fmt.Errorf("waiting for %d blocks... aborting", delta)
@@ -31,7 +31,7 @@ func DefaultWaitStrategy(delta int64) (abort error) {
 // the block at the given height is available.
 //
 // If waiter is nil, we use DefaultWaitStrategy, but you can also
-// provide your own implementation
+// provide your own implementation.
 func WaitForHeight(c StatusClient, h int64, waiter Waiter) error {
 	if waiter == nil {
 		waiter = DefaultWaitStrategy
@@ -56,7 +56,7 @@ func WaitForHeight(c StatusClient, h int64, waiter Waiter) error {
 // event time and returns upon receiving it one time, or
 // when the timeout duration has expired.
 //
-// This handles subscribing and unsubscribing under the hood
+// This handles subscribing and unsubscribing under the hood.
 func WaitForOneEvent(c EventsClient, evtTyp string, timeout time.Duration) (types.TMEventData, error) {
 	const subscriber = "helpers"
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

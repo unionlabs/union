@@ -1,15 +1,14 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 )
 
 // InitGenesis initializes the ibc-transfer state and binds to PortID.
-func (k Keeper) InitGenesis(ctx sdk.Context, state types.GenesisState) {
+func (k Keeper) InitGenesis(ctx context.Context, state types.GenesisState) {
 	k.SetPort(ctx, state.PortId)
 
 	for _, trace := range state.DenomTraces {
@@ -38,7 +37,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state types.GenesisState) {
 }
 
 // ExportGenesis exports ibc-transfer module's portID and denom trace info into its genesis state.
-func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
+func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 	return &types.GenesisState{
 		PortId:        k.GetPort(ctx),
 		DenomTraces:   k.GetAllDenomTraces(ctx),

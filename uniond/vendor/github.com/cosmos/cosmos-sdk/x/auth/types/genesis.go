@@ -2,10 +2,12 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 
-	proto "github.com/cosmos/gogoproto/proto"
+	"github.com/cosmos/gogoproto/proto"
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
@@ -13,7 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 )
 
-var _ types.UnpackInterfacesMessage = GenesisState{}
+var _ gogoprotoany.UnpackInterfacesMessage = GenesisState{}
 
 // RandomGenesisAccountsFn defines the function required to generate custom account types
 type RandomGenesisAccountsFn func(simState *module.SimulationState) GenesisAccounts
@@ -31,7 +33,7 @@ func NewGenesisState(params Params, accounts GenesisAccounts) *GenesisState {
 }
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (g GenesisState) UnpackInterfaces(unpacker types.AnyUnpacker) error {
+func (g GenesisState) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	for _, any := range g.Accounts {
 		var account GenesisAccount
 		err := unpacker.UnpackAny(any, &account)
@@ -136,7 +138,7 @@ func ValidateGenAccounts(accounts GenesisAccounts) error {
 
 		// check account specific validation
 		if err := acc.Validate(); err != nil {
-			return fmt.Errorf("invalid account found in genesis state; address: %s, error: %s", addrStr, err.Error())
+			return fmt.Errorf("invalid account found in genesis state; address: %s, error: %w", addrStr, err)
 		}
 	}
 	return nil
@@ -186,7 +188,7 @@ func UnpackAccounts(accountsAny []*types.Any) (GenesisAccounts, error) {
 	for i, any := range accountsAny {
 		acc, ok := any.GetCachedValue().(GenesisAccount)
 		if !ok {
-			return nil, fmt.Errorf("expected genesis account")
+			return nil, errors.New("expected genesis account")
 		}
 		accounts[i] = acc
 	}

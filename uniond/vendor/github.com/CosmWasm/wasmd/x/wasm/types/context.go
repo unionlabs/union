@@ -18,6 +18,8 @@ const (
 	contextKeySubMsgAuthzPolicy = iota
 	// gas register
 	contextKeyGasRegister = iota
+
+	contextKeyCallDepth contextKey = iota
 )
 
 // WithTXCounter stores a transaction counter value in the context
@@ -40,6 +42,15 @@ func WithQueryStackSize(ctx sdk.Context, counter uint32) sdk.Context {
 // QueryStackSize reads the stack position for smart queries from the context
 func QueryStackSize(ctx context.Context) (uint32, bool) {
 	val, ok := ctx.Value(contextKeyQueryStackSize).(uint32)
+	return val, ok
+}
+
+func WithCallDepth(ctx sdk.Context, counter uint32) sdk.Context {
+	return ctx.WithValue(contextKeyCallDepth, counter)
+}
+
+func CallDepth(ctx context.Context) (uint32, bool) {
+	val, ok := ctx.Value(contextKeyCallDepth).(uint32)
 	return val, ok
 }
 

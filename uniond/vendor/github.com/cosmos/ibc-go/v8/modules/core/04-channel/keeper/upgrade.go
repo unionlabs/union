@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"slices"
@@ -20,7 +21,7 @@ import (
 // ChanUpgradeInit is called by a module to initiate a channel upgrade handshake with
 // a module on another chain.
 func (k Keeper) ChanUpgradeInit(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID string,
 	channelID string,
 	upgradeFields types.UpgradeFields,
@@ -45,7 +46,7 @@ func (k Keeper) ChanUpgradeInit(
 
 // WriteUpgradeInitChannel writes a channel which has successfully passed the UpgradeInit handshake step.
 // An event is emitted for the handshake step.
-func (k Keeper) WriteUpgradeInitChannel(ctx sdk.Context, portID, channelID string, upgrade types.Upgrade, upgradeVersion string) (types.Channel, types.Upgrade) {
+func (k Keeper) WriteUpgradeInitChannel(ctx context.Context, portID, channelID string, upgrade types.Upgrade, upgradeVersion string) (types.Channel, types.Upgrade) {
 	defer telemetry.IncrCounter(1, "ibc", "channel", "upgrade-init")
 
 	channel, found := k.GetChannel(ctx, portID, channelID)
@@ -74,7 +75,7 @@ func (k Keeper) WriteUpgradeInitChannel(ctx sdk.Context, portID, channelID strin
 // ChanUpgradeTry is called by a module to accept the first step of a channel upgrade handshake initiated by
 // a module on another chain. If this function is successful, the proposed upgrade will be returned. If the upgrade fails, the upgrade sequence will still be incremented but an error will be returned.
 func (k Keeper) ChanUpgradeTry(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	proposedConnectionHops []string,
@@ -225,7 +226,7 @@ func (k Keeper) ChanUpgradeTry(
 
 // WriteUpgradeTryChannel writes the channel end and upgrade to state after successfully passing the UpgradeTry handshake step.
 // An event is emitted for the handshake step.
-func (k Keeper) WriteUpgradeTryChannel(ctx sdk.Context, portID, channelID string, upgrade types.Upgrade, upgradeVersion string) (types.Channel, types.Upgrade) {
+func (k Keeper) WriteUpgradeTryChannel(ctx context.Context, portID, channelID string, upgrade types.Upgrade, upgradeVersion string) (types.Channel, types.Upgrade) {
 	defer telemetry.IncrCounter(1, "ibc", "channel", "upgrade-try")
 
 	channel, found := k.GetChannel(ctx, portID, channelID)
@@ -254,7 +255,7 @@ func (k Keeper) WriteUpgradeTryChannel(ctx sdk.Context, portID, channelID string
 //
 //	A -> Init (OPEN), B -> Init (OPEN) -> A -> Try (FLUSHING), B -> Try (FLUSHING), A -> Ack (begins in FLUSHING)
 func (k Keeper) ChanUpgradeAck(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	counterpartyUpgrade types.Upgrade,
@@ -342,7 +343,8 @@ func (k Keeper) ChanUpgradeAck(
 	}
 
 	timeout := counterpartyUpgrade.Timeout
-	selfHeight, selfTimestamp := clienttypes.GetSelfHeight(ctx), uint64(ctx.BlockTime().UnixNano())
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	selfHeight, selfTimestamp := clienttypes.GetSelfHeight(ctx), uint64(sdkCtx.BlockTime().UnixNano())
 
 	if timeout.Elapsed(selfHeight, selfTimestamp) {
 		return types.NewUpgradeError(channel.UpgradeSequence, errorsmod.Wrap(timeout.ErrTimeoutElapsed(selfHeight, selfTimestamp), "counterparty upgrade timeout elapsed"))
@@ -354,7 +356,7 @@ func (k Keeper) ChanUpgradeAck(
 // WriteUpgradeAckChannel writes a channel which has successfully passed the UpgradeAck handshake step as well as
 // setting the upgrade for that channel.
 // An event is emitted for the handshake step.
-func (k Keeper) WriteUpgradeAckChannel(ctx sdk.Context, portID, channelID string, counterpartyUpgrade types.Upgrade) (types.Channel, types.Upgrade) {
+func (k Keeper) WriteUpgradeAckChannel(ctx context.Context, portID, channelID string, counterpartyUpgrade types.Upgrade) (types.Channel, types.Upgrade) {
 	defer telemetry.IncrCounter(1, "ibc", "channel", "upgrade-ack")
 
 	channel, found := k.GetChannel(ctx, portID, channelID)
@@ -385,7 +387,7 @@ func (k Keeper) WriteUpgradeAckChannel(ctx sdk.Context, portID, channelID string
 // ChanUpgradeConfirm is called on the chain which is on FLUSHING after chanUpgradeAck is called on the counterparty.
 // This will inform the TRY chain of the timeout set on ACK by the counterparty. If the timeout has already exceeded, we will write an error receipt and restore.
 func (k Keeper) ChanUpgradeConfirm(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	counterpartyChannelState types.State,
@@ -448,8 +450,24 @@ func (k Keeper) ChanUpgradeConfirm(
 		return errorsmod.Wrap(err, "failed to verify counterparty upgrade")
 	}
 
+	// if we have cancelled our upgrade after performing UpgradeInit,
+	// UpgradeTry or UpgradeAck, the lack of a stored upgrade will prevent
+	// us from continuing the upgrade handshake
+	upgrade, found := k.GetUpgrade(ctx, portID, channelID)
+	if !found {
+		return errorsmod.Wrapf(types.ErrUpgradeNotFound, "failed to retrieve channel upgrade: port ID (%s) channel ID (%s)", portID, channelID)
+	}
+
+	// in the crossing-hello case it is possible that both chains execute the
+	// INIT, TRY and CONFIRM steps without any of them executing ACK, therefore
+	// we also need to check that the upgrades are compatible on this step
+	if err := k.checkForUpgradeCompatibility(ctx, upgrade.Fields, counterpartyUpgrade.Fields); err != nil {
+		return types.NewUpgradeError(channel.UpgradeSequence, err)
+	}
+
 	timeout := counterpartyUpgrade.Timeout
-	selfHeight, selfTimestamp := clienttypes.GetSelfHeight(ctx), uint64(ctx.BlockTime().UnixNano())
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	selfHeight, selfTimestamp := clienttypes.GetSelfHeight(ctx), uint64(sdkCtx.BlockTime().UnixNano())
 
 	if timeout.Elapsed(selfHeight, selfTimestamp) {
 		return types.NewUpgradeError(channel.UpgradeSequence, errorsmod.Wrap(timeout.ErrTimeoutElapsed(selfHeight, selfTimestamp), "counterparty upgrade timeout elapsed"))
@@ -462,7 +480,7 @@ func (k Keeper) ChanUpgradeConfirm(
 // If the channel has no in-flight packets, its state is updated to indicate that flushing has completed. Otherwise, the counterparty upgrade is set
 // and the channel state is left unchanged.
 // An event is emitted for the handshake step.
-func (k Keeper) WriteUpgradeConfirmChannel(ctx sdk.Context, portID, channelID string, counterpartyUpgrade types.Upgrade) types.Channel {
+func (k Keeper) WriteUpgradeConfirmChannel(ctx context.Context, portID, channelID string, counterpartyUpgrade types.Upgrade) types.Channel {
 	defer telemetry.IncrCounter(1, "ibc", "channel", "upgrade-confirm")
 
 	channel, found := k.GetChannel(ctx, portID, channelID)
@@ -485,7 +503,7 @@ func (k Keeper) WriteUpgradeConfirmChannel(ctx sdk.Context, portID, channelID st
 // This method should only be called after both channels have flushed any in-flight packets.
 // This method should only be called directly by the core IBC message server.
 func (k Keeper) ChanUpgradeOpen(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	counterpartyChannelState types.State,
@@ -576,7 +594,7 @@ func (k Keeper) ChanUpgradeOpen(
 // WriteUpgradeOpenChannel writes the agreed upon upgrade fields to the channel, and sets the channel state back to OPEN. This can be called in one of two cases:
 // - In the UpgradeConfirm step of the handshake if both sides have already flushed all in-flight packets.
 // - In the UpgradeOpen step of the handshake.
-func (k Keeper) WriteUpgradeOpenChannel(ctx sdk.Context, portID, channelID string) types.Channel {
+func (k Keeper) WriteUpgradeOpenChannel(ctx context.Context, portID, channelID string) types.Channel {
 	channel, found := k.GetChannel(ctx, portID, channelID)
 	if !found {
 		panic(fmt.Errorf("could not find existing channel when updating channel state, channelID: %s, portID: %s", channelID, portID))
@@ -638,7 +656,7 @@ func (k Keeper) WriteUpgradeOpenChannel(ctx sdk.Context, portID, channelID strin
 // ChanUpgradeCancel is called by the msg server to prove that an error receipt was written on the counterparty
 // which constitutes a valid situation where the upgrade should be cancelled. An error is returned if sufficient evidence
 // for cancelling the upgrade has not been provided.
-func (k Keeper) ChanUpgradeCancel(ctx sdk.Context, portID, channelID string, errorReceipt types.ErrorReceipt, errorReceiptProof []byte, proofHeight clienttypes.Height) error {
+func (k Keeper) ChanUpgradeCancel(ctx context.Context, portID, channelID string, errorReceipt types.ErrorReceipt, errorReceiptProof []byte, proofHeight clienttypes.Height) error {
 	channel, found := k.GetChannel(ctx, portID, channelID)
 	if !found {
 		return errorsmod.Wrapf(types.ErrChannelNotFound, "port ID (%s) channel ID (%s)", portID, channelID)
@@ -699,7 +717,7 @@ func (k Keeper) ChanUpgradeCancel(ctx sdk.Context, portID, channelID string, err
 
 // WriteUpgradeCancelChannel writes a channel which has canceled the upgrade process.Auxiliary upgrade state is
 // also deleted.
-func (k Keeper) WriteUpgradeCancelChannel(ctx sdk.Context, portID, channelID string, sequence uint64) {
+func (k Keeper) WriteUpgradeCancelChannel(ctx context.Context, portID, channelID string, sequence uint64) {
 	defer telemetry.IncrCounter(1, "ibc", "channel", "upgrade-cancel")
 
 	channel, found := k.GetChannel(ctx, portID, channelID)
@@ -718,7 +736,7 @@ func (k Keeper) WriteUpgradeCancelChannel(ctx sdk.Context, portID, channelID str
 // ChanUpgradeTimeout times out an outstanding upgrade.
 // This should be used by the initialising chain when the counterparty chain has not responded to an upgrade proposal within the specified timeout period.
 func (k Keeper) ChanUpgradeTimeout(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID, channelID string,
 	counterpartyChannel types.Channel,
 	counterpartyChannelProof []byte,
@@ -817,7 +835,7 @@ func (k Keeper) ChanUpgradeTimeout(
 // Auxiliary upgrade state is also deleted.
 // An event is emitted for the handshake step.
 func (k Keeper) WriteUpgradeTimeoutChannel(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID, channelID string,
 ) (types.Channel, types.Upgrade) {
 	defer telemetry.IncrCounter(1, "ibc", "channel", "upgrade-timeout")
@@ -842,7 +860,7 @@ func (k Keeper) WriteUpgradeTimeoutChannel(
 
 // startFlushing will set the upgrade last packet send and continue blocking the upgrade from continuing until all
 // in-flight packets have been flushed.
-func (k Keeper) startFlushing(ctx sdk.Context, portID, channelID string, upgrade *types.Upgrade) error {
+func (k Keeper) startFlushing(ctx context.Context, portID, channelID string, upgrade *types.Upgrade) error {
 	channel, found := k.GetChannel(ctx, portID, channelID)
 	if !found {
 		return errorsmod.Wrapf(types.ErrChannelNotFound, "port ID (%s) channel ID (%s)", portID, channelID)
@@ -873,13 +891,14 @@ func (k Keeper) startFlushing(ctx sdk.Context, portID, channelID string, upgrade
 }
 
 // getAbsoluteUpgradeTimeout returns the absolute timeout for the given upgrade.
-func (k Keeper) getAbsoluteUpgradeTimeout(ctx sdk.Context) types.Timeout {
+func (k Keeper) getAbsoluteUpgradeTimeout(ctx context.Context) types.Timeout {
 	upgradeTimeout := k.GetParams(ctx).UpgradeTimeout
-	return types.NewTimeout(clienttypes.ZeroHeight(), uint64(ctx.BlockTime().UnixNano())+upgradeTimeout.Timestamp)
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	return types.NewTimeout(clienttypes.ZeroHeight(), uint64(sdkCtx.BlockTime().UnixNano())+upgradeTimeout.Timestamp)
 }
 
 // checkForUpgradeCompatibility checks performs stateful validation of self upgrade fields relative to counterparty upgrade.
-func (k Keeper) checkForUpgradeCompatibility(ctx sdk.Context, upgradeFields, counterpartyUpgradeFields types.UpgradeFields) error {
+func (k Keeper) checkForUpgradeCompatibility(ctx context.Context, upgradeFields, counterpartyUpgradeFields types.UpgradeFields) error {
 	// assert that both sides propose the same channel ordering
 	if upgradeFields.Ordering != counterpartyUpgradeFields.Ordering {
 		return errorsmod.Wrapf(types.ErrIncompatibleCounterpartyUpgrade, "expected upgrade ordering (%s) to match counterparty upgrade ordering (%s)", upgradeFields.Ordering, counterpartyUpgradeFields.Ordering)
@@ -917,7 +936,7 @@ func (k Keeper) checkForUpgradeCompatibility(ctx sdk.Context, upgradeFields, cou
 // - the proposed connection hops do not exist
 // - the proposed version is non-empty (checked in UpgradeFields.ValidateBasic())
 // - the proposed connection hops are not open
-func (k Keeper) validateSelfUpgradeFields(ctx sdk.Context, proposedUpgrade types.UpgradeFields, currentChannel types.Channel) error {
+func (k Keeper) validateSelfUpgradeFields(ctx context.Context, proposedUpgrade types.UpgradeFields, currentChannel types.Channel) error {
 	currentFields := extractUpgradeFields(currentChannel)
 
 	if reflect.DeepEqual(proposedUpgrade, currentFields) {
@@ -969,7 +988,7 @@ func extractUpgradeFields(channel types.Channel) types.UpgradeFields {
 // MustAbortUpgrade will restore the channel state to its pre-upgrade state so that upgrade is aborted.
 // Any unnecessary state is deleted and an error receipt is written.
 // This function is expected to always succeed, a panic will occur if an error occurs.
-func (k Keeper) MustAbortUpgrade(ctx sdk.Context, portID, channelID string, err error) {
+func (k Keeper) MustAbortUpgrade(ctx context.Context, portID, channelID string, err error) {
 	if err := k.abortUpgrade(ctx, portID, channelID, err); err != nil {
 		panic(err)
 	}
@@ -979,7 +998,7 @@ func (k Keeper) MustAbortUpgrade(ctx sdk.Context, portID, channelID string, err 
 // All upgrade information associated with the upgrade attempt is deleted and an upgrade error
 // receipt is written for that upgrade attempt. This prevents the upgrade handshake from continuing
 // on our side and provides proof for the counterparty to safely abort the upgrade.
-func (k Keeper) abortUpgrade(ctx sdk.Context, portID, channelID string, err error) error {
+func (k Keeper) abortUpgrade(ctx context.Context, portID, channelID string, err error) error {
 	if err == nil {
 		return errorsmod.Wrap(types.ErrInvalidUpgradeError, "cannot abort upgrade handshake with nil error")
 	}
@@ -1007,7 +1026,7 @@ func (k Keeper) abortUpgrade(ctx sdk.Context, portID, channelID string, err erro
 // restoreChannel will restore the channel state to its pre-upgrade state so that upgrade is aborted.
 // When an upgrade attempt is aborted, the upgrade information must be deleted. This prevents us
 // from continuing an upgrade handshake after we cancel an upgrade attempt.
-func (k Keeper) restoreChannel(ctx sdk.Context, portID, channelID string, upgradeSequence uint64, channel types.Channel) types.Channel {
+func (k Keeper) restoreChannel(ctx context.Context, portID, channelID string, upgradeSequence uint64, channel types.Channel) types.Channel {
 	channel.State = types.OPEN
 	channel.UpgradeSequence = upgradeSequence
 
@@ -1020,7 +1039,7 @@ func (k Keeper) restoreChannel(ctx sdk.Context, portID, channelID string, upgrad
 }
 
 // WriteErrorReceipt will write an error receipt from the provided UpgradeError.
-func (k Keeper) WriteErrorReceipt(ctx sdk.Context, portID, channelID string, upgradeError *types.UpgradeError) {
+func (k Keeper) WriteErrorReceipt(ctx context.Context, portID, channelID string, upgradeError *types.UpgradeError) {
 	channel, found := k.GetChannel(ctx, portID, channelID)
 	if !found {
 		panic(errorsmod.Wrapf(types.ErrChannelNotFound, "port ID (%s) channel ID (%s)", portID, channelID))

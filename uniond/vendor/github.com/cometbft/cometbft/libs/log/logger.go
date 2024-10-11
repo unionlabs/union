@@ -8,11 +8,11 @@ import (
 
 // Logger is what any CometBFT library should take.
 type Logger interface {
-	Debug(msg string, keyvals ...interface{})
-	Info(msg string, keyvals ...interface{})
-	Error(msg string, keyvals ...interface{})
+	Debug(msg string, keyvals ...any)
+	Info(msg string, keyvals ...any)
+	Error(msg string, keyvals ...any)
 
-	With(keyvals ...interface{}) Logger
+	With(keyvals ...any) Logger
 }
 
 // NewSyncWriter returns a new writer that is safe for concurrent use by

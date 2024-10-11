@@ -5,9 +5,9 @@ package keyring
 
 import (
 	fmt "fmt"
-	types "github.com/cosmos/cosmos-sdk/codec/types"
 	hd "github.com/cosmos/cosmos-sdk/crypto/hd"
 	_ "github.com/cosmos/gogoproto/gogoproto"
+	any "github.com/cosmos/gogoproto/types/any"
 	proto "github.com/golang/protobuf/proto"
 	io "io"
 	math "math"
@@ -30,7 +30,7 @@ type Record struct {
 	// name represents a name of Record
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// pub_key represents a public key in any format
-	PubKey *types.Any `protobuf:"bytes,2,opt,name=pub_key,json=pubKey,proto3" json:"pub_key,omitempty"`
+	PubKey *any.Any `protobuf:"bytes,2,opt,name=pub_key,json=pubKey,proto3" json:"pub_key,omitempty"`
 	// Record contains one of the following items
 	//
 	// Types that are valid to be assigned to Item:
@@ -146,7 +146,7 @@ func (*Record) XXX_OneofWrappers() []interface{} {
 // Item is a keyring item stored in a keyring backend.
 // Local item
 type Record_Local struct {
-	PrivKey *types.Any `protobuf:"bytes,1,opt,name=priv_key,json=privKey,proto3" json:"priv_key,omitempty"`
+	PrivKey *any.Any `protobuf:"bytes,1,opt,name=priv_key,json=privKey,proto3" json:"priv_key,omitempty"`
 }
 
 func (m *Record_Local) Reset()         { *m = Record_Local{} }
@@ -807,7 +807,7 @@ func (m *Record) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.PubKey == nil {
-				m.PubKey = &types.Any{}
+				m.PubKey = &any.Any{}
 			}
 			if err := m.PubKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1033,7 +1033,7 @@ func (m *Record_Local) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.PrivKey == nil {
-				m.PrivKey = &types.Any{}
+				m.PrivKey = &any.Any{}
 			}
 			if err := m.PrivKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

@@ -18,9 +18,6 @@
 
 // Package dns implements a dns resolver to be installed as the default resolver
 // in grpc.
-//
-// Deprecated: this package is imported by grpc and should not need to be
-// imported directly by users.
 package dns
 
 import (
@@ -51,4 +48,13 @@ func SetResolvingTimeout(timeout time.Duration) {
 // Deprecated: import grpc and use resolver.Get("dns") instead.
 func NewBuilder() resolver.Builder {
 	return dns.NewBuilder()
+}
+
+// SetMinResolutionInterval sets the default minimum interval at which DNS
+// re-resolutions are allowed. This helps to prevent excessive re-resolution.
+//
+// It must be called only at application startup, before any gRPC calls are
+// made. Modifying this value after initialization is not thread-safe.
+func SetMinResolutionInterval(d time.Duration) {
+	dns.MinResolutionInterval = d
 }

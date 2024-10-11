@@ -1,16 +1,19 @@
 package simulation
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
 	"math/rand"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/types"
 
+	"cosmossdk.io/core/address"
+	stakingtypes "cosmossdk.io/x/staking/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 const (
@@ -125,13 +128,20 @@ func NewSimLegacyParamChange(subspace, key string, simVal simulation.SimValFn) s
 
 // WeightedProposalMsg defines a common struct for proposal msgs defined by external modules (i.e outside gov)
 type WeightedProposalMsg struct {
-	appParamsKey   string                    // key used to retrieve the value of the weight from the simulation application params
-	defaultWeight  int                       // default weight
-	msgSimulatorFn simulation.MsgSimulatorFn // msg simulator function
+	appParamsKey    string                     // key used to retrieve the value of the weight from the simulation application params
+	defaultWeight   int                        // default weight
+	msgSimulatorFnX simulation.MsgSimulatorFnX // msg simulator function
 }
 
+// Deprecated: use NewWeightedProposalMsgX instead
 func NewWeightedProposalMsg(appParamsKey string, defaultWeight int, msgSimulatorFn simulation.MsgSimulatorFn) simulation.WeightedProposalMsg {
-	return &WeightedProposalMsg{appParamsKey: appParamsKey, defaultWeight: defaultWeight, msgSimulatorFn: msgSimulatorFn}
+	return NewWeightedProposalMsgX(appParamsKey, defaultWeight, func(_ context.Context, r *rand.Rand, accs []simulation.Account, cdc address.Codec) (sdk.Msg, error) {
+		return msgSimulatorFn(r, accs, cdc)
+	})
+}
+
+func NewWeightedProposalMsgX(appParamsKey string, defaultWeight int, msgSimulatorFn simulation.MsgSimulatorFnX) simulation.WeightedProposalMsg {
+	return &WeightedProposalMsg{appParamsKey: appParamsKey, defaultWeight: defaultWeight, msgSimulatorFnX: msgSimulatorFn}
 }
 
 func (w WeightedProposalMsg) AppParamsKey() string {
@@ -142,8 +152,8 @@ func (w WeightedProposalMsg) DefaultWeight() int {
 	return w.defaultWeight
 }
 
-func (w WeightedProposalMsg) MsgSimulatorFn() simulation.MsgSimulatorFn {
-	return w.msgSimulatorFn
+func (w WeightedProposalMsg) MsgSimulatorFn() simulation.MsgSimulatorFnX {
+	return w.msgSimulatorFnX
 }
 
 // Legacy Proposal Content
@@ -175,8 +185,8 @@ func (w WeightedProposalContent) ContentSimulatorFn() simulation.ContentSimulato
 
 // Consensus Params
 
-// randomConsensusParams returns random simulation consensus parameters, it extracts the Evidence from the Staking genesis state.
-func randomConsensusParams(r *rand.Rand, appState json.RawMessage, cdc codec.JSONCodec, maxGas int64) *cmtproto.ConsensusParams {
+// RandomConsensusParams returns random simulation consensus parameters, it extracts the Evidence from the Staking genesis state.
+func RandomConsensusParams(r *rand.Rand, appState json.RawMessage, cdc codec.JSONCodec, maxGas int64) *cmtproto.ConsensusParams {
 	var genesisState map[string]json.RawMessage
 	err := json.Unmarshal(appState, &genesisState)
 	if err != nil {
@@ -190,19 +200,12 @@ func randomConsensusParams(r *rand.Rand, appState json.RawMessage, cdc codec.JSO
 			MaxGas:   maxGas,
 		},
 		Validator: &cmtproto.ValidatorParams{
-			PubKeyTypes: []string{types.ABCIPubKeyTypeBn254},
+			PubKeyTypes: []string{types.ABCIPubKeyTypeEd25519},
 		},
 		Evidence: &cmtproto.EvidenceParams{
 			MaxAgeNumBlocks: int64(stakingGenesisState.Params.UnbondingTime / AverageBlockTime),
 			MaxAgeDuration:  stakingGenesisState.Params.UnbondingTime,
 		},
 	}
-
-	bz, err := json.MarshalIndent(&consensusParams, "", " ")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("Selected randomly generated consensus parameters:\n%s\n", bz)
-
 	return consensusParams
 }

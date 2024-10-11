@@ -1,7 +1,7 @@
 package types
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -52,7 +52,7 @@ func (pa PermissionsForAddress) GetPermissions() []string {
 func validatePermissions(permissions ...string) error {
 	for _, perm := range permissions {
 		if strings.TrimSpace(perm) == "" {
-			return fmt.Errorf("module permission is empty")
+			return errors.New("module permission is empty")
 		}
 	}
 	return nil

@@ -14,6 +14,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"
 
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
@@ -22,7 +23,20 @@ import (
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
-var _ types.QueryServer = (*Keeper)(nil)
+var _ types.QueryServer = (*queryServer)(nil)
+
+// queryServer implements the 02-client types.QueryServer interface.
+// It embeds the client keeper to leverage store access while limiting the api of the client keeper.
+type queryServer struct {
+	*Keeper
+}
+
+// NewQueryServer returns a new 02-client types.QueryServer implementation.
+func NewQueryServer(k *Keeper) types.QueryServer {
+	return &queryServer{
+		Keeper: k,
+	}
+}
 
 // ClientState implements the Query/ClientState gRPC method
 func (k Keeper) ClientState(c context.Context, req *types.QueryClientStateRequest) (*types.QueryClientStateResponse, error) {
@@ -64,7 +78,7 @@ func (k Keeper) ClientStates(c context.Context, req *types.QueryClientStatesRequ
 	ctx := sdk.UnwrapSDKContext(c)
 
 	var clientStates types.IdentifiedClientStates
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), host.KeyClientStorePrefix)
+	store := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), host.KeyClientStorePrefix)
 
 	pageRes, err := query.FilteredPaginate(store, req.Pagination, func(key, value []byte, accumulate bool) (bool, error) {
 		// filter any metadata stored under client state key
@@ -159,7 +173,7 @@ func (k Keeper) ConsensusStates(c context.Context, req *types.QueryConsensusStat
 	ctx := sdk.UnwrapSDKContext(c)
 
 	var consensusStates []types.ConsensusStateWithHeight
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), host.FullClientKey(req.ClientId, []byte(fmt.Sprintf("%s/", host.KeyConsensusStatePrefix))))
+	store := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), host.FullClientKey(req.ClientId, []byte(fmt.Sprintf("%s/", host.KeyConsensusStatePrefix))))
 
 	pageRes, err := query.FilteredPaginate(store, req.Pagination, func(key, value []byte, accumulate bool) (bool, error) {
 		// filter any metadata stored under consensus state key
@@ -203,7 +217,7 @@ func (k Keeper) ConsensusStateHeights(c context.Context, req *types.QueryConsens
 	ctx := sdk.UnwrapSDKContext(c)
 
 	var consensusStateHeights []types.Height
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), host.FullClientKey(req.ClientId, []byte(fmt.Sprintf("%s/", host.KeyConsensusStatePrefix))))
+	store := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), host.FullClientKey(req.ClientId, []byte(fmt.Sprintf("%s/", host.KeyConsensusStatePrefix))))
 
 	pageRes, err := query.FilteredPaginate(store, req.Pagination, func(key, _ []byte, accumulate bool) (bool, error) {
 		// filter any metadata stored under consensus state key

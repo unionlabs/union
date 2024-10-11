@@ -5,15 +5,18 @@ import (
 	"fmt"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
-	dbm "github.com/cosmos/cosmos-db"
 
 	coreheader "cosmossdk.io/core/header"
+	corestore "cosmossdk.io/core/store"
+	coretesting "cosmossdk.io/core/testing"
 	"cosmossdk.io/depinject"
 	sdkmath "cosmossdk.io/math"
+	banktypes "cosmossdk.io/x/bank/types"
+	stakingtypes "cosmossdk.io/x/staking/types"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -25,8 +28,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 const DefaultGenTxGas = 10000000
@@ -34,6 +35,9 @@ const DefaultGenTxGas = 10000000
 // DefaultConsensusParams defines the default CometBFT consensus params used in
 // SimApp testing.
 var DefaultConsensusParams = &cmtproto.ConsensusParams{
+	Version: &cmtproto.VersionParams{
+		App: 1,
+	},
 	Block: &cmtproto.BlockParams{
 		MaxBytes: 200000,
 		MaxGas:   100_000_000,
@@ -45,7 +49,8 @@ var DefaultConsensusParams = &cmtproto.ConsensusParams{
 	},
 	Validator: &cmtproto.ValidatorParams{
 		PubKeyTypes: []string{
-			cmttypes.ABCIPubKeyTypeBn254,
+			cmttypes.ABCIPubKeyTypeEd25519,
+			cmttypes.ABCIPubKeyTypeSecp256k1,
 		},
 	},
 }
@@ -79,7 +84,7 @@ type StartupConfig struct {
 	BaseAppOption   runtime.BaseAppOption
 	AtGenesis       bool
 	GenesisAccounts []GenesisAccount
-	DB              dbm.DB
+	DB              corestore.KVStoreWithBatch
 }
 
 func DefaultStartUpConfig() StartupConfig {
@@ -90,7 +95,7 @@ func DefaultStartUpConfig() StartupConfig {
 		ValidatorSet:    CreateRandomValidatorSet,
 		AtGenesis:       false,
 		GenesisAccounts: []GenesisAccount{ga},
-		DB:              dbm.NewMemDB(),
+		DB:              coretesting.NewMemDB(),
 	}
 }
 
@@ -110,7 +115,7 @@ func SetupAtGenesis(appConfig depinject.Config, extraOutputs ...interface{}) (*r
 
 // NextBlock starts a new block.
 func NextBlock(app *runtime.App, ctx sdk.Context, jumpTime time.Duration) (sdk.Context, error) {
-	_, err := app.FinalizeBlock(&abci.RequestFinalizeBlock{Height: ctx.BlockHeight(), Time: ctx.BlockTime()})
+	_, err := app.FinalizeBlock(&abci.FinalizeBlockRequest{Height: ctx.BlockHeight(), Time: ctx.BlockTime()})
 	if err != nil {
 		return sdk.Context{}, err
 	}
@@ -130,11 +135,7 @@ func NextBlock(app *runtime.App, ctx sdk.Context, jumpTime time.Duration) (sdk.C
 		Time:   header.Time,
 	})
 
-	if err != nil {
-		return sdk.Context{}, err
-	}
-
-	return newCtx, err
+	return newCtx, nil
 }
 
 // SetupWithConfiguration initializes a new runtime.App. A Nop logger is set in runtime.App.
@@ -188,7 +189,7 @@ func SetupWithConfiguration(appConfig depinject.Config, startupConfig StartupCon
 	}
 
 	// init chain will set the validator set and initialize the genesis accounts
-	_, err = app.InitChain(&abci.RequestInitChain{
+	_, err = app.InitChain(&abci.InitChainRequest{
 		Validators:      []abci.ValidatorUpdate{},
 		ConsensusParams: DefaultConsensusParams,
 		AppStateBytes:   stateBytes,
@@ -199,7 +200,7 @@ func SetupWithConfiguration(appConfig depinject.Config, startupConfig StartupCon
 
 	// commit genesis changes
 	if !startupConfig.AtGenesis {
-		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		_, err = app.FinalizeBlock(&abci.FinalizeBlockRequest{
 			Height:             app.LastBlockHeight() + 1,
 			NextValidatorsHash: valSet.Hash(),
 		})
@@ -303,6 +304,15 @@ func (m AppOptionsMap) Get(key string) interface{} {
 	}
 
 	return v
+}
+
+func (m AppOptionsMap) GetString(key string) string {
+	v, ok := m[key]
+	if !ok {
+		return ""
+	}
+
+	return v.(string)
 }
 
 func NewAppOptionsWithFlagHome(homePath string) servertypes.AppOptions {

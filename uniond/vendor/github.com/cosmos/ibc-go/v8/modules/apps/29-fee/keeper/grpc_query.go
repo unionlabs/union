@@ -9,6 +9,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"
 
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
@@ -26,7 +27,7 @@ func (k Keeper) IncentivizedPackets(goCtx context.Context, req *types.QueryIncen
 	ctx := sdk.UnwrapSDKContext(goCtx).WithBlockHeight(int64(req.QueryHeight))
 
 	var identifiedPackets []types.IdentifiedPacketFees
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte(types.FeesInEscrowPrefix))
+	store := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), []byte(types.FeesInEscrowPrefix))
 	pagination, err := query.Paginate(store, req.Pagination, func(key, value []byte) error {
 		packetID, err := types.ParseKeyFeesInEscrow(types.FeesInEscrowPrefix + string(key))
 		if err != nil {
@@ -77,7 +78,7 @@ func (k Keeper) IncentivizedPacketsForChannel(goCtx context.Context, req *types.
 
 	var packets []*types.IdentifiedPacketFees
 	keyPrefix := types.KeyFeesInEscrowChannelPrefix(req.PortId, req.ChannelId)
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), keyPrefix)
+	store := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), keyPrefix)
 	pagination, err := query.Paginate(store, req.Pagination, func(key, value []byte) error {
 		packetID, err := types.ParseKeyFeesInEscrow(string(keyPrefix) + string(key))
 		if err != nil {
@@ -224,7 +225,7 @@ func (k Keeper) FeeEnabledChannels(goCtx context.Context, req *types.QueryFeeEna
 	ctx := sdk.UnwrapSDKContext(goCtx).WithBlockHeight(int64(req.QueryHeight))
 
 	var feeEnabledChannels []types.FeeEnabledChannel
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte(types.FeeEnabledKeyPrefix))
+	store := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), []byte(types.FeeEnabledKeyPrefix))
 	pagination, err := query.Paginate(store, req.Pagination, func(key, value []byte) error {
 		portID, channelID, err := types.ParseKeyFeeEnabled(types.FeeEnabledKeyPrefix + string(key))
 		if err != nil {

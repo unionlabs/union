@@ -42,17 +42,17 @@ So for moderately sized messages it tops out at about 15 GB/sec. Also for small 
 
 ### ARM Performance
 
-Below are the single core results on an EC2 m6g.4xlarge (Graviton2) instance for 256 bit outputs:
+Below are the single core results on an EC2 c7g.4xlarge (Graviton3) instance for 256 bit outputs:
 
 ```
-BenchmarkSum256_16                 96.82 MB/s
-BenchmarkSum256_64                445.35 MB/s
-BenchmarkSum256_1K               2782.46 MB/s
-BenchmarkSum256_8K               4083.58 MB/s
-BenchmarkSum256_1M               4986.41 MB/s
-BenchmarkSum256_5M               4992.72 MB/s
-BenchmarkSum256_10M              4993.32 MB/s
-BenchmarkSum256_25M              4992.55 MB/s
+BenchmarkSum256_16                143.66 MB/s
+BenchmarkSum256_64                628.75 MB/s
+BenchmarkSum256_1K               3621.71 MB/s
+BenchmarkSum256_8K               5039.64 MB/s
+BenchmarkSum256_1M               5279.79 MB/s
+BenchmarkSum256_5M               5474.60 MB/s
+BenchmarkSum256_10M              5621.73 MB/s
+BenchmarkSum256_25M              5250.47 MB/s
 ```
 
 ### ppc64le Performance

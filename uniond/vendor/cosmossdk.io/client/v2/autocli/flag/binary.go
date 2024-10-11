@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"os"
 
-	"github.com/cockroachdb/errors"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -14,7 +14,7 @@ type binaryType struct{}
 
 var _ Value = (*fileBinaryValue)(nil)
 
-func (f binaryType) NewValue(context.Context, *Builder) Value {
+func (f binaryType) NewValue(*context.Context, *Builder) Value {
 	return &fileBinaryValue{}
 }
 

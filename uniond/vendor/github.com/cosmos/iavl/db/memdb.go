@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	corestore "cosmossdk.io/core/store"
 	"github.com/google/btree"
 )
 
@@ -164,19 +165,19 @@ func (db *MemDB) Stats() map[string]string {
 }
 
 // NewBatch implements DB.
-func (db *MemDB) NewBatch() Batch {
+func (db *MemDB) NewBatch() corestore.Batch {
 	return newMemDBBatch(db)
 }
 
 // NewBatchWithSize implements DB.
 // It does the same thing as NewBatch because we can't pre-allocate memDBBatch
-func (db *MemDB) NewBatchWithSize(_ int) Batch {
+func (db *MemDB) NewBatchWithSize(_ int) corestore.Batch {
 	return newMemDBBatch(db)
 }
 
 // Iterator implements DB.
 // Takes out a read-lock on the database until the iterator is closed.
-func (db *MemDB) Iterator(start, end []byte) (Iterator, error) {
+func (db *MemDB) Iterator(start, end []byte) (corestore.Iterator, error) {
 	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
 		return nil, errKeyEmpty
 	}
@@ -185,7 +186,7 @@ func (db *MemDB) Iterator(start, end []byte) (Iterator, error) {
 
 // ReverseIterator implements DB.
 // Takes out a read-lock on the database until the iterator is closed.
-func (db *MemDB) ReverseIterator(start, end []byte) (Iterator, error) {
+func (db *MemDB) ReverseIterator(start, end []byte) (corestore.Iterator, error) {
 	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
 		return nil, errKeyEmpty
 	}
@@ -193,7 +194,7 @@ func (db *MemDB) ReverseIterator(start, end []byte) (Iterator, error) {
 }
 
 // IteratorNoMtx makes an iterator with no mutex.
-func (db *MemDB) IteratorNoMtx(start, end []byte) (Iterator, error) {
+func (db *MemDB) IteratorNoMtx(start, end []byte) (corestore.Iterator, error) {
 	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
 		return nil, errKeyEmpty
 	}
@@ -201,7 +202,7 @@ func (db *MemDB) IteratorNoMtx(start, end []byte) (Iterator, error) {
 }
 
 // ReverseIteratorNoMtx makes an iterator with no mutex.
-func (db *MemDB) ReverseIteratorNoMtx(start, end []byte) (Iterator, error) {
+func (db *MemDB) ReverseIteratorNoMtx(start, end []byte) (corestore.Iterator, error) {
 	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
 		return nil, errKeyEmpty
 	}
@@ -225,7 +226,7 @@ type memDBIterator struct {
 	useMtx bool
 }
 
-var _ Iterator = (*memDBIterator)(nil)
+var _ corestore.Iterator = (*memDBIterator)(nil)
 
 // newMemDBIterator creates a new memDBIterator.
 func newMemDBIterator(db *MemDB, start []byte, end []byte, reverse bool) *memDBIterator {
@@ -378,7 +379,7 @@ type memDBBatch struct {
 	size int
 }
 
-var _ Batch = (*memDBBatch)(nil)
+var _ corestore.Batch = (*memDBBatch)(nil)
 
 // newMemDBBatch creates a new memDBBatch
 func newMemDBBatch(db *MemDB) *memDBBatch {

@@ -18,7 +18,7 @@ const (
 	DefaultGasLimit      = 200000
 	GasFlagAuto          = "auto"
 
-	// DefaultKeyringBackend
+	// DefaultKeyringBackend defines the default keyring backend to be used
 	DefaultKeyringBackend = keyring.BackendOS
 
 	// BroadcastSync defines a tx broadcasting mode where the client waits for
@@ -73,7 +73,8 @@ const (
 	FlagPageKey          = "page-key"
 	FlagOffset           = "offset"
 	FlagCountTotal       = "count-total"
-	FlagTimeoutHeight    = "timeout-height"
+	FlagTimeoutTimestamp = "timeout-timestamp"
+	FlagUnordered        = "unordered"
 	FlagKeyAlgorithm     = "algo"
 	FlagKeyType          = "key-type"
 	FlagFeePayer         = "fee-payer"
@@ -85,7 +86,7 @@ const (
 	// FlagOutput is the flag to set the output format.
 	// This differs from FlagOutputDocument that is used to set the output file.
 	FlagOutput = "output"
-	// Logging flags
+	// FlagLogLevel defines the flag for setting the log level
 	FlagLogLevel   = "log_level"
 	FlagLogFormat  = "log_format"
 	FlagLogNoColor = "log_no_color"
@@ -125,7 +126,7 @@ func AddTxFlagsToCmd(cmd *cobra.Command) {
 	f.Uint64P(FlagSequence, "s", 0, "The sequence number of the signing account (offline mode only)")
 	f.String(FlagNote, "", "Note to add a description to the transaction (previously --memo)")
 	f.String(FlagFees, "", "Fees to pay along with transaction; eg: 10uatom")
-	f.String(FlagGasPrices, "", "Gas prices in decimal format to determine the transaction fee (e.g. 0.1uatom)")
+	f.String(FlagGasPrices, "", "Determine the transaction fee by multiplying max gas units by gas prices (e.g. 0.1uatom), rounding up to nearest denom unit")
 	f.String(FlagNode, "tcp://localhost:26657", "<host>:<port> to CometBFT rpc interface for this chain")
 	f.Bool(FlagUseLedger, false, "Use a connected Ledger device")
 	f.Float64(FlagGasAdjustment, DefaultGasAdjustment, "adjustment factor to be multiplied against the estimate returned by the tx simulation; if the gas limit is set manually this flag is ignored ")
@@ -135,7 +136,8 @@ func AddTxFlagsToCmd(cmd *cobra.Command) {
 	f.Bool(FlagOffline, false, "Offline mode (does not allow any online functionality)")
 	f.BoolP(FlagSkipConfirmation, "y", false, "Skip tx broadcasting prompt confirmation")
 	f.String(FlagSignMode, "", "Choose sign mode (direct|amino-json|direct-aux|textual), this is an advanced feature")
-	f.Uint64(FlagTimeoutHeight, 0, "Set a block timeout height to prevent the tx from being committed past a certain height")
+	f.Int64(FlagTimeoutTimestamp, 0, "Set a block timeout timestamp to prevent the tx from being committed past a certain time")
+	f.Bool(FlagUnordered, false, "Enable unordered transaction delivery; must be used in conjunction with --timeout-timestamp")
 	f.String(FlagFeePayer, "", "Fee payer pays fees for the transaction instead of deducting from the signer")
 	f.String(FlagFeeGranter, "", "Fee granter grants fees for the transaction")
 	f.String(FlagTip, "", "Tip is the amount that is going to be transferred to the fee payer on the target chain. This flag is only valid when used with --aux, and is ignored if the target chain didn't enable the TipDecorator")

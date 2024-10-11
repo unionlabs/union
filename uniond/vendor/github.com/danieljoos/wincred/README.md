@@ -4,7 +4,7 @@ wincred
 Go wrapper around the Windows Credential Manager API functions.
 
 [![GitHub release](https://img.shields.io/github/release/danieljoos/wincred.svg?style=flat-square)](https://github.com/danieljoos/wincred/releases/latest)
-[![Test Status](https://img.shields.io/github/workflow/status/danieljoos/wincred/test?label=test&logo=github&style=flat-square)](https://github.com/danieljoos/wincred/actions?query=workflow%3Atest)
+[![Test Status](https://img.shields.io/github/actions/workflow/status/danieljoos/wincred/test.yml?label=test&logo=github&style=flat-square)](https://github.com/danieljoos/wincred/actions?query=workflow%3Atest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/danieljoos/wincred)](https://goreportcard.com/report/github.com/danieljoos/wincred)
 [![Codecov](https://img.shields.io/codecov/c/github/danieljoos/wincred?logo=codecov&style=flat-square)](https://codecov.io/gh/danieljoos/wincred)
 [![PkgGoDev](https://img.shields.io/badge/go.dev-docs-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/danieljoos/wincred)

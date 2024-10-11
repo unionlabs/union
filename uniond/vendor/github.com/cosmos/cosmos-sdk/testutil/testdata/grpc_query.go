@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"testing"
 
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
+	"github.com/cosmos/gogoproto/types/any/test"
+
 	"github.com/cosmos/gogoproto/proto"
-	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 	"gotest.tools/v3/assert"
 
 	"github.com/cosmos/cosmos-sdk/codec/types"
@@ -22,7 +25,7 @@ type QueryImpl struct{}
 var _ QueryServer = QueryImpl{}
 
 func (e QueryImpl) TestAny(_ context.Context, request *TestAnyRequest) (*TestAnyResponse, error) {
-	animal, ok := request.AnyAnimal.GetCachedValue().(Animal)
+	animal, ok := request.AnyAnimal.GetCachedValue().(test.Animal)
 	if !ok {
 		return nil, fmt.Errorf("expected Animal")
 	}
@@ -47,16 +50,16 @@ func (e QueryImpl) SayHello(_ context.Context, request *SayHelloRequest) (*SayHe
 	return &SayHelloResponse{Greeting: greeting}, nil
 }
 
-var _ types.UnpackInterfacesMessage = &TestAnyRequest{}
+var _ gogoprotoany.UnpackInterfacesMessage = &TestAnyRequest{}
 
-func (m *TestAnyRequest) UnpackInterfaces(unpacker types.AnyUnpacker) error {
-	var animal Animal
+func (m *TestAnyRequest) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
+	var animal test.Animal
 	return unpacker.UnpackAny(m.AnyAnimal, &animal)
 }
 
-var _ types.UnpackInterfacesMessage = &TestAnyResponse{}
+var _ gogoprotoany.UnpackInterfacesMessage = &TestAnyResponse{}
 
-func (m *TestAnyResponse) UnpackInterfaces(unpacker types.AnyUnpacker) error {
+func (m *TestAnyResponse) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return m.HasAnimal.UnpackInterfaces(unpacker)
 }
 
@@ -67,13 +70,14 @@ func (m *TestAnyResponse) UnpackInterfaces(unpacker types.AnyUnpacker) error {
 // `gasOverwrite` is set to true, we also check that this consumed
 // gas value is equal to the hardcoded `gasConsumed`.
 func DeterministicIterations[request, response proto.Message](
-	ctx sdk.Context,
 	t *testing.T,
+	ctx sdk.Context,
 	req request,
 	grpcFn func(context.Context, request, ...grpc.CallOption) (response, error),
 	gasConsumed uint64,
 	gasOverwrite bool,
 ) {
+	t.Helper()
 	before := ctx.GasMeter().GasConsumed()
 	prevRes, err := grpcFn(ctx, req)
 	assert.NilError(t, err)

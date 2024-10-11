@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"context"
 
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	"cosmossdk.io/x/gov/types/v1beta1"
 
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 )
@@ -29,38 +30,39 @@ func NewLegacyWasmProposalHandlerX(k types.ContractOpsKeeper, enabledProposalTyp
 	for i := range enabledProposalTypes {
 		enabledTypes[string(enabledProposalTypes[i])] = struct{}{}
 	}
-	return func(ctx sdk.Context, content v1beta1.Content) error {
+	return func(ctx context.Context, content v1beta1.Content) error {
 		if content == nil {
 			return errorsmod.Wrap(sdkerrors.ErrUnknownRequest, "content must not be empty")
 		}
 		if _, ok := enabledTypes[content.ProposalType()]; !ok {
 			return errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "unsupported wasm proposal content type: %q", content.ProposalType())
 		}
+		sdkCtx := ctx.(sdk.Context);
 		switch c := content.(type) {
 		case *types.StoreCodeProposal:
-			return handleStoreCodeProposal(ctx, k, *c)
+			return handleStoreCodeProposal(sdkCtx, k, *c)
 		case *types.InstantiateContractProposal:
-			return handleInstantiateProposal(ctx, k, *c)
+			return handleInstantiateProposal(sdkCtx, k, *c)
 		case *types.InstantiateContract2Proposal:
-			return handleInstantiate2Proposal(ctx, k, *c)
+			return handleInstantiate2Proposal(sdkCtx, k, *c)
 		case *types.MigrateContractProposal:
-			return handleMigrateProposal(ctx, k, *c)
+			return handleMigrateProposal(sdkCtx, k, *c)
 		case *types.SudoContractProposal:
-			return handleSudoProposal(ctx, k, *c)
+			return handleSudoProposal(sdkCtx, k, *c)
 		case *types.ExecuteContractProposal:
-			return handleExecuteProposal(ctx, k, *c)
+			return handleExecuteProposal(sdkCtx, k, *c)
 		case *types.UpdateAdminProposal:
-			return handleUpdateAdminProposal(ctx, k, *c)
+			return handleUpdateAdminProposal(sdkCtx, k, *c)
 		case *types.ClearAdminProposal:
-			return handleClearAdminProposal(ctx, k, *c)
+			return handleClearAdminProposal(sdkCtx, k, *c)
 		case *types.PinCodesProposal:
-			return handlePinCodesProposal(ctx, k, *c)
+			return handlePinCodesProposal(sdkCtx, k, *c)
 		case *types.UnpinCodesProposal:
-			return handleUnpinCodesProposal(ctx, k, *c)
+			return handleUnpinCodesProposal(sdkCtx, k, *c)
 		case *types.UpdateInstantiateConfigProposal:
-			return handleUpdateInstantiateConfigProposal(ctx, k, *c)
+			return handleUpdateInstantiateConfigProposal(sdkCtx, k, *c)
 		case *types.StoreAndInstantiateContractProposal:
-			return handleStoreAndInstantiateContractProposal(ctx, k, *c)
+			return handleStoreAndInstantiateContractProposal(sdkCtx, k, *c)
 		default:
 			return errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized wasm proposal content type: %T", c)
 		}

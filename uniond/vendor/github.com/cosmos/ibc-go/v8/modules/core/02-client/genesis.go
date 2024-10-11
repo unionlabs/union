@@ -1,10 +1,9 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"fmt"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
 	"github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -13,7 +12,7 @@ import (
 
 // InitGenesis initializes the ibc client submodule's state from a provided genesis
 // state.
-func InitGenesis(ctx sdk.Context, k keeper.Keeper, gs types.GenesisState) {
+func InitGenesis(ctx context.Context, k *keeper.Keeper, gs types.GenesisState) error {
 	if err := gs.Params.Validate(); err != nil {
 		panic(fmt.Errorf("invalid ibc client genesis state parameters: %v", err))
 	}
@@ -42,7 +41,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, gs types.GenesisState) {
 		for _, consState := range cs.ConsensusStates {
 			consensusState, ok := consState.ConsensusState.GetCachedValue().(exported.ConsensusState)
 			if !ok {
-				panic(fmt.Errorf("invalid consensus state with client ID %s at height %s", cs.ClientId, consState.Height))
+				return fmt.Errorf("invalid consensus state with client ID %s at height %s", cs.ClientId, consState.Height)
 			}
 
 			k.SetClientConsensusState(ctx, cs.ClientId, consState.Height, consensusState)
@@ -54,16 +53,18 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, gs types.GenesisState) {
 	// if the localhost already exists in state (included in the genesis file),
 	// it must be overwritten to ensure its stored height equals the context block height
 	if err := k.CreateLocalhostClient(ctx); err != nil {
-		panic(fmt.Errorf("failed to initialise localhost client: %s", err.Error()))
+		return fmt.Errorf("failed to initialise localhost client: %s", err.Error())
 	}
+
+	return nil
 }
 
 // ExportGenesis returns the ibc client submodule's exported genesis.
-func ExportGenesis(ctx sdk.Context, k keeper.Keeper) types.GenesisState {
+func ExportGenesis(ctx context.Context, k *keeper.Keeper) (types.GenesisState, error) {
 	genClients := k.GetAllGenesisClients(ctx)
 	clientsMetadata, err := k.GetAllClientMetadata(ctx, genClients)
 	if err != nil {
-		panic(err)
+		return types.GenesisState{}, err
 	}
 	return types.GenesisState{
 		Clients:          genClients,
@@ -73,5 +74,5 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) types.GenesisState {
 		// Warning: CreateLocalhost is deprecated
 		CreateLocalhost:    false,
 		NextClientSequence: k.GetNextClientSequence(ctx),
-	}
+	}, nil
 }

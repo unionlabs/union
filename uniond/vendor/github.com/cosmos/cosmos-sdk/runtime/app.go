@@ -3,13 +3,16 @@ package runtime
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"golang.org/x/exp/slices"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	cmtcrypto "github.com/cometbft/cometbft/crypto"
+	cmted25519 "github.com/cometbft/cometbft/crypto/ed25519"
+	"google.golang.org/grpc"
 
 	runtimev1alpha1 "cosmossdk.io/api/cosmos/app/runtime/v1alpha1"
-	appv1alpha1 "cosmossdk.io/api/cosmos/app/v1alpha1"
 	"cosmossdk.io/core/appmodule"
+	"cosmossdk.io/core/registry"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 
@@ -25,8 +28,12 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/x/auth/ante/unorderedtx"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 )
+
+// KeyGenF is a function that generates a private key for use by comet.
+type KeyGenF = func() (cmtcrypto.PrivKey, error)
 
 // App is a wrapper around BaseApp and ModuleManager that can be used in hybrid
 // app.go/app config scenarios or directly as a servertypes.Application instance.
@@ -40,17 +47,18 @@ import (
 type App struct {
 	*baseapp.BaseApp
 
-	ModuleManager     *module.Manager
-	configurator      module.Configurator
+	ModuleManager      *module.Manager
+	UnorderedTxManager *unorderedtx.Manager
+
+	configurator      module.Configurator //nolint:staticcheck // SA1019: Configurator is deprecated but still used in runtime v1.
 	config            *runtimev1alpha1.Module
 	storeKeys         []storetypes.StoreKey
 	interfaceRegistry codectypes.InterfaceRegistry
 	cdc               codec.Codec
-	amino             *codec.LegacyAmino
-	basicManager      module.BasicManager
+	amino             registry.AminoRegistrar
 	baseAppOptions    []BaseAppOption
 	msgServiceRouter  *baseapp.MsgServiceRouter
-	appConfig         *appv1alpha1.Config
+	grpcQueryRouter   *baseapp.GRPCQueryRouter
 	logger            log.Logger
 	// initChainer is the init chainer function defined by the app config.
 	// this is only required if the chain wants to add special InitChainer logic.
@@ -67,18 +75,18 @@ func (a *App) RegisterModules(modules ...module.AppModule) error {
 			return fmt.Errorf("AppModule named %q already exists", name)
 		}
 
-		if _, ok := a.basicManager[name]; ok {
-			return fmt.Errorf("AppModuleBasic named %q already exists", name)
+		a.ModuleManager.Modules[name] = appModule
+		if mod, ok := appModule.(appmodule.HasRegisterInterfaces); ok {
+			mod.RegisterInterfaces(a.interfaceRegistry)
 		}
 
-		a.ModuleManager.Modules[name] = appModule
-		a.basicManager[name] = appModule
-		appModule.RegisterInterfaces(a.interfaceRegistry)
-		appModule.RegisterLegacyAminoCodec(a.amino)
+		if mod, ok := appModule.(module.HasAminoCodec); ok {
+			mod.RegisterLegacyAminoCodec(a.amino)
+		}
 
-		if module, ok := appModule.(module.HasServices); ok {
-			module.RegisterServices(a.configurator)
-		} else if module, ok := appModule.(appmodule.HasServices); ok {
+		if mod, ok := appModule.(module.HasServices); ok {
+			mod.RegisterServices(a.configurator)
+		} else if module, ok := appModule.(hasServicesV1); ok {
 			if err := module.RegisterServices(a.configurator); err != nil {
 				return err
 			}
@@ -90,7 +98,7 @@ func (a *App) RegisterModules(modules ...module.AppModule) error {
 
 // RegisterStores registers the provided store keys.
 // This method should only be used for registering extra stores
-// wiich is necessary for modules that not registered using the app config.
+// which is necessary for modules that not registered using the app config.
 // To be used in combination of RegisterModules.
 func (a *App) RegisterStores(keys ...storetypes.StoreKey) error {
 	a.storeKeys = append(a.storeKeys, keys...)
@@ -154,8 +162,25 @@ func (a *App) Load(loadLatest bool) error {
 	return nil
 }
 
+// Close closes all necessary application resources.
+// It implements servertypes.Application.
+func (a *App) Close() error {
+	// the unordered tx manager could be nil (unlikely but possible)
+	// if the app has no app options supplied.
+	if a.UnorderedTxManager != nil {
+		if err := a.UnorderedTxManager.Close(); err != nil {
+			return err
+		}
+	}
+
+	return a.BaseApp.Close()
+}
+
 // PreBlocker application updates every pre block
-func (a *App) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+func (a *App) PreBlocker(ctx sdk.Context, _ *abci.FinalizeBlockRequest) error {
+	if a.UnorderedTxManager != nil {
+		a.UnorderedTxManager.OnNewBlock(ctx.BlockTime())
+	}
 	return a.ModuleManager.PreBlock(ctx)
 }
 
@@ -171,21 +196,25 @@ func (a *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 
 // Precommiter application updates every commit
 func (a *App) Precommiter(ctx sdk.Context) {
-	a.ModuleManager.Precommit(ctx)
+	if err := a.ModuleManager.Precommit(ctx); err != nil {
+		panic(err)
+	}
 }
 
 // PrepareCheckStater application updates every commit
 func (a *App) PrepareCheckStater(ctx sdk.Context) {
-	a.ModuleManager.PrepareCheckState(ctx)
+	if err := a.ModuleManager.PrepareCheckState(ctx); err != nil {
+		panic(err)
+	}
 }
 
 // InitChainer initializes the chain.
-func (a *App) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+func (a *App) InitChainer(ctx sdk.Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error) {
 	var genesisState map[string]json.RawMessage
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
-		panic(err)
+		return nil, err
 	}
-	return a.ModuleManager.InitGenesis(ctx, a.cdc, genesisState)
+	return a.ModuleManager.InitGenesis(ctx, genesisState)
 }
 
 // RegisterAPIRoutes registers all application module routes with the provided
@@ -202,7 +231,7 @@ func (a *App) RegisterAPIRoutes(apiSvr *api.Server, _ config.APIConfig) {
 	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// Register grpc-gateway routes for all modules.
-	a.basicManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	a.ModuleManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 }
 
 // RegisterTxService implements the Application.RegisterTxService method.
@@ -227,7 +256,7 @@ func (a *App) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
 }
 
 // Configurator returns the app's configurator.
-func (a *App) Configurator() module.Configurator {
+func (a *App) Configurator() module.Configurator { //nolint:staticcheck // SA1019: Configurator is deprecated but still used in runtime v1.
 	return a.configurator
 }
 
@@ -236,14 +265,9 @@ func (a *App) LoadHeight(height int64) error {
 	return a.LoadVersion(height)
 }
 
-// DefaultGenesis returns a default genesis from the registered AppModuleBasic's.
+// DefaultGenesis returns a default genesis from the registered AppModule's.
 func (a *App) DefaultGenesis() map[string]json.RawMessage {
-	return a.basicManager.DefaultGenesis(a.cdc)
-}
-
-// GetStoreKeys returns all the stored store keys.
-func (a *App) GetStoreKeys() []storetypes.StoreKey {
-	return a.storeKeys
+	return a.ModuleManager.DefaultGenesis()
 }
 
 // SetInitChainer sets the init chainer function
@@ -251,6 +275,23 @@ func (a *App) GetStoreKeys() []storetypes.StoreKey {
 func (a *App) SetInitChainer(initChainer sdk.InitChainer) {
 	a.initChainer = initChainer
 	a.BaseApp.SetInitChainer(initChainer)
+}
+
+// GetStoreKeys returns all the stored store keys.
+func (a *App) GetStoreKeys() []storetypes.StoreKey {
+	return a.storeKeys
+}
+
+// GetKey returns the KVStoreKey for the provided store key.
+//
+// NOTE: This should only be used in testing.
+func (a *App) GetKey(storeKey string) *storetypes.KVStoreKey {
+	sk := a.UnsafeFindStoreKey(storeKey)
+	kvStoreKey, ok := sk.(*storetypes.KVStoreKey)
+	if !ok {
+		return nil
+	}
+	return kvStoreKey
 }
 
 // UnsafeFindStoreKey fetches a registered StoreKey from the App in linear time.
@@ -266,3 +307,16 @@ func (a *App) UnsafeFindStoreKey(storeKey string) storetypes.StoreKey {
 }
 
 var _ servertypes.Application = &App{}
+
+// hasServicesV1 is the interface for registering service in baseapp Cosmos SDK.
+// This API is part of core/appmodule but commented out for dependencies.
+type hasServicesV1 interface {
+	RegisterServices(grpc.ServiceRegistrar) error
+}
+
+// ValidatorKeyProvider returns a function that generates a private key for use by comet.
+func (a *App) ValidatorKeyProvider() KeyGenF {
+	return func() (cmtcrypto.PrivKey, error) {
+		return cmted25519.GenPrivKey(), nil
+	}
+}

@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	wasmvm "github.com/CosmWasm/wasmvm/v2"
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 
 	"cosmossdk.io/core/appmodule"
+	"cosmossdk.io/core/registry"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -34,7 +34,6 @@ import (
 
 var (
 	_ module.AppModuleBasic      = AppModuleBasic{}
-	_ module.AppModuleSimulation = AppModule{}
 )
 
 // Module init related flags
@@ -48,7 +47,7 @@ const (
 // AppModuleBasic defines the basic application module used by the wasm module.
 type AppModuleBasic struct{}
 
-func (b AppModuleBasic) RegisterLegacyAminoCodec(amino *codec.LegacyAmino) {
+func (b AppModuleBasic) RegisterLegacyAminoCodec(amino registry.AminoRegistrar) {
 	types.RegisterLegacyAminoCodec(amino)
 }
 
@@ -178,7 +177,7 @@ func (AppModule) QuerierRoute() string {
 
 // InitGenesis performs genesis initialization for the wasm module. It returns
 // no validator updates.
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []appmodule.ValidatorUpdate {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	validators, err := keeper.InitGenesis(ctx, am.keeper, genesisState)

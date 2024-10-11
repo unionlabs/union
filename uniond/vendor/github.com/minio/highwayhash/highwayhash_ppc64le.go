@@ -2,7 +2,8 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
-//+build !noasm,!appengine
+//go:build !noasm && !appengine
+// +build !noasm,!appengine
 
 package highwayhash
 
@@ -10,6 +11,8 @@ var (
 	useSSE4 = false
 	useAVX2 = false
 	useNEON = false
+	useSVE  = false
+	useSVE2 = false
 	useVMX  = true
 )
 

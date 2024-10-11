@@ -6,9 +6,9 @@ package testdata
 import (
 	context "context"
 	fmt "fmt"
-	types "github.com/cosmos/cosmos-sdk/codec/types"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	proto "github.com/cosmos/gogoproto/proto"
+	any "github.com/cosmos/gogoproto/types/any"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -205,7 +205,7 @@ func (m *SayHelloResponse) GetGreeting() string {
 }
 
 type TestAnyRequest struct {
-	AnyAnimal *types.Any `protobuf:"bytes,1,opt,name=any_animal,json=anyAnimal,proto3" json:"any_animal,omitempty"`
+	AnyAnimal *any.Any `protobuf:"bytes,1,opt,name=any_animal,json=anyAnimal,proto3" json:"any_animal,omitempty"`
 }
 
 func (m *TestAnyRequest) Reset()         { *m = TestAnyRequest{} }
@@ -241,7 +241,7 @@ func (m *TestAnyRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_TestAnyRequest proto.InternalMessageInfo
 
-func (m *TestAnyRequest) GetAnyAnimal() *types.Any {
+func (m *TestAnyRequest) GetAnyAnimal() *any.Any {
 	if m != nil {
 		return m.AnyAnimal
 	}
@@ -1154,7 +1154,7 @@ func (m *TestAnyRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.AnyAnimal == nil {
-				m.AnyAnimal = &types.Any{}
+				m.AnyAnimal = &any.Any{}
 			}
 			if err := m.AnyAnimal.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

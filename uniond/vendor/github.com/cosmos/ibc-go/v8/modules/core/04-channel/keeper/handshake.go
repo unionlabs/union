@@ -1,12 +1,12 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -21,7 +21,7 @@ import (
 // a module on another chain. The counterparty channel identifier is validated to be
 // empty in msg validation.
 func (k Keeper) ChanOpenInit(
-	ctx sdk.Context,
+	ctx context.Context,
 	order types.Order,
 	connectionHops []string,
 	portID string,
@@ -79,7 +79,7 @@ func (k Keeper) ChanOpenInit(
 // The channel is set in state and all the associated Send and Recv sequences are set to 1.
 // An event is emitted for the handshake step.
 func (k Keeper) WriteOpenInitChannel(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	order types.Order,
@@ -104,7 +104,7 @@ func (k Keeper) WriteOpenInitChannel(
 // ChanOpenTry is called by a module to accept the first step of a channel opening
 // handshake initiated by a module on another chain.
 func (k Keeper) ChanOpenTry(
-	ctx sdk.Context,
+	ctx context.Context,
 	order types.Order,
 	connectionHops []string,
 	portID string,
@@ -189,7 +189,7 @@ func (k Keeper) ChanOpenTry(
 // The channel is set in state. If a previous channel state did not exist, all the Send and Recv
 // sequences are set to 1. An event is emitted for the handshake step.
 func (k Keeper) WriteOpenTryChannel(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	order types.Order,
@@ -215,7 +215,7 @@ func (k Keeper) WriteOpenTryChannel(
 // ChanOpenAck is called by the handshake-originating module to acknowledge the
 // acceptance of the initial request by the counterparty module on the other chain.
 func (k Keeper) ChanOpenAck(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	chanCap *capabilitytypes.Capability,
@@ -267,7 +267,7 @@ func (k Keeper) ChanOpenAck(
 // WriteOpenAckChannel writes an updated channel state for the successful OpenAck handshake step.
 // An event is emitted for the handshake step.
 func (k Keeper) WriteOpenAckChannel(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID,
 	counterpartyVersion,
@@ -293,7 +293,7 @@ func (k Keeper) WriteOpenAckChannel(
 // ChanOpenConfirm is called by the handshake-accepting module to confirm the acknowledgement
 // of the handshake-originating module on the other chain and finish the channel opening handshake.
 func (k Keeper) ChanOpenConfirm(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	chanCap *capabilitytypes.Capability,
@@ -347,7 +347,7 @@ func (k Keeper) ChanOpenConfirm(
 // WriteOpenConfirmChannel writes an updated channel state for the successful OpenConfirm handshake step.
 // An event is emitted for the handshake step.
 func (k Keeper) WriteOpenConfirmChannel(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 ) {
@@ -373,7 +373,7 @@ func (k Keeper) WriteOpenConfirmChannel(
 // ChanCloseInit is called by either module to close their end of the channel. Once
 // closed, channels cannot be reopened.
 func (k Keeper) ChanCloseInit(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	chanCap *capabilitytypes.Capability,
@@ -427,7 +427,7 @@ func (k Keeper) ChanCloseInit(
 // ChanCloseConfirm is called by the counterparty module to close their end of the
 // channel, since the other end has been closed.
 func (k Keeper) ChanCloseConfirm(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	chanCap *capabilitytypes.Capability,
@@ -444,7 +444,7 @@ func (k Keeper) ChanCloseConfirm(
 //
 // This function will be removed in ibc-go v9.0.0 and the API of ChanCloseConfirm will be updated.
 func (k Keeper) ChanCloseConfirmWithCounterpartyUpgradeSequence(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	chanCap *capabilitytypes.Capability,

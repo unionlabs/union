@@ -1,12 +1,12 @@
 package exported
 
 import (
+	"context"
 	proto "github.com/cosmos/gogoproto/proto"
 
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // Status represents the status of a client
@@ -53,7 +53,7 @@ type ClientState interface {
 	Validate() error
 
 	// Status must return the status of the client. Only Active clients are allowed to process packets.
-	Status(ctx sdk.Context, clientStore storetypes.KVStore, cdc codec.BinaryCodec) Status
+	Status(ctx context.Context, clientStore storetypes.KVStore, cdc codec.BinaryCodec) Status
 
 	// ExportMetadata must export metadata stored within the clientStore for genesis export
 	ExportMetadata(clientStore storetypes.KVStore) []GenesisMetadata
@@ -65,7 +65,7 @@ type ClientState interface {
 
 	// GetTimestampAtHeight must return the timestamp for the consensus state associated with the provided height.
 	GetTimestampAtHeight(
-		ctx sdk.Context,
+		ctx context.Context,
 		clientStore storetypes.KVStore,
 		cdc codec.BinaryCodec,
 		height Height,
@@ -73,12 +73,12 @@ type ClientState interface {
 
 	// Initialize is called upon client creation, it allows the client to perform validation on the initial consensus state and set the
 	// client state, consensus state and any client-specific metadata necessary for correct light client operation in the provided client store.
-	Initialize(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, consensusState ConsensusState) error
+	Initialize(ctx context.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, consensusState ConsensusState) error
 
 	// VerifyMembership is a generic proof verification method which verifies a proof of the existence of a value at a given CommitmentPath at the specified height.
 	// The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
 	VerifyMembership(
-		ctx sdk.Context,
+		ctx context.Context,
 		clientStore storetypes.KVStore,
 		cdc codec.BinaryCodec,
 		height Height,
@@ -92,7 +92,7 @@ type ClientState interface {
 	// VerifyNonMembership is a generic proof verification method which verifies the absence of a given CommitmentPath at a specified height.
 	// The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
 	VerifyNonMembership(
-		ctx sdk.Context,
+		ctx context.Context,
 		clientStore storetypes.KVStore,
 		cdc codec.BinaryCodec,
 		height Height,
@@ -106,22 +106,22 @@ type ClientState interface {
 	// It must handle each type of ClientMessage appropriately. Calls to CheckForMisbehaviour, UpdateState, and UpdateStateOnMisbehaviour
 	// will assume that the content of the ClientMessage has been verified and can be trusted. An error should be returned
 	// if the ClientMessage fails to verify.
-	VerifyClientMessage(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg ClientMessage) error
+	VerifyClientMessage(ctx context.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg ClientMessage) error
 
 	// Checks for evidence of a misbehaviour in Header or Misbehaviour type. It assumes the ClientMessage
 	// has already been verified.
-	CheckForMisbehaviour(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg ClientMessage) bool
+	CheckForMisbehaviour(ctx context.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg ClientMessage) bool
 
 	// UpdateStateOnMisbehaviour should perform appropriate state changes on a client state given that misbehaviour has been detected and verified
-	UpdateStateOnMisbehaviour(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg ClientMessage)
+	UpdateStateOnMisbehaviour(ctx context.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg ClientMessage)
 
 	// UpdateState updates and stores as necessary any associated information for an IBC client, such as the ClientState and corresponding ConsensusState.
 	// Upon successful update, a list of consensus heights is returned. It assumes the ClientMessage has already been verified.
-	UpdateState(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg ClientMessage) []Height
+	UpdateState(ctx context.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg ClientMessage) []Height
 
 	// CheckSubstituteAndUpdateState must verify that the provided substitute may be used to update the subject client.
 	// The light client must set the updated client and consensus states within the clientStore for the subject client.
-	CheckSubstituteAndUpdateState(ctx sdk.Context, cdc codec.BinaryCodec, subjectClientStore, substituteClientStore storetypes.KVStore, substituteClient ClientState) error
+	CheckSubstituteAndUpdateState(ctx context.Context, cdc codec.BinaryCodec, subjectClientStore, substituteClientStore storetypes.KVStore, substituteClient ClientState) error
 
 	// Upgrade functions
 	// NOTE: proof heights are not included as upgrade to a new revision is expected to pass only on the last
@@ -131,7 +131,7 @@ type ClientState interface {
 	// may be cancelled or modified before the last planned height.
 	// If the upgrade is verified, the upgraded client and consensus states must be set in the client store.
 	VerifyUpgradeAndUpdateState(
-		ctx sdk.Context,
+		ctx context.Context,
 		cdc codec.BinaryCodec,
 		store storetypes.KVStore,
 		newClient ClientState,

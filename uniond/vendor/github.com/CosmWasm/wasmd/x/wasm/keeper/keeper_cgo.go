@@ -47,10 +47,10 @@ func NewKeeper(
 		accountPruner:        NewVestingCoinBurner(bankKeeper),
 		portKeeper:           portKeeper,
 		capabilityKeeper:     capabilityKeeper,
-		messenger:            NewDefaultMessageHandler(router, ics4Wrapper, channelKeeper, capabilityKeeper, bankKeeper, cdc, portSource),
 		queryGasLimit:        wasmConfig.SmartQueryGasLimit,
 		gasRegister:          types.NewDefaultWasmGasRegister(),
 		maxQueryStackSize:    types.DefaultMaxQueryStackSize,
+		maxCallDepth:         types.DefaultMaxCallDepth,
 		acceptedAccountTypes: defaultAcceptedAccountTypes,
 		params:               collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
 		propagateGovAuthorization: map[types.AuthorizationPolicyAction]struct{}{
@@ -58,11 +58,14 @@ func NewKeeper(
 		},
 		authority: authority,
 	}
+	keeper.messenger = NewDefaultMessageHandler(keeper, router, ics4Wrapper, channelKeeper, capabilityKeeper, bankKeeper, cdc, portSource)
 	keeper.wasmVMQueryHandler = DefaultQueryPlugins(bankKeeper, stakingKeeper, distrKeeper, channelKeeper, keeper)
 	preOpts, postOpts := splitOpts(opts)
 	for _, o := range preOpts {
 		o.apply(keeper)
 	}
+	// always wrap the messenger, even if it was replaced by an option
+	keeper.messenger = callDepthMessageHandler{keeper.messenger, keeper.maxCallDepth}
 	// only set the wasmvm if no one set this in the options
 	// NewVM does a lot, so better not to create it and silently drop it.
 	if keeper.wasmVM == nil {

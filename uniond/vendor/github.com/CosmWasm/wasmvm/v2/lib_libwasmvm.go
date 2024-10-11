@@ -111,6 +111,12 @@ func (vm *VM) GetMetrics() (*types.Metrics, error) {
 	return api.GetMetrics(vm.cache)
 }
 
+// GetPinnedMetrics returns some internal metrics of pinned contracts for monitoring purposes.
+// The order of entries is non-deterministic and the values are node-specific. Don't use this in consensus-critical contexts.
+func (vm *VM) GetPinnedMetrics() (*types.PinnedMetrics, error) {
+	return api.GetPinnedMetrics(vm.cache)
+}
+
 // Instantiate will create a new contract based on the given Checksum.
 // We can set the initMsg (contract "genesis") here, and it then receives
 // an account and address and can be invoked (Execute) many times.
@@ -532,6 +538,75 @@ func (vm *VM) IBCPacketTimeout(
 	return &result, gasReport.UsedInternally, nil
 }
 
+// IBCSourceCallback is available on IBC-enabled contracts with the corresponding entrypoint
+// and should be called when the response (ack or timeout) for an outgoing callbacks-enabled packet
+// (previously sent by this contract) is received.
+func (vm *VM) IBCSourceCallback(
+	checksum Checksum,
+	env types.Env,
+	msg types.IBCSourceCallbackMsg,
+	store KVStore,
+	goapi GoAPI,
+	querier Querier,
+	gasMeter GasMeter,
+	gasLimit uint64,
+	deserCost types.UFraction,
+) (*types.IBCBasicResult, uint64, error) {
+	envBin, err := json.Marshal(env)
+	if err != nil {
+		return nil, 0, err
+	}
+	msgBin, err := json.Marshal(msg)
+	if err != nil {
+		return nil, 0, err
+	}
+	data, gasReport, err := api.IBCSourceCallback(vm.cache, checksum, envBin, msgBin, &gasMeter, store, &goapi, &querier, gasLimit, vm.printDebug)
+	if err != nil {
+		return nil, gasReport.UsedInternally, err
+	}
+
+	var result types.IBCBasicResult
+	err = DeserializeResponse(gasLimit, deserCost, &gasReport, data, &result)
+	if err != nil {
+		return nil, gasReport.UsedInternally, err
+	}
+	return &result, gasReport.UsedInternally, nil
+}
+
+// IBCDestinationCallback is available on IBC-enabled contracts with the corresponding entrypoint
+// and should be called when an incoming callbacks-enabled IBC packet is received.
+func (vm *VM) IBCDestinationCallback(
+	checksum Checksum,
+	env types.Env,
+	msg types.IBCDestinationCallbackMsg,
+	store KVStore,
+	goapi GoAPI,
+	querier Querier,
+	gasMeter GasMeter,
+	gasLimit uint64,
+	deserCost types.UFraction,
+) (*types.IBCBasicResult, uint64, error) {
+	envBin, err := json.Marshal(env)
+	if err != nil {
+		return nil, 0, err
+	}
+	msgBin, err := json.Marshal(msg)
+	if err != nil {
+		return nil, 0, err
+	}
+	data, gasReport, err := api.IBCDestinationCallback(vm.cache, checksum, envBin, msgBin, &gasMeter, store, &goapi, &querier, gasLimit, vm.printDebug)
+	if err != nil {
+		return nil, gasReport.UsedInternally, err
+	}
+
+	var result types.IBCBasicResult
+	err = DeserializeResponse(gasLimit, deserCost, &gasReport, data, &result)
+	if err != nil {
+		return nil, gasReport.UsedInternally, err
+	}
+	return &result, gasReport.UsedInternally, nil
+}
+
 func compileCost(code WasmCode) uint64 {
 	// CostPerByte is how much CosmWasm gas is charged *per byte* for compiling WASM code.
 	// Benchmarks and numbers (in SDK Gas) were discussed in:
@@ -545,6 +620,14 @@ func compileCost(code WasmCode) uint64 {
 type hasSubMessages interface {
 	SubMessages() []types.SubMsg
 }
+
+// make sure the types implement the interface
+// cannot put these next to the types, as the interface is private
+var (
+	_ hasSubMessages = (*types.IBCBasicResult)(nil)
+	_ hasSubMessages = (*types.IBCReceiveResult)(nil)
+	_ hasSubMessages = (*types.ContractResult)(nil)
+)
 
 func DeserializeResponse(gasLimit uint64, deserCost types.UFraction, gasReport *types.GasReport, data []byte, response any) error {
 	gasForDeserialization := deserCost.Mul(uint64(len(data))).Floor()

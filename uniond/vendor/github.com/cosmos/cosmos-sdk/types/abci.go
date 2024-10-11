@@ -1,11 +1,11 @@
 package types
 
 import (
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 )
 
 // InitChainer initializes application state at genesis
-type InitChainer func(ctx Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error)
+type InitChainer func(ctx Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error)
 
 // PrepareCheckStater runs code during commit after the block has been committed, and the `checkState`
 // has been branched for the new block.
@@ -15,20 +15,25 @@ type PrepareCheckStater func(ctx Context)
 type Precommiter func(ctx Context)
 
 // PeerFilter responds to p2p filtering queries from Tendermint
-type PeerFilter func(info string) *abci.ResponseQuery
+type PeerFilter func(info string) *abci.QueryResponse
 
 // ProcessProposalHandler defines a function type alias for processing a proposer
-type ProcessProposalHandler func(Context, *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error)
+type ProcessProposalHandler func(Context, *abci.ProcessProposalRequest) (*abci.ProcessProposalResponse, error)
 
 // PrepareProposalHandler defines a function type alias for preparing a proposal
-type PrepareProposalHandler func(Context, *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error)
+type PrepareProposalHandler func(Context, *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error)
+
+// CheckTxHandler defines a function type alias for executing logic before transactions are executed.
+// `RunTx` is a function type alias for executing logic before transactions are executed.
+// The passed in runtx does not override antehandlers, the execution mode is not passed into runtx to avoid overriding the execution mode.
+type CheckTxHandler func(func(txBytes []byte, tx Tx) (gInfo GasInfo, result *Result, anteEvents []abci.Event, err error), *abci.CheckTxRequest) (*abci.CheckTxResponse, error)
 
 // ExtendVoteHandler defines a function type alias for extending a pre-commit vote.
-type ExtendVoteHandler func(Context, *abci.RequestExtendVote) (*abci.ResponseExtendVote, error)
+type ExtendVoteHandler func(Context, *abci.ExtendVoteRequest) (*abci.ExtendVoteResponse, error)
 
 // VerifyVoteExtensionHandler defines a function type alias for verifying a
 // pre-commit vote extension.
-type VerifyVoteExtensionHandler func(Context, *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error)
+type VerifyVoteExtensionHandler func(Context, *abci.VerifyVoteExtensionRequest) (*abci.VerifyVoteExtensionResponse, error)
 
 // PreBlocker runs code before the `BeginBlocker` and defines a function type alias for executing logic right
 // before FinalizeBlock is called (but after its context has been set up). It is
@@ -36,7 +41,7 @@ type VerifyVoteExtensionHandler func(Context, *abci.RequestVerifyVoteExtension) 
 // persist their results in state.
 //
 // Note: returning an error will make FinalizeBlock fail.
-type PreBlocker func(Context, *abci.RequestFinalizeBlock) (*ResponsePreBlock, error)
+type PreBlocker func(Context, *abci.FinalizeBlockRequest) error
 
 // BeginBlocker defines a function type alias for executing application
 // business logic before transactions are executed.
@@ -65,12 +70,4 @@ type EndBlock struct {
 // BeginBlock defines a type which contains beginBlock events
 type BeginBlock struct {
 	Events []abci.Event
-}
-
-type ResponsePreBlock struct {
-	ConsensusParamsChanged bool
-}
-
-func (r ResponsePreBlock) IsConsensusParamsChanged() bool {
-	return r.ConsensusParamsChanged
 }

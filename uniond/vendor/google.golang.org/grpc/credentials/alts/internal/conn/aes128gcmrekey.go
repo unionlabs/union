@@ -51,7 +51,7 @@ type aes128gcmRekey struct {
 
 // NewAES128GCMRekey creates an instance that uses aes128gcm with rekeying
 // for ALTS record. The key argument should be 44 bytes, the first 32 bytes
-// are used as a key for HKDF-expand and the remainining 12 bytes are used
+// are used as a key for HKDF-expand and the remaining 12 bytes are used
 // as a random mask for the counter.
 func NewAES128GCMRekey(side core.Side, key []byte) (ALTSRecordCrypto, error) {
 	inCounter := NewInCounter(side, overflowLenAES128GCMRekey)

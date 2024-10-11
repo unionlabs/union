@@ -3,10 +3,9 @@ package gogoreflection
 import (
 	"reflect"
 
+	_ "github.com/cosmos/cosmos-proto"        // look above
 	_ "github.com/cosmos/gogoproto/gogoproto" // required so it does register the gogoproto file descriptor
 	gogoproto "github.com/cosmos/gogoproto/proto"
-
-	_ "github.com/cosmos/cosmos-proto" // look above
 	"github.com/golang/protobuf/proto" //nolint:staticcheck // migrate in a future pr
 )
 
@@ -42,12 +41,12 @@ func getExtension(extID int32, m proto.Message) *gogoproto.ExtensionDesc {
 	for id, desc := range proto.RegisteredExtensions(m) { //nolint:staticcheck // keep for backward compatibility
 		if id == extID {
 			return &gogoproto.ExtensionDesc{
-				ExtendedType:  desc.ExtendedType,  //nolint:staticcheck // keep for backward compatibility
-				ExtensionType: desc.ExtensionType, //nolint:staticcheck // keep for backward compatibility
-				Field:         desc.Field,         //nolint:staticcheck // keep for backward compatibility
-				Name:          desc.Name,          //nolint:staticcheck // keep for backward compatibility
-				Tag:           desc.Tag,           //nolint:staticcheck // keep for backward compatibility
-				Filename:      desc.Filename,      //nolint:staticcheck // keep for backward compatibility
+				ExtendedType:  desc.ExtendedType,
+				ExtensionType: desc.ExtensionType,
+				Field:         desc.Field,
+				Name:          desc.Name,
+				Tag:           desc.Tag,
+				Filename:      desc.Filename,
 			}
 		}
 	}

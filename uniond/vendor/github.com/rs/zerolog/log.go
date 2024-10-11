@@ -24,7 +24,7 @@
 //
 // Sub-loggers let you chain loggers with additional context:
 //
-//     sublogger := log.With().Str("component": "foo").Logger()
+//     sublogger := log.With().Str("component", "foo").Logger()
 //     sublogger.Info().Msg("hello world")
 //     // Output: {"time":1494567715,"level":"info","message":"hello world","component":"foo"}
 //

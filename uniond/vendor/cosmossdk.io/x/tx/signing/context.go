@@ -3,6 +3,7 @@ package signing
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	cosmos_proto "github.com/cosmos/cosmos-proto"
 	gogoproto "github.com/cosmos/gogoproto/proto"
@@ -29,7 +30,7 @@ type Context struct {
 	typeResolver          protoregistry.MessageTypeResolver
 	addressCodec          address.Codec
 	validatorAddressCodec address.Codec
-	getSignersFuncs       map[protoreflect.FullName]GetSignersFunc
+	getSignersFuncs       sync.Map
 	customGetSignerFuncs  map[protoreflect.FullName]GetSignersFunc
 	maxRecursionDepth     int
 }
@@ -110,7 +111,7 @@ func NewContext(options Options) (*Context, error) {
 		typeResolver:          protoTypes,
 		addressCodec:          options.AddressCodec,
 		validatorAddressCodec: options.ValidatorAddressCodec,
-		getSignersFuncs:       map[protoreflect.FullName]GetSignersFunc{},
+		getSignersFuncs:       sync.Map{},
 		customGetSignerFuncs:  customGetSignerFuncs,
 		maxRecursionDepth:     options.MaxRecursionDepth,
 	}
@@ -334,14 +335,17 @@ func (c *Context) getGetSignersFn(messageDescriptor protoreflect.MessageDescript
 	if ok {
 		return f, nil
 	}
-	f, ok = c.getSignersFuncs[messageDescriptor.FullName()]
+
+	loadedFn, ok := c.getSignersFuncs.Load(messageDescriptor.FullName())
 	if !ok {
 		var err error
 		f, err = c.makeGetSignersFunc(messageDescriptor)
 		if err != nil {
 			return nil, err
 		}
-		c.getSignersFuncs[messageDescriptor.FullName()] = f
+		c.getSignersFuncs.Store(messageDescriptor.FullName(), f)
+	} else {
+		f = loadedFn.(GetSignersFunc)
 	}
 
 	return f, nil

@@ -45,8 +45,8 @@ func (z *Int) Dec() string {
 	)
 	for {
 		// Obtain Q and R for divisor
-		var quot Int
-		rem := udivrem(quot[:], y[:], divisor)
+		var quot, rem Int
+		udivrem(quot[:], y[:], divisor, &rem)
 		y.Set(&quot) // Set Q for next loop
 		// Convert the R to ascii representation
 		buf = strconv.AppendUint(buf[:0], rem.Uint64(), 10)
@@ -79,8 +79,8 @@ func (z *Int) PrettyDec(separator byte) string {
 		comma   = 0
 	)
 	for {
-		var quot Int
-		rem := udivrem(quot[:], y[:], divisor)
+		var quot, rem Int
+		udivrem(quot[:], y[:], divisor, &rem)
 		y.Set(&quot) // Set Q for next loop
 		buf = strconv.AppendUint(buf[:0], rem.Uint64(), 10)
 		for j := len(buf) - 1; j >= 0; j-- {

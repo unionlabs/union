@@ -2,8 +2,6 @@ package store
 
 import "errors"
 
-var (
-	// ErrLightBlockNotFound is returned when a store does not have the
-	// requested header.
-	ErrLightBlockNotFound = errors.New("light block not found")
-)
+// ErrLightBlockNotFound is returned when a store does not have the
+// requested header.
+var ErrLightBlockNotFound = errors.New("light block not found")

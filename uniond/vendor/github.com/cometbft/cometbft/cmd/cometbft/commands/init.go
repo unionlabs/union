@@ -6,8 +6,10 @@ import (
 	"github.com/spf13/cobra"
 
 	cfg "github.com/cometbft/cometbft/config"
-	cmtos "github.com/cometbft/cometbft/libs/os"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	kt "github.com/cometbft/cometbft/internal/keytypes"
+	cmtos "github.com/cometbft/cometbft/internal/os"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/types"
@@ -19,6 +21,10 @@ var InitFilesCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize CometBFT",
 	RunE:  initFiles,
+}
+
+func init() {
+	InitFilesCmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, fmt.Sprintf("private key type (one of %s)", kt.SupportedKeyTypesStr()))
 }
 
 func initFiles(*cobra.Command, []string) error {
@@ -35,7 +41,11 @@ func initFilesWithConfig(config *cfg.Config) error {
 		logger.Info("Found private validator", "keyFile", privValKeyFile,
 			"stateFile", privValStateFile)
 	} else {
-		pv = privval.GenFilePV(privValKeyFile, privValStateFile)
+		var err error
+		pv, err = privval.GenFilePV(privValKeyFile, privValStateFile, genPrivKeyFromFlag)
+		if err != nil {
+			return fmt.Errorf("can't generate file pv: %w", err)
+		}
 		pv.Save()
 		logger.Info("Generated private validator", "keyFile", privValKeyFile,
 			"stateFile", privValStateFile)

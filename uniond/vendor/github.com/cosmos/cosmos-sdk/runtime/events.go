@@ -3,7 +3,7 @@ package runtime
 import (
 	"context"
 
-	"google.golang.org/protobuf/runtime/protoiface"
+	gogoproto "github.com/cosmos/gogoproto/proto"
 
 	"cosmossdk.io/core/event"
 
@@ -34,12 +34,12 @@ func NewEventManager(ctx context.Context) event.Manager {
 
 // Emit emits an typed event that is defined in the protobuf file.
 // In the future these events will be added to consensus.
-func (e Events) Emit(ctx context.Context, event protoiface.MessageV1) error {
+func (e Events) Emit(event gogoproto.Message) error {
 	return e.EventManagerI.EmitTypedEvent(event)
 }
 
 // EmitKV emits a key value pair event.
-func (e Events) EmitKV(ctx context.Context, eventType string, attrs ...event.Attribute) error {
+func (e Events) EmitKV(eventType string, attrs ...event.Attribute) error {
 	attributes := make([]sdk.Attribute, 0, len(attrs))
 
 	for _, attr := range attrs {
@@ -48,10 +48,4 @@ func (e Events) EmitKV(ctx context.Context, eventType string, attrs ...event.Att
 
 	e.EventManagerI.EmitEvents(sdk.Events{sdk.NewEvent(eventType, attributes...)})
 	return nil
-}
-
-// Emit emits an typed event that is defined in the protobuf file.
-// In the future these events will be added to consensus.
-func (e Events) EmitNonConsensus(ctx context.Context, event protoiface.MessageV1) error {
-	return e.EventManagerI.EmitTypedEvent(event)
 }

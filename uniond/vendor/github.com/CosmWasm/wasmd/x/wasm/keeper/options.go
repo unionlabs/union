@@ -158,6 +158,12 @@ func WithMaxQueryStackSize(m uint32) Option {
 	})
 }
 
+func WithMaxCallDepth(m uint32) Option {
+	return optsFn(func(k *Keeper) {
+		k.maxCallDepth = m
+	})
+}
+
 // WithAcceptedAccountTypesOnContractInstantiation sets the accepted account types. Account types of this list won't be overwritten or cause a failure
 // when they exist for an address on contract instantiation.
 //

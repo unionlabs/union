@@ -10,11 +10,11 @@ import (
 
 // Unmarshal unmarshals JSON into the given value, using Amino-compatible JSON encoding (strings
 // for 64-bit numbers, and type wrappers for registered types).
-func Unmarshal(bz []byte, v interface{}) error {
+func Unmarshal(bz []byte, v any) error {
 	return decode(bz, v)
 }
 
-func decode(bz []byte, v interface{}) error {
+func decode(bz []byte, v any) error {
 	if len(bz) == 0 {
 		return errors.New("cannot decode empty bytes")
 	}
@@ -115,7 +115,6 @@ func decodeReflectList(bz []byte, rv reflect.Value) error {
 				return fmt.Errorf("got %v bytes, expected %v", len(buf), rv.Len())
 			}
 			reflect.Copy(rv, reflect.ValueOf(buf))
-
 		} else if err := decodeStdlib(bz, rv); err != nil {
 			return err
 		}

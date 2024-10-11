@@ -89,6 +89,9 @@ var (
 
 	// ErrVMError means an error occurred in wasmvm (not in the contract itself, but in the host environment)
 	ErrVMError = errorsmod.Register(DefaultCodespace, 29, "wasmvm error")
+
+	// ErrExceedMaxCallDepth error if max message stack size is exceeded
+	ErrExceedMaxCallDepth = errorsmod.Register(DefaultCodespace, 30, "max call depth exceeded")
 )
 
 // WasmVMErrorable mapped error type in wasmvm and are not redacted

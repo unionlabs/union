@@ -6,6 +6,8 @@ import (
 	"sort"
 	"time"
 
+	"cosmossdk.io/core/address"
+	"cosmossdk.io/core/appmodule"
 	sdkmath "cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -16,27 +18,31 @@ import (
 // AppModuleSimulation defines the standard functions that every module should expose
 // for the SDK blockchain simulator
 type AppModuleSimulation interface {
-	// randomized genesis states
+	// GenerateGenesisState randomized genesis states
 	GenerateGenesisState(input *SimulationState)
 
-	// register a func to decode the each module's defined types from their corresponding store key
+	// RegisterStoreDecoder register a func to decode the each module's defined types from their corresponding store key
 	RegisterStoreDecoder(simulation.StoreDecoderRegistry)
-
-	// simulation operations (i.e msgs) with their respective weight
-	WeightedOperations(simState SimulationState) []simulation.WeightedOperation
 }
+type (
+	HasLegacyWeightedOperations interface {
+		// WeightedOperations simulation operations (i.e msgs) with their respective weight
+		WeightedOperations(simState SimulationState) []simulation.WeightedOperation
+	}
+	// HasLegacyProposalMsgs defines the messages that can be used to simulate governance (v1) proposals
+	// Deprecated replaced by HasProposalMsgsX
+	HasLegacyProposalMsgs interface {
+		// ProposalMsgs msg functions used to simulate governance proposals
+		ProposalMsgs(simState SimulationState) []simulation.WeightedProposalMsg
+	}
 
-// HasProposalMsgs defines the messages that can be used to simulate governance (v1) proposals
-type HasProposalMsgs interface {
-	// msg functions used to simulate governance proposals
-	ProposalMsgs(simState SimulationState) []simulation.WeightedProposalMsg
-}
-
-// HasProposalContents defines the contents that can be used to simulate legacy governance (v1beta1) proposals
-type HasProposalContents interface {
-	// content functions used to simulate governance proposals
-	ProposalContents(simState SimulationState) []simulation.WeightedProposalContent //nolint:staticcheck // legacy v1beta1 governance
-}
+	// HasLegacyProposalContents defines the contents that can be used to simulate legacy governance (v1beta1) proposals
+	// Deprecated replaced by HasProposalMsgsX
+	HasLegacyProposalContents interface {
+		// ProposalContents content functions used to simulate governance proposals
+		ProposalContents(simState SimulationState) []simulation.WeightedProposalContent //nolint:staticcheck // legacy v1beta1 governance
+	}
+)
 
 // SimulationManager defines a simulation manager that provides the high level utility
 // for managing and executing simulation functionalities for a group of modules
@@ -61,15 +67,14 @@ func NewSimulationManager(modules ...AppModuleSimulation) *SimulationManager {
 // with the same moduleName.
 // Then it attempts to cast every provided AppModule into an AppModuleSimulation.
 // If the cast succeeds, its included, otherwise it is excluded.
-func NewSimulationManagerFromAppModules(modules map[string]interface{}, overrideModules map[string]AppModuleSimulation) *SimulationManager {
-	simModules := []AppModuleSimulation{}
+func NewSimulationManagerFromAppModules(modules map[string]appmodule.AppModule, overrideModules map[string]AppModuleSimulation) *SimulationManager {
 	appModuleNamesSorted := make([]string, 0, len(modules))
 	for moduleName := range modules {
 		appModuleNamesSorted = append(appModuleNamesSorted, moduleName)
 	}
-
 	sort.Strings(appModuleNamesSorted)
 
+	var simModules []AppModuleSimulation
 	for _, moduleName := range appModuleNamesSorted {
 		// for every module, see if we override it. If so, use override.
 		// Else, if we can cast the app module into a simulation module add it.
@@ -93,21 +98,8 @@ func NewSimulationManagerFromAppModules(modules map[string]interface{}, override
 func (sm *SimulationManager) GetProposalContents(simState SimulationState) []simulation.WeightedProposalContent {
 	wContents := make([]simulation.WeightedProposalContent, 0, len(sm.Modules))
 	for _, module := range sm.Modules {
-		if module, ok := module.(HasProposalContents); ok {
+		if module, ok := module.(HasLegacyProposalContents); ok {
 			wContents = append(wContents, module.ProposalContents(simState)...)
-		}
-	}
-
-	return wContents
-}
-
-// GetProposalMsgs returns each module's proposal msg generator function
-// with their default operation weight and key.
-func (sm *SimulationManager) GetProposalMsgs(simState SimulationState) []simulation.WeightedProposalMsg {
-	wContents := make([]simulation.WeightedProposalMsg, 0, len(sm.Modules))
-	for _, module := range sm.Modules {
-		if module, ok := module.(HasProposalMsgs); ok {
-			wContents = append(wContents, module.ProposalMsgs(simState)...)
 		}
 	}
 
@@ -129,21 +121,13 @@ func (sm *SimulationManager) GenerateGenesisStates(simState *SimulationState) {
 	}
 }
 
-// WeightedOperations returns all the modules' weighted operations of an application
-func (sm *SimulationManager) WeightedOperations(simState SimulationState) []simulation.WeightedOperation {
-	wOps := make([]simulation.WeightedOperation, 0, len(sm.Modules))
-	for _, module := range sm.Modules {
-		wOps = append(wOps, module.WeightedOperations(simState)...)
-	}
-
-	return wOps
-}
-
 // SimulationState is the input parameters used on each of the module's randomized
 // GenesisState generator function
 type SimulationState struct {
 	AppParams         simulation.AppParams
 	Cdc               codec.JSONCodec                // application codec
+	AddressCodec      address.Codec                  // address codec
+	ValidatorCodec    address.Codec                  // validator address codec
 	TxConfig          client.TxConfig                // Shared TxConfig; this is expensive to create and stateless, so create it once up front.
 	Rand              *rand.Rand                     // random number
 	GenState          map[string]json.RawMessage     // genesis state
@@ -154,7 +138,4 @@ type SimulationState struct {
 	GenTimestamp      time.Time                      // genesis timestamp
 	UnbondTime        time.Duration                  // staking unbond time stored to use it as the slashing maximum evidence duration
 	LegacyParamChange []simulation.LegacyParamChange // simulated parameter changes from modules
-	//nolint:staticcheck //	legacy used for testing
-	LegacyProposalContents []simulation.WeightedProposalContent // proposal content generator functions with their default weight and app sim key
-	ProposalMsgs           []simulation.WeightedProposalMsg     // proposal msg generator functions with their default weight and app sim key
 }

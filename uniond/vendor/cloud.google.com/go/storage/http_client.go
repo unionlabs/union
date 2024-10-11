@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -74,9 +75,10 @@ func newHTTPStorageClient(ctx context.Context, opts ...storageOption) (storageCl
 		// Prepend default options to avoid overriding options passed by the user.
 		o = append([]option.ClientOption{option.WithScopes(ScopeFullControl, "https://www.googleapis.com/auth/cloud-platform"), option.WithUserAgent(userAgent)}, o...)
 
-		o = append(o, internaloption.WithDefaultEndpoint("https://storage.googleapis.com/storage/v1/"))
-		o = append(o, internaloption.WithDefaultMTLSEndpoint("https://storage.mtls.googleapis.com/storage/v1/"))
-
+		o = append(o, internaloption.WithDefaultEndpointTemplate("https://storage.UNIVERSE_DOMAIN/storage/v1/"),
+			internaloption.WithDefaultMTLSEndpoint("https://storage.mtls.googleapis.com/storage/v1/"),
+			internaloption.WithDefaultUniverseDomain("googleapis.com"),
+		)
 		// Don't error out here. The user may have passed in their own HTTP
 		// client which does not auth with ADC or other common conventions.
 		c, err := transport.Creds(ctx, o...)
@@ -105,12 +107,12 @@ func newHTTPStorageClient(ctx context.Context, opts ...storageOption) (storageCl
 		// Append the emulator host as default endpoint for the user
 		o = append([]option.ClientOption{option.WithoutAuthentication()}, o...)
 
-		o = append(o, internaloption.WithDefaultEndpoint(endpoint))
+		o = append(o, internaloption.WithDefaultEndpointTemplate(endpoint))
 		o = append(o, internaloption.WithDefaultMTLSEndpoint(endpoint))
 	}
 	s.clientOption = o
 
-	// htransport selects the correct endpoint among WithEndpoint (user override), WithDefaultEndpoint, and WithDefaultMTLSEndpoint.
+	// htransport selects the correct endpoint among WithEndpoint (user override), WithDefaultEndpointTemplate, and WithDefaultMTLSEndpoint.
 	hc, ep, err := htransport.NewClient(ctx, s.clientOption...)
 	if err != nil {
 		return nil, fmt.Errorf("dialing: %w", err)
@@ -174,7 +176,6 @@ func (c *httpStorageClient) CreateBucket(ctx context.Context, project, bucket st
 		bkt.Location = "US"
 	}
 	req := c.raw.Buckets.Insert(project, bkt)
-	setClientHeader(req.Header())
 	if attrs != nil && attrs.PredefinedACL != "" {
 		req.PredefinedAcl(attrs.PredefinedACL)
 	}
@@ -205,7 +206,6 @@ func (c *httpStorageClient) ListBuckets(ctx context.Context, project string, opt
 
 	fetch := func(pageSize int, pageToken string) (token string, err error) {
 		req := c.raw.Buckets.List(it.projectID)
-		setClientHeader(req.Header())
 		req.Projection("full")
 		req.Prefix(it.Prefix)
 		req.PageToken(pageToken)
@@ -243,7 +243,6 @@ func (c *httpStorageClient) ListBuckets(ctx context.Context, project string, opt
 func (c *httpStorageClient) DeleteBucket(ctx context.Context, bucket string, conds *BucketConditions, opts ...storageOption) error {
 	s := callSettings(c.settings, opts...)
 	req := c.raw.Buckets.Delete(bucket)
-	setClientHeader(req.Header())
 	if err := applyBucketConds("httpStorageClient.DeleteBucket", conds, req); err != nil {
 		return err
 	}
@@ -257,7 +256,6 @@ func (c *httpStorageClient) DeleteBucket(ctx context.Context, bucket string, con
 func (c *httpStorageClient) GetBucket(ctx context.Context, bucket string, conds *BucketConditions, opts ...storageOption) (*BucketAttrs, error) {
 	s := callSettings(c.settings, opts...)
 	req := c.raw.Buckets.Get(bucket).Projection("full")
-	setClientHeader(req.Header())
 	err := applyBucketConds("httpStorageClient.GetBucket", conds, req)
 	if err != nil {
 		return nil, err
@@ -285,7 +283,6 @@ func (c *httpStorageClient) UpdateBucket(ctx context.Context, bucket string, uat
 	s := callSettings(c.settings, opts...)
 	rb := uattrs.toRawBucket()
 	req := c.raw.Buckets.Patch(bucket, rb).Projection("full")
-	setClientHeader(req.Header())
 	err := applyBucketConds("httpStorageClient.UpdateBucket", conds, req)
 	if err != nil {
 		return nil, err
@@ -335,7 +332,9 @@ func (c *httpStorageClient) ListObjects(ctx context.Context, bucket string, q *Q
 	}
 	fetch := func(pageSize int, pageToken string) (string, error) {
 		req := c.raw.Objects.List(bucket)
-		setClientHeader(req.Header())
+		if it.query.SoftDeleted {
+			req.SoftDeleted(it.query.SoftDeleted)
+		}
 		projection := it.query.Projection
 		if projection == ProjectionDefault {
 			projection = ProjectionFull
@@ -348,6 +347,7 @@ func (c *httpStorageClient) ListObjects(ctx context.Context, bucket string, q *Q
 		req.Versions(it.query.Versions)
 		req.IncludeTrailingDelimiter(it.query.IncludeTrailingDelimiter)
 		req.MatchGlob(it.query.MatchGlob)
+		req.IncludeFoldersAsPrefixes(it.query.IncludeFoldersAsPrefixes)
 		if selection := it.query.toFieldSelection(); selection != "" {
 			req.Fields("nextPageToken", googleapi.Field(selection))
 		}
@@ -406,18 +406,22 @@ func (c *httpStorageClient) DeleteObject(ctx context.Context, bucket, object str
 	return err
 }
 
-func (c *httpStorageClient) GetObject(ctx context.Context, bucket, object string, gen int64, encryptionKey []byte, conds *Conditions, opts ...storageOption) (*ObjectAttrs, error) {
+func (c *httpStorageClient) GetObject(ctx context.Context, params *getObjectParams, opts ...storageOption) (*ObjectAttrs, error) {
 	s := callSettings(c.settings, opts...)
-	req := c.raw.Objects.Get(bucket, object).Projection("full").Context(ctx)
-	if err := applyConds("Attrs", gen, conds, req); err != nil {
+	req := c.raw.Objects.Get(params.bucket, params.object).Projection("full").Context(ctx)
+	if err := applyConds("Attrs", params.gen, params.conds, req); err != nil {
 		return nil, err
 	}
 	if s.userProject != "" {
 		req.UserProject(s.userProject)
 	}
-	if err := setEncryptionHeaders(req.Header(), encryptionKey, false); err != nil {
+	if err := setEncryptionHeaders(req.Header(), params.encryptionKey, false); err != nil {
 		return nil, err
 	}
+	if params.softDeleted {
+		req.SoftDeleted(params.softDeleted)
+	}
+
 	var obj *raw.Object
 	var err error
 	err = run(ctx, func(ctx context.Context) error {
@@ -544,6 +548,33 @@ func (c *httpStorageClient) UpdateObject(ctx context.Context, params *updateObje
 	return newObject(obj), nil
 }
 
+func (c *httpStorageClient) RestoreObject(ctx context.Context, params *restoreObjectParams, opts ...storageOption) (*ObjectAttrs, error) {
+	s := callSettings(c.settings, opts...)
+	req := c.raw.Objects.Restore(params.bucket, params.object, params.gen).Context(ctx)
+	// Do not set the generation here since it's not an optional condition; it gets set above.
+	if err := applyConds("RestoreObject", defaultGen, params.conds, req); err != nil {
+		return nil, err
+	}
+	if s.userProject != "" {
+		req.UserProject(s.userProject)
+	}
+	if params.copySourceACL {
+		req.CopySourceAcl(params.copySourceACL)
+	}
+	if err := setEncryptionHeaders(req.Header(), params.encryptionKey, false); err != nil {
+		return nil, err
+	}
+
+	var obj *raw.Object
+	var err error
+	err = run(ctx, func(ctx context.Context) error { obj, err = req.Context(ctx).Do(); return err }, s.retry, s.idempotent)
+	var e *googleapi.Error
+	if ok := errors.As(err, &e); ok && e.Code == http.StatusNotFound {
+		return nil, ErrObjectNotExist
+	}
+	return newObject(obj), err
+}
+
 // Default Object ACL methods.
 
 func (c *httpStorageClient) DeleteDefaultObjectACL(ctx context.Context, bucket string, entity ACLEntity, opts ...storageOption) error {
@@ -629,7 +660,7 @@ func (c *httpStorageClient) UpdateBucketACL(ctx context.Context, bucket string, 
 	}, s.retry, s.idempotent)
 }
 
-// configureACLCall sets the context, user project and headers on the apiary library call.
+// configureACLCall sets the context and user project on the apiary library call.
 // This will panic if the call does not have the correct methods.
 func configureACLCall(ctx context.Context, userProject string, call interface{ Header() http.Header }) {
 	vc := reflect.ValueOf(call)
@@ -637,7 +668,6 @@ func configureACLCall(ctx context.Context, userProject string, call interface{ H
 	if userProject != "" {
 		vc.MethodByName("UserProject").Call([]reflect.Value{reflect.ValueOf(userProject)})
 	}
-	setClientHeader(call.Header())
 }
 
 // Object ACL methods.
@@ -723,7 +753,6 @@ func (c *httpStorageClient) ComposeObject(ctx context.Context, req *composeObjec
 		return nil, err
 	}
 	var obj *raw.Object
-	setClientHeader(call.Header())
 
 	var err error
 	retryCall := func(ctx context.Context) error { obj, err = call.Context(ctx).Do(); return err }
@@ -772,7 +801,6 @@ func (c *httpStorageClient) RewriteObject(ctx context.Context, req *rewriteObjec
 
 	var res *raw.RewriteResponse
 	var err error
-	setClientHeader(call.Header())
 
 	retryCall := func(ctx context.Context) error { res, err = call.Context(ctx).Do(); return err }
 
@@ -827,17 +855,18 @@ func (c *httpStorageClient) newRangeReaderXML(ctx context.Context, params *newRa
 		return nil, err
 	}
 
-	// Set custom headers passed in via the context. This is only required for XML;
-	// for gRPC & JSON this is handled in the GAPIC and Apiary layers respectively.
-	ctxHeaders := callctx.HeadersFromContext(ctx)
-	for k, vals := range ctxHeaders {
-		for _, v := range vals {
-			req.Header.Add(k, v)
-		}
-	}
-
 	reopen := readerReopen(ctx, req.Header, params, s,
-		func(ctx context.Context) (*http.Response, error) { return c.hc.Do(req.WithContext(ctx)) },
+		func(ctx context.Context) (*http.Response, error) {
+			// Set custom headers passed in via the context. This is only required for XML;
+			// for gRPC & JSON this is handled in the GAPIC and Apiary layers respectively.
+			ctxHeaders := callctx.HeadersFromContext(ctx)
+			for k, vals := range ctxHeaders {
+				for _, v := range vals {
+					req.Header.Set(k, v)
+				}
+			}
+			return c.hc.Do(req.WithContext(ctx))
+		},
 		func() error { return setConditionsHeaders(req.Header, params.conds) },
 		func() { req.URL.RawQuery = fmt.Sprintf("generation=%d", params.gen) })
 
@@ -851,7 +880,6 @@ func (c *httpStorageClient) newRangeReaderXML(ctx context.Context, params *newRa
 func (c *httpStorageClient) newRangeReaderJSON(ctx context.Context, params *newRangeReaderParams, s *settings) (r *Reader, err error) {
 	call := c.raw.Objects.Get(params.bucket, params.object)
 
-	setClientHeader(call.Header())
 	call.Projection("full")
 
 	if s.userProject != "" {
@@ -883,7 +911,7 @@ func (c *httpStorageClient) OpenWriter(params *openWriterParams, opts ...storage
 	mediaOpts := []googleapi.MediaOption{
 		googleapi.ChunkSize(params.chunkSize),
 	}
-	if c := attrs.ContentType; c != "" {
+	if c := attrs.ContentType; c != "" || params.forceEmptyContentType {
 		mediaOpts = append(mediaOpts, googleapi.ContentType(c))
 	}
 	if params.chunkRetryDeadline != 0 {
@@ -967,7 +995,6 @@ func (c *httpStorageClient) OpenWriter(params *openWriterParams, opts ...storage
 func (c *httpStorageClient) GetIamPolicy(ctx context.Context, resource string, version int32, opts ...storageOption) (*iampb.Policy, error) {
 	s := callSettings(c.settings, opts...)
 	call := c.raw.Buckets.GetIamPolicy(resource).OptionsRequestedPolicyVersion(int64(version))
-	setClientHeader(call.Header())
 	if s.userProject != "" {
 		call.UserProject(s.userProject)
 	}
@@ -988,7 +1015,6 @@ func (c *httpStorageClient) SetIamPolicy(ctx context.Context, resource string, p
 
 	rp := iamToStoragePolicy(policy)
 	call := c.raw.Buckets.SetIamPolicy(resource, rp)
-	setClientHeader(call.Header())
 	if s.userProject != "" {
 		call.UserProject(s.userProject)
 	}
@@ -1002,7 +1028,6 @@ func (c *httpStorageClient) SetIamPolicy(ctx context.Context, resource string, p
 func (c *httpStorageClient) TestIamPermissions(ctx context.Context, resource string, permissions []string, opts ...storageOption) ([]string, error) {
 	s := callSettings(c.settings, opts...)
 	call := c.raw.Buckets.TestIamPermissions(resource, permissions)
-	setClientHeader(call.Header())
 	if s.userProject != "" {
 		call.UserProject(s.userProject)
 	}
@@ -1051,7 +1076,6 @@ func (c *httpStorageClient) ListHMACKeys(ctx context.Context, project, serviceAc
 	}
 	fetch := func(pageSize int, pageToken string) (token string, err error) {
 		call := c.raw.Projects.HmacKeys.List(project)
-		setClientHeader(call.Header())
 		if pageToken != "" {
 			call = call.PageToken(pageToken)
 		}
@@ -1216,9 +1240,12 @@ func (c *httpStorageClient) DeleteNotification(ctx context.Context, bucket strin
 }
 
 type httpReader struct {
-	body   io.ReadCloser
-	seen   int64
-	reopen func(seen int64) (*http.Response, error)
+	body     io.ReadCloser
+	seen     int64
+	reopen   func(seen int64) (*http.Response, error)
+	checkCRC bool   // should we check the CRC?
+	wantCRC  uint32 // the CRC32c value the server sent in the header
+	gotCRC   uint32 // running crc
 }
 
 func (r *httpReader) Read(p []byte) (int, error) {
@@ -1227,7 +1254,22 @@ func (r *httpReader) Read(p []byte) (int, error) {
 		m, err := r.body.Read(p[n:])
 		n += m
 		r.seen += int64(m)
-		if err == nil || err == io.EOF {
+		if r.checkCRC {
+			r.gotCRC = crc32.Update(r.gotCRC, crc32cTable, p[:n])
+		}
+		if err == nil {
+			return n, nil
+		}
+		if err == io.EOF {
+			// Check CRC here. It would be natural to check it in Close, but
+			// everybody defers Close on the assumption that it doesn't return
+			// anything worth looking at.
+			if r.checkCRC {
+				if r.gotCRC != r.wantCRC {
+					return n, fmt.Errorf("storage: bad CRC on read: got %d, want %d",
+						r.gotCRC, r.wantCRC)
+				}
+			}
 			return n, err
 		}
 		// Read failed (likely due to connection issues), but we will try to reopen
@@ -1433,11 +1475,12 @@ func parseReadResponse(res *http.Response, params *newRangeReaderParams, reopen 
 		Attrs:    attrs,
 		size:     size,
 		remain:   remain,
-		wantCRC:  crc,
 		checkCRC: checkCRC,
 		reader: &httpReader{
-			reopen: reopen,
-			body:   body,
+			reopen:   reopen,
+			body:     body,
+			wantCRC:  crc,
+			checkCRC: checkCRC,
 		},
 	}, nil
 }

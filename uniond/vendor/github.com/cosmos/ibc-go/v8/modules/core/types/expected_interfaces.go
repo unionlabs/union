@@ -2,7 +2,8 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	paramtypes "cosmossdk.io/x/params/types"
 )
 
 // ParamSubspace defines the expected Subspace interface for module parameters.

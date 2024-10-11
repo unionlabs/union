@@ -20,9 +20,9 @@ const (
 // Intermediate type used exclusively in serialization/deserialization of
 // State, such that State need not expose any of its internal values publicly.
 type serializedState struct {
-	Height uint64
-	Values map[string]string
-	Hash   []byte
+	Height uint64            `json:"height"`
+	Values map[string]string `json:"values"`
+	Hash   []byte            `json:"hash"`
 }
 
 // State is the application state.
@@ -63,14 +63,13 @@ func (s *State) load() error {
 	bz, err := os.ReadFile(s.currentFile)
 	if err != nil {
 		// if the current state doesn't exist then we try recover from the previous state
-		if errors.Is(err, os.ErrNotExist) {
-			bz, err = os.ReadFile(s.previousFile)
-			if err != nil {
-				return fmt.Errorf("failed to read both current and previous state (%q): %w",
-					s.previousFile, err)
-			}
-		} else {
+		if !errors.Is(err, os.ErrNotExist) {
 			return fmt.Errorf("failed to read state from %q: %w", s.currentFile, err)
+		}
+		bz, err = os.ReadFile(s.previousFile)
+		if err != nil {
+			return fmt.Errorf("failed to read both current and previous state (%q): %w",
+				s.previousFile, err)
 		}
 	}
 	if err := json.Unmarshal(bz, s); err != nil {
@@ -182,7 +181,7 @@ func (s *State) Query(key string) (string, uint64) {
 	return value, height
 }
 
-// Finalize is called after applying a block, updating the height and returning the new app_hash
+// Finalize is called after applying a block, updating the height and returning the new app_hash.
 func (s *State) Finalize() []byte {
 	s.Lock()
 	defer s.Unlock()

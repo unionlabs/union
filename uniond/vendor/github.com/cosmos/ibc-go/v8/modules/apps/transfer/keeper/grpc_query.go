@@ -11,6 +11,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"
 
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
@@ -53,7 +54,7 @@ func (k Keeper) DenomTraces(c context.Context, req *types.QueryDenomTracesReques
 	ctx := sdk.UnwrapSDKContext(c)
 
 	var traces types.Traces
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DenomTraceKey)
+	store := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), types.DenomTraceKey)
 
 	pageRes, err := query.Paginate(store, req.Pagination, func(_, value []byte) error {
 		result, err := k.UnmarshalDenomTrace(value)

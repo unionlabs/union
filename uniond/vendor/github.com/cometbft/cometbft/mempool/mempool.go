@@ -2,25 +2,19 @@ package mempool
 
 import (
 	"crypto/sha256"
-	"errors"
 	"fmt"
-	"math"
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
 )
 
 const (
 	MempoolChannel = byte(0x30)
 
-	// PeerCatchupSleepIntervalMS defines how much time to sleep if a peer is behind
+	// PeerCatchupSleepIntervalMS defines how much time to sleep if a peer is behind.
 	PeerCatchupSleepIntervalMS = 100
-
-	// UnknownPeerID is the peer ID to use when running CheckTx when there is
-	// no peer (e.g. RPC)
-	UnknownPeerID uint16 = 0
-
-	MaxActiveIDs = math.MaxUint16
 )
 
 //go:generate ../scripts/mockery_generate.sh Mempool
@@ -32,7 +26,7 @@ const (
 type Mempool interface {
 	// CheckTx executes a new transaction against the application to determine
 	// its validity and whether it should be added to the mempool.
-	CheckTx(tx types.Tx, callback func(*abci.ResponseCheckTx), txInfo TxInfo) error
+	CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)
 
 	// RemoveTxByKey removes a transaction, identified by its key,
 	// from the mempool.
@@ -57,6 +51,10 @@ type Mempool interface {
 
 	// Unlock unlocks the mempool.
 	Unlock()
+
+	// PreUpdate signals that a new update is coming, before acquiring the mempool lock.
+	// If the mempool is still rechecking at this point, it should be considered full.
+	PreUpdate()
 
 	// Update informs the mempool that the given txs were committed and can be
 	// discarded.
@@ -108,7 +106,7 @@ type PreCheckFunc func(types.Tx) error
 // PostCheckFunc is an optional filter executed after CheckTx and rejects
 // transaction if false is returned. An example would be to ensure a
 // transaction doesn't require more gas than available for the block.
-type PostCheckFunc func(types.Tx, *abci.ResponseCheckTx) error
+type PostCheckFunc func(types.Tx, *abci.CheckTxResponse) error
 
 // PreCheckMaxBytes checks that the size of the transaction is smaller or equal
 // to the expected maxBytes.
@@ -127,7 +125,7 @@ func PreCheckMaxBytes(maxBytes int64) PreCheckFunc {
 // PostCheckMaxGas checks that the wanted gas is smaller or equal to the passed
 // maxGas. Returns nil if maxGas is -1.
 func PostCheckMaxGas(maxGas int64) PostCheckFunc {
-	return func(tx types.Tx, res *abci.ResponseCheckTx) error {
+	return func(_ types.Tx, res *abci.CheckTxResponse) error {
 		if maxGas == -1 {
 			return nil
 		}
@@ -144,52 +142,5 @@ func PostCheckMaxGas(maxGas int64) PostCheckFunc {
 	}
 }
 
-// ErrTxInCache is returned to the client if we saw tx earlier
-var ErrTxInCache = errors.New("tx already exists in cache")
-
 // TxKey is the fixed length array key used as an index.
 type TxKey [sha256.Size]byte
-
-// ErrTxTooLarge defines an error when a transaction is too big to be sent in a
-// message to other peers.
-type ErrTxTooLarge struct {
-	Max    int
-	Actual int
-}
-
-func (e ErrTxTooLarge) Error() string {
-	return fmt.Sprintf("Tx too large. Max size is %d, but got %d", e.Max, e.Actual)
-}
-
-// ErrMempoolIsFull defines an error where CometBFT and the application cannot
-// handle that much load.
-type ErrMempoolIsFull struct {
-	NumTxs      int
-	MaxTxs      int
-	TxsBytes    int64
-	MaxTxsBytes int64
-}
-
-func (e ErrMempoolIsFull) Error() string {
-	return fmt.Sprintf(
-		"mempool is full: number of txs %d (max: %d), total txs bytes %d (max: %d)",
-		e.NumTxs,
-		e.MaxTxs,
-		e.TxsBytes,
-		e.MaxTxsBytes,
-	)
-}
-
-// ErrPreCheck defines an error where a transaction fails a pre-check.
-type ErrPreCheck struct {
-	Reason error
-}
-
-func (e ErrPreCheck) Error() string {
-	return e.Reason.Error()
-}
-
-// IsPreCheckError returns true if err is due to pre check failure.
-func IsPreCheckError(err error) bool {
-	return errors.As(err, &ErrPreCheck{})
-}

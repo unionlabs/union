@@ -2,44 +2,11 @@ package types
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"time"
 
-	"cosmossdk.io/log"
-
 	"github.com/cosmos/cosmos-sdk/types/kv"
 )
-
-// SortedJSON takes any JSON and returns it sorted by keys. Also, all white-spaces
-// are removed.
-// This method can be used to canonicalize JSON to be returned by GetSignBytes,
-// e.g. for the ledger integration.
-// If the passed JSON isn't valid it will return an error.
-// Deprecated: SortJSON was used for GetSignbytes, this is now automatic with amino signing
-func SortJSON(toSortJSON []byte) ([]byte, error) {
-	var c interface{}
-	err := json.Unmarshal(toSortJSON, &c)
-	if err != nil {
-		return nil, err
-	}
-	js, err := json.Marshal(c)
-	if err != nil {
-		return nil, err
-	}
-	return js, nil
-}
-
-// MustSortJSON is like SortJSON but panic if an error occurs, e.g., if
-// the passed JSON isn't valid.
-// Deprecated: SortJSON was used for GetSignbytes, this is now automatic with amino signing
-func MustSortJSON(toSortJSON []byte) []byte {
-	js, err := SortJSON(toSortJSON)
-	if err != nil {
-		panic(err)
-	}
-	return js
-}
 
 // Uint64ToBigEndian - marshals uint64 to a bigendian byte slice so it can be sorted
 func Uint64ToBigEndian(i uint64) []byte {
@@ -136,11 +103,4 @@ func ParseLengthPrefixedBytes(key []byte, startIndex, sliceLength int) ([]byte, 
 	byteSlice := key[startIndex:neededLength]
 
 	return byteSlice, endIndex
-}
-
-// LogDeferred logs an error in a deferred function call if the returned error is non-nil.
-func LogDeferred(logger log.Logger, f func() error) {
-	if err := f(); err != nil {
-		logger.Error(err.Error())
-	}
 }

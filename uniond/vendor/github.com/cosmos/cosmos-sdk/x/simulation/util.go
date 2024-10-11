@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
@@ -15,6 +14,7 @@ import (
 )
 
 func getTestingMode(tb testing.TB) (testingMode bool, t *testing.T, b *testing.B) {
+	tb.Helper()
 	testingMode = false
 
 	if _t, ok := tb.(*testing.T); ok {
@@ -64,7 +64,7 @@ func mustMarshalJSONIndent(o interface{}) []byte {
 // OperationInput is a struct that holds all the needed values to generate a tx and deliver it
 type OperationInput struct {
 	R               *rand.Rand
-	App             *baseapp.BaseApp
+	App             simtypes.AppEntrypoint
 	TxGen           client.TxConfig
 	Cdc             *codec.ProtoCodec
 	Msg             sdk.Msg
@@ -89,7 +89,7 @@ func GenAndDeliverTxWithRandFees(txCtx OperationInput) (simtypes.OperationMsg, [
 		return simtypes.NoOpMsg(txCtx.ModuleName, sdk.MsgTypeURL(txCtx.Msg), "message doesn't leave room for fees"), nil, err
 	}
 
-	fees, err = simtypes.RandomFees(txCtx.R, txCtx.Context, coins)
+	fees, err = simtypes.RandomFees(txCtx.R, coins)
 	if err != nil {
 		return simtypes.NoOpMsg(txCtx.ModuleName, sdk.MsgTypeURL(txCtx.Msg), "unable to generate fees"), nil, err
 	}

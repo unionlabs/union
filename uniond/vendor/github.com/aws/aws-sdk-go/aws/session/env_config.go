@@ -171,6 +171,12 @@ type envConfig struct {
 	// AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE=IPv6
 	EC2IMDSEndpointMode endpoints.EC2IMDSEndpointModeState
 
+	// Specifies that IMDS clients should not fallback to IMDSv1 if token
+	// requests fail.
+	//
+	// AWS_EC2_METADATA_V1_DISABLED=true
+	EC2IMDSv1Disabled *bool
+
 	// Specifies that SDK clients must resolve a dual-stack endpoint for
 	// services.
 	//
@@ -250,6 +256,9 @@ var (
 	}
 	ec2IMDSEndpointModeEnvKey = []string{
 		"AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE",
+	}
+	ec2MetadataV1DisabledEnvKey = []string{
+		"AWS_EC2_METADATA_V1_DISABLED",
 	}
 	useCABundleKey = []string{
 		"AWS_CA_BUNDLE",
@@ -393,6 +402,7 @@ func envConfigLoad(enableSharedConfig bool) (envConfig, error) {
 	if err := setEC2IMDSEndpointMode(&cfg.EC2IMDSEndpointMode, ec2IMDSEndpointModeEnvKey); err != nil {
 		return envConfig{}, err
 	}
+	setBoolPtrFromEnvVal(&cfg.EC2IMDSv1Disabled, ec2MetadataV1DisabledEnvKey)
 
 	if err := setUseDualStackEndpointFromEnvVal(&cfg.UseDualStackEndpoint, awsUseDualStackEndpoint); err != nil {
 		return cfg, err
@@ -410,6 +420,24 @@ func setFromEnvVal(dst *string, keys []string) {
 		if v := os.Getenv(k); len(v) != 0 {
 			*dst = v
 			break
+		}
+	}
+}
+
+func setBoolPtrFromEnvVal(dst **bool, keys []string) {
+	for _, k := range keys {
+		value := os.Getenv(k)
+		if len(value) == 0 {
+			continue
+		}
+
+		switch {
+		case strings.EqualFold(value, "false"):
+			*dst = new(bool)
+			**dst = false
+		case strings.EqualFold(value, "true"):
+			*dst = new(bool)
+			**dst = true
 		}
 	}
 }

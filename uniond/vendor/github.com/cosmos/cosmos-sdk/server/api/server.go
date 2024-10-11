@@ -14,7 +14,6 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"google.golang.org/grpc"
 
 	"cosmossdk.io/log"
@@ -114,30 +113,7 @@ func (s *Server) Start(ctx context.Context, cfg config.Config) error {
 	s.listener = listener
 	s.mtx.Unlock()
 
-	// configure grpc-web server
-	if cfg.GRPC.Enable && cfg.GRPCWeb.Enable {
-		var options []grpcweb.Option
-		if cfg.API.EnableUnsafeCORS {
-			options = append(options,
-				grpcweb.WithOriginFunc(func(origin string) bool {
-					return true
-				}),
-			)
-		}
-
-		wrappedGrpc := grpcweb.WrapServer(s.GRPCSrv, options...)
-		s.Router.PathPrefix("/").Handler(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if wrappedGrpc.IsGrpcWebRequest(req) {
-				wrappedGrpc.ServeHTTP(w, req)
-				return
-			}
-
-			// Fall back to grpc gateway server.
-			s.GRPCGatewayRouter.ServeHTTP(w, req)
-		}))
-	}
-
-	// register grpc-gateway routes (after grpc-web server as the first match is used)
+	// register grpc-gateway routes
 	s.Router.PathPrefix("/").Handler(s.GRPCGatewayRouter)
 
 	errCh := make(chan error)

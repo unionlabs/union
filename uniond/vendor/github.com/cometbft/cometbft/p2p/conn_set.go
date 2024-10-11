@@ -8,11 +8,11 @@ import (
 
 // ConnSet is a lookup table for connections and all their ips.
 type ConnSet interface {
-	Has(net.Conn) bool
-	HasIP(net.IP) bool
-	Set(net.Conn, []net.IP)
-	Remove(net.Conn)
-	RemoveAddr(net.Addr)
+	Has(conn net.Conn) bool
+	HasIP(ip net.IP) bool
+	Set(conn net.Conn, ip []net.IP)
+	Remove(conn net.Conn)
+	RemoveAddr(addr net.Addr)
 }
 
 type connSetItem struct {

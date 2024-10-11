@@ -18,6 +18,14 @@ import (
 
 var errNegativeNotAllowed = errors.New("unable to cast negative value")
 
+type float64EProvider interface {
+	Float64() (float64, error)
+}
+
+type float64Provider interface {
+	Float64() float64
+}
+
 // ToTimeE casts an interface to a time.Time type.
 func ToTimeE(i interface{}) (tim time.Time, err error) {
 	return ToTimeInDefaultLocationE(i, time.UTC)
@@ -77,10 +85,13 @@ func ToDurationE(i interface{}) (d time.Duration, err error) {
 			d, err = time.ParseDuration(s + "ns")
 		}
 		return
-	case json.Number:
+	case float64EProvider:
 		var v float64
 		v, err = s.Float64()
 		d = time.Duration(v)
+		return
+	case float64Provider:
+		d = time.Duration(s.Float64())
 		return
 	default:
 		err = fmt.Errorf("unable to cast %#v of type %T to Duration", i, i)
@@ -174,12 +185,14 @@ func ToFloat64E(i interface{}) (float64, error) {
 			return v, nil
 		}
 		return 0, fmt.Errorf("unable to cast %#v of type %T to float64", i, i)
-	case json.Number:
+	case float64EProvider:
 		v, err := s.Float64()
 		if err == nil {
 			return v, nil
 		}
 		return 0, fmt.Errorf("unable to cast %#v of type %T to float64", i, i)
+	case float64Provider:
+		return s.Float64(), nil
 	case bool:
 		if s {
 			return 1, nil
@@ -230,12 +243,14 @@ func ToFloat32E(i interface{}) (float32, error) {
 			return float32(v), nil
 		}
 		return 0, fmt.Errorf("unable to cast %#v of type %T to float32", i, i)
-	case json.Number:
+	case float64EProvider:
 		v, err := s.Float64()
 		if err == nil {
 			return float32(v), nil
 		}
 		return 0, fmt.Errorf("unable to cast %#v of type %T to float32", i, i)
+	case float64Provider:
+		return float32(s.Float64()), nil
 	case bool:
 		if s {
 			return 1, nil
@@ -917,8 +932,8 @@ func indirectToStringerOrError(a interface{}) interface{} {
 		return nil
 	}
 
-	var errorType = reflect.TypeOf((*error)(nil)).Elem()
-	var fmtStringerType = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
+	errorType := reflect.TypeOf((*error)(nil)).Elem()
+	fmtStringerType := reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
 
 	v := reflect.ValueOf(a)
 	for !v.Type().Implements(fmtStringerType) && !v.Type().Implements(errorType) && v.Kind() == reflect.Ptr && !v.IsNil() {
@@ -987,7 +1002,7 @@ func ToStringE(i interface{}) (string, error) {
 
 // ToStringMapStringE casts an interface to a map[string]string type.
 func ToStringMapStringE(i interface{}) (map[string]string, error) {
-	var m = map[string]string{}
+	m := map[string]string{}
 
 	switch v := i.(type) {
 	case map[string]string:
@@ -1017,7 +1032,7 @@ func ToStringMapStringE(i interface{}) (map[string]string, error) {
 
 // ToStringMapStringSliceE casts an interface to a map[string][]string type.
 func ToStringMapStringSliceE(i interface{}) (map[string][]string, error) {
-	var m = map[string][]string{}
+	m := map[string][]string{}
 
 	switch v := i.(type) {
 	case map[string][]string:
@@ -1081,7 +1096,7 @@ func ToStringMapStringSliceE(i interface{}) (map[string][]string, error) {
 
 // ToStringMapBoolE casts an interface to a map[string]bool type.
 func ToStringMapBoolE(i interface{}) (map[string]bool, error) {
-	var m = map[string]bool{}
+	m := map[string]bool{}
 
 	switch v := i.(type) {
 	case map[interface{}]interface{}:
@@ -1106,7 +1121,7 @@ func ToStringMapBoolE(i interface{}) (map[string]bool, error) {
 
 // ToStringMapE casts an interface to a map[string]interface{} type.
 func ToStringMapE(i interface{}) (map[string]interface{}, error) {
-	var m = map[string]interface{}{}
+	m := map[string]interface{}{}
 
 	switch v := i.(type) {
 	case map[interface{}]interface{}:
@@ -1126,7 +1141,7 @@ func ToStringMapE(i interface{}) (map[string]interface{}, error) {
 
 // ToStringMapIntE casts an interface to a map[string]int{} type.
 func ToStringMapIntE(i interface{}) (map[string]int, error) {
-	var m = map[string]int{}
+	m := map[string]int{}
 	if i == nil {
 		return m, fmt.Errorf("unable to cast %#v of type %T to map[string]int", i, i)
 	}
@@ -1167,7 +1182,7 @@ func ToStringMapIntE(i interface{}) (map[string]int, error) {
 
 // ToStringMapInt64E casts an interface to a map[string]int64{} type.
 func ToStringMapInt64E(i interface{}) (map[string]int64, error) {
-	var m = map[string]int64{}
+	m := map[string]int64{}
 	if i == nil {
 		return m, fmt.Errorf("unable to cast %#v of type %T to map[string]int64", i, i)
 	}
@@ -1404,38 +1419,35 @@ func (f timeFormat) hasTimezone() bool {
 	return f.typ >= timeFormatNumericTimezone && f.typ <= timeFormatNumericAndNamedTimezone
 }
 
-var (
-	timeFormats = []timeFormat{
-		// Keep common formats at the top.
-		{"2006-01-02", timeFormatNoTimezone},
-		{time.RFC3339, timeFormatNumericTimezone},
-		{"2006-01-02T15:04:05", timeFormatNoTimezone}, // iso8601 without timezone
-		{time.RFC1123Z, timeFormatNumericTimezone},
-		{time.RFC1123, timeFormatNamedTimezone},
-		{time.RFC822Z, timeFormatNumericTimezone},
-		{time.RFC822, timeFormatNamedTimezone},
-		{time.RFC850, timeFormatNamedTimezone},
-		{"2006-01-02 15:04:05.999999999 -0700 MST", timeFormatNumericAndNamedTimezone}, // Time.String()
-		{"2006-01-02T15:04:05-0700", timeFormatNumericTimezone},                        // RFC3339 without timezone hh:mm colon
-		{"2006-01-02 15:04:05Z0700", timeFormatNumericTimezone},                        // RFC3339 without T or timezone hh:mm colon
-		{"2006-01-02 15:04:05", timeFormatNoTimezone},
-		{time.ANSIC, timeFormatNoTimezone},
-		{time.UnixDate, timeFormatNamedTimezone},
-		{time.RubyDate, timeFormatNumericTimezone},
-		{"2006-01-02 15:04:05Z07:00", timeFormatNumericTimezone},
-		{"02 Jan 2006", timeFormatNoTimezone},
-		{"2006-01-02 15:04:05 -07:00", timeFormatNumericTimezone},
-		{"2006-01-02 15:04:05 -0700", timeFormatNumericTimezone},
-		{time.Kitchen, timeFormatTimeOnly},
-		{time.Stamp, timeFormatTimeOnly},
-		{time.StampMilli, timeFormatTimeOnly},
-		{time.StampMicro, timeFormatTimeOnly},
-		{time.StampNano, timeFormatTimeOnly},
-	}
-)
+var timeFormats = []timeFormat{
+	// Keep common formats at the top.
+	{"2006-01-02", timeFormatNoTimezone},
+	{time.RFC3339, timeFormatNumericTimezone},
+	{"2006-01-02T15:04:05", timeFormatNoTimezone}, // iso8601 without timezone
+	{time.RFC1123Z, timeFormatNumericTimezone},
+	{time.RFC1123, timeFormatNamedTimezone},
+	{time.RFC822Z, timeFormatNumericTimezone},
+	{time.RFC822, timeFormatNamedTimezone},
+	{time.RFC850, timeFormatNamedTimezone},
+	{"2006-01-02 15:04:05.999999999 -0700 MST", timeFormatNumericAndNamedTimezone}, // Time.String()
+	{"2006-01-02T15:04:05-0700", timeFormatNumericTimezone},                        // RFC3339 without timezone hh:mm colon
+	{"2006-01-02 15:04:05Z0700", timeFormatNumericTimezone},                        // RFC3339 without T or timezone hh:mm colon
+	{"2006-01-02 15:04:05", timeFormatNoTimezone},
+	{time.ANSIC, timeFormatNoTimezone},
+	{time.UnixDate, timeFormatNamedTimezone},
+	{time.RubyDate, timeFormatNumericTimezone},
+	{"2006-01-02 15:04:05Z07:00", timeFormatNumericTimezone},
+	{"02 Jan 2006", timeFormatNoTimezone},
+	{"2006-01-02 15:04:05 -07:00", timeFormatNumericTimezone},
+	{"2006-01-02 15:04:05 -0700", timeFormatNumericTimezone},
+	{time.Kitchen, timeFormatTimeOnly},
+	{time.Stamp, timeFormatTimeOnly},
+	{time.StampMilli, timeFormatTimeOnly},
+	{time.StampMicro, timeFormatTimeOnly},
+	{time.StampNano, timeFormatTimeOnly},
+}
 
 func parseDateWith(s string, location *time.Location, formats []timeFormat) (d time.Time, e error) {
-
 	for _, format := range formats {
 		if d, e = time.Parse(format.format, s); e == nil {
 

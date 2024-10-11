@@ -3,17 +3,18 @@ package privval
 import (
 	"io"
 
+	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
 	"github.com/cometbft/cometbft/types"
 )
 
-// ValidationRequestHandlerFunc handles different remoteSigner requests
+// ValidationRequestHandlerFunc handles different remoteSigner requests.
 type ValidationRequestHandlerFunc func(
 	privVal types.PrivValidator,
 	requestMessage privvalproto.Message,
-	chainID string) (privvalproto.Message, error)
+	chainID string,
+) (privvalproto.Message, error)
 
 type SignerServer struct {
 	service.BaseService
@@ -51,7 +52,7 @@ func (ss *SignerServer) OnStop() {
 	_ = ss.endpoint.Close()
 }
 
-// SetRequestHandler override the default function that is used to service requests
+// SetRequestHandler override the default function that is used to service requests.
 func (ss *SignerServer) SetRequestHandler(validationRequestHandler ValidationRequestHandlerFunc) {
 	ss.handlerMtx.Lock()
 	defer ss.handlerMtx.Unlock()
@@ -72,8 +73,7 @@ func (ss *SignerServer) servicePendingRequest() {
 	}
 
 	var res privvalproto.Message
-	{
-		// limit the scope of the lock
+	func() {
 		ss.handlerMtx.Lock()
 		defer ss.handlerMtx.Unlock()
 		res, err = ss.validationRequestHandler(ss.privVal, req, ss.chainID)
@@ -81,7 +81,7 @@ func (ss *SignerServer) servicePendingRequest() {
 			// only log the error; we'll reply with an error in res
 			ss.Logger.Error("SignerServer: handleMessage", "err", err)
 		}
-	}
+	}()
 
 	err = ss.endpoint.WriteMessage(res)
 	if err != nil {

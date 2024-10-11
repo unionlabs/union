@@ -7,8 +7,8 @@ import (
 
 // Checks whether the transaction should be profiled (according to ProfilesSampleRate)
 // and starts a profiler if so.
-func (span *Span) sampleTransactionProfile() {
-	var sampleRate = span.clientOptions().ProfilesSampleRate
+func (s *Span) sampleTransactionProfile() {
+	var sampleRate = s.clientOptions().ProfilesSampleRate
 	switch {
 	case sampleRate < 0.0 || sampleRate > 1.0:
 		Logger.Printf("Skipping transaction profiling: ProfilesSampleRate out of range [0.0, 1.0]: %f\n", sampleRate)
@@ -19,7 +19,7 @@ func (span *Span) sampleTransactionProfile() {
 		if globalProfiler == nil {
 			Logger.Println("Skipping transaction profiling: the profiler couldn't be started")
 		} else {
-			span.collectProfile = collectTransactionProfile
+			s.collectProfile = collectTransactionProfile
 		}
 	}
 }
@@ -69,22 +69,27 @@ func (info *profileInfo) UpdateFromEvent(event *Event) {
 	info.Dist = event.Dist
 	info.Transaction.ID = event.EventID
 
+	getStringFromContext := func(context map[string]interface{}, originalValue, key string) string {
+		v, ok := context[key]
+		if !ok {
+			return originalValue
+		}
+
+		if s, ok := v.(string); ok {
+			return s
+		}
+
+		return originalValue
+	}
+
 	if runtimeContext, ok := event.Contexts["runtime"]; ok {
-		if value, ok := runtimeContext["name"]; !ok {
-			info.Runtime.Name = value.(string)
-		}
-		if value, ok := runtimeContext["version"]; !ok {
-			info.Runtime.Version = value.(string)
-		}
+		info.Runtime.Name = getStringFromContext(runtimeContext, info.Runtime.Name, "name")
+		info.Runtime.Version = getStringFromContext(runtimeContext, info.Runtime.Version, "version")
 	}
 	if osContext, ok := event.Contexts["os"]; ok {
-		if value, ok := osContext["name"]; !ok {
-			info.OS.Name = value.(string)
-		}
+		info.OS.Name = getStringFromContext(osContext, info.OS.Name, "name")
 	}
 	if deviceContext, ok := event.Contexts["device"]; ok {
-		if value, ok := deviceContext["arch"]; !ok {
-			info.Device.Architecture = value.(string)
-		}
+		info.Device.Architecture = getStringFromContext(deviceContext, info.Device.Architecture, "arch")
 	}
 }

@@ -5,7 +5,7 @@
 [![API Reference](https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f676f6c616e672f6764646f3f7374617475732e737667)](https://pkg.go.dev/github.com/cosmos/iavl)
 ![Lint](https://github.com/cosmos/iavl/workflows/Lint/badge.svg?branch=master)
 ![Test](https://github.com/cosmos/iavl/workflows/Test/badge.svg?branch=master)
-[![Discord chat](https://img.shields.io/discord/669268347736686612.svg)](https://discord.gg/AzefAFd)
+[![Discord chat](https://img.shields.io/discord/669268347736686612.svg)](https://discord.gg/cosmosnetwork)
 
 Note: **Requires Go 1.18+**
 
@@ -24,9 +24,11 @@ In Ethereum, the analog is [Patricia tries](http://en.wikipedia.org/wiki/Radix_t
 ## IAVL x Cosmos SDK
 
 | IAVL                                                           | DB Interface                                             | Cosmos SDK       |
-| -------------------------------------------------------------- | -------------------------------------------------------- | ---------------- |
+|----------------------------------------------------------------|----------------------------------------------------------|------------------|
 | [v0.19.x](https://github.com/cosmos/iavl/tree/release/v0.19.x) | [`tm-db`](https://github.com/tendermint/tm-db)           | v0.45.x, v0.46.x |
 | [v0.20.x](https://github.com/cosmos/iavl/tree/release/v0.20.x) | [`cometbft-db`](https://github.com/cometbft/cometbft-db) | v0.47.x          |
-| [v1.x.x](https://github.com/cosmos/iavl/tree/release/v1.x.x)   | [`cosmos-db`](https://github.com/cosmos/cosmos-db)       | -                |
+| [v1.0.3](https://github.com/cosmos/iavl/tree/release/v1.x.x)   | [`cosmos-db`](https://github.com/cosmos/cosmos-db)       | v0.50.0-5        |
+| [v1.1.2,4](https://github.com/cosmos/iavl/tree/release/v1.x.x) | [`iavl-db`](https://github.com/cosmos/iavl)              | v0.50.6          |
+| [v1.2.x](https://github.com/cosmos/iavl/tree/release/v1.x.x)   | [`iavl-db`](https://github.com/cosmos/iavl)              | v0.50.7+         |
 
 NOTE: In the past, a v0.21.x release was published, but never used in production. It was retracted to avoid confusion.

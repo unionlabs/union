@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"strings"
 
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramtypes "cosmossdk.io/x/params/types"
 )
 
 var (

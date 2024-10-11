@@ -10,7 +10,7 @@ Bitcoin (secp256k1 only for now). It is designed so that it may be used with the
 standard crypto/ecdsa packages provided with go.  A comprehensive suite of test
 is provided to ensure proper functionality.  Package btcec was originally based
 on work from ThePiachu which is licensed under the same terms as Go, but it has
-signficantly diverged since then.  The btcsuite developers original is licensed
+significantly diverged since then.  The btcsuite developers original is licensed
 under the liberal ISC license.
 
 Although this package was primarily written for btcd, it has intentionally been

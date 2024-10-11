@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-// Now returns the current time in UTC with no monotonic component.
-func Now() time.Time {
-	return Canonical(time.Now())
-}
-
 // Canonical returns UTC time with no monotonic component.
 // Stripping the monotonic component is for time equality.
 // See https://github.com/tendermint/tendermint/pull/2203#discussion_r215064334
@@ -17,6 +12,33 @@ func Canonical(t time.Time) time.Time {
 	return t.Round(0).UTC()
 }
 
+//go:generate ../../scripts/mockery_generate.sh Source
+
+// Source is an interface that defines a way to fetch the current time.
+type Source interface {
+	Now() time.Time
+}
+
+// Until returns the duration until t.
+// It is shorthand for t.Sub(time.Now()).
+func Until(t time.Time) time.Duration {
+	return t.Sub(Now())
+}
+
+// Since returns the time elapsed since t.
+// It is shorthand for time.Now().Sub(t).
+func Since(t time.Time) time.Duration {
+	return Now().Sub(t)
+}
+
+// DefaultSource implements the Source interface using the system clock provided by the standard library.
+type DefaultSource struct{}
+
+func (DefaultSource) Now() time.Time {
+	return Now()
+}
+
+// TODO: find which commit removed this and make sure it's in our list
 // WeightedTime for computing a median.
 type WeightedTime struct {
 	Time   time.Time
@@ -54,5 +76,5 @@ func WeightedMedian(weightedTimes []*WeightedTime, totalVotingPower int64) (res 
 			median -= weightedTime.Weight
 		}
 	}
-	return
+	return res
 }

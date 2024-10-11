@@ -18,7 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/cosmos/cosmos-sdk/x/authz"
+	"cosmossdk.io/x/authz"
 
 	"github.com/CosmWasm/wasmd/x/wasm/ioutils"
 	"github.com/CosmWasm/wasmd/x/wasm/types"
@@ -112,7 +112,6 @@ func parseStoreCodeArgs(file, sender string, flags *flag.FlagSet) (types.MsgStor
 	// gzip the wasm file
 	if ioutils.IsWasm(wasm) {
 		wasm, err = ioutils.GzipIt(wasm)
-
 		if err != nil {
 			return types.MsgStoreCode{}, err
 		}
@@ -203,7 +202,7 @@ func InstantiateContractCmd() *cobra.Command {
 Each contract instance has a unique address assigned.
 Example:
 $ %s tx wasm instantiate 1 '{"foo":"bar"}' --admin="$(%s keys show mykey -a)" \
-  --from mykey --amount="100ustake" --label "local0.1.0" 
+  --from mykey --amount="100ustake" --label "local0.1.0"
 `, version.AppName, version.AppName),
 		Aliases: []string{"start", "init", "inst", "i"},
 		Args:    cobra.ExactArgs(2),
@@ -229,7 +228,7 @@ $ %s tx wasm instantiate 1 '{"foo":"bar"}' --admin="$(%s keys show mykey -a)" \
 	return cmd
 }
 
-// InstantiateContract2Cmd will instantiate a contract from previously uploaded code with predicable address generated
+// InstantiateContract2Cmd will instantiate a contract from previously uploaded code with predictable address generated
 func InstantiateContract2Cmd() *cobra.Command {
 	decoder := newArgDecoder(hex.DecodeString)
 	cmd := &cobra.Command{
@@ -237,13 +236,13 @@ func InstantiateContract2Cmd() *cobra.Command {
 			"--fix-msg [bool,optional]",
 		Short: "Instantiate a wasm contract with predictable address",
 		Long: fmt.Sprintf(`Creates a new instance of an uploaded wasm code with the given 'constructor' message.
-Each contract instance has a unique address assigned. They are assigned automatically but in order to have predictable addresses 
+Each contract instance has a unique address assigned. They are assigned automatically but in order to have predictable addresses
 for special use cases, the given 'salt' argument and '--fix-msg' parameters can be used to generate a custom address.
 
 Predictable address example (also see '%s query wasm build-address -h'):
 $ %s tx wasm instantiate2 1 '{"foo":"bar"}' $(echo -n "testing" | xxd -ps) --admin="$(%s keys show mykey -a)" \
   --from mykey --amount="100ustake" --label "local0.1.0" \
-   --fix-msg 
+   --fix-msg
 `, version.AppName, version.AppName, version.AppName),
 		Aliases: []string{"start", "init", "inst", "i"},
 		Args:    cobra.ExactArgs(3),
@@ -323,7 +322,7 @@ func parseInstantiateArgs(rawCodeID, initMsg string, kr keyring.Keyring, sender 
 
 	// ensure sensible admin is set (or explicitly immutable)
 	if adminStr == "" && !noAdmin {
-		return nil, fmt.Errorf("you must set an admin or explicitly pass --no-admin to make it immutible (wasmd issue #719)")
+		return nil, fmt.Errorf("you must set an admin or explicitly pass --no-admin to make it immutable (wasmd issue #719)")
 	}
 	if adminStr != "" && noAdmin {
 		return nil, fmt.Errorf("you set an admin and passed --no-admin, those cannot both be true")
@@ -358,7 +357,7 @@ func parseInstantiateArgs(rawCodeID, initMsg string, kr keyring.Keyring, sender 
 	return &msg, msg.ValidateBasic()
 }
 
-// ExecuteContractCmd will instantiate a contract from previously uploaded code.
+// ExecuteContractCmd will execute a contract method using its address and JSON-encoded arguments.
 func ExecuteContractCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "execute [contract_addr_bech32] [json_encoded_send_args] --amount [coins,optional]",
@@ -543,7 +542,7 @@ $ %s tx grant contract <grantee_addr> execution <contract_addr> --allow-all-mess
 				return err
 			}
 
-			grantMsg, err := authz.NewMsgGrant(clientCtx.GetFromAddress(), grantee, authorization, expire)
+			grantMsg, err := authz.NewMsgGrant(clientCtx.GetFromAddress().String(), grantee.String(), authorization, expire)
 			if err != nil {
 				return err
 			}
@@ -595,7 +594,7 @@ $ %s tx grant store-code <grantee_addr> *:%s1l2rsakp388kuv9k8qzq6lrm9taddae7fpx5
 				return err
 			}
 
-			grantMsg, err := authz.NewMsgGrant(clientCtx.GetFromAddress(), grantee, authorization, expire)
+			grantMsg, err := authz.NewMsgGrant(clientCtx.GetFromAddress().String(), grantee.String(), authorization, expire)
 			if err != nil {
 				return err
 			}

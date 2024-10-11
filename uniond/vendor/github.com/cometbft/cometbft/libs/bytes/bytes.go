@@ -9,12 +9,12 @@ import (
 // HexBytes enables HEX-encoding for json/encoding.
 type HexBytes []byte
 
-// Marshal needed for protobuf compatibility
+// Marshal needed for protobuf compatibility.
 func (bz HexBytes) Marshal() ([]byte, error) {
 	return bz, nil
 }
 
-// Unmarshal needed for protobuf compatibility
+// Unmarshal needed for protobuf compatibility.
 func (bz *HexBytes) Unmarshal(data []byte) error {
 	*bz = data
 	return nil
@@ -58,8 +58,12 @@ func (bz HexBytes) String() string {
 func (bz HexBytes) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'p':
-		s.Write([]byte(fmt.Sprintf("%p", bz)))
+		if _, err := s.Write([]byte(fmt.Sprintf("%p", bz))); err != nil {
+			panic(err)
+		}
 	default:
-		s.Write([]byte(fmt.Sprintf("%X", []byte(bz))))
+		if _, err := s.Write([]byte(fmt.Sprintf("%X", []byte(bz)))); err != nil {
+			panic(err)
+		}
 	}
 }

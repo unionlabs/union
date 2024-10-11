@@ -11,6 +11,11 @@ const (
 
 	// StoreKey is the prefix under which we store this module's data
 	StoreKey = ModuleName
+
+	// GovModuleName duplicates the gov module's name to avoid a cyclic dependency with x/gov.
+	// It should be synced with the gov module's name if it is ever changed.
+	// See: https://github.com/cosmos/cosmos-sdk/blob/b62a28aac041829da5ded4aeacfcd7a42873d1c8/x/gov/types/keys.go#L9
+	GovModuleName = "gov"
 )
 
 const (
@@ -22,9 +27,6 @@ const (
 
 	// VersionMapByte is a prefix to look up module names (key) and versions (value)
 	VersionMapByte = 0x2
-
-	// ProtocolVersionByte is a prefix to look up Protocol Version
-	ProtocolVersionByte = 0x3
 
 	// KeyUpgradedIBCState is the key under which upgraded ibc state is stored in the upgrade store
 	KeyUpgradedIBCState = "upgradedIBCState"

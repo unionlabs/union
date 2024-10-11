@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"io"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	cmttypes "github.com/cometbft/cometbft/types"
-	dbm "github.com/cosmos/cosmos-db"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/cosmos/gogoproto/grpc"
-	"github.com/spf13/cobra"
 
+	"cosmossdk.io/core/server"
+	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	"cosmossdk.io/store/snapshots"
 	storetypes "cosmossdk.io/store/types"
@@ -17,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type (
@@ -27,9 +28,7 @@ type (
 	// literal defined on the server Context. Note, casting Get calls may not yield
 	// the expected types and could result in type assertion errors. It is recommend
 	// to either use the cast package or perform manual conversion for safety.
-	AppOptions interface {
-		Get(string) interface{}
-	}
+	AppOptions = server.DynamicConfig
 
 	// Application defines an application interface that wraps abci.Application.
 	// The interface defines the necessary contracts to be implemented in order
@@ -56,8 +55,11 @@ type (
 		// CommitMultiStore return the multistore instance
 		CommitMultiStore() storetypes.CommitMultiStore
 
-		// Return the snapshot manager
+		// SnapshotManager return the snapshot manager
 		SnapshotManager() *snapshots.Manager
+
+		// ValidatorKeyProvider returns a function that generates a validator key
+		ValidatorKeyProvider() func() (cmtcrypto.PrivKey, error)
 
 		// Close is called in start cmd to gracefully cleanup resources.
 		// Must be safe to be called multiple times.
@@ -66,10 +68,7 @@ type (
 
 	// AppCreator is a function that allows us to lazily initialize an
 	// application using various configurations.
-	AppCreator func(log.Logger, dbm.DB, io.Writer, AppOptions) Application
-
-	// ModuleInitFlags takes a start command and adds modules specific init flags.
-	ModuleInitFlags func(startCmd *cobra.Command)
+	AppCreator[T Application] func(log.Logger, corestore.KVStoreWithBatch, io.Writer, AppOptions) T
 
 	// ExportedApp represents an exported app state, along with
 	// validators, consensus params and latest app height.
@@ -77,7 +76,7 @@ type (
 		// AppState is the application state as JSON.
 		AppState json.RawMessage
 		// Validators is the exported validator set.
-		Validators []cmttypes.GenesisValidator
+		Validators []sdk.GenesisValidator
 		// Height is the app's latest block height.
 		Height int64
 		// ConsensusParams are the exported consensus params for ABCI.
@@ -88,7 +87,7 @@ type (
 	// JSON-serializable structure and returns the current validator set.
 	AppExporter func(
 		logger log.Logger,
-		db dbm.DB,
+		db corestore.KVStoreWithBatch,
 		traceWriter io.Writer,
 		height int64,
 		forZeroHeight bool,

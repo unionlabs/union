@@ -62,7 +62,7 @@ the associated capability.`),
 	}
 
 	cmd.Flags().String(flagVersion, "", "Controller chain channel version")
-	cmd.Flags().String(flagOrdering, channeltypes.ORDERED.String(), fmt.Sprintf("Channel ordering, can be one of: %s", strings.Join(connectiontypes.SupportedOrderings, ", ")))
+	cmd.Flags().String(flagOrdering, channeltypes.UNORDERED.String(), fmt.Sprintf("Channel ordering, can be one of: %s", strings.Join(connectiontypes.SupportedOrderings, ", ")))
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"context"
 	"strconv"
 
 	errorsmod "cosmossdk.io/errors"
@@ -23,7 +24,7 @@ import (
 // perform appropriate state transitions. Its intended usage is within the
 // ante handler.
 func (k Keeper) TimeoutPacket(
-	ctx sdk.Context,
+	ctx context.Context,
 	packet exported.PacketI,
 	proof []byte,
 	proofHeight exported.Height,
@@ -131,7 +132,7 @@ func (k Keeper) TimeoutPacket(
 //
 // CONTRACT: this function must be called in the IBC handler
 func (k Keeper) TimeoutExecuted(
-	ctx sdk.Context,
+	ctx context.Context,
 	chanCap *capabilitytypes.Capability,
 	packet exported.PacketI,
 ) error {
@@ -157,7 +158,8 @@ func (k Keeper) TimeoutExecuted(
 		// then we can move to flushing complete if the timeout has not passed and there are no in-flight packets
 		if found {
 			timeout := counterpartyUpgrade.Timeout
-			selfHeight, selfTimestamp := clienttypes.GetSelfHeight(ctx), uint64(ctx.BlockTime().UnixNano())
+			sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+			selfHeight, selfTimestamp := clienttypes.GetSelfHeight(ctx), uint64(sdkCtx.BlockTime().UnixNano())
 
 			if timeout.Elapsed(selfHeight, selfTimestamp) {
 				// packet flushing timeout has expired, abort the upgrade and return nil,
@@ -204,7 +206,7 @@ func (k Keeper) TimeoutExecuted(
 // which an unreceived packet was addressed has been closed, so the packet will
 // never be received (even if the timeoutHeight has not yet been reached).
 func (k Keeper) TimeoutOnClose(
-	ctx sdk.Context,
+	ctx context.Context,
 	chanCap *capabilitytypes.Capability,
 	packet exported.PacketI,
 	proof,
@@ -224,7 +226,7 @@ func (k Keeper) TimeoutOnClose(
 //
 // This function will be removed in ibc-go v9.0.0 and the API of TimeoutOnClose will be updated.
 func (k Keeper) TimeoutOnCloseWithCounterpartyUpgradeSequence(
-	ctx sdk.Context,
+	ctx context.Context,
 	chanCap *capabilitytypes.Capability,
 	packet exported.PacketI,
 	proof,

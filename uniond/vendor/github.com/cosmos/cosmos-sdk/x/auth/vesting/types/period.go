@@ -31,7 +31,7 @@ func (p Periods) TotalDuration() time.Duration {
 	return time.Duration(len) * time.Second
 }
 
-// TotalDuration returns the sum of coins for the period
+// TotalAmount returns the sum of coins for the period
 func (p Periods) TotalAmount() sdk.Coins {
 	total := sdk.Coins{}
 	for _, period := range p {
@@ -42,7 +42,7 @@ func (p Periods) TotalAmount() sdk.Coins {
 
 // String implements the fmt.Stringer interface
 func (p Periods) String() string {
-	periodsListString := make([]string, len(p))
+	periodsListString := make([]string, 0, len(p))
 	for _, period := range p {
 		periodsListString = append(periodsListString, period.String())
 	}

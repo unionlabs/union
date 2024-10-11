@@ -11,4 +11,6 @@ const (
 	// EnvUnixSocketGroup specifies the owning, writable group to set for Unix
 	// sockets created by _plugins_. Does not affect client behavior.
 	EnvUnixSocketGroup = "PLUGIN_UNIX_SOCKET_GROUP"
+
+	envMultiplexGRPC = "PLUGIN_MULTIPLEX_GRPC"
 )

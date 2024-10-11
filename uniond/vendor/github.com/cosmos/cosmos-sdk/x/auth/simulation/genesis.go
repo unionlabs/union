@@ -1,8 +1,6 @@
 package simulation
 
 import (
-	"encoding/json"
-	"fmt"
 	"math/rand"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -113,10 +111,5 @@ func RandomizedGenState(simState *module.SimulationState, randGenAccountsFn type
 
 	authGenesis := types.NewGenesisState(params, genesisAccs)
 
-	bz, err := json.MarshalIndent(&authGenesis.Params, "", " ")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("Selected randomly generated auth parameters:\n%s\n", bz)
 	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(authGenesis)
 }

@@ -8,15 +8,16 @@ import (
 	"net/http"
 	"reflect"
 	"sort"
+	"strings"
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // HTTP + JSON handler
 
-// jsonrpc calls grab the given method's function info and runs reflect.Call
+// jsonrpc calls grab the given method's function info and runs reflect.Call.
 func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)
@@ -30,7 +31,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 			return
 		}
 
-		// if its an empty request (like from a browser), just display a list of
+		// if it's an empty request (like from a browser), just display a list of
 		// functions
 		if len(b) == 0 {
 			writeListOfEndpoints(w, r, funcMap)
@@ -60,9 +61,8 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 		// 2. Any RPC request doesn't allow to be cached.
 		// 3. Any RPC request has the height argument and the value is 0 (the default).
 		cache := true
-		for _, request := range requests {
-			request := request
-
+		for _, req := range requests {
+			request := req
 			// A Notification is a Request object without an "id" member.
 			// The Server MUST NOT reply to a Notification, including those that are within a batch request.
 			if request.ID == nil {
@@ -72,7 +72,8 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 				)
 				continue
 			}
-			if len(r.URL.Path) > 1 {
+			trimmedPath := strings.Trim(r.URL.Path, "/")
+			if trimmedPath != "" && trimmedPath != "v1" {
 				responses = append(
 					responses,
 					types.RPCInvalidRequestError(request.ID, fmt.Errorf("path %s is invalid", r.URL.Path)),
@@ -130,9 +131,8 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 
 func handleInvalidJSONRPCPaths(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Since the pattern "/" matches all paths not matched by other registered patterns,
-		//  we check whether the path is indeed "/", otherwise return a 404 error
-		if r.URL.Path != "/" {
+		trimmedPath := strings.Trim(r.URL.Path, "/")
+		if trimmedPath != "" && trimmedPath != "v1" {
 			http.NotFound(w, r)
 			return
 		}
@@ -217,7 +217,7 @@ func jsonParamsToArgs(rpcFunc *RPCFunc, raw []byte) ([]reflect.Value, error) {
 	return nil, fmt.Errorf("unknown type for JSON params: %v. Expected map or array", err)
 }
 
-// writes a list of available rpc endpoints as an html page
+// writes a list of available rpc endpoints as an html page.
 func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[string]*RPCFunc) {
 	noArgNames := []string{}
 	argNames := []string{}
@@ -235,8 +235,9 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 	buf.WriteString("<br>Available endpoints:<br>")
 
 	for _, name := range noArgNames {
+		// FIXME: The link should have the version as well. Where can we get it from the request?
 		link := fmt.Sprintf("//%s/%s", r.Host, name)
-		buf.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a></br>", link, link))
+		buf.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a><br>", link, name))
 	}
 
 	buf.WriteString("<br>Endpoints that require arguments:<br>")
@@ -253,6 +254,6 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 	}
 	buf.WriteString("</body></html>")
 	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	w.Write(buf.Bytes()) //nolint: errcheck
 }

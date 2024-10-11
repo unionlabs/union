@@ -59,7 +59,7 @@ func (h Header) ValidateBasic() error {
 	if err != nil {
 		return errorsmod.Wrap(err, "header is not a tendermint header")
 	}
-	if err := tmSignedHeader.ValidateBasicLegacy(h.Header.GetChainID()); err != nil {
+	if err := tmSignedHeader.ValidateBasic(h.Header.GetChainID()); err != nil {
 		return errorsmod.Wrap(err, "header failed basic validation")
 	}
 
@@ -76,7 +76,7 @@ func (h Header) ValidateBasic() error {
 	if err != nil {
 		return errorsmod.Wrap(err, "validator set is not tendermint validator set")
 	}
-	if !bytes.Equal(h.Header.ValidatorsHash, tmValset.HashSha256()) {
+	if !bytes.Equal(h.Header.ValidatorsHash, tmValset.Hash()) {
 		return errorsmod.Wrap(clienttypes.ErrInvalidHeader, "validator set does not match hash")
 	}
 	return nil

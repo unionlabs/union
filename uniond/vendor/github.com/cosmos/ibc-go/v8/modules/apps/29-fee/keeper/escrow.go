@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
@@ -13,7 +14,7 @@ import (
 )
 
 // escrowPacketFee sends the packet fee to the 29-fee module account to hold in escrow
-func (k Keeper) escrowPacketFee(ctx sdk.Context, packetID channeltypes.PacketId, packetFee types.PacketFee) error {
+func (k Keeper) escrowPacketFee(ctx context.Context, packetID channeltypes.PacketId, packetFee types.PacketFee) error {
 	// check if the refund address is valid
 	refundAddr, err := sdk.AccAddressFromBech32(packetFee.RefundAddress)
 	if err != nil {
@@ -46,10 +47,11 @@ func (k Keeper) escrowPacketFee(ctx sdk.Context, packetID channeltypes.PacketId,
 }
 
 // DistributePacketFeesOnAcknowledgement pays all the acknowledgement & receive fees for a given packetID while refunding the timeout fees to the refund account.
-func (k Keeper) DistributePacketFeesOnAcknowledgement(ctx sdk.Context, forwardRelayer string, reverseRelayer sdk.AccAddress, packetFees []types.PacketFee, packetID channeltypes.PacketId) {
+func (k Keeper) DistributePacketFeesOnAcknowledgement(ctx context.Context, forwardRelayer string, reverseRelayer sdk.AccAddress, packetFees []types.PacketFee, packetID channeltypes.PacketId) {
 	// cache context before trying to distribute fees
 	// if the escrow account has insufficient balance then we want to avoid partially distributing fees
-	cacheCtx, writeFn := ctx.CacheContext()
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/5917
+	cacheCtx, writeFn := sdkCtx.CacheContext()
 
 	// forward relayer address will be empty if conversion fails
 	forwardAddr, _ := sdk.AccAddressFromBech32(forwardRelayer)
@@ -84,7 +86,7 @@ func (k Keeper) DistributePacketFeesOnAcknowledgement(ctx sdk.Context, forwardRe
 
 // distributePacketFeeOnAcknowledgement pays the receive fee for a given packetID while refunding the timeout fee to the refund account associated with the Fee.
 // If there was no forward relayer or the associated forward relayer address is blocked, the receive fee is refunded.
-func (k Keeper) distributePacketFeeOnAcknowledgement(ctx sdk.Context, refundAddr, forwardRelayer, reverseRelayer sdk.AccAddress, packetFee types.PacketFee) {
+func (k Keeper) distributePacketFeeOnAcknowledgement(ctx context.Context, refundAddr, forwardRelayer, reverseRelayer sdk.AccAddress, packetFee types.PacketFee) {
 	// distribute fee to valid forward relayer address otherwise refund the fee
 	if !forwardRelayer.Empty() && !k.bankKeeper.BlockedAddr(forwardRelayer) {
 		// distribute fee for forward relaying
@@ -103,10 +105,11 @@ func (k Keeper) distributePacketFeeOnAcknowledgement(ctx sdk.Context, refundAddr
 }
 
 // DistributePacketsFeesOnTimeout pays all the timeout fees for a given packetID while refunding the acknowledgement & receive fees to the refund account.
-func (k Keeper) DistributePacketFeesOnTimeout(ctx sdk.Context, timeoutRelayer sdk.AccAddress, packetFees []types.PacketFee, packetID channeltypes.PacketId) {
+func (k Keeper) DistributePacketFeesOnTimeout(ctx context.Context, timeoutRelayer sdk.AccAddress, packetFees []types.PacketFee, packetID channeltypes.PacketId) {
 	// cache context before trying to distribute fees
 	// if the escrow account has insufficient balance then we want to avoid partially distributing fees
-	cacheCtx, writeFn := ctx.CacheContext()
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/5917
+	cacheCtx, writeFn := sdkCtx.CacheContext()
 
 	for _, packetFee := range packetFees {
 		if !k.EscrowAccountHasBalance(cacheCtx, packetFee.Fee.Total()) {
@@ -137,7 +140,7 @@ func (k Keeper) DistributePacketFeesOnTimeout(ctx sdk.Context, timeoutRelayer sd
 }
 
 // distributePacketFeeOnTimeout pays the timeout fee to the timeout relayer and refunds the acknowledgement & receive fee.
-func (k Keeper) distributePacketFeeOnTimeout(ctx sdk.Context, refundAddr, timeoutRelayer sdk.AccAddress, packetFee types.PacketFee) {
+func (k Keeper) distributePacketFeeOnTimeout(ctx context.Context, refundAddr, timeoutRelayer sdk.AccAddress, packetFee types.PacketFee) {
 	// distribute fee for timeout relaying
 	k.distributeFee(ctx, timeoutRelayer, refundAddr, packetFee.Fee.TimeoutFee)
 
@@ -149,9 +152,10 @@ func (k Keeper) distributePacketFeeOnTimeout(ctx sdk.Context, refundAddr, timeou
 // distributeFee will attempt to distribute the escrowed fee to the receiver address.
 // If the distribution fails for any reason (such as the receiving address being blocked),
 // the state changes will be discarded.
-func (k Keeper) distributeFee(ctx sdk.Context, receiver, refundAccAddress sdk.AccAddress, fee sdk.Coins) {
+func (k Keeper) distributeFee(ctx context.Context, receiver, refundAccAddress sdk.AccAddress, fee sdk.Coins) {
 	// cache context before trying to distribute fees
-	cacheCtx, writeFn := ctx.CacheContext()
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/5917
+	cacheCtx, writeFn := sdkCtx.CacheContext()
 
 	err := k.bankKeeper.SendCoinsFromModuleToAccount(cacheCtx, types.ModuleName, receiver, fee)
 	if err != nil {
@@ -181,15 +185,16 @@ func (k Keeper) distributeFee(ctx sdk.Context, receiver, refundAccAddress sdk.Ac
 // If the escrow account runs out of balance then fee module will become locked as this implies the presence
 // of a severe bug. When the fee module is locked, no fee distributions will be performed.
 // Please see ADR 004 for more information.
-func (k Keeper) RefundFeesOnChannelClosure(ctx sdk.Context, portID, channelID string) error {
+func (k Keeper) RefundFeesOnChannelClosure(ctx context.Context, portID, channelID string) error {
 	identifiedPacketFees := k.GetIdentifiedPacketFeesForChannel(ctx, portID, channelID)
 
 	// cache context before trying to distribute fees
 	// if the escrow account has insufficient balance then we want to avoid partially distributing fees
-	cacheCtx, writeFn := ctx.CacheContext()
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/5917
+	cacheCtx, writeFn := sdkCtx.CacheContext()
 
 	for _, identifiedPacketFee := range identifiedPacketFees {
-		var failedToSendCoins bool
+		var unRefundedFees []types.PacketFee
 		for _, packetFee := range identifiedPacketFee.PacketFees {
 
 			if !k.EscrowAccountHasBalance(cacheCtx, packetFee.Fee.Total()) {
@@ -207,18 +212,22 @@ func (k Keeper) RefundFeesOnChannelClosure(ctx sdk.Context, portID, channelID st
 
 			refundAddr, err := sdk.AccAddressFromBech32(packetFee.RefundAddress)
 			if err != nil {
-				failedToSendCoins = true
+				unRefundedFees = append(unRefundedFees, packetFee)
 				continue
 			}
 
 			// refund all fees to refund address
 			if err = k.bankKeeper.SendCoinsFromModuleToAccount(cacheCtx, types.ModuleName, refundAddr, packetFee.Fee.Total()); err != nil {
-				failedToSendCoins = true
+				unRefundedFees = append(unRefundedFees, packetFee)
 				continue
 			}
 		}
 
-		if !failedToSendCoins {
+		if len(unRefundedFees) > 0 {
+			// update packet fees to keep only the unrefunded fees
+			packetFees := types.NewPacketFees(unRefundedFees)
+			k.SetFeesInEscrow(cacheCtx, identifiedPacketFee.PacketId, packetFees)
+		} else {
 			k.DeleteFeesInEscrow(cacheCtx, identifiedPacketFee.PacketId)
 		}
 	}

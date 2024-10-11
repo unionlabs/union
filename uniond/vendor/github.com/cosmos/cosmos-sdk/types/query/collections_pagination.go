@@ -19,6 +19,15 @@ func WithCollectionPaginationPairPrefix[K1, K2 any](prefix K1) func(o *Collectio
 	}
 }
 
+// WithCollectionPaginationTriplePrefix applies a prefix to a collection, whose key is a collection.Triple,
+// being paginated that needs prefixing.
+func WithCollectionPaginationTriplePrefix[K1, K2, K3 any](prefix K1) func(o *CollectionsPaginateOptions[collections.Triple[K1, K2, K3]]) {
+	return func(o *CollectionsPaginateOptions[collections.Triple[K1, K2, K3]]) {
+		prefix := collections.TriplePrefix[K1, K2, K3](prefix)
+		o.Prefix = &prefix
+	}
+}
+
 // CollectionsPaginateOptions provides extra options for pagination in collections.
 type CollectionsPaginateOptions[K any] struct {
 	// Prefix allows to optionally set a prefix for the pagination.
@@ -321,11 +330,11 @@ func encodeCollKey[K, V any, C Collection[K, V]](coll C, key K) ([]byte, error) 
 func getCollIter[K, V any, C Collection[K, V]](ctx context.Context, coll C, prefix, start []byte, reverse bool) (collections.Iterator[K, V], error) {
 	// TODO: maybe can be simplified
 	if reverse {
-		var end []byte
-		if prefix != nil {
-			start = storetypes.PrefixEndBytes(append(prefix, start...))
-			end = prefix
-		}
+		// if we are in reverse mode, we need to increase the start key
+		// to include the start key in the iteration.
+		start = storetypes.PrefixEndBytes(append(prefix, start...))
+		end := prefix
+
 		return coll.IterateRaw(ctx, end, start, collections.OrderDescending)
 	}
 	var end []byte

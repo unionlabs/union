@@ -14,6 +14,7 @@ const (
 // metricSource source of wasmvm metrics
 type metricSource interface {
 	GetMetrics() (*wasmvmtypes.Metrics, error)
+	GetPinnedMetrics() (*wasmvmtypes.PinnedMetrics, error)
 }
 
 var _ prometheus.Collector = (*WasmVMMetricsCollector)(nil)
@@ -25,6 +26,8 @@ type WasmVMMetricsCollector struct {
 	CacheMissesDescr   *prometheus.Desc
 	CacheElementsDescr *prometheus.Desc
 	CacheSizeDescr     *prometheus.Desc
+	PinnedHitsDescr    *prometheus.Desc
+	PinnedSizeDescr    *prometheus.Desc
 }
 
 // NewWasmVMMetricsCollector constructor
@@ -38,6 +41,8 @@ func NewWasmVMMetricsCollector(s metricSource) *WasmVMMetricsCollector {
 		CacheMissesDescr:   prometheus.NewDesc("wasmvm_cache_misses_total", "Total number of cache misses", nil, nil),
 		CacheElementsDescr: prometheus.NewDesc("wasmvm_cache_elements_total", "Total number of elements in the cache", []string{"type"}, nil),
 		CacheSizeDescr:     prometheus.NewDesc("wasmvm_cache_size_bytes", "Total number of elements in the cache", []string{"type"}, nil),
+		PinnedHitsDescr:    prometheus.NewDesc("wasmvm_pinned_contract_hits", "Number of hits of a pinned contract", []string{"checksum"}, nil),
+		PinnedSizeDescr:    prometheus.NewDesc("wasmvm_pinned_contract_size", "Size of a pinned contract", []string{"checksum"}, nil),
 	}
 }
 
@@ -57,17 +62,25 @@ func (p *WasmVMMetricsCollector) Describe(descs chan<- *prometheus.Desc) {
 // Collect is called by the Prometheus registry when collecting metrics.
 func (p *WasmVMMetricsCollector) Collect(c chan<- prometheus.Metric) {
 	m, err := p.source.GetMetrics()
-	if err != nil {
-		return
+	if err == nil {
+		c <- prometheus.MustNewConstMetric(p.CacheHitsDescr, prometheus.CounterValue, float64(m.HitsPinnedMemoryCache), labelPinned)
+		c <- prometheus.MustNewConstMetric(p.CacheHitsDescr, prometheus.CounterValue, float64(m.HitsMemoryCache), labelMemory)
+		c <- prometheus.MustNewConstMetric(p.CacheHitsDescr, prometheus.CounterValue, float64(m.HitsFsCache), labelFs)
+		c <- prometheus.MustNewConstMetric(p.CacheMissesDescr, prometheus.CounterValue, float64(m.Misses))
+		c <- prometheus.MustNewConstMetric(p.CacheElementsDescr, prometheus.GaugeValue, float64(m.ElementsPinnedMemoryCache), labelPinned)
+		c <- prometheus.MustNewConstMetric(p.CacheElementsDescr, prometheus.GaugeValue, float64(m.ElementsMemoryCache), labelMemory)
+		c <- prometheus.MustNewConstMetric(p.CacheSizeDescr, prometheus.GaugeValue, float64(m.SizeMemoryCache), labelMemory)
+		c <- prometheus.MustNewConstMetric(p.CacheSizeDescr, prometheus.GaugeValue, float64(m.SizePinnedMemoryCache), labelPinned)
 	}
-	c <- prometheus.MustNewConstMetric(p.CacheHitsDescr, prometheus.CounterValue, float64(m.HitsPinnedMemoryCache), labelPinned)
-	c <- prometheus.MustNewConstMetric(p.CacheHitsDescr, prometheus.CounterValue, float64(m.HitsMemoryCache), labelMemory)
-	c <- prometheus.MustNewConstMetric(p.CacheHitsDescr, prometheus.CounterValue, float64(m.HitsFsCache), labelFs)
-	c <- prometheus.MustNewConstMetric(p.CacheMissesDescr, prometheus.CounterValue, float64(m.Misses))
-	c <- prometheus.MustNewConstMetric(p.CacheElementsDescr, prometheus.GaugeValue, float64(m.ElementsPinnedMemoryCache), labelPinned)
-	c <- prometheus.MustNewConstMetric(p.CacheElementsDescr, prometheus.GaugeValue, float64(m.ElementsMemoryCache), labelMemory)
-	c <- prometheus.MustNewConstMetric(p.CacheSizeDescr, prometheus.GaugeValue, float64(m.SizeMemoryCache), labelMemory)
-	c <- prometheus.MustNewConstMetric(p.CacheSizeDescr, prometheus.GaugeValue, float64(m.SizePinnedMemoryCache), labelPinned)
+
+	pm, err := p.source.GetPinnedMetrics()
+	if err == nil {
+		for _, mod := range pm.PerModule {
+			c <- prometheus.MustNewConstMetric(p.PinnedHitsDescr, prometheus.CounterValue, float64(mod.Metrics.Hits), mod.Checksum.String())
+			c <- prometheus.MustNewConstMetric(p.PinnedSizeDescr, prometheus.GaugeValue, float64(mod.Metrics.Size), mod.Checksum.String())
+		}
+	}
+
 	// Node about fs metrics:
 	// The number of elements and the size of elements in the file system cache cannot easily be obtained.
 	// We had to either scan the whole directory of potentially thousands of files or track the values when files are added or removed.

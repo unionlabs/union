@@ -1,6 +1,7 @@
 package solomachine
 
 import (
+	"context"
 	"errors"
 	"reflect"
 
@@ -9,7 +10,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -44,7 +44,7 @@ func (cs ClientState) GetLatestHeight() exported.Height {
 
 // GetTimestampAtHeight returns the timestamp in nanoseconds of the consensus state at the given height.
 func (cs ClientState) GetTimestampAtHeight(
-	_ sdk.Context,
+	_ context.Context,
 	clientStore storetypes.KVStore,
 	cdc codec.BinaryCodec,
 	height exported.Height,
@@ -56,7 +56,7 @@ func (cs ClientState) GetTimestampAtHeight(
 // The client may be:
 // - Active: if frozen sequence is 0
 // - Frozen: otherwise solo machine is frozen
-func (cs ClientState) Status(_ sdk.Context, _ storetypes.KVStore, _ codec.BinaryCodec) exported.Status {
+func (cs ClientState) Status(_ context.Context, _ storetypes.KVStore, _ codec.BinaryCodec) exported.Status {
 	if cs.IsFrozen {
 		return exported.Frozen
 	}
@@ -82,7 +82,7 @@ func (ClientState) ZeroCustomFields() exported.ClientState {
 
 // Initialize checks that the initial consensus state is equal to the latest consensus state of the initial client and
 // sets the client state in the provided client store.
-func (cs ClientState) Initialize(_ sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, consState exported.ConsensusState) error {
+func (cs ClientState) Initialize(_ context.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, consState exported.ConsensusState) error {
 	if !reflect.DeepEqual(cs.ConsensusState, consState) {
 		return errorsmod.Wrapf(clienttypes.ErrInvalidConsensus, "consensus state in initial client does not equal initial consensus state. expected: %s, got: %s",
 			cs.ConsensusState, consState)
@@ -100,7 +100,7 @@ func (ClientState) ExportMetadata(_ storetypes.KVStore) []exported.GenesisMetada
 
 // VerifyUpgradeAndUpdateState returns an error since solomachine client does not support upgrades
 func (ClientState) VerifyUpgradeAndUpdateState(
-	_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore,
+	_ context.Context, _ codec.BinaryCodec, _ storetypes.KVStore,
 	_ exported.ClientState, _ exported.ConsensusState, _, _ []byte,
 ) error {
 	return errorsmod.Wrap(clienttypes.ErrInvalidUpgradeClient, "cannot upgrade solomachine client")
@@ -109,7 +109,7 @@ func (ClientState) VerifyUpgradeAndUpdateState(
 // VerifyMembership is a generic proof verification method which verifies a proof of the existence of a value at a given CommitmentPath at the latest sequence.
 // The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
 func (cs *ClientState) VerifyMembership(
-	ctx sdk.Context,
+	ctx context.Context,
 	clientStore storetypes.KVStore,
 	cdc codec.BinaryCodec,
 	_ exported.Height,
@@ -166,7 +166,7 @@ func (cs *ClientState) VerifyMembership(
 // VerifyNonMembership is a generic proof verification method which verifies the absence of a given CommitmentPath at the latest sequence.
 // The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
 func (cs *ClientState) VerifyNonMembership(
-	ctx sdk.Context,
+	ctx context.Context,
 	clientStore storetypes.KVStore,
 	cdc codec.BinaryCodec,
 	_ exported.Height,

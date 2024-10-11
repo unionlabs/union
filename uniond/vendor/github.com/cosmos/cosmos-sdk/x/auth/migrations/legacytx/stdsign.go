@@ -2,11 +2,13 @@ package legacytx
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
 	"sigs.k8s.io/yaml"
 
-	"cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/legacy"
@@ -23,7 +25,7 @@ import (
 type LegacyMsg interface {
 	sdk.Msg
 
-	// Get the canonical byte representation of the Msg.
+	// GetSignBytes get the canonical byte representation of the Msg.
 	GetSignBytes() []byte
 }
 
@@ -62,7 +64,7 @@ func mustSortJSON(bz []byte) []byte {
 // Deprecated: Please use x/tx/signing/aminojson instead.
 func StdSignBytes(chainID string, accnum, sequence, timeout uint64, fee StdFee, msgs []sdk.Msg, memo string) []byte {
 	if RegressionTestingAminoCodec == nil {
-		panic(fmt.Errorf("must set RegressionTestingAminoCodec before calling StdSignBytes"))
+		panic(errors.New("must set RegressionTestingAminoCodec before calling StdSignBytes"))
 	}
 	msgsBytes := make([]json.RawMessage, 0, len(msgs))
 	for _, msg := range msgs {
@@ -92,7 +94,7 @@ type StdSignature struct {
 	Signature          []byte                          `json:"signature" yaml:"signature"`
 }
 
-// Deprecated
+// Deprecated: NewStdSignature returns a std signature
 func NewStdSignature(pk cryptotypes.PubKey, sig []byte) StdSignature {
 	return StdSignature{PubKey: pk, Signature: sig}
 }
@@ -129,7 +131,7 @@ func (ss StdSignature) MarshalYAML() (interface{}, error) {
 	return string(bz), err
 }
 
-func (ss StdSignature) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (ss StdSignature) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return codectypes.UnpackInterfaces(ss.PubKey, unpacker)
 }
 
@@ -172,7 +174,7 @@ func pubKeySigToSigData(cdc *codec.LegacyAmino, key cryptotypes.PubKey, sig []by
 		if bitArray.GetIndex(i) {
 			data, err := pubKeySigToSigData(cdc, pubKeys[i], multiSig.Sigs[sigIdx])
 			if err != nil {
-				return nil, errors.Wrapf(err, "Unable to convert Signature to SigData %d", sigIdx)
+				return nil, errorsmod.Wrapf(err, "Unable to convert Signature to SigData %d", sigIdx)
 			}
 
 			sigDatas[sigIdx] = data

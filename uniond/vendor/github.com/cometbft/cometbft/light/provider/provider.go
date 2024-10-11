@@ -25,5 +25,5 @@ type Provider interface {
 	LightBlock(ctx context.Context, height int64) (*types.LightBlock, error)
 
 	// ReportEvidence reports an evidence of misbehavior.
-	ReportEvidence(context.Context, types.Evidence) error
+	ReportEvidence(ctx context.Context, ev types.Evidence) error
 }

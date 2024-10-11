@@ -14,7 +14,7 @@ import (
 // Amino-serialized bytes
 func GetEncodeCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "encode [file]",
+		Use:   "encode <file>",
 		Short: "Encode transactions generated offline",
 		Long: `Encode transactions created with the --generate-only flag or signed with the sign command.
 Read a transaction from <file>, serialize it to the Protobuf wire protocol, and output it as base64.

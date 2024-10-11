@@ -115,7 +115,7 @@ func (t1 messageMeta) Equal(t2 messageMeta) bool {
 // of the encoded field (as the [protoreflect.RawFields] type).
 //
 // Message values must not be created by or mutated by users.
-type Message map[string]interface{}
+type Message map[string]any
 
 // Unwrap returns the original message value.
 // It returns nil if this Message was not constructed from another message.
@@ -226,7 +226,7 @@ func Transform(opts ...option) cmp.Option {
 		}
 
 		return false
-	}, cmp.Transformer("protocmp.Transform", func(v interface{}) Message {
+	}, cmp.Transformer("protocmp.Transform", func(v any) Message {
 		// For user convenience, shallow copy the message value if necessary
 		// in order for it to implement the message interface.
 		if rv := reflect.ValueOf(v); rv.IsValid() && rv.Kind() != reflect.Ptr && !isMessageType(rv.Type()) {
@@ -303,7 +303,7 @@ func (xf *transformer) transformMessage(m protoreflect.Message) Message {
 	return mx
 }
 
-func (xf *transformer) transformList(fd protoreflect.FieldDescriptor, lv protoreflect.List) interface{} {
+func (xf *transformer) transformList(fd protoreflect.FieldDescriptor, lv protoreflect.List) any {
 	t := protoKindToGoType(fd.Kind())
 	rv := reflect.MakeSlice(reflect.SliceOf(t), lv.Len(), lv.Len())
 	for i := 0; i < lv.Len(); i++ {
@@ -313,7 +313,7 @@ func (xf *transformer) transformList(fd protoreflect.FieldDescriptor, lv protore
 	return rv.Interface()
 }
 
-func (xf *transformer) transformMap(fd protoreflect.FieldDescriptor, mv protoreflect.Map) interface{} {
+func (xf *transformer) transformMap(fd protoreflect.FieldDescriptor, mv protoreflect.Map) any {
 	kfd := fd.MapKey()
 	vfd := fd.MapValue()
 	kt := protoKindToGoType(kfd.Kind())
@@ -328,7 +328,7 @@ func (xf *transformer) transformMap(fd protoreflect.FieldDescriptor, mv protoref
 	return rv.Interface()
 }
 
-func (xf *transformer) transformSingular(fd protoreflect.FieldDescriptor, v protoreflect.Value) interface{} {
+func (xf *transformer) transformSingular(fd protoreflect.FieldDescriptor, v protoreflect.Value) any {
 	switch fd.Kind() {
 	case protoreflect.EnumKind:
 		return Enum{num: v.Enum(), ed: fd.Enum()}

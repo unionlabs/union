@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/privval"
 )
 

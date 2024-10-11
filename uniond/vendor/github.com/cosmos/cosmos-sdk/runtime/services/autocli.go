@@ -25,7 +25,7 @@ type AutoCLIQueryService struct {
 }
 
 // NewAutoCLIQueryService returns a AutoCLIQueryService for the provided modules.
-func NewAutoCLIQueryService(appModules map[string]interface{}) *AutoCLIQueryService {
+func NewAutoCLIQueryService(appModules map[string]appmodule.AppModule) *AutoCLIQueryService {
 	return &AutoCLIQueryService{
 		moduleOptions: ExtractAutoCLIOptions(appModules),
 	}
@@ -36,7 +36,7 @@ func NewAutoCLIQueryService(appModules map[string]interface{}) *AutoCLIQueryServ
 // Example Usage:
 //
 //	ExtractAutoCLIOptions(ModuleManager.Modules)
-func ExtractAutoCLIOptions(appModules map[string]interface{}) map[string]*autocliv1.ModuleOptions {
+func ExtractAutoCLIOptions(appModules map[string]appmodule.AppModule) map[string]*autocliv1.ModuleOptions {
 	moduleOptions := map[string]*autocliv1.ModuleOptions{}
 	for modName, mod := range appModules {
 		if autoCliMod, ok := mod.(interface {
@@ -54,7 +54,9 @@ func ExtractAutoCLIOptions(appModules map[string]interface{}) map[string]*autocl
 			mod.RegisterServices(cfg)
 		}
 
-		if mod, ok := mod.(appmodule.HasServices); ok {
+		if mod, ok := mod.(interface {
+			RegisterServices(grpc.ServiceRegistrar) error
+		}); ok {
 			err := mod.RegisterServices(cfg)
 			if err != nil {
 				panic(err)
@@ -103,13 +105,17 @@ type autocliConfigurator struct {
 	err           error
 }
 
-var _ module.Configurator = &autocliConfigurator{}
+var _ module.Configurator = &autocliConfigurator{} //nolint:staticcheck // SA1019: Configurator is deprecated but still used in runtime v1.
 
 func (a *autocliConfigurator) MsgServer() gogogrpc.Server { return &a.msgServer }
 
 func (a *autocliConfigurator) QueryServer() gogogrpc.Server { return &a.queryServer }
 
 func (a *autocliConfigurator) RegisterMigration(string, uint64, module.MigrationHandler) error {
+	return nil
+}
+
+func (a *autocliConfigurator) Register(string, uint64, appmodule.MigrationHandler) error {
 	return nil
 }
 

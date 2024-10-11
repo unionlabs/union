@@ -17,6 +17,7 @@
 #include <string.h>    /* memcpy */
 
 #include "zstd_v04.h"
+#include "compiler.h"
 #include "error_private.h"
 
 
@@ -37,15 +38,6 @@ extern "C" {
 #if defined(_MSC_VER)   /* Visual Studio */
 #   include <stdlib.h>  /* _byteswap_ulong */
 #   include <intrin.h>  /* _byteswap_* */
-#endif
-#if defined(__GNUC__)
-#  define MEM_STATIC static __attribute__((unused))
-#elif defined (__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
-#  define MEM_STATIC static inline
-#elif defined(_MSC_VER)
-#  define MEM_STATIC static __inline
-#else
-#  define MEM_STATIC static  /* this version may generate warnings for unused static functions; disable the relevant warning */
 #endif
 
 
@@ -3219,6 +3211,7 @@ static size_t ZSTD_decompressContinue(ZSTD_DCtx* ctx, void* dst, size_t maxDstSi
             }
             ctx->stage = ZSTDds_decodeBlockHeader;
             ctx->expected = ZSTD_blockHeaderSize;
+            if (ZSTD_isError(rSize)) return rSize;
             ctx->previousDstEnd = (char*)dst + rSize;
             return rSize;
         }
@@ -3546,8 +3539,8 @@ static size_t ZBUFF_decompressContinue(ZBUFF_DCtx* zbc, void* dst, size_t* maxDs
 unsigned ZBUFFv04_isError(size_t errorCode) { return ERR_isError(errorCode); }
 const char* ZBUFFv04_getErrorName(size_t errorCode) { return ERR_getErrorName(errorCode); }
 
-size_t ZBUFFv04_recommendedDInSize()  { return BLOCKSIZE + 3; }
-size_t ZBUFFv04_recommendedDOutSize() { return BLOCKSIZE; }
+size_t ZBUFFv04_recommendedDInSize(void)  { return BLOCKSIZE + 3; }
+size_t ZBUFFv04_recommendedDOutSize(void) { return BLOCKSIZE; }
 
 
 

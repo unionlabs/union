@@ -43,16 +43,16 @@ func (s signModeLegacyAminoJSONHandler) GetSignBytes(mode signingtypes.SignMode,
 		return nil, fmt.Errorf("expected %s, got %s", signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON, mode)
 	}
 
-	protoTx, ok := tx.(*wrapper)
+	protoTx, ok := tx.(*gogoTxWrapper)
 	if !ok {
 		return nil, fmt.Errorf("can only handle a protobuf Tx, got %T", tx)
 	}
 
-	if protoTx.txBodyHasUnknownNonCriticals {
+	if protoTx.TxBodyHasUnknownNonCriticals {
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, aminoNonCriticalFieldsError)
 	}
 
-	body := protoTx.tx.Body
+	body := protoTx.Tx.Body
 
 	if len(body.ExtensionOptions) != 0 || len(body.NonCriticalExtensionOptions) != 0 {
 		return nil, errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "%s does not support protobuf extension options", signingtypes.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
@@ -68,8 +68,8 @@ func (s signModeLegacyAminoJSONHandler) GetSignBytes(mode signingtypes.SignMode,
 		legacytx.StdFee{
 			Amount:  protoTx.GetFee(),
 			Gas:     protoTx.GetGas(),
-			Payer:   protoTx.tx.AuthInfo.Fee.Payer,
-			Granter: protoTx.tx.AuthInfo.Fee.Granter,
+			Payer:   protoTx.Tx.AuthInfo.Fee.Payer,
+			Granter: protoTx.Tx.AuthInfo.Fee.Granter,
 		},
 		tx.GetMsgs(), protoTx.GetMemo(),
 	), nil

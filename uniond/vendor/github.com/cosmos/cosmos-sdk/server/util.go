@@ -24,6 +24,8 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 
+	corectx "cosmossdk.io/core/context"
+	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/snapshots"
@@ -44,7 +46,9 @@ import (
 // a command's Context.
 const ServerContextKey = sdk.ContextKey("server.context")
 
-// server context
+// Context is the server context.
+// Prefer using we use viper a it tracks track all config.
+// See core/context/server_context.go.
 type Context struct {
 	Viper  *viper.Viper
 	Config *cmtcfg.Config
@@ -223,7 +227,11 @@ func SetCmdServerContext(cmd *cobra.Command, serverCtx *Context) error {
 		cmdCtx = cmd.Context()
 	}
 
-	cmd.SetContext(context.WithValue(cmdCtx, ServerContextKey, serverCtx))
+	cmdCtx = context.WithValue(cmdCtx, ServerContextKey, serverCtx)
+	cmdCtx = context.WithValue(cmdCtx, corectx.ViperContextKey, serverCtx.Viper)
+	cmdCtx = context.WithValue(cmdCtx, corectx.LoggerContextKey, serverCtx.Logger)
+
+	cmd.SetContext(cmdCtx)
 
 	return nil
 }
@@ -284,21 +292,31 @@ func interceptConfigs(rootViper *viper.Viper, customAppTemplate string, customCo
 
 	appCfgFilePath := filepath.Join(configPath, "app.toml")
 	if _, err := os.Stat(appCfgFilePath); os.IsNotExist(err) {
+		if (customAppTemplate != "" && customConfig == nil) || (customAppTemplate == "" && customConfig != nil) {
+			return nil, errors.New("customAppTemplate and customConfig should be both nil or not nil")
+		}
+
 		if customAppTemplate != "" {
-			config.SetConfigTemplate(customAppTemplate)
+			if err := config.SetConfigTemplate(customAppTemplate); err != nil {
+				return nil, fmt.Errorf("failed to set config template: %w", err)
+			}
 
 			if err = rootViper.Unmarshal(&customConfig); err != nil {
 				return nil, fmt.Errorf("failed to parse %s: %w", appCfgFilePath, err)
 			}
 
-			config.WriteConfigFile(appCfgFilePath, customConfig)
+			if err := config.WriteConfigFile(appCfgFilePath, customConfig); err != nil {
+				return nil, fmt.Errorf("failed to write %s: %w", appCfgFilePath, err)
+			}
 		} else {
 			appConf, err := config.ParseConfig(rootViper)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse %s: %w", appCfgFilePath, err)
 			}
 
-			config.WriteConfigFile(appCfgFilePath, appConf)
+			if err := config.WriteConfigFile(appCfgFilePath, appConf); err != nil {
+				return nil, fmt.Errorf("failed to write %s: %w", appCfgFilePath, err)
+			}
 		}
 	}
 
@@ -313,8 +331,8 @@ func interceptConfigs(rootViper *viper.Viper, customAppTemplate string, customCo
 	return conf, nil
 }
 
-// add server commands
-func AddCommands(rootCmd *cobra.Command, defaultNodeHome string, appCreator types.AppCreator, appExport types.AppExporter, addStartFlags types.ModuleInitFlags) {
+// AddCommands add server commands
+func AddCommands[T types.Application](rootCmd *cobra.Command, appCreator types.AppCreator[T], opts StartCmdOptions[T]) {
 	cometCmd := &cobra.Command{
 		Use:     "comet",
 		Aliases: []string{"cometbft", "tendermint"},
@@ -331,26 +349,29 @@ func AddCommands(rootCmd *cobra.Command, defaultNodeHome string, appCreator type
 		BootstrapStateCmd(appCreator),
 	)
 
-	startCmd := StartCmd(appCreator, defaultNodeHome)
-	addStartFlags(startCmd)
-
+	startCmd := StartCmdWithOptions(appCreator, opts)
 	rootCmd.AddCommand(
 		startCmd,
 		cometCmd,
-		ExportCmd(appExport, defaultNodeHome),
 		version.NewVersionCommand(),
-		NewRollbackCmd(appCreator, defaultNodeHome),
+		NewRollbackCmd(appCreator),
+		ModuleHashByHeightQuery(appCreator),
 	)
 }
 
+// AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
+// Deprecated: Use AddCommands directly instead.
+func AddCommandsWithStartCmdOptions[T types.Application](rootCmd *cobra.Command, appCreator types.AppCreator[T], opts StartCmdOptions[T]) {
+	AddCommands(rootCmd, appCreator, opts)
+}
+
 // AddTestnetCreatorCommand allows chains to create a testnet from the state existing in their node's data directory.
-func AddTestnetCreatorCommand(rootCmd *cobra.Command, appCreator types.AppCreator, addStartFlags types.ModuleInitFlags) {
+func AddTestnetCreatorCommand[T types.Application](rootCmd *cobra.Command, appCreator types.AppCreator[T]) {
 	testnetCreateCmd := InPlaceTestnetCreator(appCreator)
-	addStartFlags(testnetCreateCmd)
 	rootCmd.AddCommand(testnetCreateCmd)
 }
 
-// https://stackoverflow.com/questions/23558425/how-do-i-get-the-local-ip-address-in-go
+// ExternalIP https://stackoverflow.com/questions/23558425/how-do-i-get-the-local-ip-address-in-go
 // TODO there must be a better way to get external IP
 func ExternalIP() (string, error) {
 	ifaces, err := net.Interfaces()
@@ -452,7 +473,8 @@ func addrToIP(addr net.Addr) net.IP {
 	return ip
 }
 
-func openDB(rootDir string, backendType dbm.BackendType) (dbm.DB, error) {
+// OpenDB opens the application database using the appropriate driver.
+func OpenDB(rootDir string, backendType dbm.BackendType) (corestore.KVStoreWithBatch, error) {
 	dataDir := filepath.Join(rootDir, "data")
 	return dbm.NewDB("application", backendType, dataDir)
 }

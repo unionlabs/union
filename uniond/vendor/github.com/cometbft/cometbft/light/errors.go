@@ -8,6 +8,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+var ErrEmptyTrustedStore = errors.New("trusted store is empty")
+
 // ErrOldHeaderExpired means the old (trusted) header has expired according to
 // the given trustingPeriod and current time. If so, the light client must be
 // reset subjectively.
@@ -27,7 +29,7 @@ type ErrNewValSetCantBeTrusted struct {
 }
 
 func (e ErrNewValSetCantBeTrusted) Error() string {
-	return fmt.Sprintf("cant trust new val set: %v", e.Reason)
+	return fmt.Sprintf("can't trust new val set: %v", e.Reason)
 }
 
 // ErrInvalidHeader means the header either failed the basic validation or
@@ -75,19 +77,35 @@ var ErrLightClientAttack = errors.New(`attempted attack detected.
 // continue running the light client.
 var ErrNoWitnesses = errors.New("no witnesses connected. please reset light client")
 
-// ----------------------------- INTERNAL ERRORS ---------------------------------
-
 // ErrConflictingHeaders is thrown when two conflicting headers are discovered.
-type errConflictingHeaders struct {
+type ErrConflictingHeaders struct {
 	Block        *types.LightBlock
 	WitnessIndex int
 }
 
-func (e errConflictingHeaders) Error() string {
+func (e ErrConflictingHeaders) Error() string {
 	return fmt.Sprintf(
 		"header hash (%X) from witness (%d) does not match primary",
 		e.Block.Hash(), e.WitnessIndex)
 }
+
+// ErrProposerPrioritiesDiverge is thrown when two conflicting headers are
+// discovered, but the error is non-attributable comparing to ErrConflictingHeaders.
+// The difference is in validator set proposer priorities, which may change
+// with every round of consensus.
+type ErrProposerPrioritiesDiverge struct {
+	WitnessHash  []byte
+	WitnessIndex int
+	PrimaryHash  []byte
+}
+
+func (e ErrProposerPrioritiesDiverge) Error() string {
+	return fmt.Sprintf(
+		"validator set's proposer priority hashes do not match: witness[%d]=%X, primary=%X",
+		e.WitnessIndex, e.WitnessHash, e.PrimaryHash)
+}
+
+// ----------------------------- INTERNAL ERRORS ---------------------------------
 
 // errBadWitness is returned when the witness either does not respond or
 // responds with an invalid header.
