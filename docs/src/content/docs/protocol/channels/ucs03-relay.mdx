@@ -1,0 +1,90 @@
+---
+title: "ucs03-relay-1"
+sidebar:
+  badge:
+    text: live
+    variant: note
+---
+
+import Mermaid from "#/components/Mermaid.astro";
+
+# Overview
+
+`ucs03-relay-1` is the most advanced and recommended protocol to use for 
+
+- message passing
+- transfers (assets and NFTs)
+- intents
+- storage proofs
+
+It's the most gas-efficient version and suitable for almost all use cases.
+
+## Protocol
+
+There are two main modes for a packet to be transferred using `ucs03-relay-1`. The main mode, which always succeeds for any chain, 
+leverages state lenses to create a recursive connection and a communication channel between two chains.
+
+
+<Mermaid
+  content={`
+sequenceDiagram
+    critical   
+        Chain A ->> Union: ClientUpdate
+        Union ->> Chain B: ClientUpdate
+        Chain A -->> Chain B: Packet
+    end 
+    Chain B ->> Union: ClientUpdate
+    Union ->> Chain A: ClientUpdate
+    Chain B -->> Chain A: Acknowledgement
+`}/>
+
+The packet submission is not routed through any PFM middleware, which avoids re-execution on Union, unlike `ucs01-relay-1`. The core protocol is 
+significantly more gas efficient over multi-hop-based protocols.
+
+### Open Filling
+
+A groundbreaking protocol improvement on IBC and trust-minimized bridging in general, is that `ucs03-relay-1` allows arbitrary filling of orders by any party. 
+
+:::tip
+
+Read more on filling and counterparty risk [here](/concepts/filling).
+
+:::
+
+For packet submissions and transfers, the protocol allows a different filler from the Union IBC contracts. In the case of an alternative filler, the assets
+are not minted but transferred from the filler's account. This allows a transfer to be filled before chains have been finalized or client updates processed. Instead,
+fillers can rely on preconfirmations to reduce the risk of reorgs.
+
+<Mermaid
+  content={`
+sequenceDiagram
+    participant Chain A
+    participant Union
+    participant Chain B
+    critical
+        Chain A -->> Chain B: Packet   
+        Chain A ->> Union: ClientUpdate
+        Union ->> Chain B: ClientUpdate
+    end 
+    Chain B ->> Union: ClientUpdate
+    Union ->> Chain A: ClientUpdate
+    Chain B -->> Chain A: Acknowledgement
+`}/>
+
+Theoretically, a filler can submit the transfer to the destination side before the transaction is included on the source, given that they protect themselves against double-spend attacks.
+
+The `Acknowledgement`, which may contain arbitrary payloads, is used to encode information on the filler and repay the filler for the service by unlocking assets from the vault. 
+
+Open filling is opt-in for any protocol, allowing for the same optimizations that `ucs03-relay-1` leverages to increase transfer speeds.
+
+### Batching
+
+To minimize the cost of packet verification (which is dominated by membership proofs), packets may be batched. This means that at scale, the gas cost of transfers tends to the 
+erc20 gas cost, which is the theoretical optimum.
+
+:::note
+
+Read more on filling and counterparty risk [here](/concepts/filling).
+
+:::
+

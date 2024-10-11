@@ -1,0 +1,51 @@
+---
+title: "ucs01-relay-1"
+sidebar:
+  badge:
+    text: live
+    variant: note
+---
+
+import Mermaid from "#/components/Mermaid.astro";
+
+# Overview
+
+`ucs01-relay-1` is an evm compatible, multihop protocol leveraging [packet-forward middleware](https://github.com/cosmos/ibc-apps/tree/main/middleware/packet-forward-middleware) (PFM).
+A transfer is decomposed into two smaller transfers, and routed through the middleware to the appropriate chain using the `channel` and `port` combination. `ucs01-relay-1` is only supported
+for transfers, as it leverages the memo field to encode routing data. 
+
+
+## Protocol
+
+<Mermaid
+  content={`
+sequenceDiagram
+    critical   
+        Chain A ->> Union: ClientUpdate
+        Chain A ->> Union: Packet
+        Union ->> Chain B: ClientUpdate
+        Union ->> Chain B: Packet
+    end 
+    Chain B ->> Union: ClientUpdate
+    Chain B ->> Union: Acknowledgement
+    Union ->> Chain A: ClientUpdate
+    Union ->> Chain A: Acknowledgement
+`}/>
+
+After the `critical` section in the diagram has been completed, the transfer portion for the user is completed, and funds become transferrable on the destination chain. 
+
+### Routing
+
+The memo field of the transfer must contain a JSON object with a `forward` key, which specifies the `port` and `channel` to forward into.
+
+```json
+{
+  "forward": {
+    "port": 5,
+    "channel": 30,
+    "recipient": "0x..."
+  }
+}
+```
+
+On Union, the `PFM` middleware will create a new transfer with a new sequence number using the routing info.

@@ -136,6 +136,12 @@ export default defineConfig({
               link: "/"
             },
             {
+              label: "Protocol",
+              autogenerate: {
+                directory: "/protocol"
+              }
+            },
+            {
               label: "Architecture",
               autogenerate: {
                 directory: "/architecture"
