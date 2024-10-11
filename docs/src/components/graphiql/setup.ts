@@ -48,7 +48,6 @@ const graphiqlProps = {
     additionalContent: [
       React.createElement(
         "button",
-        // biome-ignore lint/a11y/useButtonType: <explanation>
         {
           key: "share",
           type: "button",

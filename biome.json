@@ -224,8 +224,11 @@
         "noSecrets": "off",
         "noProcessEnv": "off",
         "useStrictMode": "off",
+        "noNestedTernary": "off",
         "noExportedImports": "off",
-        "useImportRestrictions": "off"
+        "useImportRestrictions": "off",
+        "noDescendingSpecificity": "off",
+        "useExplicitFunctionReturnType": "off"
       },
       "performance": {
         "all": true,
