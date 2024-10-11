@@ -58,7 +58,6 @@ jobs:
 
   deploy-preview:
     runs-on: ['ubuntu-latest']
-    needs: [garnix]
     permissions:
       contents: read
       pull-requests: write
@@ -104,7 +103,6 @@ jobs:
 
   deploy-manual:
     runs-on: ['ubuntu-latest']
-    needs: [garnix]
     env:
       npm_config_yes: true
     if: github.event_name == 'workflow_dispatch'
