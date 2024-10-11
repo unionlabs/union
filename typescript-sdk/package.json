@@ -26,7 +26,8 @@
     "check-package": "bunx publint@latest --strict && bunx @arethetypeswrong/cli --pack --ignore-rules 'cjs-resolves-to-esm'",
     "clean": "rm -rf dist node_modules",
     "postinstall": "patch-package",
-    "prepublish": "bun run build"
+    "prepublish": "bun run build",
+    "preinstall": "npm_config_yes=true npm exec --no-package-lock=true only-allow@latest bun"
   },
   "dependencies": {
     "@aptos-labs/ts-sdk": "^1.29.1",
@@ -35,15 +36,15 @@
     "@cosmjs/proto-signing": "^0.32.4",
     "@cosmjs/stargate": "0.32.4",
     "@cosmjs/tendermint-rpc": "^0.32.4",
-    "@scure/base": "^1.1.8",
+    "@scure/base": "^1.1.9",
     "neverthrow": "^8.0.0",
-    "ofetch": "^1.3.4",
+    "ofetch": "^1.4.1",
     "patch-package": "^8.0.0",
     "viem": "^2.21.8"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.6.1",
-    "@types/bun": "^1.1.9",
+    "@types/bun": "^1.1.11",
     "@types/node": "^22.7.5",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
@@ -52,7 +53,7 @@
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
     "vite-tsconfig-paths": "^5.0.1",
-    "vitest": "^2.1.1"
+    "vitest": "^2.1.2"
   },
   "repository": {
     "type": "git",
