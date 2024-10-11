@@ -1,3 +1,0 @@
-go test fuzz v1
-string("OOOOOOOO000")
-string("0000000000\x1000")

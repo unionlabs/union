@@ -1,4 +1,0 @@
--- go.mod --
-module example.com/prerelease
-
-go 1.12

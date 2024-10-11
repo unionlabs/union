@@ -1,3 +1,0 @@
-{
-	"cert_provider_command":["cat", "testdata/invalid.pem"]
-}

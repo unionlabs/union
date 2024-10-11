@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message Cat {
-    int32 Age = 1;
-    string Breed = 2;
-    string Name = 3;
-}

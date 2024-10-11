@@ -1,5 +1,0 @@
-# Simply sanity check on help output
-! testscript -help
-! stdout .+
-stderr 'The testscript command'
-stderr 'Examples'

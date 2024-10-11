@@ -1,3 +1,0 @@
-#!/bin/bash
-
-vagrant ssh linux -c 'cd /keyring; go test .'

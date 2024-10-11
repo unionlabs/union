@@ -1,8 +1,0 @@
-load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
-
-swift_library(
-    name = "swift",
-    srcs = glob(["Sources/FlatBuffers/*.swift"]),
-    module_name = "FlatBuffers",
-    visibility = ["//visibility:public"],
-)

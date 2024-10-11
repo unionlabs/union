@@ -1,7 +1,0 @@
-use ../foo
-
-use (
-	/bar
-
-	baz
-)

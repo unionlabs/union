@@ -1,8 +1,0 @@
--- go.mod --
-module example.com/tidy/b
-
-go 1.12
--- p.go --
-package b
-
-func B() {}

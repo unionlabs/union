@@ -1,5 +1,0 @@
-// This test checks that an error is written for invalid JSON requests.
-
---> 'f
-<-- {"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"invalid character '\\'' looking for beginning of value"}}
-

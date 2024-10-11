@@ -1,2 +1,0 @@
-proxy_from_environment: true
-no_proxy: 127.0.0.1

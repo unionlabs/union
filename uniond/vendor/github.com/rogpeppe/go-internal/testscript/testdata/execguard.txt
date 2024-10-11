@@ -1,7 +1,0 @@
-[exec:nosuchcommand] exec nosuchcommand
-[!exec:cat] stop
-exec cat foo
-stdout 'foo\n'
-
--- foo --
-foo

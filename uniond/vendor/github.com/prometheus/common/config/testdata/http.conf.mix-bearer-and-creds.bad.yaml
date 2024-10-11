@@ -1,3 +1,0 @@
-authorization:
-  type: APIKEY
-bearer_token: foo

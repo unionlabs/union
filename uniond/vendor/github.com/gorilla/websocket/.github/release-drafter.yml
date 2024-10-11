@@ -1,7 +1,0 @@
-# Config for https://github.com/apps/release-drafter
-template: |
-  
-  <summary of changes here>
-  
-  ## CHANGELOG
-  $CHANGES

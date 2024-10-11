@@ -1,8 +1,0 @@
-{
-    "id": "74c9af99-629e-453b-97a0-af6251efd414",
-    "type": "bugfix",
-    "description": "endpoints were incorrect for kendra-ranking. this fixes that",
-    "modules": [
-        "."
-    ]
-}

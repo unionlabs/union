@@ -1,9 +1,0 @@
-{
-  "pagination": {
-    "ListTunnels": {
-      "input_token": "nextToken",
-      "output_token": "nextToken",
-      "limit_key": "maxResults"
-    }
-  }
-}

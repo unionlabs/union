@@ -1,9 +1,0 @@
----
-# Default rules for YAML linting from super-linter.
-# See: See https://yamllint.readthedocs.io/en/stable/rules.html
-extends: default
-rules:
-  document-end: disable
-  document-start: disable
-  line-length: disable
-  truthy: disable

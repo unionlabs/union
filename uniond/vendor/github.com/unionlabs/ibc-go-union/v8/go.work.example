@@ -1,8 +1,0 @@
-go 1.20
-
-use (
-	./
-	./modules/capability
-	./modules/apps/callbacks
-	./e2e
-)

@@ -1,6 +1,0 @@
--- go.mod --
-module example.com/cycle
-
-go 1.12
--- a.go --
-package a

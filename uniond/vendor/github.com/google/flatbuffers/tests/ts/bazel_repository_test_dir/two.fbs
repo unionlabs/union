@@ -1,9 +1,0 @@
-include 'one.fbs';
-
-namespace bazel_repository_test;
-
-table Two {
-  one:One;
-}
-
-root_type Two;

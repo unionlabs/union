@@ -1,6 +1,0 @@
-setSpecialVal
-exists $SPECIALVAL.txt
-ensureSpecialVal
-
--- 42.txt --
-Douglas Adams

@@ -1,7 +1,0 @@
-http_headers:
-  one:
-    values: [value1]
-  two:
-    secrets: [value2]
-  three:
-    files: [testdata/headers-file]

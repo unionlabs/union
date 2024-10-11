@@ -1,6 +1,0 @@
-mod=example.com/cycle/v2
-version=v2.0.0
--- want --
-# summary
-Inferred base version: v2.0.0
-Suggested version: v2.0.1

@@ -1,7 +1,0 @@
-# CODEOWNERS: https://help.github.com/articles/about-codeowners/
-
-# NOTE: Order is important; the last matching pattern takes the 
-# most precedence.
-
-# Primary repo maintainers
-*       @cosmos/sdk-core-dev

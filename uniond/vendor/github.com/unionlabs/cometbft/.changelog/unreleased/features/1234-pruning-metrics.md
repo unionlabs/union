@@ -1,2 +1,0 @@
-- `[metrics]` Add metrics to monitor pruning and current available data in stores: `PruningServiceBlockRetainHeight`, `PruningServiceBlockResultsRetainHeight`, `ApplicationBlockRetainHeight`, `BlockStoreBaseHeight`, `ABCIResultsBaseHeight`.
-  ([\#1234](https://github.com/cometbft/cometbft/pull/1234))

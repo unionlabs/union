@@ -1,6 +1,0 @@
-syntax = "proto2";
-
-package test.issue270.b;
-
-message B {
-}

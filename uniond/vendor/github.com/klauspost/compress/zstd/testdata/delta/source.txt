@@ -1,5 +1,0 @@
-0000000000000000
-
-This file is to be used as the dictionary for compressing target.txt:
-
-	zstd -19 --patch-from=source.txt target.txt

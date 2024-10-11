@@ -1,9 +1,0 @@
-namespace v2;
-
-table RootTable {
-  a:float;
-  b:[uint8];
-  big_vector:[uint8] (vector64);
-}
-
-root_type RootTable;

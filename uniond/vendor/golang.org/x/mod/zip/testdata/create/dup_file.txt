@@ -1,7 +1,0 @@
-path=example.com/m
-version=v1.0.0
-wantErr=multiple entries for file "dup.go"
--- dup.go --
-package d1
--- dup.go --
-package d2

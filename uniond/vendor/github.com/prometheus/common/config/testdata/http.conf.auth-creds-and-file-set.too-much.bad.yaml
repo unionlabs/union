@@ -1,3 +1,0 @@
-authorization:
-  credentials: bearertoken
-  credentials_file: key.txt

@@ -1,7 +1,0 @@
-# See https://help.github.com/articles/about-codeowners/ for syntax
-# Rules are matched bottom-to-top, so one team can own subdirectories
-# and another team can own the rest of the directory.
-
-
-# Documentation
-*.md                  @DataDog/baklava

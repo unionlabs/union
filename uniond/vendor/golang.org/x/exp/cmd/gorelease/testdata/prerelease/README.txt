@@ -1,1 +1,0 @@
-This directory contains tests for pre-release versions.

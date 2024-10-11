@@ -1,3 +1,0 @@
-path=example.com/empty
-version=v1.0.0
-hash=h1:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=

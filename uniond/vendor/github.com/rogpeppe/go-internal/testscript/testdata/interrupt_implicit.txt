@@ -1,4 +1,0 @@
-# Let testscript stop signalcatcher at the end of the testscript.
-
-signalcatcher &
-waitfile catchsignal
