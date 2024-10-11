@@ -49,6 +49,7 @@ cloud.google.com/go/storage/internal/apiv2/storagepb
 # cosmossdk.io/api v0.8.0 => cosmossdk.io/api v0.7.3-0.20240924065902-eb7653cfecdf
 ## explicit; go 1.21
 cosmossdk.io/api/amino
+cosmossdk.io/api/cosmos/accounts/module/v1
 cosmossdk.io/api/cosmos/app/runtime/v1alpha1
 cosmossdk.io/api/cosmos/app/v1alpha1
 cosmossdk.io/api/cosmos/auth/module/v1
@@ -86,6 +87,8 @@ cosmossdk.io/api/cosmos/mint/v1beta1
 cosmossdk.io/api/cosmos/msg/v1
 cosmossdk.io/api/cosmos/params/module/v1
 cosmossdk.io/api/cosmos/params/v1beta1
+cosmossdk.io/api/cosmos/protocolpool/module/v1
+cosmossdk.io/api/cosmos/protocolpool/v1
 cosmossdk.io/api/cosmos/query/v1
 cosmossdk.io/api/cosmos/reflection/v1
 cosmossdk.io/api/cosmos/slashing/module/v1
@@ -195,6 +198,15 @@ cosmossdk.io/store/types
 ## explicit; go 1.23.1
 cosmossdk.io/tools/confix
 cosmossdk.io/tools/confix/cmd
+# cosmossdk.io/x/accounts v0.1.1 => github.com/unionlabs/cosmos-sdk-union/x/accounts v0.0.0-20241009174353-cb4ef3142d00
+## explicit; go 1.23.1
+cosmossdk.io/x/accounts
+cosmossdk.io/x/accounts/accountstd
+cosmossdk.io/x/accounts/cli
+cosmossdk.io/x/accounts/interfaces/account_abstraction/v1
+cosmossdk.io/x/accounts/internal/implementation
+cosmossdk.io/x/accounts/internal/prefixstore
+cosmossdk.io/x/accounts/v1
 # cosmossdk.io/x/authz v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/authz v0.0.0-20241009174353-cb4ef3142d00
 ## explicit; go 1.23.1
 cosmossdk.io/x/authz
@@ -281,14 +293,14 @@ cosmossdk.io/x/mint/types
 # cosmossdk.io/x/params v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/params v0.0.0-20241009174353-cb4ef3142d00
 ## explicit; go 1.23.1
 cosmossdk.io/x/params
-cosmossdk.io/x/params/client
-cosmossdk.io/x/params/client/cli
-cosmossdk.io/x/params/client/utils
 cosmossdk.io/x/params/keeper
 cosmossdk.io/x/params/types
 cosmossdk.io/x/params/types/proposal
-# cosmossdk.io/x/protocolpool v0.0.0-20230925135524-a1bc045b3190 => github.com/unionlabs/cosmos-sdk-union/x/protocolpool v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/protocolpool v0.1.0 => github.com/unionlabs/cosmos-sdk-union/x/protocolpool v0.0.0-20241009174353-cb4ef3142d00
 ## explicit; go 1.23.1
+cosmossdk.io/x/protocolpool
+cosmossdk.io/x/protocolpool/keeper
+cosmossdk.io/x/protocolpool/simulation
 cosmossdk.io/x/protocolpool/types
 # cosmossdk.io/x/slashing v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/slashing v0.0.0-20241009174353-cb4ef3142d00
 ## explicit; go 1.23.1
