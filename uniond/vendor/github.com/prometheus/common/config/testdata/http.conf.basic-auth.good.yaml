@@ -1,3 +1,0 @@
-basic_auth:
-  username: user
-  password_file: testdata/basic-auth-password

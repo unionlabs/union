@@ -1,9 +1,0 @@
-path=example.com/m
-version=v1.0.0
-wantErr=go.mod file not in module root directory
--- example.com/m@v1.0.0/go.mod --
-module example.com/m
-
-go 1.13
--- example.com/m@v1.0.0/sub/go.mod --
-module example.com/m/sub

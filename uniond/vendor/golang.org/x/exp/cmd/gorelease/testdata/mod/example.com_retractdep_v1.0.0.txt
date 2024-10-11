@@ -1,8 +1,0 @@
--- go.mod --
-module example.com/retractdep
-
-go 1.12
--- a.go --
-package a
-
-const A = "a"

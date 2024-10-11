@@ -1,5 +1,0 @@
-path=example.com/m
-version=v1.0.0
-hash=h1:Mun5l9cBlDnnV6JasTpio2aZJSbFj++h+814mnKC/OM=
--- go.mod/a.go --
-package a

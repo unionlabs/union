@@ -1,3 +1,0 @@
-table Message {
-  internal_message: string;
-}

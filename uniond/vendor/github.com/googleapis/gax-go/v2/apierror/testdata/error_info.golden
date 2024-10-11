@@ -1,2 +1,0 @@
-rpc error: code = Unauthenticated desc = ei
-error details: name = ErrorInfo reason = Foo domain = Bar metadata = map[type:test]

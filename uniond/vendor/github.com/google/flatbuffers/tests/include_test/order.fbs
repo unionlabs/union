@@ -1,8 +1,0 @@
-include "no_namespace.fbs";
-
-namespace order;
-
-table Food {
-  pizza: Pizza (id: 0);
-  pizza_test:Pizza(id:1);
-}

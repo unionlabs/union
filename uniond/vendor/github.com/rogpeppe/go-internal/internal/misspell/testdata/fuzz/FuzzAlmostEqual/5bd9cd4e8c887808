@@ -1,3 +1,0 @@
-go test fuzz v1
-string("\x980")
-string("0\xb70")

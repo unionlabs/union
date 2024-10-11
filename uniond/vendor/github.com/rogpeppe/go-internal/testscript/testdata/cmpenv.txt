@@ -1,7 +1,0 @@
-env $=$
-cmpenv file1 file2
-
--- file1 --
-$i
--- file2 --
-$$i

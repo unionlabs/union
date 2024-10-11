@@ -1,3 +1,0 @@
-enum Color : int {Red = 1, Blue, Orange}
-
-enum Size: int {Small = 10, Large = 100, Medium = 1000}

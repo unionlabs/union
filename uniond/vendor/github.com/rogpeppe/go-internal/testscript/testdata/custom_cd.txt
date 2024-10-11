@@ -1,7 +1,0 @@
-# Verify that a custom command can chdir.
-
-mkChdir foo
-exists $WORK/foo
-
-# Current directory is not $WORK.
-! exists foo

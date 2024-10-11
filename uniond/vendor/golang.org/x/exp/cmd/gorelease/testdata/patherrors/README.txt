@@ -1,1 +1,0 @@
-Module example.com/patherrors tests errors related to paths.

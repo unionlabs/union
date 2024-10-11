@@ -1,8 +1,0 @@
--- go.mod --
-module example.com/main
-
-go 1.14
--- a/a.go --
-package main
-
-func main() {}

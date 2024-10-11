@@ -1,3 +1,0 @@
-module "bar" {
-    source = "./baz"
-}

@@ -1,6 +1,0 @@
-*.gem
-.bundle
-.ruby-version
-.jekyll-cache
-.sass-cache
-_site

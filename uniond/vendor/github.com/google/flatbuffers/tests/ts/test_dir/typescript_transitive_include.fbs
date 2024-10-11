@@ -1,5 +1,0 @@
-namespace foobar;
-
-enum Abc: int {
-  a,
-}

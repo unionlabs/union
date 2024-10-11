@@ -1,1 +1,0 @@
- check --length=8 --inv=Inv --cinit=CInit --discard-disabled=false MC_PBT_3C_1F.tla

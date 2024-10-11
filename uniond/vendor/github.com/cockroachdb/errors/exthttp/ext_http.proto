@@ -1,7 +1,0 @@
-syntax = "proto3";
-package cockroach.errors.exthttp;
-option go_package = "exthttp";
-
-message EncodedHTTPCode {
-	uint32 code = 1;
-}

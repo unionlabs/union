@@ -1,7 +1,0 @@
-Querying commands for the testpb.Query service
-
-Usage:
-  test skipecho [flags]
-
-Flags:
-  -h, --help   help for skipecho

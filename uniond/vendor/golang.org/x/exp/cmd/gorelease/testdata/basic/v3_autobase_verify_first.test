@@ -1,7 +1,0 @@
-mod=example.com/basic/v3
-version=v3.0.0-ignore
-release=v3.0.0
--- want --
-# summary
-Inferred base version: none
-v3.0.0 is a valid semantic version for this release.

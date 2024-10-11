@@ -1,5 +1,0 @@
-go test fuzz v1
-int(5)
-int(0)
-[]byte("")
-uint64(8234)

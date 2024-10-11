@@ -1,5 +1,0 @@
-include "tests/included_test.fbs";
-
-table Wrapper {
-  a:Wrapped;
-}

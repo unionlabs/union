@@ -1,8 +1,0 @@
-mod=example.com/errors
-base=v0.1.0
-release=v0.1.0
-error=true
--- want --
-usage: gorelease [-base=version] [-version=version]
--base and -version must be different
-For more information, run go doc golang.org/x/exp/cmd/gorelease

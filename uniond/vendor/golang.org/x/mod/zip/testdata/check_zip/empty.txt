@@ -1,8 +1,0 @@
-path=example.com/empty
-version=v1.0.0
--- want --
-valid:
-
-omitted:
-
-invalid:

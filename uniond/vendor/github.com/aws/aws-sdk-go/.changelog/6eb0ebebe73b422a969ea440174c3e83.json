@@ -1,8 +1,0 @@
-{
-    "id": "6eb0ebeb-e73b-422a-969e-a440174c3e83",
-    "type": "bugfix",
-    "description": "Removes old model file for ssm sap and uses the new model file to regenerate client",
-    "modules": [
-        "."
-    ]
-}

@@ -1,1 +1,0 @@
-- Remove remotedb ([\#121](https://github.com/cometbft/cometbft-db/pull/121))

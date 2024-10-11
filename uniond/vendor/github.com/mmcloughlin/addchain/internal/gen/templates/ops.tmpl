@@ -1,3 +1,0 @@
-{{- range $n, $op := .Ops -}}
-{{- printf "[%3d] %4d+%-4d %#x\n" $n $op.I $op.J (index $.Chain (inc $n)) -}}
-{{- end -}}

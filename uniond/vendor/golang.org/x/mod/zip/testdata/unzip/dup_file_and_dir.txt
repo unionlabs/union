@@ -1,7 +1,0 @@
-path=example.com/m
-version=v1.0.0
-wantErr=entry "a.go" is both a file and a directory
--- example.com/m@v1.0.0/a.go --
-package a
--- example.com/m@v1.0.0/a.go/b.go --
-package b

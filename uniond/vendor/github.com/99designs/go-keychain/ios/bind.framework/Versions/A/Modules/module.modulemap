@@ -1,8 +1,0 @@
-framework module "Bind" {
-	header "ref.h"
-    header "Bind.objc.h"
-    header "Universe.objc.h"
-    header "Bind.h"
-
-    export *
-}

@@ -1,1 +1,0 @@
-- Expanded db interface to support compaction ([\#111](https://github.com/cometbft/cometbft-db/pull/111))

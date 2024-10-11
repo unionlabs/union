@@ -1,3 +1,0 @@
-variable "memory" {}
-
-output "result" {}

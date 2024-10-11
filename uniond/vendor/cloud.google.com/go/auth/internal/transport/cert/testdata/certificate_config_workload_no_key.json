@@ -1,7 +1,0 @@
-{
-  "cert_configs": {
-    "workload": {
-      "cert_path": "testdata/workload_cert.pem"
-    }
-  }
-}

@@ -1,3 +1,0 @@
-path=ÿ  # 0xFF
-version=v1.0.0
-wantErr=malformed module path "\xff": invalid UTF-8

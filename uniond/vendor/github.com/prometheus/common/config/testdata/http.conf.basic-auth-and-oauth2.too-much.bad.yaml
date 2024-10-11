@@ -1,6 +1,0 @@
-basic_auth:
-  username: user
-  password: foo
-oauth2:
-  client_id: foo
-  client_secret: bar

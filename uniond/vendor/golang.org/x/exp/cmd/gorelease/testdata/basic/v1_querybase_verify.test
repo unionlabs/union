@@ -1,8 +1,0 @@
-mod=example.com/basic
-version=v1.0.1
-base=version-1.0.1
-release=v1.0.2
--- want --
-# summary
-Base version: v1.0.1 (version-1.0.1)
-v1.0.2 is a valid semantic version for this release.

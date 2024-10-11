@@ -1,7 +1,0 @@
-obj {
-    foo = [<<EOF
-        TEXT!
-!!EOF
-EOF
-    ]
-}

@@ -1,5 +1,0 @@
-basic_auth:
-  username: username
-  password: "mysecret"
-proxy_url: "http://remote.host"
-enable_http2: true

@@ -1,9 +1,0 @@
-mod=example.com/cycle
-base=v1.0.0
-version=v1.0.0
-release=v1.0.1
-success=false
--- want --
-# summary
-v1.0.1 is not a valid semantic version for this release.
-Module indirectly depends on a higher version of itself (v1.5.0).

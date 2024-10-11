@@ -1,3 +1,0 @@
-[submodule "src/bls"]
-	path = src/bls
-	url = https://github.com/herumi/bls

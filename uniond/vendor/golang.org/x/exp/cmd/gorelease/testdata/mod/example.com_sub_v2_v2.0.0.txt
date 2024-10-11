@@ -1,6 +1,0 @@
--- go.mod --
-module example.com/sub/v2
-
-go 1.12
--- sub.go --
-package sub

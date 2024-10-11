@@ -1,8 +1,0 @@
-mod=example.com/errors
-base=v0.1.0
-release=master
-error=true
--- want --
-usage: gorelease [-base=version] [-version=version]
-release version "master" is not a canonical semantic version
-For more information, run go doc golang.org/x/exp/cmd/gorelease

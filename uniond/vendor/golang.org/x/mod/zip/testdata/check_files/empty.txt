@@ -1,6 +1,0 @@
--- want --
-valid:
-
-omitted:
-
-invalid:

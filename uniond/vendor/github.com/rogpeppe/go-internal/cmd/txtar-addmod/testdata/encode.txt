@@ -1,5 +1,0 @@
-mkdir $WORK/out
-txtar-addmod $WORK/out github.com/shurcooL/httpfs@v0.0.0-20171119174359-809beceb2371
-! stdout .+
-! stderr .+
-exists $WORK/out/github.com_shurcoo!l_httpfs_v0.0.0-20171119174359-809beceb2371.txtar

@@ -1,3 +1,0 @@
-basic_auth:
-  username_ref: admin
-  password_ref: pass

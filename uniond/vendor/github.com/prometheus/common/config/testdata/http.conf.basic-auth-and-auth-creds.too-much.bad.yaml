@@ -1,5 +1,0 @@
-basic_auth:
-  username: user
-  password: foo
-authorization:
-  credentials: foo

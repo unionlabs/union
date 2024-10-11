@@ -1,7 +1,0 @@
-mod=example.com/basic
-version=v1.0.1
-release=v1.0.1
-base=>v1.0.1
-error=true
--- want --
-base version v1.1.0 (>v1.0.1) must be lower than release version v1.0.1
