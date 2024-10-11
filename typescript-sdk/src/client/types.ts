@@ -34,6 +34,7 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
       }
     : CHAIN_ID extends MoveChainId // Add Move-specific parameters
       ? {
+          simulate?: boolean
           denomAddress: string // Move will also need a denomAddress for token identification
           account?: AptosAccount // Define account type (Move accounts)
           relayContractAddress?: string // Optional relay contract address for cross-chain moves

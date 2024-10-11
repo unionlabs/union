@@ -1,12 +1,14 @@
 import { createClient, fallback, type HttpTransport } from "viem"
-import { err, type Result } from "neverthrow"
+import { err, ok, type Result } from "neverthrow"
 import type { TransferAssetsParameters } from "./types.ts"
-import { cosmosChainId } from "./cosmos.ts"
 import { consola } from "scripts/logger"
-import { transferAssetFromMove } from "src/transfer/move.ts" // Import the Move transfer function
+import {
+  moveSameChainTransfer,
+  transferAssetFromMove,
+  transferAssetFromMoveSimulate
+} from "src/transfer/move.ts" // Import the Move transfer function
 import type { Account } from "@aptos-labs/ts-sdk"
-import { createPfmMemo, getHubbleChainDetails } from "#pfm.ts"
-import { bech32AddressToHex } from "#convert.ts"
+import { getHubbleChainDetails } from "../pfm.ts"
 
 // Define the list of supported Move chains
 export const moveChainId = ["2"] as const
@@ -27,6 +29,7 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
       amount,
       receiver,
       denomAddress,
+      simulate = true,
       destinationChainId,
       account = parameters.account,
       gasPrice = parameters.gasPrice
@@ -34,6 +37,17 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
       const rpcUrl = parameters.transport({}).value?.url
       if (!rpcUrl) return err(new Error("No Move RPC URL found"))
       if (!account) return err(new Error("No Move account found"))
+      if (parameters.chainId === destinationChainId) {
+        const transfer = await moveSameChainTransfer({
+          amount,
+          account,
+          receiver,
+          denomAddress,
+          baseUrl: rpcUrl
+        })
+        if (transfer.isErr()) return err(transfer.error)
+        return ok(transfer.value)
+      }
       consola.info(`Move client created for chainId: ${parameters.chainId}`)
       consola.info(`RPC URL: ${rpcUrl}`)
       consola.info(`account: ${account}`)
@@ -72,6 +86,7 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
         memo,
         amount,
         account,
+        simulate,
         receiver,
         denomAddress,
         sourceChannel,
@@ -80,6 +95,61 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
       })
       if (result.isErr()) {
         return err(new Error(`Move transfer failed: ${result.error.message}`))
+      }
+      return result // Return the success or error result from transferAssetFromMove
+    },
+    simulateTransaction: async ({
+      memo,
+      amount,
+      receiver,
+      denomAddress,
+      destinationChainId,
+      account = parameters.account,
+      gasPrice = parameters.gasPrice
+    }: TransferAssetsParameters<MoveChainId>): Promise<Result<string, Error>> => {
+      const rpcUrl = parameters.transport({}).value?.url
+      if (!rpcUrl) return err(new Error("No Move RPC URL found"))
+      if (!account) return err(new Error("No Move account found"))
+
+      const chainDetails = await getHubbleChainDetails({
+        destinationChainId,
+        sourceChainId: parameters.chainId
+      })
+      consola.info(`Chain details: ${JSON.stringify(chainDetails, null, 2)}`)
+      if (chainDetails.isErr()) return err(chainDetails.error)
+
+      // if (chainDetails.value.transferType === "pfm") {
+      // if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
+      // const pfmMemo = createPfmMemo({
+      //     port: chainDetails.value.port,
+      //     channel: chainDetails.value.destinationChannel,
+      //     receiver: cosmosChainId.includes(destinationChainId)
+      //     ? bech32AddressToHex({ address: receiver })
+      //     : receiver
+      // })
+
+      // if (pfmMemo.isErr()) return err(pfmMemo.error)
+      // memo = pfmMemo.value
+      // }
+      //const sourceChannel = chainDetails.value.sourceChannel
+      //relayContractAddress ??= getAddress(chainDetails.value.relayContractAddress)
+      // if (!sourceChannel) return err(new Error("Source channel not found"))
+      // if (!relayContractAddress) return err(new Error("Relay contract address not found"))
+      const sourceChannel = "channel-0"
+      const relayContractAddress =
+        "0x52570c4292730a9d81aead22ac75d4bfca3f23d788f679ce72a11ca3fa7d6762"
+      const result = await transferAssetFromMoveSimulate({
+        memo,
+        amount,
+        account,
+        receiver,
+        denomAddress,
+        sourceChannel,
+        relayContractAddress,
+        baseUrl: rpcUrl // Pass the fetched RPC URL here as the base URL
+      })
+      if (!result) {
+        return err(new Error(`Move transfer failed`))
       }
       return result // Return the success or error result from transferAssetFromMove
     }
