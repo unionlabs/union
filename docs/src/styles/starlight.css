@@ -4,10 +4,13 @@
   --sl-color-white: #f9f9f9;
   --bg-gray: #1f1f1f1f;
   --sl-color-black: #0d0d0d;
+  --sl-color-accent: theme("colors.accent.500") !important;
+  --sl-color-accent-high: theme("colors.accent.950") !important;
 }
 
 :root[data-theme="light"] {
-  --sl-accent-color: theme("colors.accent.500");
+  --sl-color-accent: theme("colors.accent.500") !important;
+  --sl-accent-color: theme("colors.accent.500") !important;
   --dark-blue: theme("colors.accent.950");
   --sl-color-text-accent: theme("colors.accent.700");
   --sl-color-accent-high: theme("colors.accent.950") !important;
@@ -19,11 +22,14 @@
   --logo-text-color: #000000;
   --anchor-icon-filter: invert(0);
   --nav-selected-color: theme("colors.accent.950");
+  --ec-frm-edBg: #17191e !important;
+  /* --code-background: #17191e !important; */
 }
 
 :root[data-theme="dark"] {
+  --sl-color-accent: theme("colors.accent.500") !important;
+  --sl-accent-color: theme("colors.accent.500") !important;
   --sl-color-black: theme("colors.neutral.900");
-  --sl-accent-color: theme("colors.accent.500");
   --dark-blue: theme("colors.accent.500");
   --sl-color-text-accent: theme("colors.accent.500");
   --sl-color-accent-high: theme("colors.accent.500") !important;
@@ -35,6 +41,8 @@
   --logo-text-color: #f9f9f9f9;
   --anchor-icon-filter: invert(1);
   --nav-selected-color: #374151;
+  --ec-frm-edBg: #17191e !important;
+  /* --code-background: #17191e !important; */
 }
 
 .starlight-aside {

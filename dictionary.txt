@@ -22,6 +22,7 @@ Blockchange
 Blured
 Boiron
 Boneh
+uusdc
 Borsh
 CBFF
 CCTP

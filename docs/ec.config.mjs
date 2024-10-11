@@ -19,8 +19,7 @@ export default {
   defaultProps: {
     showLineNumbers: false
   },
-  useStarlightUiThemeColors: true,
   useStarlightDarkModeSwitch: true,
-  themes: ["starlight-dark", "starlight-light"],
+  themes: ["houston"],
   plugins: [pluginCollapsibleSections(), pluginLineNumbers()]
 }

@@ -1,0 +1,152 @@
+---
+title: "UCS01 Relay Rust Integration"
+description: "Example showcasing how to create a CosmWasm contract that leverages UCS01 Relay to execute cross-chain asset transfer."
+---
+
+import Code from '#/components/Code.astro'
+import { Tabs, TabItem, FileTree, Steps } from '@astrojs/starlight/components'
+
+This example demonstrates how to create a CosmWasm contract that calls Union's UCS01 Relay to execute a cross-chain asset transfer.
+
+```sh frame="none"
+UCS01_RELAY=
+```
+
+Source code for this example can be found her: [example-ucs01-cosmwasm](https://github.com/unionlabs/example-ucs01-cosmwasm)
+
+For this example we will be using [Rust](https://rustup.rs) to write the smart contract and [CosmWasm](https://cosmwasm.com) as the smart contract platform.
+
+# Prerequisites
+
+Install [Rust](https://rustup.rs)
+```sh frame="none"
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+<FileTree>
+- src
+  - lib.rs
+- Cargo.toml
+- Cargo.lock
+</FileTree>
+
+## Basic Contract
+
+Let's write a dead simple contract that transfers an asset from a CosmWasm contract to an evm contract.
+
+### Contract Source
+
+```rust title="src/lib.rs"
+use cosmwasm_std::{
+    entry_point, to_json_binary, Coin, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct InstantiateMsg {}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum ExecuteMsg {
+    Transfer { recipient: String, amount: u128 },
+}
+
+#[entry_point]
+pub fn instantiate(
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    _msg: InstantiateMsg,
+) -> StdResult<Response> {
+    Ok(Response::new().add_attribute("action", "instantiate"))
+}
+
+#[entry_point]
+pub fn execute(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
+    match msg {
+        ExecuteMsg::Transfer { recipient, amount } => {
+            execute_transfer(deps, info, recipient, amount)
+        }
+    }
+}
+
+pub fn execute_transfer(
+    deps: DepsMut,
+    _info: MessageInfo,
+    recipient: String,
+    amount: u128,
+) -> StdResult<Response> {
+    let recipient_addr = deps.api.addr_validate(&recipient)?;
+
+    let msg = WasmMsg::Execute {
+        contract_addr: "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
+            .to_string(),
+        msg: to_json_binary(&ExecuteMsg::Transfer {
+            recipient: recipient_addr.to_string(),
+            amount,
+        })?,
+        funds: vec![Coin {
+            denom: "uusdc".to_string(),
+            amount: amount.into(),
+        }],
+    };
+
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("action", "transfer")
+        .add_attribute("recipient", recipient)
+        .add_attribute("amount", amount.to_string()))
+}
+```
+
+You will be using the same RPC url across examples, so good to export it to an environment variable:
+
+```sh frame="none"
+export RPC_URL=<YOUR_RPC_URL>
+```
+
+### Building the Contract
+
+The build is two steps; first we compile the Rust code to wasm, and then we optimize the wasm to be smaller.
+
+<Steps>
+    1. 
+        ```sh title="Compile the contract to wasm"
+        RUSTFLAGS='-C target-cpu=mvp -C opt-level=z' cargo build \
+            --target wasm32-unknown-unknown \
+            --no-default-features \
+            --lib \
+            --release \
+            -Z build-std=std,panic_abort \
+            -Z build-std-features=panic_immediate_abort
+        ```
+    2. 
+        ```sh title="Optimize the wasm"
+        wasm-opt target/wasm32-unknown-unknown/release/$YOUR_APP.wasm \
+            -o build/contract.wasm \
+            -O3 --converge
+        ```
+</Steps>
+
+## Deploying the Contract
+
+```sh frame="none"
+wasmd tx wasm store /path/to/contract.wasm \
+    --gas auto \
+    --gas-adjustment 1.5 \
+    -y \
+    --home $NODE_HOME \
+    --node $RPC_URL \
+    --chain-id $CHAIN_ID \
+    --from $ACCOUNT_NAME
+```
+
+## Instantiating the Contract
+
+```sh frame="none"
+# TODO
+```

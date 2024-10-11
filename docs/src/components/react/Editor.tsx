@@ -1,7 +1,6 @@
 import * as React from "react"
 import ts from "shiki/langs/typescript.mjs"
-// biome-ignore lint/correctness/noUnusedImports: used as type
-import type * as monaco from "monaco-editor"
+import type * as Monaco from "monaco-editor"
 import { shikiToMonaco } from "@shikijs/monaco"
 import { createHighlighterCoreSync } from "shiki"
 import tokyoNight from "shiki/themes/tokyo-night.mjs"
@@ -40,7 +39,7 @@ export function Editor({
   const { width, height, fontSize, className, initialCode, lineNumbers } = options
   const monaco = useMonaco()
   const [code, setCode] = React.useState(initialCode)
-  const editorRef = React.useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
+  const editorRef = React.useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
 
   React.useEffect(() => {
     if (monaco) {

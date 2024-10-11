@@ -10,6 +10,8 @@ import starlightUtils from "@lorenzo_lewis/starlight-utils"
 import { markdownConfiguration } from "./markdown.config.ts"
 import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
+import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers"
+import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections"
 
 const SITE_URL = "https://docs.union.build"
 const SITE_DESCRIPTION =
@@ -68,7 +70,21 @@ export default defineConfig({
       description: SITE_DESCRIPTION,
       tagline: "Connecting blockchains trustlessly",
       defaultLocale: "root",
-      expressiveCode: false,
+      expressiveCode: {
+        frames: {
+          extractFileNameFromCode: true,
+          showCopyToClipboardButton: true,
+          removeCommentsWhenCopyingTerminalFrames: true
+        },
+        defaultProps: {
+          // @ts-expect-error
+          showLineNumbers: false
+        },
+        themes: ["houston"],
+        useStarlightDarkModeSwitch: true,
+        // @ts-expect-error
+        plugins: [pluginCollapsibleSections(), pluginLineNumbers()]
+      },
       locales: { root: { label: "English", lang: "en" } },
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/docs/"
@@ -173,11 +189,15 @@ export default defineConfig({
                 },
                 {
                   label: "UCS01",
+                  badge: { variant: "success", text: "new" },
                   items: [
                     {
                       label: "Solidity",
-                      link: "/integrations/ucs01/solidity",
-                      badge: { variant: "success", text: "new" }
+                      link: "/integrations/ucs01/solidity"
+                    },
+                    {
+                      label: "CosmWasm",
+                      link: "/integrations/ucs01/cosmwasm"
                     }
                   ]
                 },
