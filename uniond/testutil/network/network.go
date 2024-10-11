@@ -29,7 +29,7 @@ type (
 
 // New creates instance with fully configured cosmos network.
 // Accepts optional config, that will be used in place of the DefaultConfig() if provided.
-func New(t *testing.T, configs ...Config) *Network {
+func New(t *testing.T, configs ...Config) *network.NetworkI {
 	if len(configs) > 1 {
 		panic("at most one config should be provided")
 	}
@@ -44,7 +44,7 @@ func New(t *testing.T, configs ...Config) *Network {
 	_, err = net.WaitForHeight(1)
 	require.NoError(t, err)
 	t.Cleanup(net.Cleanup)
-	return net
+	return &net
 }
 
 // DefaultConfig will initialize config for the network with custom application,
@@ -59,7 +59,7 @@ func DefaultConfig() network.Config {
 		dbm.NewMemDB(),
 		nil,
 		true,
-		simtestutil.EmptyAppOptions{},
+		simtestutil.AppOptionsMap{},
 		[]wasmkeeper.Option{},
 	)
 
@@ -71,11 +71,11 @@ func DefaultConfig() network.Config {
 		AccountRetriever:  authtypes.AccountRetriever{},
 		AppConstructor: func(val network.ValidatorI) servertypes.Application {
 			return app.NewUnionApp(
-				val.GetCtx().Logger,
+				val.GetLogger(),
 				dbm.NewMemDB(),
 				nil,
 				true,
-				simtestutil.EmptyAppOptions{},
+				simtestutil.AppOptionsMap{},
 				[]wasmkeeper.Option{},
 				baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.GetAppConfig().Pruning)),
 				baseapp.SetMinGasPrices(val.GetAppConfig().MinGasPrices),

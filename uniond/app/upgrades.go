@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 
+	"union/app/upgrades"
+
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 )
 

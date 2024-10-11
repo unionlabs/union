@@ -10,6 +10,7 @@ import (
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/client/v2/autocli"
+	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/accounts"
@@ -68,8 +69,6 @@ import (
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/bn254"
-
-	dbm "github.com/cosmos/cosmos-db"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -256,7 +255,7 @@ type UnionApp struct {
 // New returns a reference to an initialized blockchain app
 func NewUnionApp(
 	logger log.Logger,
-	db dbm.DB,
+	db corestore.KVStoreWithBatch,
 	traceStore io.Writer,
 	loadLatest bool,
 	appOpts servertypes.AppOptions,
@@ -545,7 +544,7 @@ func NewUnionApp(
 
 	app.TfKeeper = tfkeeper.NewKeeper(
 		appCodec,
-		keys[tftypes.StoreKey],
+		runtime.NewKVStoreService(keys[tftypes.StoreKey]),
 		app.GetSubspace(tftypes.ModuleName),
 		app.AuthKeeper,
 		app.BankKeeper,
