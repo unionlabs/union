@@ -27,6 +27,7 @@
     "clean": "rm -rf dist node_modules",
     "postinstall": "patch-package",
     "prepublish": "bun run build",
+    "typedoc": "bunx typedoc --out .docs ./src/mod.ts",
     "preinstall": "npm_config_yes=true npm exec --no-package-lock=true only-allow@latest bun"
   },
   "dependencies": {
@@ -40,7 +41,7 @@
     "neverthrow": "^8.0.0",
     "ofetch": "^1.4.1",
     "patch-package": "^8.0.0",
-    "viem": "^2.21.8"
+    "viem": "^2.21.22"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.6.1",
