@@ -29,7 +29,7 @@
 
       rustToolchain = rust.mkNightly { targets = [ CARGO_BUILD_TARGET ]; };
 
-      BIOME_VERSION = "1.9.2";
+      BIOME_VERSION = "1.9.3";
 
       biome = (crane.lib.overrideToolchain rustToolchain).buildPackage {
         inherit CARGO_BUILD_TARGET BIOME_VERSION;
