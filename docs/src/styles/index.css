@@ -1,4 +1,5 @@
-pre.astro-code, .not-content > pre {
+pre.astro-code,
+.not-content > pre {
   border-radius: 0.3em !important;
 }
 

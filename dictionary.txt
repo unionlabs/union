@@ -22,7 +22,6 @@ Blockchange
 Blured
 Boiron
 Boneh
-uusdc
 Borsh
 CBFF
 CCTP
@@ -1363,6 +1362,7 @@ ustars
 ustrd
 utilised
 utilising
+uusdc
 valbz
 valcons
 valconspub
