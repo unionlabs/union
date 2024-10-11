@@ -1,8 +1,6 @@
 import { err, ok, type Result } from "neverthrow"
-import { type Account, Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk"
-import consola from "consola"
-import { raise } from "#utilities/index.ts"
 import { Hex } from "node_modules/@aptos-labs/ts-sdk/dist/common"
+import { type Account, Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk"
 
 export type TransferAssetFromMoveParams = {
   memo?: string
@@ -51,20 +49,16 @@ export async function transferAssetFromMove({
 }: TransferAssetFromMoveParams): Promise<Result<string, Error>> {
   try {
     // Ensure the baseUrl is provided and valid
-    if (!baseUrl) {
-      return err(new Error("Base URL for Aptos node not provided"))
-    }
+    if (!baseUrl) return err(new Error("Base URL for Aptos node not provided"))
 
     // TODO: Handle simulation scenario
-    if (simulate) {
-      raise("Simulation not implemented")
-    }
+    if (simulate) return err(new Error("Simulation not implemented"))
 
     // Setup the Aptos client with the correct network and base URL
     const config = new AptosConfig({ fullnode: baseUrl, network: Network.TESTNET })
     const aptos = new Aptos(config)
 
-    consola.info(`Using Aptos fullnode at: ${baseUrl}`)
+    console.info(`Using Aptos fullnode at: ${baseUrl}`)
 
     // Build the transaction using the IBC `send` function (similar to EVM)
     const transaction = await aptos.transaction.build.simple({
@@ -85,7 +79,7 @@ export async function transferAssetFromMove({
       }
     })
 
-    consola.info("Transaction built successfully")
+    console.info("Transaction built successfully")
 
     // Sign and submit the transaction
     const senderAuthenticator = aptos.transaction.sign({
@@ -95,7 +89,7 @@ export async function transferAssetFromMove({
 
     const pendingTxn = await aptos.transaction.submit.simple({ transaction, senderAuthenticator })
 
-    consola.info(`Transaction executed! Hash: ${pendingTxn.hash}`)
+    console.info(`Transaction executed! Hash: ${pendingTxn.hash}`)
 
     return ok(pendingTxn.hash) // Return the transaction hash
   } catch (error) {
