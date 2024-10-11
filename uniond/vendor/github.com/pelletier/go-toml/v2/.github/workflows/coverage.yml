@@ -1,0 +1,20 @@
+name: coverage
+on:
+  pull_request:
+    branches:
+      - v2
+
+jobs:
+  report:
+    runs-on: "ubuntu-latest"
+    name: report
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - name: Run tests with coverage
+        run: ./ci.sh coverage -d "${GITHUB_BASE_REF-HEAD}"

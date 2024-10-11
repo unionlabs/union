@@ -1,0 +1,10 @@
+// -*- mode: go -*-
+
+package test
+
+type Test struct{
+     A uint8
+     B uint16
+     C uint32
+     D uint64
+}

@@ -1,0 +1,280 @@
+\section{Proof of Tendermint consensus algorithm} \label{sec:proof}
+
+\begin{lemma} \label{lemma:majority-intersection} For all $f\geq 0$, any two
+sets of processes with voting power at least equal to $2f+1$ have at least one
+correct process in common.  \end{lemma}
+
+\begin{proof} As the total voting power is equal to $n=3f+1$, we have $2(2f+1)
+    = n+f+1$.  This means that the intersection of two sets with the voting
+    power equal to $2f+1$ contains at least $f+1$ voting power in common, \ie,
+    at least one correct process (as the total voting power of faulty processes
+    is $f$). The result follows directly from this.  \end{proof}
+
+\begin{lemma} \label{lemma:locked-decision_value-prevote-v} If $f+1$ correct
+processes lock value $v$ in round $r_0$ ($lockedValue = v$ and $lockedRound =
+r_0$), then in all rounds $r > r_0$, they send $\Prevote$ for $id(v)$ or
+$\nil$.  \end{lemma}
+
+\begin{proof} We prove the result by induction on $r$.
+
+\emph{Base step $r = r_0 + 1:$} Let's denote with $C$ the set of correct
+processes with voting power equal to $f+1$.  By the rules at
+line~\ref{line:tab:recvProposal} and line~\ref{line:tab:acceptProposal}, the
+processes from the set $C$ can't accept $\Proposal$ for any value different
+from $v$ in round $r$, and therefore can't send a $\li{\Prevote,height_p,
+r,id(v')}$ message, if $v' \neq v$. Therefore, the Lemma holds for the base
+step.
+
+\emph{Induction step from $r_1$ to $r_1+1$:} We assume that no process from the
+set $C$ has sent $\Prevote$ for values different than $id(v)$ or $\nil$ until
+round $r_1 + 1$. We now prove that the Lemma also holds for round $r_1 + 1$. As
+processes from the set $C$ send $\Prevote$ for $id(v)$ or $\nil$ in rounds $r_0
+\le r \le r_1$, by Lemma~\ref{lemma:majority-intersection} there is no value
+$v' \neq v$ for which it is possible to receive $2f+1$ $\Prevote$ messages in
+those rounds (i). Therefore, we have for all processes from the set $C$,
+$lockedValue = v$ and $lockedRound \ge r_0$.   Let's assume by a contradiction
+that a process $q$ from the set $C$ sends $\Prevote$ in round $r_1 + 1$ for
+value $id(v')$, where $v' \neq v$. This is possible only by
+line~\ref{line:tab:prevote-higher-proposal}.  Note that this implies that $q$
+received $2f+1$ $\li{\Prevote,h_q, r,id(v')}$ messages, where $r > r_0$ and $r
+< r_1 +1$ (see line~\ref{line:tab:cond-prevote-higher-proposal}). A
+contradiction with (i) and Lemma~\ref{lemma:majority-intersection}.
+\end{proof}	
+
+\begin{lemma} \label{lemma:agreement} Algorithm~\ref{alg:tendermint} satisfies
+Agreement.  \end{lemma}
+
+\begin{proof} Let round $r_0$ be the first round of height $h$ such that some
+    correct process $p$ decides $v$. We now prove that if some correct process
+    $q$ decides $v'$ in some round $r \ge r_0$, then $v = v'$.
+
+In case $r = r_0$, $q$ has received at least $2f+1$
+$\li{\Precommit,h_p,r_0,id(v')}$  messages at line~\ref{line:tab:onDecideRule},
+while $p$ has received at least $2f+1$ $\li{\Precommit,h_p,r_0,id(v)}$
+messages.  By Lemma~\ref{lemma:majority-intersection} two sets of messages of
+voting power $2f+1$ intersect in at least one correct process.  As a correct
+process sends a single $\Precommit$ message in a round, then $v=v'$.
+
+We prove the case $r > r_0$ by contradiction. By the
+rule~\ref{line:tab:onDecideRule}, $p$ has received at least $2f+1$ voting-power
+equivalent of $\li{\Precommit,h_p,r_0,id(v)}$ messages, i.e., at least $f+1$
+voting-power equivalent correct processes have locked value $v$ in round $r_0$ and have
+sent those messages (i). Let denote this set of messages with $C$.  On the
+other side, $q$ has received at least $2f+1$ voting power equivalent of
+$\li{\Precommit,h_q, r,id(v')}$ messages. As the voting power of all faulty
+processes is at most $f$, some correct process $c$ has sent one of those
+messages. By the rule at line~\ref{line:tab:recvPrevote}, $c$ has locked value
+$v'$ in round $r$ before sending $\li{\Precommit,h_q, r,id(v')}$. Therefore $c$
+has received $2f+1$ $\Prevote$ messages for $id(v')$ in round $r > r_0$ (see
+line~\ref{line:tab:recvPrevote}). By Lemma~\ref{lemma:majority-intersection}, a
+process from the set $C$ has sent $\Prevote$ message for $id(v')$ in round $r$.
+A contradiction with (i) and Lemma~\ref{lemma:locked-decision_value-prevote-v}.
+\end{proof}	
+
+\begin{lemma} \label{lemma:agreement} Algorithm~\ref{alg:tendermint} satisfies
+Validity.  \end{lemma}
+
+\begin{proof} Trivially follows from the rule at line
+\ref{line:tab:validDecisionValue} which ensures that only valid values can be
+decided.  \end{proof}	
+
+\begin{lemma} \label{lemma:round-synchronisation} If we assume that:
+\begin{enumerate} 
+    \item a correct process $p$ is the first correct process to
+            enter a round $r>0$ at time $t > GST$ (for every correct process
+            $c$, $round_c \le r$ at time $t$) 
+    \item the proposer of round $r$ is
+            a correct process $q$ 
+    \item for every correct process $c$,
+            $lockedRound_c \le validRound_q$ at time $t$ 
+    \item $\timeoutPropose(r)
+        > 2\Delta + \timeoutPrecommit(r-1)$, $\timeoutPrevote(r) > 2\Delta$ and
+            $\timeoutPrecommit(r) > 2\Delta$, 
+\end{enumerate} 
+then all correct processes decide in round $r$ before $t + 4\Delta +
+    \timeoutPrecommit(r-1)$.  
+\end{lemma}	
+
+\begin{proof} As $p$ is the first correct process to enter round $r$, it
+    executed the line~\ref{line:tab:nextRound} after $\timeoutPrecommit(r-1)$
+    expired. Therefore, $p$ received $2f+1$ $\Precommit$ messages in the round
+    $r-1$ before time $t$. By the \emph{Gossip communication} property, all
+    correct processes will receive those messages the latest at time $t +
+    \Delta$. Correct processes that are in rounds $< r-1$ at time $t$ will
+    enter round $r-1$ (see the rule at line~\ref{line:tab:nextRound2}) and
+    trigger $\timeoutPrecommit(r-1)$ (see rule~\ref{line:tab:startTimeoutPrecommit})
+    by time $t+\Delta$. Therefore, all correct processes will start round $r$
+    by time $t+\Delta+\timeoutPrecommit(r-1)$ (i).
+ 
+In the worst case, the process $q$ is the last correct process to enter round
+$r$, so $q$ starts round $r$ and sends $\Proposal$ message for some value $v$
+at time $t + \Delta + \timeoutPrecommit(r-1)$. Therefore, all correct processes
+receive the $\Proposal$ message from $q$ the latest by time $t + 2\Delta +
+\timeoutPrecommit(r-1)$. Therefore, if $\timeoutPropose(r) > 2\Delta +
+\timeoutPrecommit(r-1)$, all correct processes will receive $\Proposal$ message
+before $\timeoutPropose(r)$ expires. 
+
+By (3) and the rules at line~\ref{line:tab:recvProposal} and
+\ref{line:tab:acceptProposal}, all correct processes will accept the
+$\Proposal$ message for value $v$ and will send a $\Prevote$ message for
+$id(v)$ by time $t + 2\Delta + \timeoutPrecommit(r-1)$.  Note that by the
+\emph{Gossip communication} property, the $\Prevote$ messages needed to trigger
+the rule at line~\ref{line:tab:acceptProposal} are received before time $t +
+\Delta$.  
+
+By time $t + 3\Delta + \timeoutPrecommit(r-1)$, all correct processes will receive
+$\Proposal$ for $v$ and $2f+1$ corresponding $\Prevote$ messages for $id(v)$.
+By the rule at line~\ref{line:tab:recvPrevote}, all correct processes will send
+a $\Precommit$ message (see line~\ref{line:tab:precommit-v}) for $id(v)$ by
+time $t + 3\Delta + \timeoutPrecommit(r-1)$. Therefore, by time $t + 4\Delta +
+\timeoutPrecommit(r-1)$, all correct processes will have received the $\Proposal$
+for $v$ and $2f+1$ $\Precommit$ messages for $id(v)$, so they decide at
+line~\ref{line:tab:decide} on $v$. 
+
+This scenario holds if every correct process $q$ sends a $\Precommit$ message
+before $\timeoutPrevote(r)$ expires, and if $\timeoutPrecommit(r)$ does not expire
+before $t + 4\Delta + \timeoutPrecommit(r-1)$.  Let's assume that a correct process
+$c_1$ is the first correct process to trigger $\timeoutPrevote(r)$ (see the rule
+at line~\ref{line:tab:recvAny2/3Prevote}) at time $t_1 > t$. This implies that
+before time $t_1$, $c_1$ received a $\Proposal$ ($step_{c_1}$ must be
+$\prevote$ by the rule at line~\ref{line:tab:recvAny2/3Prevote}) and a set of
+$2f+1$ $\Prevote$ messages.  By time $t_1 + \Delta$, all correct processes will
+receive those messages. Note that even if some correct process was in the
+smaller round before time $t_1$, at time $t_1 + \Delta$ it will start round $r$
+after receiving those messages (see the rule at
+line~\ref{line:tab:skipRounds}).  Therefore, all correct processes will send
+their $\Prevote$ message for $id(v)$ by time $t_1 + \Delta$, and all correct
+processes will receive those messages the by time $t_1 + 2\Delta$.  Therefore,
+as $\timeoutPrevote(r) > 2\Delta$, this ensures that all correct processes receive
+$\Prevote$ messages from all correct processes before their respective local
+$\timeoutPrevote(r)$ expire.   
+
+On the other hand, $\timeoutPrecommit(r)$ is triggered in a correct process $c_2$
+after it receives any set of $2f+1$ $\Precommit$ messages for the first time.
+Let's denote with $t_2 > t$ the earliest point in time $\timeoutPrecommit(r)$ is
+triggered in some correct process $c_2$. This implies that $c_2$ has received
+at least $f+1$ $\Precommit$ messages for $id(v)$ from correct processes, i.e.,
+those processes have received $\Proposal$ for $v$ and $2f+1$ $\Prevote$
+messages for $id(v)$ before time $t_2$. By the \emph{Gossip communication}
+property, all correct processes will receive those messages by time $t_2 +
+\Delta$, and will send $\Precommit$ messages for $id(v)$. Note that even if
+some correct processes were at time $t_2$ in a round smaller than $r$, by the
+rule at line~\ref{line:tab:skipRounds} they will enter round $r$ by time $t_2 +
+\Delta$.  Therefore, by time $t_2 + 2\Delta$, all correct processes will
+receive $\Proposal$ for $v$ and $2f+1$ $\Precommit$ messages for $id(v)$. So if
+$\timeoutPrecommit(r) > 2\Delta$, all correct processes will decide before the
+timeout expires.         \end{proof}	
+
+
+\begin{lemma} \label{lemma:validValue} If a correct process $p$ locks a value
+    $v$ at time $t_0 > GST$ in some round $r$ ($lockedValue = v$ and
+    $lockedRound = r$) and $\timeoutPrecommit(r) > 2\Delta$, then all correct
+    processes set $validValue$ to $v$ and $validRound$ to $r$ before starting
+    round $r+1$.  \end{lemma}
+ 
+\begin{proof} In order to prove this Lemma, we need to prove that if the
+    process $p$ locks a value $v$ at time $t_0$, then no correct process will
+    leave round $r$ before time $t_0 + \Delta$ (unless it has already set
+    $validValue$ to $v$ and $validRound$ to $r$). It is sufficient to prove
+    this, since by the \emph{Gossip communication} property the messages that
+    $p$ received at time $t_0$ and that triggered rule at
+    line~\ref{line:tab:recvPrevote} will be received by time $t_0 + \Delta$ by
+    all correct processes, so all correct processes that are still in round $r$
+    will set $validValue$ to $v$ and $validRound$ to $r$ (by the rule at
+    line~\ref{line:tab:recvPrevote}). To prove this, we need to compute the
+    earliest point in time a correct process could leave round $r$ without
+    updating $validValue$ to $v$ and $validRound$ to $r$ (we denote this time
+    with $t_1$). The Lemma is correct if $t_0 + \Delta < t_1$. 
+
+If the process $p$ locks a value $v$ at time $t_0$, this implies that $p$
+received the valid $\Proposal$ message for $v$ and $2f+1$
+$\li{\Prevote,h,r,id(v)}$ at time $t_0$. At least $f+1$ of those messages are
+sent by correct processes. Let's denote this set of correct processes as $C$. By
+Lemma~\ref{lemma:majority-intersection} any set of $2f+1$ $\Prevote$ messages
+in round $r$ contains at least a single message from the set $C$. 
+
+Let's denote as time $t$ the earliest point in time a correct process, $c_1$, triggered
+$\timeoutPrevote(r)$. This implies that $c_1$ received $2f+1$ $\Prevote$ messages
+(see the rule at line \ref{line:tab:recvAny2/3Prevote}), where at least one of
+those messages was sent by a process $c_2$ from the set $C$.  Therefore, process
+$c_2$ had received $\Proposal$ message before time $t$. By the \emph{Gossip
+communication} property, all correct processes will receive $\Proposal$ and
+$2f+1$ $\Prevote$ messages for round $r$ by time $t+\Delta$. The latest point
+in time $p$ will trigger $\timeoutPrevote(r)$ is $t+\Delta$\footnote{Note that
+even if $p$ was in smaller round at time $t$ it will start round $r$ by time
+$t+\Delta$.}.  So the latest point in time $p$ can lock the value $v$ in
+round $r$ is $t_0 = t+\Delta+\timeoutPrevote(r)$ (as at this point
+$\timeoutPrevote(r)$ expires, so a process sends $\Precommit$ $\nil$ and updates
+$step$ to $\precommit$, see line \ref{line:tab:onTimeoutPrevote}).  
+
+Note that according to the Algorithm \ref{alg:tendermint}, a correct process
+can not send a $\Precommit$ message before receiving $2f+1$ $\Prevote$
+messages.  Therefore, no correct process can send a $\Precommit$ message in
+round $r$ before time $t$. If a correct process sends a $\Precommit$ message
+for $\nil$, it implies that it has waited for the full duration of
+$\timeoutPrevote(r)$ (see line
+\ref{line:tab:precommit-nil-onTimeout})\footnote{The other case in which a
+correct process $\Precommit$ for $\nil$ is after receiving $2f+1$ $Prevote$ for
+$\nil$ messages, see the line \ref{line:tab:precommit-v-1}. By
+Lemma~\ref{lemma:majority-intersection}, this is not possible in round $r$.}.
+Therefore, no correct process can send $\Precommit$ for $\nil$ before time $t +
+\timeoutPrevote(r)$ (*).
+
+A correct process $q$ that enters round $r+1$ must wait (i) $\timeoutPrecommit(r)$
+(see line \ref{line:tab:nextRound}) or (ii) receiving $f+1$ messages from the
+round $r+1$ (see the line \ref{line:tab:skipRounds}).  In the former case, $q$
+receives $2f+1$ $\Precommit$ messages before starting $\timeoutPrecommit(r)$. If
+at least a single $\Precommit$ message from a correct process (at least $f+1$
+voting power equivalent of those messages is sent by correct processes) is for
+$\nil$, then $q$ cannot start round $r+1$ before time $t_1 = t +
+\timeoutPrevote(r) + \timeoutPrecommit(r)$ (see (*)). Therefore in this case we have:
+$t_0 + \Delta < t_1$, i.e., $t+2\Delta+\timeoutPrevote(r) <  t + \timeoutPrevote(r) +
+\timeoutPrecommit(r)$, and this is true whenever $\timeoutPrecommit(r) > 2\Delta$, so
+Lemma holds in this case. 
+
+If in the set of $2f+1$ $\Precommit$ messages $q$ receives, there is at least a
+single $\Precommit$ for $id(v)$ message from a correct process $c$, then $q$
+can start the round $r+1$ the earliest at time $t_1 = t+\timeoutPrecommit(r)$. In
+this case, by the \emph{Gossip communication} property, all correct processes
+will receive $\Proposal$ and $2f+1$ $\Prevote$ messages (that $c$ received
+before time $t$) the latest at time $t+\Delta$. Therefore, $q$ will set
+$validValue$ to $v$ and $validRound$ to $r$ the latest at time $t+\Delta$. As
+$t+\Delta < t+\timeoutPrecommit(r)$, whenever $\timeoutPrecommit(r) > \Delta$, the
+Lemma holds also in this case.    
+
+In case (ii), $q$ received at least a single message from a correct process $c$
+from the round $r+1$. The earliest point in time $c$ could have started round
+$r+1$ is $t+\timeoutPrecommit(r)$ in case it received a $\Precommit$ message for
+$v$ from some correct process in the set of $2f+1$ $\Precommit$ messages it
+received. The same reasoning as above holds also in this case, so $q$ set
+$validValue$ to $v$ and $validRound$ to $r$ the latest by time $t+\Delta$. As
+$t+\Delta < t+\timeoutPrecommit(r)$, whenever $\timeoutPrecommit(r) > \Delta$, the
+Lemma holds also in this case.    \end{proof}
+
+\begin{lemma} \label{lemma:agreement} Algorithm~\ref{alg:tendermint} satisfies
+Termination.  \end{lemma}
+
+\begin{proof} Lemma~\ref{lemma:round-synchronisation} defines a scenario in
+    which all correct processes decide. We now prove that within a bounded
+    duration after GST such a scenario will unfold. Let's assume that at time
+    $GST$ the highest round started by a correct process is $r_0$, and that
+    there exists a correct process $p$ such that the following holds: for every
+    correct process $c$, $lockedRound_c \le validRound_p$. Furthermore, we
+    assume that $p$ will be the proposer in some round $r_1 > r$ (this is
+    ensured by the $\coord$ function). 
+
+We have two cases to consider. In the first case, for all rounds $r \ge r_0$
+and $r < r_1$, no correct process locks a value (set $lockedRound$ to $r$). So
+in round $r_1$ we have the scenario from the
+Lemma~\ref{lemma:round-synchronisation}, so all correct processes decides in
+round $r_1$.  
+
+In the second case, a correct process locks a value $v$ in round $r_2$, where
+$r_2 \ge r_0$ and $r_2 < r_1$.  Let's assume that $r_2$ is the highest round
+before $r_1$ in which some correct process $q$ locks a value. By Lemma
+\ref{lemma:validValue} at the end of round $r_2$ the following holds for all
+correct processes $c$: $validValue_c = lockedValue_q$ and $validRound_c = r_2$.
+Then in round $r_1$, the conditions for the
+Lemma~\ref{lemma:round-synchronisation} holds, so all correct processes decide.
+\end{proof}	
+

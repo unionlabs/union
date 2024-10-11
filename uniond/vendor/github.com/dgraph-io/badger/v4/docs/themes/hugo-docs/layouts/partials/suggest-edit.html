@@ -1,0 +1,6 @@
+{{ $currentBranch := getenv "CURRENT_BRANCH" }}
+
+<a class="edit-btn" target="_blank"
+  href="https://github.com/dgraph-io/badger/blob/{{ $currentBranch }}/docs/content/{{ replace .File.Path '\\' '/' }}">
+  <i class="fa fa-github-alt"></i> Edit Page
+</a>

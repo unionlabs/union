@@ -1,0 +1,14 @@
+{
+  "pagination": {
+    "GetAgreementTerms": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults"
+    },
+    "SearchAgreements": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults"
+    }
+  }
+}

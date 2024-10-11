@@ -161,10 +161,12 @@ func AnalyzeCode(cache Cache, checksum []byte) (*types.AnalysisReport, error) {
 	}
 	requiredCapabilities := string(copyAndDestroyUnmanagedVector(report.required_capabilities))
 	entrypoints := string(copyAndDestroyUnmanagedVector(report.entrypoints))
+
 	res := types.AnalysisReport{
-		HasIBCEntryPoints:    bool(report.has_ibc_entry_points),
-		RequiredCapabilities: requiredCapabilities,
-		Entrypoints:          strings.Split(entrypoints, ","),
+		HasIBCEntryPoints:      bool(report.has_ibc_entry_points),
+		RequiredCapabilities:   requiredCapabilities,
+		Entrypoints:            strings.Split(entrypoints, ","),
+		ContractMigrateVersion: optionalU64ToPtr(report.contract_migrate_version),
 	}
 	return &res, nil
 }
@@ -186,6 +188,21 @@ func GetMetrics(cache Cache) (*types.Metrics, error) {
 		SizePinnedMemoryCache:     uint64(metrics.size_pinned_memory_cache),
 		SizeMemoryCache:           uint64(metrics.size_memory_cache),
 	}, nil
+}
+
+func GetPinnedMetrics(cache Cache) (*types.PinnedMetrics, error) {
+	errmsg := uninitializedUnmanagedVector()
+	metrics, err := C.get_pinned_metrics(cache.ptr, &errmsg)
+	if err != nil {
+		return nil, errorWithMessage(err, errmsg)
+	}
+
+	var pinnedMetrics types.PinnedMetrics
+	if err := pinnedMetrics.UnmarshalMessagePack(copyAndDestroyUnmanagedVector(metrics)); err != nil {
+		return nil, err
+	}
+
+	return &pinnedMetrics, nil
 }
 
 func Instantiate(
@@ -698,6 +715,90 @@ func IBCPacketTimeout(
 	return copyAndDestroyUnmanagedVector(res), convertGasReport(gasReport), nil
 }
 
+func IBCSourceCallback(
+	cache Cache,
+	checksum []byte,
+	env []byte,
+	msg []byte,
+	gasMeter *types.GasMeter,
+	store types.KVStore,
+	api *types.GoAPI,
+	querier *Querier,
+	gasLimit uint64,
+	printDebug bool,
+) ([]byte, types.GasReport, error) {
+	cs := makeView(checksum)
+	defer runtime.KeepAlive(checksum)
+	e := makeView(env)
+	defer runtime.KeepAlive(env)
+	msgBytes := makeView(msg)
+	defer runtime.KeepAlive(msg)
+	var pinner runtime.Pinner
+	pinner.Pin(gasMeter)
+	checkAndPinAPI(api, pinner)
+	checkAndPinQuerier(querier, pinner)
+	defer pinner.Unpin()
+
+	callID := startCall()
+	defer endCall(callID)
+
+	dbState := buildDBState(store, callID)
+	db := buildDB(&dbState, gasMeter)
+	a := buildAPI(api)
+	q := buildQuerier(querier)
+	var gasReport C.GasReport
+	errmsg := uninitializedUnmanagedVector()
+
+	res, err := C.ibc_source_callback(cache.ptr, cs, e, msgBytes, db, a, q, cu64(gasLimit), cbool(printDebug), &gasReport, &errmsg)
+	if err != nil && err.(syscall.Errno) != C.ErrnoValue_Success {
+		// Depending on the nature of the error, `gasUsed` will either have a meaningful value, or just 0.
+		return nil, convertGasReport(gasReport), errorWithMessage(err, errmsg)
+	}
+	return copyAndDestroyUnmanagedVector(res), convertGasReport(gasReport), nil
+}
+
+func IBCDestinationCallback(
+	cache Cache,
+	checksum []byte,
+	env []byte,
+	msg []byte,
+	gasMeter *types.GasMeter,
+	store types.KVStore,
+	api *types.GoAPI,
+	querier *Querier,
+	gasLimit uint64,
+	printDebug bool,
+) ([]byte, types.GasReport, error) {
+	cs := makeView(checksum)
+	defer runtime.KeepAlive(checksum)
+	e := makeView(env)
+	defer runtime.KeepAlive(env)
+	msgBytes := makeView(msg)
+	defer runtime.KeepAlive(msg)
+	var pinner runtime.Pinner
+	pinner.Pin(gasMeter)
+	checkAndPinAPI(api, pinner)
+	checkAndPinQuerier(querier, pinner)
+	defer pinner.Unpin()
+
+	callID := startCall()
+	defer endCall(callID)
+
+	dbState := buildDBState(store, callID)
+	db := buildDB(&dbState, gasMeter)
+	a := buildAPI(api)
+	q := buildQuerier(querier)
+	var gasReport C.GasReport
+	errmsg := uninitializedUnmanagedVector()
+
+	res, err := C.ibc_destination_callback(cache.ptr, cs, e, msgBytes, db, a, q, cu64(gasLimit), cbool(printDebug), &gasReport, &errmsg)
+	if err != nil && err.(syscall.Errno) != C.ErrnoValue_Success {
+		// Depending on the nature of the error, `gasUsed` will either have a meaningful value, or just 0.
+		return nil, convertGasReport(gasReport), errorWithMessage(err, errmsg)
+	}
+	return copyAndDestroyUnmanagedVector(res), convertGasReport(gasReport), nil
+}
+
 func convertGasReport(report C.GasReport) types.GasReport {
 	return types.GasReport{
 		Limit:          uint64(report.limit),
@@ -710,11 +811,13 @@ func convertGasReport(report C.GasReport) types.GasReport {
 /**** To error module ***/
 
 func errorWithMessage(err error, b C.UnmanagedVector) error {
+	// we always destroy the unmanaged vector to avoid a memory leak
+	msg := copyAndDestroyUnmanagedVector(b)
+
 	// this checks for out of gas as a special case
 	if errno, ok := err.(syscall.Errno); ok && int(errno) == 2 {
 		return types.OutOfGasError{}
 	}
-	msg := copyAndDestroyUnmanagedVector(b)
 	if msg == nil {
 		return err
 	}

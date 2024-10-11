@@ -1,0 +1,3 @@
+oauth2:
+  client_secret: "mysecret"
+  token_url: "http://auth"

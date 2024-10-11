@@ -1,0 +1,21 @@
+name: Create release from new tag
+
+# this flow will be run only when new tags are pushed that match our pattern
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create GitHub release from tag
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true

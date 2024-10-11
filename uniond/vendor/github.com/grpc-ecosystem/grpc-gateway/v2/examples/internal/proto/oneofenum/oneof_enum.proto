@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package grpc.gateway.examples.internal.proto.oneofenum;
+
+option go_package = "github.com/grpc-ecosystem/grpc-gateway/v2/examples/internal/proto/oneofenum";
+
+enum ExampleEnum {
+  EXAMPLE_ENUM_UNSPECIFIED = 0;
+  EXAMPLE_ENUM_FIRST = 1;
+}
+
+message OneofEnumMessage {
+  oneof one {
+    ExampleEnum example_enum = 1;
+  }
+}

@@ -154,6 +154,18 @@ func (s *RangeKeyIteratorStats) Merge(o RangeKeyIteratorStats) {
 	s.SkippedPoints += o.SkippedPoints
 }
 
+func (s *RangeKeyIteratorStats) String() string {
+	return redact.StringWithoutMarkers(s)
+}
+
+// SafeFormat implements the redact.SafeFormatter interface.
+func (s *RangeKeyIteratorStats) SafeFormat(p redact.SafePrinter, verb rune) {
+	p.Printf("range keys: %s, contained points: %s (%s skipped)",
+		humanize.Count.Uint64(uint64(s.Count)),
+		humanize.Count.Uint64(uint64(s.ContainedPoints)),
+		humanize.Count.Uint64(uint64(s.SkippedPoints)))
+}
+
 // LazyValue is a lazy value. See the long comment in base.LazyValue.
 type LazyValue = base.LazyValue
 
@@ -2788,44 +2800,44 @@ func (stats *IteratorStats) String() string {
 
 // SafeFormat implements the redact.SafeFormatter interface.
 func (stats *IteratorStats) SafeFormat(s redact.SafePrinter, verb rune) {
-	for i := range stats.ForwardStepCount {
-		switch IteratorStatsKind(i) {
-		case InterfaceCall:
-			s.SafeString("(interface (dir, seek, step): ")
-		case InternalIterCall:
-			s.SafeString(", (internal (dir, seek, step): ")
-		}
-		s.Printf("(fwd, %d, %d), (rev, %d, %d))",
-			redact.Safe(stats.ForwardSeekCount[i]), redact.Safe(stats.ForwardStepCount[i]),
-			redact.Safe(stats.ReverseSeekCount[i]), redact.Safe(stats.ReverseStepCount[i]))
-	}
-	if stats.InternalStats != (InternalIteratorStats{}) {
-		s.SafeString(",\n(internal-stats: ")
-		s.Printf("(block-bytes: (total %s, cached %s, read-time %s)), "+
-			"(points: (count %s, key-bytes %s, value-bytes %s, tombstoned %s))",
-			humanize.Bytes.Uint64(stats.InternalStats.BlockBytes),
-			humanize.Bytes.Uint64(stats.InternalStats.BlockBytesInCache),
-			humanize.FormattedString(stats.InternalStats.BlockReadDuration.String()),
-			humanize.Count.Uint64(stats.InternalStats.PointCount),
-			humanize.Bytes.Uint64(stats.InternalStats.KeyBytes),
-			humanize.Bytes.Uint64(stats.InternalStats.ValueBytes),
-			humanize.Count.Uint64(stats.InternalStats.PointsCoveredByRangeTombstones),
+	if stats.ReverseSeekCount[InterfaceCall] == 0 && stats.ReverseSeekCount[InternalIterCall] == 0 {
+		s.Printf("seeked %s times (%s internal)",
+			humanize.Count.Uint64(uint64(stats.ForwardSeekCount[InterfaceCall])),
+			humanize.Count.Uint64(uint64(stats.ForwardSeekCount[InternalIterCall])),
 		)
-		if stats.InternalStats.SeparatedPointValue.Count != 0 {
-			s.Printf(", (separated: (count %s, bytes %s, fetched %s)))",
-				humanize.Count.Uint64(stats.InternalStats.SeparatedPointValue.Count),
-				humanize.Bytes.Uint64(stats.InternalStats.SeparatedPointValue.ValueBytes),
-				humanize.Bytes.Uint64(stats.InternalStats.SeparatedPointValue.ValueBytesFetched))
-		} else {
-			s.Printf(")")
-		}
+	} else {
+		s.Printf("seeked %s times (%s fwd/%s rev, internal: %s fwd/%s rev)",
+			humanize.Count.Uint64(uint64(stats.ForwardSeekCount[InterfaceCall]+stats.ReverseSeekCount[InterfaceCall])),
+			humanize.Count.Uint64(uint64(stats.ForwardSeekCount[InterfaceCall])),
+			humanize.Count.Uint64(uint64(stats.ReverseSeekCount[InterfaceCall])),
+			humanize.Count.Uint64(uint64(stats.ForwardSeekCount[InternalIterCall])),
+			humanize.Count.Uint64(uint64(stats.ReverseSeekCount[InternalIterCall])),
+		)
+	}
+	s.SafeString("; ")
+
+	if stats.ReverseStepCount[InterfaceCall] == 0 && stats.ReverseStepCount[InternalIterCall] == 0 {
+		s.Printf("stepped %s times (%s internal)",
+			humanize.Count.Uint64(uint64(stats.ForwardStepCount[InterfaceCall])),
+			humanize.Count.Uint64(uint64(stats.ForwardStepCount[InternalIterCall])),
+		)
+	} else {
+		s.Printf("stepped %s times (%s fwd/%s rev, internal: %s fwd/%s rev)",
+			humanize.Count.Uint64(uint64(stats.ForwardStepCount[InterfaceCall]+stats.ReverseStepCount[InterfaceCall])),
+			humanize.Count.Uint64(uint64(stats.ForwardStepCount[InterfaceCall])),
+			humanize.Count.Uint64(uint64(stats.ReverseStepCount[InterfaceCall])),
+			humanize.Count.Uint64(uint64(stats.ForwardStepCount[InternalIterCall])),
+			humanize.Count.Uint64(uint64(stats.ReverseStepCount[InternalIterCall])),
+		)
+	}
+
+	if stats.InternalStats != (InternalIteratorStats{}) {
+		s.SafeString("; ")
+		stats.InternalStats.SafeFormat(s, verb)
 	}
 	if stats.RangeKeyStats != (RangeKeyIteratorStats{}) {
-		s.SafeString(",\n(range-key-stats: ")
-		s.Printf("(count %d), (contained points: (count %d, skipped %d)))",
-			stats.RangeKeyStats.Count,
-			stats.RangeKeyStats.ContainedPoints,
-			stats.RangeKeyStats.SkippedPoints)
+		s.SafeString(", ")
+		stats.RangeKeyStats.SafeFormat(s, verb)
 	}
 }
 

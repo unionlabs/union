@@ -1,0 +1,16 @@
+mod=example.com/fix
+base=v1.0.0
+version=v1.1.0-incompatible-same
+success=false
+-- want --
+# example.com/fix/bad
+## errors in base version:
+bad/bad.go:3:15: undefined: NOTYPE
+
+## incompatible changes
+Bad: changed from func() int to func() string
+Broken: changed from func() invalid type to func() int
+
+# summary
+Cannot suggest a release version.
+Errors were found.

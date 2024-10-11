@@ -1,0 +1,57 @@
+Test of (lack of) comment preservation by inlining,
+whether by literalization or reduction.
+
+Comment handling was better in an earlier implementation
+based on byte-oriented file surgery; switching to AST
+manipulation (though better in all other respects) was
+a regression. The underlying problem of AST comment fidelity
+is Go issue #20744.
+
+-- go.mod --
+module testdata
+go 1.12
+
+-- a/f.go --
+package a
+
+func _() {
+	f() //@ inline(re"f", f)
+}
+
+func f() {
+	// a
+	/* b */ g() /* c */
+	// d
+}
+
+-- f --
+package a
+
+func _() {
+	g() //@ inline(re"f", f)
+}
+
+func f() {
+	// a
+	/* b */
+	g() /* c */
+	// d
+}
+
+-- a/g.go --
+package a
+
+func _() {
+	println(g()) //@ inline(re"g", g)
+}
+
+func g() int { return 1 /*hello*/ + /*there*/ 1 }
+
+-- g --
+package a
+
+func _() {
+	println(1 + 1) //@ inline(re"g", g)
+}
+
+func g() int { return 1 /*hello*/ + /*there*/ 1 }

@@ -1,0 +1,17 @@
+{
+  "chain-a": [
+    "release-v7.3.x"
+  ],
+  "chain-b": [
+    "release-v7.3.x"
+  ],
+  "entrypoint": [
+    "LocalhostTransferTestSuite"
+  ],
+  "test": [
+    "TestMsgTransfer_Localhost"
+  ],
+  "relayer-type": [
+    "rly"
+  ]
+}

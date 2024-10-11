@@ -1,0 +1,18 @@
+syntax = "proto3";
+package cosmos.auth.v1beta1;
+
+import "google/protobuf/any.proto";
+import "gogoproto/gogo.proto";
+import "cosmos/auth/v1beta1/auth.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/auth/types";
+
+// GenesisState defines the auth module's genesis state.
+message GenesisState {
+  // params defines all the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // accounts are the accounts present at genesis.
+  repeated google.protobuf.Any accounts = 2;
+}

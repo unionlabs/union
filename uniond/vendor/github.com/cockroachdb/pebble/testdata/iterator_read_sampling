@@ -1,0 +1,351 @@
+# Test with overlapping keys across levels, should pick top level to compact after allowed-seeks goes to 0
+# Verify that Iterator.First(), Iterator.SeekGE() and Iterator.Next() call maybe sample read.
+define auto-compactions=off
+L0
+  a.SET.4:4
+L1
+  a.SET.3:3
+L2
+  d.SET.2:2
+L3
+  d.SET.1:1
+----
+0.0:
+  000004:[a#4,SET-a#4,SET]
+1:
+  000005:[a#3,SET-a#3,SET]
+2:
+  000006:[d#2,SET-d#2,SET]
+3:
+  000007:[d#1,SET-d#1,SET]
+
+set allowed-seeks=2
+----
+
+
+iter
+first
+----
+a: (4, .)
+
+iter-read-compactions
+----
+(none)
+
+iter
+first
+----
+a: (4, .)
+
+iter-read-compactions
+----
+(level: 0, start: a, end: a)
+
+read-compactions
+----
+(none)
+
+close-iter
+----
+
+read-compactions
+----
+(level: 0, start: a, end: a)
+
+iter
+seek-ge d
+----
+d: (2, .)
+
+iter
+prev
+----
+a: (4, .)
+
+iter
+next
+----
+d: (2, .)
+
+iter-read-compactions
+----
+(level: 2, start: d, end: d)
+
+close-iter
+----
+
+read-compactions
+----
+(level: 0, start: a, end: a)
+(level: 2, start: d, end: d)
+
+
+
+# Verify that Iterator.Last(), Iterator.SeekLT() and Iterator.Prev() call maybe sample read.
+define auto-compactions=off
+L0
+  a.SET.4:4
+  c.SET.8:8
+L1
+  a.SET.3:3
+  c.SET.9:9
+L2
+  d.SET.2:2
+  l.SET.7:7
+L3
+  d.SET.1:1
+  l.SET.8:8
+----
+0.0:
+  000004:[a#4,SET-c#8,SET]
+1:
+  000005:[a#3,SET-c#9,SET]
+2:
+  000006:[d#2,SET-l#7,SET]
+3:
+  000007:[d#1,SET-l#8,SET]
+
+set allowed-seeks=2
+----
+
+
+iter
+last
+----
+l: (8, .)
+
+iter-read-compactions
+----
+(none)
+
+iter
+last
+----
+l: (8, .)
+
+iter-read-compactions
+----
+(level: 2, start: d, end: l)
+
+read-compactions
+----
+(none)
+
+close-iter
+----
+
+read-compactions
+----
+(level: 2, start: d, end: l)
+
+iter
+seek-lt d
+----
+c: (9, .)
+
+iter
+next
+----
+d: (2, .)
+
+iter
+prev
+----
+c: (9, .)
+
+iter-read-compactions
+----
+(level: 0, start: a, end: c)
+
+close-iter
+----
+
+read-compactions
+----
+(level: 2, start: d, end: l)
+(level: 0, start: a, end: c)
+
+
+# For Iterator.Last(), Iterator.SeekLT() and Iterator.Prev(), if the key is the first key of the file or
+# the only key, sampling skips it because the iterator has already moved past it.
+define auto-compactions=off
+L0
+  a.SET.4:4
+L1
+  a.SET.3:3
+L2
+  d.SET.2:2
+L3
+  d.SET.1:1
+----
+0.0:
+  000004:[a#4,SET-a#4,SET]
+1:
+  000005:[a#3,SET-a#3,SET]
+2:
+  000006:[d#2,SET-d#2,SET]
+3:
+  000007:[d#1,SET-d#1,SET]
+
+set allowed-seeks=2
+----
+
+
+iter
+last
+----
+d: (2, .)
+
+iter-read-compactions
+----
+(none)
+
+iter
+last
+----
+d: (2, .)
+
+iter-read-compactions
+----
+(none)
+
+read-compactions
+----
+(none)
+
+close-iter
+----
+
+read-compactions
+----
+(none)
+
+iter
+seek-lt d
+----
+a: (4, .)
+
+iter
+next
+----
+d: (2, .)
+
+iter
+prev
+----
+a: (4, .)
+
+iter-read-compactions
+----
+(none)
+
+close-iter
+----
+
+read-compactions
+----
+(none)
+
+
+
+
+# Test with no overlapping keys across levels, should not pick any compaction
+define auto-compactions=off
+L0
+  a.SET.4:4
+L1
+  b.SET.3:3
+L2
+  c.SET.2:2
+L3
+  d.SET.1:1
+----
+0.0:
+  000004:[a#4,SET-a#4,SET]
+1:
+  000005:[b#3,SET-b#3,SET]
+2:
+  000006:[c#2,SET-c#2,SET]
+3:
+  000007:[d#1,SET-d#1,SET]
+
+set allowed-seeks=3
+----
+
+iter
+first
+----
+a: (4, .)
+
+iter
+first
+----
+a: (4, .)
+
+iter
+first
+----
+a: (4, .)
+
+iter-read-compactions
+----
+(none)
+
+close-iter
+----
+
+read-compactions
+----
+(none)
+
+# Test to see if the allowedSeeks associated with a file
+# is reset once it hits 0.
+define auto-compactions=off
+L0
+  a.SET.4:4
+  c.SET.8:8
+L1
+  a.SET.3:3
+  c.SET.9:9
+L2
+  d.SET.2:2
+  l.SET.7:7
+L3
+  d.SET.1:1
+  l.SET.8:8
+----
+0.0:
+  000004:[a#4,SET-c#8,SET]
+1:
+  000005:[a#3,SET-c#9,SET]
+2:
+  000006:[d#2,SET-l#7,SET]
+3:
+  000007:[d#1,SET-l#8,SET]
+
+set allowed-seeks=1
+----
+
+iter
+last
+----
+l: (8, .)
+
+iter-read-compactions
+----
+(level: 2, start: d, end: l)
+
+close-iter
+----
+
+read-compactions
+----
+(level: 2, start: d, end: l)
+
+# The allowedSeeks on this file should have been reset.
+# Since the value of allowedSeeks determined
+# by the code is 100, we check if allowed-seeks has been
+# reset to 100.
+show allowed-seeks=(000006,)
+----
+100

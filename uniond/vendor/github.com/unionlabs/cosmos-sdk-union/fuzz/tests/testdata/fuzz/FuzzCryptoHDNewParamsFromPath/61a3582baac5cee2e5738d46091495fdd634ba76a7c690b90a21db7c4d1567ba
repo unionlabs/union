@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("0/\u007f\u007f///")

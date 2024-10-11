@@ -1,0 +1,2495 @@
+{
+  "metadata": {
+    "apiVersion": "2019-12-02",
+    "endpointPrefix": "route53-recovery-readiness",
+    "signingName": "route53-recovery-readiness",
+    "serviceFullName": "AWS Route53 Recovery Readiness",
+    "serviceId": "Route53 Recovery Readiness",
+    "protocol": "rest-json",
+    "jsonVersion": "1.1",
+    "uid": "route53-recovery-readiness-2019-12-02",
+    "signatureVersion": "v4"
+  },
+  "operations": {
+    "CreateCell": {
+      "name": "CreateCell",
+      "http": {
+        "method": "POST",
+        "requestUri": "/cells",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "CreateCellRequest"
+      },
+      "output": {
+        "shape": "CreateCellResponse"
+      },
+      "errors": [
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "CreateCrossAccountAuthorization": {
+      "name": "CreateCrossAccountAuthorization",
+      "http": {
+        "method": "POST",
+        "requestUri": "/crossaccountauthorizations",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "CreateCrossAccountAuthorizationRequest"
+      },
+      "output": {
+        "shape": "CreateCrossAccountAuthorizationResponse"
+      },
+      "errors": [
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "CreateReadinessCheck": {
+      "name": "CreateReadinessCheck",
+      "http": {
+        "method": "POST",
+        "requestUri": "/readinesschecks",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "CreateReadinessCheckRequest"
+      },
+      "output": {
+        "shape": "CreateReadinessCheckResponse"
+      },
+      "errors": [
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "CreateRecoveryGroup": {
+      "name": "CreateRecoveryGroup",
+      "http": {
+        "method": "POST",
+        "requestUri": "/recoverygroups",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "CreateRecoveryGroupRequest"
+      },
+      "output": {
+        "shape": "CreateRecoveryGroupResponse"
+      },
+      "errors": [
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "CreateResourceSet": {
+      "name": "CreateResourceSet",
+      "http": {
+        "method": "POST",
+        "requestUri": "/resourcesets",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "CreateResourceSetRequest"
+      },
+      "output": {
+        "shape": "CreateResourceSetResponse"
+      },
+      "errors": [
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "DeleteCell": {
+      "name": "DeleteCell",
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/cells/{cellName}",
+        "responseCode": 204
+      },
+      "input": {
+        "shape": "DeleteCellRequest"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "DeleteCrossAccountAuthorization": {
+      "name": "DeleteCrossAccountAuthorization",
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/crossaccountauthorizations/{crossAccountAuthorization}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "DeleteCrossAccountAuthorizationRequest"
+      },
+      "output": {
+        "shape": "DeleteCrossAccountAuthorizationResponse"
+      },
+      "errors": [
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "DeleteReadinessCheck": {
+      "name": "DeleteReadinessCheck",
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/readinesschecks/{readinessCheckName}",
+        "responseCode": 204
+      },
+      "input": {
+        "shape": "DeleteReadinessCheckRequest"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "DeleteRecoveryGroup": {
+      "name": "DeleteRecoveryGroup",
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/recoverygroups/{recoveryGroupName}",
+        "responseCode": 204
+      },
+      "input": {
+        "shape": "DeleteRecoveryGroupRequest"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "DeleteResourceSet": {
+      "name": "DeleteResourceSet",
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/resourcesets/{resourceSetName}",
+        "responseCode": 204
+      },
+      "input": {
+        "shape": "DeleteResourceSetRequest"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "GetArchitectureRecommendations": {
+      "name": "GetArchitectureRecommendations",
+      "http": {
+        "method": "GET",
+        "requestUri": "/recoverygroups/{recoveryGroupName}/architectureRecommendations",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetArchitectureRecommendationsRequest"
+      },
+      "output": {
+        "shape": "GetArchitectureRecommendationsResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "GetCell": {
+      "name": "GetCell",
+      "http": {
+        "method": "GET",
+        "requestUri": "/cells/{cellName}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetCellRequest"
+      },
+      "output": {
+        "shape": "GetCellResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "GetCellReadinessSummary": {
+      "name": "GetCellReadinessSummary",
+      "http": {
+        "method": "GET",
+        "requestUri": "/cellreadiness/{cellName}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetCellReadinessSummaryRequest"
+      },
+      "output": {
+        "shape": "GetCellReadinessSummaryResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "GetReadinessCheck": {
+      "name": "GetReadinessCheck",
+      "http": {
+        "method": "GET",
+        "requestUri": "/readinesschecks/{readinessCheckName}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetReadinessCheckRequest"
+      },
+      "output": {
+        "shape": "GetReadinessCheckResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "GetReadinessCheckResourceStatus": {
+      "name": "GetReadinessCheckResourceStatus",
+      "http": {
+        "method": "GET",
+        "requestUri": "/readinesschecks/{readinessCheckName}/resource/{resourceIdentifier}/status",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetReadinessCheckResourceStatusRequest"
+      },
+      "output": {
+        "shape": "GetReadinessCheckResourceStatusResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "GetReadinessCheckStatus": {
+      "name": "GetReadinessCheckStatus",
+      "http": {
+        "method": "GET",
+        "requestUri": "/readinesschecks/{readinessCheckName}/status",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetReadinessCheckStatusRequest"
+      },
+      "output": {
+        "shape": "GetReadinessCheckStatusResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "GetRecoveryGroup": {
+      "name": "GetRecoveryGroup",
+      "http": {
+        "method": "GET",
+        "requestUri": "/recoverygroups/{recoveryGroupName}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetRecoveryGroupRequest"
+      },
+      "output": {
+        "shape": "GetRecoveryGroupResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "GetRecoveryGroupReadinessSummary": {
+      "name": "GetRecoveryGroupReadinessSummary",
+      "http": {
+        "method": "GET",
+        "requestUri": "/recoverygroupreadiness/{recoveryGroupName}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetRecoveryGroupReadinessSummaryRequest"
+      },
+      "output": {
+        "shape": "GetRecoveryGroupReadinessSummaryResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "GetResourceSet": {
+      "name": "GetResourceSet",
+      "http": {
+        "method": "GET",
+        "requestUri": "/resourcesets/{resourceSetName}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetResourceSetRequest"
+      },
+      "output": {
+        "shape": "GetResourceSetResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "ListCells": {
+      "name": "ListCells",
+      "http": {
+        "method": "GET",
+        "requestUri": "/cells",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListCellsRequest"
+      },
+      "output": {
+        "shape": "ListCellsResponse"
+      },
+      "errors": [
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "ListCrossAccountAuthorizations": {
+      "name": "ListCrossAccountAuthorizations",
+      "http": {
+        "method": "GET",
+        "requestUri": "/crossaccountauthorizations",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListCrossAccountAuthorizationsRequest"
+      },
+      "output": {
+        "shape": "ListCrossAccountAuthorizationsResponse"
+      },
+      "errors": [
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "ListReadinessChecks": {
+      "name": "ListReadinessChecks",
+      "http": {
+        "method": "GET",
+        "requestUri": "/readinesschecks",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListReadinessChecksRequest"
+      },
+      "output": {
+        "shape": "ListReadinessChecksResponse"
+      },
+      "errors": [
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "ListRecoveryGroups": {
+      "name": "ListRecoveryGroups",
+      "http": {
+        "method": "GET",
+        "requestUri": "/recoverygroups",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListRecoveryGroupsRequest"
+      },
+      "output": {
+        "shape": "ListRecoveryGroupsResponse"
+      },
+      "errors": [
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "ListResourceSets": {
+      "name": "ListResourceSets",
+      "http": {
+        "method": "GET",
+        "requestUri": "/resourcesets",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListResourceSetsRequest"
+      },
+      "output": {
+        "shape": "ListResourceSetsResponse"
+      },
+      "errors": [
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "ListRules": {
+      "name": "ListRules",
+      "http": {
+        "method": "GET",
+        "requestUri": "/rules",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListRulesRequest"
+      },
+      "output": {
+        "shape": "ListRulesResponse"
+      },
+      "errors": [
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "ListTagsForResources": {
+      "name": "ListTagsForResources",
+      "http": {
+        "method": "GET",
+        "requestUri": "/tags/{resource-arn}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListTagsForResourcesRequest"
+      },
+      "output": {
+        "shape": "ListTagsForResourcesResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        }
+      ]
+    },
+    "TagResource": {
+      "name": "TagResource",
+      "http": {
+        "method": "POST",
+        "requestUri": "/tags/{resource-arn}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "TagResourceRequest"
+      },
+      "output": {
+        "shape": "TagResourceResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        }
+      ]
+    },
+    "UntagResource": {
+      "name": "UntagResource",
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/tags/{resource-arn}",
+        "responseCode": 204
+      },
+      "input": {
+        "shape": "UntagResourceRequest"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        }
+      ]
+    },
+    "UpdateCell": {
+      "name": "UpdateCell",
+      "http": {
+        "method": "PUT",
+        "requestUri": "/cells/{cellName}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "UpdateCellRequest"
+      },
+      "output": {
+        "shape": "UpdateCellResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "UpdateReadinessCheck": {
+      "name": "UpdateReadinessCheck",
+      "http": {
+        "method": "PUT",
+        "requestUri": "/readinesschecks/{readinessCheckName}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "UpdateReadinessCheckRequest"
+      },
+      "output": {
+        "shape": "UpdateReadinessCheckResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "UpdateRecoveryGroup": {
+      "name": "UpdateRecoveryGroup",
+      "http": {
+        "method": "PUT",
+        "requestUri": "/recoverygroups/{recoveryGroupName}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "UpdateRecoveryGroupRequest"
+      },
+      "output": {
+        "shape": "UpdateRecoveryGroupResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    },
+    "UpdateResourceSet": {
+      "name": "UpdateResourceSet",
+      "http": {
+        "method": "PUT",
+        "requestUri": "/resourcesets/{resourceSetName}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "UpdateResourceSetRequest"
+      },
+      "output": {
+        "shape": "UpdateResourceSetResponse"
+      },
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ]
+    }
+  },
+  "shapes": {
+    "AccessDeniedException": {
+      "type": "structure",
+      "exception": true,
+      "error": {
+        "httpStatusCode": 403
+      },
+      "members": {
+        "Message": {
+          "shape": "__string",
+          "locationName": "message"
+        }
+      }
+    },
+    "CellOutput": {
+      "type": "structure",
+      "members": {
+        "CellArn": {
+          "shape": "__stringMax256",
+          "locationName": "cellArn"
+        },
+        "CellName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "cellName"
+        },
+        "Cells": {
+          "shape": "__listOf__string",
+          "locationName": "cells"
+        },
+        "ParentReadinessScopes": {
+          "shape": "__listOf__string",
+          "locationName": "parentReadinessScopes"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      },
+      "required": [
+        "ParentReadinessScopes",
+        "CellArn",
+        "CellName",
+        "Cells"
+      ]
+    },
+    "ConflictException": {
+      "type": "structure",
+      "exception": true,
+      "error": {
+        "httpStatusCode": 409
+      },
+      "members": {
+        "Message": {
+          "shape": "__string",
+          "locationName": "message"
+        }
+      }
+    },
+    "CreateCellRequest": {
+      "type": "structure",
+      "members": {
+        "CellName": {
+          "shape": "__string",
+          "locationName": "cellName"
+        },
+        "Cells": {
+          "shape": "__listOf__string",
+          "locationName": "cells"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      },
+      "required": [
+        "CellName"
+      ]
+    },
+    "CreateCellResponse": {
+      "type": "structure",
+      "members": {
+        "CellArn": {
+          "shape": "__stringMax256",
+          "locationName": "cellArn"
+        },
+        "CellName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "cellName"
+        },
+        "Cells": {
+          "shape": "__listOf__string",
+          "locationName": "cells"
+        },
+        "ParentReadinessScopes": {
+          "shape": "__listOf__string",
+          "locationName": "parentReadinessScopes"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "CreateCrossAccountAuthorizationRequest": {
+      "type": "structure",
+      "members": {
+        "CrossAccountAuthorization": {
+          "shape": "CrossAccountAuthorization",
+          "locationName": "crossAccountAuthorization"
+        }
+      },
+      "required": [
+        "CrossAccountAuthorization"
+      ]
+    },
+    "CreateCrossAccountAuthorizationResponse": {
+      "type": "structure",
+      "members": {
+        "CrossAccountAuthorization": {
+          "shape": "CrossAccountAuthorization",
+          "locationName": "crossAccountAuthorization"
+        }
+      }
+    },
+    "CreateReadinessCheckRequest": {
+      "type": "structure",
+      "members": {
+        "ReadinessCheckName": {
+          "shape": "__string",
+          "locationName": "readinessCheckName"
+        },
+        "ResourceSetName": {
+          "shape": "__string",
+          "locationName": "resourceSetName"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      },
+      "required": [
+        "ResourceSetName",
+        "ReadinessCheckName"
+      ]
+    },
+    "CreateReadinessCheckResponse": {
+      "type": "structure",
+      "members": {
+        "ReadinessCheckArn": {
+          "shape": "__stringMax256",
+          "locationName": "readinessCheckArn"
+        },
+        "ReadinessCheckName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "readinessCheckName"
+        },
+        "ResourceSet": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "resourceSet"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "CreateRecoveryGroupRequest": {
+      "type": "structure",
+      "members": {
+        "Cells": {
+          "shape": "__listOf__string",
+          "locationName": "cells"
+        },
+        "RecoveryGroupName": {
+          "shape": "__string",
+          "locationName": "recoveryGroupName"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      },
+      "required": [
+        "RecoveryGroupName"
+      ]
+    },
+    "CreateRecoveryGroupResponse": {
+      "type": "structure",
+      "members": {
+        "Cells": {
+          "shape": "__listOf__string",
+          "locationName": "cells"
+        },
+        "RecoveryGroupArn": {
+          "shape": "__stringMax256",
+          "locationName": "recoveryGroupArn"
+        },
+        "RecoveryGroupName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "recoveryGroupName"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "CreateResourceSetRequest": {
+      "type": "structure",
+      "members": {
+        "ResourceSetName": {
+          "shape": "__string",
+          "locationName": "resourceSetName"
+        },
+        "ResourceSetType": {
+          "shape": "__stringPatternAWSAZaZ09AZaZ09",
+          "locationName": "resourceSetType"
+        },
+        "Resources": {
+          "shape": "__listOfResource",
+          "locationName": "resources"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      },
+      "required": [
+        "ResourceSetType",
+        "ResourceSetName",
+        "Resources"
+      ]
+    },
+    "CreateResourceSetResponse": {
+      "type": "structure",
+      "members": {
+        "ResourceSetArn": {
+          "shape": "__stringMax256",
+          "locationName": "resourceSetArn"
+        },
+        "ResourceSetName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "resourceSetName"
+        },
+        "ResourceSetType": {
+          "shape": "__stringPatternAWSAZaZ09AZaZ09",
+          "locationName": "resourceSetType"
+        },
+        "Resources": {
+          "shape": "__listOfResource",
+          "locationName": "resources"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "CrossAccountAuthorization": {
+      "type": "string"
+    },
+    "DNSTargetResource": {
+      "type": "structure",
+      "members": {
+        "DomainName": {
+          "shape": "__string",
+          "locationName": "domainName"
+        },
+        "HostedZoneArn": {
+          "shape": "__string",
+          "locationName": "hostedZoneArn"
+        },
+        "RecordSetId": {
+          "shape": "__string",
+          "locationName": "recordSetId"
+        },
+        "RecordType": {
+          "shape": "__string",
+          "locationName": "recordType"
+        },
+        "TargetResource": {
+          "shape": "TargetResource",
+          "locationName": "targetResource"
+        }
+      }
+    },
+    "DeleteCellRequest": {
+      "type": "structure",
+      "members": {
+        "CellName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "cellName"
+        }
+      },
+      "required": [
+        "CellName"
+      ]
+    },
+    "DeleteCrossAccountAuthorizationRequest": {
+      "type": "structure",
+      "members": {
+        "CrossAccountAuthorization": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "crossAccountAuthorization"
+        }
+      },
+      "required": [
+        "CrossAccountAuthorization"
+      ]
+    },
+    "DeleteCrossAccountAuthorizationResponse": {
+      "type": "structure",
+      "members": {}
+    },
+    "DeleteReadinessCheckRequest": {
+      "type": "structure",
+      "members": {
+        "ReadinessCheckName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "readinessCheckName"
+        }
+      },
+      "required": [
+        "ReadinessCheckName"
+      ]
+    },
+    "DeleteRecoveryGroupRequest": {
+      "type": "structure",
+      "members": {
+        "RecoveryGroupName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "recoveryGroupName"
+        }
+      },
+      "required": [
+        "RecoveryGroupName"
+      ]
+    },
+    "DeleteResourceSetRequest": {
+      "type": "structure",
+      "members": {
+        "ResourceSetName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "resourceSetName"
+        }
+      },
+      "required": [
+        "ResourceSetName"
+      ]
+    },
+    "GetArchitectureRecommendationsRequest": {
+      "type": "structure",
+      "members": {
+        "MaxResults": {
+          "shape": "MaxResults",
+          "location": "querystring",
+          "locationName": "maxResults"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "location": "querystring",
+          "locationName": "nextToken"
+        },
+        "RecoveryGroupName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "recoveryGroupName"
+        }
+      },
+      "required": [
+        "RecoveryGroupName"
+      ]
+    },
+    "GetArchitectureRecommendationsResponse": {
+      "type": "structure",
+      "members": {
+        "LastAuditTimestamp": {
+          "shape": "LastAuditTimestamp",
+          "locationName": "lastAuditTimestamp"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken"
+        },
+        "Recommendations": {
+          "shape": "__listOfRecommendation",
+          "locationName": "recommendations"
+        }
+      }
+    },
+    "GetCellReadinessSummaryRequest": {
+      "type": "structure",
+      "members": {
+        "CellName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "cellName"
+        },
+        "MaxResults": {
+          "shape": "MaxResults",
+          "location": "querystring",
+          "locationName": "maxResults"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "location": "querystring",
+          "locationName": "nextToken"
+        }
+      },
+      "required": [
+        "CellName"
+      ]
+    },
+    "GetCellReadinessSummaryResponse": {
+      "type": "structure",
+      "members": {
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken"
+        },
+        "Readiness": {
+          "shape": "Readiness",
+          "locationName": "readiness"
+        },
+        "ReadinessChecks": {
+          "shape": "__listOfReadinessCheckSummary",
+          "locationName": "readinessChecks"
+        }
+      }
+    },
+    "GetCellRequest": {
+      "type": "structure",
+      "members": {
+        "CellName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "cellName"
+        }
+      },
+      "required": [
+        "CellName"
+      ]
+    },
+    "GetCellResponse": {
+      "type": "structure",
+      "members": {
+        "CellArn": {
+          "shape": "__stringMax256",
+          "locationName": "cellArn"
+        },
+        "CellName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "cellName"
+        },
+        "Cells": {
+          "shape": "__listOf__string",
+          "locationName": "cells"
+        },
+        "ParentReadinessScopes": {
+          "shape": "__listOf__string",
+          "locationName": "parentReadinessScopes"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "GetReadinessCheckRequest": {
+      "type": "structure",
+      "members": {
+        "ReadinessCheckName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "readinessCheckName"
+        }
+      },
+      "required": [
+        "ReadinessCheckName"
+      ]
+    },
+    "GetReadinessCheckResourceStatusRequest": {
+      "type": "structure",
+      "members": {
+        "MaxResults": {
+          "shape": "MaxResults",
+          "location": "querystring",
+          "locationName": "maxResults"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "location": "querystring",
+          "locationName": "nextToken"
+        },
+        "ReadinessCheckName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "readinessCheckName"
+        },
+        "ResourceIdentifier": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "resourceIdentifier"
+        }
+      },
+      "required": [
+        "ReadinessCheckName",
+        "ResourceIdentifier"
+      ]
+    },
+    "GetReadinessCheckResourceStatusResponse": {
+      "type": "structure",
+      "members": {
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken"
+        },
+        "Readiness": {
+          "shape": "Readiness",
+          "locationName": "readiness"
+        },
+        "Rules": {
+          "shape": "__listOfRuleResult",
+          "locationName": "rules"
+        }
+      }
+    },
+    "GetReadinessCheckResponse": {
+      "type": "structure",
+      "members": {
+        "ReadinessCheckArn": {
+          "shape": "__stringMax256",
+          "locationName": "readinessCheckArn"
+        },
+        "ReadinessCheckName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "readinessCheckName"
+        },
+        "ResourceSet": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "resourceSet"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "GetReadinessCheckStatusRequest": {
+      "type": "structure",
+      "members": {
+        "MaxResults": {
+          "shape": "MaxResults",
+          "location": "querystring",
+          "locationName": "maxResults"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "location": "querystring",
+          "locationName": "nextToken"
+        },
+        "ReadinessCheckName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "readinessCheckName"
+        }
+      },
+      "required": [
+        "ReadinessCheckName"
+      ]
+    },
+    "GetReadinessCheckStatusResponse": {
+      "type": "structure",
+      "members": {
+        "Messages": {
+          "shape": "__listOfMessage",
+          "locationName": "messages"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken"
+        },
+        "Readiness": {
+          "shape": "Readiness",
+          "locationName": "readiness"
+        },
+        "Resources": {
+          "shape": "__listOfResourceResult",
+          "locationName": "resources"
+        }
+      }
+    },
+    "GetRecoveryGroupReadinessSummaryRequest": {
+      "type": "structure",
+      "members": {
+        "MaxResults": {
+          "shape": "MaxResults",
+          "location": "querystring",
+          "locationName": "maxResults"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "location": "querystring",
+          "locationName": "nextToken"
+        },
+        "RecoveryGroupName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "recoveryGroupName"
+        }
+      },
+      "required": [
+        "RecoveryGroupName"
+      ]
+    },
+    "GetRecoveryGroupReadinessSummaryResponse": {
+      "type": "structure",
+      "members": {
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken"
+        },
+        "Readiness": {
+          "shape": "Readiness",
+          "locationName": "readiness"
+        },
+        "ReadinessChecks": {
+          "shape": "__listOfReadinessCheckSummary",
+          "locationName": "readinessChecks"
+        }
+      }
+    },
+    "GetRecoveryGroupRequest": {
+      "type": "structure",
+      "members": {
+        "RecoveryGroupName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "recoveryGroupName"
+        }
+      },
+      "required": [
+        "RecoveryGroupName"
+      ]
+    },
+    "GetRecoveryGroupResponse": {
+      "type": "structure",
+      "members": {
+        "Cells": {
+          "shape": "__listOf__string",
+          "locationName": "cells"
+        },
+        "RecoveryGroupArn": {
+          "shape": "__stringMax256",
+          "locationName": "recoveryGroupArn"
+        },
+        "RecoveryGroupName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "recoveryGroupName"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "GetResourceSetRequest": {
+      "type": "structure",
+      "members": {
+        "ResourceSetName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "resourceSetName"
+        }
+      },
+      "required": [
+        "ResourceSetName"
+      ]
+    },
+    "GetResourceSetResponse": {
+      "type": "structure",
+      "members": {
+        "ResourceSetArn": {
+          "shape": "__stringMax256",
+          "locationName": "resourceSetArn"
+        },
+        "ResourceSetName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "resourceSetName"
+        },
+        "ResourceSetType": {
+          "shape": "__stringPatternAWSAZaZ09AZaZ09",
+          "locationName": "resourceSetType"
+        },
+        "Resources": {
+          "shape": "__listOfResource",
+          "locationName": "resources"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "InternalServerException": {
+      "type": "structure",
+      "exception": true,
+      "error": {
+        "httpStatusCode": 500
+      },
+      "members": {
+        "Message": {
+          "shape": "__string",
+          "locationName": "message"
+        }
+      }
+    },
+    "LastAuditTimestamp": {
+      "type": "timestamp",
+      "timestampFormat": "iso8601"
+    },
+    "ListCellsRequest": {
+      "type": "structure",
+      "members": {
+        "MaxResults": {
+          "shape": "MaxResults",
+          "location": "querystring",
+          "locationName": "maxResults"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "location": "querystring",
+          "locationName": "nextToken"
+        }
+      }
+    },
+    "ListCellsResponse": {
+      "type": "structure",
+      "members": {
+        "Cells": {
+          "shape": "__listOfCellOutput",
+          "locationName": "cells"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken"
+        }
+      }
+    },
+    "ListCrossAccountAuthorizationsRequest": {
+      "type": "structure",
+      "members": {
+        "MaxResults": {
+          "shape": "MaxResults",
+          "location": "querystring",
+          "locationName": "maxResults"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "location": "querystring",
+          "locationName": "nextToken"
+        }
+      }
+    },
+    "ListCrossAccountAuthorizationsResponse": {
+      "type": "structure",
+      "members": {
+        "CrossAccountAuthorizations": {
+          "shape": "__listOfCrossAccountAuthorization",
+          "locationName": "crossAccountAuthorizations"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken"
+        }
+      }
+    },
+    "ListReadinessChecksRequest": {
+      "type": "structure",
+      "members": {
+        "MaxResults": {
+          "shape": "MaxResults",
+          "location": "querystring",
+          "locationName": "maxResults"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "location": "querystring",
+          "locationName": "nextToken"
+        }
+      }
+    },
+    "ListReadinessChecksResponse": {
+      "type": "structure",
+      "members": {
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken"
+        },
+        "ReadinessChecks": {
+          "shape": "__listOfReadinessCheckOutput",
+          "locationName": "readinessChecks"
+        }
+      }
+    },
+    "ListRecoveryGroupsRequest": {
+      "type": "structure",
+      "members": {
+        "MaxResults": {
+          "shape": "MaxResults",
+          "location": "querystring",
+          "locationName": "maxResults"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "location": "querystring",
+          "locationName": "nextToken"
+        }
+      }
+    },
+    "ListRecoveryGroupsResponse": {
+      "type": "structure",
+      "members": {
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken"
+        },
+        "RecoveryGroups": {
+          "shape": "__listOfRecoveryGroupOutput",
+          "locationName": "recoveryGroups"
+        }
+      }
+    },
+    "ListResourceSetsRequest": {
+      "type": "structure",
+      "members": {
+        "MaxResults": {
+          "shape": "MaxResults",
+          "location": "querystring",
+          "locationName": "maxResults"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "location": "querystring",
+          "locationName": "nextToken"
+        }
+      }
+    },
+    "ListResourceSetsResponse": {
+      "type": "structure",
+      "members": {
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken"
+        },
+        "ResourceSets": {
+          "shape": "__listOfResourceSetOutput",
+          "locationName": "resourceSets"
+        }
+      }
+    },
+    "ListRulesOutput": {
+      "type": "structure",
+      "members": {
+        "ResourceType": {
+          "shape": "__stringMax64",
+          "locationName": "resourceType"
+        },
+        "RuleDescription": {
+          "shape": "__stringMax256",
+          "locationName": "ruleDescription"
+        },
+        "RuleId": {
+          "shape": "__stringMax64",
+          "locationName": "ruleId"
+        }
+      },
+      "required": [
+        "RuleDescription",
+        "RuleId",
+        "ResourceType"
+      ]
+    },
+    "ListRulesRequest": {
+      "type": "structure",
+      "members": {
+        "MaxResults": {
+          "shape": "MaxResults",
+          "location": "querystring",
+          "locationName": "maxResults"
+        },
+        "NextToken": {
+          "shape": "__string",
+          "location": "querystring",
+          "locationName": "nextToken"
+        },
+        "ResourceType": {
+          "shape": "__string",
+          "location": "querystring",
+          "locationName": "resourceType"
+        }
+      }
+    },
+    "ListRulesResponse": {
+      "type": "structure",
+      "members": {
+        "NextToken": {
+          "shape": "__string",
+          "locationName": "nextToken"
+        },
+        "Rules": {
+          "shape": "__listOfListRulesOutput",
+          "locationName": "rules"
+        }
+      }
+    },
+    "ListTagsForResourcesRequest": {
+      "type": "structure",
+      "members": {
+        "ResourceArn": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "resource-arn"
+        }
+      },
+      "required": [
+        "ResourceArn"
+      ]
+    },
+    "ListTagsForResourcesResponse": {
+      "type": "structure",
+      "members": {
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "MaxResults": {
+      "type": "integer",
+      "min": 1,
+      "max": 1000
+    },
+    "Message": {
+      "type": "structure",
+      "members": {
+        "MessageText": {
+          "shape": "__string",
+          "locationName": "messageText"
+        }
+      }
+    },
+    "NLBResource": {
+      "type": "structure",
+      "members": {
+        "Arn": {
+          "shape": "__string",
+          "locationName": "arn"
+        }
+      }
+    },
+    "R53ResourceRecord": {
+      "type": "structure",
+      "members": {
+        "DomainName": {
+          "shape": "__string",
+          "locationName": "domainName"
+        },
+        "RecordSetId": {
+          "shape": "__string",
+          "locationName": "recordSetId"
+        }
+      }
+    },
+    "Readiness": {
+      "type": "string",
+      "enum": [
+        "READY",
+        "NOT_READY",
+        "UNKNOWN",
+        "NOT_AUTHORIZED"
+      ]
+    },
+    "ReadinessCheckOutput": {
+      "type": "structure",
+      "members": {
+        "ReadinessCheckArn": {
+          "shape": "__stringMax256",
+          "locationName": "readinessCheckArn"
+        },
+        "ReadinessCheckName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "readinessCheckName"
+        },
+        "ResourceSet": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "resourceSet"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      },
+      "required": [
+        "ReadinessCheckArn",
+        "ResourceSet"
+      ]
+    },
+    "ReadinessCheckSummary": {
+      "type": "structure",
+      "members": {
+        "Readiness": {
+          "shape": "Readiness",
+          "locationName": "readiness"
+        },
+        "ReadinessCheckName": {
+          "shape": "__string",
+          "locationName": "readinessCheckName"
+        }
+      }
+    },
+    "ReadinessCheckTimestamp": {
+      "type": "timestamp",
+      "timestampFormat": "iso8601"
+    },
+    "Recommendation": {
+      "type": "structure",
+      "members": {
+        "RecommendationText": {
+          "shape": "__string",
+          "locationName": "recommendationText"
+        }
+      },
+      "required": [
+        "RecommendationText"
+      ]
+    },
+    "RecoveryGroupOutput": {
+      "type": "structure",
+      "members": {
+        "Cells": {
+          "shape": "__listOf__string",
+          "locationName": "cells"
+        },
+        "RecoveryGroupArn": {
+          "shape": "__stringMax256",
+          "locationName": "recoveryGroupArn"
+        },
+        "RecoveryGroupName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "recoveryGroupName"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      },
+      "required": [
+        "RecoveryGroupArn",
+        "RecoveryGroupName",
+        "Cells"
+      ]
+    },
+    "Resource": {
+      "type": "structure",
+      "members": {
+        "ComponentId": {
+          "shape": "__string",
+          "locationName": "componentId"
+        },
+        "DnsTargetResource": {
+          "shape": "DNSTargetResource",
+          "locationName": "dnsTargetResource"
+        },
+        "ReadinessScopes": {
+          "shape": "__listOf__string",
+          "locationName": "readinessScopes"
+        },
+        "ResourceArn": {
+          "shape": "__string",
+          "locationName": "resourceArn"
+        }
+      }
+    },
+    "ResourceNotFoundException": {
+      "type": "structure",
+      "exception": true,
+      "error": {
+        "httpStatusCode": 404
+      },
+      "members": {
+        "Message": {
+          "shape": "__string",
+          "locationName": "message"
+        }
+      }
+    },
+    "ResourceResult": {
+      "type": "structure",
+      "members": {
+        "ComponentId": {
+          "shape": "__string",
+          "locationName": "componentId"
+        },
+        "LastCheckedTimestamp": {
+          "shape": "ReadinessCheckTimestamp",
+          "locationName": "lastCheckedTimestamp"
+        },
+        "Readiness": {
+          "shape": "Readiness",
+          "locationName": "readiness"
+        },
+        "ResourceArn": {
+          "shape": "__string",
+          "locationName": "resourceArn"
+        }
+      },
+      "required": [
+        "Readiness",
+        "LastCheckedTimestamp"
+      ]
+    },
+    "ResourceSetOutput": {
+      "type": "structure",
+      "members": {
+        "ResourceSetArn": {
+          "shape": "__stringMax256",
+          "locationName": "resourceSetArn"
+        },
+        "ResourceSetName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "resourceSetName"
+        },
+        "ResourceSetType": {
+          "shape": "__stringPatternAWSAZaZ09AZaZ09",
+          "locationName": "resourceSetType"
+        },
+        "Resources": {
+          "shape": "__listOfResource",
+          "locationName": "resources"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      },
+      "required": [
+        "ResourceSetType",
+        "ResourceSetName",
+        "ResourceSetArn",
+        "Resources"
+      ]
+    },
+    "RuleResult": {
+      "type": "structure",
+      "members": {
+        "LastCheckedTimestamp": {
+          "shape": "ReadinessCheckTimestamp",
+          "locationName": "lastCheckedTimestamp"
+        },
+        "Messages": {
+          "shape": "__listOfMessage",
+          "locationName": "messages"
+        },
+        "Readiness": {
+          "shape": "Readiness",
+          "locationName": "readiness"
+        },
+        "RuleId": {
+          "shape": "__string",
+          "locationName": "ruleId"
+        }
+      },
+      "required": [
+        "Messages",
+        "Readiness",
+        "RuleId",
+        "LastCheckedTimestamp"
+      ]
+    },
+    "TagResourceRequest": {
+      "type": "structure",
+      "members": {
+        "ResourceArn": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "resource-arn"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      },
+      "required": [
+        "ResourceArn",
+        "Tags"
+      ]
+    },
+    "TagResourceResponse": {
+      "type": "structure",
+      "members": {}
+    },
+    "Tags": {
+      "type": "map",
+      "key": {
+        "shape": "__string"
+      },
+      "value": {
+        "shape": "__string"
+      }
+    },
+    "TargetResource": {
+      "type": "structure",
+      "members": {
+        "NLBResource": {
+          "shape": "NLBResource",
+          "locationName": "nLBResource"
+        },
+        "R53Resource": {
+          "shape": "R53ResourceRecord",
+          "locationName": "r53Resource"
+        }
+      }
+    },
+    "ThrottlingException": {
+      "type": "structure",
+      "exception": true,
+      "error": {
+        "httpStatusCode": 429
+      },
+      "members": {
+        "Message": {
+          "shape": "__string",
+          "locationName": "message"
+        }
+      }
+    },
+    "UntagResourceRequest": {
+      "type": "structure",
+      "members": {
+        "ResourceArn": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "resource-arn"
+        },
+        "TagKeys": {
+          "shape": "__listOf__string",
+          "location": "querystring",
+          "locationName": "tagKeys"
+        }
+      },
+      "required": [
+        "TagKeys",
+        "ResourceArn"
+      ]
+    },
+    "UpdateCellRequest": {
+      "type": "structure",
+      "members": {
+        "CellName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "cellName"
+        },
+        "Cells": {
+          "shape": "__listOf__string",
+          "locationName": "cells"
+        }
+      },
+      "required": [
+        "CellName",
+        "Cells"
+      ]
+    },
+    "UpdateCellResponse": {
+      "type": "structure",
+      "members": {
+        "CellArn": {
+          "shape": "__stringMax256",
+          "locationName": "cellArn"
+        },
+        "CellName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "cellName"
+        },
+        "Cells": {
+          "shape": "__listOf__string",
+          "locationName": "cells"
+        },
+        "ParentReadinessScopes": {
+          "shape": "__listOf__string",
+          "locationName": "parentReadinessScopes"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "UpdateReadinessCheckRequest": {
+      "type": "structure",
+      "members": {
+        "ReadinessCheckName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "readinessCheckName"
+        },
+        "ResourceSetName": {
+          "shape": "__string",
+          "locationName": "resourceSetName"
+        }
+      },
+      "required": [
+        "ReadinessCheckName",
+        "ResourceSetName"
+      ]
+    },
+    "UpdateReadinessCheckResponse": {
+      "type": "structure",
+      "members": {
+        "ReadinessCheckArn": {
+          "shape": "__stringMax256",
+          "locationName": "readinessCheckArn"
+        },
+        "ReadinessCheckName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "readinessCheckName"
+        },
+        "ResourceSet": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "resourceSet"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "UpdateRecoveryGroupRequest": {
+      "type": "structure",
+      "members": {
+        "Cells": {
+          "shape": "__listOf__string",
+          "locationName": "cells"
+        },
+        "RecoveryGroupName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "recoveryGroupName"
+        }
+      },
+      "required": [
+        "RecoveryGroupName",
+        "Cells"
+      ]
+    },
+    "UpdateRecoveryGroupResponse": {
+      "type": "structure",
+      "members": {
+        "Cells": {
+          "shape": "__listOf__string",
+          "locationName": "cells"
+        },
+        "RecoveryGroupArn": {
+          "shape": "__stringMax256",
+          "locationName": "recoveryGroupArn"
+        },
+        "RecoveryGroupName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "recoveryGroupName"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "UpdateResourceSetRequest": {
+      "type": "structure",
+      "members": {
+        "ResourceSetName": {
+          "shape": "__string",
+          "location": "uri",
+          "locationName": "resourceSetName"
+        },
+        "ResourceSetType": {
+          "shape": "__stringPatternAWSAZaZ09AZaZ09",
+          "locationName": "resourceSetType"
+        },
+        "Resources": {
+          "shape": "__listOfResource",
+          "locationName": "resources"
+        }
+      },
+      "required": [
+        "ResourceSetName",
+        "ResourceSetType",
+        "Resources"
+      ]
+    },
+    "UpdateResourceSetResponse": {
+      "type": "structure",
+      "members": {
+        "ResourceSetArn": {
+          "shape": "__stringMax256",
+          "locationName": "resourceSetArn"
+        },
+        "ResourceSetName": {
+          "shape": "__stringMax64PatternAAZAZ09Z",
+          "locationName": "resourceSetName"
+        },
+        "ResourceSetType": {
+          "shape": "__stringPatternAWSAZaZ09AZaZ09",
+          "locationName": "resourceSetType"
+        },
+        "Resources": {
+          "shape": "__listOfResource",
+          "locationName": "resources"
+        },
+        "Tags": {
+          "shape": "Tags",
+          "locationName": "tags"
+        }
+      }
+    },
+    "ValidationException": {
+      "type": "structure",
+      "exception": true,
+      "error": {
+        "httpStatusCode": 400
+      },
+      "members": {
+        "Message": {
+          "shape": "__string",
+          "locationName": "message"
+        }
+      }
+    },
+    "__listOfCellOutput": {
+      "type": "list",
+      "member": {
+        "shape": "CellOutput"
+      }
+    },
+    "__listOfCrossAccountAuthorization": {
+      "type": "list",
+      "member": {
+        "shape": "CrossAccountAuthorization"
+      }
+    },
+    "__listOfListRulesOutput": {
+      "type": "list",
+      "member": {
+        "shape": "ListRulesOutput"
+      }
+    },
+    "__listOfMessage": {
+      "type": "list",
+      "member": {
+        "shape": "Message"
+      }
+    },
+    "__listOfReadinessCheckOutput": {
+      "type": "list",
+      "member": {
+        "shape": "ReadinessCheckOutput"
+      }
+    },
+    "__listOfReadinessCheckSummary": {
+      "type": "list",
+      "member": {
+        "shape": "ReadinessCheckSummary"
+      }
+    },
+    "__listOfRecommendation": {
+      "type": "list",
+      "member": {
+        "shape": "Recommendation"
+      }
+    },
+    "__listOfRecoveryGroupOutput": {
+      "type": "list",
+      "member": {
+        "shape": "RecoveryGroupOutput"
+      }
+    },
+    "__listOfResource": {
+      "type": "list",
+      "member": {
+        "shape": "Resource"
+      }
+    },
+    "__listOfResourceResult": {
+      "type": "list",
+      "member": {
+        "shape": "ResourceResult"
+      }
+    },
+    "__listOfResourceSetOutput": {
+      "type": "list",
+      "member": {
+        "shape": "ResourceSetOutput"
+      }
+    },
+    "__listOfRuleResult": {
+      "type": "list",
+      "member": {
+        "shape": "RuleResult"
+      }
+    },
+    "__listOf__string": {
+      "type": "list",
+      "member": {
+        "shape": "__string"
+      }
+    },
+    "__string": {
+      "type": "string"
+    },
+    "__stringMax256": {
+      "type": "string",
+      "max": 256
+    },
+    "__stringMax64": {
+      "type": "string",
+      "max": 64
+    },
+    "__stringMax64PatternAAZAZ09Z": {
+      "type": "string",
+      "max": 64,
+      "pattern": "\\A[a-zA-Z0-9_]+\\z"
+    },
+    "__stringPatternAWSAZaZ09AZaZ09": {
+      "type": "string",
+      "pattern": "AWS::[A-Za-z0-9]+::[A-Za-z0-9]+"
+    }
+  }
+}

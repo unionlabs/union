@@ -1,0 +1,121 @@
+open
+----
+
+list-files build
+----
+build:
+  000002.log
+  CURRENT
+  LOCK
+  MANIFEST-000001
+  OPTIONS-000003
+  marker.format-version.000007.008
+  marker.manifest.000001.MANIFEST-000001
+
+commit
+set a a
+set b b
+set c c
+set d d
+set de d
+set e e
+set ed e
+set f f
+set fe f
+set g g
+set ge g
+set h h
+set he h
+set i i
+set ie i
+set j j
+set k k
+set l l
+set m m
+set n n
+set o o
+set p p
+set q q
+set r r
+set s s
+set t t
+set u u
+set v v
+set w w
+set x x
+set y y
+set z z
+----
+
+flush
+----
+
+commit
+set c c
+----
+
+flush
+----
+
+
+commit
+set a a
+----
+
+flush
+----
+
+list-files build
+----
+build:
+  000005.sst
+  000006.log
+  000007.sst
+  000009.log
+  000010.sst
+  CURRENT
+  LOCK
+  MANIFEST-000008
+  MANIFEST-000011
+  OPTIONS-000003
+  marker.format-version.000007.008
+  marker.manifest.000003.MANIFEST-000011
+
+start
+----
+started
+
+list-files high_read_amp/checkpoint
+----
+high_read_amp/checkpoint:
+  000005.sst
+  000007.sst
+  000009.log
+  000010.sst
+  MANIFEST-000011
+  OPTIONS-000003
+  marker.format-version.000001.008
+  marker.manifest.000001.MANIFEST-000011
+
+commit
+set d d
+set e e
+set f f
+set i i
+set h h
+set g g
+----
+
+flush
+----
+
+stop
+----
+stopped
+
+list-files high_read_amp
+----
+high_read_amp:
+  000013.sst
+  MANIFEST-000011
+  checkpoint

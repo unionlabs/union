@@ -1,0 +1,5 @@
+name: 'Go mod tidy checker'
+description: 'Checks that `go mod tidy` has been applied.'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

@@ -1,0 +1,30 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["upgrade.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/core/deneb",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/core/time:go_default_library",
+        "//beacon-chain/state:go_default_library",
+        "//beacon-chain/state/state-native:go_default_library",
+        "//config/params:go_default_library",
+        "//proto/engine/v1:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["upgrade_test.go"],
+    deps = [
+        ":go_default_library",
+        "//beacon-chain/core/time:go_default_library",
+        "//config/params:go_default_library",
+        "//proto/engine/v1:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/util:go_default_library",
+    ],
+)

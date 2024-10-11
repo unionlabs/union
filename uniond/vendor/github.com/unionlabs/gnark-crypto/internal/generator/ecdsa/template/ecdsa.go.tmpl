@@ -1,0 +1,437 @@
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"crypto/sha512"
+	"crypto/subtle"
+	{{- if or (eq .Name "secp256k1") (eq .Name "bn254") (eq .Name "stark-curve") }}
+	"errors"
+	{{- end }}
+	"hash"
+	"io"
+	"math/big"
+
+	"github.com/consensys/gnark-crypto/ecc/{{ .Name }}"
+	"github.com/consensys/gnark-crypto/ecc/{{ .Name }}/fr"
+	"github.com/consensys/gnark-crypto/ecc/{{ .Name }}/fp"
+	"github.com/consensys/gnark-crypto/signature"
+)
+
+const (
+	sizeFr         = fr.Bytes
+	sizeFrBits     = fr.Bits
+	sizeFp         = fp.Bytes
+{{- if eq .Name "secp256k1"}}
+	sizePublicKey  = 2 * sizeFp
+{{- else}}
+	sizePublicKey  = sizeFp
+{{- end}}
+	sizePrivateKey = sizeFr + sizePublicKey
+	sizeSignature  = 2 * sizeFr
+)
+
+var order = fr.Modulus()
+
+// PublicKey represents an ECDSA public key
+type PublicKey struct {
+	A {{ .CurvePackage }}.G1Affine
+}
+
+// PrivateKey represents an ECDSA private key
+type PrivateKey struct {
+	PublicKey PublicKey
+	scalar    [sizeFr]byte // secret scalar, in big Endian
+}
+
+// Signature represents an ECDSA signature
+type Signature struct {
+	R, S [sizeFr]byte
+}
+
+var one = new(big.Int).SetInt64(1)
+
+// randFieldElement returns a random element of the order of the given
+// curve using the procedure given in FIPS 186-4, Appendix B.5.1.
+func randFieldElement(rand io.Reader) (k *big.Int, err error) {
+	b := make([]byte, fr.Bits/8+8)
+	_, err = io.ReadFull(rand, b)
+	if err != nil {
+		return
+	}
+
+	k = new(big.Int).SetBytes(b)
+	n := new(big.Int).Sub(order, one)
+	k.Mod(k, n)
+	k.Add(k, one)
+	return
+}
+
+// GenerateKey generates a public and private key pair.
+func GenerateKey(rand io.Reader) (*PrivateKey, error) {
+
+	k, err := randFieldElement(rand)
+	if err != nil {
+		return nil, err
+
+	}
+
+    {{- if or (eq .Name "secp256k1") (eq .Name "stark-curve")}}
+        _, g := {{ .CurvePackage }}.Generators()
+    {{- else}}
+        _, _, g, _ := {{ .CurvePackage }}.Generators()
+    {{- end}}
+
+	privateKey := new(PrivateKey)
+	k.FillBytes(privateKey.scalar[:sizeFr])
+	privateKey.PublicKey.A.ScalarMultiplication(&g, k)
+	return privateKey, nil
+}
+
+// HashToInt converts a hash value to an integer. Per FIPS 186-4, Section 6.4,
+// we use the left-most bits of the hash to match the bit-length of the order of
+// the curve. This also performs Step 5 of SEC 1, Version 2.0, Section 4.1.3.
+func HashToInt(hash []byte) *big.Int {
+	if len(hash) > sizeFr {
+		hash = hash[:sizeFr]
+    }
+	ret := new(big.Int).SetBytes(hash)
+	excess := ret.BitLen() - sizeFrBits
+	if excess > 0 {
+		ret.Rsh(ret, uint(excess))
+	}
+	return ret
+}
+
+{{- if or (eq .Name "secp256k1") (eq .Name "bn254") (eq .Name "stark-curve") }}
+// RecoverP recovers the value P (prover commitment) when creating a signature.
+// It uses the recovery information v and part of the decomposed signature r. It
+// is used internally for recovering the public key.
+func RecoverP(v uint, r *big.Int) (*{{ .CurvePackage }}.G1Affine, error) {
+	if r.Cmp(fr.Modulus()) >= 0 {
+		return nil, errors.New("r is larger than modulus")
+	}
+	if r.Cmp(big.NewInt(0)) <= 0 {
+	    return nil, errors.New("r is negative")
+	}
+	x := new(big.Int).Set(r)
+	{{- /* actually we want use a mask which corresponds to maximum cofactor of the curve. But this is when
+	we generalize the implementation over arbitrary curve.*/}}
+	// if x is r or r+N
+	xChoice := (v & 2) >> 1
+	// if y is y or -y
+	yChoice := v & 1
+	// decompose limbs into big.Int value
+	// conditional +n based on xChoice
+	kn := big.NewInt(int64(xChoice))
+	kn.Mul(kn, fr.Modulus())
+	x.Add(x, kn)
+	// y^2 = x^3+ax+b
+	a, b := {{ .CurvePackage }}.CurveCoefficients()
+	y := new(big.Int).Exp(x, big.NewInt(3), fp.Modulus())
+	if !a.IsZero() {
+		y.Add(y, new(big.Int).Mul(a.BigInt(new(big.Int)), x))
+	}
+	y.Add(y, b.BigInt(new(big.Int)))
+	y.Mod(y, fp.Modulus())
+	// y = sqrt(y^2)
+	if y.ModSqrt(y, fp.Modulus()) == nil {
+		return nil, errors.New("no square root")
+	}
+	// check that y has same oddity as defined by v
+	if y.Bit(0) != yChoice {
+		y = y.Sub(fp.Modulus(), y)
+	}
+	return &{{ .CurvePackage }}.G1Affine{
+		X: *new(fp.Element).SetBigInt(x),
+		Y: *new(fp.Element).SetBigInt(y),
+	}, nil
+}
+{{- end}}
+
+type zr struct{}
+
+// Read replaces the contents of dst with zeros. It is safe for concurrent use.
+func (zr) Read(dst []byte) (n int, err error) {
+	for i := range dst {
+		dst[i] = 0
+	}
+	return len(dst), nil
+}
+
+var zeroReader = zr{}
+
+const (
+	aesIV = "gnark-crypto IV." // must be 16 chars (equal block size)
+)
+
+func nonce(privateKey *PrivateKey, hash []byte) (csprng *cipher.StreamReader, err error) {
+	// This implementation derives the nonce from an AES-CTR CSPRNG keyed by:
+	//
+	//    SHA2-512(privateKey.scalar ∥ entropy ∥ hash)[:32]
+	//
+	// The CSPRNG key is indifferentiable from a random oracle as shown in
+	// [Coron], the AES-CTR stream is indifferentiable from a random oracle
+	// under standard cryptographic assumptions (see [Larsson] for examples).
+	//
+	// [Coron]: https://cs.nyu.edu/~dodis/ps/merkle.pdf
+	// [Larsson]: https://web.archive.org/web/20040719170906/https://www.nada.kth.se/kurser/kth/2D1441/semteo03/lecturenotes/assump.pdf
+
+	// Get 256 bits of entropy from rand.
+	entropy := make([]byte, 32)
+	_, err = io.ReadFull(rand.Reader, entropy)
+	if err != nil {
+		return
+
+	}
+
+	// Initialize an SHA-512 hash context; digest...
+	md := sha512.New()
+	md.Write(privateKey.scalar[:sizeFr]) // the private key,
+	md.Write(entropy)                   // the entropy,
+	md.Write(hash)                      // and the input hash;
+	key := md.Sum(nil)[:32]             // and compute ChopMD-256(SHA-512),
+	// which is an indifferentiable MAC.
+
+	// Create an AES-CTR instance to use as a CSPRNG.
+	block, _ := aes.NewCipher(key)
+
+	// Create a CSPRNG that xors a stream of zeros with
+	// the output of the AES-CTR instance.
+	csprng = &cipher.StreamReader{
+		R: zeroReader,
+		S: cipher.NewCTR(block, []byte(aesIV)),
+	}
+
+	return csprng, err
+}
+
+// Equal compares 2 public keys
+func (pub *PublicKey) Equal(x signature.PublicKey) bool {
+	xx, ok := x.(*PublicKey)
+	if !ok {
+		return false
+	}
+	bpk := pub.Bytes()
+	bxx := xx.Bytes()
+	return subtle.ConstantTimeCompare(bpk, bxx) == 1
+}
+
+// Public returns the public key associated to the private key.
+func (privKey *PrivateKey) Public() signature.PublicKey {
+	var pub PublicKey
+	pub.A.Set(&privKey.PublicKey.A)
+	return &pub
+}
+
+{{- if or (eq .Name "secp256k1") (eq .Name "bn254") (eq .Name "stark-curve") }}
+// SignForRecover performs the ECDSA signature and returns public key recovery information
+//
+// k ← 𝔽r (random)
+// P = k ⋅ g1Gen
+// r = x_P (mod order)
+// s = k⁻¹ . (m + sk ⋅ r)
+// v = (div(x_P, order)<<1) || y_P[-1]
+//
+// SEC 1, Version 2.0, Section 4.1.3
+func (privKey *PrivateKey) SignForRecover(message []byte, hFunc hash.Hash) (v uint, r, s *big.Int, err error) {
+	r, s = new(big.Int), new(big.Int)
+
+	scalar, kInv := new(big.Int), new(big.Int)
+	scalar.SetBytes(privKey.scalar[:sizeFr])
+	for {
+		for {
+			csprng, err := nonce(privKey, message)
+			if err != nil {
+				return 0, nil, nil, err
+			}
+			k, err := randFieldElement(csprng)
+			if err != nil {
+				return 0, nil, nil, err
+			}
+
+			var P {{ .CurvePackage }}.G1Affine
+			P.ScalarMultiplicationBase(k)
+			kInv.ModInverse(k, order)
+
+			P.X.BigInt(r)
+			// set how many times we overflow the scalar field
+			v |= (uint(new(big.Int).Div(r, order).Uint64())) << 1
+			// set if y is even or odd
+			v |= P.Y.BigInt(new(big.Int)).Bit(0)
+
+			r.Mod(r, order)
+			if r.Sign() != 0 {
+				break
+			}
+		}
+		s.Mul(r, scalar)
+
+		var m *big.Int
+		if hFunc != nil {
+			// compute the hash of the message as an integer
+			dataToHash := make([]byte, len(message))
+			copy(dataToHash[:], message[:])
+			hFunc.Reset()
+			_, err := hFunc.Write(dataToHash[:])
+			if err != nil {
+				return 0, nil, nil, err
+			}
+			hramBin := hFunc.Sum(nil)
+			m = HashToInt(hramBin)
+		} else {
+			m = HashToInt(message)
+		}
+
+		s.Add(m, s).
+			Mul(kInv, s).
+			Mod(s, order) // order != 0
+		if s.Sign() != 0 {
+			break
+		}
+	}
+
+	return v, r, s, nil
+}
+
+// Sign performs the ECDSA signature
+//
+// k ← 𝔽r (random)
+// P = k ⋅ g1Gen
+// r = x_P (mod order)
+// s = k⁻¹ . (m + sk ⋅ r)
+// signature = {r, s}
+//
+// SEC 1, Version 2.0, Section 4.1.3
+func (privKey *PrivateKey) Sign(message []byte, hFunc hash.Hash) ([]byte, error) {
+	_, r, s, err := privKey.SignForRecover(message, hFunc)
+	if err != nil {
+		return nil, err
+	}
+	var sig Signature
+	r.FillBytes(sig.R[:sizeFr])
+	s.FillBytes(sig.S[:sizeFr])
+
+	return sig.Bytes(), nil
+}
+{{- else }}
+// Sign performs the ECDSA signature
+//
+// k ← 𝔽r (random)
+// P = k ⋅ g1Gen
+// r = x_P (mod order)
+// s = k⁻¹ . (m + sk ⋅ r)
+// signature = {r, s}
+//
+// SEC 1, Version 2.0, Section 4.1.3
+func (privKey *PrivateKey) Sign(message []byte, hFunc hash.Hash) ([]byte, error) {
+	scalar, r, s, kInv := new(big.Int), new(big.Int), new(big.Int), new(big.Int)
+	scalar.SetBytes(privKey.scalar[:sizeFr])
+	for {
+		for {
+			csprng, err := nonce(privKey, message)
+			if err != nil {
+				return nil, err
+			}
+			k, err := randFieldElement(csprng)
+			if err != nil {
+				return nil, err
+			}
+
+			var P {{ .CurvePackage }}.G1Affine
+			P.ScalarMultiplicationBase(k)
+			kInv.ModInverse(k, order)
+
+			P.X.BigInt(r)
+
+			r.Mod(r, order)
+			if r.Sign() != 0 {
+				break
+			}
+		}
+		s.Mul(r, scalar)
+
+		var m *big.Int
+		if hFunc != nil {
+			// compute the hash of the message as an integer
+			dataToHash := make([]byte, len(message))
+			copy(dataToHash[:], message[:])
+			hFunc.Reset()
+			_, err := hFunc.Write(dataToHash[:])
+			if err != nil {
+				return nil, err
+			}
+			hramBin := hFunc.Sum(nil)
+			m = HashToInt(hramBin)
+		} else {
+			m = HashToInt(message)
+		}
+
+		s.Add(m, s).
+			Mul(kInv, s).
+			Mod(s, order) // order != 0
+		if s.Sign() != 0 {
+			break
+		}
+	}
+
+	var sig Signature
+	r.FillBytes(sig.R[:sizeFr])
+	s.FillBytes(sig.S[:sizeFr])
+
+	return sig.Bytes(), nil
+}
+{{- end }}
+
+// Verify validates the ECDSA signature
+//
+// R ?= (s⁻¹ ⋅ m ⋅ Base + s⁻¹ ⋅ R ⋅ publiKey)_x
+//
+// SEC 1, Version 2.0, Section 4.1.4
+func (publicKey *PublicKey) Verify(sigBin, message []byte, hFunc hash.Hash) (bool, error) {
+
+	// Deserialize the signature
+	var sig Signature
+	if _, err := sig.SetBytes(sigBin); err != nil {
+		return false, err
+ 	}
+
+	r, s := new(big.Int), new(big.Int)
+	r.SetBytes(sig.R[:sizeFr])
+	s.SetBytes(sig.S[:sizeFr])
+
+	sInv := new(big.Int).ModInverse(s, order)
+
+    var m *big.Int
+	if hFunc != nil {
+		// compute the hash of the message as an integer
+		dataToHash := make([]byte, len(message))
+		copy(dataToHash[:], message[:])
+		hFunc.Reset()
+		_, err := hFunc.Write(dataToHash[:])
+		if err != nil {
+			return false, err
+		}
+		hramBin := hFunc.Sum(nil)
+		m = HashToInt(hramBin)
+	} else {
+		m = HashToInt(message)
+ 	}
+
+	u1 := new(big.Int).Mul(m, sInv)
+	u1.Mod(u1, order)
+	u2 := new(big.Int).Mul(r, sInv)
+	u2.Mod(u2, order)
+     var U {{ .CurvePackage }}.G1Jac
+	U.JointScalarMultiplicationBase(&publicKey.A, u1, u2)
+
+	var z big.Int
+ 	U.Z.Square(&U.Z).
+		Inverse(&U.Z).
+		Mul(&U.Z, &U.X).
+		BigInt(&z)
+
+	z.Mod(&z, order)
+
+	return z.Cmp(r) == 0, nil
+
+}

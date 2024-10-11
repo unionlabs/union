@@ -1,0 +1,278 @@
+build ext1
+merge a 1
+set c 2
+----
+
+ingest ext1
+----
+6:
+  000004:[a#10,MERGE-c#10,SET]
+
+build ext2
+del-range b c
+----
+
+ingest ext2
+----
+0.0:
+  000005:[b#11,RANGEDEL-c#inf,RANGEDEL]
+6:
+  000004:[a#10,MERGE-c#10,SET]
+
+# Regression test for a bug where range tombstones were not properly
+# ignored by Iterator.prevUserKey when switching from forward to
+# reverse iteration. In the forward direction, the Iterator sees the
+# keys:
+#
+#   a#1,MERGE
+#   c#1,SET
+#
+# Due to the synthetic boundary key generated for sstable 5, in the
+# reverse direction Iterator sees the keys:
+#
+#   c#1,SET
+#   b#2,RANGEDEL
+#   a#1,MERGE
+#
+# Normally the record b#2,RANGEDEL is skipped by Iterator during
+# iteration, but logic to do so was missing from Iterator.prevUserKey.
+# The result was that prev could return the same key that iterator was
+# currently pointed at.
+
+iter
+first
+prev
+----
+a: (1, .)
+.
+
+reset
+----
+
+build ext1
+set t 1
+merge z 2
+----
+
+ingest ext1
+----
+6:
+  000004:[t#10,SET-z#10,MERGE]
+
+build ext2
+del-range x y
+----
+
+ingest ext2
+----
+0.0:
+  000005:[x#11,RANGEDEL-y#inf,RANGEDEL]
+6:
+  000004:[t#10,SET-z#10,MERGE]
+
+# Regression test for a bug where range tombstones were not properly
+# ignored by Iterator.nextUserKey when switching from reverse to
+# forward iteration. In the reverse direction, the Iterator sees the
+# keys:
+#
+#   z#1,MERGE
+#   t#1,SET
+#
+# Due to the synthetic boundary key generated for sstable 5, in the
+# forward direction Iterator sees the keys:
+#
+#   t#1,SET
+#   y#72057594037927935,RANGEDEL
+#   z#1,MERGE
+#
+# Normally the record y#72057594037927935,RANGEDEL is skipped by
+# Iterator during iteration, but logic to do so was missing from
+# Iterator.nextUserKey. The result was that next could return the same
+# key that iterator was currently pointed at.
+
+iter
+last
+next
+----
+z: (2, .)
+.
+
+# Verify that switching from reverse iteration to forward iteration
+# properly skips over range tombstones at the start of forward
+# iteration.
+
+reset
+----
+
+build ext1
+set e e
+----
+
+ingest ext1
+----
+6:
+  000004:[e#10,SET-e#10,SET]
+
+build ext2
+set b b
+del-range c d
+----
+
+ingest ext2
+----
+6:
+  000005:[b#11,SET-d#inf,RANGEDEL]
+  000004:[e#10,SET-e#10,SET]
+
+# The scenario requires iteration at a snapshot. The "last" operation
+# will exhaust the mergingIter looking backwards for visible
+# records. The subsequent "next" will seek-ge(lower) which will skip
+# over the "b" record and find the boundary key due to the range
+# deletion sentinel.
+
+iter seq=11
+set-bounds lower=c upper=f
+last
+next
+----
+.
+e: (e, .)
+.
+
+# Test that the cloned iterator sees all the keys.
+iter
+set-bounds lower=a upper=f
+first
+next
+next
+clone
+seek-ge a
+next
+next
+----
+.
+b: (b, .)
+e: (e, .)
+.
+.
+b: (b, .)
+e: (e, .)
+.
+
+# Test that the cloned iterator respects the original bounds.
+iter
+set-bounds lower=a upper=d
+first
+next
+clone
+seek-ge a
+next
+----
+.
+b: (b, .)
+.
+.
+b: (b, .)
+.
+
+# Test that a cloned iterator set with new bounds, respects the new bounds and
+# options.
+iter
+set-bounds lower=a upper=d
+first
+next
+clone lower=a upper=z key-types=both
+seek-ge a
+next
+----
+.
+b: (b, .)
+.
+.
+b: (b, .)
+e: (e, .)
+
+# Test that the cloned iterator respects the seq num.
+iter seq=11
+set-bounds lower=a upper=f
+first
+next
+clone
+last
+prev
+----
+.
+e: (e, .)
+.
+.
+e: (e, .)
+.
+
+# Verify that switching from forward iteration to reverse iteration
+# properly skips over range tombstones at the end of reverse
+# iteration.
+
+reset
+----
+
+build ext1
+merge a a
+----
+
+ingest ext1
+----
+6:
+  000004:[a#10,MERGE-a#10,MERGE]
+
+build ext2
+set e e
+del-range c d
+----
+
+ingest ext2
+----
+6:
+  000004:[a#10,MERGE-a#10,MERGE]
+  000005:[c#11,RANGEDEL-e#11,SET]
+
+iter seq=11
+set-bounds lower=a upper=e
+first
+prev
+----
+.
+a: (a, .)
+.
+
+reset
+----
+
+# Test demonstrating inadvertent exposure of ordering effects of the
+# InternalKeyKind numbering. We build an sst with a (del/singledel, set) pair
+# for two user keys. When ingested, all 4 keys have the same seqnum. The set
+# overrides the del, and the singedel overrides the set.
+#
+# The test input setup looks peculiar because the build uses an indexed batch,
+# and iterates over it to write to the sst, so we need to place the set after
+# the del, and the singledel after the set in order for the batch ordering to
+# be one that is suitable for feeding into the sstable writer. All 4 keys are
+# being written to the sst (notice the bounds in the ingest).
+
+build ext1
+del a
+set a 1
+set b 2
+singledel b
+----
+
+ingest ext1
+----
+6:
+  000004:[a#10,SET-b#10,SET]
+
+iter
+first
+next
+----
+a: (1, .)
+.

@@ -1,0 +1,87 @@
+# All disjoint RANGEKEYSETs.
+
+coalesce
+a-c:{(#10,RANGEKEYSET,@5,foo)}
+----
+a-c:{(#10,RANGEKEYSET,@5,foo)}
+
+coalesce
+c-d:{(#4,RANGEKEYSET,@3,foo)}
+----
+c-d:{(#4,RANGEKEYSET,@3,foo)}
+
+coalesce
+e-f:{(#20,RANGEKEYSET,@5,bar) (#20,RANGEKEYSET,@3,foo)}
+----
+e-f:{(#20,RANGEKEYSET,@5,bar) (#20,RANGEKEYSET,@3,foo)}
+
+# Merge overlapping RANGEKEYSETs.
+
+coalesce
+a-c:{(#10,RANGEKEYSET,@5,foo5) (#4,RANGEKEYSET,@3,foo3) (#4,RANGEKEYSET,@2,foo2)}
+----
+a-c:{(#10,RANGEKEYSET,@5,foo5) (#4,RANGEKEYSET,@3,foo3) (#4,RANGEKEYSET,@2,foo2)}
+
+# RANGEKEYUNSETs.
+
+coalesce
+a-c:{(#10,RANGEKEYUNSET,@5)}
+----
+a-c:{(#10,RANGEKEYUNSET,@5)}
+
+coalesce
+c-d:{(#4,RANGEKEYUNSET,@3)}
+----
+c-d:{(#4,RANGEKEYUNSET,@3)}
+
+coalesce
+e-f:{(#20,RANGEKEYUNSET,@5) (#20,RANGEKEYUNSET,@3)}
+----
+e-f:{(#20,RANGEKEYUNSET,@5) (#20,RANGEKEYUNSET,@3)}
+
+# Merge overlapping RANGEKEYUNSETs.
+
+coalesce
+a-c:{(#10,RANGEKEYUNSET,@5) (#4,RANGEKEYUNSET,@3) (#4,RANGEKEYUNSET,@2)}
+----
+a-c:{(#10,RANGEKEYUNSET,@5) (#4,RANGEKEYUNSET,@3) (#4,RANGEKEYUNSET,@2)}
+
+# Unsets may partially remove sets.
+
+coalesce
+a-c:{(#10,RANGEKEYUNSET,@100) (#9,RANGEKEYSET,@100,v100) (#9,RANGEKEYSET,@50,v50)}
+----
+a-c:{(#10,RANGEKEYUNSET,@100) (#9,RANGEKEYSET,@50,v50)}
+
+coalesce
+c-d:{(#9,RANGEKEYSET,@100,v100) (#9,RANGEKEYSET,@50,v50)}
+----
+c-d:{(#9,RANGEKEYSET,@100,v100) (#9,RANGEKEYSET,@50,v50)}
+
+# Unsets may wholly remove sets.
+
+coalesce
+b-c:{(#10,RANGEKEYUNSET,@3) (#10,RANGEKEYUNSET,@2) (#10,RANGEKEYUNSET,@1) (#8,RANGEKEYSET,@3,v3) (#8,RANGEKEYSET,@2,v2) (#8,RANGEKEYSET,@1,v1)}
+----
+b-c:{(#10,RANGEKEYUNSET,@3) (#10,RANGEKEYUNSET,@2) (#10,RANGEKEYUNSET,@1)}
+
+# Sets may shadow unsets.
+
+coalesce
+a-c:{(#5,RANGEKEYSET,@5,v5) (#4,RANGEKEYUNSET,@5)}
+----
+a-c:{(#5,RANGEKEYSET,@5,v5)}
+
+# Deletes shadow Sets and Unsets, but not at the same sequence number.
+
+coalesce
+a-c:{(#10,RANGEKEYSET,@5,foo5) (#10,RANGEKEYDEL) (#8,RANGEKEYUNSET,@1) (#4,RANGEKEYSET,@3,foo3) (#4,RANGEKEYSET,@2,foo2)}
+----
+a-c:{(#10,RANGEKEYSET,@5,foo5) (#10,RANGEKEYDEL)}
+
+# Within a sequence number, none of the internal range keys affect one another.
+
+coalesce
+a-c:{(#5,RANGEKEYSET,@5,foo) (#5,RANGEKEYUNSET,@5) (#5,RANGEKEYDEL)}
+----
+a-c:{(#5,RANGEKEYSET,@5,foo) (#5,RANGEKEYDEL)}

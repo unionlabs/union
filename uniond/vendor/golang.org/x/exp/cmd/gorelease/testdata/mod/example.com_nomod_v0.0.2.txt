@@ -1,0 +1,6 @@
+-- go.mod --
+module example.com/nomod
+
+go 1.12
+-- p/p.go --
+package p

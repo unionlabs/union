@@ -1,0 +1,153 @@
+[
+    {
+        "proto": {},
+        "screens": [
+            {"content": "Qux object", "indent": 0}
+        ]
+    },
+    {
+        "proto": {
+            "messages": [
+                {
+                    "full_name": "thing one",
+                    "nickname": ":thing two"
+                }
+            ]
+        },
+        "screens": [
+            {"content": "Qux object", "indent": 0},
+            {"title": "Messages", "content": "1 Foo", "indent": 1},
+            {"title": "Messages (1/1)", "content": "Foo object", "indent": 2},
+            {"title": "Full name", "content": "thing one", "indent": 3},
+            {"title": "Nickname", "content": ":thing two", "indent": 3},
+            {"content": "End of Messages", "indent": 1}
+       ]
+    },
+    {
+        "proto": {
+            "messages": [
+                {
+                    "full_name": "thing one",
+                    "nickname": "thing two"
+                },
+                {
+                    "full_name": "thing three",
+                    "nickname": "thing four"
+                }
+            ]
+        },
+        "screens": [
+            {"content": "Qux object", "indent": 0},
+            {"title": "Messages", "content": "2 Foo", "indent": 1},
+            {"title": "Messages (1/2)", "content": "Foo object", "indent": 2},
+            {"title": "Full name", "content": "thing one", "indent": 3},
+            {"title": "Nickname", "content": "thing two", "indent": 3},
+            {"title": "Messages (2/2)", "content": "Foo object", "indent": 2},
+            {"title": "Full name", "content": "thing three", "indent": 3},
+            {"title": "Nickname", "content": "thing four", "indent": 3},
+            {"content": "End of Messages", "indent": 1}
+
+       ]
+    },
+    {
+        "proto": {
+            "string_messages": [
+                "/OmniFlix.onft.v1beta1.MsgTransferONFT"
+            ]
+        },
+        "screens": [
+            {"content": "Qux object", "indent": 0},
+            {"title": "String messages", "content": "1 String", "indent": 1},
+            {"title": "String messages (1/1)", "content": "/OmniFlix.onft.v1beta1.MsgTransferONFT", "indent": 2},
+            {"content": "End of String messages", "indent": 1}
+        ]
+    },
+    {
+        "proto": {
+            "string_messages": [
+                "/OmniFlix.onft.v1beta1.MsgTransferONFT",
+                "/OmniFlix.onft.v1beta1.MsgBurnONFT",
+                "/OmniFlix.marketplace.v1beta1.MsgListNFT"
+            ]
+        },
+        "screens": [
+            {"content": "Qux object", "indent": 0},
+            {"title": "String messages", "content": "3 String", "indent": 1},
+            {"title": "String messages (1/3)", "content": "/OmniFlix.onft.v1beta1.MsgTransferONFT", "indent": 2},
+            {"title": "String messages (2/3)", "content": "/OmniFlix.onft.v1beta1.MsgBurnONFT", "indent": 2},
+            {"title": "String messages (3/3)", "content": "/OmniFlix.marketplace.v1beta1.MsgListNFT", "indent": 2},
+            {"content": "End of String messages", "indent": 1}
+        ]
+    },
+    {
+        "proto": {
+            "vote" : {
+                "proposal_id": 4,
+                "voter": "cosmos1abc...def",
+                "options": [
+                    {
+                        "option": "Yes",
+                        "weight": "0.7"
+                    },
+                    {
+                        "option": "No",
+                        "weight": "0.3"
+                    }
+                ]
+            }
+        },
+        "screens": [
+            {"content": "Qux object", "indent": 0},
+            {"title": "Vote", "content": "Ballot object", "indent": 1},
+            {"title": "Proposal id", "content": "4", "indent": 2},
+            {"title": "Voter", "content": "cosmos1abc...def", "indent": 2},
+            {"title": "Options", "content": "2 WeightedBallotOption", "indent": 2},
+            {"title": "Options (1/2)", "content": "WeightedBallotOption object", "indent": 3},
+            {"title": "Option", "content": "Yes", "indent": 4},
+            {"title": "Weight", "content": "0.7", "indent": 4},
+            {"title": "Options (2/2)", "content": "WeightedBallotOption object", "indent": 3},
+            {"title": "Option", "content": "No", "indent": 4},
+            {"title": "Weight", "content": "0.3", "indent": 4},
+            {"content": "End of Options", "indent": 2}
+        ]
+    },
+    {
+        "proto": {
+            "price": [
+                { "amount": "1", "denom": "ucosm" },
+                { "amount": "3", "denom": "ustake" }
+            ]
+        },
+        "screens": [
+            {"content": "Qux object", "indent": 0},
+            {"title": "Price", "content": "1 ucosm, 3 ustake", "indent": 1}
+        ]
+    },
+    {
+        "proto": {
+            "expirations": [
+                {"seconds": 0, "nanos": 1},
+                {"seconds": 0, "nanos": 10},
+                {"seconds": 0, "nanos": 100},
+                {"seconds": 0, "nanos": 1000},
+                {"seconds": 0, "nanos": 10000},
+                {"seconds": 0, "nanos": 100000},
+                {"seconds": 0, "nanos": 1000000},
+                {"seconds": 0, "nanos": 10000000}
+            ]
+        },
+        "screens": [
+            {"content": "Qux object", "indent": 0},
+            {"title": "Expirations", "content": "8 Timestamp", "indent": 1},
+            {"title": "Expirations (1/8)", "content": "1970-01-01T00:00:00.000000001Z", "indent": 2},
+            {"title": "Expirations (2/8)", "content": "1970-01-01T00:00:00.00000001Z", "indent": 2},
+            {"title": "Expirations (3/8)", "content": "1970-01-01T00:00:00.0000001Z", "indent": 2},
+            {"title": "Expirations (4/8)", "content": "1970-01-01T00:00:00.000001Z", "indent": 2},
+            {"title": "Expirations (5/8)", "content": "1970-01-01T00:00:00.00001Z", "indent": 2},
+            {"title": "Expirations (6/8)", "content": "1970-01-01T00:00:00.0001Z", "indent": 2},
+            {"title": "Expirations (7/8)", "content": "1970-01-01T00:00:00.001Z", "indent": 2},
+            {"title": "Expirations (8/8)", "content": "1970-01-01T00:00:00.01Z", "indent": 2},
+            {"content": "End of Expirations", "indent": 1}
+        ]
+    }
+]

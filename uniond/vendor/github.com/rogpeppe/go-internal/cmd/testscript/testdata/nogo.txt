@@ -1,0 +1,12 @@
+# should support skip
+unquote file.txt
+
+# We can't just set PATH to empty because we need the part of it that
+# contains the command names, so use a special builtin instead.
+dropgofrompath
+
+! testscript -v file.txt
+stdout 'unknown command "go"'
+
+-- file.txt --
+>go env

@@ -1,0 +1,16 @@
+# should support -continue
+unquote file.txt
+
+# Running with continue, the testscript command itself
+# should fail, but we should see the results of executing
+# both commands.
+! testscript -continue file.txt
+stdout 'grep banana in'
+stdout 'no match for `banana` found in in'
+stdout 'grep apple in'
+
+-- file.txt --
+>grep banana in
+>grep apple in
+>-- in --
+>apple

@@ -1,0 +1,72 @@
+{
+  "genesis": {
+    "difficulty": "117067574",
+    "extraData": "0xd783010502846765746887676f312e372e33856c696e7578",
+    "gasLimit": "4712380",
+    "hash": "0xe05db05eeb3f288041ecb10a787df121c0ed69499355716e17c307de313a4486",
+    "miner": "0x0c062b329265c965deef1eede55183b3acb8f611",
+    "mixHash": "0xb669ae39118a53d2c65fd3b1e1d3850dd3f8c6842030698ed846a2762d68b61d",
+    "nonce": "0x2b469722b8e28c45",
+    "number": "24973",
+    "stateRoot": "0x532a5c3f75453a696428db078e32ae283c85cb97e4d8560dbdf022adac6df369",
+    "timestamp": "1479891145",
+    "totalDifficulty": "1892250259406",
+    "alloc": {
+      "0x6c06b16512b332e6cd8293a2974872674716ce18": {
+        "balance": "0x0",
+        "nonce": "1",
+        "code": "0x60606040526000357c0100000000000000000000000000000000000000000000000000000000900480632e1a7d4d146036575b6000565b34600057604e60048080359060200190919050506050565b005b3373ffffffffffffffffffffffffffffffffffffffff166108fc829081150290604051809050600060405180830381858888f19350505050505b5056",
+        "storage": {}
+      },
+      "0x66fdfd05e46126a07465ad24e40cc0597bc1ef31": {
+        "balance": "0x229ebbb36c3e0f20",
+        "nonce": "3",
+        "code": "0x",
+        "storage": {}
+      }
+    },
+    "config": {
+      "chainId": 3,
+      "homesteadBlock": 0,
+      "daoForkSupport": true,
+      "eip150Block": 0,
+      "eip150Hash": "0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d",
+      "eip155Block": 10,
+      "eip158Block": 10,
+      "byzantiumBlock": 1700000,
+      "constantinopleBlock": 4230000,
+      "petersburgBlock": 4939394,
+      "istanbulBlock": 6485846,
+      "muirGlacierBlock": 7117117,
+      "ethash": {}
+    }
+  },
+  "context": {
+    "number": "24974",
+    "difficulty": "117067574",
+    "timestamp": "1479891162",
+    "gasLimit": "4712388",
+    "miner": "0xc822ef32e6d26e170b70cf761e204c1806265914"
+  },
+  "input": "0xf889038504a81557008301f97e946c06b16512b332e6cd8293a2974872674716ce1880a42e1a7d4d00000000000000000000000000000000000000000000000014d1120d7b1600002aa0e2a6558040c5d72bc59f2fb62a38993a314c849cd22fb393018d2c5af3112095a01bdb6d7ba32263ccc2ecc880d38c49d9f0c5a72d8b7908e3122b31356d349745",
+  "result": [
+    {
+      "action": {
+        "callType": "call",
+        "from": "0x66fdfd05e46126a07465ad24e40cc0597bc1ef31",
+        "gas": "0x1f97e",
+        "input": "0x2e1a7d4d00000000000000000000000000000000000000000000000014d1120d7b160000",
+        "to": "0x6c06b16512b332e6cd8293a2974872674716ce18",
+        "value": "0x0"
+      },
+      "blockNumber": 24974,
+      "result": {
+        "gasUsed": "0x72de",
+        "output": "0x"
+      },
+      "subtraces": 0,
+      "traceAddress": [],
+      "type": "call"
+    }
+  ]
+}

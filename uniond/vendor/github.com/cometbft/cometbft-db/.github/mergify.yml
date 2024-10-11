@@ -1,0 +1,25 @@
+pull_request_rules:
+  - name: automatic approval for Dependabot pull requests
+    conditions:
+      - author=dependabot[bot]
+    actions:
+      review:
+        type: APPROVE
+        message: Automatically approving dependabot
+
+  - name: automatically merge PR with automerge label
+    conditions:
+      - '-label=manual-backport'
+      - label=automerge
+    actions:
+      merge:
+        method: squash
+
+  - name: Make sure PR are up to date before merging
+    description: >-
+      This automatically updates PRs when they are out-of-date with the base
+      branch to avoid semantic conflicts (next step is using a merge queue).
+    conditions:
+      - '-draft'
+    actions:
+      update:

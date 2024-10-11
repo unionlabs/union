@@ -1,11 +1,11 @@
 package maps
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 
+	cmtprotocrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	"github.com/cometbft/cometbft/crypto/merkle"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	"cosmossdk.io/store/internal/kv"
 	"cosmossdk.io/store/internal/tree"
@@ -36,11 +36,11 @@ func (sm *merkleMap) set(key string, value []byte) {
 
 	// The value is hashed, so you can check for equality with a cached value (say)
 	// and make a determination to fetch or not.
-	vhash := tmhash.Sum(value)
+	vhash := sha256.Sum256(value)
 
 	sm.kvs.Pairs = append(sm.kvs.Pairs, kv.Pair{
 		Key:   byteKey,
-		Value: vhash,
+		Value: vhash[:],
 	})
 }
 
@@ -97,11 +97,11 @@ func (sm *simpleMap) Set(key string, value []byte) {
 	// The value is hashed, so you can
 	// check for equality with a cached value (say)
 	// and make a determination to fetch or not.
-	vhash := tmhash.Sum(value)
+	vhash := sha256.Sum256(value)
 
 	sm.Kvs.Pairs = append(sm.Kvs.Pairs, kv.Pair{
 		Key:   byteKey,
-		Value: vhash,
+		Value: vhash[:],
 	})
 }
 
@@ -120,7 +120,7 @@ func (sm *simpleMap) Sort() {
 	sm.sorted = true
 }
 
-// Returns a copy of sorted KVPairs.
+// KVPairs returns a copy of sorted KVPairs.
 // NOTE these contain the hashed key and value.
 func (sm *simpleMap) KVPairs() kv.Pairs {
 	sm.Sort()
@@ -134,7 +134,7 @@ func (sm *simpleMap) KVPairs() kv.Pairs {
 
 //----------------------------------------
 
-// A local extension to KVPair that can be hashed.
+// KVPair is a local extension to KVPair that can be hashed.
 // Key and value are length prefixed and concatenated,
 // then hashed.
 type KVPair kv.Pair

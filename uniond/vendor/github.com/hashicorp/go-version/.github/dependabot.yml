@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels: ["dependencies"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies
+    # only update HashiCorp actions, external actions managed by TSCCR
+    allow:
+      - dependency-name: hashicorp/*
+    groups:
+      github-actions-breaking:
+        update-types:
+          - major
+      github-actions-backward-compatible:
+        update-types:
+          - minor
+          - patch

@@ -1,0 +1,1 @@
+- `[store]` Added support for a different DB key representation to state and block store ([\#2327](https://github.com/cometbft/cometbft/pull/2327/))

@@ -1,0 +1,195 @@
+// Copyright 2020 Prysmatic Labs.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+
+package ethereum.eth.v1alpha1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+import "proto/eth/ext/options.proto";
+
+option csharp_namespace = "Ethereum.Eth.v1alpha1";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1;eth";
+option java_multiple_files = true;
+option java_outer_classname = "NodeProto";
+option java_package = "org.ethereum.eth.v1alpha1";
+option php_namespace = "Ethereum\\Eth\\v1alpha1";
+
+// Node service API
+//
+// Node service provides general information about the node itself, the services
+// it supports, chain information and node version.
+service Node {
+    // Retrieve the current network sync status of the node.
+	rpc GetSyncStatus(google.protobuf.Empty) returns (SyncStatus) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/node/syncing"
+        };
+    }
+
+    // Retrieve information about the genesis of Ethereum proof of stake.
+    rpc GetGenesis(google.protobuf.Empty) returns (Genesis) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/node/genesis"
+        };
+    }
+
+    // Retrieve information about the running Ethereum Beacon Node.
+    rpc GetVersion(google.protobuf.Empty) returns (Version) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/node/version"
+        };
+    }
+
+    // Retrieve the list of services implemented and enabled by this node.
+    //
+    // Any service not present in this list may return UNIMPLEMENTED or
+    // PERMISSION_DENIED. The server may also support fetching services by grpc
+    // reflection.
+    rpc ListImplementedServices(google.protobuf.Empty) returns (ImplementedServices) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/node/services"
+        };
+    }
+
+    // Retrieves the peer data of the local peer.
+    rpc GetHost(google.protobuf.Empty) returns (HostData) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/node/p2p"
+        };
+    }
+
+    // Retrieve the peer corresponding to the provided peer id.
+    rpc GetPeer(PeerRequest) returns (Peer) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/node/peer"
+        };
+    }
+
+    // Retrieve the list of peers currently connected to this node.
+    rpc ListPeers(google.protobuf.Empty) returns (Peers) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/node/peers"
+        };
+    }
+
+    // // Retrieve the status of the ETH1 connections.
+    rpc GetETH1ConnectionStatus(google.protobuf.Empty) returns (ETH1ConnectionStatus) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/node/eth1/connections"
+        };
+    }
+}
+
+// Information about the current network sync status of the node.
+message SyncStatus {
+    // Whether or not the node is currently syncing.
+    bool syncing = 1;
+}
+
+// Information about the genesis of Ethereum proof of stake.
+message Genesis {
+    // UTC time specified in the chain start event in the deposit contract.
+    google.protobuf.Timestamp genesis_time = 1;
+
+    // Address of the deposit contract in the Ethereum 1 chain.
+    bytes deposit_contract_address = 2;
+
+    // Root of the genesis validators deposits; used for domain separation
+    // when signing data structures for this chain.
+    bytes genesis_validators_root = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+// Information about the node version.
+message Version {
+    // A string that uniquely identifies the node and its version.
+    string version = 1;
+
+    // Additional metadata that the node would like to provide. This field may
+    // be used to list any meaningful data to the client.
+    string metadata = 2;
+}
+
+message ImplementedServices {
+    repeated string services = 1;
+}
+
+message PeerRequest {
+    // Peer id of the peer requested.
+    string peer_id = 1;
+}
+
+// Peers is a list of peer messages.
+message Peers {
+    repeated Peer peers = 1;
+}
+
+// Peer provides details of a peer on the network.
+message Peer {
+    // The address of the peer, as a full multiaddr, for example:
+    // /ip4/37.221.192.134/tcp/13000/p2p/16Uiu2HAm8maLMjag1TAUM52zPfmLbVMGFdwUAWgoHu1HDQLR6e17
+    string address = 1;
+    // The direction of the connection (inbound/outbound).
+    PeerDirection direction = 2;
+    // The connection state of the peer at the moment of the request. (e.g. Connecting)
+    ConnectionState connection_state = 3;
+    // The peer id of the peer.
+    string peer_id = 4;
+    // The latest ENR of the peer that's in the record.
+    string enr = 5;
+}
+
+// P2P Data on the local host.
+message HostData {
+    // All the  multiaddress of the peer, specified as a full multiaddr, for example:
+    // /ip4/37.221.192.134/tcp/13000/p2p/16Uiu2HAm8maLMjag1TAUM52zPfmLbVMGFdwUAWgoHu1HDQLR6e17
+    repeated string addresses = 1;
+    // The peer id of the peer.
+    string peer_id = 2;
+    // The latest ENR of the local peer.
+    string enr = 3;
+}
+
+// PeerDirection states the direction of the connection to a peer.
+enum PeerDirection {
+  UNKNOWN = 0;
+  INBOUND = 1;
+  OUTBOUND = 2;
+}
+
+// ConnectionState states the current status of the peer.
+enum ConnectionState {
+    DISCONNECTED = 0;
+    DISCONNECTING = 1;
+    CONNECTED = 2;
+    CONNECTING = 3;
+}
+
+// ETH1ConnectionStatus states the current address and error of the ETH1 API
+// endpoint. It also provides the addresses and errors for any fallback URLs. 
+message ETH1ConnectionStatus {
+    // Current ETH1 HTTP endpoint.
+    string current_address = 1;
+
+    // Current error (if any) of the current connection.
+    string current_connection_error = 2;
+
+    // A list of all provider URLs. 
+    repeated string addresses = 3;
+
+    // Current error (if any) of the HTTP connections.
+    repeated string connection_errors = 4;
+}

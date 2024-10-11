@@ -1,0 +1,23 @@
+syntax = "proto3";
+option go_package = "github.com/grpc-ecosystem/grpc-gateway/examples/internal/proto/pathenum";
+package grpc.gateway.examples.internal.pathenum;
+
+enum PathEnum {
+	ABC = 0;
+	DEF = 1;
+}
+
+message MessagePathEnum {
+	enum NestedPathEnum {
+		GHI = 0;
+		JKL = 1;
+	}
+}
+
+message MessageWithPathEnum {
+	PathEnum value = 1;
+}
+
+message MessageWithNestedPathEnum {
+	MessagePathEnum.NestedPathEnum value = 1;
+}

@@ -1,0 +1,1 @@
+load("@prysm//tools/go:def.bzl", "go_library")

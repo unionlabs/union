@@ -86,7 +86,7 @@ func appendMessage(b []byte, m protoreflect.Message) []byte {
 	return b
 }
 
-var protocmpMessageType = reflect.TypeOf(map[string]interface{}(nil))
+var protocmpMessageType = reflect.TypeOf(map[string]any(nil))
 
 func appendKnownMessage(b []byte, m protoreflect.Message) []byte {
 	md := m.Descriptor()
@@ -98,7 +98,7 @@ func appendKnownMessage(b []byte, m protoreflect.Message) []byte {
 		if v := reflect.ValueOf(m); v.Type().ConvertibleTo(protocmpMessageType) {
 			// For protocmp.Message, directly obtain the sub-message value
 			// which is stored in structured form, rather than as raw bytes.
-			m2 := v.Convert(protocmpMessageType).Interface().(map[string]interface{})
+			m2 := v.Convert(protocmpMessageType).Interface().(map[string]any)
 			v, ok := m2[string(genid.Any_Value_field_name)].(proto.Message)
 			if !ok {
 				return nil

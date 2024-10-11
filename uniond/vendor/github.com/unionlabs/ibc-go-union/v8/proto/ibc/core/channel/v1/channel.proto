@@ -1,0 +1,187 @@
+syntax = "proto3";
+
+package ibc.core.channel.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types";
+
+import "gogoproto/gogo.proto";
+import "ibc/core/client/v1/client.proto";
+
+// Channel defines pipeline for exactly-once packet delivery between specific
+// modules on separate blockchains, which has at least one end capable of
+// sending packets and one end capable of receiving packets.
+message Channel {
+  option (gogoproto.goproto_getters) = false;
+
+  // current state of the channel end
+  State state = 1;
+  // whether the channel is ordered or unordered
+  Order ordering = 2;
+  // counterparty channel end
+  Counterparty counterparty = 3 [(gogoproto.nullable) = false];
+  // list of connection identifiers, in order, along which packets sent on
+  // this channel will travel
+  repeated string connection_hops = 4;
+  // opaque channel version, which is agreed upon during the handshake
+  string version = 5;
+  // upgrade sequence indicates the latest upgrade attempt performed by this channel
+  // the value of 0 indicates the channel has never been upgraded
+  uint64 upgrade_sequence = 6;
+}
+
+// IdentifiedChannel defines a channel with additional port and channel
+// identifier fields.
+message IdentifiedChannel {
+  option (gogoproto.goproto_getters) = false;
+
+  // current state of the channel end
+  State state = 1;
+  // whether the channel is ordered or unordered
+  Order ordering = 2;
+  // counterparty channel end
+  Counterparty counterparty = 3 [(gogoproto.nullable) = false];
+  // list of connection identifiers, in order, along which packets sent on
+  // this channel will travel
+  repeated string connection_hops = 4;
+  // opaque channel version, which is agreed upon during the handshake
+  string version = 5;
+  // port identifier
+  string port_id = 6;
+  // channel identifier
+  string channel_id = 7;
+  // upgrade sequence indicates the latest upgrade attempt performed by this channel
+  // the value of 0 indicates the channel has never been upgraded
+  uint64 upgrade_sequence = 8;
+}
+
+// State defines if a channel is in one of the following states:
+// CLOSED, INIT, TRYOPEN, OPEN, FLUSHING, FLUSHCOMPLETE or UNINITIALIZED.
+enum State {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // Default State
+  STATE_UNINITIALIZED_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "UNINITIALIZED"];
+  // A channel has just started the opening handshake.
+  STATE_INIT = 1 [(gogoproto.enumvalue_customname) = "INIT"];
+  // A channel has acknowledged the handshake step on the counterparty chain.
+  STATE_TRYOPEN = 2 [(gogoproto.enumvalue_customname) = "TRYOPEN"];
+  // A channel has completed the handshake. Open channels are
+  // ready to send and receive packets.
+  STATE_OPEN = 3 [(gogoproto.enumvalue_customname) = "OPEN"];
+  // A channel has been closed and can no longer be used to send or receive
+  // packets.
+  STATE_CLOSED = 4 [(gogoproto.enumvalue_customname) = "CLOSED"];
+  // A channel has just accepted the upgrade handshake attempt and is flushing in-flight packets.
+  STATE_FLUSHING = 5 [(gogoproto.enumvalue_customname) = "FLUSHING"];
+  // A channel has just completed flushing any in-flight packets.
+  STATE_FLUSHCOMPLETE = 6 [(gogoproto.enumvalue_customname) = "FLUSHCOMPLETE"];
+}
+
+// Order defines if a channel is ORDERED or UNORDERED
+enum Order {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // zero-value for channel ordering
+  ORDER_NONE_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "NONE"];
+  // packets can be delivered in any order, which may differ from the order in
+  // which they were sent.
+  ORDER_UNORDERED = 1 [(gogoproto.enumvalue_customname) = "UNORDERED"];
+  // packets are delivered exactly in the order which they were sent
+  ORDER_ORDERED = 2 [(gogoproto.enumvalue_customname) = "ORDERED"];
+}
+
+// Counterparty defines a channel end counterparty
+message Counterparty {
+  option (gogoproto.goproto_getters) = false;
+
+  // port on the counterparty chain which owns the other end of the channel.
+  string port_id = 1;
+  // channel end on the counterparty chain
+  string channel_id = 2;
+}
+
+// Packet defines a type that carries data across different chains through IBC
+message Packet {
+  option (gogoproto.goproto_getters) = false;
+
+  // number corresponds to the order of sends and receives, where a Packet
+  // with an earlier sequence number must be sent and received before a Packet
+  // with a later sequence number.
+  uint64 sequence = 1;
+  // identifies the port on the sending chain.
+  string source_port = 2;
+  // identifies the channel end on the sending chain.
+  string source_channel = 3;
+  // identifies the port on the receiving chain.
+  string destination_port = 4;
+  // identifies the channel end on the receiving chain.
+  string destination_channel = 5;
+  // actual opaque bytes transferred directly to the application module
+  bytes data = 6;
+  // block height after which the packet times out
+  ibc.core.client.v1.Height timeout_height = 7 [(gogoproto.nullable) = false];
+  // block timestamp (in nanoseconds) after which the packet times out
+  uint64 timeout_timestamp = 8;
+}
+
+// PacketState defines the generic type necessary to retrieve and store
+// packet commitments, acknowledgements, and receipts.
+// Caller is responsible for knowing the context necessary to interpret this
+// state as a commitment, acknowledgement, or a receipt.
+message PacketState {
+  option (gogoproto.goproto_getters) = false;
+
+  // channel port identifier.
+  string port_id = 1;
+  // channel unique identifier.
+  string channel_id = 2;
+  // packet sequence.
+  uint64 sequence = 3;
+  // embedded data that represents packet state.
+  bytes data = 4;
+}
+
+// PacketId is an identifer for a unique Packet
+// Source chains refer to packets by source port/channel
+// Destination chains refer to packets by destination port/channel
+message PacketId {
+  option (gogoproto.goproto_getters) = false;
+
+  // channel port identifier
+  string port_id = 1;
+  // channel unique identifier
+  string channel_id = 2;
+  // packet sequence
+  uint64 sequence = 3;
+}
+
+// Acknowledgement is the recommended acknowledgement format to be used by
+// app-specific protocols.
+// NOTE: The field numbers 21 and 22 were explicitly chosen to avoid accidental
+// conflicts with other protobuf message formats used for acknowledgements.
+// The first byte of any message with this format will be the non-ASCII values
+// `0xaa` (result) or `0xb2` (error). Implemented as defined by ICS:
+// https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#acknowledgement-envelope
+message Acknowledgement {
+  // response contains either a result or an error and must be non-empty
+  oneof response {
+    bytes  result = 21;
+    string error  = 22;
+  }
+}
+
+// Timeout defines an execution deadline structure for 04-channel handlers.
+// This includes packet lifecycle handlers as well as the upgrade handshake handlers.
+// A valid Timeout contains either one or both of a timestamp and block height (sequence).
+message Timeout {
+  // block height after which the packet or upgrade times out
+  ibc.core.client.v1.Height height = 1 [(gogoproto.nullable) = false];
+  // block timestamp (in nanoseconds) after which the packet or upgrade times out
+  uint64 timestamp = 2;
+}
+
+// Params defines the set of IBC channel parameters.
+message Params {
+  // the relative timeout after which channel upgrades will time out.
+  Timeout upgrade_timeout = 1 [(gogoproto.nullable) = false];
+}

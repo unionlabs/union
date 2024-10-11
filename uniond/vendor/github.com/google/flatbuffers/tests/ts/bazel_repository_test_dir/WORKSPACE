@@ -1,0 +1,71 @@
+workspace(name = "bazel_repository_test")
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+local_repository(
+    name = "com_github_google_flatbuffers",
+    path = "../../../",
+)
+
+http_archive(
+    name = "aspect_rules_js",
+    sha256 = "124ed29fb0b3d0cba5b44f8f8e07897cf61b34e35e33b1f83d1a943dfd91b193",
+    strip_prefix = "rules_js-1.24.0",
+    url = "https://github.com/aspect-build/rules_js/releases/download/v1.24.0/rules_js-v1.24.0.tar.gz",
+)
+
+load("@aspect_rules_js//js:repositories.bzl", "rules_js_dependencies")
+
+rules_js_dependencies()
+
+load("@aspect_rules_js//npm:npm_import.bzl", "npm_translate_lock", "pnpm_repository")
+
+pnpm_repository(name = "pnpm")
+
+http_archive(
+    name = "aspect_rules_ts",
+    sha256 = "8eb25d1fdafc0836f5778d33fb8eaac37c64176481d67872b54b0a05de5be5c0",
+    strip_prefix = "rules_ts-1.3.3",
+    url = "https://github.com/aspect-build/rules_ts/releases/download/v1.3.3/rules_ts-v1.3.3.tar.gz",
+)
+
+load("@aspect_rules_ts//ts:repositories.bzl", "rules_ts_dependencies")
+
+rules_ts_dependencies(
+    # curl --silent https://registry.npmjs.org/typescript/5.0.3 | jq ._integrity
+    ts_integrity = "sha512-xv8mOEDnigb/tN9PSMTwSEqAnUvkoXMQlicOb0IUVDBSQCgBSaAAROUZYy2IcUy5qU6XajK5jjjO7TMWqBTKZA==",
+    ts_version = "5.0.3",
+)
+
+load("@rules_nodejs//nodejs:repositories.bzl", "DEFAULT_NODE_VERSION", "nodejs_register_toolchains")
+
+nodejs_register_toolchains(
+    name = "nodejs",
+    node_version = DEFAULT_NODE_VERSION,
+)
+
+npm_translate_lock(
+    name = "npm",
+    npmrc = "//:.npmrc",
+    pnpm_lock = "//:pnpm-lock.yaml",
+    verify_node_modules_ignored = "//:.bazelignore",
+)
+
+load("@npm//:repositories.bzl", "npm_repositories")
+
+npm_repositories()
+
+http_archive(
+    name = "aspect_rules_esbuild",
+    sha256 = "2ea31bd97181a315e048be693ddc2815fddda0f3a12ca7b7cc6e91e80f31bac7",
+    strip_prefix = "rules_esbuild-0.14.4",
+    url = "https://github.com/aspect-build/rules_esbuild/releases/download/v0.14.4/rules_esbuild-v0.14.4.tar.gz",
+)
+
+# Register a toolchain containing esbuild npm package and native bindings
+load("@aspect_rules_esbuild//esbuild:repositories.bzl", "LATEST_VERSION", "esbuild_register_toolchains")
+
+esbuild_register_toolchains(
+    name = "esbuild",
+    esbuild_version = LATEST_VERSION,
+)

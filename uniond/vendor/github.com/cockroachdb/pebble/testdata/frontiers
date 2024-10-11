@@ -1,0 +1,71 @@
+# NB: The empty line in 'init' configures a frontier with no keys. It should
+# never be added to the heap.
+
+init
+b e j
+a p n z
+
+f
+----
+
+scan
+a b c d e f g h j i k l m n o p q r s t u v w x y z
+----
+a : { b: "b", p: "p", f: "f" }
+b : { e: "e", p: "p", f: "f" }
+c : { e: "e", p: "p", f: "f" }
+d : { e: "e", p: "p", f: "f" }
+e : { f: "f", p: "p", j: "j" }
+f : { j: "j", p: "p" }
+g : { j: "j", p: "p" }
+h : { j: "j", p: "p" }
+j : { p: "p" }
+i : { p: "p" }
+k : { p: "p" }
+l : { p: "p" }
+m : { p: "p" }
+n : { p: "p" }
+o : { p: "p" }
+p : { z: "z" }
+q : { z: "z" }
+r : { z: "z" }
+s : { z: "z" }
+t : { z: "z" }
+u : { z: "z" }
+v : { z: "z" }
+w : { z: "z" }
+x : { z: "z" }
+y : { z: "z" }
+z : {  }
+
+scan
+z
+----
+z : {  }
+
+scan
+a z
+----
+a : { b: "b", p: "p", f: "f" }
+z : {  }
+
+scan
+e
+----
+e : { f: "f", p: "p", j: "j" }
+
+# Test duplicate user keys within a frontier and across individual frontiers.
+
+init
+b e e g
+c e z
+----
+
+scan
+a c d f z
+----
+a : { b: "b", c: "c" }
+c : { e: "e", e: "e" }
+d : { e: "e", e: "e" }
+f : { g: "g", z: "z" }
+z : {  }

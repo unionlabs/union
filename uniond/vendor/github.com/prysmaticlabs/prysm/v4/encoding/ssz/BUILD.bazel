@@ -1,0 +1,51 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "hashers.go",
+        "helpers.go",
+        "htrutils.go",
+        "merkleize.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/encoding/ssz",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//config/fieldparams:go_default_library",
+        "//container/trie:go_default_library",
+        "//crypto/hash/htr:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//proto/engine/v1:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_minio_sha256_simd//:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+        "@com_github_prysmaticlabs_gohashtree//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = [
+        "export_test.go",
+        "hashers_test.go",
+        "helpers_test.go",
+        "htrutils_fuzz_test.go",
+        "htrutils_test.go",
+        "merkleize_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//config/fieldparams:go_default_library",
+        "//config/params:go_default_library",
+        "//crypto/hash:go_default_library",
+        "//proto/engine/v1:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_prysmaticlabs_fastssz//:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+    ],
+)

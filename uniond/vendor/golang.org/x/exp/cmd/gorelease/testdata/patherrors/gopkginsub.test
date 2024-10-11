@@ -1,0 +1,16 @@
+mod=example.com/patherrors
+base=none
+dir=yaml
+success=false
+vcs=git
+-- want --
+# diagnostics
+go.mod: go directive is missing
+gopkg.in/yaml.v2: module path starts with gopkg.in and must be declared in the root directory of the repository
+
+# summary
+Suggested version: v2.0.0
+-- .mod --
+module example.com/patherrors
+-- yaml/go.mod --
+module gopkg.in/yaml.v2

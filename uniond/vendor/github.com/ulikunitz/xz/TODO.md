@@ -86,6 +86,11 @@
 
 ## Log
 
+### 2024-04-03
+
+Release v0.5.12 updates README.md and SECURITY.md to address the supply chain
+attack on the original xz implementation.
+
 ### 2022-12-12
 
 Matt Dantay (@bodgit) reported an issue with the LZMA reader. The implementation
@@ -99,7 +104,7 @@ it.
 
 Mituo Heijo has fuzzed xz and found a bug in the function readIndexBody. The
 function allocated a slice of records immediately after reading the value
-without further checks. Sincex the number has been too large the make function
+without further checks. Since the number has been too large the make function
 did panic. The fix is to check the number against the expected number of records
 before allocating the records.
 

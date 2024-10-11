@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/hashicorp/go-plugin/internal/grpcmux"
 	"github.com/hashicorp/go-plugin/internal/plugin"
 	"github.com/hashicorp/go-plugin/runner"
 
@@ -40,6 +41,8 @@ type sendErr struct {
 // connection information to/from the plugin. Implements GRPCBrokerServer and
 // streamer interfaces.
 type gRPCBrokerServer struct {
+	plugin.UnimplementedGRPCBrokerServer
+
 	// send is used to send connection info to the gRPC stream.
 	send chan *sendErr
 
@@ -263,13 +266,19 @@ func (s *gRPCBrokerClientImpl) Close() {
 type GRPCBroker struct {
 	nextId   uint32
 	streamer streamer
-	streams  map[uint32]*gRPCBrokerPending
 	tls      *tls.Config
 	doneCh   chan struct{}
 	o        sync.Once
 
+	clientStreams map[uint32]*gRPCBrokerPending
+	serverStreams map[uint32]*gRPCBrokerPending
+
 	unixSocketCfg  UnixSocketConfig
 	addrTranslator runner.AddrTranslator
+
+	dialMutex sync.Mutex
+
+	muxer grpcmux.GRPCMuxer
 
 	sync.Mutex
 }
@@ -277,14 +286,18 @@ type GRPCBroker struct {
 type gRPCBrokerPending struct {
 	ch     chan *plugin.ConnInfo
 	doneCh chan struct{}
+	once   sync.Once
 }
 
-func newGRPCBroker(s streamer, tls *tls.Config, unixSocketCfg UnixSocketConfig, addrTranslator runner.AddrTranslator) *GRPCBroker {
+func newGRPCBroker(s streamer, tls *tls.Config, unixSocketCfg UnixSocketConfig, addrTranslator runner.AddrTranslator, muxer grpcmux.GRPCMuxer) *GRPCBroker {
 	return &GRPCBroker{
 		streamer: s,
-		streams:  make(map[uint32]*gRPCBrokerPending),
 		tls:      tls,
 		doneCh:   make(chan struct{}),
+
+		clientStreams: make(map[uint32]*gRPCBrokerPending),
+		serverStreams: make(map[uint32]*gRPCBrokerPending),
+		muxer:         muxer,
 
 		unixSocketCfg:  unixSocketCfg,
 		addrTranslator: addrTranslator,
@@ -295,6 +308,42 @@ func newGRPCBroker(s streamer, tls *tls.Config, unixSocketCfg UnixSocketConfig, 
 //
 // This should not be called multiple times with the same ID at one time.
 func (b *GRPCBroker) Accept(id uint32) (net.Listener, error) {
+	if b.muxer.Enabled() {
+		p := b.getServerStream(id)
+		go func() {
+			err := b.listenForKnocks(id)
+			if err != nil {
+				log.Printf("[ERR]: error listening for knocks, id: %d, error: %s", id, err)
+			}
+		}()
+
+		ln, err := b.muxer.Listener(id, p.doneCh)
+		if err != nil {
+			return nil, err
+		}
+
+		ln = &rmListener{
+			Listener: ln,
+			close: func() error {
+				// We could have multiple listeners on the same ID, so use sync.Once
+				// for closing doneCh to ensure we don't get a panic.
+				p.once.Do(func() {
+					close(p.doneCh)
+				})
+
+				b.Lock()
+				defer b.Unlock()
+
+				// No longer need to listen for knocks once the listener is closed.
+				delete(b.serverStreams, id)
+
+				return nil
+			},
+		}
+
+		return ln, nil
+	}
+
 	listener, err := serverListener(b.unixSocketCfg)
 	if err != nil {
 		return nil, err
@@ -327,20 +376,20 @@ func (b *GRPCBroker) Accept(id uint32) (net.Listener, error) {
 // connection is opened every call, these calls should be used sparingly.
 // Multiple gRPC server implementations can be registered to a single
 // AcceptAndServe call.
-func (b *GRPCBroker) AcceptAndServe(id uint32, s func([]grpc.ServerOption) *grpc.Server) {
-	listener, err := b.Accept(id)
+func (b *GRPCBroker) AcceptAndServe(id uint32, newGRPCServer func([]grpc.ServerOption) *grpc.Server) {
+	ln, err := b.Accept(id)
 	if err != nil {
 		log.Printf("[ERR] plugin: plugin acceptAndServe error: %s", err)
 		return
 	}
-	defer listener.Close()
+	defer ln.Close()
 
 	var opts []grpc.ServerOption
 	if b.tls != nil {
 		opts = []grpc.ServerOption{grpc.Creds(credentials.NewTLS(b.tls))}
 	}
 
-	server := s(opts)
+	server := newGRPCServer(opts)
 
 	// Here we use a run group to close this goroutine if the server is shutdown
 	// or the broker is shutdown.
@@ -348,7 +397,7 @@ func (b *GRPCBroker) AcceptAndServe(id uint32, s func([]grpc.ServerOption) *grpc
 	{
 		// Serve on the listener, if shutting down call GracefulStop.
 		g.Add(func() error {
-			return server.Serve(listener)
+			return server.Serve(ln)
 		}, func(err error) {
 			server.GracefulStop()
 		})
@@ -381,12 +430,108 @@ func (b *GRPCBroker) Close() error {
 	return nil
 }
 
+func (b *GRPCBroker) listenForKnocks(id uint32) error {
+	p := b.getServerStream(id)
+	for {
+		select {
+		case msg := <-p.ch:
+			// Shouldn't be possible.
+			if msg.ServiceId != id {
+				return fmt.Errorf("knock received with wrong service ID; expected %d but got %d", id, msg.ServiceId)
+			}
+
+			// Also shouldn't be possible.
+			if msg.Knock == nil || !msg.Knock.Knock || msg.Knock.Ack {
+				return fmt.Errorf("knock received for service ID %d with incorrect values; knock=%+v", id, msg.Knock)
+			}
+
+			// Successful knock, open the door for the given ID.
+			var ackError string
+			err := b.muxer.AcceptKnock(id)
+			if err != nil {
+				ackError = err.Error()
+			}
+
+			// Send back an acknowledgement to allow the client to start dialling.
+			err = b.streamer.Send(&plugin.ConnInfo{
+				ServiceId: id,
+				Knock: &plugin.ConnInfo_Knock{
+					Knock: true,
+					Ack:   true,
+					Error: ackError,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("error sending back knock acknowledgement: %w", err)
+			}
+		case <-p.doneCh:
+			return nil
+		}
+	}
+}
+
+func (b *GRPCBroker) knock(id uint32) error {
+	// Send a knock.
+	err := b.streamer.Send(&plugin.ConnInfo{
+		ServiceId: id,
+		Knock: &plugin.ConnInfo_Knock{
+			Knock: true,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	// Wait for the ack.
+	p := b.getClientStream(id)
+	select {
+	case msg := <-p.ch:
+		if msg.ServiceId != id {
+			return fmt.Errorf("handshake failed for multiplexing on id %d; got response for %d", id, msg.ServiceId)
+		}
+		if msg.Knock == nil || !msg.Knock.Knock || !msg.Knock.Ack {
+			return fmt.Errorf("handshake failed for multiplexing on id %d; expected knock and ack, but got %+v", id, msg.Knock)
+		}
+		if msg.Knock.Error != "" {
+			return fmt.Errorf("failed to knock for id %d: %s", id, msg.Knock.Error)
+		}
+	case <-time.After(5 * time.Second):
+		return fmt.Errorf("timeout waiting for multiplexing knock handshake on id %d", id)
+	}
+
+	return nil
+}
+
+func (b *GRPCBroker) muxDial(id uint32) func(string, time.Duration) (net.Conn, error) {
+	return func(string, time.Duration) (net.Conn, error) {
+		b.dialMutex.Lock()
+		defer b.dialMutex.Unlock()
+
+		// Tell the other side the listener ID it should give the next stream to.
+		err := b.knock(id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to knock before dialling client: %w", err)
+		}
+
+		conn, err := b.muxer.Dial()
+		if err != nil {
+			return nil, err
+		}
+
+		return conn, nil
+	}
+}
+
 // Dial opens a connection by ID.
 func (b *GRPCBroker) Dial(id uint32) (conn *grpc.ClientConn, err error) {
+	if b.muxer.Enabled() {
+		return dialGRPCConn(b.tls, b.muxDial(id))
+	}
+
 	var c *plugin.ConnInfo
 
 	// Open the stream
-	p := b.getStream(id)
+	p := b.getClientStream(id)
 	select {
 	case c = <-p.ch:
 		close(p.doneCh)
@@ -434,37 +579,63 @@ func (m *GRPCBroker) NextId() uint32 {
 // the plugin host/client.
 func (m *GRPCBroker) Run() {
 	for {
-		stream, err := m.streamer.Recv()
+		msg, err := m.streamer.Recv()
 		if err != nil {
 			// Once we receive an error, just exit
 			break
 		}
 
 		// Initialize the waiter
-		p := m.getStream(stream.ServiceId)
+		var p *gRPCBrokerPending
+		if msg.Knock != nil && msg.Knock.Knock && !msg.Knock.Ack {
+			p = m.getServerStream(msg.ServiceId)
+			// The server side doesn't close the channel immediately as it needs
+			// to continuously listen for knocks.
+		} else {
+			p = m.getClientStream(msg.ServiceId)
+			go m.timeoutWait(msg.ServiceId, p)
+		}
 		select {
-		case p.ch <- stream:
+		case p.ch <- msg:
 		default:
 		}
-
-		go m.timeoutWait(stream.ServiceId, p)
 	}
 }
 
-func (m *GRPCBroker) getStream(id uint32) *gRPCBrokerPending {
+// getClientStream is a buffer to receive new connection info and knock acks
+// by stream ID.
+func (m *GRPCBroker) getClientStream(id uint32) *gRPCBrokerPending {
 	m.Lock()
 	defer m.Unlock()
 
-	p, ok := m.streams[id]
+	p, ok := m.clientStreams[id]
 	if ok {
 		return p
 	}
 
-	m.streams[id] = &gRPCBrokerPending{
+	m.clientStreams[id] = &gRPCBrokerPending{
 		ch:     make(chan *plugin.ConnInfo, 1),
 		doneCh: make(chan struct{}),
 	}
-	return m.streams[id]
+	return m.clientStreams[id]
+}
+
+// getServerStream is a buffer to receive knocks to a multiplexed stream ID
+// that its side is listening on. Not used unless multiplexing is enabled.
+func (m *GRPCBroker) getServerStream(id uint32) *gRPCBrokerPending {
+	m.Lock()
+	defer m.Unlock()
+
+	p, ok := m.serverStreams[id]
+	if ok {
+		return p
+	}
+
+	m.serverStreams[id] = &gRPCBrokerPending{
+		ch:     make(chan *plugin.ConnInfo, 1),
+		doneCh: make(chan struct{}),
+	}
+	return m.serverStreams[id]
 }
 
 func (m *GRPCBroker) timeoutWait(id uint32, p *gRPCBrokerPending) {
@@ -479,5 +650,5 @@ func (m *GRPCBroker) timeoutWait(id uint32, p *gRPCBrokerPending) {
 	defer m.Unlock()
 
 	// Delete the stream so no one else can grab it
-	delete(m.streams, id)
+	delete(m.clientStreams, id)
 }

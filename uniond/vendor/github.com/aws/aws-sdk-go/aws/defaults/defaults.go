@@ -9,6 +9,7 @@ package defaults
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -74,6 +75,7 @@ func Handlers() request.Handlers {
 	handlers.Validate.PushBackNamed(corehandlers.ValidateEndpointHandler)
 	handlers.Validate.AfterEachFn = request.HandlerListStopOnError
 	handlers.Build.PushBackNamed(corehandlers.SDKVersionUserAgentHandler)
+	handlers.Build.PushBackNamed(corehandlers.AddAwsInternal)
 	handlers.Build.PushBackNamed(corehandlers.AddHostExecEnvUserAgentHander)
 	handlers.Build.AfterEachFn = request.HandlerListStopOnError
 	handlers.Sign.PushBackNamed(corehandlers.BuildContentLengthHandler)
@@ -114,8 +116,30 @@ func CredProviders(cfg *aws.Config, handlers request.Handlers) []credentials.Pro
 
 const (
 	httpProviderAuthorizationEnvVar = "AWS_CONTAINER_AUTHORIZATION_TOKEN"
+	httpProviderAuthFileEnvVar      = "AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE"
 	httpProviderEnvVar              = "AWS_CONTAINER_CREDENTIALS_FULL_URI"
 )
+
+// direct representation of the IPv4 address for the ECS container
+// "169.254.170.2"
+var ecsContainerIPv4 net.IP = []byte{
+	169, 254, 170, 2,
+}
+
+// direct representation of the IPv4 address for the EKS container
+// "169.254.170.23"
+var eksContainerIPv4 net.IP = []byte{
+	169, 254, 170, 23,
+}
+
+// direct representation of the IPv6 address for the EKS container
+// "fd00:ec2::23"
+var eksContainerIPv6 net.IP = []byte{
+	0xFD, 0, 0xE, 0xC2,
+	0, 0, 0, 0,
+	0, 0, 0, 0,
+	0, 0, 0, 0x23,
+}
 
 // RemoteCredProvider returns a credentials provider for the default remote
 // endpoints such as EC2 or ECS Roles.
@@ -134,24 +158,34 @@ func RemoteCredProvider(cfg aws.Config, handlers request.Handlers) credentials.P
 
 var lookupHostFn = net.LookupHost
 
-func isLoopbackHost(host string) (bool, error) {
-	ip := net.ParseIP(host)
-	if ip != nil {
-		return ip.IsLoopback(), nil
+// isAllowedHost allows host to be loopback or known ECS/EKS container IPs
+//
+// host can either be an IP address OR an unresolved hostname - resolution will
+// be automatically performed in the latter case
+func isAllowedHost(host string) (bool, error) {
+	if ip := net.ParseIP(host); ip != nil {
+		return isIPAllowed(ip), nil
 	}
 
-	// Host is not an ip, perform lookup
 	addrs, err := lookupHostFn(host)
 	if err != nil {
 		return false, err
 	}
+
 	for _, addr := range addrs {
-		if !net.ParseIP(addr).IsLoopback() {
+		if ip := net.ParseIP(addr); ip == nil || !isIPAllowed(ip) {
 			return false, nil
 		}
 	}
 
 	return true, nil
+}
+
+func isIPAllowed(ip net.IP) bool {
+	return ip.IsLoopback() ||
+		ip.Equal(ecsContainerIPv4) ||
+		ip.Equal(eksContainerIPv4) ||
+		ip.Equal(eksContainerIPv6)
 }
 
 func localHTTPCredProvider(cfg aws.Config, handlers request.Handlers, u string) credentials.Provider {
@@ -164,10 +198,12 @@ func localHTTPCredProvider(cfg aws.Config, handlers request.Handlers, u string) 
 		host := aws.URLHostname(parsed)
 		if len(host) == 0 {
 			errMsg = "unable to parse host from local HTTP cred provider URL"
-		} else if isLoopback, loopbackErr := isLoopbackHost(host); loopbackErr != nil {
-			errMsg = fmt.Sprintf("failed to resolve host %q, %v", host, loopbackErr)
-		} else if !isLoopback {
-			errMsg = fmt.Sprintf("invalid endpoint host, %q, only loopback hosts are allowed.", host)
+		} else if parsed.Scheme == "http" {
+			if isAllowedHost, allowHostErr := isAllowedHost(host); allowHostErr != nil {
+				errMsg = fmt.Sprintf("failed to resolve host %q, %v", host, allowHostErr)
+			} else if !isAllowedHost {
+				errMsg = fmt.Sprintf("invalid endpoint host, %q, only loopback/ecs/eks hosts are allowed.", host)
+			}
 		}
 	}
 
@@ -189,6 +225,15 @@ func httpCredProvider(cfg aws.Config, handlers request.Handlers, u string) crede
 		func(p *endpointcreds.Provider) {
 			p.ExpiryWindow = 5 * time.Minute
 			p.AuthorizationToken = os.Getenv(httpProviderAuthorizationEnvVar)
+			if authFilePath := os.Getenv(httpProviderAuthFileEnvVar); authFilePath != "" {
+				p.AuthorizationTokenProvider = endpointcreds.TokenProviderFunc(func() (string, error) {
+					if contents, err := ioutil.ReadFile(authFilePath); err != nil {
+						return "", fmt.Errorf("failed to read authorization token from %v: %v", authFilePath, err)
+					} else {
+						return string(contents), nil
+					}
+				})
+			}
 		},
 	)
 }

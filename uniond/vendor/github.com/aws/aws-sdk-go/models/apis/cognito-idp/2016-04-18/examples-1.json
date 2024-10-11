@@ -1,0 +1,777 @@
+{
+  "version": "1.0",
+  "examples": {
+    "AdminCreateUser": [
+      {
+        "input": {
+          "DesiredDeliveryMediums": [
+            "SMS"
+          ],
+          "MessageAction": "SUPPRESS",
+          "TemporaryPassword": "This-is-my-test-99!",
+          "UserAttributes": [
+            {
+              "Name": "name",
+              "Value": "John"
+            },
+            {
+              "Name": "phone_number",
+              "Value": "+12065551212"
+            },
+            {
+              "Name": "email",
+              "Value": "testuser@example.com"
+            }
+          ],
+          "UserPoolId": "us-east-1_EXAMPLE",
+          "Username": "testuser"
+        },
+        "output": {
+          "User": {
+            "Attributes": [
+              {
+                "Name": "sub",
+                "Value": "d16b4aa8-8633-4abd-93b3-5062a8e1b5f8"
+              },
+              {
+                "Name": "name",
+                "Value": "John"
+              },
+              {
+                "Name": "phone_number",
+                "Value": "+12065551212"
+              },
+              {
+                "Name": "email",
+                "Value": "testuser@example.com"
+              }
+            ],
+            "Enabled": true,
+            "UserCreateDate": 1689980857.949,
+            "UserLastModifiedDate": 1689980857.949,
+            "UserStatus": "FORCE_CHANGE_PASSWORD",
+            "Username": "testuser"
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This request submits a value for all possible parameters for AdminCreateUser.",
+        "id": "an-admincreateuser-request-for-for-a-test-user-named-john-1689980900481",
+        "title": "An AdminCreateUser request for for a test user named John."
+      }
+    ],
+    "CreateUserPool": [
+      {
+        "input": {
+          "AccountRecoverySetting": {
+            "RecoveryMechanisms": [
+              {
+                "Name": "verified_email",
+                "Priority": 1
+              }
+            ]
+          },
+          "AdminCreateUserConfig": {
+            "AllowAdminCreateUserOnly": false,
+            "InviteMessageTemplate": {
+              "EmailMessage": "Your username is {username} and temporary password is {####}.",
+              "EmailSubject": "Your sign-in information",
+              "SMSMessage": "Your username is {username} and temporary password is {####}."
+            }
+          },
+          "AliasAttributes": [
+            "email"
+          ],
+          "AutoVerifiedAttributes": [
+            "email"
+          ],
+          "DeletionProtection": "ACTIVE",
+          "DeviceConfiguration": {
+            "ChallengeRequiredOnNewDevice": true,
+            "DeviceOnlyRememberedOnUserPrompt": true
+          },
+          "EmailConfiguration": {
+            "ConfigurationSet": "my-test-ses-configuration-set",
+            "EmailSendingAccount": "DEVELOPER",
+            "From": "support@example.com",
+            "ReplyToEmailAddress": "support@example.com",
+            "SourceArn": "arn:aws:ses:us-east-1:123456789012:identity/support@example.com"
+          },
+          "EmailVerificationMessage": "Your verification code is {####}.",
+          "EmailVerificationSubject": "Verify your email address",
+          "LambdaConfig": {
+            "CustomEmailSender": {
+              "LambdaArn": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+              "LambdaVersion": "V1_0"
+            },
+            "CustomMessage": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+            "CustomSMSSender": {
+              "LambdaArn": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+              "LambdaVersion": "V1_0"
+            },
+            "DefineAuthChallenge": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+            "KMSKeyID": "arn:aws:kms:us-east-1:123456789012:key/a6c4f8e2-0c45-47db-925f-87854bc9e357",
+            "PostAuthentication": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+            "PostConfirmation": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+            "PreAuthentication": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+            "PreSignUp": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+            "PreTokenGeneration": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+            "UserMigration": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+            "VerifyAuthChallengeResponse": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction"
+          },
+          "MfaConfiguration": "OPTIONAL",
+          "Policies": {
+            "PasswordPolicy": {
+              "MinimumLength": 6,
+              "RequireLowercase": true,
+              "RequireNumbers": true,
+              "RequireSymbols": true,
+              "RequireUppercase": true,
+              "TemporaryPasswordValidityDays": 7
+            }
+          },
+          "PoolName": "my-test-user-pool",
+          "Schema": [
+            {
+              "AttributeDataType": "Number",
+              "DeveloperOnlyAttribute": true,
+              "Mutable": true,
+              "Name": "mydev",
+              "NumberAttributeConstraints": {
+                "MaxValue": "99",
+                "MinValue": "1"
+              },
+              "Required": false,
+              "StringAttributeConstraints": {
+                "MaxLength": "99",
+                "MinLength": "1"
+              }
+            }
+          ],
+          "SmsAuthenticationMessage": "Your verification code is {####}.",
+          "SmsConfiguration": {
+            "ExternalId": "my-role-external-id",
+            "SnsCallerArn": "arn:aws:iam::123456789012:role/service-role/test-cognito-SMS-Role"
+          },
+          "SmsVerificationMessage": "Your verification code is {####}.",
+          "UserAttributeUpdateSettings": {
+            "AttributesRequireVerificationBeforeUpdate": [
+              "email"
+            ]
+          },
+          "UserPoolAddOns": {
+            "AdvancedSecurityMode": "OFF"
+          },
+          "UserPoolTags": {
+            "my-test-tag-key": "my-test-tag-key"
+          },
+          "UsernameConfiguration": {
+            "CaseSensitive": true
+          },
+          "VerificationMessageTemplate": {
+            "DefaultEmailOption": "CONFIRM_WITH_CODE",
+            "EmailMessage": "Your confirmation code is {####}",
+            "EmailMessageByLink": "Choose this link to {##verify your email##}",
+            "EmailSubject": "Here is your confirmation code",
+            "EmailSubjectByLink": "Here is your confirmation link",
+            "SmsMessage": "Your confirmation code is {####}"
+          }
+        },
+        "output": {
+          "UserPool": {
+            "AccountRecoverySetting": {
+              "RecoveryMechanisms": [
+                {
+                  "Name": "verified_email",
+                  "Priority": 1
+                }
+              ]
+            },
+            "AdminCreateUserConfig": {
+              "AllowAdminCreateUserOnly": false,
+              "InviteMessageTemplate": {
+                "EmailMessage": "Your username is {username} and temporary password is {####}.",
+                "EmailSubject": "Your sign-in information",
+                "SMSMessage": "Your username is {username} and temporary password is {####}."
+              },
+              "UnusedAccountValidityDays": 7
+            },
+            "AliasAttributes": [
+              "email"
+            ],
+            "Arn": "arn:aws:cognito-idp:us-east-1:123456789012:userpool/us-east-1_EXAMPLE",
+            "AutoVerifiedAttributes": [
+              "email"
+            ],
+            "CreationDate": 1689721665.239,
+            "DeletionProtection": "ACTIVE",
+            "DeviceConfiguration": {
+              "ChallengeRequiredOnNewDevice": true,
+              "DeviceOnlyRememberedOnUserPrompt": true
+            },
+            "EmailConfiguration": {
+              "ConfigurationSet": "my-test-ses-configuration-set",
+              "EmailSendingAccount": "DEVELOPER",
+              "From": "support@example.com",
+              "ReplyToEmailAddress": "support@example.com",
+              "SourceArn": "arn:aws:ses:us-east-1:123456789012:identity/support@example.com"
+            },
+            "EmailVerificationMessage": "Your verification code is {####}.",
+            "EmailVerificationSubject": "Verify your email address",
+            "EstimatedNumberOfUsers": 0,
+            "Id": "us-east-1_EXAMPLE",
+            "LambdaConfig": {
+              "CustomEmailSender": {
+                "LambdaArn": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+                "LambdaVersion": "V1_0"
+              },
+              "CustomMessage": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+              "CustomSMSSender": {
+                "LambdaArn": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+                "LambdaVersion": "V1_0"
+              },
+              "DefineAuthChallenge": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+              "KMSKeyID": "arn:aws:kms:us-east-1:767671399759:key/4d43904c-8edf-4bb4-9fca-fb1a80e41cbe",
+              "PostAuthentication": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+              "PostConfirmation": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+              "PreAuthentication": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+              "PreSignUp": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+              "PreTokenGeneration": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+              "UserMigration": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction",
+              "VerifyAuthChallengeResponse": "arn:aws:lambda:us-east-1:123456789012:function:MyFunction"
+            },
+            "LastModifiedDate": 1689721665.239,
+            "MfaConfiguration": "OPTIONAL",
+            "Name": "my-test-user-pool",
+            "Policies": {
+              "PasswordPolicy": {
+                "MinimumLength": 6,
+                "RequireLowercase": true,
+                "RequireNumbers": true,
+                "RequireSymbols": true,
+                "RequireUppercase": true,
+                "TemporaryPasswordValidityDays": 7
+              }
+            },
+            "SchemaAttributes": [
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": false,
+                "Name": "sub",
+                "Required": true,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "1"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "name",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "given_name",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "family_name",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "middle_name",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "nickname",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "preferred_username",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "profile",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "picture",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "website",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "email",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "Boolean",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "email_verified",
+                "Required": false
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "gender",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "birthdate",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "10",
+                  "MinLength": "10"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "zoneinfo",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "locale",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "phone_number",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "Boolean",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "phone_number_verifie",
+                "Required": false
+              },
+              {
+                "AttributeDataType": "String",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "address",
+                "Required": false,
+                "StringAttributeConstraints": {
+                  "MaxLength": "2048",
+                  "MinLength": "0"
+                }
+              },
+              {
+                "AttributeDataType": "Number",
+                "DeveloperOnlyAttribute": false,
+                "Mutable": true,
+                "Name": "updated_at",
+                "NumberAttributeConstraints": {
+                  "MinValue": "0"
+                },
+                "Required": false
+              },
+              {
+                "AttributeDataType": "Number",
+                "DeveloperOnlyAttribute": true,
+                "Mutable": true,
+                "Name": "dev:custom:mydev",
+                "NumberAttributeConstraints": {
+                  "MaxValue": "99",
+                  "MinValue": "1"
+                },
+                "Required": false
+              }
+            ],
+            "SmsAuthenticationMessage": "Your verification code is {####}.",
+            "SmsConfiguration": {
+              "ExternalId": "my-role-external-id",
+              "SnsCallerArn": "arn:aws:iam::123456789012:role/service-role/test-cognito-SMS-Role",
+              "SnsRegion": "us-east-1"
+            },
+            "SmsVerificationMessage": "Your verification code is {####}.",
+            "UserAttributeUpdateSettings": {
+              "AttributesRequireVerificationBeforeUpdate": [
+                "email"
+              ]
+            },
+            "UserPoolAddOns": {
+              "AdvancedSecurityMode": "OFF"
+            },
+            "UserPoolTags": {
+              "my-test-tag-key": "my-test-tag-value"
+            },
+            "UsernameConfiguration": {
+              "CaseSensitive": true
+            },
+            "VerificationMessageTemplate": {
+              "DefaultEmailOption": "CONFIRM_WITH_CODE",
+              "EmailMessage": "Your confirmation code is {####}",
+              "EmailMessageByLink": "Choose this link to {##verify your email##}",
+              "EmailSubject": "Here is your confirmation code",
+              "EmailSubjectByLink": "Here is your confirmation link",
+              "SmsMessage": "Your confirmation code is {####}"
+            }
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example creates a user pool with all configurable properties set to an example value. The resulting user pool allows sign-in with username or email address, has optional MFA, and has a Lambda function assigned to each possible trigger.",
+        "id": "example-user-pool-with-email-and-username-sign-in-1689722835145",
+        "title": "Example user pool with email and username sign-in"
+      }
+    ],
+    "CreateUserPoolClient": [
+      {
+        "input": {
+          "AccessTokenValidity": 6,
+          "AllowedOAuthFlows": [
+            "code"
+          ],
+          "AllowedOAuthFlowsUserPoolClient": true,
+          "AllowedOAuthScopes": [
+            "aws.cognito.signin.user.admin",
+            "openid"
+          ],
+          "AnalyticsConfiguration": {
+            "ApplicationId": "d70b2ba36a8c4dc5a04a0451a31a1e12",
+            "ExternalId": "my-external-id",
+            "RoleArn": "arn:aws:iam::123456789012:role/test-cognitouserpool-role",
+            "UserDataShared": true
+          },
+          "CallbackURLs": [
+            "https://example.com",
+            "http://localhost",
+            "myapp://example"
+          ],
+          "ClientName": "my-test-app-client",
+          "DefaultRedirectURI": "https://example.com",
+          "ExplicitAuthFlows": [
+            "ALLOW_ADMIN_USER_PASSWORD_AUTH",
+            "ALLOW_USER_PASSWORD_AUTH",
+            "ALLOW_REFRESH_TOKEN_AUTH"
+          ],
+          "GenerateSecret": true,
+          "IdTokenValidity": 6,
+          "LogoutURLs": [
+            "https://example.com/logout"
+          ],
+          "PreventUserExistenceErrors": "ENABLED",
+          "ReadAttributes": [
+            "email",
+            "address",
+            "preferred_username"
+          ],
+          "RefreshTokenValidity": 6,
+          "SupportedIdentityProviders": [
+            "SignInWithApple",
+            "MySSO"
+          ],
+          "TokenValidityUnits": {
+            "AccessToken": "hours",
+            "IdToken": "minutes",
+            "RefreshToken": "days"
+          },
+          "UserPoolId": "us-east-1_EXAMPLE",
+          "WriteAttributes": [
+            "family_name",
+            "email"
+          ]
+        },
+        "output": {
+          "UserPoolClient": {
+            "AccessTokenValidity": 6,
+            "AllowedOAuthFlows": [
+              "code"
+            ],
+            "AllowedOAuthFlowsUserPoolClient": true,
+            "AllowedOAuthScopes": [
+              "aws.cognito.signin.user.admin",
+              "openid"
+            ],
+            "AnalyticsConfiguration": {
+              "ApplicationId": "d70b2ba36a8c4dc5a04a0451a31a1e12",
+              "ExternalId": "my-external-id",
+              "RoleArn": "arn:aws:iam::123456789012:role/test-cognitouserpool-role",
+              "UserDataShared": true
+            },
+            "AuthSessionValidity": 3,
+            "CallbackURLs": [
+              "https://example.com",
+              "http://localhost",
+              "myapp://example"
+            ],
+            "ClientId": "26cb2c60kq7nbmas7rbme9b6pp",
+            "ClientName": "my-test-app-client",
+            "ClientSecret": "13ka4h7u28d9oo44tqpq9djqsfvhvu8rk4d2ighvpu0k8fj1c2r9",
+            "CreationDate": 1689885426.107,
+            "DefaultRedirectURI": "https://example.com",
+            "EnablePropagateAdditionalUserContextData": false,
+            "EnableTokenRevocation": true,
+            "ExplicitAuthFlows": [
+              "ALLOW_USER_PASSWORD_AUTH",
+              "ALLOW_ADMIN_USER_PASSWORD_AUTH",
+              "ALLOW_REFRESH_TOKEN_AUTH"
+            ],
+            "IdTokenValidity": 6,
+            "LastModifiedDate": 1689885426.107,
+            "LogoutURLs": [
+              "https://example.com/logout"
+            ],
+            "PreventUserExistenceErrors": "ENABLED",
+            "ReadAttributes": [
+              "address",
+              "preferred_username",
+              "email"
+            ],
+            "RefreshTokenValidity": 6,
+            "SupportedIdentityProviders": [
+              "SignInWithApple",
+              "MySSO"
+            ],
+            "TokenValidityUnits": {
+              "AccessToken": "hours",
+              "IdToken": "minutes",
+              "RefreshToken": "days"
+            },
+            "UserPoolId": "us-east-1_EXAMPLE",
+            "WriteAttributes": [
+              "family_name",
+              "email"
+            ]
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example creates an app client with all configurable properties set to an example value. The resulting user pool client connects to an analytics client, allows sign-in with username and password, and has two external identity providers associated with it.",
+        "id": "example-user-pool-app-client-with-email-and-username-sign-in-1689885750745",
+        "title": "Example user pool app client with email and username sign-in"
+      }
+    ],
+    "InitiateAuth": [
+      {
+        "input": {
+          "AnalyticsMetadata": {
+            "AnalyticsEndpointId": "d70b2ba36a8c4dc5a04a0451a31a1e12"
+          },
+          "AuthFlow": "USER_PASSWORD_AUTH",
+          "AuthParameters": {
+            "PASSWORD": "This-is-my-test-99!",
+            "SECRET_HASH": "oT5ZkS8ctnrhYeeGsGTvOzPhoc/Jd1cO5fueBWFVmp8=",
+            "USERNAME": "mytestuser"
+          },
+          "ClientId": "1example23456789",
+          "ClientMetadata": {
+            "MyTestKey": "MyTestValue"
+          },
+          "UserContextData": {
+            "EncodedData": "AmazonCognitoAdvancedSecurityData_object",
+            "IpAddress": "192.0.2.1"
+          }
+        },
+        "output": {
+          "ChallengeName": "SOFTWARE_TOKEN_MFA",
+          "ChallengeParameters": {
+            "FRIENDLY_DEVICE_NAME": "mytestauthenticator",
+            "USER_ID_FOR_SRP": "mytestuser"
+          },
+          "Session": "AYABeC1-y8qooiuysEv0uM4wAqQAHQABAAdTZXJ2aWNlABBDb2duaXRvVXNlclBvb2xzAAEAB2F3cy1rbXMAS2Fybjphd3M6a21zOnVzLXdlc3QtMjowMTU3MzY3MjcxOTg6a2V5LzI5OTFhNGE5LTM5YTAtNDQ0Mi04MWU4LWRkYjY4NTllMTg2MQC4AQIBAHhjxv5lVLhE2_WNrC1zuomqn08qDUUp3z9v4EGAjazZ-wGP3HuBF5Izvxf-9WkCT5uyAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMeQoT5e6Dpfh52caqAgEQgDvuL8uLMhPt0WmQpZnkNED1gob6xbqt5LaQo_H4L5CuT4Kj499dGCoZ1q1trmlZSRgRm0wwGGG8lFU37QIAAAAADAAAEAAAAAAAAAAAAAAAAADuLe9_UJ4oZAMsQYr0ntiT_____wAAAAEAAAAAAAAAAAAAAAEAAADnLDGmKBQtsCafNokRmPLgl2itBKuKR2dfZBQb5ucCYkzThM5HOfQUSEL-A3dZzfYDC0IODsrcMkrbeeVyMJk-FCzsxS9Og8BEBVnvi9WjZkPJ4mF0YS6FUXnoPSBV5oUqGzRaT-tJ169SUFZAUfFM1fGeJ8T57-QdCxjyISRCWV1VG5_7TiCioyRGfWwzNVWh7exJortF3ccfOyiEyxeqJ2VJvJq3m_w8NP24_PMDpktpRMKftObIMlD5ewRTNCdrUXQ1BW5KIxhJLGjYfRzJDZuKzmEgS-VHsKz0z76w-AlAgdfvdAjflLnsgduU5kUX4YP6jqnetg"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example signs in the user mytestuser with analytics data, client metadata, and user context data for advanced security.",
+        "id": "example-username-and-password-sign-in-for-a-user-who-has-totp-mfa-1689887395219",
+        "title": "Example username and password sign-in for a user who has TOTP MFA"
+      }
+    ],
+    "ListUsers": [
+      {
+        "input": {
+          "AttributesToGet": [
+            "email",
+            "sub"
+          ],
+          "Filter": "\"email\"^=\"testuser\"",
+          "Limit": 3,
+          "PaginationToken": "abcd1234EXAMPLE",
+          "UserPoolId": "us-east-1_EXAMPLE"
+        },
+        "output": {
+          "PaginationToken": "efgh5678EXAMPLE",
+          "Users": [
+            {
+              "Attributes": [
+                {
+                  "Name": "sub",
+                  "Value": "eaad0219-2117-439f-8d46-4db20e59268f"
+                },
+                {
+                  "Name": "email",
+                  "Value": "testuser@example.com"
+                }
+              ],
+              "Enabled": true,
+              "UserCreateDate": 1682955829.578,
+              "UserLastModifiedDate": 1689030181.63,
+              "UserStatus": "CONFIRMED",
+              "Username": "testuser"
+            },
+            {
+              "Attributes": [
+                {
+                  "Name": "sub",
+                  "Value": "3b994cfd-0b07-4581-be46-3c82f9a70c90"
+                },
+                {
+                  "Name": "email",
+                  "Value": "testuser2@example.com"
+                }
+              ],
+              "Enabled": true,
+              "UserCreateDate": 1684427979.201,
+              "UserLastModifiedDate": 1684427979.201,
+              "UserStatus": "UNCONFIRMED",
+              "Username": "testuser2"
+            },
+            {
+              "Attributes": [
+                {
+                  "Name": "sub",
+                  "Value": "5929e0d1-4c34-42d1-9b79-a5ecacfe66f7"
+                },
+                {
+                  "Name": "email",
+                  "Value": "testuser3@example.com"
+                }
+              ],
+              "Enabled": true,
+              "UserCreateDate": 1684427823.641,
+              "UserLastModifiedDate": 1684427823.641,
+              "UserStatus": "UNCONFIRMED",
+              "Username": "testuser3@example.com"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This request submits a value for all possible parameters for ListUsers. By iterating the PaginationToken, you can page through and collect all users in a user pool.",
+        "id": "a-listusers-request-for-the-next-3-users-whose-email-address-starts-with-testuser-1689977648246",
+        "title": "A ListUsers request for the next 3 users whose email address starts with \"testuser.\""
+      }
+    ]
+  }
+}

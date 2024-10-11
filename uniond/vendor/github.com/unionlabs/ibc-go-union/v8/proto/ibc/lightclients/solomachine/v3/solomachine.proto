@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package ibc.lightclients.solomachine.v3;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/light-clients/06-solomachine;solomachine";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+
+// ClientState defines a solo machine client that tracks the current consensus
+// state and if the client is frozen.
+message ClientState {
+  option (gogoproto.goproto_getters) = false;
+  // latest sequence of the client state
+  uint64 sequence = 1;
+  // frozen sequence of the solo machine
+  bool           is_frozen       = 2;
+  ConsensusState consensus_state = 3;
+}
+
+// ConsensusState defines a solo machine consensus state. The sequence of a
+// consensus state is contained in the "height" key used in storing the
+// consensus state.
+message ConsensusState {
+  option (gogoproto.goproto_getters) = false;
+  // public key of the solo machine
+  google.protobuf.Any public_key = 1;
+  // diversifier allows the same public key to be re-used across different solo
+  // machine clients (potentially on different chains) without being considered
+  // misbehaviour.
+  string diversifier = 2;
+  uint64 timestamp   = 3;
+}
+
+// Header defines a solo machine consensus header
+message Header {
+  option (gogoproto.goproto_getters) = false;
+
+  uint64              timestamp       = 1;
+  bytes               signature       = 2;
+  google.protobuf.Any new_public_key  = 3;
+  string              new_diversifier = 4;
+}
+
+// Misbehaviour defines misbehaviour for a solo machine which consists
+// of a sequence and two signatures over different messages at that sequence.
+message Misbehaviour {
+  option (gogoproto.goproto_getters) = false;
+
+  uint64           sequence      = 1;
+  SignatureAndData signature_one = 2;
+  SignatureAndData signature_two = 3;
+}
+
+// SignatureAndData contains a signature and the data signed over to create that
+// signature.
+message SignatureAndData {
+  option (gogoproto.goproto_getters) = false;
+
+  bytes  signature = 1;
+  bytes  path      = 2;
+  bytes  data      = 3;
+  uint64 timestamp = 4;
+}
+
+// TimestampedSignatureData contains the signature data and the timestamp of the
+// signature.
+message TimestampedSignatureData {
+  option (gogoproto.goproto_getters) = false;
+
+  bytes  signature_data = 1;
+  uint64 timestamp      = 2;
+}
+
+// SignBytes defines the signed bytes used for signature verification.
+message SignBytes {
+  option (gogoproto.goproto_getters) = false;
+
+  // the sequence number
+  uint64 sequence = 1;
+  // the proof timestamp
+  uint64 timestamp = 2;
+  // the public key diversifier
+  string diversifier = 3;
+  // the standardised path bytes
+  bytes path = 4;
+  // the marshaled data bytes
+  bytes data = 5;
+}
+
+// HeaderData returns the SignBytes data for update verification.
+message HeaderData {
+  option (gogoproto.goproto_getters) = false;
+
+  // header public key
+  google.protobuf.Any new_pub_key = 1;
+  // header diversifier
+  string new_diversifier = 2;
+}

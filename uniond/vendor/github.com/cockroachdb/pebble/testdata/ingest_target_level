@@ -1,0 +1,324 @@
+define
+----
+
+# An empty LSM ingests into the bottom level.
+target
+a-b
+----
+6
+
+define
+L5
+  b.SET.1:1
+  c.SET.2:2
+----
+5:
+  000004:[b#1,SET-c#2,SET]
+
+# Overlapping cases.
+target
+a-b
+b-c
+c-d
+----
+4
+4
+4
+
+# Non-overlapping cases:
+# - Ingested file lies entirely before the existing file.
+# - Ingested file lies entirely after the existing file.
+# - Ingested file has no data overlap (falls through the middle of the existing
+#   file).
+target
+a-aa
+d-e
+bb-bb
+----
+6
+6
+6
+
+define
+L0
+  b.SET.3:3
+  e.SET.4:4
+L0
+  d.SET.5:5
+  f.SET.6:6
+L0
+  x.SET.7:7
+  y.SET.8:8
+L3
+  g.SET.1:1
+  h.SET.2:2
+----
+0.1:
+  000005:[d#5,SET-f#6,SET]
+0.0:
+  000004:[b#3,SET-e#4,SET]
+  000006:[x#7,SET-y#8,SET]
+3:
+  000007:[g#1,SET-h#2,SET]
+
+# Files overlap with L0. Files ingested into L0.
+target
+b-c
+d-e
+----
+0
+0
+
+# Files overlap with L3. Files ingested into L2.
+target
+g-m
+----
+2
+
+# No overlap. Files ingested into L6.
+target
+i-m
+c-c
+----
+6
+6
+
+define
+L5
+  a.SET.4:4
+L5
+  c.SET.3:3
+L6
+  a.SET.2:2
+L6
+  c.SET.1:1
+----
+5:
+  000004:[a#4,SET-a#4,SET]
+  000005:[c#3,SET-c#3,SET]
+6:
+  000006:[a#2,SET-a#2,SET]
+  000007:[c#1,SET-c#1,SET]
+
+# The ingested file slips through the gaps in both L5 and L6.
+target
+b-b
+----
+6
+
+define
+L5
+  a.SET.4:4
+L5
+  c.SET.3:3
+L6
+  a.SET.2:2
+L6
+  c.SET.1:1
+  compact:a-c
+----
+5:
+  000004:[a#4,SET-a#4,SET]
+  000005:[c#3,SET-c#3,SET]
+6:
+  000006:[a#2,SET-a#2,SET]
+  000007:[c#1,SET-c#1,SET]
+
+# The ingested file cannot reach L6 as there is a compaction outputting a file
+# into the range [a,c].
+target
+b-b
+----
+5
+
+define
+L0
+  c.SET.4:4
+  d.SET.3:3
+  d.RANGEDEL.2:g
+L2
+  a.RANGEDEL.1:g
+----
+0.0:
+  000004:[c#4,SET-g#inf,RANGEDEL]
+2:
+  000005:[a#1,RANGEDEL-g#inf,RANGEDEL]
+
+# Overlapping cases:
+# - The ingested file overlaps with with [c,c].
+# - The rangedel over [d,g) keeps the ingested file in L0.
+# - Ditto.
+target
+c-c
+d-d
+e-e
+----
+0
+0
+0
+
+# Non-overlapping cases:
+# - The ingested file [cc,cc] slips through L0, but is kept at L1 by the
+#   rangedel in L2.
+# - The ingested file is to completely to right of all files.
+# - The ingested file is to the left of all files in L0, but is kept at L1 by
+#   the rangedel in L2.
+target
+cc-cc
+g-g
+a-a
+----
+1
+6
+1
+
+# A more complicated example demonstrating data overlap.
+#            |--|        ingested file: [d-e] - data overlap
+#          |-|           ingested file: [cc-d] - no data overlap
+#                |--|    ingested file: [ee-ff] - no data overlap
+#  |*--*--*----*------*| existing file: [a-g], points: [a, b, c, dd, g]
+#  _____________________
+#   a  b  c  d  e  f  g
+define
+L1
+  a.SET.0:a
+  b.SET.0:b
+  c.SET.0:c
+  dd.SET.0:dd
+  g.SET.0:g
+----
+1:
+  000004:[a#0,SET-g#0,SET]
+
+# Data overlap.
+target
+d-e
+----
+0
+
+# No data overlap.
+target
+cc-d
+ee-ff
+----
+6
+6
+
+# Range key-point key data overlap will always correctly identify overlap because
+# we seek using the combined point and range key bounds of the ingested file
+# to determine overlap and don't check the data within the ingested file.
+define
+L5
+  a.SET.0:a
+  b.SET.0:b
+  c.SET.0:c
+----
+5:
+  000004:[a#0,SET-c#0,SET]
+
+target
+rkey:a-c
+----
+4
+
+# Point key-range key overlap
+define
+L5
+  rangekey:a-c:{(#1,RANGEKEYSET,@t10,foo)}
+----
+5:
+  000004:[a#1,RANGEKEYSET-c#inf,RANGEKEYSET]
+
+target
+a-c
+----
+4
+
+# Range key-range key overlap.
+define
+L5
+  rangekey:a-c:{(#1,RANGEKEYSET,@t10,foo)}
+----
+5:
+  000004:[a#1,RANGEKEYSET-c#inf,RANGEKEYSET]
+
+target
+rkey:a-c
+----
+4
+
+# Cases with boundary overlap and no data overlap. With suggest-split off
+# we get a target level of L0, but with suggest-split on, we get suggested
+# a file split.
+
+define
+L6
+  a.SET.2:2
+  d.SET.3:3
+L6
+  f.SET.4:4
+  k.SET.6:6
+----
+6:
+  000004:[a#2,SET-d#3,SET]
+  000005:[f#4,SET-k#6,SET]
+
+target
+b-c
+e-g
+----
+5
+5
+
+target suggest-split
+b-c
+e-g
+----
+6 (split file: 000004)
+5
+
+target suggest-split
+g-i
+----
+6 (split file: 000005)
+
+# suggest-split recognizes and avoids in-progress compactions.
+
+define
+L6
+  a.SET.2:2
+  d.SET.3:3
+L6
+  f.SET.4:4
+  k.SET.6:6
+  compact:f-k
+----
+6:
+  000004:[a#2,SET-d#3,SET]
+  000005:[f#4,SET-k#6,SET]
+
+target suggest-split
+g-i
+----
+5
+
+# Ingestion splitting correctly recognizes data overlap in L6, and suggests
+# split in L5.
+
+define
+L5
+  a.SET.2:2
+  e.SET.3:3
+L6
+  c.SET.1:1
+  k.SET.1:1
+----
+5:
+  000004:[a#2,SET-e#3,SET]
+6:
+  000005:[c#1,SET-k#1,SET]
+
+target suggest-split
+b-c
+----
+5 (split file: 000004)

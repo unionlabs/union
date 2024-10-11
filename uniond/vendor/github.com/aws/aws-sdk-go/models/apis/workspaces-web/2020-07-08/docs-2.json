@@ -1,0 +1,1517 @@
+{
+  "version": "2.0",
+  "service": "<p>WorkSpaces Web is a low cost, fully managed WorkSpace built specifically to facilitate secure, web-based workloads. WorkSpaces Web makes it easy for customers to safely provide their employees with access to internal websites and SaaS web applications without the administrative burden of appliances or specialized client software. WorkSpaces Web provides simple policy tools tailored for user interactions, while offloading common tasks like capacity management, scaling, and maintaining browser images.</p>",
+  "operations": {
+    "AssociateBrowserSettings": "<p>Associates a browser settings resource with a web portal.</p>",
+    "AssociateIpAccessSettings": "<p>Associates an IP access settings resource with a web portal.</p>",
+    "AssociateNetworkSettings": "<p>Associates a network settings resource with a web portal.</p>",
+    "AssociateTrustStore": "<p>Associates a trust store with a web portal.</p>",
+    "AssociateUserAccessLoggingSettings": "<p>Associates a user access logging settings resource with a web portal.</p>",
+    "AssociateUserSettings": "<p>Associates a user settings resource with a web portal.</p>",
+    "CreateBrowserSettings": "<p>Creates a browser settings resource that can be associated with a web portal. Once associated with a web portal, browser settings control how the browser will behave once a user starts a streaming session for the web portal. </p>",
+    "CreateIdentityProvider": "<p>Creates an identity provider resource that is then associated with a web portal.</p>",
+    "CreateIpAccessSettings": "<p>Creates an IP access settings resource that can be associated with a web portal.</p>",
+    "CreateNetworkSettings": "<p>Creates a network settings resource that can be associated with a web portal. Once associated with a web portal, network settings define how streaming instances will connect with your specified VPC. </p>",
+    "CreatePortal": "<p>Creates a web portal.</p>",
+    "CreateTrustStore": "<p>Creates a trust store that can be associated with a web portal. A trust store contains certificate authority (CA) certificates. Once associated with a web portal, the browser in a streaming session will recognize certificates that have been issued using any of the CAs in the trust store. If your organization has internal websites that use certificates issued by private CAs, you should add the private CA certificate to the trust store. </p>",
+    "CreateUserAccessLoggingSettings": "<p>Creates a user access logging settings resource that can be associated with a web portal.</p>",
+    "CreateUserSettings": "<p>Creates a user settings resource that can be associated with a web portal. Once associated with a web portal, user settings control how users can transfer data between a streaming session and the their local devices. </p>",
+    "DeleteBrowserSettings": "<p>Deletes browser settings.</p>",
+    "DeleteIdentityProvider": "<p>Deletes the identity provider.</p>",
+    "DeleteIpAccessSettings": "<p>Deletes IP access settings.</p>",
+    "DeleteNetworkSettings": "<p>Deletes network settings.</p>",
+    "DeletePortal": "<p>Deletes a web portal.</p>",
+    "DeleteTrustStore": "<p>Deletes the trust store.</p>",
+    "DeleteUserAccessLoggingSettings": "<p>Deletes user access logging settings.</p>",
+    "DeleteUserSettings": "<p>Deletes user settings.</p>",
+    "DisassociateBrowserSettings": "<p>Disassociates browser settings from a web portal.</p>",
+    "DisassociateIpAccessSettings": "<p>Disassociates IP access settings from a web portal.</p>",
+    "DisassociateNetworkSettings": "<p>Disassociates network settings from a web portal.</p>",
+    "DisassociateTrustStore": "<p>Disassociates a trust store from a web portal.</p>",
+    "DisassociateUserAccessLoggingSettings": "<p>Disassociates user access logging settings from a web portal.</p>",
+    "DisassociateUserSettings": "<p>Disassociates user settings from a web portal.</p>",
+    "GetBrowserSettings": "<p>Gets browser settings.</p>",
+    "GetIdentityProvider": "<p>Gets the identity provider.</p>",
+    "GetIpAccessSettings": "<p>Gets the IP access settings.</p>",
+    "GetNetworkSettings": "<p>Gets the network settings.</p>",
+    "GetPortal": "<p>Gets the web portal.</p>",
+    "GetPortalServiceProviderMetadata": "<p>Gets the service provider metadata.</p>",
+    "GetTrustStore": "<p>Gets the trust store.</p>",
+    "GetTrustStoreCertificate": "<p>Gets the trust store certificate.</p>",
+    "GetUserAccessLoggingSettings": "<p>Gets user access logging settings.</p>",
+    "GetUserSettings": "<p>Gets user settings.</p>",
+    "ListBrowserSettings": "<p>Retrieves a list of browser settings.</p>",
+    "ListIdentityProviders": "<p>Retrieves a list of identity providers for a specific web portal.</p>",
+    "ListIpAccessSettings": "<p>Retrieves a list of IP access settings.</p>",
+    "ListNetworkSettings": "<p>Retrieves a list of network settings.</p>",
+    "ListPortals": "<p>Retrieves a list or web portals.</p>",
+    "ListTagsForResource": "<p>Retrieves a list of tags for a resource.</p>",
+    "ListTrustStoreCertificates": "<p>Retrieves a list of trust store certificates.</p>",
+    "ListTrustStores": "<p>Retrieves a list of trust stores.</p>",
+    "ListUserAccessLoggingSettings": "<p>Retrieves a list of user access logging settings.</p>",
+    "ListUserSettings": "<p>Retrieves a list of user settings.</p>",
+    "TagResource": "<p>Adds or overwrites one or more tags for the specified resource.</p>",
+    "UntagResource": "<p>Removes one or more tags from the specified resource.</p>",
+    "UpdateBrowserSettings": "<p>Updates browser settings.</p>",
+    "UpdateIdentityProvider": "<p>Updates the identity provider. </p>",
+    "UpdateIpAccessSettings": "<p>Updates IP access settings.</p>",
+    "UpdateNetworkSettings": "<p>Updates network settings.</p>",
+    "UpdatePortal": "<p>Updates a web portal.</p>",
+    "UpdateTrustStore": "<p>Updates the trust store.</p>",
+    "UpdateUserAccessLoggingSettings": "<p>Updates the user access logging settings.</p>",
+    "UpdateUserSettings": "<p>Updates the user settings.</p>"
+  },
+  "shapes": {
+    "ARN": {
+      "base": null,
+      "refs": {
+        "ArnList$member": null,
+        "AssociateBrowserSettingsRequest$browserSettingsArn": "<p>The ARN of the browser settings.</p>",
+        "AssociateBrowserSettingsRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "AssociateBrowserSettingsResponse$browserSettingsArn": "<p>The ARN of the browser settings.</p>",
+        "AssociateBrowserSettingsResponse$portalArn": "<p>The ARN of the web portal.</p>",
+        "AssociateIpAccessSettingsRequest$ipAccessSettingsArn": "<p>The ARN of the IP access settings.</p>",
+        "AssociateIpAccessSettingsRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "AssociateIpAccessSettingsResponse$ipAccessSettingsArn": "<p>The ARN of the IP access settings resource.</p>",
+        "AssociateIpAccessSettingsResponse$portalArn": "<p>The ARN of the web portal.</p>",
+        "AssociateNetworkSettingsRequest$networkSettingsArn": "<p>The ARN of the network settings.</p>",
+        "AssociateNetworkSettingsRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "AssociateNetworkSettingsResponse$networkSettingsArn": "<p>The ARN of the network settings.</p>",
+        "AssociateNetworkSettingsResponse$portalArn": "<p>The ARN of the web portal.</p>",
+        "AssociateTrustStoreRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "AssociateTrustStoreRequest$trustStoreArn": "<p>The ARN of the trust store.</p>",
+        "AssociateTrustStoreResponse$portalArn": "<p>The ARN of the web portal.</p>",
+        "AssociateTrustStoreResponse$trustStoreArn": "<p>The ARN of the trust store.</p>",
+        "AssociateUserAccessLoggingSettingsRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "AssociateUserAccessLoggingSettingsRequest$userAccessLoggingSettingsArn": "<p>The ARN of the user access logging settings.</p>",
+        "AssociateUserAccessLoggingSettingsResponse$portalArn": "<p>The ARN of the web portal.</p>",
+        "AssociateUserAccessLoggingSettingsResponse$userAccessLoggingSettingsArn": "<p>The ARN of the user access logging settings.</p>",
+        "AssociateUserSettingsRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "AssociateUserSettingsRequest$userSettingsArn": "<p>The ARN of the user settings.</p>",
+        "AssociateUserSettingsResponse$portalArn": "<p>The ARN of the web portal.</p>",
+        "AssociateUserSettingsResponse$userSettingsArn": "<p>The ARN of the user settings.</p>",
+        "BrowserSettings$browserSettingsArn": "<p>The ARN of the browser settings.</p>",
+        "BrowserSettingsSummary$browserSettingsArn": "<p>The ARN of the browser settings.</p>",
+        "CreateBrowserSettingsResponse$browserSettingsArn": "<p>The ARN of the browser settings.</p>",
+        "CreateIdentityProviderRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "CreateIpAccessSettingsResponse$ipAccessSettingsArn": "<p>The ARN of the IP access settings resource.</p>",
+        "CreateNetworkSettingsResponse$networkSettingsArn": "<p>The ARN of the network settings.</p>",
+        "CreatePortalResponse$portalArn": "<p>The ARN of the web portal.</p>",
+        "CreateTrustStoreResponse$trustStoreArn": "<p>The ARN of the trust store.</p>",
+        "CreateUserAccessLoggingSettingsResponse$userAccessLoggingSettingsArn": "<p>The ARN of the user access logging settings.</p>",
+        "CreateUserSettingsResponse$userSettingsArn": "<p>The ARN of the user settings.</p>",
+        "DeleteBrowserSettingsRequest$browserSettingsArn": "<p>The ARN of the browser settings.</p>",
+        "DeleteIpAccessSettingsRequest$ipAccessSettingsArn": "<p>The ARN of the IP access settings.</p>",
+        "DeleteNetworkSettingsRequest$networkSettingsArn": "<p>The ARN of the network settings.</p>",
+        "DeletePortalRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "DeleteTrustStoreRequest$trustStoreArn": "<p>The ARN of the trust store.</p>",
+        "DeleteUserAccessLoggingSettingsRequest$userAccessLoggingSettingsArn": "<p>The ARN of the user access logging settings.</p>",
+        "DeleteUserSettingsRequest$userSettingsArn": "<p>The ARN of the user settings.</p>",
+        "DisassociateBrowserSettingsRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "DisassociateIpAccessSettingsRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "DisassociateNetworkSettingsRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "DisassociateTrustStoreRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "DisassociateUserAccessLoggingSettingsRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "DisassociateUserSettingsRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "GetBrowserSettingsRequest$browserSettingsArn": "<p>The ARN of the browser settings.</p>",
+        "GetIpAccessSettingsRequest$ipAccessSettingsArn": "<p>The ARN of the IP access settings.</p>",
+        "GetNetworkSettingsRequest$networkSettingsArn": "<p>The ARN of the network settings.</p>",
+        "GetPortalRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "GetPortalServiceProviderMetadataRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "GetPortalServiceProviderMetadataResponse$portalArn": "<p>The ARN of the web portal.</p>",
+        "GetTrustStoreCertificateRequest$trustStoreArn": "<p>The ARN of the trust store certificate.</p>",
+        "GetTrustStoreCertificateResponse$trustStoreArn": "<p>The ARN of the trust store certificate.</p>",
+        "GetTrustStoreRequest$trustStoreArn": "<p>The ARN of the trust store.</p>",
+        "GetUserAccessLoggingSettingsRequest$userAccessLoggingSettingsArn": "<p>The ARN of the user access logging settings.</p>",
+        "GetUserSettingsRequest$userSettingsArn": "<p>The ARN of the user settings.</p>",
+        "IpAccessSettings$ipAccessSettingsArn": "<p>The ARN of the IP access settings resource.</p>",
+        "IpAccessSettingsSummary$ipAccessSettingsArn": "<p>The ARN of IP access settings.</p>",
+        "ListIdentityProvidersRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "ListTagsForResourceRequest$resourceArn": "<p>The ARN of the resource.</p>",
+        "ListTrustStoreCertificatesRequest$trustStoreArn": "<p>The ARN of the trust store</p>",
+        "ListTrustStoreCertificatesResponse$trustStoreArn": "<p>The ARN of the trust store.</p>",
+        "NetworkSettings$networkSettingsArn": "<p>The ARN of the network settings.</p>",
+        "NetworkSettingsSummary$networkSettingsArn": "<p>The ARN of the network settings.</p>",
+        "Portal$browserSettingsArn": "<p>The ARN of the browser settings that is associated with this web portal.</p>",
+        "Portal$ipAccessSettingsArn": "<p>The ARN of the IP access settings.</p>",
+        "Portal$networkSettingsArn": "<p>The ARN of the network settings that is associated with the web portal.</p>",
+        "Portal$portalArn": "<p>The ARN of the web portal.</p>",
+        "Portal$trustStoreArn": "<p>The ARN of the trust store that is associated with the web portal.</p>",
+        "Portal$userAccessLoggingSettingsArn": "<p>The ARN of the user access logging settings that is associated with the web portal.</p>",
+        "Portal$userSettingsArn": "<p>The ARN of the user settings that is associated with the web portal.</p>",
+        "PortalSummary$browserSettingsArn": "<p>The ARN of the browser settings that is associated with the web portal.</p>",
+        "PortalSummary$ipAccessSettingsArn": "<p>The ARN of the IP access settings.</p>",
+        "PortalSummary$networkSettingsArn": "<p>The ARN of the network settings that is associated with the web portal.</p>",
+        "PortalSummary$portalArn": "<p>The ARN of the web portal.</p>",
+        "PortalSummary$trustStoreArn": "<p>The ARN of the trust that is associated with this web portal.</p>",
+        "PortalSummary$userAccessLoggingSettingsArn": "<p>The ARN of the user access logging settings that is associated with the web portal.</p>",
+        "PortalSummary$userSettingsArn": "<p>The ARN of the user settings that is associated with the web portal.</p>",
+        "TagResourceRequest$resourceArn": "<p>The ARN of the resource.</p>",
+        "TooManyTagsException$resourceName": "<p>Name of the resource affected.</p>",
+        "TrustStore$trustStoreArn": "<p>The ARN of the trust store.</p>",
+        "TrustStoreSummary$trustStoreArn": "<p>The ARN of the trust store.</p>",
+        "UntagResourceRequest$resourceArn": "<p>The ARN of the resource.</p>",
+        "UpdateBrowserSettingsRequest$browserSettingsArn": "<p>The ARN of the browser settings.</p>",
+        "UpdateIpAccessSettingsRequest$ipAccessSettingsArn": "<p>The ARN of the IP access settings.</p>",
+        "UpdateNetworkSettingsRequest$networkSettingsArn": "<p>The ARN of the network settings.</p>",
+        "UpdatePortalRequest$portalArn": "<p>The ARN of the web portal.</p>",
+        "UpdateTrustStoreRequest$trustStoreArn": "<p>The ARN of the trust store.</p>",
+        "UpdateTrustStoreResponse$trustStoreArn": "<p>The ARN of the trust store.</p>",
+        "UpdateUserAccessLoggingSettingsRequest$userAccessLoggingSettingsArn": "<p>The ARN of the user access logging settings.</p>",
+        "UpdateUserSettingsRequest$userSettingsArn": "<p>The ARN of the user settings.</p>",
+        "UserAccessLoggingSettings$userAccessLoggingSettingsArn": "<p>The ARN of the user access logging settings.</p>",
+        "UserAccessLoggingSettingsSummary$userAccessLoggingSettingsArn": "<p>The ARN of the user access logging settings.</p>",
+        "UserSettings$userSettingsArn": "<p>The ARN of the user settings.</p>",
+        "UserSettingsSummary$userSettingsArn": "<p>The ARN of the user settings.</p>"
+      }
+    },
+    "AccessDeniedException": {
+      "base": "<p>Access is denied.</p>",
+      "refs": {
+      }
+    },
+    "ArnList": {
+      "base": null,
+      "refs": {
+        "BrowserSettings$associatedPortalArns": "<p>A list of web portal ARNs that this browser settings is associated with.</p>",
+        "IpAccessSettings$associatedPortalArns": "<p>A list of web portal ARNs that this IP access settings resource is associated with.</p>",
+        "NetworkSettings$associatedPortalArns": "<p>A list of web portal ARNs that this network settings is associated with.</p>",
+        "TrustStore$associatedPortalArns": "<p>A list of web portal ARNs that this trust store is associated with.</p>",
+        "UserAccessLoggingSettings$associatedPortalArns": "<p>A list of web portal ARNs that this user access logging settings is associated with.</p>",
+        "UserSettings$associatedPortalArns": "<p>A list of web portal ARNs that this user settings is associated with.</p>"
+      }
+    },
+    "AssociateBrowserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateBrowserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateIpAccessSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateIpAccessSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateNetworkSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateNetworkSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateTrustStoreRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateTrustStoreResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateUserAccessLoggingSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateUserAccessLoggingSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateUserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateUserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AuthenticationType": {
+      "base": null,
+      "refs": {
+        "CreatePortalRequest$authenticationType": "<p>The type of authentication integration points used when signing into the web portal. Defaults to <code>Standard</code>.</p> <p> <code>Standard</code> web portals are authenticated directly through your identity provider. You need to call <code>CreateIdentityProvider</code> to integrate your identity provider with your web portal. User and group access to your web portal is controlled through your identity provider.</p> <p> <code>IAM Identity Center</code> web portals are authenticated through IAM Identity Center (successor to Single Sign-On). Identity sources (including external identity provider integration), plus user and group access to your web portal, can be configured in the IAM Identity Center.</p>",
+        "Portal$authenticationType": "<p>The type of authentication integration points used when signing into the web portal. Defaults to <code>Standard</code>.</p> <p> <code>Standard</code> web portals are authenticated directly through your identity provider. You need to call <code>CreateIdentityProvider</code> to integrate your identity provider with your web portal. User and group access to your web portal is controlled through your identity provider.</p> <p> <code>IAM Identity Center</code> web portals are authenticated through IAM Identity Center (successor to Single Sign-On). Identity sources (including external identity provider integration), plus user and group access to your web portal, can be configured in the IAM Identity Center.</p>",
+        "PortalSummary$authenticationType": "<p>The type of authentication integration points used when signing into the web portal. Defaults to <code>Standard</code>.</p> <p> <code>Standard</code> web portals are authenticated directly through your identity provider. You need to call <code>CreateIdentityProvider</code> to integrate your identity provider with your web portal. User and group access to your web portal is controlled through your identity provider.</p> <p> <code>IAM Identity Center</code> web portals are authenticated through IAM Identity Center (successor to Single Sign-On). Identity sources (including external identity provider integration), plus user and group access to your web portal, can be configured in the IAM Identity Center.</p>",
+        "UpdatePortalRequest$authenticationType": "<p>The type of authentication integration points used when signing into the web portal. Defaults to <code>Standard</code>.</p> <p> <code>Standard</code> web portals are authenticated directly through your identity provider. You need to call <code>CreateIdentityProvider</code> to integrate your identity provider with your web portal. User and group access to your web portal is controlled through your identity provider.</p> <p> <code>IAM Identity Center</code> web portals are authenticated through IAM Identity Center (successor to Single Sign-On). Identity sources (including external identity provider integration), plus user and group access to your web portal, can be configured in the IAM Identity Center.</p>"
+      }
+    },
+    "BrowserPolicy": {
+      "base": null,
+      "refs": {
+        "BrowserSettings$browserPolicy": "<p>A JSON string containing Chrome Enterprise policies that will be applied to all streaming sessions.</p>",
+        "CreateBrowserSettingsRequest$browserPolicy": "<p>A JSON string containing Chrome Enterprise policies that will be applied to all streaming sessions.</p>",
+        "UpdateBrowserSettingsRequest$browserPolicy": "<p>A JSON string containing Chrome Enterprise policies that will be applied to all streaming sessions. </p>"
+      }
+    },
+    "BrowserSettings": {
+      "base": "<p>The browser settings resource that can be associated with a web portal. Once associated with a web portal, browser settings control how the browser will behave once a user starts a streaming session for the web portal. </p>",
+      "refs": {
+        "GetBrowserSettingsResponse$browserSettings": "<p>The browser settings.</p>",
+        "UpdateBrowserSettingsResponse$browserSettings": "<p>The browser settings.</p>"
+      }
+    },
+    "BrowserSettingsList": {
+      "base": null,
+      "refs": {
+        "ListBrowserSettingsResponse$browserSettings": "<p>The browser settings.</p>"
+      }
+    },
+    "BrowserSettingsSummary": {
+      "base": "<p>The summary for browser settings.</p>",
+      "refs": {
+        "BrowserSettingsList$member": null
+      }
+    },
+    "BrowserType": {
+      "base": null,
+      "refs": {
+        "Portal$browserType": "<p>The browser that users see when using a streaming session.</p>",
+        "PortalSummary$browserType": "<p>The browser type of the web portal.</p>"
+      }
+    },
+    "Certificate": {
+      "base": "<p>The certificate.</p>",
+      "refs": {
+        "GetTrustStoreCertificateResponse$certificate": "<p>The certificate of the trust store certificate.</p>"
+      }
+    },
+    "CertificateAuthorityBody": {
+      "base": null,
+      "refs": {
+        "Certificate$body": "<p>The body of the certificate.</p>",
+        "CertificateList$member": null
+      }
+    },
+    "CertificateList": {
+      "base": null,
+      "refs": {
+        "CreateTrustStoreRequest$certificateList": "<p>A list of CA certificates to be added to the trust store.</p>",
+        "UpdateTrustStoreRequest$certificatesToAdd": "<p>A list of CA certificates to add to the trust store.</p>"
+      }
+    },
+    "CertificatePrincipal": {
+      "base": null,
+      "refs": {
+        "Certificate$issuer": "<p>The entity that issued the certificate.</p>",
+        "Certificate$subject": "<p>The entity the certificate belongs to.</p>",
+        "CertificateSummary$issuer": "<p>The entity that issued the certificate.</p>",
+        "CertificateSummary$subject": "<p>The entity the certificate belongs to.</p>"
+      }
+    },
+    "CertificateSummary": {
+      "base": "<p>The summary of the certificate.</p>",
+      "refs": {
+        "CertificateSummaryList$member": null
+      }
+    },
+    "CertificateSummaryList": {
+      "base": null,
+      "refs": {
+        "ListTrustStoreCertificatesResponse$certificateList": "<p>The certificate list.</p>"
+      }
+    },
+    "CertificateThumbprint": {
+      "base": null,
+      "refs": {
+        "Certificate$thumbprint": "<p>A hexadecimal identifier for the certificate.</p>",
+        "CertificateSummary$thumbprint": "<p>A hexadecimal identifier for the certificate.</p>",
+        "CertificateThumbprintList$member": null,
+        "GetTrustStoreCertificateRequest$thumbprint": "<p>The thumbprint of the trust store certificate.</p>"
+      }
+    },
+    "CertificateThumbprintList": {
+      "base": null,
+      "refs": {
+        "UpdateTrustStoreRequest$certificatesToDelete": "<p>A list of CA certificates to delete from a trust store.</p>"
+      }
+    },
+    "ClientToken": {
+      "base": null,
+      "refs": {
+        "CreateBrowserSettingsRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token returns the result from the original successful request.</p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK. </p>",
+        "CreateIdentityProviderRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token returns the result from the original successful request.</p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "CreateIpAccessSettingsRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token returns the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "CreateNetworkSettingsRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token returns the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "CreatePortalRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token returns the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "CreateTrustStoreRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token returns the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "CreateUserAccessLoggingSettingsRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token returns the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "CreateUserSettingsRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token returns the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "TagResourceRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token returns the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "UpdateBrowserSettingsRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token return the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "UpdateIdentityProviderRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token return the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "UpdateIpAccessSettingsRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token return the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "UpdateNetworkSettingsRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token return the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "UpdateTrustStoreRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token return the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "UpdateUserAccessLoggingSettingsRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token return the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>",
+        "UpdateUserSettingsRequest$clientToken": "<p>A unique, case-sensitive identifier that you provide to ensure the idempotency of the request. Idempotency ensures that an API request completes only once. With an idempotent request, if the original request completes successfully, subsequent retries with the same client token return the result from the original successful request. </p> <p>If you do not specify a client token, one is automatically generated by the Amazon Web Services SDK.</p>"
+      }
+    },
+    "ConflictException": {
+      "base": "<p>There is a conflict.</p>",
+      "refs": {
+      }
+    },
+    "CookieDomain": {
+      "base": null,
+      "refs": {
+        "CookieSpecification$domain": "<p>The domain of the cookie.</p>"
+      }
+    },
+    "CookieName": {
+      "base": null,
+      "refs": {
+        "CookieSpecification$name": "<p>The name of the cookie.</p>"
+      }
+    },
+    "CookiePath": {
+      "base": null,
+      "refs": {
+        "CookieSpecification$path": "<p>The path of the cookie.</p>"
+      }
+    },
+    "CookieSpecification": {
+      "base": "<p>Specifies a single cookie or set of cookies in an end user's browser.</p>",
+      "refs": {
+        "CookieSpecifications$member": null
+      }
+    },
+    "CookieSpecifications": {
+      "base": null,
+      "refs": {
+        "CookieSynchronizationConfiguration$allowlist": "<p>The list of cookie specifications that are allowed to be synchronized to the remote browser.</p>",
+        "CookieSynchronizationConfiguration$blocklist": "<p>The list of cookie specifications that are blocked from being synchronized to the remote browser.</p>"
+      }
+    },
+    "CookieSynchronizationConfiguration": {
+      "base": "<p>The configuration that specifies which cookies should be synchronized from the end user's local browser to the remote browser.</p>",
+      "refs": {
+        "CreateUserSettingsRequest$cookieSynchronizationConfiguration": "<p>The configuration that specifies which cookies should be synchronized from the end user's local browser to the remote browser.</p>",
+        "UpdateUserSettingsRequest$cookieSynchronizationConfiguration": "<p>The configuration that specifies which cookies should be synchronized from the end user's local browser to the remote browser.</p> <p>If the allowlist and blocklist are empty, the configuration becomes null.</p>",
+        "UserSettings$cookieSynchronizationConfiguration": "<p>The configuration that specifies which cookies should be synchronized from the end user's local browser to the remote browser.</p>",
+        "UserSettingsSummary$cookieSynchronizationConfiguration": "<p>The configuration that specifies which cookies should be synchronized from the end user's local browser to the remote browser.</p>"
+      }
+    },
+    "CreateBrowserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateBrowserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateIdentityProviderRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateIdentityProviderResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateIpAccessSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateIpAccessSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateNetworkSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateNetworkSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreatePortalRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreatePortalResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateTrustStoreRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateTrustStoreResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateUserAccessLoggingSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateUserAccessLoggingSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateUserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateUserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteBrowserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteBrowserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteIdentityProviderRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteIdentityProviderResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteIpAccessSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteIpAccessSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteNetworkSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteNetworkSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeletePortalRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeletePortalResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteTrustStoreRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteTrustStoreResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteUserAccessLoggingSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteUserAccessLoggingSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteUserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteUserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Description": {
+      "base": null,
+      "refs": {
+        "CreateIpAccessSettingsRequest$description": "<p>The description of the IP access settings.</p>",
+        "IpAccessSettings$description": "<p>The description of the IP access settings.</p>",
+        "IpAccessSettingsSummary$description": "<p>The description of the IP access settings.</p>",
+        "IpRule$description": "<p>The description of the IP rule.</p>",
+        "UpdateIpAccessSettingsRequest$description": "<p>The description of the IP access settings.</p>"
+      }
+    },
+    "DisassociateBrowserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateBrowserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateIpAccessSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateIpAccessSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateNetworkSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateNetworkSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateTrustStoreRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateTrustStoreResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateUserAccessLoggingSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateUserAccessLoggingSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateUserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateUserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisconnectTimeoutInMinutes": {
+      "base": null,
+      "refs": {
+        "CreateUserSettingsRequest$disconnectTimeoutInMinutes": "<p>The amount of time that a streaming session remains active after users disconnect.</p>",
+        "UpdateUserSettingsRequest$disconnectTimeoutInMinutes": "<p>The amount of time that a streaming session remains active after users disconnect.</p>",
+        "UserSettings$disconnectTimeoutInMinutes": "<p>The amount of time that a streaming session remains active after users disconnect.</p>",
+        "UserSettingsSummary$disconnectTimeoutInMinutes": "<p>The amount of time that a streaming session remains active after users disconnect.</p>"
+      }
+    },
+    "DisplayName": {
+      "base": null,
+      "refs": {
+        "CreateIpAccessSettingsRequest$displayName": "<p>The display name of the IP access settings.</p>",
+        "CreatePortalRequest$displayName": "<p>The name of the web portal. This is not visible to users who log into the web portal.</p>",
+        "IpAccessSettings$displayName": "<p> The display name of the IP access settings.</p>",
+        "IpAccessSettingsSummary$displayName": "<p>The display name of the IP access settings.</p>",
+        "Portal$displayName": "<p>The name of the web portal.</p>",
+        "PortalSummary$displayName": "<p>The name of the web portal.</p>",
+        "UpdateIpAccessSettingsRequest$displayName": "<p>The display name of the IP access settings.</p>",
+        "UpdatePortalRequest$displayName": "<p>The name of the web portal. This is not visible to users who log into the web portal.</p>"
+      }
+    },
+    "EnabledType": {
+      "base": null,
+      "refs": {
+        "CreateUserSettingsRequest$copyAllowed": "<p>Specifies whether the user can copy text from the streaming session to the local device.</p>",
+        "CreateUserSettingsRequest$downloadAllowed": "<p>Specifies whether the user can download files from the streaming session to the local device.</p>",
+        "CreateUserSettingsRequest$pasteAllowed": "<p>Specifies whether the user can paste text from the local device to the streaming session.</p>",
+        "CreateUserSettingsRequest$printAllowed": "<p>Specifies whether the user can print to the local device.</p>",
+        "CreateUserSettingsRequest$uploadAllowed": "<p>Specifies whether the user can upload files from the local device to the streaming session.</p>",
+        "UpdateUserSettingsRequest$copyAllowed": "<p>Specifies whether the user can copy text from the streaming session to the local device.</p>",
+        "UpdateUserSettingsRequest$downloadAllowed": "<p>Specifies whether the user can download files from the streaming session to the local device.</p>",
+        "UpdateUserSettingsRequest$pasteAllowed": "<p>Specifies whether the user can paste text from the local device to the streaming session.</p>",
+        "UpdateUserSettingsRequest$printAllowed": "<p>Specifies whether the user can print to the local device.</p>",
+        "UpdateUserSettingsRequest$uploadAllowed": "<p>Specifies whether the user can upload files from the local device to the streaming session.</p>",
+        "UserSettings$copyAllowed": "<p>Specifies whether the user can copy text from the streaming session to the local device.</p>",
+        "UserSettings$downloadAllowed": "<p>Specifies whether the user can download files from the streaming session to the local device.</p>",
+        "UserSettings$pasteAllowed": "<p>Specifies whether the user can paste text from the local device to the streaming session.</p>",
+        "UserSettings$printAllowed": "<p>Specifies whether the user can print to the local device.</p>",
+        "UserSettings$uploadAllowed": "<p>Specifies whether the user can upload files from the local device to the streaming session.</p>",
+        "UserSettingsSummary$copyAllowed": "<p>Specifies whether the user can copy text from the streaming session to the local device.</p>",
+        "UserSettingsSummary$downloadAllowed": "<p>Specifies whether the user can download files from the streaming session to the local device.</p>",
+        "UserSettingsSummary$pasteAllowed": "<p>Specifies whether the user can paste text from the local device to the streaming session.</p>",
+        "UserSettingsSummary$printAllowed": "<p>Specifies whether the user can print to the local device.</p>",
+        "UserSettingsSummary$uploadAllowed": "<p>Specifies whether the user can upload files from the local device to the streaming session.</p>"
+      }
+    },
+    "EncryptionContextMap": {
+      "base": null,
+      "refs": {
+        "BrowserSettings$additionalEncryptionContext": "<p>The additional encryption context of the browser settings.</p>",
+        "CreateBrowserSettingsRequest$additionalEncryptionContext": "<p>Additional encryption context of the browser settings.</p>",
+        "CreateIpAccessSettingsRequest$additionalEncryptionContext": "<p>Additional encryption context of the IP access settings.</p>",
+        "CreatePortalRequest$additionalEncryptionContext": "<p>The additional encryption context of the portal.</p>",
+        "CreateUserSettingsRequest$additionalEncryptionContext": "<p>The additional encryption context of the user settings.</p>",
+        "IpAccessSettings$additionalEncryptionContext": "<p>The additional encryption context of the IP access settings.</p>",
+        "Portal$additionalEncryptionContext": "<p>The additional encryption context of the portal.</p>",
+        "UserSettings$additionalEncryptionContext": "<p>The additional encryption context of the user settings.</p>"
+      }
+    },
+    "ExceptionMessage": {
+      "base": null,
+      "refs": {
+        "AccessDeniedException$message": null,
+        "ConflictException$message": null,
+        "InternalServerException$message": null,
+        "ResourceNotFoundException$message": null,
+        "ServiceQuotaExceededException$message": null,
+        "ThrottlingException$message": null,
+        "ValidationException$message": null,
+        "ValidationExceptionField$message": "<p>The message describing why the field failed validation.</p>"
+      }
+    },
+    "FieldName": {
+      "base": null,
+      "refs": {
+        "ValidationExceptionField$name": "<p>The name of the field that failed validation.</p>"
+      }
+    },
+    "GetBrowserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetBrowserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetIdentityProviderRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetIdentityProviderResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetIpAccessSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetIpAccessSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetNetworkSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetNetworkSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetPortalRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetPortalResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetPortalServiceProviderMetadataRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetPortalServiceProviderMetadataResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetTrustStoreCertificateRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetTrustStoreCertificateResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetTrustStoreRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetTrustStoreResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetUserAccessLoggingSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetUserAccessLoggingSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetUserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetUserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "IdentityProvider": {
+      "base": "<p>The identity provider.</p>",
+      "refs": {
+        "GetIdentityProviderResponse$identityProvider": "<p>The identity provider.</p>",
+        "UpdateIdentityProviderResponse$identityProvider": "<p>The identity provider.</p>"
+      }
+    },
+    "IdentityProviderDetails": {
+      "base": null,
+      "refs": {
+        "CreateIdentityProviderRequest$identityProviderDetails": "<p>The identity provider details. The following list describes the provider detail keys for each identity provider type. </p> <ul> <li> <p>For Google and Login with Amazon:</p> <ul> <li> <p> <code>client_id</code> </p> </li> <li> <p> <code>client_secret</code> </p> </li> <li> <p> <code>authorize_scopes</code> </p> </li> </ul> </li> <li> <p>For Facebook:</p> <ul> <li> <p> <code>client_id</code> </p> </li> <li> <p> <code>client_secret</code> </p> </li> <li> <p> <code>authorize_scopes</code> </p> </li> <li> <p> <code>api_version</code> </p> </li> </ul> </li> <li> <p>For Sign in with Apple:</p> <ul> <li> <p> <code>client_id</code> </p> </li> <li> <p> <code>team_id</code> </p> </li> <li> <p> <code>key_id</code> </p> </li> <li> <p> <code>private_key</code> </p> </li> <li> <p> <code>authorize_scopes</code> </p> </li> </ul> </li> <li> <p>For OIDC providers:</p> <ul> <li> <p> <code>client_id</code> </p> </li> <li> <p> <code>client_secret</code> </p> </li> <li> <p> <code>attributes_request_method</code> </p> </li> <li> <p> <code>oidc_issuer</code> </p> </li> <li> <p> <code>authorize_scopes</code> </p> </li> <li> <p> <code>authorize_url</code> <i>if not available from discovery URL specified by <code>oidc_issuer</code> key</i> </p> </li> <li> <p> <code>token_url</code> <i>if not available from discovery URL specified by <code>oidc_issuer</code> key</i> </p> </li> <li> <p> <code>attributes_url</code> <i>if not available from discovery URL specified by <code>oidc_issuer</code> key</i> </p> </li> <li> <p> <code>jwks_uri</code> <i>if not available from discovery URL specified by <code>oidc_issuer</code> key</i> </p> </li> </ul> </li> <li> <p>For SAML providers:</p> <ul> <li> <p> <code>MetadataFile</code> OR <code>MetadataURL</code> </p> </li> <li> <p> <code>IDPSignout</code> (boolean) <i>optional</i> </p> </li> <li> <p> <code>IDPInit</code> (boolean) <i>optional</i> </p> </li> <li> <p> <code>RequestSigningAlgorithm</code> (string) <i>optional</i> - Only accepts <code>rsa-sha256</code> </p> </li> <li> <p> <code>EncryptedResponses</code> (boolean) <i>optional</i> </p> </li> </ul> </li> </ul>",
+        "IdentityProvider$identityProviderDetails": "<p>The identity provider details. The following list describes the provider detail keys for each identity provider type. </p> <ul> <li> <p>For Google and Login with Amazon:</p> <ul> <li> <p> <code>client_id</code> </p> </li> <li> <p> <code>client_secret</code> </p> </li> <li> <p> <code>authorize_scopes</code> </p> </li> </ul> </li> <li> <p>For Facebook:</p> <ul> <li> <p> <code>client_id</code> </p> </li> <li> <p> <code>client_secret</code> </p> </li> <li> <p> <code>authorize_scopes</code> </p> </li> <li> <p> <code>api_version</code> </p> </li> </ul> </li> <li> <p>For Sign in with Apple:</p> <ul> <li> <p> <code>client_id</code> </p> </li> <li> <p> <code>team_id</code> </p> </li> <li> <p> <code>key_id</code> </p> </li> <li> <p> <code>private_key</code> </p> </li> <li> <p> <code>authorize_scopes</code> </p> </li> </ul> </li> <li> <p>For OIDC providers:</p> <ul> <li> <p> <code>client_id</code> </p> </li> <li> <p> <code>client_secret</code> </p> </li> <li> <p> <code>attributes_request_method</code> </p> </li> <li> <p> <code>oidc_issuer</code> </p> </li> <li> <p> <code>authorize_scopes</code> </p> </li> <li> <p> <code>authorize_url</code> <i>if not available from discovery URL specified by oidc_issuer key</i> </p> </li> <li> <p> <code>token_url</code> <i>if not available from discovery URL specified by oidc_issuer key</i> </p> </li> <li> <p> <code>attributes_url</code> <i>if not available from discovery URL specified by oidc_issuer key</i> </p> </li> <li> <p> <code>jwks_uri</code> <i>if not available from discovery URL specified by oidc_issuer key</i> </p> </li> </ul> </li> <li> <p>For SAML providers:</p> <ul> <li> <p> <code>MetadataFile</code> OR <code>MetadataURL</code> </p> </li> <li> <p> <code>IDPSignout</code> (boolean) <i>optional</i> </p> </li> <li> <p> <code>IDPInit</code> (boolean) <i>optional</i> </p> </li> <li> <p> <code>RequestSigningAlgorithm</code> (string) <i>optional</i> - Only accepts <code>rsa-sha256</code> </p> </li> <li> <p> <code>EncryptedResponses</code> (boolean) <i>optional</i> </p> </li> </ul> </li> </ul>",
+        "UpdateIdentityProviderRequest$identityProviderDetails": "<p>The details of the identity provider. The following list describes the provider detail keys for each identity provider type. </p> <ul> <li> <p>For Google and Login with Amazon:</p> <ul> <li> <p> <code>client_id</code> </p> </li> <li> <p> <code>client_secret</code> </p> </li> <li> <p> <code>authorize_scopes</code> </p> </li> </ul> </li> <li> <p>For Facebook:</p> <ul> <li> <p> <code>client_id</code> </p> </li> <li> <p> <code>client_secret</code> </p> </li> <li> <p> <code>authorize_scopes</code> </p> </li> <li> <p> <code>api_version</code> </p> </li> </ul> </li> <li> <p>For Sign in with Apple:</p> <ul> <li> <p> <code>client_id</code> </p> </li> <li> <p> <code>team_id</code> </p> </li> <li> <p> <code>key_id</code> </p> </li> <li> <p> <code>private_key</code> </p> </li> <li> <p> <code>authorize_scopes</code> </p> </li> </ul> </li> <li> <p>For OIDC providers:</p> <ul> <li> <p> <code>client_id</code> </p> </li> <li> <p> <code>client_secret</code> </p> </li> <li> <p> <code>attributes_request_method</code> </p> </li> <li> <p> <code>oidc_issuer</code> </p> </li> <li> <p> <code>authorize_scopes</code> </p> </li> <li> <p> <code>authorize_url</code> <i>if not available from discovery URL specified by <code>oidc_issuer</code> key</i> </p> </li> <li> <p> <code>token_url</code> <i>if not available from discovery URL specified by <code>oidc_issuer</code> key</i> </p> </li> <li> <p> <code>attributes_url</code> <i>if not available from discovery URL specified by <code>oidc_issuer</code> key</i> </p> </li> <li> <p> <code>jwks_uri</code> <i>if not available from discovery URL specified by <code>oidc_issuer</code> key</i> </p> </li> </ul> </li> <li> <p>For SAML providers:</p> <ul> <li> <p> <code>MetadataFile</code> OR <code>MetadataURL</code> </p> </li> <li> <p> <code>IDPSignout</code> (boolean) <i>optional</i> </p> </li> <li> <p> <code>IDPInit</code> (boolean) <i>optional</i> </p> </li> <li> <p> <code>RequestSigningAlgorithm</code> (string) <i>optional</i> - Only accepts <code>rsa-sha256</code> </p> </li> <li> <p> <code>EncryptedResponses</code> (boolean) <i>optional</i> </p> </li> </ul> </li> </ul>"
+      }
+    },
+    "IdentityProviderList": {
+      "base": null,
+      "refs": {
+        "ListIdentityProvidersResponse$identityProviders": "<p>The identity providers.</p>"
+      }
+    },
+    "IdentityProviderName": {
+      "base": null,
+      "refs": {
+        "CreateIdentityProviderRequest$identityProviderName": "<p>The identity provider name.</p>",
+        "IdentityProvider$identityProviderName": "<p>The identity provider name.</p>",
+        "IdentityProviderSummary$identityProviderName": "<p>The identity provider name.</p>",
+        "UpdateIdentityProviderRequest$identityProviderName": "<p>The name of the identity provider.</p>"
+      }
+    },
+    "IdentityProviderSummary": {
+      "base": "<p>The summary of the identity provider.</p>",
+      "refs": {
+        "IdentityProviderList$member": null
+      }
+    },
+    "IdentityProviderType": {
+      "base": null,
+      "refs": {
+        "CreateIdentityProviderRequest$identityProviderType": "<p>The identity provider type.</p>",
+        "IdentityProvider$identityProviderType": "<p>The identity provider type.</p>",
+        "IdentityProviderSummary$identityProviderType": "<p>The identity provider type.</p>",
+        "UpdateIdentityProviderRequest$identityProviderType": "<p>The type of the identity provider.</p>"
+      }
+    },
+    "IdleDisconnectTimeoutInMinutes": {
+      "base": null,
+      "refs": {
+        "CreateUserSettingsRequest$idleDisconnectTimeoutInMinutes": "<p>The amount of time that users can be idle (inactive) before they are disconnected from their streaming session and the disconnect timeout interval begins.</p>",
+        "UpdateUserSettingsRequest$idleDisconnectTimeoutInMinutes": "<p>The amount of time that users can be idle (inactive) before they are disconnected from their streaming session and the disconnect timeout interval begins.</p>",
+        "UserSettings$idleDisconnectTimeoutInMinutes": "<p>The amount of time that users can be idle (inactive) before they are disconnected from their streaming session and the disconnect timeout interval begins.</p>",
+        "UserSettingsSummary$idleDisconnectTimeoutInMinutes": "<p>The amount of time that users can be idle (inactive) before they are disconnected from their streaming session and the disconnect timeout interval begins.</p>"
+      }
+    },
+    "InstanceType": {
+      "base": null,
+      "refs": {
+        "CreatePortalRequest$instanceType": "<p>The type and resources of the underlying instance.</p>",
+        "Portal$instanceType": "<p>The type and resources of the underlying instance.</p>",
+        "PortalSummary$instanceType": "<p>The type and resources of the underlying instance.</p>",
+        "UpdatePortalRequest$instanceType": "<p>The type and resources of the underlying instance.</p>"
+      }
+    },
+    "InternalServerException": {
+      "base": "<p>There is an internal server error.</p>",
+      "refs": {
+      }
+    },
+    "IpAccessSettings": {
+      "base": "<p>The IP access settings resource that can be associated with a web portal. </p>",
+      "refs": {
+        "GetIpAccessSettingsResponse$ipAccessSettings": "<p>The IP access settings.</p>",
+        "UpdateIpAccessSettingsResponse$ipAccessSettings": "<p>The IP access settings.</p>"
+      }
+    },
+    "IpAccessSettingsList": {
+      "base": null,
+      "refs": {
+        "ListIpAccessSettingsResponse$ipAccessSettings": "<p>The IP access settings.</p>"
+      }
+    },
+    "IpAccessSettingsSummary": {
+      "base": "<p>The summary of IP access settings.</p>",
+      "refs": {
+        "IpAccessSettingsList$member": null
+      }
+    },
+    "IpRange": {
+      "base": "<p>A single IP address or an IP address range in CIDR notation</p>",
+      "refs": {
+        "IpRule$ipRange": "<p>The IP range of the IP rule.</p>"
+      }
+    },
+    "IpRule": {
+      "base": "<p>The IP rules of the IP access settings.</p>",
+      "refs": {
+        "IpRuleList$member": null
+      }
+    },
+    "IpRuleList": {
+      "base": null,
+      "refs": {
+        "CreateIpAccessSettingsRequest$ipRules": "<p>The IP rules of the IP access settings.</p>",
+        "IpAccessSettings$ipRules": "<p>The IP rules of the IP access settings.</p>",
+        "UpdateIpAccessSettingsRequest$ipRules": "<p>The updated IP rules of the IP access settings.</p>"
+      }
+    },
+    "KinesisStreamArn": {
+      "base": "<p>Kinesis stream ARN to which log events are published.</p>",
+      "refs": {
+        "CreateUserAccessLoggingSettingsRequest$kinesisStreamArn": "<p>The ARN of the Kinesis stream.</p>",
+        "UpdateUserAccessLoggingSettingsRequest$kinesisStreamArn": "<p>The ARN of the Kinesis stream.</p>",
+        "UserAccessLoggingSettings$kinesisStreamArn": "<p>The ARN of the Kinesis stream.</p>",
+        "UserAccessLoggingSettingsSummary$kinesisStreamArn": "<p>The ARN of the Kinesis stream.</p>"
+      }
+    },
+    "ListBrowserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListBrowserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListIdentityProvidersRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListIdentityProvidersResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListIpAccessSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListIpAccessSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListNetworkSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListNetworkSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListPortalsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListPortalsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTagsForResourceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTagsForResourceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTrustStoreCertificatesRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTrustStoreCertificatesResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTrustStoresRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTrustStoresResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListUserAccessLoggingSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListUserAccessLoggingSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListUserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListUserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "MaxConcurrentSessions": {
+      "base": null,
+      "refs": {
+        "CreatePortalRequest$maxConcurrentSessions": "<p>The maximum number of concurrent sessions for the portal.</p>",
+        "Portal$maxConcurrentSessions": "<p>The maximum number of concurrent sessions for the portal.</p>",
+        "PortalSummary$maxConcurrentSessions": "<p>The maximum number of concurrent sessions for the portal.</p>",
+        "UpdatePortalRequest$maxConcurrentSessions": "<p>The maximum number of concurrent sessions for the portal.</p>"
+      }
+    },
+    "MaxResults": {
+      "base": null,
+      "refs": {
+        "ListBrowserSettingsRequest$maxResults": "<p>The maximum number of results to be included in the next page.</p>",
+        "ListIdentityProvidersRequest$maxResults": "<p>The maximum number of results to be included in the next page.</p>",
+        "ListIpAccessSettingsRequest$maxResults": "<p>The maximum number of results to be included in the next page.</p>",
+        "ListNetworkSettingsRequest$maxResults": "<p>The maximum number of results to be included in the next page.</p>",
+        "ListPortalsRequest$maxResults": "<p>The maximum number of results to be included in the next page.</p>",
+        "ListTrustStoreCertificatesRequest$maxResults": "<p>The maximum number of results to be included in the next page.</p>",
+        "ListTrustStoresRequest$maxResults": "<p>The maximum number of results to be included in the next page.</p>",
+        "ListUserAccessLoggingSettingsRequest$maxResults": "<p>The maximum number of results to be included in the next page.</p>",
+        "ListUserSettingsRequest$maxResults": "<p>The maximum number of results to be included in the next page.</p>"
+      }
+    },
+    "NetworkSettings": {
+      "base": "<p>A network settings resource that can be associated with a web portal. Once associated with a web portal, network settings define how streaming instances will connect with your specified VPC. </p>",
+      "refs": {
+        "GetNetworkSettingsResponse$networkSettings": "<p>The network settings.</p>",
+        "UpdateNetworkSettingsResponse$networkSettings": "<p>The network settings.</p>"
+      }
+    },
+    "NetworkSettingsList": {
+      "base": null,
+      "refs": {
+        "ListNetworkSettingsResponse$networkSettings": "<p>The network settings.</p>"
+      }
+    },
+    "NetworkSettingsSummary": {
+      "base": "<p>The summary of network settings.</p>",
+      "refs": {
+        "NetworkSettingsList$member": null
+      }
+    },
+    "PaginationToken": {
+      "base": null,
+      "refs": {
+        "ListBrowserSettingsRequest$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListBrowserSettingsResponse$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListIdentityProvidersRequest$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListIdentityProvidersResponse$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListIpAccessSettingsRequest$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListIpAccessSettingsResponse$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListNetworkSettingsRequest$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListNetworkSettingsResponse$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListPortalsRequest$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation. </p>",
+        "ListPortalsResponse$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation. </p>",
+        "ListTrustStoreCertificatesRequest$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListTrustStoreCertificatesResponse$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.&gt;</p>",
+        "ListTrustStoresRequest$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListTrustStoresResponse$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListUserAccessLoggingSettingsRequest$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListUserAccessLoggingSettingsResponse$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation.</p>",
+        "ListUserSettingsRequest$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation. </p>",
+        "ListUserSettingsResponse$nextToken": "<p>The pagination token used to retrieve the next page of results for this operation. </p>"
+      }
+    },
+    "Portal": {
+      "base": "<p>The web portal.</p>",
+      "refs": {
+        "GetPortalResponse$portal": "<p>The web portal.</p>",
+        "UpdatePortalResponse$portal": "<p>The web portal.</p>"
+      }
+    },
+    "PortalEndpoint": {
+      "base": null,
+      "refs": {
+        "CreatePortalResponse$portalEndpoint": "<p>The endpoint URL of the web portal that users access in order to start streaming sessions.</p>",
+        "Portal$portalEndpoint": "<p>The endpoint URL of the web portal that users access in order to start streaming sessions.</p>",
+        "PortalSummary$portalEndpoint": "<p>The endpoint URL of the web portal that users access in order to start streaming sessions.</p>"
+      }
+    },
+    "PortalList": {
+      "base": null,
+      "refs": {
+        "ListPortalsResponse$portals": "<p>The portals in the list.</p>"
+      }
+    },
+    "PortalStatus": {
+      "base": null,
+      "refs": {
+        "Portal$portalStatus": "<p>The status of the web portal.</p>",
+        "PortalSummary$portalStatus": "<p>The status of the web portal.</p>"
+      }
+    },
+    "PortalSummary": {
+      "base": "<p>The summary of the portal.</p>",
+      "refs": {
+        "PortalList$member": null
+      }
+    },
+    "QuotaCode": {
+      "base": null,
+      "refs": {
+        "ServiceQuotaExceededException$quotaCode": "<p>The originating quota.</p>",
+        "ThrottlingException$quotaCode": "<p>The originating quota.</p>"
+      }
+    },
+    "RendererType": {
+      "base": null,
+      "refs": {
+        "Portal$rendererType": "<p>The renderer that is used in streaming sessions.</p>",
+        "PortalSummary$rendererType": "<p>The renderer that is used in streaming sessions.</p>"
+      }
+    },
+    "ResourceId": {
+      "base": null,
+      "refs": {
+        "ConflictException$resourceId": "<p>Identifier of the resource affected.</p>",
+        "ResourceNotFoundException$resourceId": "<p>Hypothetical identifier of the resource affected.</p>",
+        "ServiceQuotaExceededException$resourceId": "<p>Identifier of the resource affected.</p>"
+      }
+    },
+    "ResourceNotFoundException": {
+      "base": "<p>The resource cannot be found.</p>",
+      "refs": {
+      }
+    },
+    "ResourceType": {
+      "base": null,
+      "refs": {
+        "ConflictException$resourceType": "<p>Type of the resource affected.</p>",
+        "ResourceNotFoundException$resourceType": "<p>Hypothetical type of the resource affected.</p>",
+        "ServiceQuotaExceededException$resourceType": "<p> Type of the resource affected.</p>"
+      }
+    },
+    "RetryAfterSeconds": {
+      "base": null,
+      "refs": {
+        "InternalServerException$retryAfterSeconds": "<p>Advice to clients on when the call can be safely retried.</p>",
+        "ThrottlingException$retryAfterSeconds": "<p>Advice to clients on when the call can be safely retried.</p>"
+      }
+    },
+    "SamlMetadata": {
+      "base": null,
+      "refs": {
+        "GetPortalServiceProviderMetadataResponse$serviceProviderSamlMetadata": "<p>The service provider SAML metadata.</p>"
+      }
+    },
+    "SecurityGroupId": {
+      "base": null,
+      "refs": {
+        "SecurityGroupIdList$member": null
+      }
+    },
+    "SecurityGroupIdList": {
+      "base": null,
+      "refs": {
+        "CreateNetworkSettingsRequest$securityGroupIds": "<p>One or more security groups used to control access from streaming instances to your VPC.</p>",
+        "NetworkSettings$securityGroupIds": "<p>One or more security groups used to control access from streaming instances to your VPC. </p>",
+        "UpdateNetworkSettingsRequest$securityGroupIds": "<p>One or more security groups used to control access from streaming instances to your VPC.</p>"
+      }
+    },
+    "ServiceCode": {
+      "base": null,
+      "refs": {
+        "ServiceQuotaExceededException$serviceCode": "<p>The originating service.</p>",
+        "ThrottlingException$serviceCode": "<p>The originating service.</p>"
+      }
+    },
+    "ServiceQuotaExceededException": {
+      "base": "<p>The service quota has been exceeded.</p>",
+      "refs": {
+      }
+    },
+    "StatusReason": {
+      "base": null,
+      "refs": {
+        "Portal$statusReason": "<p>A message that explains why the web portal is in its current status.</p>"
+      }
+    },
+    "StringType": {
+      "base": null,
+      "refs": {
+        "EncryptionContextMap$key": null,
+        "EncryptionContextMap$value": null,
+        "IdentityProviderDetails$key": null,
+        "IdentityProviderDetails$value": null
+      }
+    },
+    "SubnetId": {
+      "base": null,
+      "refs": {
+        "SubnetIdList$member": null
+      }
+    },
+    "SubnetIdList": {
+      "base": null,
+      "refs": {
+        "CreateNetworkSettingsRequest$subnetIds": "<p>The subnets in which network interfaces are created to connect streaming instances to your VPC. At least two of these subnets must be in different availability zones.</p>",
+        "NetworkSettings$subnetIds": "<p>The subnets in which network interfaces are created to connect streaming instances to your VPC. At least two of these subnets must be in different availability zones.</p>",
+        "UpdateNetworkSettingsRequest$subnetIds": "<p>The subnets in which network interfaces are created to connect streaming instances to your VPC. At least two of these subnets must be in different availability zones.</p>"
+      }
+    },
+    "SubresourceARN": {
+      "base": null,
+      "refs": {
+        "CreateIdentityProviderResponse$identityProviderArn": "<p>The ARN of the identity provider.</p>",
+        "DeleteIdentityProviderRequest$identityProviderArn": "<p>The ARN of the identity provider.</p>",
+        "GetIdentityProviderRequest$identityProviderArn": "<p>The ARN of the identity provider.</p>",
+        "IdentityProvider$identityProviderArn": "<p>The ARN of the identity provider.</p>",
+        "IdentityProviderSummary$identityProviderArn": "<p>The ARN of the identity provider.</p>",
+        "UpdateIdentityProviderRequest$identityProviderArn": "<p>The ARN of the identity provider.</p>"
+      }
+    },
+    "Tag": {
+      "base": "<p>The tag.</p>",
+      "refs": {
+        "TagList$member": null
+      }
+    },
+    "TagExceptionMessage": {
+      "base": null,
+      "refs": {
+        "TooManyTagsException$message": null
+      }
+    },
+    "TagKey": {
+      "base": null,
+      "refs": {
+        "Tag$Key": "<p>The key of the tag.</p>",
+        "TagKeyList$member": null
+      }
+    },
+    "TagKeyList": {
+      "base": null,
+      "refs": {
+        "UntagResourceRequest$tagKeys": "<p>The list of tag keys to remove from the resource.</p>"
+      }
+    },
+    "TagList": {
+      "base": null,
+      "refs": {
+        "CreateBrowserSettingsRequest$tags": "<p>The tags to add to the browser settings resource. A tag is a key-value pair.</p>",
+        "CreateIpAccessSettingsRequest$tags": "<p>The tags to add to the browser settings resource. A tag is a key-value pair.</p>",
+        "CreateNetworkSettingsRequest$tags": "<p>The tags to add to the network settings resource. A tag is a key-value pair.</p>",
+        "CreatePortalRequest$tags": "<p>The tags to add to the web portal. A tag is a key-value pair.</p>",
+        "CreateTrustStoreRequest$tags": "<p>The tags to add to the trust store. A tag is a key-value pair.</p>",
+        "CreateUserAccessLoggingSettingsRequest$tags": "<p>The tags to add to the user settings resource. A tag is a key-value pair.</p>",
+        "CreateUserSettingsRequest$tags": "<p>The tags to add to the user settings resource. A tag is a key-value pair.</p>",
+        "ListTagsForResourceResponse$tags": "<p>The tags of the resource.</p>",
+        "TagResourceRequest$tags": "<p>The tags of the resource.</p>"
+      }
+    },
+    "TagResourceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "TagResourceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "TagValue": {
+      "base": null,
+      "refs": {
+        "Tag$Value": "<p>The value of the tag</p>"
+      }
+    },
+    "ThrottlingException": {
+      "base": "<p>There is a throttling error.</p>",
+      "refs": {
+      }
+    },
+    "Timestamp": {
+      "base": null,
+      "refs": {
+        "Certificate$notValidAfter": "<p>The certificate is not valid after this date.</p>",
+        "Certificate$notValidBefore": "<p>The certificate is not valid before this date.</p>",
+        "CertificateSummary$notValidAfter": "<p>The certificate is not valid after this date.</p>",
+        "CertificateSummary$notValidBefore": "<p>The certificate is not valid before this date.</p>",
+        "IpAccessSettings$creationDate": "<p>The creation date timestamp of the IP access settings.</p>",
+        "IpAccessSettingsSummary$creationDate": "<p>The creation date timestamp of the IP access settings.</p>",
+        "Portal$creationDate": "<p>The creation date of the web portal.</p>",
+        "PortalSummary$creationDate": "<p>The creation date of the web portal.</p>"
+      }
+    },
+    "TooManyTagsException": {
+      "base": "<p>There are too many tags.</p>",
+      "refs": {
+      }
+    },
+    "TrustStore": {
+      "base": "<p>A trust store that can be associated with a web portal. A trust store contains certificate authority (CA) certificates. Once associated with a web portal, the browser in a streaming session will recognize certificates that have been issued using any of the CAs in the trust store. If your organization has internal websites that use certificates issued by private CAs, you should add the private CA certificate to the trust store. </p>",
+      "refs": {
+        "GetTrustStoreResponse$trustStore": "<p>The trust store.</p>"
+      }
+    },
+    "TrustStoreSummary": {
+      "base": "<p>The summary of the trust store.</p>",
+      "refs": {
+        "TrustStoreSummaryList$member": null
+      }
+    },
+    "TrustStoreSummaryList": {
+      "base": null,
+      "refs": {
+        "ListTrustStoresResponse$trustStores": "<p>The trust stores.</p>"
+      }
+    },
+    "UntagResourceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UntagResourceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateBrowserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateBrowserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateIdentityProviderRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateIdentityProviderResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateIpAccessSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateIpAccessSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateNetworkSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateNetworkSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdatePortalRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdatePortalResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateTrustStoreRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateTrustStoreResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateUserAccessLoggingSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateUserAccessLoggingSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateUserSettingsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateUserSettingsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UserAccessLoggingSettings": {
+      "base": "<p>A user access logging settings resource that can be associated with a web portal.</p>",
+      "refs": {
+        "GetUserAccessLoggingSettingsResponse$userAccessLoggingSettings": "<p>The user access logging settings.</p>",
+        "UpdateUserAccessLoggingSettingsResponse$userAccessLoggingSettings": "<p>The user access logging settings.</p>"
+      }
+    },
+    "UserAccessLoggingSettingsList": {
+      "base": null,
+      "refs": {
+        "ListUserAccessLoggingSettingsResponse$userAccessLoggingSettings": "<p>The user access logging settings.</p>"
+      }
+    },
+    "UserAccessLoggingSettingsSummary": {
+      "base": "<p>The summary of user access logging settings.</p>",
+      "refs": {
+        "UserAccessLoggingSettingsList$member": null
+      }
+    },
+    "UserSettings": {
+      "base": "<p>A user settings resource that can be associated with a web portal. Once associated with a web portal, user settings control how users can transfer data between a streaming session and the their local devices. </p>",
+      "refs": {
+        "GetUserSettingsResponse$userSettings": "<p>The user settings.</p>",
+        "UpdateUserSettingsResponse$userSettings": "<p>The user settings.</p>"
+      }
+    },
+    "UserSettingsList": {
+      "base": null,
+      "refs": {
+        "ListUserSettingsResponse$userSettings": "<p>The user settings.</p>"
+      }
+    },
+    "UserSettingsSummary": {
+      "base": "<p>The summary of user settings.</p>",
+      "refs": {
+        "UserSettingsList$member": null
+      }
+    },
+    "ValidationException": {
+      "base": "<p>There is a validation error.</p>",
+      "refs": {
+      }
+    },
+    "ValidationExceptionField": {
+      "base": "<p>Information about a field passed inside a request that resulted in an exception.</p>",
+      "refs": {
+        "ValidationExceptionFieldList$member": null
+      }
+    },
+    "ValidationExceptionFieldList": {
+      "base": null,
+      "refs": {
+        "ValidationException$fieldList": "<p>The field that caused the error.</p>"
+      }
+    },
+    "ValidationExceptionReason": {
+      "base": null,
+      "refs": {
+        "ValidationException$reason": "<p>Reason the request failed validation</p>"
+      }
+    },
+    "VpcId": {
+      "base": null,
+      "refs": {
+        "CreateNetworkSettingsRequest$vpcId": "<p>The VPC that streaming instances will connect to.</p>",
+        "NetworkSettings$vpcId": "<p>The VPC that streaming instances will connect to.</p>",
+        "NetworkSettingsSummary$vpcId": "<p>The VPC ID of the network settings.</p>",
+        "UpdateNetworkSettingsRequest$vpcId": "<p>The VPC that streaming instances will connect to.</p>"
+      }
+    },
+    "keyArn": {
+      "base": null,
+      "refs": {
+        "BrowserSettings$customerManagedKey": "<p>The customer managed key used to encrypt sensitive information in the browser settings.</p>",
+        "CreateBrowserSettingsRequest$customerManagedKey": "<p>The custom managed key of the browser settings.</p>",
+        "CreateIpAccessSettingsRequest$customerManagedKey": "<p>The custom managed key of the IP access settings.</p>",
+        "CreatePortalRequest$customerManagedKey": "<p>The customer managed key of the web portal.</p>",
+        "CreateUserSettingsRequest$customerManagedKey": "<p>The customer managed key used to encrypt sensitive information in the user settings.</p>",
+        "IpAccessSettings$customerManagedKey": "<p>The customer managed key used to encrypt sensitive information in the IP access settings.</p>",
+        "Portal$customerManagedKey": "<p>The customer managed key used to encrypt sensitive information in the portal.</p>",
+        "UserSettings$customerManagedKey": "<p>The customer managed key used to encrypt sensitive information in the user settings.</p>"
+      }
+    }
+  }
+}

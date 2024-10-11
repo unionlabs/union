@@ -1,0 +1,10 @@
+version: v1
+name: buf.build/cosmos/cosmos-proto
+lint:
+  use:
+    - DEFAULT
+  except:
+    - PACKAGE_VERSION_SUFFIX
+breaking:
+  use:
+    - FILE

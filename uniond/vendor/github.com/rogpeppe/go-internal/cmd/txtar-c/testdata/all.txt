@@ -1,0 +1,56 @@
+unquote expect-all
+unquote expect-no-all
+
+# Without the -a flag, it should ignore . files.
+txtar-c blah
+! stderr .+
+cmp stdout expect-no-all
+
+# With the -a flag, it should include them.
+txtar-c -a blah
+! stderr .+
+cmp stdout expect-all
+
+-- blah/.foo/foo --
+foo
+-- blah/.other --
+other
+-- blah/go.mod --
+module example.com/blah
+
+-- blah/main.go --
+package main
+
+import "fmt"
+
+func main() {
+  fmt.Println("Hello, world!")
+}
+-- expect-all --
+>-- .foo/foo --
+>foo
+>-- .other --
+>other
+>-- go.mod --
+>module example.com/blah
+>
+>-- main.go --
+>package main
+>
+>import "fmt"
+>
+>func main() {
+>  fmt.Println("Hello, world!")
+>}
+-- expect-no-all --
+>-- go.mod --
+>module example.com/blah
+>
+>-- main.go --
+>package main
+>
+>import "fmt"
+>
+>func main() {
+>  fmt.Println("Hello, world!")
+>}

@@ -1,0 +1,55 @@
+mkfs A B
+----
+OK
+
+#
+# Locking a path with parents that don't exist should error.
+#
+
+lock fs=A path=a/b/c handle=fsApathABC
+----
+open a/b/c: file does not exist
+
+#
+# If we create the parents, it should succeed.
+#
+
+mkdirall fs=A path=a/b
+----
+OK
+
+lock fs=A path=a/b/c handle=fsApathABC
+----
+OK
+
+#
+# Locking the same path on the same filesystem should fail with EAGAIN.
+#
+
+lock fs=A path=a/b/c handle=bogus
+----
+resource temporarily unavailable
+
+#
+# Locking the same path on a DIFFERENT filesystem should succeed.
+#
+
+mkdirall fs=B path=a/b
+----
+OK
+
+lock fs=B path=a/b/c handle=fsBpathABC
+----
+OK
+
+#
+# Releasing the lock on fs A should allow us to reacquire it.
+#
+
+close handle=fsApathABC
+----
+OK
+
+lock fs=A path=a/b/c handle=fsApathABC
+----
+OK

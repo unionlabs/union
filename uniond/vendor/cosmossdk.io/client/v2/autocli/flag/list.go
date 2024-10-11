@@ -52,7 +52,7 @@ type compositeListType struct {
 	simpleType Type
 }
 
-func (t compositeListType) NewValue(ctx context.Context, opts *Builder) Value {
+func (t compositeListType) NewValue(ctx *context.Context, opts *Builder) Value {
 	return &compositeListValue{
 		simpleType: t.simpleType,
 		values:     nil,
@@ -68,7 +68,7 @@ func (t compositeListType) DefaultValue() string {
 type compositeListValue struct {
 	simpleType Type
 	values     []protoreflect.Value
-	ctx        context.Context
+	ctx        *context.Context
 	opts       *Builder
 }
 

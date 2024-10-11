@@ -1,0 +1,45 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "field_trie.go",
+        "field_trie_helpers.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/fieldtrie",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/state/state-native/custom-types:go_default_library",
+        "//beacon-chain/state/state-native/types:go_default_library",
+        "//beacon-chain/state/stateutil:go_default_library",
+        "//container/multi-value-slice:go_default_library",
+        "//math:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "field_trie_test.go",
+        "helpers_test.go",
+    ],
+    data = glob(["testdata/**"]),
+    embed = [":go_default_library"],
+    deps = [
+        "//beacon-chain/state/state-native/custom-types:go_default_library",
+        "//beacon-chain/state/state-native/types:go_default_library",
+        "//beacon-chain/state/stateutil:go_default_library",
+        "//config/features:go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//container/multi-value-slice:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/util:go_default_library",
+        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
+    ],
+)

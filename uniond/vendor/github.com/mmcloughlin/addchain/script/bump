@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+set -exuo pipefail
+
+# Parse options.
+version="$1"
+
+# Check repo is not dirty.
+git diff
+test -z "$(git status --porcelain)"
+
+# Start new branch.
+branch="release-${version}"
+git checkout -b "${branch}"
+
+# Bump version.
+go run ./internal/tools/release bump "${version}"
+
+# Reserve DOI.
+go run ./internal/tools/release reservedoi
+
+# Rerun code generation.
+./script/generate
+
+# Create a commit.
+git add -u
+git commit -m "all: release ${version}"

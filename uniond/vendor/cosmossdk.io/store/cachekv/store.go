@@ -6,10 +6,9 @@ import (
 	"sort"
 	"sync"
 
-	dbm "github.com/cosmos/cosmos-db"
-
 	"cosmossdk.io/math"
 	"cosmossdk.io/store/cachekv/internal"
+	dbm "cosmossdk.io/store/db"
 	"cosmossdk.io/store/internal/conv"
 	"cosmossdk.io/store/internal/kv"
 	"cosmossdk.io/store/tracekv"
@@ -303,7 +302,7 @@ func (store *Store) dirtyItems(start, end []byte) {
 	n := len(store.unsortedCache)
 	unsorted := make([]*kv.Pair, 0)
 	// If the unsortedCache is too big, its costs too much to determine
-	// whats in the subset we are concerned about.
+	// what's in the subset we are concerned about.
 	// If you are interleaving iterator calls with writes, this can easily become an
 	// O(N^2) overhead.
 	// Even without that, too many range checks eventually becomes more expensive

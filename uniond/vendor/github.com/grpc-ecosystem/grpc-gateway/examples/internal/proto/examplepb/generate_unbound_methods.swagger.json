@@ -1,0 +1,168 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "examples/internal/proto/examplepb/generate_unbound_methods.proto",
+    "description": "Generate Unannotated Methods Echo Service\nSimilar to echo_service.proto but without annotations and without external configuration.\n\nGenerate Unannotated Methods Echo Service API consists of a single service which returns\na message.",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/grpc.gateway.examples.internal.examplepb.GenerateUnboundMethodsEchoService/Echo": {
+      "post": {
+        "summary": "Echo method receives a simple message and returns it.",
+        "description": "The message posted as the id parameter will also be\nreturned.",
+        "operationId": "GenerateUnboundMethodsEchoService_Echo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbGenerateUnboundMethodsSimpleMessage"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbGenerateUnboundMethodsSimpleMessage"
+            }
+          }
+        ],
+        "tags": [
+          "GenerateUnboundMethodsEchoService"
+        ]
+      }
+    },
+    "/grpc.gateway.examples.internal.examplepb.GenerateUnboundMethodsEchoService/EchoBody": {
+      "post": {
+        "summary": "EchoBody method receives a simple message and returns it.",
+        "operationId": "GenerateUnboundMethodsEchoService_EchoBody",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbGenerateUnboundMethodsSimpleMessage"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbGenerateUnboundMethodsSimpleMessage"
+            }
+          }
+        ],
+        "tags": [
+          "GenerateUnboundMethodsEchoService"
+        ]
+      }
+    },
+    "/grpc.gateway.examples.internal.examplepb.GenerateUnboundMethodsEchoService/EchoDelete": {
+      "post": {
+        "summary": "EchoDelete method receives a simple message and returns it.",
+        "operationId": "GenerateUnboundMethodsEchoService_EchoDelete",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbGenerateUnboundMethodsSimpleMessage"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbGenerateUnboundMethodsSimpleMessage"
+            }
+          }
+        ],
+        "tags": [
+          "GenerateUnboundMethodsEchoService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "examplepbGenerateUnboundMethodsSimpleMessage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Id represents the message identifier."
+        },
+        "num": {
+          "type": "string",
+          "format": "int64"
+        },
+        "duration": {
+          "type": "string"
+        }
+      },
+      "description": "GenerateUnboundMethodsSimpleMessage represents a simple message sent to the unannotated GenerateUnboundMethodsEchoService service."
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

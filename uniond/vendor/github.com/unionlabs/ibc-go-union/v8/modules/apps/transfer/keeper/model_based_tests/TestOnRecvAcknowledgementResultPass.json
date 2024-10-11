@@ -1,0 +1,58 @@
+[
+  {
+    "packet": {
+      "sourceChannel": "ethereum-hub",
+      "sourcePort": "transfer",
+      "destChannel": "channel-0",
+      "destPort": "ethereum-hub",
+      "data": {
+        "sender": "a1",
+        "receiver": "a2",
+        "amount": "1",
+        "denom": [
+          "cosmos-hub",
+          "transfer",
+          "channel-0",
+          "cosmos-hub",
+          "btc"
+        ]
+      }
+    },
+    "handler": "OnRecvAcknowledgementResult",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      }
+    ],
+    "error": false
+  }
+]

@@ -1,0 +1,8 @@
+syntax = "proto3";
+package tendermint.types;
+
+message EventDataRoundState {
+  int64  height = 1;
+  int32  round  = 2;
+  string step   = 3;
+}

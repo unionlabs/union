@@ -1,0 +1,26 @@
+version: '2'
+services:
+  etcd:
+    image: gcr.io/etcd-development/etcd:v3.5.0
+    ports:
+      - "2379:2379"
+    environment:
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_ADVERTISE_CLIENT_URLS: http://0.0.0.0:2379
+
+  consul:
+    image: consul:1.7
+    ports:
+      - "8500:8500"
+
+  zk:
+    image: zookeeper:3.5
+    ports:
+      - "2181:2181"
+
+  eureka:
+    image: springcloud/eureka
+    environment:
+      eureka.server.responseCacheUpdateIntervalMs: 1000
+    ports:
+      - "8761:8761"

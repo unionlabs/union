@@ -1,0 +1,70 @@
+# TYPE system_cpu_schedlatency_count counter
+system_cpu_schedlatency_count 5645
+
+# TYPE system_cpu_schedlatency summary
+system_cpu_schedlatency {quantile="0.5"} 0
+system_cpu_schedlatency {quantile="0.75"} 7168
+system_cpu_schedlatency {quantile="0.95"} 1.6777216e+07
+system_cpu_schedlatency {quantile="0.99"} 2.9360128e+07
+system_cpu_schedlatency {quantile="0.999"} 3.3554432e+07
+system_cpu_schedlatency {quantile="0.9999"} 3.3554432e+07
+
+# TYPE system_memory_pauses_count counter
+system_memory_pauses_count 14
+
+# TYPE system_memory_pauses summary
+system_memory_pauses {quantile="0.5"} 32768
+system_memory_pauses {quantile="0.75"} 57344
+system_memory_pauses {quantile="0.95"} 196608
+system_memory_pauses {quantile="0.99"} 196608
+system_memory_pauses {quantile="0.999"} 196608
+system_memory_pauses {quantile="0.9999"} 196608
+
+# TYPE test_counter gauge
+test_counter 12345
+
+# TYPE test_counter_float64 gauge
+test_counter_float64 54321.98
+
+# TYPE test_gauge gauge
+test_gauge 23456
+
+# TYPE test_gauge_float64 gauge
+test_gauge_float64 34567.89
+
+# TYPE test_gauge_info gauge
+test_gauge_info {arch="amd64", commit="7caa2d8163ae3132c1c2d6978c76610caee2d949", os="linux", protocol_versions="64 65 66", version="1.10.18-unstable"} 1
+
+# TYPE test_histogram_count counter
+test_histogram_count 3
+
+# TYPE test_histogram summary
+test_histogram {quantile="0.5"} 2
+test_histogram {quantile="0.75"} 3
+test_histogram {quantile="0.95"} 3
+test_histogram {quantile="0.99"} 3
+test_histogram {quantile="0.999"} 3
+test_histogram {quantile="0.9999"} 3
+
+# TYPE test_meter gauge
+test_meter 0
+
+# TYPE test_resetting_timer_count counter
+test_resetting_timer_count 6
+
+# TYPE test_resetting_timer summary
+test_resetting_timer {quantile="0.50"} 1.25e+07
+test_resetting_timer {quantile="0.95"} 1.2e+08
+test_resetting_timer {quantile="0.99"} 1.2e+08
+
+# TYPE test_timer_count counter
+test_timer_count 6
+
+# TYPE test_timer summary
+test_timer {quantile="0.5"} 2.25e+07
+test_timer {quantile="0.75"} 4.8e+07
+test_timer {quantile="0.95"} 1.2e+08
+test_timer {quantile="0.99"} 1.2e+08
+test_timer {quantile="0.999"} 1.2e+08
+test_timer {quantile="0.9999"} 1.2e+08
+

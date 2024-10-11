@@ -1,0 +1,7 @@
+filegroup(
+    name = "eth1data",
+    srcs = [
+        "UTC--2021-12-22T19-14-08.590377700Z--878705ba3f8bc32fcf7f4caa1a35e72af65cf766",
+    ],
+    visibility = ["//testing/endtoend:__subpackages__"],
+)

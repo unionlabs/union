@@ -1,0 +1,12 @@
+#!/bin/bash
+
+echo "Local ($(uname)):"
+go test .
+
+echo
+echo "Linux:"
+./bin/go-test-linux
+
+echo
+echo "Windows:"
+./bin/go-test-windows

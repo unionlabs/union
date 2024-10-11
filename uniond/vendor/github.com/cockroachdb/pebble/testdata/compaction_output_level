@@ -1,0 +1,199 @@
+compact start=0 base=1
+----
+output=1
+max-output-file-size=4194304
+
+compact start=1 base=1
+----
+output=2
+max-output-file-size=8388608
+
+compact start=2 base=1
+----
+output=3
+max-output-file-size=16777216
+
+compact start=3 base=1
+----
+output=4
+max-output-file-size=33554432
+
+compact start=4 base=1
+----
+output=5
+max-output-file-size=67108864
+
+compact start=5 base=1
+----
+output=6
+max-output-file-size=134217728
+
+compact start=6 base=1
+----
+output=6
+max-output-file-size=134217728
+
+
+compact start=0 base=2
+----
+output=2
+max-output-file-size=4194304
+
+compact start=1 base=2
+----
+invalid compaction: start level 1 should not be empty (base level 2)
+
+compact start=2 base=2
+----
+output=3
+max-output-file-size=8388608
+
+compact start=3 base=2
+----
+output=4
+max-output-file-size=16777216
+
+compact start=4 base=2
+----
+output=5
+max-output-file-size=33554432
+
+compact start=5 base=2
+----
+output=6
+max-output-file-size=67108864
+
+compact start=6 base=2
+----
+output=6
+max-output-file-size=67108864
+
+
+compact start=0 base=3
+----
+output=3
+max-output-file-size=4194304
+
+compact start=1 base=3
+----
+invalid compaction: start level 1 should not be empty (base level 3)
+
+compact start=2 base=3
+----
+invalid compaction: start level 2 should not be empty (base level 3)
+
+compact start=3 base=3
+----
+output=4
+max-output-file-size=8388608
+
+compact start=4 base=3
+----
+output=5
+max-output-file-size=16777216
+
+compact start=5 base=3
+----
+output=6
+max-output-file-size=33554432
+
+compact start=6 base=3
+----
+output=6
+max-output-file-size=33554432
+
+
+compact start=0 base=4
+----
+output=4
+max-output-file-size=4194304
+
+compact start=1 base=4
+----
+invalid compaction: start level 1 should not be empty (base level 4)
+
+compact start=2 base=4
+----
+invalid compaction: start level 2 should not be empty (base level 4)
+
+compact start=3 base=4
+----
+invalid compaction: start level 3 should not be empty (base level 4)
+
+compact start=4 base=4
+----
+output=5
+max-output-file-size=8388608
+
+compact start=5 base=4
+----
+output=6
+max-output-file-size=16777216
+
+compact start=6 base=4
+----
+output=6
+max-output-file-size=16777216
+
+
+compact start=0 base=5
+----
+output=5
+max-output-file-size=4194304
+
+compact start=1 base=5
+----
+invalid compaction: start level 1 should not be empty (base level 5)
+
+compact start=2 base=5
+----
+invalid compaction: start level 2 should not be empty (base level 5)
+
+compact start=3 base=5
+----
+invalid compaction: start level 3 should not be empty (base level 5)
+
+compact start=4 base=5
+----
+invalid compaction: start level 4 should not be empty (base level 5)
+
+compact start=5 base=5
+----
+output=6
+max-output-file-size=8388608
+
+compact start=6 base=5
+----
+output=6
+max-output-file-size=8388608
+
+
+compact start=0 base=6
+----
+output=6
+max-output-file-size=4194304
+
+compact start=1 base=6
+----
+invalid compaction: start level 1 should not be empty (base level 6)
+
+compact start=2 base=6
+----
+invalid compaction: start level 2 should not be empty (base level 6)
+
+compact start=3 base=6
+----
+invalid compaction: start level 3 should not be empty (base level 6)
+
+compact start=4 base=6
+----
+invalid compaction: start level 4 should not be empty (base level 6)
+
+compact start=5 base=6
+----
+invalid compaction: start level 5 should not be empty (base level 6)
+
+compact start=6 base=6
+----
+output=6
+max-output-file-size=4194304

@@ -1,0 +1,1183 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head prefix="og: http://ogp.me/ns#"> <!-- CANOUS-7275  -->
+<!-- DEBUT CANOUS-8045-->
+<script>
+var Xt_marche = "particuliers";
+</script>
+<!-- Fin CANOUS-8045  DEBUT TMATRACK CANOUS-7853-->
+<script type="text/javascript" src="//libs.de.coremetrics.com/eluminate.js"></script>
+<script type="text/javascript" src="/Vitrine/ObjCommun/js/referrer.js"></script>
+<script>
+
+cmSetClientID("50580000|81300_CLI_3",true,"data.de.coremetrics.com","ca-alpesprovence.fr");
+
+//CANOUS-9425
+cmSetupOther({"cm_JSFCoreCookieExpireSeconds":"33696000"});
+ cmSetupOther({"cm_TrackImpressions":""});
+ cmSetupOther({"cm_TrackLink":false});
+</script>
+<!-- FIN TMATRACK CANOUS-7853-->
+<meta name="description" content="Retrouvez toutes les offres du crédit agricole pour les particuliers, les professionnels, les agriculteurs, les associations et les collectivités publiques. Gestion des comptes, épargne et placement, crédits, assurances, actualité financière et bancaire. Accédez à vos comptes en ligne, faites vos simulations et prenez rendez-vous avec un conseiller ou souscrivez un produit directement sur le site !"/>
+<meta name="keywords" lang="fr" content="crédit agricole, particuliers, professionnels, agriculteurs, gestion des comptes, carte bancaire, épargne, placements, assurance-vie, crédits, prêts, assurances, prévoyance, rendez-vous, souscriptions, simulations, actualités, articles"/>
+<title>Crédit Agricole Alpes Provence (Bouches-du-Rhône, Hautes Alpes et Vaucluse) - Crédit Agricole Alpes Provence (Bouches-du-Rhône, Hautes Alpes et Vaucluse)</title>
+<meta name="author" content="Crédit Agricole"/>
+<meta name="copyright" content="&copy; 2007 Crédit Agricole"/>
+
+	<link href="/Vitrine/ObjCommun/DCIV2/css/global.css" type="text/css" rel="stylesheet" media="all" />
+	<link href="/Vitrine/ObjCommun/DCIV2/css/accueil.css" type="text/css" rel="stylesheet" media="all" />
+	<link href="/Vitrine/ObjCommun/DCIV2/css/print.css" type="text/css" rel="stylesheet" media="print" />
+                 <!-- CANOUS-10192 Suppression d'appel des 3 feuilles css de TMAREFOFLOT2 -->
+	<!--[if lte IE 8]><link rel="stylesheet" type="text/css" href="/Vitrine/ObjCommun/DCIV2/css/ie.css" media="all" /><![endif]-->
+	<!--[if lte IE 9]><link rel="shortcut icon" type="image/x-icon" href="/Vitrine/ObjCommun/DCIV2/img/favicon.ico" /><![endif]-->     
+	
+
+<!-- Debut G3, TMAVIE -->
+
+<!-- Fin TMAVIE, Debut TMANICEV1AC -->
+
+
+<!-- Fin TMANICEV1AC, G3 -->
+<script type="text/javascript" src="/Vitrine/ObjCommun/DCI/js/ecart-v1/jquery.min.js"></script>
+<script type="text/javascript" src="/Vitrine/ObjCommun/DCI/js/wg/jquery.pngFix.pack.js"></script>
+<!-- debut SICRP-474 -->
+<script>
+jQuery.noConflict();
+</script>
+<!-- fin SICRP-474 -->
+<script type="text/javascript" src="/Vitrine/ObjCommun/DCI/js/ap_full.js" language="javascript"></script>
+<script type="text/javascript" src="/Vitrine/ObjCommun/DCI/js/commun.js" language="javascript"></script>
+<script type="text/javascript" src="/Vitrine/ObjCommun/js/utils.js" type="text/javascript"></script>
+<script type="text/javascript" src="/Vitrine/ObjCommun/js/monitor.js" type="text/javascript"></script>
+<script type="text/javascript" src="/Vitrine/ObjCommun/js/tools.js" type="text/javascript"></script>
+<script type="text/javascript" src="/Vitrine/ObjCommun/js/recherche.js" type="text/javascript"></script>
+<script type="text/javascript" src="/Vitrine/ObjCommun/js/browser.js" type="text/javascript"></script>
+<script type="text/javascript" src="/Vitrine/ObjCommun/js/xiti.js" type="text/javascript"></script>
+<script language="javascript" src="/Vitrine/ObjCommun/js/xtplugF.js" type="text/javascript"></script>
+<!-- <script type="text/javascript" src="/Vitrine/DCI/Admin/ModExt/Decloisonnement/P_Decloisonnement.jsp"></script> TMADECLOI  DEBUT CANOUS-6345 -->
+<script>
+
+
+
+
+
+
+
+
+
+
+
+
+authentSyn = true;
+var templateBloc = "<div id=\'popin_ctnr\' class=\'decloisonnement\'>\
+    <div class=\'popin\'>\
+        <a href=\'#\' id=\'btn-popin\' class=\'fermer\'>Fermer <span>x</span></a>\
+		<h1 class=\'decloiTitre\'></h1>\
+        <p class =\'decloiIntro\'></p>\
+        <div class=\'popin-ctn\'>\
+            <div class=\'popin-bloc-g\'>\
+               <div class=\'inner\'>\
+                <div id=\'bloc_client-aveccode\'>\
+                    <h2 class=\'decloiQuestionClient\'></h2>\
+                    <p class=\'decloiInfo\'></p>\
+					<div id=\'btnComptes2\'></div>\
+				</div>\
+                <div id=\'bloc_client-sanscode\'>\
+                    <h2 class=\'decloiQClientD\'></h2>\
+                    <p class=\'decloiInfoD\'></p>\
+                    <p class=\'lien lienLibre\'></p>\
+                </div>\
+				</div>\
+            </div>\
+			<div name=\'divIdentDecloi\' class=\'paveidentification\' id=\'divIdentDecloi\' style=\'display:none;\' ><iframe name=\'frameIdentDecloi\' id=\'frameIdentDecloi\' frameborder=\'no\' scrolling=\'no\' style=\'width: 100%; height: 215px;\'></iframe></div>\
+            <div class=\'popin-bloc-d\'>\
+                <div id=\'bloc_pasclient\'>\
+                    <h2 class=\'decloiQuestionProspect\'></h2>\
+					<p class=\'decloiInfoT\'></p>\
+                    <p class=\'lien lienLibreProspect\'><p>\
+                </div>\
+            </div>\
+        </div>\
+    </div>\
+</div>\
+\
+";
+/** TMADECLOI LOT2 :Fonction pour déclencher le decloisonnement pour les flash**/
+function openDecloisonnement(idLnk){
+	jQuery("span#"+idLnk+" a").click();
+}
+
+
+/**Fonction pour créer le bouton d'accès aux comptes**/
+function writeBtn(idTCM, detail){
+    var strAccesBamPoppin = "";
+	if(!emailing){		    
+			strAccesBamPoppin = '<form name="bamaccess_' + idTCM + '" id="bamaccess_' + idTCM + '"   class="bamaccessDecloi" autocomplete="off" method="post" action="'+chemin+'"'; 
+			if (typeConnexion == "True") {strAccesBamPoppinPoppin = strAccesBamPoppin +'>';
+				strAccesBamPoppin = strAccesBamPoppin + '<INPUT TYPE="hidden" name="largeur_ecran" value="800">';
+				strAccesBamPoppin = strAccesBamPoppin + '<INPUT TYPE="hidden" name="hauteur_ecran" value="600">';
+			}else{
+				if(authentSyn) strAccesBamPoppin = strAccesBamPoppin + ' target="frameIdentDecloi" >'
+				strAccesBamPoppin = strAccesBamPoppin + '<input type="hidden" name="largeur_ecran" value="1024">';
+				strAccesBamPoppin = strAccesBamPoppin + '<input type="hidden" name="hauteur_ecran" value="768">';
+			}
+			strAccesBamPoppinPoppin = strAccesBamPoppin + '<input type="hidden" name="TOP_ORIGINE" value="V">';
+			strAccesBamPoppin = strAccesBamPoppin + '<INPUT type="hidden" name="vitrine" value="O">';
+			strAccesBamPoppin = strAccesBamPoppin + '<INPUT TYPE="hidden" name="origine" value="vitrine">';
+			strAccesBamPoppin = strAccesBamPoppin + '<INPUT TYPE="hidden" name="situationTravail" value="BANQUAIRE">';
+			strAccesBamPoppin = strAccesBamPoppin + '<INPUT TYPE="hidden" name="canal" value="WEB">';
+			strAccesBamPoppin = strAccesBamPoppin + '<INPUT TYPE="hidden" name="typeAuthentification" value="CLIC_ALLER">';
+			strAccesBamPoppin = strAccesBamPoppin + '<input type="hidden" name="idtcm" value="' + idTCM + '">';
+			strAccesBamPoppin = strAccesBamPoppin + '<INPUT TYPE="hidden" name="urlOrigine" value="http://www.ca-alpesprovence.fr">';/*CANOUS-6428*/
+			//TMATRACKINGLOT3 part 1 : accès BAM bouton standard
+				strAccesBamPoppin = strAccesBamPoppin + '<INPUT TYPE="hidden" name="tracking" value="'+tracking+'">';
+			if (typeConnexion == "True") {
+			           
+				strAccesBamPoppin = strAccesBamPoppin + '</form><a class="decloiAcces" href="javascript:bamv3_validationDecloi();" >Accédez à vos comptes</a>';
+			  				
+                                                 }else{
+				if(authentSyn) {
+				    strAccesBamPoppin = strAccesBamPoppin + '<input type="hidden" name="matrice" value="true">';
+					if(detail == "True"){
+						strAccesBamPoppin = strAccesBamPoppin + '<input type="text" name="CCPTE" maxlength="11" value="           " id="inputcomptes" onkeypress="detectKeyReturn(event,\'mylink5\');" />'; //CANOUS-6410 
+                                                                                }else{
+						strAccesBamPoppin = strAccesBamPoppin + '<input type="text" name="CCPTE" maxlength="11" value="" id="inputcomptes" onkeypress="detectKeyReturn(event,\'mylink5\');" />'; //CANOUS-6410
+                                                                                }
+					strAccesBamPoppin = strAccesBamPoppin + '<input type="hidden" name="liberror" value="">';
+					//TMATRACKINGLOT3 part 2 : accès BAM pavé flottant
+				strAccesBamPoppin = strAccesBamPoppin + '<input type="hidden" name="tracking" value="'+tracking+'">';
+				}
+				//Debut canous-6290 part1
+				 
+				strAccesBamPoppin = strAccesBamPoppin + '<label for="inputcomptes" id="labelcomptes">Entrez votre numéro de compte :</label>';
+				 		
+				strAccesBamPoppin = strAccesBamPoppin + '<label for="inputcomptes" id="labelcomptes"></label>';
+				 
+				  strAccesBamPoppin = strAccesBamPoppin + '<a id="mylink5" class="" href="#">OK</a></form>'; // CANOUS-6410 
+				  	
+				//Fin canous-6290 part1
+				strAccesBamPoppin = strAccesBamPoppin + '</form>';
+			
+			}
+        
+		}	
+	return  strAccesBamPoppin;
+}
+
+//Fonction pour traiter le Xt_Param récuperer sur les pages 
+function processXtParam(param){
+  var p
+  if (param.indexOf('p=',0)!=1){
+    p = param.substring(param.indexOf('p=',0)+2,param.length)
+	if (p.indexOf('&',0)!=1){
+		var tp = p.split('&');
+		p = tp[0];
+		
+	}
+    if (p.indexOf('::',0)!=1){
+		var tp = p.split('::');
+		p = tp[1];
+		
+	}
+	}
+  return p;
+} 
+
+function startComptesP(l_form){
+   	jQuery('#frameIdentDecloi').attr('src', 'about:blank');
+	var divFrere = jQuery('div.paveidentification').nextAll('div'); 
+	var divFrereP = jQuery('div.paveidentification').prevAll('div'); 
+                /* Debut canous-6346*/
+	divFrereP.hide(); divFrere.hide();
+	l_form.hide(); 
+	l_form.submit();
+	jQuery('#divIdentDecloi').show();
+                 /* Fin canous-6346*/
+									
+}
+/*Debut CANOUS-7232 part1*/
+function weaveDecloisonnement(){
+		var paramXiti; 
+		var lienDecloi = jQuery('a[data-decloison]');
+                                if (lienDecloi.size()>0){
+	                        if (jQuery('area[data-decloison]').size()>0)
+	                        lienDecloi = jQuery('a[data-decloison]').add(jQuery('area[data-decloison]'));
+                                      }else lienDecloi = jQuery('area[data-decloison]');
+			lienDecloi.each(function(){
+/*Fin CANOUS-7232 part1*/
+			var aDecloison = jQuery(this);
+			
+			/* Récupération des attributs href et onclick de la balise a et suppression du onclick */
+			var hrefDeBase = aDecloison.attr('href');
+			/*DEBUT CANOUS-6543 PART1*/
+			var aDecloisonJs = jQuery(this).get();
+			var onclickDeBase = '';
+			if(aDecloison.attr('onclick')) onclickDeBase = aDecloisonJs[0].attributes['onclick'].nodeValue;
+		    var target = aDecloison.attr('target');
+			var htmlDeBase = aDecloison.html(); //canous-6293 part4
+            if (aDecloison.children('img').size()>0 || aDecloison.children().children('img').size()>0) { 
+				if (aDecloison.children('img').size()>0) { htmlDeBase = aDecloison.children('img').attr('alt');}else{ htmlDeBase = aDecloison.text();}
+			} //canous-6395
+			aDecloison.removeAttr('onclick');
+			var lienProspect = '<a href="'+hrefDeBase+'"';
+			if(onclickDeBase!='undefined' && onclickDeBase!=''){  // CANOUS-6703 part 1
+				lienProspect = lienProspect + 'onclick="'+onclickDeBase+'"';
+			}
+			lienProspect = lienProspect + '>'+htmlDeBase+'<a>';//canous-6293 part5
+			/*FIN CANOUS-6543 PART1*/
+			aDecloison.click(function(){
+			        /*DEBUT CANOUS-6287BIS*/
+					var idTCM = aDecloison.data('decloison');
+					var idBam = "bamaccess_" + idTCM;
+					var tire = "";
+					if(aDecloison.is('[title]')){
+						var tire = aDecloison.attr('title') ;
+					}else if(aDecloison.is('[alt]')){
+						tire = aDecloison.attr('alt') ;
+					}else if(aDecloison.children('img') && aDecloison.children('img').is('[alt]')) {
+						   var img = aDecloison.children('img');
+							tire = img.attr('alt');
+					}else{tire = aDecloison.text();}
+					
+					try {if (aDecloison.data('type')=="contact"){
+						if (tire.indexOf(':',0)!=1){   
+							var titleTab = tire.split(":");
+							tire = titleTab[1].trim()+" : "+titleTab[0];
+						}
+					}}catch(e){}
+					paramXiti = "Acces_Banque_En_Ligne::"+processXtParam(XtParamDebase)+"::"+tire+"_"+idTCM; /*CANOUS-6287 PART2*/
+					xiti_page(paramXiti,92);
+				/* Fin CANOUS-6287BIS,Récupération des données debut canous-6293 part6 canous-6310  */
+				var introduction ="", questionClient ="", information ="", questionClientD = "", informationD = "", lienLibre = "", questionLibre ="", informationT =""; libelleProspect =""; 
+                if (aDecloison.is('[data-questionClient]')){
+				    if (aDecloison.is('[data-introduction]')) introduction = aDecloison.data('introduction');
+					if (aDecloison.is('[data-information]'))  information = aDecloison.data('information');
+					if (aDecloison.is('[data-questionClient2]')) questionClientD = aDecloison.data('questionClient2');
+					if (aDecloison.is('[data-information2]'))  informationD = aDecloison.data('information2');
+					if (aDecloison.is('[data-lienLibre]'))lienLibre = aDecloison.data('lienLibre');
+					if (aDecloison.is('[data-information3]')) informationT = aDecloison.data('information3');
+					if (aDecloison.is('[data-libelleProspect]')) libelleProspect = aDecloison.data('libelleProspect');
+                    questionClient = aDecloison.data('questionClient').replace('&apos;','&rsquo;');
+                    questionLibre = aDecloison.data('questionLibre').replace('&apos;','&rsquo;');
+ /* fin canous-6310 */
+				}else{
+				    questionClient = "Vous êtes client et vous utilisez Crédit Agricole en ligne ?";
+					questionLibre = "Vous n&rsquo;êtes pas encore client du Crédit Agricole ?";
+				     introduction ="Réalisez vos devis, souscrivez à nos produits ou encore préparez vos projets en quelques clics et sans vous déplacer. Les services en ligne du <b>Crédit Agricole Alpes Provence</b> sont simples, sécurisés et accessibles où que vous soyez."; 
+					 information ="Connectez-vous à votre espace sécurisé et continuez cette opération"; 
+					 questionClientD ="Vous n’utilisez pas la banque en ligne ?"; 
+					 informationD ="Pour pouvoir vous connecter"; 
+					 lienLibre ="<a href=\'/Formulaires/Vitrine/p-88794.jsp \'>Demandez votre code d&rsquo;accès</a>"; 
+					 questionLibre ="Vous n&rsquo;êtes pas encore client du Crédit Agricole ?"; 
+					
+					 libelleProspect ="Poursuivez et découvrez notre offre !"; 
+				}
+                if (libelleProspect!=""){
+					lienProspect = '<a href="'+hrefDeBase+'" onclick="'+onclickDeBase+'">'+libelleProspect+'<a>';
+				}			
+				/* Fin Récupération des données, fin canous-6293 part6 */
+				
+				/* Integration des données dans la poppin */
+				jQuery(".decloiTitre").html(tire);
+				jQuery("p.decloiIntro").html(introduction);
+				jQuery(".decloiQuestionClient").html(questionClient);
+				jQuery("p.decloiInfo").html(information);
+				jQuery(".decloiQClientD").html(questionClientD);
+				jQuery("p.decloiInfoD").html(informationD);
+				jQuery("p.lienLibre").html(lienLibre);
+				jQuery(".decloiQuestionProspect").html(questionLibre);
+				jQuery("p.decloiInfoT").html(informationT);
+				jQuery("p.lienLibreProspect").html(lienProspect);
+				
+				/* Script pour le fonctionnement de la poppin */
+				var jlink = jQuery('#btnComptes2');
+				var detail ="False";
+                                                                if(jQuery('#detailedInfo').size()>0){if(jQuery('form [input[name="CCPTE"]').size()>0){detail= "True";}}
+				jlink.append( writeBtn(idTCM,detail) );
+				if (typeConnexion != "True"){				    
+					var aIdBam = jQuery('[name="'+idBam+'"] a');  var inputComptes = jQuery('[name="'+idBam+'"] input[name="CCPTE"]'); 
+					//Debut canous-6290 part2
+					inputComptes.keyup(function(){
+					    aIdBam.removeClass('disabled');
+					});
+					//Fin canous-6290 part2
+					aIdBam.click( function(event){					    
+					    var l_form = jQuery('form[name="'+idBam+'"]');
+						// CANOUS-8766
+						xiti_clic('N', paramXiti+'::Authentification', null, null, null, 92);
+						setTimeout(function(){
+							if(authentSyn){ 
+								var expnbr = new RegExp("^[0-9A-Za-z]+$");
+                                                                                                                                if((expnbr.test(inputComptes.val())) && (inputComptes.val().length == 11) ){
+                                                                                                                                           startComptesP(l_form); 
+                                                                                                                                }else{
+								              alert('Veuillez saisir votre numéro de compte à onze chiffres ou caractères alphabétiques');
+								}
+							} 
+						},500); //CANOUS-6410
+                         return false;/*CANOUS-6346*/ 						
+					});
+                     inputComptes.focus(function(){ inputComptes.css('background-position', '0 -20px')}); // CANOUS-6290 part 3
+				}else{
+					var aIdBam = jQuery('a.decloiAcces');
+					aIdBam.click(function(e){
+					    e.preventDefault();
+						var oldHref = jQuery(this).attr('href');
+						xiti_clic('N', paramXiti+'::Authentification', null, null, null, 92);
+      					                setTimeout(function(){
+							document.location.href= oldHref;
+						},500); //CANOUS-6410
+					});
+				}
+                                                               //DEBUT CANOUS-6287
+				jQuery('.lienLibre a').bind("click",function(e){
+				   e.preventDefault();
+				   var oldHref = jQuery(this).attr('href');
+				   xiti_clic('N', paramXiti+'::Demande_Code_Acces', null, null, null, 92);
+				   setTimeout(function(){
+					document.location.href= oldHref;
+					},500); //CANOUS-6410
+                                                                 
+				});
+				/*DEBUT CANOUS-6543 PART2*/
+				jQuery('.lienLibreProspect a').bind("click",function(e){
+				    e.preventDefault()
+					var tab = jQuery(this).get();
+					var onc;
+					if(jQuery(this).attr('onclick')){ 
+					    onc = tab[0].attributes['onclick'].nodeValue;
+					}
+				    var oldHref = jQuery(this).attr('href');
+					xiti_clic('N', paramXiti+'::Navigation_Prospect', null, null, null, 92);
+					setTimeout(function(){
+						if (target =='_blank'){window.open(oldHref);}
+						// debut CANOUS-6703 part 2
+						else {
+							if (onc == undefined || onc == '') {
+								document.location.href= oldHref;
+							}
+						}
+						// fin CANOUS-6703 part 2
+						fermerPoppin();	
+					},500); //CANOUS-6410
+				});
+				/*Fin CANOUS-6543 PART2*/
+
+				/*Début CANOUS-6689 */
+				//Debut TMASOCIETA CANOUS-9196 part1
+				var IE = (!! window.ActiveXObject && +(/msie\s(\d+)/i.exec(navigator.userAgent)[1])) || NaN;
+				if (IE < 9) {	jQuery("#popin_ctnr").show();	
+							} else {jQuery('#popin_ctnr').fadeIn(); }
+				
+				
+				/*if (jQuery.browser.msie) {
+					if(parseFloat(jQuery.browser.version) < 9) jQuery("#popin_ctnr").show();
+					else jQuery('#popin_ctnr').fadeIn();
+				} else jQuery('#popin_ctnr').fadeIn();*/
+				//Fin TMASOCIETA CANOUS-9196 part1
+				/*Fin CANOUS-6689 */
+
+				/* Debut CANOUS-7236 */
+				if (typeConnexion == "True"){
+					// on positionne le focus sur le bouton d'acces aux comptes 
+					jQuery('a.decloiAcces').focus(); 
+				} else { 
+					// on positionne le focus sur le pave de saisie du numero de compte 
+					jQuery('[name="'+idBam+'"] input[name="CCPTE"]').focus(); 				}
+				/* Fin CANOUS-7236 */
+
+				jQuery('#btn-popin').bind("click",function(e){
+						xiti_clic('N', paramXiti+'::Fermer', null, null, null, 92);
+						fermerPoppin();
+				   return false;
+				});
+                                                                //Fin CANOUS-6287
+				return false;
+            
+			});
+			
+		});
+}
+function fermerPoppin(){
+    	jQuery('#frameIdentDecloi').html('');
+	jQuery('#divIdentDecloi').css('display', 'none');
+	var divFrere = jQuery('div.paveidentification').nextAll('div'); 
+	var divFrereP = jQuery('div.paveidentification').prevAll('div'); 
+	divFrereP.fadeIn(); divFrere.fadeIn();
+	
+	//Debut TMASOCIETA CANOUS-9196 part2
+				var IE = (!! window.ActiveXObject && +(/msie\s(\d+)/i.exec(navigator.userAgent)[1])) || NaN;
+				if (IE < 9) {	jQuery("#popin_ctnr").hide();	
+							} else { jQuery("#popin_ctnr").fadeOut() }
+	
+	
+	/*if (jQuery.browser.msie) {
+		if(parseFloat(jQuery.browser.version) < 9) jQuery("#popin_ctnr").hide();
+		else jQuery("#popin_ctnr").fadeOut();
+	} else jQuery("#popin_ctnr").fadeOut();*/
+	//Fin TMASOCIETA CANOUS-9196 part2
+		jQuery("#btnComptes2").html('');
+
+}
+
+/*FIN CANOUS-6543 PART2 DEBUT CANOUS-6287 PART2*/
+var XtParamDebase;
+jQuery(document).ready(function(){
+/*Debut CANOUS-7232 part2*/
+	var lienDecloi = jQuery('a[data-decloison]');
+                if (lienDecloi.size()>0){
+	      if (jQuery('area[data-decloison]').size()>0)
+	      lienDecloi = jQuery('a[data-decloison]').add(jQuery('area[data-decloison]'));
+                    }else lienDecloi = jQuery('area[data-decloison]');
+
+	if (lienDecloi.size()>0){
+/*Fin CANOUS-7232 part2*/
+           XtParamDebase = Xt_param; 
+/*FIN CANOUS-6287 PART2*/
+        /* Création de la poppin qui recevra les éléments + ajout au body */
+        jQuery('body').append(templateBloc);
+		weaveDecloisonnement();
+		
+	}
+});
+</script>
+<!--Fin CANOUS-6345 -->
+<script>ca_pageLoad = new function(){this.Tasks = new Array();this.execute = function(){for(var i=0; i<this.Tasks.length; i++){this.Tasks[i].apply(window);}};};</script>
+<script>var idXiti; idXiti=66366;</script><script>xiti_g_s1=66366;idCR=131;</script>
+
+<!-- DEBUT SICRH-72 Inversion des 2 blocs js, SICRH-52-PROTO -->
+
+
+
+<!-- DEBUT 06/06/2013 : CRI : CANOUS 5837 : Anomalie affichage réglettes bloc Simulateur de livret d'épargne -->
+<!-- changement de la condition pour l'affichage de la réglette dans les 2 cas typeStandard et mode de saisie d'identification --> 
+
+<script type="text/javascript" src="/Vitrine/ObjCommun/DCI/js/ecart-v1/jquery-ui.min.js"></script>
+<script type="text/javascript" src="/Vitrine/ObjCommun/DCI/js/wg/jquery.pngFix.pack.js"></script>
+
+<!-- FIN 06/06/2013 : CRI : CANOUS 5837 : Anomalie affichage réglettes bloc Simulateur de livret d'épargne -->
+
+<!-- Fin SICRH-52-PROTO, Debut TMANICEV1AC -->
+
+<!-- Fin TMANICEV1AC, SICRH-72 -->
+
+<!-- Debut TMARESSOC-->
+
+<!-- Fin TMARESSOC-->
+
+<!-- Debut CANOUS-9492 part 2 -->
+<script>
+function delCookiesMarketing() {
+					var keyCook = utils_getCookie("keyCookie");
+					var productCook = utils_getCookie("productCookie");
+									
+					if (keyCook != null){
+						utils_setCookie("keyCookie", "", -1, "/");
+					}
+					if (productCook != null){
+						utils_setCookie("productCookie", "", -1, "/");
+					}
+					// Suppression des cookies Coremetrics quand on refuse managed-cookie-reccli
+					cmSetIT(true);
+					cmSetCookieSetting("D");
+
+}
+
+/*Debut TMATRACKINGLOT3 part1 : variable d'activation pour la BAM - debut CANOUS-9520 part 1*/
+//CANOUS-9950 part3
+
+var cookieReco = utils_getCookie('managed-cookie-reccli-new');
+var tracking ;
+//CANOUS-9058 part2
+if (cookieReco != "Refus" ){
+	tracking = "O";
+} else { tracking = "N"; }
+/*Fin TMATRACKINGLOT3 part1  - fin CANOUS-9520 part 1*/
+</script>
+<!-- Fin CANOUS-9492 part 2 -->
+
+</head>
+
+<!--TMABLOCAD TMABLOCDH TMATOCOV TMARECCLILOT3  TMAREFOF TMAREFOFLOT2 part3-->
+<body onload="ca_pageLoad.execute();" class="v12_3 v13_2 v13_2_2 v14_2 alpesProvence particuliers ">
+<!--Debut TMARECCLILOT2 - CANOUS-6537 -->
+
+
+
+
+<!--Fin TMARECCLILOT2 CANOUS-6537-->
+<!-- <h1> marché Entet value : particuliers </h1> -->
+<div id="__contentRoot" class="accueil">
+
+
+
+<!-- Debut TMANICEV1AC -->
+
+
+
+<!-- Deb top -->
+<div id="top">
+	<!-- Deb Header -->
+	<div id="header">
+		<div id="logo">
+
+<!-- Debut TMAVIE -->
+
+			<a title="Page d'accueil" href="/"><img width="320" height="160" alt="Crédit Agricole Alpes Provence" src="/Vitrine/ObjCommun/DCIV2/img/logo_creditagricole.png"></a>
+
+<!-- Fin TMAVIE -->                                            
+			   <h1>Crédit Agricole<br/>Alpes Provence</h1>
+
+                                               
+			   <h2>Banque <span>et</span> Assurances</h2>
+                                               
+
+		</div>
+		<div id="navComptes">
+			<div id="petiteNav">
+				<ul>
+
+					<li class="bR"><a href="/engagement-caap.html" title="Nos Engagements" onclick="xiti_clic('N', 'engagements-cr');" target="_blank">Nos Engagements</a></li>    <!-- Canous-5862  -->
+
+					<li class="bR"><a href="/Contacts.html" title="Contact" target="_blank">Contact</a></li>    <!-- Canous-5862  -->
+
+					<li class="bR"><a href="/banque-mobile.html" title="Nos services en ligne" onclick="xiti_clic('N', 'servicenligne-banquemobile', '/banque-mobile.html', false);return false;">Nos services en ligne</a></li>    <!-- Canous-5862  -->
+
+					<li class="bR"><a href="/tarifs.html" title="Nos tarifs" target="_blank">Nos tarifs</a></li>    <!-- Canous-5862  -->
+
+					<li class="bR"><a href="http://ca-alpesprovence-recrute.talent-soft.com" title="Recrutement" onclick="xiti_clic('N', 'recrutement', 'http://ca-alpesprovence-recrute.talent-soft.com', false);return false;">Recrutement</a></li>    <!-- Canous-5862  -->
+
+					<li class="bR"><a href="http://www.squarehabitat-alpesprovence.fr/" title="Square Habitat" onclick="xiti_clic('N', 'clic-entete-squarehabitat');" target="_blank">Square Habitat</a></li>    <!-- Canous-5862  -->
+
+					<li class="bR"><a href="/emailings.html" title="Nos derniers e-mailings" target="_blank">Nos derniers e-mailings</a></li>    <!-- Canous-5862  -->
+
+					<li style="background-image: url('/content/binary/english_flag_tcm_186_98602.gif'); background-repeat: no-repeat; background-position: 5px 3px; padding: 0 0 0 21px;border: 0;">
+						<a href="/english-speaking-customer.html" title="English speaking customers">English speaking customers</a>
+					</li>
+
+				</ul>
+			</div>
+			<div id="blocAcces" class="comptes">
+				<ul>
+
+<!-- Debut TMANICEV1AC-->
+
+		<li id="blocComptes">
+			
+				<a onclick="ap.css.changeClassByID('blocAcces','comptes'); return false;" onfocus="blur();" href="#"><span>Vos comptes</span></a>
+			
+		</li> 
+		
+<!-- Fin TMANICEV1AC-->
+
+
+
+<script language="JavaScript" src="/Vitrine/ObjCommun/js/bamv3.js" type="text/javascript"></script>
+<script>
+var emailing = ("true" == utils_getCookie("emailing")) || ("true" == utils_getCookie("ctx_emailing"));
+
+
+
+<!-- Debut TMAVIE -->
+
+</script>
+<!-- Fin TMAVIE -->
+
+					<li id="blocRecherches"><a onclick="ap.css.changeClassByID('blocAcces','recherches'); return false;" onfocus="blur();" href="#">
+<span>
+
+Rechercher</span></a></li>
+
+
+	
+					 
+<li id="blocSecurite"><a href="/site-securite.html" title="Site sécurité" onclick="xiti_clic('N', 'site-securite', '/site-securite.html', false);return false;">Sécurité</a></li>
+
+				
+				</ul>
+
+<!-- TMANICEV1AC ajout remarque DDP -->
+				<div id="comptesZone" class="content first" style="z-index:1000;">
+				
+			<!-- TMANICEV1AC -->
+				
+					<div id="btnComptes">
+<!-- Debut TMAVIE -->
+
+
+
+
+
+	<script language="JavaScript" src="/Vitrine/ObjCommun/js/bamv3.js" type="text/javascript"></script>
+	<script language="JavaScript">
+	<!--
+	bamv3_g_bSecurite = false;
+	bamv3_g_bSansPopup = false;
+	bamv3_g_sUrlSecurite = "";
+	//-->
+	</script>
+	<script language="JavaScript">
+		var emailing = ("true" == utils_getCookie("emailing")) || ("true" == utils_getCookie("ctx_emailing"));
+		var typeConnexion = "True"; //canous-5782: TMADECLOI
+		var strAccesBam = "";
+		var strMsg = "Vous êtes arrivé sur ce site depuis un site partenaire ou un e-mailing, c\'est pourquoi l\'accès à vos comptes est inactivé. <br/><br/>Pour l\'afficher de nouveau, veuillez fermer votre session et ouvrir un second navigateur.";
+
+                               /*Debut CANOUS-2766*/
+
+                                var chemin = "https://www.alpesprovence-g3-enligne.credit-agricole.fr/stb/entreeBam" || "https://www.alpesprovence-g3-enligne.credit-agricole.fr/stb/entreeBam";
+
+                            
+		/* Fin CANOUS-2766 Debut TMANICEV1AC*/
+
+		
+/*Debut CANOUS-841*/
+			if (!emailing) {
+				strAccesBam = '<form name="bamaccess" id="bamaccess" autocomplete="off" method="post" action="'+chemin+'">' + strAccesBam;
+				strAccesBam = strAccesBam + '<input type="hidden" name="TOP_ORIGINE" value="V">';
+				strAccesBam = strAccesBam + '<INPUT type="hidden" name="vitrine" value="O">';
+				strAccesBam = strAccesBam + '<INPUT TYPE="hidden" name="largeur_ecran" value="800">';
+				strAccesBam = strAccesBam + '<INPUT TYPE="hidden" name="hauteur_ecran" value="600">';
+				strAccesBam = strAccesBam + '<INPUT TYPE="hidden" name="origine" value="vitrine">';
+				strAccesBam = strAccesBam + '<INPUT TYPE="hidden" name="situationTravail" value="BANQUAIRE">';
+				strAccesBam = strAccesBam + '<INPUT TYPE="hidden" name="canal" value="WEB">';
+				strAccesBam = strAccesBam + '<INPUT TYPE="hidden" name="typeAuthentification" value="CLIC_ALLER">';
+				strAccesBam = strAccesBam + '<INPUT TYPE="hidden" name="urlOrigine" value="http://www.ca-alpesprovence.fr">';
+				//TMATRACKINGLOT3 part 1bis : accès BAM bouton standard
+				strAccesBam = strAccesBam + '<INPUT TYPE="hidden" name="tracking" value="'+tracking+'">';
+				strAccesBam = strAccesBam + '</form><a href="javascript:bamv3_validation();">Accédez à vos comptes</a>';
+			} else {
+				strAccesBam = strAccesBam + '<a href="javascript:void(0);" onClick="javascript:bamv3_popupMailing(strMsg)">> Vos comptes...</a>';
+			}
+			
+
+	document.write(strAccesBam);
+/* Fin TMANICEV1AC */
+	</script>
+	
+	
+
+
+<!-- Fin TMAVIE -->
+					</div>
+
+
+<div id="demo"><!-- \CA_Recette_Vitrine\Building Blocks Management\DCI\Composants\Liens\EnTete\Visite guidée (tcm:46-100187) -->
+                        <a href="/demo-cael.html" title="Visite guidée" onclick="xiti_clic('N', 'Clic-Lien-Zone_Entete-DemoBAMv5', '/demo-cael.html', false);return false;">Voir la démo</a>
+                    </div>
+
+
+		
+					<ul>
+
+						<li class="border"><a href="/Formulaires/Vitrine/p-305137.jsp">Code oublié?</a></li>
+
+						<li class="finish"><a href="/Formulaires/Vitrine/p-88794.jsp">Demandez votre code</a></li>
+
+					</ul>
+
+				</div>
+
+				<div id="rechercheZone" class="content">
+					<label>Saisissez votre recherche :</label>
+                    <form onsubmit="return validationOK()" enctype="application/x-www-form-urlencoded" name="newSearch" method="post" action="les-resultats-de-votre-recherche.html" target="_self">
+                        <input type="hidden" name="RE" value="131" >
+                        <div class="moteur">
+                            <input type="text" align="left" onfocus="this.value='';" size="1" value="Rechercher" id="KEYWORDS" name="KEYWORDS">
+                        </div>
+                        <a onclick="validationEntree();" href="#" class="lien_nav_btn">OK</a>
+                    </form>
+				</div>
+
+<!--Fin CANOUS-842 -->
+                                           </div>
+		</div>
+	</div>
+
+	<!-- Fin Header -->
+
+
+<!-- Deb nav_horizontale -->
+
+<!-- Debut TMAVIE -->
+
+	<div id="navH">
+		<!-- baseline -->
+		<div id="menu1" class="col2">
+			<ul>
+<li class="particuliers selected"><a  href="/particuliers.html"><span class="oRight">Particuliers</span></a></li>
+
+<li class="professionnels"><a  href="/professionnels.html"><span class="oRight">Professionnels</span></a></li>
+
+<li class="agriculteurs"><a  href="/agriculteurs.html"><span class="oRight">Agriculteurs</span></a></li>
+<!-- DEBUT TMAVIE - LivProdVIE -->
+
+
+<li class="entreprises"><a  href="http://entreprises.ca-alpesprovence.fr"><span class="oRight">Entreprises</span></a></li>
+<!-- FIN TMAVIE - LivProdVIE -->
+
+<li class="collectivites"><a  href="/collectivites.html"><span class="oRight">Collectivités Publiques</span></a></li>
+
+<li class="associations"><a  href="/associations.html"><span class="oRight">Associations</span></a></li>
+
+			</ul>
+		</div>
+		<div class="cb"></div>
+		<div id="bandeau">
+			<span></span></div>
+		<!-- zone bourse -->
+		<script language="javascript" src="/Vitrine/ObjCommun/js/indFinancier.js" type="text/javascript"></script>
+		<!-- menu 2 : entree par produits -->
+
+		<div id="menu2" class="col2">
+<ul>
+
+<li class="quotidien "><a  class="oLeft" href="/particuliers/services-essentiels.html"><span class="oRight">Quotidien</span></a></li>
+
+<li class="credit "><a  class="oLeft" href="/particuliers/pret-immobilier.html"><span class="oRight">Crédit</span></a></li>
+<li class="epargne "><a  class="oLeft" href="/particuliers/epargne-bancaire.html"><span class="oRight">Epargne</span></a></li>
+<li class="assurances "><a  class="oLeft" href="/particuliers/assurance-des-biens.html"><span class="oRight">Assurances</span></a></li>
+<li class="produits "><a  class="oLeft" href="/particuliers/tous-nos-produits-particuliers.html"><span class="oRight">Tous nos produits</span></a></li>
+
+<li class="simulateurs "><a  class="oLeft" href="/particuliers/simulateurs.html"><span class="oRight">
+
+Simulateurs</span></a></li>
+</ul>
+		</div>
+		<div class="cb"></div>
+	</div>
+	<!-- Fin nav_horizontale -->
+<!-- Fin TMAVIE -->
+
+</div>
+<!-- Fin Top DEBUT CANOUS-8384 : TMATRACKINGLOT3 PART 4  DEBUT CANOUS-9950 part1-->
+
+<!-- Debut CANOUS-9951 -->
+<script>
+
+
+
+
+
+
+
+
+
+
+
+
+				 
+                
+				document.write ("<div class=\"recocliv2\">");		
+				
+				
+					document.write ("<a class=\"lien-valid\" href=\"#\" title=\"Validez en cliquant sur ce bouton pour que le message disparaisse\">x</a>");
+						document.write ("<div class=\"texte\">");
+						
+						document.write ("En poursuivant votre navigation sur ce site, vous acceptez l'utilisation de cookies susceptibles de vous proposer des publicités ciblées adaptées à vos centres d'intérêts, un affichage de contenus personnalisés et de réaliser des statistiques de visites.<br/>");
+						document.write ("<span id=\"tcm\" style=\"display:none;\">279561</span>");
+						document.write ("<a class=\"lien-conf\" href=\"/charte-de-l-internaute.html#cookieManager_form\" title=\"Lien charte de l'internaute\" onclick=\"xiti_clic('N', 'clic-lien-simulateurEALS', '/charte-de-l-internaute.html#cookieManager_form', false);return false;\" >Pour en savoir plus et paramétrer les cookies</a>");
+						document.write ("</div></div>");
+				
+								
+									   
+				    //CANOUS-9058 part3 : Pas accord explicite du cookie quand on clique sur X dans l'encart
+				    function fermerEncartV2(){
+						jQuery(".recocliv2").fadeOut();
+						var idMess = jQuery('.recocliv2 .texte span#tcm').html();
+						xiti_clic('N', "RecommandationClient::ok::"+idMess);
+						return false;
+						
+					}
+					//Debut CANOUS-9058 part4
+					// Depot de cookie Accord si on clique sur tous les liens interne sauf celui contenu dans de la X de l'encart
+					jQuery(document).ready(function() {
+					    jQuery('body a').click(function(){
+							var contenuLien = jQuery(this).attr('href');
+							var classLien =  jQuery(this).attr('class');
+                                                                                                                var idLien =  jQuery(this).attr('id');
+							if (classLien != "lien-valid" && idLien != "btn_cover" && ((contenuLien.indexOf("javascript")==0)||(contenuLien.indexOf("/")==0)||(contenuLien.indexOf("www.ca-alpesprovence.fr")>=0)||(contenuLien.indexOf("#")==0))){
+								/*CANOUS-9950*/
+								utils_setCookie('managed-cookie-reccli-new','Accord',33696000000,'/','.ca-alpesprovence.fr');
+								}
+						});
+						jQuery('.lien-valid').bind("click",fermerEncartV2);
+	                    jQuery('.recocliv2').css('display','block');
+			        });
+				//Fin CANOUS-9058 part4
+					<!-- Fin  CANOUS-8384 : TMATRACKINGLOT3 -->
+				
+				
+
+
+</script>
+<!-- Fin CANOUS-9951 -->
+
+
+<!-- Script pour le formulaire de gestion des cookies -->
+<script>
+jQuery(document).ready(function(){
+	var _timer = setInterval(function(){
+	    var formul = jQuery('form#cookieManager_form');
+	    if (formul.length > 0){
+			jQuery('form#cookieManager_form input').click(function(){
+			//Debut CANOUS-9297
+			var nomCookie = jQuery(this).attr('id');
+			//Debut CANOUS-9058 part5
+			    if (!jQuery(this).attr('checked')){
+				    utils_setCookie(nomCookie, "Accord", 33696000000, "/",'.ca-alpesprovence.fr');
+				}else{
+					//CANOUS-9950 part2
+					if (nomCookie == "managed-cookie-reccli-new"){
+				    		utils_setCookie(nomCookie, "Refus", 33696000000, "/",'.ca-alpesprovence.fr');
+						// Debut TMATRACKINGLOT3 part 5 -- Suppression des cookies productCookie et keyCookie si on désactive managed-cookie-reccli
+						delCookiesMarketing(); //CANOUS-9492 part 4
+						// Fin TMATRACKINGLOT3 part 5
+					} else {
+						utils_setCookie(nomCookie, "Refus", 33696000000, "/",'.ca-alpesprovence.fr');
+					}
+				}
+			//Fin CANOUS-9297
+			});
+		//Fin CANOUS-9058 part5	
+          clearInterval(_timer);			
+		}
+   }, 500);
+});
+</script>
+<!-- fin CANOUS-8384 : TMATRACKINGLOT3  PART 4 -->
+
+
+
+<!-- debut TMARESSOC-->
+
+<!-- fin TMARESSOC -->
+
+
+
+<script>utils_setCookie("lastMark", "particuliers", 604800000, "/");</script>
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- CANOUS-737  -->
+
+
+
+
+
+
+
+
+
+
+
+<!-- CANOUS-737  -->
+
+<script type="text/javascript" src="/Vitrine/ObjCommun/DCIV2/js/jquery.jfeed.js"></script>
+
+<!-- Debut TMACARROUSEL -->
+<script type="text/javascript" src="/Vitrine/ObjCommun/DCIV2/js/carousel.js"></script>
+<script type="text/javascript" src="/Vitrine/ObjCommun/DCIV2/js/jquery.color.js"></script>
+
+<!-- Fin TMACARROUSEL, Début CANOUS-786  -->
+
+
+
+
+<script>
+jQuery(document).ready(function(){
+                                                /* Début TMASIMINFO */
+			 jQuery(".blocsuggestion .bloc_contenu span").click(function () {
+			 /*jQuery(".bloc_contenu #connexe").click(function () {*/
+                                                /* Fin modification TMASIMINFO */
+				$clickedpos = jQuery(this).parent().attr('class');
+				if ($clickedpos != 'pos1') {
+					$pos1elt = jQuery(this).parent().parent().find('div.pos1').fadeOut('fast', function(){jQuery(this).removeClass('pos1').addClass($clickedpos).fadeIn('fast');})
+					jQuery(this).parent().fadeOut('fast', function(){
+						jQuery(this).removeClass($clickedpos).addClass('pos1').fadeIn('fast')
+					});
+				}
+		  });
+	});
+</script>
+
+
+
+
+
+
+<script language="javascript">
+function changeCheminUrl(url,id,mot){
+    var cheminAbsolu;
+    cheminAbsolu=document.location.href;
+    var pat=/http[s]?:\/\/[\w\.-]+/i;
+    var patRelative = /&url=\/|&u=\//;
+    var cheminRacine = cheminAbsolu.match(pat);
+    if(patRelative.test(url)){ 
+            url =url.replace(mot,mot+cheminRacine);
+            document.getElementById(id).href=url;
+    }
+}
+</script>
+
+<!-- Fin CANOUS-786 , debut alertes client  -->
+
+<!-- fin alerte client  -->
+
+
+
+<!-- debut CANOUS-2402 -->
+
+
+<!-- fin CANOUS-2402 -->
+
+<div class="col3 cef" id="main"><div class="bloc3 blocs"><iframe scrolling="no" frameborder="no" noresize="noresize" style="border: 1px solid #c3c3c3; height: 260px;" src="/Vitrine/ObjCommun/Fic/AlpesProvence/HOME2014/loader-home.html"></iframe> </div> 
+ 
+<!-- debut TMASIMEP -->
+
+
+
+<!-- Fin TMASIMEP TMASIMEVOL -->
+</div>
+
+
+
+
+
+
+
+
+
+
+<!-- d Marquage IBM inc V.39 -->
+<script language="JavaScript1.1">
+
+//CANOUS-8504 XITI 1 ligne à supprimer pour CoreMetrics
+var xitiDN = (location.protocol.indexOf('https') != -1) ? "https://logs8.xiti.com" : "http://logc8.xiti.com";
+
+Xt_param = 's=66366&s2=2&di=&p=particuliers::particuliers';
+
+
+
+// DEBUT 16/09/2013 CRI: CANOUS-6494 creation cookie DEBUT CANOUS-8440 part1
+try {
+	referent = top.document.referrer;
+} catch(e) {
+	referent = document.referrer;
+}
+page_courante = window.location.href.substring(window.location.href.indexOf("/",0));
+page_precedente = referent.substring(referent.indexOf("/",0));
+if (page_courante == page_precedente) {
+	// on est dans le cas d'une redirection https
+	Xt_r = utils_getCookie("Referrer"); 
+	if (Xt_r == null) {
+		Xt_r = "";
+	}
+}
+else {
+	if (referent !=null ) {
+		Xt_r = referent;
+	}
+	else {
+		Xt_r = "";
+	}
+}
+// FIN 16/09/2013 CRI: CANOUS-6494 creation cookie Fin CANOUS-8440 part1
+//DEBUT CANOUS-8504 XITI 2
+Xt_h = new Date();
+
+/*DEBUT CANOUS-5760*/
+if (window['g_skipAnalyticsTag'] != true){
+	var xt_src = xitiDN + '/hit.xiti?'+Xt_param + '&hl='+Xt_h.getHours()+'x'+Xt_h.getMinutes()+'x'+Xt_h.getSeconds();
+	if(parseFloat(navigator.appVersion)>=4)
+		{Xt_s=screen;xt_src+='&r='+Xt_s.width+'x'+Xt_s.height+'x'+Xt_s.pixelDepth+'x'+Xt_s.colorDepth;}
+	xt_src+='&ref='+Xt_r.replace(/[<>"]/g, '').replace(/&|\?/g, '$');
+	xt_img = new Image();
+	xt_img.style.display = 'none';
+	xt_img.src = xt_src;
+}
+/*FIN CANOUS-5760*/
+//FIN CANOUS-8504 XITI 2
+//DEBUT TMATRACK CANOUS-7853 part2
+//Différenciation Formulaire normal ou embarqué
+var nomForm ;
+var modeFormNormal = false;
+ if(jQuery('div.form .title h1').size()>0){
+		nomForm = jQuery('div.form .title h1').text();
+}else{
+	if(jQuery('div.apForm .title h1').size()>0){
+	nomForm = jQuery('div.apForm .title h1').text();
+	modeFormNormal = true;
+	}
+}
+
+			if (window['g_skipAnalyticsTag'] != true){
+				cmCreatePageviewTag("particuliers::particuliers", "V_2","","","-_--_--_--_--_--_--_--_-81300");
+			}
+	
+
+</script>
+
+<!--DEBUT CANOUS-8504 XITI 3 -->
+<noscript>
+<img width="1" height="1" src="https://logs8.xiti.com/hit.xiti?s=66366&s2=2&p=particuliers::particuliers&di=">
+</noscript>
+<!--FIN CANOUS-8504 XITI 3 -->
+
+<!-- f Marquage IBM inc V.39 -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- Deb bottom -->
+
+<div id="bottom">
+<!-- DEBUT SICRH-52, TMAMASSFOOT -->
+
+
+
+ <ul class="bottom_menu">
+    <li>
+        BANQUE
+        <ul>
+              
+                    <li><a href="/relation-banque-client.html" title="Relation Banque-Client" target="_blank">Relation Banque-Client</a></li>    <!--   Canous-5862   -->
+              
+                    <li><a href="/banque-assurance.html" title="Trouvez votre agence" target="_blank">Trouvez votre agence</a></li>    <!--   Canous-5862   -->
+              
+                    <li><a href="/tarifs.html" title="Nos tarifs" target="_blank">Nos tarifs</a></li>    <!--   Canous-5862   -->
+              
+        </ul>
+    </li>
+
+    <li>
+        INFORMATIONS UTILES
+        <ul>
+              
+	    <li><a href="/Vitrine/ObjCommun/Fic/AlpesProvence/EspaceD/infos_financieres/index.htm" title="Information Réglementée" target="_blank">Information Réglementée</a></li>    <!--   Canous-5862   -->
+              
+	    <li><a href="/Vitrine/ObjCommun/Fic/AlpesProvence/EspaceD/ComPresse/index.htm" title="Communiqués de Presse" target="_blank">Communiqués de Presse</a></li>    <!--   Canous-5862   -->
+              
+	    <li><a href="/etudes-economiques.html" title="Etudes économiques">Etudes économiques</a></li>    <!--   Canous-5862   -->
+              
+        </ul>
+    </li>
+
+    <li>
+        INFORMATIONS SITE
+        <ul>
+              
+	    <li><a href="/plan-du-site.html" title="Plan du site" target="_blank">Plan du site</a></li>    <!--   Canous-5862   -->
+              
+	    <li><a href="/mentions-legales.html" title="Mentions légales" target="_blank">Mentions légales</a></li>    <!--   Canous-5862   -->
+              
+	    <li><a href="/Contacts.html" title="Contactez-nous" target="_blank">Contactez-nous</a></li>    <!--   Canous-5862   -->
+              
+        </ul>
+    </li>
+
+    <li>
+        NOS AUTRES SITES
+        <ul>
+              
+	    <li><a href="https://www.kwixo.com/" title="Kwixo" onclick="xiti_clic('N', 'lien kwixo');" target="_blank">Kwixo</a></li>    <!--   Canous-5862   -->
+              
+	    <li><a href="http://www.ca-mozaic.com/" title="Mozaic" onclick="xiti_clic('N', 'lien mozaic footer');" target="_blank">Mozaic</a></li>    <!--   Canous-5862   -->
+              
+        </ul>
+    </li>
+</ul>
+
+
+
+<!-- FIN SICRH-52, TMAMASSFOOT -->
+  <div class="copy">
+  	&copy; Crédit Agricole 2011
+  </div>
+
+</div>
+<!-- Fin bottom -->
+</div>
+</body>
+</html>
+
+	
+	

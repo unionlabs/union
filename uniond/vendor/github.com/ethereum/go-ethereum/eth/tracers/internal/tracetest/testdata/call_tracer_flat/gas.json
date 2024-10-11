@@ -1,0 +1,95 @@
+{
+  "genesis": {
+    "difficulty": "4683014",
+    "extraData": "0x537465762d63676574682d76312e31312e34",
+    "gasLimit": "9435044",
+    "hash": "0x3452ca5005cb73cd60dfa488a7b124251168e564491f80eb66765e79d78cfd95",
+    "miner": "0x415aa6292d1db797a467b22139704956c030e62f",
+    "mixHash": "0x6037612618507ae70c74a72bc2580253662971db959cfbc06d3f8527d4d01575",
+    "nonce": "0x314fc90dee5e39a2",
+    "number": "1555274",
+    "stateRoot": "0x795751f3f96a5de1fd3944ddd78cbfe4ef10491e1086be47609869a30929d0e5",
+    "timestamp": "1590795228",
+    "totalDifficulty": "2242595605834",
+    "alloc": {
+      "0x0000000000000000000000000000000000000001": {
+        "balance": "0x0",
+        "nonce": "0",
+        "code": "0x",
+        "storage": {}
+      },
+      "0x877bd459c9b7d8576b44e59e09d076c25946f443": {
+        "balance": "0x6242e3ccf48e66425fb1",
+        "nonce": "264882",
+        "code": "0x",
+        "storage": {}
+      }
+    },
+    "config": {
+      "chainId": 63,
+      "daoForkSupport": true,
+      "eip150Block": 0,
+      "eip150Hash": "0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d",
+      "eip155Block": 0,
+      "eip158Block": 0,
+      "ethash": {},
+      "homesteadBlock": 0,
+      "byzantiumBlock": 0,
+      "constantinopleBlock": 301243,
+      "petersburgBlock": 999983,
+      "istanbulBlock": 999983
+    }
+  },
+  "context": {
+    "number": "1555275",
+    "difficulty": "4683014",
+    "timestamp": "1590795244",
+    "gasLimit": "9444256",
+    "miner": "0x877bd459c9b7d8576b44e59e09d076c25946f443"
+  },
+  "input": "0xf9011583040ab2843b9aca008301a9c88080b8c0601b565b6000555b005b630badf00d6003565b63c001f00d6003565b7319e7e376e7c213b7e7e7e46cc70a5dd086daff2a7f22ae6da6b482f9b1b19b0b897c3fd43884180a1c5ee361e1107a1bc635649dda600052601b603f537f16433dce375ce6dc8151d3f0a22728bc4a1d9fd6ed39dfd18b4609331937367f6040527f306964c0cf5d74f04129fdc60b54d35b596dde1bf89ad92cb4123318f4c0e40060605260206080607f60006000600161fffff2156007576080511460125760095681a1a07682fc43dbe1fb13c6474f5e70e121c826dd996168d8bb1d8ca7a63470127b46a00a25b308ba417b7770899e8f98a3f0c14aa9bf7db0edacfe4e78d00dbbd3c31e",
+  "result": [
+    {
+      "type": "create",
+      "action": {
+        "from": "0x877bd459c9b7d8576b44e59e09d076c25946f443",
+        "value": "0x0",
+        "gas": "0x1a9c8",
+        "init": "0x601b565b6000555b005b630badf00d6003565b63c001f00d6003565b7319e7e376e7c213b7e7e7e46cc70a5dd086daff2a7f22ae6da6b482f9b1b19b0b897c3fd43884180a1c5ee361e1107a1bc635649dda600052601b603f537f16433dce375ce6dc8151d3f0a22728bc4a1d9fd6ed39dfd18b4609331937367f6040527f306964c0cf5d74f04129fdc60b54d35b596dde1bf89ad92cb4123318f4c0e40060605260206080607f60006000600161fffff21560075760805114601257600956"
+      },
+      "result": {
+        "gasUsed": "0x137e5",
+        "code": "0x",
+        "address": "0x1a05d76017ca02010533a470e05e8925a0380d8f"
+      },
+      "traceAddress": [],
+      "subtraces": 1,
+      "transactionPosition": 18,
+      "transactionHash": "0xc1c42a325856d513523aec464811923b2e2926f54015c7ba37877064cf889803",
+      "blockNumber": 1555275,
+      "blockHash": "0x80945caaff2fc67253cbb0217d2e5a307afde943929e97d8b36e58b88cbb02fd",
+      "time": "453.925µs"
+    },
+    {
+      "type": "call",
+      "action": {
+        "from": "0x1a05d76017ca02010533a470e05e8925a0380d8f",
+        "to": "0x0000000000000000000000000000000000000001",
+        "value": "0x0",
+        "gas": "0xc8c6",
+        "input": "0x22ae6da6b482f9b1b19b0b897c3fd43884180a1c5ee361e1107a1bc635649dda000000000000000000000000000000000000000000000000000000000000001b16433dce375ce6dc8151d3f0a22728bc4a1d9fd6ed39dfd18b4609331937367f306964c0cf5d74f04129fdc60b54d35b596dde1bf89ad92cb4123318f4c0e4",
+        "callType": "callcode"
+      },
+      "result": {
+        "gasUsed": "0xbb8",
+        "output": "0x00000000000000000000000019e7e376e7c213b7e7e7e46cc70a5dd086daff2a"
+      },
+      "traceAddress": [0],
+      "subtraces": 0,
+      "transactionPosition": 18,
+      "transactionHash": "0xc1c42a325856d513523aec464811923b2e2926f54015c7ba37877064cf889803",
+      "blockNumber": 1555275,
+      "blockHash": "0x80945caaff2fc67253cbb0217d2e5a307afde943929e97d8b36e58b88cbb02fd"
+    }
+  ]
+}

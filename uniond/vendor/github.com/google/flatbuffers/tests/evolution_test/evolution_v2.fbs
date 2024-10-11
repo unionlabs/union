@@ -1,0 +1,51 @@
+namespace Evolution.V2;
+
+table TableA {
+    b:int (id: 1);      // swapped with 'a'
+    a:float (id: 0);    // swapped with 'b'
+    c:string (id: 2);   // new in v2
+}
+
+table TableB {
+    a:int;
+}
+
+table TableC {          // new in v2
+    a:double;
+    b:string;
+}
+
+enum Enum : byte {
+    King,
+    Queen,
+    Rook,               // new in v2
+    Bishop              // new in v2
+}
+
+union Union {
+    TableA,
+    TableB,
+    TableC
+}
+
+struct Struct {
+    a:int;
+    b:double;
+}
+
+table Root {
+    a:int (deprecated); // deprecated in v2
+    b:bool;
+    c:Union;
+    d:Enum;
+    e:TableA;
+    ff:Struct;          // renamed from 'f' in v1
+    g:[int];
+    h:[TableB];
+    i:uint = 1234;
+    j:Union (deprecated); // deprecated in v2
+    k:TableC;           // new in v2
+    l:uint8 = 56;       // new in v2
+}
+
+root_type Root;

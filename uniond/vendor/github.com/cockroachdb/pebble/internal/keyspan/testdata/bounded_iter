@@ -1,0 +1,251 @@
+define
+a-b:{(#10,RANGEKEYSET,@5,apples)}
+d-e:{(#4,RANGEKEYSET,@3,coconut)}
+g-h:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+----
+
+# Nothing out of bounds.
+
+iter lower=a upper=z
+first
+next
+next
+next
+last
+prev
+prev
+prev
+----
+a-b:{(#10,RANGEKEYSET,@5,apples)}
+d-e:{(#4,RANGEKEYSET,@3,coconut)}
+g-h:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+<nil>
+g-h:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+d-e:{(#4,RANGEKEYSET,@3,coconut)}
+a-b:{(#10,RANGEKEYSET,@5,apples)}
+<nil>
+
+# Test out of upper bound, but undiscovered until we Next.
+
+iter lower=a upper=f
+first
+next
+next
+prev
+----
+a-b:{(#10,RANGEKEYSET,@5,apples)}
+d-e:{(#4,RANGEKEYSET,@3,coconut)}
+<nil>
+d-e:{(#4,RANGEKEYSET,@3,coconut)}
+
+# Test out of upper bound, but discovered before we Next.
+
+iter lower=a upper=dog
+first
+next
+next
+prev
+----
+a-b:{(#10,RANGEKEYSET,@5,apples)}
+d-e:{(#4,RANGEKEYSET,@3,coconut)}
+<nil>
+d-e:{(#4,RANGEKEYSET,@3,coconut)}
+
+# Test out of lower bound, but undiscovered until we Prev.
+
+iter lower=c upper=z
+last
+prev
+prev
+next
+----
+g-h:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+d-e:{(#4,RANGEKEYSET,@3,coconut)}
+<nil>
+d-e:{(#4,RANGEKEYSET,@3,coconut)}
+
+# Test out of lower bound, but discovered before we Prev.
+
+iter lower=d upper=z
+last
+prev
+prev
+next
+----
+g-h:{(#20,RANGEKEYSET,@5,pineapple) (#20,RANGEKEYSET,@3,guava)}
+d-e:{(#4,RANGEKEYSET,@3,coconut)}
+<nil>
+d-e:{(#4,RANGEKEYSET,@3,coconut)}
+
+# Test a single span ([b-g)) within the bounds, overlapping on both ends.
+
+define
+a-b:{(#10,RANGEKEYSET,@5)}
+b-g:{(#4,RANGEKEYSET,@3)}
+g-h:{(#20,RANGEKEYSET,@5)}
+----
+
+iter lower=c upper=f
+seek-ge b
+next
+next
+seek-ge b
+prev
+prev
+seek-lt f
+prev
+prev
+seek-lt f
+next
+next
+prev
+prev
+----
+b-g:{(#4,RANGEKEYSET,@3)}
+<nil>
+<nil>
+b-g:{(#4,RANGEKEYSET,@3)}
+<nil>
+<nil>
+b-g:{(#4,RANGEKEYSET,@3)}
+<nil>
+<nil>
+b-g:{(#4,RANGEKEYSET,@3)}
+<nil>
+<nil>
+b-g:{(#4,RANGEKEYSET,@3)}
+<nil>
+
+set-prefix bar
+----
+set prefix to "bar"
+
+# Test seeking to a portion of the keyspace that contains no range keys with
+# start bounds ≥ the seek key such that the range key also overlaps the current
+# prefix.
+
+iter lower=a upper=z
+seek-ge bar
+prev
+prev
+----
+b-g:{(#4,RANGEKEYSET,@3)}
+<nil>
+<nil>
+
+# Test seeking to a portion of the keyspace that contains a range key with a
+# start bound < the seek key, and the range key also overlaps the current
+# prefix.
+
+iter lower=a upper=z
+seek-lt bar
+next
+prev
+prev
+----
+b-g:{(#4,RANGEKEYSET,@3)}
+<nil>
+b-g:{(#4,RANGEKEYSET,@3)}
+<nil>
+
+# Test seeking with bounds narrower than the range of the seek prefix. This is
+# possible in practice because the bounded iterator iterates over fragments, not
+# pre-defragmented range keys.
+
+iter lower=bar@9 upper=bar@3
+seek-lt bar
+next
+prev
+prev
+----
+b-g:{(#4,RANGEKEYSET,@3)}
+<nil>
+b-g:{(#4,RANGEKEYSET,@3)}
+<nil>
+
+# Test a similar scenario but on the start prefix of a key.
+
+iter lower=b@9 upper=b@3
+seek-lt b
+next
+next
+prev
+prev
+----
+<nil>
+b-g:{(#4,RANGEKEYSET,@3)}
+<nil>
+b-g:{(#4,RANGEKEYSET,@3)}
+<nil>
+
+# Test a scenario where the prefix overlaps a span, but the bounds exclude it.
+
+iter lower=z@9 upper=z@3
+seek-lt z@3
+next
+----
+<nil>
+<nil>
+
+# Test many spans matching the prefix, due to fragmentation within a prefix.
+
+define
+b-boo:{(#1,RANGEKEYSET,@1)}
+c@9-c@8:{(#1,RANGEKEYSET,@1)}
+c@8-c@7:{(#1,RANGEKEYSET,@1)}
+c@7-c@6:{(#1,RANGEKEYSET,@1)}
+c@6-c@5:{(#1,RANGEKEYSET,@1)}
+c@5-c@4:{(#1,RANGEKEYSET,@1)}
+----
+
+set-prefix c
+----
+set prefix to "c"
+
+iter
+seek-lt c
+next
+next
+next
+next
+next
+next
+----
+<nil>
+c@9-c@8:{(#1,RANGEKEYSET,@1)}
+c@8-c@7:{(#1,RANGEKEYSET,@1)}
+c@7-c@6:{(#1,RANGEKEYSET,@1)}
+c@6-c@5:{(#1,RANGEKEYSET,@1)}
+c@5-c@4:{(#1,RANGEKEYSET,@1)}
+<nil>
+
+# Test the same scenario with bounds limiting iteration to a subset of the
+# keys.
+
+iter lower=c@7 upper=c@5
+seek-lt c@7
+next
+next
+next
+----
+<nil>
+c@7-c@6:{(#1,RANGEKEYSET,@1)}
+c@6-c@5:{(#1,RANGEKEYSET,@1)}
+<nil>
+
+define
+a@7-a@5:{(#1,RANGEKEYSET,@1)}
+b-boo:{(#1,RANGEKEYSET,@1)}
+c@9-c@8:{(#1,RANGEKEYSET,@1)}
+----
+
+set-prefix b
+----
+set prefix to "b"
+
+iter
+seek-lt c@8
+seek-ge a@9
+----
+<nil>
+<nil>

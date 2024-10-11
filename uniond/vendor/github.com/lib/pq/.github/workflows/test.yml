@@ -1,0 +1,209 @@
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres:
+          - '13'
+          - '12'
+          - '11'
+          - '10'
+          - '9.6'
+        go:
+          - '1.17'
+          - '1.16'
+          - '1.15'
+          - '1.14'
+    steps:
+    - name: setup postgres pre-reqs
+      run: |
+        mkdir init
+        cat <<CONF > init/root.crt
+        -----BEGIN CERTIFICATE-----
+        MIIEBjCCAu6gAwIBAgIJAPizR+OD14YnMA0GCSqGSIb3DQEBCwUAMF4xCzAJBgNV
+        BAYTAlVTMQ8wDQYDVQQIDAZOZXZhZGExEjAQBgNVBAcMCUxhcyBWZWdhczEaMBgG
+        A1UECgwRZ2l0aHViLmNvbS9saWIvcHExDjAMBgNVBAMMBXBxIENBMB4XDTIxMDkw
+        MjAxNTUwMloXDTMxMDkwMzAxNTUwMlowXjELMAkGA1UEBhMCVVMxDzANBgNVBAgM
+        Bk5ldmFkYTESMBAGA1UEBwwJTGFzIFZlZ2FzMRowGAYDVQQKDBFnaXRodWIuY29t
+        L2xpYi9wcTEOMAwGA1UEAwwFcHEgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAw
+        ggEKAoIBAQDb9d6sjdU6GdibGrXRMOHREH3MRUS8T4TFqGgPEGVDP/V5bAZlBSGP
+        AN0o9DTyVLcbQpBt8zMTw9KeIzIIe5NIVkSmA16lw/YckGhOM+kZIkiDuE6qt5Ia
+        OQCRMdXkZ8ejG/JUu+rHU8FJZL8DE+jyYherzdjkeVAQ7JfzxAwW2Dl7T/47g337
+        Pwmf17AEb8ibSqmXyUN7R5NhJQs+hvaYdNagzdx91E1H+qlyBvmiNeasUQljLvZ+
+        Y8wAuU79neA+d09O4PBiYwV17rSP6SZCeGE3oLZviL/0KM9Xig88oB+2FmvQ6Zxa
+        L7SoBlqS+5pBZwpH7eee/wCIKAnJtMAJAgMBAAGjgcYwgcMwDwYDVR0TAQH/BAUw
+        AwEB/zAdBgNVHQ4EFgQUfIXEczahbcM2cFrwclJF7GbdajkwgZAGA1UdIwSBiDCB
+        hYAUfIXEczahbcM2cFrwclJF7GbdajmhYqRgMF4xCzAJBgNVBAYTAlVTMQ8wDQYD
+        VQQIDAZOZXZhZGExEjAQBgNVBAcMCUxhcyBWZWdhczEaMBgGA1UECgwRZ2l0aHVi
+        LmNvbS9saWIvcHExDjAMBgNVBAMMBXBxIENBggkA+LNH44PXhicwDQYJKoZIhvcN
+        AQELBQADggEBABFyGgSz2mHVJqYgX1Y+7P+MfKt83cV2uYDGYvXrLG2OGiCilVul
+        oTBG+8omIMSHOsQZvWMpA5H0tnnlQHrKpKpUyKkSL+Wv5GL0UtBmHX7mVRiaK2l4
+        q2BjRaQUitp/FH4NSdXtVrMME5T1JBBZHsQkNL3cNRzRKwY/Vj5UGEDxDS7lILUC
+        e01L4oaK0iKQn4beALU+TvKoAHdPvoxpPpnhkF5ss9HmdcvRktJrKZemDJZswZ7/
+        +omx8ZPIYYUH5VJJYYE88S7guAt+ZaKIUlel/t6xPbo2ZySFSg9u1uB99n+jTo3L
+        1rAxFnN3FCX2jBqgP29xMVmisaN5k04UmyI=
+        -----END CERTIFICATE-----
+        CONF
+        cat <<CONF > init/server.crt
+        -----BEGIN CERTIFICATE-----
+        MIIDqzCCApOgAwIBAgIJAPiewLrOyYipMA0GCSqGSIb3DQEBCwUAMF4xCzAJBgNV
+        BAYTAlVTMQ8wDQYDVQQIDAZOZXZhZGExEjAQBgNVBAcMCUxhcyBWZWdhczEaMBgG
+        A1UECgwRZ2l0aHViLmNvbS9saWIvcHExDjAMBgNVBAMMBXBxIENBMB4XDTIxMDkw
+        MjAxNTUwMloXDTMxMDkwMzAxNTUwMlowTjELMAkGA1UEBhMCVVMxDzANBgNVBAgM
+        Bk5ldmFkYTESMBAGA1UEBwwJTGFzIFZlZ2FzMRowGAYDVQQKDBFnaXRodWIuY29t
+        L2xpYi9wcTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKf6H4UzmANN
+        QiQJe92Mf3ETMYmpZKNNO9DPEHyNLIkag+XwMrBTdcCK0mLvsNCYpXuBN6703KCd
+        WAFOeMmj7gOsWtvjt5Xm6bRHLgegekXzcG/jDwq/wyzeDzr/YkITuIlG44Lf9lhY
+        FLwiHlHOWHnwrZaEh6aU//02aQkzyX5INeXl/3TZm2G2eIH6AOxOKOU27MUsyVSQ
+        5DE+SDKGcRP4bElueeQWvxAXNMZYb7sVSDdfHI3zr32K4k/tC8x0fZJ5XN/dvl4t
+        4N4MrYlmDO5XOrb/gQH1H4iu6+5EMDfZYab4fkThnNFdfFqu4/8Scv7KZ8mWqpKM
+        fGAjEPctQi0CAwEAAaN8MHowHQYDVR0OBBYEFENExPbmDyFB2AJUdbMvVyhlNPD5
+        MAkGA1UdEwQCMAAwCwYDVR0PBAQDAgWgMBMGA1UdEQQMMAqCCHBvc3RncmVzMCwG
+        CWCGSAGG+EIBDQQfFh1PcGVuU1NMIEdlbmVyYXRlZCBDZXJ0aWZpY2F0ZTANBgkq
+        hkiG9w0BAQsFAAOCAQEAMRVbV8RiEsmp9HAtnVCZmRXMIbgPGrqjeSwk586s4K8v
+        BSqNCqxv6s5GfCRmDYiqSqeuCVDtUJS1HsTmbxVV7Ke71WMo+xHR1ICGKOa8WGCb
+        TGsuicG5QZXWaxeMOg4s0qpKmKko0d1aErdVsanU5dkrVS7D6729Ffnzu4lwApk6
+        invAB67p8u7sojwqRq5ce0vRaG+YFylTrWomF9kauEb8gKbQ9Xc7QfX+h+UH/mq9
+        Nvdj8LOHp6/82bZdnsYUOtV4lS1IA/qzeXpqBphxqfWabD1yLtkyJyImZKq8uIPp
+        0CG4jhObPdWcCkXD6bg3QK3mhwlC79OtFgxWmldCRQ==
+        -----END CERTIFICATE-----
+        CONF
+        cat <<CONF > init/server.key
+        -----BEGIN PRIVATE KEY-----
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCn+h+FM5gDTUIk
+        CXvdjH9xEzGJqWSjTTvQzxB8jSyJGoPl8DKwU3XAitJi77DQmKV7gTeu9NygnVgB
+        TnjJo+4DrFrb47eV5um0Ry4HoHpF83Bv4w8Kv8Ms3g86/2JCE7iJRuOC3/ZYWBS8
+        Ih5Rzlh58K2WhIemlP/9NmkJM8l+SDXl5f902ZthtniB+gDsTijlNuzFLMlUkOQx
+        PkgyhnET+GxJbnnkFr8QFzTGWG+7FUg3XxyN8699iuJP7QvMdH2SeVzf3b5eLeDe
+        DK2JZgzuVzq2/4EB9R+IruvuRDA32WGm+H5E4ZzRXXxaruP/EnL+ymfJlqqSjHxg
+        IxD3LUItAgMBAAECggEAOE2naQ9tIZYw2EFxikZApVcooJrtx6ropMnzHbx4NBB2
+        K4mChAXFj184u77ZxmGT/jzGvFcI6LE0wWNbK0NOUV7hKZk/fPhkV3AQZrAMrAu4
+        IVi7PwAd3JkmA8F8XuebUDA5rDGDsgL8GD9baFJA58abeLs9eMGyuF4XgOUh4bip
+        hgHa76O2rcDWNY5HZqqRslw75FzlYkB0PCts/UJxSswj70kTTihyOhDlrm2TnyxI
+        ne54UbGRrpfs9wiheSGLjDG81qZToBHQDwoAnjjZhu1VCaBISuGbgZrxyyRyqdnn
+        xPW+KczMv04XyvF7v6Pz+bUEppalLXGiXnH5UtWvZQKBgQDTPCdMpNE/hwlq4nAw
+        Kf42zIBWfbnMLVWYoeDiAOhtl9XAUAXn76xe6Rvo0qeAo67yejdbJfRq3HvGyw+q
+        4PS8r9gXYmLYIPQxSoLL5+rFoBCN3qFippfjLB1j32mp7+15KjRj8FF2r6xIN8fu
+        XatSRsaqmvCWYLDRv/rbHnxwkwKBgQDLkyfFLF7BtwtPWKdqrwOM7ip1UKh+oDBS
+        vkCQ08aEFRBU7T3jChsx5GbaW6zmsSBwBwcrHclpSkz7n3aq19DDWObJR2p80Fma
+        rsXeIcvtEpkvT3pVX268P5d+XGs1kxgFunqTysG9yChW+xzcs5MdKBzuMPPn7rL8
+        MKAzdar6PwKBgEypkzW8x3h/4Moa3k6MnwdyVs2NGaZheaRIc95yJ+jGZzxBjrMr
+        h+p2PbvU4BfO0AqOkpKRBtDVrlJqlggVVp04UHvEKE16QEW3Xhr0037f5cInX3j3
+        Lz6yXwRFLAsR2aTUzWjL6jTh8uvO2s/GzQuyRh3a16Ar/WBShY+K0+zjAoGATnLT
+        xZjWnyHRmu8X/PWakamJ9RFzDPDgDlLAgM8LVgTj+UY/LgnL9wsEU6s2UuP5ExKy
+        QXxGDGwUhHar/SQTj+Pnc7Mwpw6HKSOmnnY5po8fNusSwml3O9XppEkrC0c236Y/
+        7EobJO5IFVTJh4cv7vFxTJzSsRL8KFD4uzvh+nMCgYEAqY8NBYtIgNJA2B6C6hHF
+        +bG7v46434ZHFfGTmMQwzE4taVg7YRnzYESAlvK4bAP5ZXR90n7GRGFhrXzoMZ38
+        r0bw/q9rV+ReGda7/Bjf7ciCKiq0RODcHtf4IaskjPXCoQRGJtgCPLhWPfld6g9v
+        /HTvO96xv9e3eG/PKSPog94=
+        -----END PRIVATE KEY-----
+        CONF
+        cat <<CONF > init/hba.sh
+        cat <<EOF > /var/lib/postgresql/data/pg_hba.conf
+        local     all         all                               trust
+        host      all         postgres    all                   trust
+        hostnossl all         pqgossltest all                   reject
+        hostnossl all         pqgosslcert all                   reject
+        hostssl   all         pqgossltest all                   trust
+        hostssl   all         pqgosslcert all                   cert
+        host      all         all         all                   trust
+        EOF
+        CONF
+        sudo chown 999:999 ./init/*
+        sudo chmod 600 ./init/*
+
+    - name: start postgres
+      run: |
+        docker run -d \
+          --name pg \
+          -p 5432:5432 \
+          -v $(pwd)/init:/init \
+          -e POSTGRES_PASSWORD=unused \
+          -e POSTGRES_USER=postgres \
+          postgres:${{ matrix.postgres }} \
+            -c ssl=on \
+            -c ssl_ca_file=/init/root.crt \
+            -c ssl_cert_file=/init/server.crt \
+            -c ssl_key_file=/init/server.key
+
+    - name: configure postgres
+      run: |
+        n=0
+        until [ "$n" -ge 10 ]
+        do
+          docker exec pg pg_isready -h localhost && break
+          n=$((n+1))
+          echo waiting for postgres to be ready...
+          sleep 1
+        done
+        docker exec pg bash /init/hba.sh
+        n=0
+        until [ "$n" -ge 10 ]
+        do
+          docker exec pg su postgres -c '/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_ctl reload' && break
+          n=$((n+1))
+          echo waiting for postgres to reload...
+          sleep 1
+        done
+
+    - name: setup hosts
+      run: echo '127.0.0.1  postgres' | sudo tee -a /etc/hosts
+
+    - name: create db/roles
+      run: |
+        n=0
+        until [ "$n" -ge 10 ]
+        do
+          docker exec pg pg_isready -h localhost && break
+          n=$((n+1))
+          echo waiting for postgres to be ready...
+          sleep 1
+        done
+        docker exec pg createdb -h localhost -U postgres pqgotest
+        docker exec pg createuser -h localhost -U postgres -DRS pqgossltest
+        docker exec pg createuser -h localhost -U postgres -DRS pqgosslcert
+
+    - name: check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: set up go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+      id: go
+
+    - name: set key perms
+      run: sudo chmod 600 certs/postgresql.key
+
+    - name: run tests
+      env:
+        PGUSER: postgres
+        PGHOST: localhost
+        PGPORT: 5432
+        PQGOSSLTESTS: 1
+        PQSSLCERTTEST_PATH: certs
+      run: |
+        PQTEST_BINARY_PARAMETERS=no go test -race -v ./...
+        PQTEST_BINARY_PARAMETERS=yes go test -race -v ./...
+
+    - name: install goimports
+      run: go get golang.org/x/tools/cmd/goimports
+
+    - name: install staticcheck
+      run: |
+        wget https://github.com/dominikh/go-tools/releases/latest/download/staticcheck_linux_amd64.tar.gz -O - | tar -xz staticcheck
+
+    - name: run goimports
+      run: |
+        goimports -d -e . | awk '{ print } END { exit NR == 0 ? 0 : 1 }'
+
+    - name: run staticcheck
+      run: ./staticcheck/staticcheck -go 1.13 ./...
+
+    - name: build
+      run: go build -v .

@@ -1,0 +1,335 @@
+# Regression test for a bug discovered in #1878.
+# A lazy-combined iterator triggers combined iteration during an initial
+# seek-prefix-ge call. The initial seek-prefix-ge call avoids defragmenting
+# fragments beyond the initial fragment [c,f). A subsequent seek-ge that seeks
+# within the bounds of the initial fragment [c,f) must not fall into the
+# optimization that reuses the span without reseeking the keypsan iterator,
+# because the span is not defragmented.
+#
+# In the bug surfaced by #1878, the initial seek-prefix-ge that switched to
+# combined iteration failed to record that the iterator was now in prefix mode,
+# allowing the subsequent seek-ge to incorrectly reuse the existing span.
+
+reset
+----
+
+batch commit
+range-key-set a c @5 foo
+----
+committed 1 keys
+
+flush
+----
+
+batch commit
+range-key-set c f @5 foo
+----
+committed 1 keys
+
+flush
+----
+
+batch commit
+range-key-set f m @5 foo
+----
+committed 1 keys
+
+flush
+----
+
+lsm
+----
+0.0:
+  000005:[a#10,RANGEKEYSET-c#inf,RANGEKEYSET]
+  000007:[c#11,RANGEKEYSET-f#inf,RANGEKEYSET]
+  000009:[f#12,RANGEKEYSET-m#inf,RANGEKEYSET]
+
+combined-iter
+seek-prefix-ge d@5
+seek-ge d
+----
+d@5: (., [d-"d\x00") @5=foo UPDATED)
+d: (., [a-m) @5=foo UPDATED)
+
+# Test that repeated SeekPrefixGEs correctly return truncated spans with
+# RangeKeyChanged() -> UPDATED.
+
+combined-iter
+seek-prefix-ge c@5
+seek-prefix-ge d@5
+seek-ge d@7
+seek-prefix-ge d@7
+----
+c@5: (., [c-"c\x00") @5=foo UPDATED)
+d@5: (., [d-"d\x00") @5=foo UPDATED)
+d@7: (., [a-m) @5=foo UPDATED)
+d@7: (., [d-"d\x00") @5=foo UPDATED)
+
+# Test a LSM with range keys fragmented within a prefix.
+# This is a regression test for cockroachdb/cockroach#86102.
+
+reset target-file-size=1
+----
+
+batch commit
+range-key-set a c @1 bar
+range-key-set c e @1 foo
+set c@9 c@9
+set c@8 c@8
+set c@7 c@7
+set c@6 c@6
+set c@5 c@5
+set c@4 c@4
+set c@3 c@3
+set c@2 c@2
+set d@0 d@0
+range-key-set y z @1 foo
+set z z
+----
+committed 13 keys
+
+flush
+----
+
+lsm
+----
+0.0:
+  000005:[a#10,RANGEKEYSET-c@8#inf,RANGEKEYSET]
+  000006:[c@8#13,SET-c@7#inf,RANGEKEYSET]
+  000007:[c@7#14,SET-c@6#inf,RANGEKEYSET]
+  000008:[c@6#15,SET-c@5#inf,RANGEKEYSET]
+  000009:[c@5#16,SET-c@4#inf,RANGEKEYSET]
+  000010:[c@4#17,SET-c@3#inf,RANGEKEYSET]
+  000011:[c@3#18,SET-c@2#inf,RANGEKEYSET]
+  000012:[c@2#19,SET-d@0#inf,RANGEKEYSET]
+  000013:[d@0#20,SET-e#inf,RANGEKEYSET]
+  000014:[y#21,RANGEKEYSET-z#22,SET]
+
+# The first seek-prefix-ge y@1 converts the iterator from lazy combined iterator
+# to combined iteration.
+#
+# The second seek-prefix-ge d@1 does not fully defragment the range key. The
+# underlying range key is defragmented to [c@2,e). This incomplete
+# defragmentation is still hidden from the user at this point, since the range
+# key is truncated to [d,d\x00).
+#
+# The third seek-prefix-ge c@0 seeks to a key that falls within the
+# range key currently defragmented on interleaving iterator. A previous bug
+# would use this span without defragmenting the span to include the full
+# span of the prefix [c,c\x00).
+
+combined-iter
+seek-prefix-ge y@1
+seek-prefix-ge d@1
+seek-prefix-ge c@0
+----
+y@1: (., [y-"y\x00") @1=foo UPDATED)
+d@1: (., [d-"d\x00") @1=foo UPDATED)
+c@0: (., [c-"c\x00") @1=foo UPDATED)
+
+# Test a LSM with range keys fragmented within a prefix.
+# This is a regression test for cockroachdb/cockroach#86102.
+
+reset
+----
+
+ingest ext1
+range-key-set a c@8 @1 bar
+set c@9 c@9
+----
+
+ingest ext2
+range-key-set c@8 e @1 bar
+set c@8 c@8
+set c@7 c@7
+set c@6 c@6
+set c@5 c@5
+set c@4 c@4
+set c@3 c@3
+set c@2 c@2
+----
+
+ingest ext2
+range-key-set y z @1 foo
+set z z
+----
+
+lsm
+----
+6:
+  000004:[a#10,RANGEKEYSET-c@8#inf,RANGEKEYSET]
+  000005:[c@8#11,RANGEKEYSET-e#inf,RANGEKEYSET]
+  000006:[y#12,RANGEKEYSET-z#12,SET]
+
+
+# The first seek-prefix-ge y@1 converts the iterator from lazy combined iterator
+# to combined iteration.
+#
+# The second seek-prefix-ge d@1 does not fully defragment the range key. The
+# underlying range key is defragmented to [a,c@8). This incomplete
+# defragmentation is still hidden from the user at this point, since the range
+# key is truncated to [a,a\x00).
+#
+# The third seek-prefix-ge c@10 seeks to a key that falls within the
+# range key currently defragmented on interleaving iterator. A previous bug
+# would use this span without defragmenting the span to include the full
+# span of the prefix [c,c\x00).
+
+combined-iter
+seek-prefix-ge y@1
+seek-prefix-ge a@1
+seek-prefix-ge c@10
+----
+y@1: (., [y-"y\x00") @1=foo UPDATED)
+a@1: (., [a-"a\x00") @1=bar UPDATED)
+c@10: (., [c-"c\x00") @1=bar UPDATED)
+
+# Regression test for an invariant violation in the range key defragmenting
+# iterator during prefix iteration. [Related to #1893]. There is a lot of
+# subtlety here. Do not modify this test case without verifying that it still
+# exercises the right conditions.
+#
+# Normally during forward iteration, if a switch to lazy-combined iteration is
+# triggered, the lazy-combined iterator establishes a seek key for the range key
+# iterator such that the seek key is:
+#   1. greater than or equal to the key at previous iterator position.
+#   2. less than or equal to the first range key with a start key greater than
+#       or equal to the previous iterator position.
+# These invariants are important so that the range key iterator is positioned
+# appropriately after the switch to combined iteration and no range keys are
+# missed.
+#
+# Parts of the iterator stack depend on the above invariants. For example,
+# during forward iteration the BoundedIter only checks span start keys against
+# iterator bounds and the configured prefix, with the expectation that the seek
+# is always already greater than or equal to the lower bound. In turn, the
+# DefragmentingIter indirectly relies on the same invariant, because it requires
+# a consistent view of the fragments. If the BoundedIter returns a span in one
+# direction, but skips it when iterating back, the defragmenting iterator will
+# end up on a different fragment.
+#
+# This test exercises a case in which previously, during prefix iteration, it
+# was possible for the switch to lazy-combined iteration to trigger using a seek
+# key k, such that there exist range key fragments between the current iterator
+# position and k (violating the 2nd invariant up above).
+#
+# The sequence of events is:
+#   1. SeekPrefixGE("b@9") = 'b@4':
+#      a. This seek positions the two levels, L0 and L6. The L0 iterator seeks
+#         to file 000006. This file does not contain any keys with the prefix
+#         "b", and the bloom filter must succeed in excluding the file. Since the
+#         file contains a range deletion, SeekPrefixGE returns the level's
+#         largest point key (`d#inf,RANGEDEL`) to ensure the file stays open until
+#         the iterator advances past the range deletion.
+#      b. In L6, the level iterator seeks to 000004 which contains a key with
+#         the prefix, returning 'b@4'.
+#   2. Next():
+#      a. Next advances the the L6 iterator to file 000005. This file contains a
+#         range key [e,f)@1=bar, which updates the lazy-combined iterator's
+#         state, recording the earliest observed range key as 'e'. The L6 level
+#         iterator then returns the file single point key 'c'.
+#      b. The merging iterator checks whether point key 'c' is deleted by any
+#         range key deletions. It is. It's deleted by L0's [c,d) range deletion.
+#         The merging iterator then seeks the iterator to the tombstone's end
+#         key 'd'.
+#      c. After seeking, the range deletion sentinel d is at the top of the
+#         heap. At this point, the merging iterator checks whether the keyspace
+#         of the prefix has been exceeded, and it has. It returns nil.
+#   3. Switch to combined iteration:
+#      a. The Next has completed and triggered combined iteration. The only file
+#         containing range keys that was observed was 000005, containing the
+#         range key [e,f). The switch to combined iteration seeks the keyspan
+#         iterator to 'e'. Note that the iterator never observed L0's [d,e)
+#         range key that precedes [e,f) in the keyspace.
+#      b. Seeking the keyspan iterator calls DefragmentingIter.SeekLT('e'),
+#         which lands on the [d,e) fragment. This fragment does NOT check to see
+#         if the span starts at a prefix greater than the current prefix 'b',
+#         because only bounds in the direction of iteration are check.
+#      c. The DefragmentingIter observes disappearing range key fragments when
+#         it switches directions, as a result of (b).
+#
+
+# Use 100-bits per key to ensure the bloom filter provides total recall.
+reset bloom-bits-per-key=100
+----
+
+# Ingest L6 files:
+#
+# 000004: b@4
+# 000005: c, [e,f)@1=bar
+
+ingest ext1
+set b@4 b@4
+----
+
+ingest ext1
+set c c
+range-key-set e f @1 bar
+----
+
+# Ingest L0 files:
+#
+# 000006: a, del-range(c, d)
+# 000007: [d,e)@1=bar
+
+ingest ext2
+set a a
+del-range c d
+----
+
+ingest ext3
+range-key-set d e @1 bar
+----
+
+lsm
+----
+0.0:
+  000006:[a#12,SET-d#inf,RANGEDEL]
+  000007:[d#13,RANGEKEYSET-e#inf,RANGEKEYSET]
+6:
+  000004:[b@4#10,SET-b@4#10,SET]
+  000005:[c#11,SET-f#inf,RANGEKEYSET]
+
+combined-iter
+seek-prefix-ge b@9
+next
+----
+b@4: (b@4, .)
+.
+
+# Regression test for #2151.
+#
+# This test consists of two SeekPrefixGEs for ascending keys, which results in
+# TrySeekUsingNext()=true for the second seek. The entirety of both seeked
+# prefixes is deleted by the range deletion [b-d). The iterator being used is
+# created from a snapshot at sequence number #4. At that sequence number, the
+# iterator observes the range deletion and all of L6's point keys, but none of
+# the point keys in L5.
+#
+# Previously, a bug existed where the SeekPrefixGE("b@9") would cause the
+# iterator to next beyond the L5 sstable. The subsequent SeekPrefixGE with
+# TrySeekUsingNext would mistakenly miss the range deletion [b-d) because it had
+# already proceeded beyond the file.
+
+define snapshots=(4)
+L5
+  b.RANGEDEL.3:d
+  b@9.SET.9:v
+  c@9.SET.9:v
+  d@9.SET.9:v
+L6
+  b@2.SET.2:v
+  c@2.SET.2:v
+  d@2.SET.2:v
+----
+5:
+  000004:[b#3,RANGEDEL-d@9#9,SET]
+6:
+  000005:[b@2#2,SET-d@2#2,SET]
+
+combined-iter snapshot=4
+seek-prefix-ge b@9
+seek-prefix-ge c@9
+----
+.
+.

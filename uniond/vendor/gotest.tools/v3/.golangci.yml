@@ -1,0 +1,64 @@
+linters-settings:
+  goconst:
+    min-len: 5
+    min-occurrences: 10
+  lll:
+    line-length: 100
+  maintidx:
+    under: 35
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - text: 'result .* is always'
+      linters: [unparam]
+    - text: 'always receives'
+      linters: [unparam]
+    - path: _test\.go
+      linters: [errcheck, staticcheck, lll, maintidx]
+    - path: internal/difflib/difflib\.go
+      text: .
+    - text: 'return value of .*Close` is not checked'
+      linters: [errcheck]
+    - text: 'SA1019'
+      linters: [staticcheck]
+    - path: internal/
+      text: 'ST1000'
+      linters: [stylecheck]
+    - path: 'example_test\.go'
+      linters: [bodyclose]
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - depguard
+    - dogsled
+    - errcheck
+    - errorlint
+    - exportloopref
+    - gocognit
+    - goconst
+    - gofmt
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - maintidx
+    - misspell
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - nolintlint
+    - prealloc
+    - revive
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - wastedassign
+    - whitespace

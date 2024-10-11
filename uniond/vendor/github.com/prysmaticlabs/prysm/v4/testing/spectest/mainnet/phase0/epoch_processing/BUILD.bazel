@@ -1,0 +1,28 @@
+load("@prysm//tools/go:def.bzl", "go_test")
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = [
+        "effective_balance_updates_test.go",
+        "epoch_processing_test.go",
+        "eth1_data_reset_test.go",
+        "historical_roots_update_test.go",
+        "justification_and_finalization_test.go",
+        "participation_record_updates_test.go",
+        "randao_mixes_reset_test.go",
+        "registry_updates_test.go",
+        "rewards_and_penalties_test.go",
+        "slashings_reset_test.go",
+        "slashings_test.go",
+    ],
+    data = glob(["*.yaml"]) + [
+        "@consensus_spec_tests_mainnet//:test_data",
+    ],
+    shard_count = 4,
+    tags = ["spectest"],
+    deps = [
+        "//config/params:go_default_library",
+        "//testing/spectest/shared/phase0/epoch_processing:go_default_library",
+    ],
+)

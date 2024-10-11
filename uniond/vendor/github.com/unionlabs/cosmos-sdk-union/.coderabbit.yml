@@ -1,0 +1,32 @@
+language: "en"
+early_access: false
+reviews:
+    request_changes_workflow: false
+    high_level_summary: true
+    poem: false
+    review_status: true
+    collapse_walkthrough: true
+    path_filters:
+        - "!api/"
+    path_instructions:
+        - path: "**/*.go"
+          instructions: "Review the Golang code for conformity with the Uber Golang style guide, highlighting any deviations."
+        - path: "tests/**/*"
+          instructions: |
+              "Assess the integration and e2e test code assessing sufficient code coverage for the changes associated in the pull request"
+        - path: "**/*_test.go"
+          instructions: |
+              "Assess the unit test code assessing sufficient code coverage for the changes associated in the pull request"
+        - path: "**/*.md"
+          instructions: |
+              "Assess the documentation for misspellings, grammatical errors, missing documentation and correctness"
+    auto_review:
+        enabled: true
+        ignore_title_keywords:
+            - "WIP"
+            - "DO NOT MERGE"
+        drafts: false
+        base_branches:
+            - "main"
+chat:
+    auto_reply: true

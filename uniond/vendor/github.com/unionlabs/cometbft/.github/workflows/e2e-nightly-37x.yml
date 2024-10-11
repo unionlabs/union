@@ -1,0 +1,78 @@
+# Runs randomly generated E2E testnets nightly on the v0.37.x branch.
+
+# !! This file should be kept in sync with the e2e-nightly-main.yml file,
+# modulo changes to the version labels.
+
+name: e2e-nightly-37x
+on:
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  e2e-nightly-test:
+    # Run parallel jobs for the listed testnet groups (must match the
+    # ./build/generator -g flag)
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ['00', '01', '02', '03', "04"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'v0.37.x'
+
+      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Capture git repo info
+        id: git-info
+        run: |
+          echo "branch=`git branch --show-current`" >> $GITHUB_OUTPUT
+
+      - name: Build
+        working-directory: test/e2e
+        # Run make jobs in parallel, since we can't run steps in parallel.
+        run: make -j2 docker generator runner tests
+
+      - name: Generate testnets
+        working-directory: test/e2e
+        # When changing -g, also change the matrix groups above
+        run: ./build/generator -g 5 -d networks/nightly/ -p
+
+      - name: Run ${{ matrix.p2p }} p2p testnets
+        working-directory: test/e2e
+        run: ./run-multiple.sh networks/nightly/*-group${{ matrix.group }}-*.toml
+
+    outputs:
+      git-branch: ${{ steps.git-info.outputs.branch }}
+
+  e2e-nightly-fail:
+    needs: e2e-nightly-test
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack on failure
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          BRANCH: ${{ needs.e2e-nightly-test.outputs.git-branch }}
+          RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          COMMITS_URL: "${{ github.server_url }}/${{ github.repository }}/commits/${{ needs.e2e-nightly-test.outputs.git-branch }}"
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":skull: Nightly E2E tests for `${{ env.BRANCH }}` failed. See the <${{ env.RUN_URL }}|run details> and the <${{ env.COMMITS_URL }}|latest commits> possibly related to the failure."
+                  }
+                }
+              ]
+            }

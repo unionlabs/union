@@ -1,0 +1,39 @@
+syntax = "proto3";
+package cosmos.crypto.bn254;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/crypto/keys/bn254";
+
+// PubKey is an bn254 public key for handling Tendermint keys in SDK.
+// It's needed for Any serialization and SDK compatibility.
+// It must not be used in a non Tendermint key context because it doesn't implement
+// ADR-28. Nevertheless, you will like to use bn254 in app user level
+// then you must create a new proto message and follow ADR-28 for Address construction.
+message PubKey {
+  option (amino.name) = "cometbft/PubKeyBn254";
+  // The Amino encoding is simply the inner bytes field, and not the Amino
+  // encoding of the whole PubKey struct.
+  //
+  // Example (JSON):
+  // s := PubKey{Key: []byte{0x01}}
+  // out := AminoJSONEncoder(s)
+  //
+  // Then we have:
+  // out == `"MQ=="`
+  // out != `{"key":"MQ=="}`
+  option (amino.message_encoding)     = "key_field";
+  option (gogoproto.goproto_stringer) = false;
+
+  bytes key = 1 [(gogoproto.casttype) = "github.com/cometbft/cometbft/crypto/bn254.PubKey"];
+}
+
+// Deprecated: PrivKey defines a bn254 private key.
+// NOTE: bn254 keys must not be used in SDK apps except in a tendermint validator context.
+message PrivKey {
+  option (amino.name)             = "cometbft/PrivKeyBn254";
+  option (amino.message_encoding) = "key_field";
+
+  bytes key = 1 [(gogoproto.casttype) = "github.com/cometbft/cometbft/crypto/bn254.PrivKey"];
+}

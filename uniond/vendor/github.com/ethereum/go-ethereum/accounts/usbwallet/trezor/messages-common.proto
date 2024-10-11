@@ -1,0 +1,147 @@
+// This file originates from the SatoshiLabs Trezor `common` repository at:
+//   https://github.com/trezor/trezor-common/blob/master/protob/messages-common.proto
+// dated 28.05.2019, commit 893fd219d4a01bcffa0cd9cfa631856371ec5aa9.
+
+syntax = "proto2";
+package hw.trezor.messages.common;
+
+/**
+ * Response: Success of the previous request
+ * @end
+ */
+message Success {
+    optional string message = 1;    // human readable description of action or request-specific payload
+}
+
+/**
+ * Response: Failure of the previous request
+ * @end
+ */
+message Failure {
+    optional FailureType code = 1;  // computer-readable definition of the error state
+    optional string message = 2;    // human-readable message of the error state
+    enum FailureType {
+        Failure_UnexpectedMessage = 1;
+        Failure_ButtonExpected = 2;
+        Failure_DataError = 3;
+        Failure_ActionCancelled = 4;
+        Failure_PinExpected = 5;
+        Failure_PinCancelled = 6;
+        Failure_PinInvalid = 7;
+        Failure_InvalidSignature = 8;
+        Failure_ProcessError = 9;
+        Failure_NotEnoughFunds = 10;
+        Failure_NotInitialized = 11;
+        Failure_PinMismatch = 12;
+        Failure_FirmwareError = 99;
+    }
+}
+
+/**
+ * Response: Device is waiting for HW button press.
+ * @auxstart
+ * @next ButtonAck
+ */
+message ButtonRequest {
+    optional ButtonRequestType code = 1;
+    optional string data = 2;
+    /**
+    * Type of button request
+    */
+    enum ButtonRequestType {
+        ButtonRequest_Other = 1;
+        ButtonRequest_FeeOverThreshold = 2;
+        ButtonRequest_ConfirmOutput = 3;
+        ButtonRequest_ResetDevice = 4;
+        ButtonRequest_ConfirmWord = 5;
+        ButtonRequest_WipeDevice = 6;
+        ButtonRequest_ProtectCall = 7;
+        ButtonRequest_SignTx = 8;
+        ButtonRequest_FirmwareCheck = 9;
+        ButtonRequest_Address = 10;
+        ButtonRequest_PublicKey = 11;
+        ButtonRequest_MnemonicWordCount = 12;
+        ButtonRequest_MnemonicInput = 13;
+        ButtonRequest_PassphraseType = 14;
+        ButtonRequest_UnknownDerivationPath = 15;
+    }
+}
+
+/**
+ * Request: Computer agrees to wait for HW button press
+ * @auxend
+ */
+message ButtonAck {
+}
+
+/**
+ * Response: Device is asking computer to show PIN matrix and awaits PIN encoded using this matrix scheme
+ * @auxstart
+ * @next PinMatrixAck
+ */
+message PinMatrixRequest {
+    optional PinMatrixRequestType type = 1;
+    /**
+    * Type of PIN request
+    */
+    enum PinMatrixRequestType {
+        PinMatrixRequestType_Current = 1;
+        PinMatrixRequestType_NewFirst = 2;
+        PinMatrixRequestType_NewSecond = 3;
+    }
+}
+
+/**
+ * Request: Computer responds with encoded PIN
+ * @auxend
+ */
+message PinMatrixAck {
+    required string pin = 1;    // matrix encoded PIN entered by user
+}
+
+/**
+ * Response: Device awaits encryption passphrase
+ * @auxstart
+ * @next PassphraseAck
+ */
+message PassphraseRequest {
+    optional bool on_device = 1;    // passphrase is being entered on the device
+}
+
+/**
+ * Request: Send passphrase back
+ * @next PassphraseStateRequest
+ */
+message PassphraseAck {
+    optional string passphrase = 1;
+    optional bytes state = 2;       // expected device state
+}
+
+/**
+ * Response: Device awaits passphrase state
+ * @next PassphraseStateAck
+ */
+message PassphraseStateRequest {
+    optional bytes state = 1;       // actual device state
+}
+
+/**
+ * Request: Send passphrase state back
+ * @auxend
+ */
+message PassphraseStateAck {
+}
+
+/**
+ * Structure representing BIP32 (hierarchical deterministic) node
+ * Used for imports of private key into the device and exporting public key out of device
+ * @embed
+ */
+message HDNodeType {
+    required uint32 depth = 1;
+    required uint32 fingerprint = 2;
+    required uint32 child_num = 3;
+    required bytes chain_code = 4;
+    optional bytes private_key = 5;
+    optional bytes public_key = 6;
+}

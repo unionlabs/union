@@ -1,0 +1,39 @@
+name: 🎉 Feature request
+description: Suggest an idea for Viper
+labels: [kind/enhancement]
+body:
+- type: markdown
+  attributes:
+    value: |
+      Thank you for submitting a feature request!
+
+      Please describe what you would like to change/add and why in detail by filling out the template below.
+
+      If you are not sure if your request fits into Viper, you can contact us via the available [support channels](https://github.com/spf13/viper/issues/new/choose).
+- type: checkboxes
+  attributes:
+    label: Preflight Checklist
+    description: Please ensure you've completed all of the following.
+    options:
+      - label: I have searched the [issue tracker](https://www.github.com/spf13/viper/issues) for an issue that matches the one I want to file, without success.
+        required: true
+- type: textarea
+  attributes:
+    label: Problem Description
+    description: A clear and concise description of the problem you are seeking to solve with this feature request.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Proposed Solution
+    description: A clear and concise description of what would you like to happen.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Alternatives Considered
+    description: A clear and concise description of any alternative solutions or features you've considered.
+- type: textarea
+  attributes:
+    label: Additional Information
+    description: Add any other context about the problem here.

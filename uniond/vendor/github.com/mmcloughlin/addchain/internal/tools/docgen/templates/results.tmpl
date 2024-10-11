@@ -1,0 +1,27 @@
+# Results
+
+{{ range .Results -}}
+* [{{ .Name }}](#{{ anchor .Name }})
+{{ end }}
+
+{{ range .Results -}}
+## {{ .Name }}
+
+| Property | Value |
+| --- | ----- |
+| _N_ | `{{ .N.String }}` |
+| _d_ | `{{ .D }}` |
+| _N_-_d_ | `{{ printf "%x" .Target }}` |
+| Length | {{ .Length }} |
+| Algorithm | `{{ .AlgorithmName }}` |
+{{- if gt .BestKnown 0 }}
+| Best Known | {{ .BestKnown }} |
+| Delta | {{ printf "%+d" .Delta }} |
+{{ end }}
+
+Addition chain produced by `addchain`:
+
+```go
+{{ include (printf "internal/results/testdata/%s.golden" .Slug) }}```
+
+{{ end }}

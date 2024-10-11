@@ -1,0 +1,3 @@
+#!/bin/bash
+
+vagrant winrm windows -e -c 'cd /keyring; go test .'

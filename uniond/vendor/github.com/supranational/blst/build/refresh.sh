@@ -21,6 +21,7 @@ for pl in ../src/asm/*-armv8.pl; do
     (set -x; ${PERL} $pl linux64 > elf/$s)
     (set -x; ${PERL} $pl coff64 > coff/$s)
     (set -x; ${PERL} $pl ios64 > mach-o/$s)
+    (set -x; ${PERL} $pl cheri64 > cheri/$s)
 done
 
 ( cd ../bindings;

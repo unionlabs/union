@@ -1,0 +1,17 @@
+
+namespace UnionUnderlyingType;
+
+table A {
+    a: int;
+}
+table B {
+    b: string;
+}
+table C {
+    c: bool;
+}
+union ABC: int { A = 555, B = 666, C = 777}
+table D {
+    test_union: ABC;
+    test_vector_of_union: [ABC];
+}

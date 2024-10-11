@@ -1,0 +1,19 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/tools/interop/export-genesis",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//beacon-chain/db/kv:go_default_library",
+        "//io/file:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "export-genesis",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)

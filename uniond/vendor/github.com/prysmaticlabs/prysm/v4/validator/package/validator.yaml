@@ -1,0 +1,21 @@
+# Configuration file for Prysm validator
+
+# datadir: Location of slashing protection DB
+datadir: /var/lib/prysm/validator
+
+# wallet-dir: Path to a wallet directory on-disk for Prysm validator accounts.
+wallet-dir: /var/lib/prysm/validator
+
+# wallet-password-file: Path to a plain-text, .txt file containing your wallet password.
+# wallet-password-file: /var/lib/prysm/validator/password.txt
+
+# Optional tuning parameters
+# For full list, see https://docs.prylabs.network/docs/prysm-usage/parameters
+
+# beacon-rpc-provider: Beacon node RPC provider endpoint. Default: localhost:4000
+# rpc-host: Specify the RPC host exposed by the validator. Default: localhost
+# rpc-port: Specify the RPC port exposed by the validator. Default: 7000
+# grpc-gateway-host: Specify the gRPC gateway port exposed by the validator. Default: localhost
+# grpc-gateway-port: Specify the gRPC gateway port exposed by the validator. Default: 7500
+# graffiti: A string to include in proposed block.
+# graffiti-file: Path to Yaml file containing advanced graffiti settings. See https://docs.prylabs.network/docs/prysm-usage/graffiti-file

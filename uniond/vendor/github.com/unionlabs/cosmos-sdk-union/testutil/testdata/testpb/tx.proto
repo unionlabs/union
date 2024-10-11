@@ -1,0 +1,46 @@
+syntax = "proto3";
+package testpb;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "testpb/testdata.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/testutil/testdata";
+
+// Msg tests the Protobuf message service as defined in
+// https://github.com/cosmos/cosmos-sdk/issues/7500.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  rpc CreateDog(MsgCreateDog) returns (MsgCreateDogResponse);
+}
+
+message MsgCreateDog {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  testpb.Dog dog   = 1;
+  string     owner = 2;
+}
+
+message MsgCreateDogResponse {
+  string name = 1;
+}
+
+// TestMsg is msg type for testing protobuf message using any, as defined in
+// https://github.com/cosmos/cosmos-sdk/issues/6213.
+message TestMsg {
+  option (cosmos.msg.v1.signer)      = "signers";
+  option (gogoproto.goproto_getters) = false;
+  option (amino.name)                = "testpb/TestMsg";
+
+  repeated string signers = 1;
+
+  string decField = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (amino.dont_omitempty) = true,
+    (gogoproto.nullable)   = false
+  ];
+}

@@ -1,0 +1,2 @@
+rpc error: code = InvalidArgument desc = br
+error details: name = ResourceInfo type = Foo resourcename = Bar owner = Client desc = Directory not Found

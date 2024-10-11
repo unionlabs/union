@@ -1,0 +1,16 @@
+{
+    "version": 2,
+    "testCases": [
+        {
+            "id": "DescribeDirectoriesSuccess",
+            "operationName": "DescribeDirectories",
+            "input": {},
+            "expectation": {
+                "success": {}
+            },
+            "config": {
+                "region": "us-west-2"
+            }
+        }
+    ]
+}

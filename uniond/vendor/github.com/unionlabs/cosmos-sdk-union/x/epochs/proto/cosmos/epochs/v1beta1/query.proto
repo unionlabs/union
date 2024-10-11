@@ -1,0 +1,33 @@
+syntax = "proto3";
+package cosmos.epochs.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/epochs/v1beta1/genesis.proto";
+
+option go_package = "cosmossdk.io/x/epochs/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // EpochInfos provide running epochInfos
+  rpc EpochInfos(QueryEpochsInfoRequest) returns (QueryEpochsInfoResponse) {
+    option (google.api.http).get = "/cosmos/epochs/v1beta1/epochs";
+  }
+  // CurrentEpoch provide current epoch of specified identifier
+  rpc CurrentEpoch(QueryCurrentEpochRequest) returns (QueryCurrentEpochResponse) {
+    option (google.api.http).get = "/cosmos/epochs/v1beta1/current_epoch";
+  }
+}
+
+message QueryEpochsInfoRequest {}
+message QueryEpochsInfoResponse {
+  repeated EpochInfo epochs = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryCurrentEpochRequest {
+  string identifier = 1;
+}
+message QueryCurrentEpochResponse {
+  int64 current_epoch = 1;
+}

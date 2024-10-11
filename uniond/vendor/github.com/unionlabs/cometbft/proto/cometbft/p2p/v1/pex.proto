@@ -1,0 +1,24 @@
+syntax = "proto3";
+package cometbft.p2p.v1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/p2p/v1";
+
+import "cometbft/p2p/v1/types.proto";
+import "gogoproto/gogo.proto";
+
+// PexRequest is a request for peer addresses.
+message PexRequest {}
+
+// PexAddrs is a response with peer addresses.
+message PexAddrs {
+  repeated NetAddress addrs = 1 [(gogoproto.nullable) = false];
+}
+
+// Message is an abstract PEX message.
+message Message {
+  // Sum of all possible messages.
+  oneof sum {
+    PexRequest pex_request = 1;
+    PexAddrs   pex_addrs   = 2;
+  }
+}

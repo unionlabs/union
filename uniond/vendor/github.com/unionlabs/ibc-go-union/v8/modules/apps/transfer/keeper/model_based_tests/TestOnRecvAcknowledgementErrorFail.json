@@ -1,0 +1,58 @@
+[
+  {
+    "packet": {
+      "sourceChannel": "",
+      "sourcePort": "",
+      "destChannel": "",
+      "destPort": "",
+      "data": {
+        "sender": "a1",
+        "receiver": "a2",
+        "amount": "1",
+        "denom": [
+          "cosmos-hub",
+          "transfer",
+          "channel-0",
+          "cosmos-hub",
+          "btc"
+        ]
+      }
+    },
+    "handler": "OnRecvAcknowledgementError",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      }
+    ],
+    "error": true
+  }
+]

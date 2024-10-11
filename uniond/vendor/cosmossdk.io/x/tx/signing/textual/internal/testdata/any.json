@@ -1,0 +1,70 @@
+[
+    {
+        "proto": {
+            "@type": "/Foo"
+        },
+        "screens": [
+            {"content": "/Foo"}
+        ]
+    },
+    {
+        "proto": {
+            "@type": "/Foo",
+            "full_name": "testing"
+        },
+        "screens": [
+            {"content": "/Foo"},
+            {"title": "Full name", "content": "testing", "indent": 1}
+        ]
+    },
+    {
+        "proto": {
+            "@type": "/google.protobuf.Timestamp",
+            "value": "2006-01-02T15:04:05Z"
+        },
+        "screens": [
+            {"content": "/google.protobuf.Timestamp"},
+            {"content": "2006-01-02T15:04:05Z", "indent": 1}
+        ]
+    },
+    {
+        "proto": {
+            "@type": "/google.protobuf.Any",
+            "value": {
+                "@type": "/Foo"
+            }
+        },
+        "screens": [
+            {"content": "/google.protobuf.Any"},
+            {"content": "/Foo", "indent": 1}
+        ]
+    },
+    {
+       "proto": {
+            "@type": "/google.protobuf.Any",
+            "value": {
+                "@type": "/Foo",
+                "full_name": "testing"
+            }
+        },
+        "screens": [
+            {"content": "/google.protobuf.Any"},
+            {"content": "/Foo", "indent": 1},
+            {"title": "Full name", "content": "testing", "indent": 2}
+        ]
+    },
+    {
+       "proto": {
+            "@type": "/A",
+            "ANY": {
+                "@type": "/Foo",
+                "full_name": "testing"
+            }
+        },
+        "screens": [
+            {"content": "/A"},
+            {"title": "ANY", "content": "/Foo", "indent": 1},
+            {"title": "Full name", "content": "testing", "indent": 2}
+        ]
+    }
+]

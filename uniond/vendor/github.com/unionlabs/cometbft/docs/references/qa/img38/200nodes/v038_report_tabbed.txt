@@ -1,0 +1,40 @@
+Experiment ID: 93024f38-a008-443d-9aa7-9ac44c9fe15b  Experiment ID: d65a486e-4712-41b5-9f41-97e491895d2e  Experiment ID: 9c39184b-b8c7-46a2-bacb-40f9961fb7a1
+    Connections: 1                                       Connections: 2                                       Connections: 4
+    Rate: 200                                            Rate: 200                                            Rate: 200
+    Size: 1024                                           Size: 1024                                           Size: 1024
+    Total Valid Tx: 17800                                Total Valid Tx: 33259                                Total Valid Tx: 33259
+    Total Negative Latencies: 0                          Total Negative Latencies: 0                          Total Negative Latencies: 0
+    Minimum Latency: 562.805076ms                        Minimum Latency: 894.026089ms                        Minimum Latency: 2.166875257s
+    Maximum Latency: 7.623963559s                        Maximum Latency: 16.941216187s                       Maximum Latency: 15.701598288s
+    Average Latency: 1.860012628s                        Average Latency: 4.033134276s                        Average Latency: 7.592412668s
+    Standard Deviation: 1.169158915s                     Standard Deviation: 3.427243686s                     Standard Deviation: 2.951797195s
+Experiment ID: de676ecf-038e-443f-a26a-27915f29e312  Experiment ID: 39d571b8-f39b-4aec-bd6a-e94f28a42a63  Experiment ID: 5b855105-60b5-4c2d-ba5c-fdad0213765c
+    Connections: 1                                       Connections: 2                                       Connections: 4
+    Rate: 400                                            Rate: 400                                            Rate: 400
+    Size: 1024                                           Size: 1024                                           Size: 1024
+    Total Valid Tx: 35600                                Total Valid Tx: 41565                                Total Valid Tx: 41384
+    Total Negative Latencies: 0                          Total Negative Latencies: 0                          Total Negative Latencies: 0
+    Minimum Latency: 565.640641ms                        Minimum Latency: 1.650712046s                        Minimum Latency: 2.796290248s
+    Maximum Latency: 10.051316705s                       Maximum Latency: 15.897581951s                       Maximum Latency: 20.124431723s
+    Average Latency: 3.499369173s                        Average Latency: 8.635543807s                        Average Latency: 10.596146863s
+    Standard Deviation: 1.926805844s                     Standard Deviation: 2.535678364s                     Standard Deviation: 3.193742233s
+Experiment ID: db10ca9e-6cf8-4dc9-9284-6e767e4b4346  Experiment ID: f57af87d-d342-41f7-a0eb-baa87a4b2257  Experiment ID: 32819ea0-1a59-41de-8aa6-b70f68697520
+    Connections: 1                                       Connections: 2                                       Connections: 4
+    Rate: 800                                            Rate: 800                                            Rate: 800
+    Size: 1024                                           Size: 1024                                           Size: 1024
+    Total Valid Tx: 36831                                Total Valid Tx: 38686                                Total Valid Tx: 40816
+    Total Negative Latencies: 0                          Total Negative Latencies: 0                          Total Negative Latencies: 0
+    Minimum Latency: 1.203966853s                        Minimum Latency: 728.863446ms                        Minimum Latency: 1.559342549s
+    Maximum Latency: 21.411365818s                       Maximum Latency: 24.349050642s                       Maximum Latency: 25.791215028s
+    Average Latency: 9.213156739s                        Average Latency: 11.194994374s                       Average Latency: 11.950851892s
+    Standard Deviation: 4.909584729s                     Standard Deviation: 5.199186587s                     Standard Deviation: 4.315394253s
+Experiment ID: 587762c4-3fd4-4799-9f3b-9e6971b353ba  Experiment ID: 489b2623-a3e4-453f-a771-5d05e7de4a1f  Experiment ID: 98605df2-3b16-46db-8675-2980bc84ea2b
+    Connections: 1                                       Connections: 2                                       Connections: 4
+    Rate: 1600                                           Rate: 1600                                           Rate: 1600
+    Size: 1024                                           Size: 1024                                           Size: 1024
+    Total Valid Tx: 40600                                Total Valid Tx: 45034                                Total Valid Tx: 39830
+    Total Negative Latencies: 0                          Total Negative Latencies: 0                          Total Negative Latencies: 0
+    Minimum Latency: 998.07523ms                         Minimum Latency: 1.43819209s                         Minimum Latency: 1.50664776s
+    Maximum Latency: 18.565312759s                       Maximum Latency: 17.098811297s                       Maximum Latency: 20.346885373s
+    Average Latency: 8.78128586s                         Average Latency: 8.957419021s                        Average Latency: 12.113245591s
+    Standard Deviation: 3.305897473s                     Standard Deviation: 2.734640455s                     Standard Deviation: 4.029854219s

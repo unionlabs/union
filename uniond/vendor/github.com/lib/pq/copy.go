@@ -1,6 +1,7 @@
 package pq
 
 import (
+	"bytes"
 	"context"
 	"database/sql/driver"
 	"encoding/binary"
@@ -20,29 +21,35 @@ var (
 // CopyIn creates a COPY FROM statement which can be prepared with
 // Tx.Prepare().  The target table should be visible in search_path.
 func CopyIn(table string, columns ...string) string {
-	stmt := "COPY " + QuoteIdentifier(table) + " ("
+	buffer := bytes.NewBufferString("COPY ")
+	BufferQuoteIdentifier(table, buffer)
+	buffer.WriteString(" (")
+	makeStmt(buffer, columns...)
+	return buffer.String()
+}
+
+// MakeStmt makes the stmt string for CopyIn and CopyInSchema.
+func makeStmt(buffer *bytes.Buffer, columns ...string) {
+	//s := bytes.NewBufferString()
 	for i, col := range columns {
 		if i != 0 {
-			stmt += ", "
+			buffer.WriteString(", ")
 		}
-		stmt += QuoteIdentifier(col)
+		BufferQuoteIdentifier(col, buffer)
 	}
-	stmt += ") FROM STDIN"
-	return stmt
+	buffer.WriteString(") FROM STDIN")
 }
 
 // CopyInSchema creates a COPY FROM statement which can be prepared with
 // Tx.Prepare().
 func CopyInSchema(schema, table string, columns ...string) string {
-	stmt := "COPY " + QuoteIdentifier(schema) + "." + QuoteIdentifier(table) + " ("
-	for i, col := range columns {
-		if i != 0 {
-			stmt += ", "
-		}
-		stmt += QuoteIdentifier(col)
-	}
-	stmt += ") FROM STDIN"
-	return stmt
+	buffer := bytes.NewBufferString("COPY ")
+	BufferQuoteIdentifier(schema, buffer)
+	buffer.WriteRune('.')
+	BufferQuoteIdentifier(table, buffer)
+	buffer.WriteString(" (")
+	makeStmt(buffer, columns...)
+	return buffer.String()
 }
 
 type copyin struct {

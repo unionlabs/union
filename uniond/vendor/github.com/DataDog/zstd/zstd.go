@@ -60,8 +60,8 @@ func cCompressBound(srcSize int) int {
 // decompressSizeHint tries to give a hint on how much of the output buffer size we should have
 // based on zstd frame descriptors. To prevent DOS from maliciously-created payloads, limit the size
 func decompressSizeHint(src []byte) int {
-	// 1 MB or 10x input size
-	upperBound := 10 * len(src)
+	// 1 MB or 50x input size
+	upperBound := 50 * len(src)
 	if upperBound < decompressSizeBufferLimit {
 		upperBound = decompressSizeBufferLimit
 	}
@@ -143,12 +143,7 @@ func Decompress(dst, src []byte) ([]byte, error) {
 		dst = make([]byte, bound)
 	}
 
-	written := int(C.ZSTD_decompress(
-		unsafe.Pointer(&dst[0]),
-		C.size_t(len(dst)),
-		unsafe.Pointer(&src[0]),
-		C.size_t(len(src))))
-	err := getError(written)
+	written, err := DecompressInto(dst, src)
 	if err == nil {
 		return dst[:written], nil
 	}
@@ -160,4 +155,20 @@ func Decompress(dst, src []byte) ([]byte, error) {
 	r := NewReader(bytes.NewReader(src))
 	defer r.Close()
 	return ioutil.ReadAll(r)
+}
+
+// DecompressInto decompresses src into dst. Unlike Decompress, DecompressInto
+// requires that dst be sufficiently large to hold the decompressed payload.
+// DecompressInto may be used when the caller knows the size of the decompressed
+// payload before attempting decompression.
+//
+// It returns the number of bytes copied and an error if any is encountered. If
+// dst is too small, DecompressInto errors.
+func DecompressInto(dst, src []byte) (int, error) {
+	written := int(C.ZSTD_decompress(
+		unsafe.Pointer(&dst[0]),
+		C.size_t(len(dst)),
+		unsafe.Pointer(&src[0]),
+		C.size_t(len(src))))
+	return written, getError(written)
 }

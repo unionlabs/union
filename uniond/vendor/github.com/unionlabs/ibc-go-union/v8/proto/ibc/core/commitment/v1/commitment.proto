@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package ibc.core.commitment.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos/ics23/v1/proofs.proto";
+
+// MerkleRoot defines a merkle root hash.
+// In the Cosmos SDK, the AppHash of a block header becomes the root.
+message MerkleRoot {
+  option (gogoproto.goproto_getters) = false;
+
+  bytes hash = 1;
+}
+
+// MerklePrefix is merkle path prefixed to the key.
+// The constructed key from the Path and the key will be append(Path.KeyPath,
+// append(Path.KeyPrefix, key...))
+message MerklePrefix {
+  bytes key_prefix = 1;
+}
+
+// MerklePath is the path used to verify commitment proofs, which can be an
+// arbitrary structured object (defined by a commitment type).
+// MerklePath is represented from root-to-leaf
+message MerklePath {
+  repeated string key_path = 1;
+}
+
+// MerkleProof is a wrapper type over a chain of CommitmentProofs.
+// It demonstrates membership or non-membership for an element or set of
+// elements, verifiable in conjunction with a known commitment root. Proofs
+// should be succinct.
+// MerkleProofs are ordered from leaf-to-root
+message MerkleProof {
+  repeated cosmos.ics23.v1.CommitmentProof proofs = 1;
+}

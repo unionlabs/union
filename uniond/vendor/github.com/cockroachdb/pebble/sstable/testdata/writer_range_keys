@@ -1,0 +1,135 @@
+# NOTE: The operations SET, UNSET, and DEL in this test file are aliases for
+# RANGEKEYSET, RANGEKEYUNSET and RANGEKEYDEL, respectively.
+
+# Keys must be added in order of start key.
+
+build
+SET b-d @3=foo
+SET a-c @5=bar
+----
+pebble: spans must be added in order: b > a
+
+# All disjoint RANGEKEYSETs.
+#
+#  ^
+#  |                •―――○    [e,f) SET @3=baz
+#  |        •―――○            [c,d) SET @2=bar
+#  |•―――――――○                [a,c) SET @1=foo
+#  |___________________________________
+#   a   b   c   d   e   f   g   h   i
+
+build
+SET a-c @1=foo
+SET c-d @2=bar
+SET e-f @3=baz
+----
+a-c:{(#0,RANGEKEYSET,@1,foo)}
+c-d:{(#0,RANGEKEYSET,@2,bar)}
+e-f:{(#0,RANGEKEYSET,@3,baz)}
+
+# Merge aligned RANGEKEYSETs.
+#
+#  ^
+#  |•―――――――○    [a,c) SET @3=baz
+#  |•―――――――○    [a,c) SET @1=bar
+#  |•―――――――○    [a,c) SET @2=foo
+#  |___________________________________
+#   a   b   c   d   e   f   g   h   i
+#
+# Note that suffixes are sorted in descending order of the timestamp value in
+# the suffix, rather than in lexical order.
+
+build
+SET a-c @2=foo
+SET a-c @1=bar
+SET a-c @3=baz
+----
+a-c:{(#0,RANGEKEYSET,@3,baz) (#0,RANGEKEYSET,@2,foo) (#0,RANGEKEYSET,@1,bar)}
+
+# Aligned spans, mixed range key kinds.
+#
+#  ^
+#  |                    •―――――――――――○    [f,i) DEL
+#  |                    •―――――――――――○    [f,i) SET   @9=v9
+#  |                    •―――――――――――○    [f,i) SET   @8=v8
+#  |                    •―――――――――――○    [f,i) SET   @7=v7
+#  |                    •―――――――――――○    [f,i) UNSET @6
+#  |                    •―――――――――――○    [f,i) SET   @5=v5
+#  |                    •―――――――――――○    [f,i) SET   @4=v4
+#  |            •―――○                    [d,e) SET   @9=v9
+#  |            •―――○                    [d,e) DEL
+#  |        •―――○                        [c,d) SET   @5=v5
+#  |        •―――○                        [c,d) SET   @2=v2
+#  |•―――――――○                            [a,c) UNSET @5
+#  |•―――――――○                            [a,c) SET   @1=v1
+#  |___________________________________
+#   a   b   c   d   e   f   g   h   i
+
+build
+SET a-c @1=v1
+UNSET a-c @5
+SET c-d @2=v2
+SET c-d @5=v5
+DEL d-e
+SET d-e @9=v9
+SET f-i @4=v4
+SET f-i @5=v5
+UNSET f-i @6
+SET f-i @7=v7
+SET f-i @8=v8
+SET f-i @9=v9
+DEL f-i
+----
+a-c:{(#0,RANGEKEYSET,@1,v1) (#0,RANGEKEYUNSET,@5)}
+c-d:{(#0,RANGEKEYSET,@5,v5) (#0,RANGEKEYSET,@2,v2)}
+d-e:{(#0,RANGEKEYSET,@9,v9) (#0,RANGEKEYDEL)}
+f-i:{(#0,RANGEKEYSET,@9,v9) (#0,RANGEKEYSET,@8,v8) (#0,RANGEKEYSET,@7,v7) (#0,RANGEKEYSET,@5,v5) (#0,RANGEKEYSET,@4,v4) (#0,RANGEKEYUNSET,@6) (#0,RANGEKEYDEL)}
+
+# Merge overlapping RANGEKEYSETs.
+#
+#  ^
+#  |        •―――○           [c,d) SET @3=baz
+#  |    •―――――――――――――――○   [b,f) SET @2=bar
+#  |•―――――――○               [a,c) SET @1=foo
+#  |___________________________________
+#   a   b   c   d   e   f
+
+build
+SET a-c @1=foo
+SET b-f @2=bar
+SET c-d @3=baz
+----
+a-b:{(#0,RANGEKEYSET,@1,foo)}
+b-c:{(#0,RANGEKEYSET,@2,bar) (#0,RANGEKEYSET,@1,foo)}
+c-d:{(#0,RANGEKEYSET,@3,baz) (#0,RANGEKEYSET,@2,bar)}
+d-f:{(#0,RANGEKEYSET,@2,bar)}
+
+# Overlapping spans, mixed range keys kinds.
+#
+#  ^
+#  |                      •―――――○     [l,o) DEL
+#  |        •―――――――――――――○           [e,l) SET   @4=baz
+#  |                              •―○ [p,q) DEL
+#  |    •―――――――――○                   [c,h) UNSET @3
+#  |  •―○                             [b,c) SET   @2=bar
+#  |•―――――――――――――――○                 [a,i) SET   @1=foo
+#  |___________________________________
+#   a b c d e f g h i j k l m n o p q
+
+build
+SET a-i @1=foo
+SET b-c @2=bar
+UNSET c-h @3
+DEL c-d
+SET e-q @4=baz
+DEL l-o
+----
+a-b:{(#0,RANGEKEYSET,@1,foo)}
+b-c:{(#0,RANGEKEYSET,@2,bar) (#0,RANGEKEYSET,@1,foo)}
+c-d:{(#0,RANGEKEYSET,@1,foo) (#0,RANGEKEYUNSET,@3) (#0,RANGEKEYDEL)}
+d-e:{(#0,RANGEKEYSET,@1,foo) (#0,RANGEKEYUNSET,@3)}
+e-h:{(#0,RANGEKEYSET,@4,baz) (#0,RANGEKEYSET,@1,foo) (#0,RANGEKEYUNSET,@3)}
+h-i:{(#0,RANGEKEYSET,@4,baz) (#0,RANGEKEYSET,@1,foo)}
+i-l:{(#0,RANGEKEYSET,@4,baz)}
+l-o:{(#0,RANGEKEYSET,@4,baz) (#0,RANGEKEYDEL)}
+o-q:{(#0,RANGEKEYSET,@4,baz)}

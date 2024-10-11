@@ -1,0 +1,15 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: cosmossdk.io/x/tx/textual/internal/testpb
+    except:
+      - buf.build/googleapis/googleapis
+      - buf.build/cosmos/gogo-proto
+      - buf.build/cosmos/cosmos-proto
+    override:
+      buf.build/cosmos/cosmos-sdk: cosmossdk.io/api
+plugins:
+  - name: go-pulsar
+    out: .
+    opt: paths=source_relative

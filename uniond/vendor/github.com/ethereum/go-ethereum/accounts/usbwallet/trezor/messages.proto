@@ -1,0 +1,264 @@
+// This file originates from the SatoshiLabs Trezor `common` repository at:
+//   https://github.com/trezor/trezor-common/blob/master/protob/messages.proto
+// dated 28.05.2019, commit 893fd219d4a01bcffa0cd9cfa631856371ec5aa9.
+
+syntax = "proto2";
+package hw.trezor.messages;
+
+/**
+ * Messages for TREZOR communication
+ */
+
+// Sugar for easier handling in Java
+option java_package = "com.satoshilabs.trezor.lib.protobuf";
+option java_outer_classname = "TrezorMessage";
+
+import "google/protobuf/descriptor.proto";
+
+/**
+ * Options for specifying message direction and type of wire (normal/debug)
+ */
+extend google.protobuf.EnumValueOptions {
+    optional bool wire_in = 50002;              // message can be transmitted via wire from PC to TREZOR
+    optional bool wire_out = 50003;             // message can be transmitted via wire from TREZOR to PC
+    optional bool wire_debug_in = 50004;        // message can be transmitted via debug wire from PC to TREZOR
+    optional bool wire_debug_out = 50005;       // message can be transmitted via debug wire from TREZOR to PC
+    optional bool wire_tiny = 50006;            // message is handled by TREZOR when the USB stack is in tiny mode
+    optional bool wire_bootloader = 50007;      // message is only handled by TREZOR Bootloader
+    optional bool wire_no_fsm = 50008;          // message is not handled by TREZOR unless the USB stack is in tiny mode
+}
+
+/**
+ * Mapping between TREZOR wire identifier (uint) and a protobuf message
+ */
+enum MessageType {
+
+    // Management
+    MessageType_Initialize = 0 [(wire_in) = true, (wire_tiny) = true];
+    MessageType_Ping = 1 [(wire_in) = true];
+    MessageType_Success = 2 [(wire_out) = true];
+    MessageType_Failure = 3 [(wire_out) = true];
+    MessageType_ChangePin = 4 [(wire_in) = true];
+    MessageType_WipeDevice = 5 [(wire_in) = true];
+    MessageType_GetEntropy = 9 [(wire_in) = true];
+    MessageType_Entropy = 10 [(wire_out) = true];
+    MessageType_LoadDevice = 13 [(wire_in) = true];
+    MessageType_ResetDevice = 14 [(wire_in) = true];
+    MessageType_Features = 17 [(wire_out) = true];
+    MessageType_PinMatrixRequest = 18 [(wire_out) = true];
+    MessageType_PinMatrixAck = 19 [(wire_in) = true, (wire_tiny) = true, (wire_no_fsm) = true];
+    MessageType_Cancel = 20 [(wire_in) = true, (wire_tiny) = true];
+    MessageType_ClearSession = 24 [(wire_in) = true];
+    MessageType_ApplySettings = 25 [(wire_in) = true];
+    MessageType_ButtonRequest = 26 [(wire_out) = true];
+    MessageType_ButtonAck = 27 [(wire_in) = true, (wire_tiny) = true, (wire_no_fsm) = true];
+    MessageType_ApplyFlags = 28 [(wire_in) = true];
+    MessageType_BackupDevice = 34 [(wire_in) = true];
+    MessageType_EntropyRequest = 35 [(wire_out) = true];
+    MessageType_EntropyAck = 36 [(wire_in) = true];
+    MessageType_PassphraseRequest = 41 [(wire_out) = true];
+    MessageType_PassphraseAck = 42 [(wire_in) = true, (wire_tiny) = true, (wire_no_fsm) = true];
+    MessageType_PassphraseStateRequest = 77 [(wire_out) = true];
+    MessageType_PassphraseStateAck = 78 [(wire_in) = true, (wire_tiny) = true, (wire_no_fsm) = true];
+    MessageType_RecoveryDevice = 45 [(wire_in) = true];
+    MessageType_WordRequest = 46 [(wire_out) = true];
+    MessageType_WordAck = 47 [(wire_in) = true];
+    MessageType_GetFeatures = 55 [(wire_in) = true];
+    MessageType_SetU2FCounter = 63 [(wire_in) = true];
+
+    // Bootloader
+    MessageType_FirmwareErase = 6 [(wire_in) = true, (wire_bootloader) = true];
+    MessageType_FirmwareUpload = 7 [(wire_in) = true, (wire_bootloader) = true];
+    MessageType_FirmwareRequest = 8 [(wire_out) = true, (wire_bootloader) = true];
+    MessageType_SelfTest = 32 [(wire_in) = true, (wire_bootloader) = true];
+
+    // Bitcoin
+    MessageType_GetPublicKey = 11 [(wire_in) = true];
+    MessageType_PublicKey = 12 [(wire_out) = true];
+    MessageType_SignTx = 15 [(wire_in) = true];
+    MessageType_TxRequest = 21 [(wire_out) = true];
+    MessageType_TxAck = 22 [(wire_in) = true];
+    MessageType_GetAddress = 29 [(wire_in) = true];
+    MessageType_Address = 30 [(wire_out) = true];
+    MessageType_SignMessage = 38 [(wire_in) = true];
+    MessageType_VerifyMessage = 39 [(wire_in) = true];
+    MessageType_MessageSignature = 40 [(wire_out) = true];
+
+    // Crypto
+    MessageType_CipherKeyValue = 23 [(wire_in) = true];
+    MessageType_CipheredKeyValue = 48 [(wire_out) = true];
+    MessageType_SignIdentity = 53 [(wire_in) = true];
+    MessageType_SignedIdentity = 54 [(wire_out) = true];
+    MessageType_GetECDHSessionKey = 61 [(wire_in) = true];
+    MessageType_ECDHSessionKey = 62 [(wire_out) = true];
+    MessageType_CosiCommit = 71 [(wire_in) = true];
+    MessageType_CosiCommitment = 72 [(wire_out) = true];
+    MessageType_CosiSign = 73 [(wire_in) = true];
+    MessageType_CosiSignature = 74 [(wire_out) = true];
+
+    // Debug
+    MessageType_DebugLinkDecision = 100 [(wire_debug_in) = true, (wire_tiny) = true, (wire_no_fsm) = true];
+    MessageType_DebugLinkGetState = 101 [(wire_debug_in) = true, (wire_tiny) = true];
+    MessageType_DebugLinkState = 102 [(wire_debug_out) = true];
+    MessageType_DebugLinkStop = 103 [(wire_debug_in) = true];
+    MessageType_DebugLinkLog = 104 [(wire_debug_out) = true];
+    MessageType_DebugLinkMemoryRead = 110 [(wire_debug_in) = true];
+    MessageType_DebugLinkMemory = 111 [(wire_debug_out) = true];
+    MessageType_DebugLinkMemoryWrite = 112 [(wire_debug_in) = true];
+    MessageType_DebugLinkFlashErase = 113 [(wire_debug_in) = true];
+
+    // Ethereum
+    MessageType_EthereumGetPublicKey = 450 [(wire_in) = true];
+    MessageType_EthereumPublicKey = 451 [(wire_out) = true];
+    MessageType_EthereumGetAddress = 56 [(wire_in) = true];
+    MessageType_EthereumAddress = 57 [(wire_out) = true];
+    MessageType_EthereumSignTx = 58 [(wire_in) = true];
+    MessageType_EthereumTxRequest = 59 [(wire_out) = true];
+    MessageType_EthereumTxAck = 60 [(wire_in) = true];
+    MessageType_EthereumSignMessage = 64 [(wire_in) = true];
+    MessageType_EthereumVerifyMessage = 65 [(wire_in) = true];
+    MessageType_EthereumMessageSignature = 66 [(wire_out) = true];
+
+    // NEM
+    MessageType_NEMGetAddress = 67 [(wire_in) = true];
+    MessageType_NEMAddress = 68 [(wire_out) = true];
+    MessageType_NEMSignTx = 69 [(wire_in) = true];
+    MessageType_NEMSignedTx = 70 [(wire_out) = true];
+    MessageType_NEMDecryptMessage = 75 [(wire_in) = true];
+    MessageType_NEMDecryptedMessage = 76 [(wire_out) = true];
+
+    // Lisk
+    MessageType_LiskGetAddress = 114 [(wire_in) = true];
+    MessageType_LiskAddress = 115 [(wire_out) = true];
+    MessageType_LiskSignTx = 116 [(wire_in) = true];
+    MessageType_LiskSignedTx = 117 [(wire_out) = true];
+    MessageType_LiskSignMessage = 118 [(wire_in) = true];
+    MessageType_LiskMessageSignature = 119 [(wire_out) = true];
+    MessageType_LiskVerifyMessage = 120 [(wire_in) = true];
+    MessageType_LiskGetPublicKey = 121 [(wire_in) = true];
+    MessageType_LiskPublicKey = 122 [(wire_out) = true];
+
+    // Tezos
+    MessageType_TezosGetAddress = 150 [(wire_in) = true];
+    MessageType_TezosAddress = 151 [(wire_out) = true];
+    MessageType_TezosSignTx = 152 [(wire_in) = true];
+    MessageType_TezosSignedTx = 153 [(wire_out) = true];
+    MessageType_TezosGetPublicKey = 154 [(wire_in) = true];
+    MessageType_TezosPublicKey = 155 [(wire_out) = true];
+
+    // Stellar
+    MessageType_StellarSignTx = 202 [(wire_in) = true];
+    MessageType_StellarTxOpRequest = 203 [(wire_out) = true];
+    MessageType_StellarGetAddress = 207 [(wire_in) = true];
+    MessageType_StellarAddress = 208 [(wire_out) = true];
+    MessageType_StellarCreateAccountOp = 210 [(wire_in) = true];
+    MessageType_StellarPaymentOp = 211 [(wire_in) = true];
+    MessageType_StellarPathPaymentOp = 212 [(wire_in) = true];
+    MessageType_StellarManageOfferOp = 213 [(wire_in) = true];
+    MessageType_StellarCreatePassiveOfferOp = 214 [(wire_in) = true];
+    MessageType_StellarSetOptionsOp = 215 [(wire_in) = true];
+    MessageType_StellarChangeTrustOp = 216 [(wire_in) = true];
+    MessageType_StellarAllowTrustOp = 217 [(wire_in) = true];
+    MessageType_StellarAccountMergeOp = 218 [(wire_in) = true];
+    // omitted: StellarInflationOp is not a supported operation, would be 219
+    MessageType_StellarManageDataOp = 220 [(wire_in) = true];
+    MessageType_StellarBumpSequenceOp = 221 [(wire_in) = true];
+    MessageType_StellarSignedTx = 230 [(wire_out) = true];
+
+    // TRON
+    MessageType_TronGetAddress = 250 [(wire_in) = true];
+    MessageType_TronAddress = 251 [(wire_out) = true];
+    MessageType_TronSignTx = 252 [(wire_in) = true];
+    MessageType_TronSignedTx = 253 [(wire_out) = true];
+
+    // Cardano
+    // dropped Sign/VerifyMessage ids 300-302
+    MessageType_CardanoSignTx = 303 [(wire_in) = true];
+    MessageType_CardanoTxRequest = 304 [(wire_out) = true];
+    MessageType_CardanoGetPublicKey = 305 [(wire_in) = true];
+    MessageType_CardanoPublicKey = 306 [(wire_out) = true];
+    MessageType_CardanoGetAddress = 307 [(wire_in) = true];
+    MessageType_CardanoAddress = 308 [(wire_out) = true];
+    MessageType_CardanoTxAck = 309 [(wire_in) = true];
+    MessageType_CardanoSignedTx = 310 [(wire_out) = true];
+
+    // Ontology
+    MessageType_OntologyGetAddress = 350 [(wire_in) = true];
+    MessageType_OntologyAddress = 351 [(wire_out) = true];
+    MessageType_OntologyGetPublicKey = 352 [(wire_in) = true];
+    MessageType_OntologyPublicKey = 353 [(wire_out) = true];
+    MessageType_OntologySignTransfer = 354 [(wire_in) = true];
+    MessageType_OntologySignedTransfer = 355 [(wire_out) = true];
+    MessageType_OntologySignWithdrawOng = 356 [(wire_in) = true];
+    MessageType_OntologySignedWithdrawOng = 357 [(wire_out) = true];
+    MessageType_OntologySignOntIdRegister = 358 [(wire_in) = true];
+    MessageType_OntologySignedOntIdRegister = 359 [(wire_out) = true];
+    MessageType_OntologySignOntIdAddAttributes = 360 [(wire_in) = true];
+    MessageType_OntologySignedOntIdAddAttributes = 361 [(wire_out) = true];
+
+    // Ripple
+    MessageType_RippleGetAddress = 400 [(wire_in) = true];
+    MessageType_RippleAddress = 401 [(wire_out) = true];
+    MessageType_RippleSignTx = 402 [(wire_in) = true];
+    MessageType_RippleSignedTx = 403 [(wire_in) = true];
+
+    // Monero
+    MessageType_MoneroTransactionInitRequest = 501 [(wire_out) = true];
+    MessageType_MoneroTransactionInitAck = 502 [(wire_out) = true];
+    MessageType_MoneroTransactionSetInputRequest = 503 [(wire_out) = true];
+    MessageType_MoneroTransactionSetInputAck = 504 [(wire_out) = true];
+    MessageType_MoneroTransactionInputsPermutationRequest = 505 [(wire_out) = true];
+    MessageType_MoneroTransactionInputsPermutationAck = 506 [(wire_out) = true];
+    MessageType_MoneroTransactionInputViniRequest = 507 [(wire_out) = true];
+    MessageType_MoneroTransactionInputViniAck = 508 [(wire_out) = true];
+    MessageType_MoneroTransactionAllInputsSetRequest = 509 [(wire_out) = true];
+    MessageType_MoneroTransactionAllInputsSetAck = 510 [(wire_out) = true];
+    MessageType_MoneroTransactionSetOutputRequest = 511 [(wire_out) = true];
+    MessageType_MoneroTransactionSetOutputAck = 512 [(wire_out) = true];
+    MessageType_MoneroTransactionAllOutSetRequest = 513 [(wire_out) = true];
+    MessageType_MoneroTransactionAllOutSetAck = 514 [(wire_out) = true];
+    MessageType_MoneroTransactionSignInputRequest = 515 [(wire_out) = true];
+    MessageType_MoneroTransactionSignInputAck = 516 [(wire_out) = true];
+    MessageType_MoneroTransactionFinalRequest = 517 [(wire_out) = true];
+    MessageType_MoneroTransactionFinalAck = 518 [(wire_out) = true];
+    MessageType_MoneroKeyImageExportInitRequest = 530 [(wire_out) = true];
+    MessageType_MoneroKeyImageExportInitAck = 531 [(wire_out) = true];
+    MessageType_MoneroKeyImageSyncStepRequest = 532 [(wire_out) = true];
+    MessageType_MoneroKeyImageSyncStepAck = 533 [(wire_out) = true];
+    MessageType_MoneroKeyImageSyncFinalRequest = 534 [(wire_out) = true];
+    MessageType_MoneroKeyImageSyncFinalAck = 535 [(wire_out) = true];
+    MessageType_MoneroGetAddress = 540 [(wire_in) = true];
+    MessageType_MoneroAddress = 541 [(wire_out) = true];
+    MessageType_MoneroGetWatchKey = 542 [(wire_in) = true];
+    MessageType_MoneroWatchKey = 543 [(wire_out) = true];
+    MessageType_DebugMoneroDiagRequest = 546 [(wire_in) = true];
+    MessageType_DebugMoneroDiagAck = 547 [(wire_out) = true];
+    MessageType_MoneroGetTxKeyRequest = 550 [(wire_in) = true];
+    MessageType_MoneroGetTxKeyAck = 551 [(wire_out) = true];
+    MessageType_MoneroLiveRefreshStartRequest = 552 [(wire_in) = true];
+    MessageType_MoneroLiveRefreshStartAck = 553 [(wire_out) = true];
+    MessageType_MoneroLiveRefreshStepRequest = 554 [(wire_in) = true];
+    MessageType_MoneroLiveRefreshStepAck = 555 [(wire_out) = true];
+    MessageType_MoneroLiveRefreshFinalRequest = 556 [(wire_in) = true];
+    MessageType_MoneroLiveRefreshFinalAck = 557 [(wire_out) = true];
+
+    // EOS
+    MessageType_EosGetPublicKey = 600 [(wire_in) = true];
+    MessageType_EosPublicKey = 601 [(wire_out) = true];
+    MessageType_EosSignTx = 602 [(wire_in) = true];
+    MessageType_EosTxActionRequest = 603 [(wire_out) = true];
+    MessageType_EosTxActionAck = 604 [(wire_in) = true];
+    MessageType_EosSignedTx = 605 [(wire_out) = true];
+
+    // Binance
+    MessageType_BinanceGetAddress = 700 [(wire_in) = true];
+    MessageType_BinanceAddress = 701 [(wire_out) = true];
+    MessageType_BinanceGetPublicKey = 702 [(wire_in) = true];
+    MessageType_BinancePublicKey = 703 [(wire_out) = true];
+    MessageType_BinanceSignTx = 704 [(wire_in) = true];
+    MessageType_BinanceTxRequest = 705 [(wire_out) = true];
+    MessageType_BinanceTransferMsg = 706 [(wire_in) = true];
+    MessageType_BinanceOrderMsg = 707 [(wire_in) = true];
+    MessageType_BinanceCancelMsg = 708 [(wire_in) = true];
+    MessageType_BinanceSignedTx = 709 [(wire_out) = true];
+}

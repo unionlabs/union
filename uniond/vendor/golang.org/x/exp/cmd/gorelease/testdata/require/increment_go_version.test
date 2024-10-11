@@ -1,0 +1,13 @@
+mod=example.com/require
+base=v0.0.1
+proxyVersions=example.com/require@v0.0.1
+-- want --
+# summary
+Suggested version: v0.1.0
+-- go.mod --
+module example.com/require
+
+go 1.13
+-- go.sum --
+-- require.go --
+package require

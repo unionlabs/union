@@ -1,0 +1,13 @@
+load("@prysm//tools/go:def.bzl", "go_test")
+
+go_test(
+    name = "go_default_test",
+    timeout = "short",
+    srcs = ["transition_test.go"],
+    data = glob(["*.yaml"]) + [
+        "@consensus_spec_tests_minimal//:test_data",
+    ],
+    eth_network = "minimal",
+    tags = ["spectest"],
+    deps = ["//testing/spectest/shared/deneb/fork:go_default_library"],
+)

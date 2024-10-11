@@ -1,0 +1,15 @@
+syntax = "proto3";
+package tendermint.crypto;
+
+import "gogoproto/gogo.proto";
+
+// PublicKey defines the keys available for use with Validators
+message PublicKey {
+  option (gogoproto.compare) = true;
+  option (gogoproto.equal)   = true;
+
+  oneof sum {
+    bytes ed25519   = 1;
+    bytes secp256k1 = 2;
+  }
+}

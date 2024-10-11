@@ -1,0 +1,32 @@
+// Copyright 2021 Prysmatic Labs.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+
+package ethereum.eth.v2;
+
+option csharp_namespace = "Ethereum.Eth.V2";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/eth/v2;eth";
+option java_multiple_files = true;
+option java_outer_classname = "VersionProto";
+option java_package = "org.ethereum.eth.v2";
+option php_namespace = "Ethereum\\Eth\\v2";
+
+// Version states the version of the returned accompanying message.
+enum Version {
+  PHASE0 = 0;
+  ALTAIR = 1;
+  BELLATRIX = 2;
+  CAPELLA = 3;
+  DENEB = 4;
+}

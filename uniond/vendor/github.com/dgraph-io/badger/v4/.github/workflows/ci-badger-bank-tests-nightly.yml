@@ -1,0 +1,47 @@
+name: ci-badger-bank-tests-nightly
+on:
+  push:
+    branches:
+      - main
+      - 'release/v*'
+  schedule:
+    - cron: "1 3 * * *"
+jobs:
+  badger-bank:
+    runs-on: warp-ubuntu-latest-x64-4x
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get Go Version
+        run: |
+          #!/bin/bash
+          GOVERSION=$({ [ -f .go-version ] && cat .go-version; })
+          echo "GOVERSION=$GOVERSION" >> $GITHUB_ENV
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GOVERSION }}
+      - name: Install Dependencies
+        run: make dependency
+      - name: Install jemalloc
+        run: make jemalloc
+      - name: Install Badger
+        run: cd badger && go install --race --tags=jemalloc .
+      - name: Run Badger Bank Test
+        run: |
+          #!/bin/bash -x
+          set -o pipefail
+          # get 16 random bytes from /dev/urandom
+          hexdump -vn16 -e'4/4 "%08X" 1 "\n"' /dev/urandom > badgerkey16bytes
+          badger bank test --dir=. --encryption-key "badgerkey16bytes" -d=4h 2>&1 | tee badgerbanktest.log | grep -v 'Moved $5'
+          if [ $? -ne 0 ]; then
+            if grep -qi 'data race' badgerbanktest.log; then
+              echo "Detected data race via grep..."
+              cat badgerbanktest.log | grep -v 'Moved $5'
+            else
+              echo "No data race detected via grep. Assuming txn violation..."
+              tail -1000 badgerbanktest.log
+              badger bank disect --dir=. --decryption-key "badgerkey16bytes"
+            fi
+            exit 1
+          fi
+          echo 'Bank test finished with no issues.'

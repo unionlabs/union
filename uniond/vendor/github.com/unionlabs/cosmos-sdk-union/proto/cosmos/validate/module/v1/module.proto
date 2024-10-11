@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package cosmos.validate.module.v1;
+
+import "cosmos/app/v1alpha1/module.proto";
+
+// Module is the config object of the x/validate module.
+message Module {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "github.com/cosmos/cosmos-sdk/x/validate"
+  };
+}

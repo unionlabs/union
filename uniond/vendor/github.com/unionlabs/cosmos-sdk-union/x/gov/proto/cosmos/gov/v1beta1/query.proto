@@ -1,0 +1,195 @@
+syntax = "proto3";
+package cosmos.gov.v1beta1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/gov/v1beta1/gov.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+
+option go_package = "cosmossdk.io/x/gov/types/v1beta1";
+
+// Query defines the gRPC querier service for gov module
+service Query {
+  // Proposal queries proposal details based on ProposalID.
+  rpc Proposal(QueryProposalRequest) returns (QueryProposalResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1beta1/proposals/{proposal_id}";
+  }
+
+  // Proposals queries all proposals based on given status.
+  rpc Proposals(QueryProposalsRequest) returns (QueryProposalsResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1beta1/proposals";
+  }
+
+  // Vote queries voted information based on proposalID, voterAddr.
+  // Due to how we handle state, this query would error for proposals that has already been finished.
+  rpc Vote(QueryVoteRequest) returns (QueryVoteResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}";
+  }
+
+  // Votes queries votes of a given proposal.
+  rpc Votes(QueryVotesRequest) returns (QueryVotesResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1beta1/proposals/{proposal_id}/votes";
+  }
+
+  // Params queries all parameters of the gov module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1beta1/params/{params_type}";
+  }
+
+  // Deposit queries single deposit information based on proposalID, depositor address.
+  rpc Deposit(QueryDepositRequest) returns (QueryDepositResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}";
+  }
+
+  // Deposits queries all deposits of a single proposal.
+  rpc Deposits(QueryDepositsRequest) returns (QueryDepositsResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits";
+  }
+
+  // TallyResult queries the tally of a proposal vote.
+  rpc TallyResult(QueryTallyResultRequest) returns (QueryTallyResultResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1beta1/proposals/{proposal_id}/tally";
+  }
+}
+
+// QueryProposalRequest is the request type for the Query/Proposal RPC method.
+message QueryProposalRequest {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+}
+
+// QueryProposalResponse is the response type for the Query/Proposal RPC method.
+message QueryProposalResponse {
+  Proposal proposal = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QueryProposalsRequest is the request type for the Query/Proposals RPC method.
+message QueryProposalsRequest {
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // proposal_status defines the status of the proposals.
+  ProposalStatus proposal_status = 1;
+
+  // voter defines the voter address for the proposals.
+  string voter = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // depositor defines the deposit addresses from the proposals.
+  string depositor = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 4;
+}
+
+// QueryProposalsResponse is the response type for the Query/Proposals RPC
+// method.
+message QueryProposalsResponse {
+  // proposals defines all the requested governance proposals.
+  repeated Proposal proposals = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryVoteRequest is the request type for the Query/Vote RPC method.
+message QueryVoteRequest {
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+
+  // voter defines the voter address for the proposals.
+  string voter = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// QueryVoteResponse is the response type for the Query/Vote RPC method.
+message QueryVoteResponse {
+  // vote defines the queried vote.
+  Vote vote = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QueryVotesRequest is the request type for the Query/Votes RPC method.
+message QueryVotesRequest {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryVotesResponse is the response type for the Query/Votes RPC method.
+message QueryVotesResponse {
+  // votes defines the queried votes.
+  repeated Vote votes = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {
+  // params_type defines which parameters to query for, can be one of "voting",
+  // "tallying" or "deposit".
+  string params_type = 1;
+}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // voting_params defines the parameters related to voting.
+  VotingParams voting_params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  // deposit_params defines the parameters related to deposit.
+  DepositParams deposit_params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  // tally_params defines the parameters related to tally.
+  TallyParams tally_params = 3 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QueryDepositRequest is the request type for the Query/Deposit RPC method.
+message QueryDepositRequest {
+  option (gogoproto.goproto_getters) = false;
+  option (gogoproto.equal)           = false;
+
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+
+  // depositor defines the deposit addresses from the proposals.
+  string depositor = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// QueryDepositResponse is the response type for the Query/Deposit RPC method.
+message QueryDepositResponse {
+  // deposit defines the requested deposit.
+  Deposit deposit = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QueryDepositsRequest is the request type for the Query/Deposits RPC method.
+message QueryDepositsRequest {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryDepositsResponse is the response type for the Query/Deposits RPC method.
+message QueryDepositsResponse {
+  // deposits defines the requested deposits.
+  repeated Deposit deposits = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryTallyResultRequest is the request type for the Query/Tally RPC method.
+message QueryTallyResultRequest {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+}
+
+// QueryTallyResultResponse is the response type for the Query/Tally RPC method.
+message QueryTallyResultResponse {
+  // tally defines the requested tally.
+  TallyResult tally = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}

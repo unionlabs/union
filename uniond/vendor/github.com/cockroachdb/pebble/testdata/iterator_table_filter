@@ -1,0 +1,66 @@
+define
+L0
+  a.SET.4:4
+L1
+  a.SET.3:3
+L2
+  a.SET.2:2
+L3
+  a.SET.1:1
+----
+0.0:
+  000004:[a#4,SET-a#4,SET]
+1:
+  000005:[a#3,SET-a#3,SET]
+2:
+  000006:[a#2,SET-a#2,SET]
+3:
+  000007:[a#1,SET-a#1,SET]
+
+iter
+first
+----
+a: (4, .)
+
+# Only scan tables with min-seq-num < filter.
+
+iter filter=5
+first
+----
+a: (4, .)
+
+iter filter=4
+first
+----
+a: (3, .)
+
+iter filter=3
+first
+----
+a: (2, .)
+
+iter filter=2
+first
+----
+a: (1, .)
+
+iter filter=1
+first
+----
+.
+
+# Set-options that reuses the filter should still see the filter apply.
+# Set-options that removes the filter should not.
+
+iter filter=4
+first
+set-options table-filter=reuse
+first
+set-options table-filter=none
+first
+----
+a: (3, .)
+.
+a: (3, .)
+.
+a: (4, .)

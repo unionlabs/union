@@ -1,0 +1,5 @@
+version: v1
+plugins:
+  - name: doc
+    out: ../docs/proto
+    opt: ../docs/proto/protodoc-markdown.tmpl,proto-docs.md

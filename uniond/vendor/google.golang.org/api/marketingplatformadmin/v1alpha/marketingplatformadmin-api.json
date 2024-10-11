@@ -1,0 +1,379 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/marketingplatformadmin.analytics.read": {
+          "description": "View your Google Analytics product account data in GMP home"
+        },
+        "https://www.googleapis.com/auth/marketingplatformadmin.analytics.update": {
+          "description": "Manage your Google Analytics product account data in GMP home"
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://marketingplatformadmin.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "Google Marketing Platform Admin API",
+  "description": "The Google Marketing Platform Admin API allows for programmatic access to the Google Marketing Platform configuration data. You can use the Google Marketing Platform Admin API to manage links between your Google Marketing Platform organization and Google Analytics accounts, and to set the service level of your GA4 properties.",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://developers.google.com/analytics/devguides/config/gmp/v1",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "marketingplatformadmin:v1alpha",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://marketingplatformadmin.mtls.googleapis.com/",
+  "name": "marketingplatformadmin",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "organizations": {
+      "methods": {
+        "get": {
+          "description": "Lookup for a single organization.",
+          "flatPath": "v1alpha/organizations/{organizationsId}",
+          "httpMethod": "GET",
+          "id": "marketingplatformadmin.organizations.get",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "name": {
+              "description": "Required. The name of the Organization to retrieve. Format: organizations/{org_id}",
+              "location": "path",
+              "pattern": "^organizations/[^/]+$",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "v1alpha/{+name}",
+          "response": {
+            "$ref": "Organization"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/marketingplatformadmin.analytics.read",
+            "https://www.googleapis.com/auth/marketingplatformadmin.analytics.update"
+          ]
+        }
+      },
+      "resources": {
+        "analyticsAccountLinks": {
+          "methods": {
+            "create": {
+              "description": "Creates the link between the Analytics account and the Google Marketing Platform organization. User needs to be an org user, and admin on the Analytics account to create the link. If the account is already linked to an organization, user needs to unlink the account from the current organization, then try link again.",
+              "flatPath": "v1alpha/organizations/{organizationsId}/analyticsAccountLinks",
+              "httpMethod": "POST",
+              "id": "marketingplatformadmin.organizations.analyticsAccountLinks.create",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "parent": {
+                  "description": "Required. The parent resource where this Analytics account link will be created. Format: organizations/{org_id}",
+                  "location": "path",
+                  "pattern": "^organizations/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v1alpha/{+parent}/analyticsAccountLinks",
+              "request": {
+                "$ref": "AnalyticsAccountLink"
+              },
+              "response": {
+                "$ref": "AnalyticsAccountLink"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/marketingplatformadmin.analytics.update"
+              ]
+            },
+            "delete": {
+              "description": "Deletes the AnalyticsAccountLink, which detaches the Analytics account from the Google Marketing Platform organization. User needs to be an org user, and admin on the Analytics account in order to delete the link.",
+              "flatPath": "v1alpha/organizations/{organizationsId}/analyticsAccountLinks/{analyticsAccountLinksId}",
+              "httpMethod": "DELETE",
+              "id": "marketingplatformadmin.organizations.analyticsAccountLinks.delete",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the Analytics account link to delete. Format: organizations/{org_id}/analyticsAccountLinks/{analytics_account_link_id}",
+                  "location": "path",
+                  "pattern": "^organizations/[^/]+/analyticsAccountLinks/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v1alpha/{+name}",
+              "response": {
+                "$ref": "Empty"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/marketingplatformadmin.analytics.update"
+              ]
+            },
+            "list": {
+              "description": "Lists the Google Analytics accounts link to the specified Google Marketing Platform organization.",
+              "flatPath": "v1alpha/organizations/{organizationsId}/analyticsAccountLinks",
+              "httpMethod": "GET",
+              "id": "marketingplatformadmin.organizations.analyticsAccountLinks.list",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "pageSize": {
+                  "description": "Optional. The maximum number of Analytics account links to return in one call. The service may return fewer than this value. If unspecified, at most 50 Analytics account links will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "Optional. A page token, received from a previous ListAnalyticsAccountLinks call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to `ListAnalyticsAccountLinks` must match the call that provided the page token.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "parent": {
+                  "description": "Required. The parent organization, which owns this collection of Analytics account links. Format: organizations/{org_id}",
+                  "location": "path",
+                  "pattern": "^organizations/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v1alpha/{+parent}/analyticsAccountLinks",
+              "response": {
+                "$ref": "ListAnalyticsAccountLinksResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/marketingplatformadmin.analytics.read",
+                "https://www.googleapis.com/auth/marketingplatformadmin.analytics.update"
+              ]
+            },
+            "setPropertyServiceLevel": {
+              "description": "Updates the service level for an Analytics property.",
+              "flatPath": "v1alpha/organizations/{organizationsId}/analyticsAccountLinks/{analyticsAccountLinksId}:setPropertyServiceLevel",
+              "httpMethod": "POST",
+              "id": "marketingplatformadmin.organizations.analyticsAccountLinks.setPropertyServiceLevel",
+              "parameterOrder": [
+                "analyticsAccountLink"
+              ],
+              "parameters": {
+                "analyticsAccountLink": {
+                  "description": "Required. The parent AnalyticsAccountLink scope where this property is in. Format: organizations/{org_id}/analyticsAccountLinks/{analytics_account_link_id}",
+                  "location": "path",
+                  "pattern": "^organizations/[^/]+/analyticsAccountLinks/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v1alpha/{+analyticsAccountLink}:setPropertyServiceLevel",
+              "request": {
+                "$ref": "SetPropertyServiceLevelRequest"
+              },
+              "response": {
+                "$ref": "SetPropertyServiceLevelResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/marketingplatformadmin.analytics.update"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20240530",
+  "rootUrl": "https://marketingplatformadmin.googleapis.com/",
+  "schemas": {
+    "AnalyticsAccountLink": {
+      "description": "A resource message representing the link between a Google Analytics account and a Google Marketing Platform organization.",
+      "id": "AnalyticsAccountLink",
+      "properties": {
+        "analyticsAccount": {
+          "description": "Required. Immutable. The resource name of the AnalyticsAdmin API account. The account ID will be used as the ID of this AnalyticsAccountLink resource, which will become the final component of the resource name. Format: analyticsadmin.googleapis.com/accounts/{account_id}",
+          "type": "string"
+        },
+        "displayName": {
+          "description": "Output only. The human-readable name for the Analytics account.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "linkVerificationState": {
+          "description": "Output only. The verification state of the link between the Analytics account and the parent organization.",
+          "enum": [
+            "LINK_VERIFICATION_STATE_UNSPECIFIED",
+            "LINK_VERIFICATION_STATE_VERIFIED",
+            "LINK_VERIFICATION_STATE_NOT_VERIFIED"
+          ],
+          "enumDescriptions": [
+            "The link state is unknown.",
+            "The link is established.",
+            "The link is requested, but hasn't been approved by the product account admin."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "name": {
+          "description": "Identifier. Resource name of this AnalyticsAccountLink. Note the resource ID is the same as the ID of the Analtyics account. Format: organizations/{org_id}/analyticsAccountLinks/{analytics_account_link_id} Example: \"organizations/xyz/analyticsAccountLinks/1234\"",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Empty": {
+      "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); }",
+      "id": "Empty",
+      "properties": {},
+      "type": "object"
+    },
+    "ListAnalyticsAccountLinksResponse": {
+      "description": "Response message for ListAnalyticsAccountLinks RPC.",
+      "id": "ListAnalyticsAccountLinksResponse",
+      "properties": {
+        "analyticsAccountLinks": {
+          "description": "Analytics account links in this organization.",
+          "items": {
+            "$ref": "AnalyticsAccountLink"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Organization": {
+      "description": "A resource message representing a Google Marketing Platform organization.",
+      "id": "Organization",
+      "properties": {
+        "displayName": {
+          "description": "The human-readable name for the organization.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Identifier. The resource name of the GMP organization. Format: organizations/{org_id}",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SetPropertyServiceLevelRequest": {
+      "description": "Request message for SetPropertyServiceLevel RPC.",
+      "id": "SetPropertyServiceLevelRequest",
+      "properties": {
+        "analyticsProperty": {
+          "description": "Required. The Analytics property to change the ServiceLevel setting. This field is the name of the Google Analytics Admin API property resource. Format: analyticsadmin.googleapis.com/properties/{property_id}",
+          "type": "string"
+        },
+        "serviceLevel": {
+          "description": "Required. The service level to set for this property.",
+          "enum": [
+            "ANALYTICS_SERVICE_LEVEL_UNSPECIFIED",
+            "ANALYTICS_SERVICE_LEVEL_STANDARD",
+            "ANALYTICS_SERVICE_LEVEL_360"
+          ],
+          "enumDescriptions": [
+            "Service level unspecified.",
+            "The standard version of Google Analytics.",
+            "The premium version of Google Analytics."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SetPropertyServiceLevelResponse": {
+      "description": "Response message for SetPropertyServiceLevel RPC.",
+      "id": "SetPropertyServiceLevelResponse",
+      "properties": {},
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Google Marketing Platform Admin API",
+  "version": "v1alpha",
+  "version_module": true
+}

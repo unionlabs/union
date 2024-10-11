@@ -1,11 +1,42 @@
 OPTION	DOTNAME
 .text$	SEGMENT ALIGN(256) 'CODE'
 
+PUBLIC	add_mod_384x384
+
 
 ALIGN	32
-__add_mod_384x384	PROC PRIVATE
+add_mod_384x384	PROC PUBLIC
 	DB	243,15,30,250
+	mov	QWORD PTR[8+rsp],rdi	;WIN64 prologue
+	mov	QWORD PTR[16+rsp],rsi
+	mov	r11,rsp
+$L$SEH_begin_add_mod_384x384::
 
+
+	push	rbp
+
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
+	mov	rcx,r9
+	push	rbx
+
+	push	r12
+
+	push	r13
+
+	push	r14
+
+	push	r15
+
+	sub	rsp,8
+
+$L$SEH_body_add_mod_384x384::
+
+
+ifdef	__SGX_LVI_HARDENING__
+	lfence
+endif
 	mov	r8,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
 	mov	r10,QWORD PTR[16+rsi]
@@ -66,14 +97,73 @@ __add_mod_384x384	PROC PRIVATE
 	mov	QWORD PTR[80+rdi],rbp
 	mov	QWORD PTR[88+rdi],rsi
 
-	DB	0F3h,0C3h		;repret
-__add_mod_384x384	ENDP
+	mov	r15,QWORD PTR[8+rsp]
+
+	mov	r14,QWORD PTR[16+rsp]
+
+	mov	r13,QWORD PTR[24+rsp]
+
+	mov	r12,QWORD PTR[32+rsp]
+
+	mov	rbx,QWORD PTR[40+rsp]
+
+	mov	rbp,QWORD PTR[48+rsp]
+
+	lea	rsp,QWORD PTR[56+rsp]
+
+$L$SEH_epilogue_add_mod_384x384::
+	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
+	mov	rsi,QWORD PTR[16+rsp]
+
+	
+ifdef	__SGX_LVI_HARDENING__
+	pop	rdx
+	lfence
+	jmp	rdx
+	ud2
+else
+	DB	0F3h,0C3h
+endif
+
+$L$SEH_end_add_mod_384x384::
+add_mod_384x384	ENDP
+
+PUBLIC	sub_mod_384x384
 
 
 ALIGN	32
-__sub_mod_384x384	PROC PRIVATE
+sub_mod_384x384	PROC PUBLIC
 	DB	243,15,30,250
+	mov	QWORD PTR[8+rsp],rdi	;WIN64 prologue
+	mov	QWORD PTR[16+rsp],rsi
+	mov	r11,rsp
+$L$SEH_begin_sub_mod_384x384::
 
+
+	push	rbp
+
+	mov	rdi,rcx
+	mov	rsi,rdx
+	mov	rdx,r8
+	mov	rcx,r9
+	push	rbx
+
+	push	r12
+
+	push	r13
+
+	push	r14
+
+	push	r15
+
+	sub	rsp,8
+
+$L$SEH_body_sub_mod_384x384::
+
+
+ifdef	__SGX_LVI_HARDENING__
+	lfence
+endif
 	mov	r8,QWORD PTR[rsi]
 	mov	r9,QWORD PTR[8+rsi]
 	mov	r10,QWORD PTR[16+rsi]
@@ -133,102 +223,6 @@ __sub_mod_384x384	PROC PRIVATE
 	mov	QWORD PTR[80+rdi],rbp
 	mov	QWORD PTR[88+rdi],rsi
 
-	DB	0F3h,0C3h		;repret
-__sub_mod_384x384	ENDP
-
-PUBLIC	add_mod_384x384
-
-
-ALIGN	32
-add_mod_384x384	PROC PUBLIC
-	DB	243,15,30,250
-	mov	QWORD PTR[8+rsp],rdi	;WIN64 prologue
-	mov	QWORD PTR[16+rsp],rsi
-	mov	r11,rsp
-$L$SEH_begin_add_mod_384x384::
-
-
-	push	rbp
-
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-	mov	rcx,r9
-	push	rbx
-
-	push	r12
-
-	push	r13
-
-	push	r14
-
-	push	r15
-
-	sub	rsp,8
-
-$L$SEH_body_add_mod_384x384::
-
-
-	call	__add_mod_384x384
-
-	mov	r15,QWORD PTR[8+rsp]
-
-	mov	r14,QWORD PTR[16+rsp]
-
-	mov	r13,QWORD PTR[24+rsp]
-
-	mov	r12,QWORD PTR[32+rsp]
-
-	mov	rbx,QWORD PTR[40+rsp]
-
-	mov	rbp,QWORD PTR[48+rsp]
-
-	lea	rsp,QWORD PTR[56+rsp]
-
-$L$SEH_epilogue_add_mod_384x384::
-	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
-	mov	rsi,QWORD PTR[16+rsp]
-
-	DB	0F3h,0C3h		;repret
-
-$L$SEH_end_add_mod_384x384::
-add_mod_384x384	ENDP
-
-PUBLIC	sub_mod_384x384
-
-
-ALIGN	32
-sub_mod_384x384	PROC PUBLIC
-	DB	243,15,30,250
-	mov	QWORD PTR[8+rsp],rdi	;WIN64 prologue
-	mov	QWORD PTR[16+rsp],rsi
-	mov	r11,rsp
-$L$SEH_begin_sub_mod_384x384::
-
-
-	push	rbp
-
-	mov	rdi,rcx
-	mov	rsi,rdx
-	mov	rdx,r8
-	mov	rcx,r9
-	push	rbx
-
-	push	r12
-
-	push	r13
-
-	push	r14
-
-	push	r15
-
-	sub	rsp,8
-
-$L$SEH_body_sub_mod_384x384::
-
-
-	call	__sub_mod_384x384
-
 	mov	r15,QWORD PTR[8+rsp]
 
 	mov	r14,QWORD PTR[16+rsp]
@@ -247,7 +241,15 @@ $L$SEH_epilogue_sub_mod_384x384::
 	mov	rdi,QWORD PTR[8+rsp]	;WIN64 epilogue
 	mov	rsi,QWORD PTR[16+rsp]
 
-	DB	0F3h,0C3h		;repret
+	
+ifdef	__SGX_LVI_HARDENING__
+	pop	rdx
+	lfence
+	jmp	rdx
+	ud2
+else
+	DB	0F3h,0C3h
+endif
 
 $L$SEH_end_sub_mod_384x384::
 sub_mod_384x384	ENDP

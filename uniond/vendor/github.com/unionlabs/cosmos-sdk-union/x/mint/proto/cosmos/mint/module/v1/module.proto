@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package cosmos.mint.module.v1;
+
+import "cosmos/app/v1alpha1/module.proto";
+
+// Module is the config object of the mint module.
+message Module {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "cosmossdk.io/x/mint"
+  };
+
+  string fee_collector_name = 1;
+
+  // authority defines the custom module authority. If not set, defaults to the governance module.
+  string authority = 2;
+}

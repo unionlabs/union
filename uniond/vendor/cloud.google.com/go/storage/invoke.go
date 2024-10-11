@@ -70,6 +70,9 @@ func run(ctx context.Context, call func(ctx context.Context) error, retry *retry
 	return internal.Retry(ctx, bo, func() (stop bool, err error) {
 		ctxWithHeaders := setInvocationHeaders(ctx, invocationID, attempts)
 		err = call(ctxWithHeaders)
+		if err != nil && retry.maxAttempts != nil && attempts >= *retry.maxAttempts {
+			return true, fmt.Errorf("storage: retry failed after %v attempts; last error: %w", *retry.maxAttempts, err)
+		}
 		attempts++
 		return !errorFunc(err), err
 	})
@@ -81,7 +84,21 @@ func setInvocationHeaders(ctx context.Context, invocationID string, attempts int
 	invocationHeader := fmt.Sprintf("gccl-invocation-id/%v gccl-attempt-count/%v", invocationID, attempts)
 	xGoogHeader := strings.Join([]string{invocationHeader, xGoogDefaultHeader}, " ")
 
-	ctx = callctx.SetHeaders(ctx, xGoogHeaderKey, xGoogHeader)
+	// TODO: remove this once the respective transport packages merge xGoogHeader.
+	// Also remove gl-go at that time, as it will be repeated.
+	hdrs := callctx.HeadersFromContext(ctx)
+	for _, v := range hdrs[xGoogHeaderKey] {
+		xGoogHeader = strings.Join([]string{xGoogHeader, v}, " ")
+	}
+
+	if hdrs[xGoogHeaderKey] != nil {
+		// Replace the key instead of adding it, if there was anything to merge with.
+		hdrs[xGoogHeaderKey] = []string{xGoogHeader}
+	} else {
+		// TODO: keep this line when removing the above code.
+		ctx = callctx.SetHeaders(ctx, xGoogHeaderKey, xGoogHeader)
+	}
+
 	ctx = callctx.SetHeaders(ctx, idempotencyHeaderKey, invocationID)
 	return ctx
 }
@@ -102,18 +119,16 @@ func ShouldRetry(err error) bool {
 	if errors.Is(err, io.ErrUnexpectedEOF) {
 		return true
 	}
+	if errors.Is(err, net.ErrClosed) {
+		return true
+	}
 
 	switch e := err.(type) {
-	case *net.OpError:
-		if strings.Contains(e.Error(), "use of closed network connection") {
-			// TODO: check against net.ErrClosed (go 1.16+) instead of string
-			return true
-		}
 	case *googleapi.Error:
 		// Retry on 408, 429, and 5xx, according to
 		// https://cloud.google.com/storage/docs/exponential-backoff.
 		return e.Code == 408 || e.Code == 429 || (e.Code >= 500 && e.Code < 600)
-	case *url.Error:
+	case *net.OpError, *url.Error:
 		// Retry socket-level errors ECONNREFUSED and ECONNRESET (from syscall).
 		// Unfortunately the error type is unexported, so we resort to string
 		// matching.

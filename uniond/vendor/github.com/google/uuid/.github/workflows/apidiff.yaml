@@ -1,0 +1,26 @@
+---
+name: apidiff
+on:
+  pull_request:
+    branches:
+      - master
+permissions:
+  contents: read
+jobs:
+  compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.21
+      - run: go install golang.org/x/exp/cmd/apidiff@latest
+      - uses: actions/checkout@v3
+        with:
+          ref: master
+      - run: apidiff -w uuid.baseline .
+      - uses: actions/checkout@v3
+        with:
+          clean: false
+      - run: |
+          apidiff -incompatible uuid.baseline . > diff.txt
+          cat diff.txt && ! [ -s diff.txt ]

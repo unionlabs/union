@@ -1,0 +1,17 @@
+syntax = "proto3";
+package cometbft.mempool.v1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/mempool/v1";
+
+// Txs contains a list of transaction from the mempool.
+message Txs {
+  repeated bytes txs = 1;
+}
+
+// Message is an abstract mempool message.
+message Message {
+  // Sum of all possible messages.
+  oneof sum {
+    Txs txs = 1;
+  }
+}

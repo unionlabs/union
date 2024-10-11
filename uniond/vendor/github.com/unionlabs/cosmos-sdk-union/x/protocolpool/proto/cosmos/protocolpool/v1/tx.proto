@@ -1,0 +1,175 @@
+syntax = "proto3";
+package cosmos.protocolpool.v1;
+
+option go_package = "cosmossdk.io/x/protocolpool/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// Msg defines the pool Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // FundCommunityPool defines a method to allow an account to directly
+  // fund the community pool.
+  rpc FundCommunityPool(MsgFundCommunityPool) returns (MsgFundCommunityPoolResponse);
+
+  // CommunityPoolSpend defines a governance operation for sending tokens from
+  // the community pool in the x/protocolpool module to another account, which
+  // could be the governance module itself. The authority is defined in the
+  // keeper.
+  rpc CommunityPoolSpend(MsgCommunityPoolSpend) returns (MsgCommunityPoolSpendResponse);
+
+  // SubmitBudgetProposal defines a method to set a budget proposal.
+  rpc SubmitBudgetProposal(MsgSubmitBudgetProposal) returns (MsgSubmitBudgetProposalResponse);
+
+  // ClaimBudget defines a method to claim the distributed budget.
+  rpc ClaimBudget(MsgClaimBudget) returns (MsgClaimBudgetResponse);
+
+  // CreateContinuousFund defines a method to add funds continuously.
+  rpc CreateContinuousFund(MsgCreateContinuousFund) returns (MsgCreateContinuousFundResponse);
+
+  // WithdrawContinuousFund defines a method to withdraw continuous fund allocated.
+  rpc WithdrawContinuousFund(MsgWithdrawContinuousFund) returns (MsgWithdrawContinuousFundResponse);
+
+  // CancelContinuousFund defines a method for cancelling continuous fund.
+  rpc CancelContinuousFund(MsgCancelContinuousFund) returns (MsgCancelContinuousFundResponse);
+}
+
+// MsgFundCommunityPool allows an account to directly
+// fund the community pool.
+message MsgFundCommunityPool {
+  option (cosmos.msg.v1.signer)      = "depositor";
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  repeated cosmos.base.v1beta1.Coin amount = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  string depositor = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgFundCommunityPoolResponse defines the Msg/FundCommunityPool response type.
+message MsgFundCommunityPoolResponse {}
+
+// MsgCommunityPoolSpend defines a message for sending tokens from the community
+// pool to another account. This message is typically executed via a governance
+// proposal with the governance module being the executing authority.
+message MsgCommunityPoolSpend {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  // Authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string   authority                       = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string   recipient                       = 2;
+  repeated cosmos.base.v1beta1.Coin amount = 3
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
+
+// MsgCommunityPoolSpendResponse defines the response to executing a
+// MsgCommunityPoolSpend message.
+message MsgCommunityPoolSpendResponse {}
+
+// MsgSubmitBudgetProposal defines budget proposal type.
+message MsgSubmitBudgetProposal {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  // Authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // RecipientAddress is the address of the recipient who can claim the budget.
+  string recipient_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // BudgetPerTranche is the amount allocated per tranche.
+  cosmos.base.v1beta1.Coin budget_per_tranche = 3;
+  // StartTime is the time when the budget becomes claimable.
+  // If StartTime is less than the current block time, proposal will not be accepted.
+  google.protobuf.Timestamp start_time = 4 [(gogoproto.stdtime) = true];
+  // Tranches is the number of times the budget amount is to be distributed.
+  uint64 tranches = 5;
+  // Period is the time interval(number of seconds) at which funds distribution should be performed.
+  // For example, if a period is set to 3600, it represents an action that
+  // should occur every hour (3600 seconds).
+  google.protobuf.Duration period = 6 [(gogoproto.stdduration) = true];
+}
+
+// MsgSubmitBudgetProposalResponse defines the response to executing a
+// MsgSubmitBudgetProposal message.
+message MsgSubmitBudgetProposalResponse {}
+
+// MsgClaimBudget defines a message for claiming the distributed budget.
+message MsgClaimBudget {
+  option (cosmos.msg.v1.signer) = "recipient_address";
+  string recipient_address      = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgClaimBudgetResponse defines the response to executing a
+// MsgClaimBudget message.
+message MsgClaimBudgetResponse {
+  cosmos.base.v1beta1.Coin amount = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  ;
+}
+
+// MsgCreateContinuousFund defines a message for adding continuous funds.
+message MsgCreateContinuousFund {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  // Authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Recipient address of the account receiving funds.
+  string recipient = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Percentage is the percentage of funds to be allocated from Community pool.
+  string percentage = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+  ];
+  // Optional, if expiry is set, removes the state object when expired.
+  google.protobuf.Timestamp expiry = 4 [(gogoproto.stdtime) = true];
+}
+
+// MsgCreateContinuousFundResponse defines the response to executing a
+// MsgCreateContinuousFund message.
+message MsgCreateContinuousFundResponse {}
+
+// MsgCancelContinuousFund defines a message to cancel continuous funds for a specific recipient.
+message MsgCancelContinuousFund {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  // Authority is the account address of authority.
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // RecipientAddress is the account address of recipient whose funds are to be cancelled.
+  string recipient_address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgCancelContinuousFundResponse defines the response to executing a
+// MsgCancelContinuousFund message.
+message MsgCancelContinuousFundResponse {
+  // CanceledTime is the canceled time.
+  google.protobuf.Timestamp canceled_time = 1 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  // CanceledHeight defines the canceled block height.
+  uint64 canceled_height = 2;
+  // RecipientAddress is the account address of recipient whose funds are cancelled.
+  string recipient_address = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // withdrawnAllocatedFund represents the fund allocated to this recipient (if any) that have not been withdrawn yet,
+  // before a cancellation request has been initiated.
+  // It involves first withdrawing the funds and then canceling the request.
+  cosmos.base.v1beta1.Coin withdrawn_allocated_fund = 4
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  ;
+}
+
+// MsgWithdrawContinuousFund defines a message for withdrawing the continuous fund allocated to it.
+message MsgWithdrawContinuousFund {
+  option (cosmos.msg.v1.signer) = "recipient_address";
+  string recipient_address      = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgWithdrawContinuousFundResponse defines the response to executing a
+// MsgWithdrawContinuousFund message.
+message MsgWithdrawContinuousFundResponse {
+  cosmos.base.v1beta1.Coin amount = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  ;
+}

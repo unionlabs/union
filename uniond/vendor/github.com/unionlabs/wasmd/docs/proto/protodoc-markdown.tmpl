@@ -1,0 +1,105 @@
+<!-- This file is auto-generated. Please do not modify it yourself. -->
+# Protobuf Documentation
+<a name="top"></a>
+
+## Table of Contents
+{{range .Files}}
+{{$file_name := .Name}}- [{{.Name}}](#{{.Name}})
+  {{- if .Messages }}
+  {{range .Messages}}  - [{{.LongName}}](#{{.FullName}})
+  {{end}}
+  {{- end -}}
+  {{- if .Enums }}
+  {{range .Enums}}  - [{{.LongName}}](#{{.FullName}})
+  {{end}}
+  {{- end -}}
+  {{- if .Extensions }}
+  {{range .Extensions}}  - [File-level Extensions](#{{$file_name}}-extensions)
+  {{end}}
+  {{- end -}}
+  {{- if .Services }}
+  {{range .Services}}  - [{{.Name}}](#{{.FullName}})
+  {{end}}
+  {{- end -}}
+{{end}}
+- [Scalar Value Types](#scalar-value-types)
+
+{{range .Files}}
+{{$file_name := .Name}}
+<a name="{{.Name}}"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## {{.Name}}
+{{.Description}}
+
+{{range .Messages}}
+<a name="{{.FullName}}"></a>
+
+### {{.LongName}}
+{{.Description}}
+
+{{if .HasFields}}
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+{{range .Fields -}}
+  | `{{.Name}}` | [{{.LongType}}](#{{.FullType}}) | {{.Label}} | {{if (index .Options "deprecated"|default false)}}**Deprecated.** {{end}}{{nobr .Description}}{{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+{{end}}
+{{end}}
+
+{{if .HasExtensions}}
+| Extension | Type | Base | Number | Description |
+| --------- | ---- | ---- | ------ | ----------- |
+{{range .Extensions -}}
+  | `{{.Name}}` | {{.LongType}} | {{.ContainingLongType}} | {{.Number}} | {{nobr .Description}}{{if .DefaultValue}} Default: {{.DefaultValue}}{{end}} |
+{{end}}
+{{end}}
+
+{{end}} <!-- end messages -->
+
+{{range .Enums}}
+<a name="{{.FullName}}"></a>
+
+### {{.LongName}}
+{{.Description}}
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+{{range .Values -}}
+  | {{.Name}} | {{.Number}} | {{nobr .Description}} |
+{{end}}
+
+{{end}} <!-- end enums -->
+
+{{if .HasExtensions}}
+<a name="{{$file_name}}-extensions"></a>
+
+### File-level Extensions
+| Extension | Type | Base | Number | Description |
+| --------- | ---- | ---- | ------ | ----------- |
+{{range .Extensions -}}
+  | `{{.Name}}` | {{.LongType}} | {{.ContainingLongType}} | {{.Number}} | {{nobr .Description}}{{if .DefaultValue}} Default: `{{.DefaultValue}}`{{end}} |
+{{end}}
+{{end}} <!-- end HasExtensions -->
+
+{{range .Services}}
+<a name="{{.FullName}}"></a>
+
+### {{.Name}}
+{{.Description}}
+
+| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
+| ----------- | ------------ | ------------- | ------------| ------- | -------- |
+{{range .Methods -}}
+  | `{{.Name}}` | [{{.RequestLongType}}](#{{.RequestFullType}}){{if .RequestStreaming}} stream{{end}} | [{{.ResponseLongType}}](#{{.ResponseFullType}}){{if .ResponseStreaming}} stream{{end}} | {{nobr .Description}} | {{with (index .Options "google.api.http")}}{{range .Rules}}{{.Method}}|{{.Pattern}}{{end}}{{end}}|
+{{end}}
+{{end}} <!-- end services -->
+
+{{end}}
+
+## Scalar Value Types
+
+| .proto Type | Notes | C++ | Java | Python | Go | C# | PHP | Ruby |
+| ----------- | ----- | --- | ---- | ------ | -- | -- | --- | ---- |
+{{range .Scalars -}}
+  | <a name="{{.ProtoType}}" /> {{.ProtoType}} | {{.Notes}} | {{.CppType}} | {{.JavaType}} | {{.PythonType}} | {{.GoType}} | {{.CSharp}} | {{.PhpType}} | {{.RubyType}} |
+{{end}}

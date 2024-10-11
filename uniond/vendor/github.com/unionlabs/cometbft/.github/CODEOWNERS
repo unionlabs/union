@@ -1,0 +1,12 @@
+# CODEOWNERS: https://help.github.com/articles/about-codeowners/
+
+# Everything goes through the following "global owners" by default.
+# Unless a later match takes precedence, these three will be
+# requested for review when someone opens a PR.
+# Note that the last matching pattern takes precedence, so
+# global owners are only requested if there isn't a more specific
+# codeowner specified below. For this reason, the global codeowners
+# are often repeated in package-level definitions.
+*     @cometbft/engineering @cometbft/devrel
+
+/spec @cometbft/research @cometbft/engineering

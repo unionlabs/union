@@ -1,0 +1,32 @@
+name: Build and Test Client
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.19
+
+    - name: Build
+      run: go build -v ./client/...
+
+    - name: Test
+      run: go test -v ./client/...
+
+    - name: Lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        working-directory: ./client
+        args: -E gofmt --max-same-issues 0

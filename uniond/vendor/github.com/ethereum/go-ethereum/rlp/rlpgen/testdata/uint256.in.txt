@@ -1,0 +1,10 @@
+// -*- mode: go -*-
+
+package test
+
+import "github.com/holiman/uint256"
+
+type Test struct {
+	Int      *uint256.Int
+	IntNoPtr uint256.Int
+}

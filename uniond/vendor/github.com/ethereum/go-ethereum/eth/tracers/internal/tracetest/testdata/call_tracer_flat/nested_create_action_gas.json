@@ -1,0 +1,90 @@
+{
+  "genesis": {
+    "difficulty": "4639933",
+    "extraData": "0xd883010b05846765746888676f312e31342e33856c696e7578",
+    "gasLimit": "9280188",
+    "hash": "0x9a5f3a98eb1c60f6e3f450658a9cea190157e7021d04f927b752ad6482cf9194",
+    "miner": "0x73f26d124436b0791169d63a3af29c2ae47765a3",
+    "mixHash": "0x6b6f8fcaa54b8565c4c1ae7cf0a020e938a53007f4561e758b17bc05c9044d78",
+    "nonce": "0x773aba50dc51b462",
+    "number": "1555169",
+    "stateRoot": "0xc4b9703de3e59ff795baae2c3afa010cf039c37244a7a6af7f3f491a10601348",
+    "timestamp": "1590794111",
+    "totalDifficulty": "2242105342155",
+    "alloc": {
+      "0x5ac5599fc9df172c89ee7ec55ad9104ccbfed40d": {
+        "balance": "0x0",
+        "nonce": "0",
+        "code": "0x",
+        "storage": {}
+      },
+      "0x877bd459c9b7d8576b44e59e09d076c25946f443": {
+        "balance": "0x62325b40cbbd0915c4b9",
+        "nonce": "260875",
+        "code": "0x",
+        "storage": {}
+      }
+    },
+    "config": {
+      "chainId": 63,
+      "daoForkSupport": true,
+      "eip150Block": 0,
+      "eip150Hash": "0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d",
+      "eip155Block": 0,
+      "eip158Block": 0,
+      "ethash": {},
+      "homesteadBlock": 0,
+      "byzantiumBlock": 0,
+      "constantinopleBlock": 301243,
+      "petersburgBlock": 999983,
+      "istanbulBlock": 999983
+    }
+  },
+  "context": {
+    "number": "1555170",
+    "difficulty": "4642198",
+    "timestamp": "1590794112",
+    "gasLimit": "9289249",
+    "miner": "0x877bd459c9b7d8576b44e59e09d076c25946f443"
+  },
+  "input": "0xf8658303fb0b843b9aca0083019ee48080915a600055600060006000f0505a6001550081a2a01a7deb3a16d967b766459ef486b00656c6581e5ad58968184a33701e27e0eb8aa07162ccdfe2018d64360a605310a62c399dd586c7282dd42a88c54f02f51d451f",
+  "result": [
+    {
+      "type": "create",
+      "action": {
+        "from": "0x877bd459c9b7d8576b44e59e09d076c25946f443",
+        "value": "0x0",
+        "gas": "0x19ee4",
+        "init": "0x5a600055600060006000f0505a60015500"
+      },
+      "error": "out of gas",
+      "traceAddress": [],
+      "subtraces": 1,
+      "transactionPosition": 63,
+      "transactionHash": "0x60e881fae3884657b5430925c5d0053535b45cce0b8188f2a6be1feee8bcc650",
+      "blockNumber": 1555170,
+      "blockHash": "0xea46fbf941d51bf1e4180fbf26d22fda3896f49c7f371d109c226de95dd7b02e",
+      "time": "952.736µs"
+    },
+    {
+      "type": "create",
+      "action": {
+        "from": "0x9c5cfe45b15eaff4ad617af4250189e26024a4f8",
+        "value": "0x0",
+        "gas": "0x3cb",
+        "init": "0x"
+      },
+      "result": {
+        "gasUsed": "0x0",
+        "code": "0x",
+        "address": "0x5ac5599fc9df172c89ee7ec55ad9104ccbfed40d"
+      },
+      "traceAddress": [0],
+      "subtraces": 0,
+      "transactionPosition": 63,
+      "transactionHash": "0x60e881fae3884657b5430925c5d0053535b45cce0b8188f2a6be1feee8bcc650",
+      "blockNumber": 1555170,
+      "blockHash": "0xea46fbf941d51bf1e4180fbf26d22fda3896f49c7f371d109c226de95dd7b02e"
+    }
+  ]
+}

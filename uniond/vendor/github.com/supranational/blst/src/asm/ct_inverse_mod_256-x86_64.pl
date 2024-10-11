@@ -119,6 +119,9 @@ ct_inverse_mod_256:
 	mov	$out_ptr, 8*4(%rsp)
 	mov	$nx_ptr,  8*5(%rsp)
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($in_ptr), @acc[0]	# load input
 	mov	8*1($in_ptr), @acc[1]
 	mov	8*2($in_ptr), @acc[2]
@@ -288,6 +291,9 @@ $code.=<<___;
 
 	mov	%rdx, @acc[0]		# mask |modulus|
 	mov	%rdx, @acc[1]
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	and	8*0($in_ptr), @acc[0]
 	mov	%rdx, @acc[2]
 	and	8*1($in_ptr), @acc[1]
@@ -492,7 +498,7 @@ $code.=<<___;
 	mov	@acc[6], 8*6($out_ptr)
 	mov	@acc[7], 8*7($out_ptr)
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=@acc[0]
 .size	__smulq_512x63,.-__smulq_512x63
 
 .type	__smulq_256x63,\@abi-omnipotent
@@ -673,7 +679,7 @@ $code.=<<___;
 	add	%rax, $f0
 	add	%rax, $g0
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=@acc[0]
 .size	__smulq_256_n_shift_by_31,.-__smulq_256_n_shift_by_31
 ___
 }
@@ -787,7 +793,7 @@ __inner_loop_31_256:		################# by Thomas Pornin
 	sub	$bias, $f1
 	sub	$bias, $g1
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=$a_lo
 .size	__inner_loop_31_256,.-__inner_loop_31_256
 
 .type	__inner_loop_62_256,\@abi-omnipotent
@@ -829,7 +835,7 @@ __inner_loop_62_256:
 	sub	\$1, %r15d
 	jnz	.Loop_62_256
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=$a_lo
 .size	__inner_loop_62_256,.-__inner_loop_62_256
 ___
 }

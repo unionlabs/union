@@ -1,0 +1,34 @@
+{
+  "pagination": {
+    "ListBaselines": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "baselines"
+    },
+    "ListControlOperations": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "controlOperations"
+    },
+    "ListEnabledBaselines": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "enabledBaselines"
+    },
+    "ListEnabledControls": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "enabledControls"
+    },
+    "ListLandingZones": {
+      "input_token": "nextToken",
+      "output_token": "nextToken",
+      "limit_key": "maxResults",
+      "result_key": "landingZones"
+    }
+  }
+}

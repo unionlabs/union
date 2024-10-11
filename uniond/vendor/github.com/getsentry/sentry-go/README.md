@@ -13,7 +13,6 @@
 [![Build Status](https://github.com/getsentry/sentry-go/workflows/go-workflow/badge.svg)](https://github.com/getsentry/sentry-go/actions?query=workflow%3Ago-workflow)
 [![Go Report Card](https://goreportcard.com/badge/github.com/getsentry/sentry-go)](https://goreportcard.com/report/github.com/getsentry/sentry-go)
 [![Discord](https://img.shields.io/discord/621778831602221064)](https://discord.gg/Ww9hbqr)
-[![GoDoc](https://godoc.org/github.com/getsentry/sentry-go?status.svg)](https://godoc.org/github.com/getsentry/sentry-go)
 [![go.dev](https://img.shields.io/badge/go.dev-pkg-007d9c.svg?style=flat)](https://pkg.go.dev/github.com/getsentry/sentry-go)
 
 `sentry-go` provides a Sentry client implementation for the Go programming
@@ -78,14 +77,12 @@ checkout the official documentation:
   - [fasthttp](https://docs.sentry.io/platforms/go/guides/fasthttp/)
   - [gin](https://docs.sentry.io/platforms/go/guides/gin/)
   - [iris](https://docs.sentry.io/platforms/go/guides/iris/)
-  - [martini](https://docs.sentry.io/platforms/go/guides/martini/)
   - [negroni](https://docs.sentry.io/platforms/go/guides/negroni/)
 
 ## Resources
 
 - [Bug Tracker](https://github.com/getsentry/sentry-go/issues)
 - [GitHub Project](https://github.com/getsentry/sentry-go)
-- [![GoDoc](https://godoc.org/github.com/getsentry/sentry-go?status.svg)](https://godoc.org/github.com/getsentry/sentry-go)
 - [![go.dev](https://img.shields.io/badge/go.dev-pkg-007d9c.svg?style=flat)](https://pkg.go.dev/github.com/getsentry/sentry-go)
 - [![Documentation](https://img.shields.io/badge/documentation-sentry.io-green.svg)](https://docs.sentry.io/platforms/go/)
 - [![Discussions](https://img.shields.io/github/discussions/getsentry/sentry-go.svg)](https://github.com/getsentry/sentry-go/discussions)

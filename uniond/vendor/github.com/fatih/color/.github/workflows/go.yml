@@ -1,0 +1,48 @@
+name: build
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    name: Test & Build
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 
+      uses: actions/setup-go@v5
+      with:
+        go-version: '>=1.22.0'
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
+    - name: Run go mod tidy
+      run: |
+        set -e
+        go mod tidy
+        output=$(git status -s)
+        if [ -z "${output}" ]; then
+         exit 0
+        fi
+        echo 'We wish to maintain a tidy state for go mod. Please run `go mod tidy` on your branch, commit and push again.'
+        echo 'Running `go mod tidy` on this CI test yields with the following changes:'
+        echo "$output"
+        exit 1
+      
+    - name: Test
+      run: go test -race ./...
+
+    - name: Lint
+      run: "go vet ./..."
+
+    - name: Staticcheck
+      uses: dominikh/staticcheck-action@v1.3.0
+      with:
+        version: "2023.1.7"
+        install-go: false
+
+    - name: Build
+      run: go build ./...

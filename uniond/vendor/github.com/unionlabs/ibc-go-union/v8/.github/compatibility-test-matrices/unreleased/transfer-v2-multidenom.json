@@ -1,0 +1,19 @@
+{
+  "chain-a": [
+    "release-v9.0.x"
+  ],
+  "chain-b": [
+    "release-v9.0.x"
+  ],
+  "entrypoint": [
+    "TestTransferTestSuite"
+  ],
+  "test": [
+    "TestMsgTransfer_Succeeds_Nonincentivized_MultiDenom",
+    "TestMsgTransfer_EntireBalance",
+    "TestMsgTransfer_Fails_InvalidAddress_MultiDenom"
+  ],
+  "relayer-type": [
+    "hermes"
+  ]
+}

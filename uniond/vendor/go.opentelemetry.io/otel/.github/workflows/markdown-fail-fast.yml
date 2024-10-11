@@ -1,0 +1,34 @@
+name: Markdown (Fail Fast)
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  changedfiles:
+    name: changed files
+    runs-on: ubuntu-latest
+    outputs:
+      md: ${{ steps.changes.outputs.md }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changes
+        run: |
+          echo "md=$(git diff --name-only --diff-filter=ACMRTUXB origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }} | grep .md$ | xargs)" >> $GITHUB_OUTPUT
+
+  lint:
+    name: lint markdown files
+    runs-on: ubuntu-latest
+    needs: changedfiles
+    if: ${{needs.changedfiles.outputs.md}}
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+    - name: Run linter
+      uses: docker://avtodev/markdown-lint:v1
+      with:
+        args: ${{needs.changedfiles.outputs.md}}

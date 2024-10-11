@@ -1,0 +1,82 @@
+[
+    {
+        "proto": {"seconds": 1136214245},
+        "text":  "2006-01-02T15:04:05Z"
+    },
+    {
+        "proto": {"seconds": 1136214245, "nanos": 123456789},
+        "text": "2006-01-02T15:04:05.123456789Z"
+    },
+    {
+        "proto": {"seconds": 1136214245, "nanos": 123000000},
+        "text": "2006-01-02T15:04:05.123Z"
+    },
+    { "text": "", "error": true },
+    { "text": " ", "error": true },
+    { "text": "garbage", "error": true },
+    { "text": "11/30/2007", "error": true },
+    {
+        "proto": {"seconds": 0, "nanos": 0},
+        "text": "1970-01-01T00:00:00Z"
+    },
+    {
+        "proto": {"seconds": 0, "nanos": 1},
+        "text": "1970-01-01T00:00:00.000000001Z"
+    },
+    {
+        "proto": {"seconds": 0, "nanos": 10},
+        "text": "1970-01-01T00:00:00.00000001Z"
+    },
+    {
+        "proto": {"seconds": 0, "nanos": 100},
+        "text": "1970-01-01T00:00:00.0000001Z"
+    },
+    {
+        "proto": {"seconds": 0, "nanos": 1000},
+        "text": "1970-01-01T00:00:00.000001Z"
+    },
+    {
+        "proto": {"seconds": 0, "nanos": 10000},
+        "text": "1970-01-01T00:00:00.00001Z"
+    },
+    {
+        "proto": {"seconds": 0, "nanos": 100000},
+        "text": "1970-01-01T00:00:00.0001Z"
+    },
+    {
+        "proto": {"seconds": 0, "nanos": 1000000},
+        "text": "1970-01-01T00:00:00.001Z"
+    },
+    {
+        "proto": {"seconds": 0, "nanos": 10000000},
+        "text": "1970-01-01T00:00:00.01Z"
+    },
+    {
+        "proto": {"seconds": 0, "nanos": 100000000},
+        "text": "1970-01-01T00:00:00.1Z"
+    },
+    {
+        "proto": {"seconds": 0, "nanos": 999999999},
+        "text": "1970-01-01T00:00:00.999999999Z"
+    },
+    {
+        "proto": {"seconds": 1, "nanos": 0},
+        "text": "1970-01-01T00:00:01Z"
+    },
+    {
+        "proto": {"seconds": 2, "nanos": 0},
+        "text": "1970-01-01T00:00:02Z"
+    },
+    {
+        "proto": {"seconds": 2, "nanos": 6},
+        "text": "1970-01-01T00:00:02.000000006Z"
+    },
+    {
+        "proto": {"seconds": 1657797740, "nanos": 983000000},
+        "text": "2022-07-14T11:22:20.983Z"
+    },
+    {
+        "proto": {"seconds": -1, "nanos": 0},
+        "text": "1969-12-31T23:59:59Z"
+    }
+]

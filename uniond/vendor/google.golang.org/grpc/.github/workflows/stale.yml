@@ -1,0 +1,33 @@
+name: Stale bot
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: "44 */2 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+
+    steps:
+    - uses: actions/stale@v8
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        days-before-stale: 6
+        days-before-close: 7
+        only-labels: 'Status: Requires Reporter Clarification'
+        stale-issue-label: 'stale'
+        stale-pr-label: 'stale'
+        operations-per-run: 999
+        stale-issue-message: >
+          This issue is labeled as requiring an update from the reporter, and no update has been received
+          after 6 days.  If no update is provided in the next 7 days, this issue will be automatically closed.
+        stale-pr-message: >
+          This PR is labeled as requiring an update from the reporter, and no update has been received
+          after 6 days.  If no update is provided in the next 7 days, this issue will be automatically closed.

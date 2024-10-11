@@ -1,0 +1,36 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# Launchpad rejects Go's access to $HOME, use custom folders
+export GOCACHE=/tmp/go-build
+export GOPATH=/tmp/gopath
+export GOROOT_BOOTSTRAP={{.GoBootPath}}
+
+override_dh_auto_clean:
+	# Don't try to be smart Launchpad, we know our build rules better than you
+
+override_dh_auto_build:
+	# We can't download a fresh Go within Launchpad, so we're shipping and building
+	# one on the fly. However, we can't build it inside the go-ethereum folder as
+	# bootstrapping clashes with go modules, so build in a sibling folder.
+	#
+	# We're also shipping the bootstrapper as of Go 1.20 as it had minimum version
+	# requirements opposed to older versions of Go.
+	(mv .goboot ../ && cd ../.goboot/src && ./make.bash)
+	(mv .go ../ && cd ../.go/src && GOROOT_BOOTSTRAP=`pwd`/../../.goboot ./make.bash)
+
+	# We can't download external go modules within Launchpad, so we're shipping the
+	# entire dependency source cache with go-ethereum.
+	mkdir -p $(GOPATH)/pkg
+	mv .mod $(GOPATH)/pkg/mod
+
+	# A fresh Go was built, all dependency downloads faked, hope build works now
+	../.go/bin/go run build/ci.go install -git-commit={{.Env.Commit}} -git-branch={{.Env.Branch}} -git-tag={{.Env.Tag}} -buildnum={{.Env.Buildnum}} -pull-request={{.Env.IsPullRequest}} -ubuntu {{.Distro}}
+
+override_dh_auto_test:
+
+%:
+	dh $@

@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "defaultRegion": "us-west-2",
+    "testCases": [
+        {
+            "operationName": "ListIdentityPools",
+            "input": {
+                "MaxResults": 10
+            },
+            "errorExpectedFromService": false
+        },
+        {
+            "operationName": "DescribeIdentityPool",
+            "input": {
+                "IdentityPoolId": "us-east-1:aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+            },
+            "errorExpectedFromService": true
+        }
+    ]
+}

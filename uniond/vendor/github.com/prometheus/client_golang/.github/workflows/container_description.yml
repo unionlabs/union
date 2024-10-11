@@ -1,0 +1,57 @@
+---
+name: Push README to Docker Hub
+on:
+  push:
+    paths:
+      - "README.md"
+      - "README-containers.md"
+      - ".github/workflows/container_description.yml"
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+
+jobs:
+  PushDockerHubReadme:
+    runs-on: ubuntu-latest
+    name: Push README to Docker Hub
+    if: github.repository_owner == 'prometheus' || github.repository_owner == 'prometheus-community' # Don't run this workflow on forks.
+    steps:
+      - name: git checkout
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - name: Set docker hub repo name
+        run: echo "DOCKER_REPO_NAME=$(make docker-repo-name)" >> $GITHUB_ENV
+      - name: Push README to Dockerhub
+        uses: christian-korneck/update-container-description-action@d36005551adeaba9698d8d67a296bd16fa91f8e8 # v1
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_LOGIN }}
+          DOCKER_PASS: ${{ secrets.DOCKER_HUB_PASSWORD }}
+        with:
+          destination_container_repo: ${{ env.DOCKER_REPO_NAME }}
+          provider: dockerhub
+          short_description: ${{ env.DOCKER_REPO_NAME }}
+          # Empty string results in README-containers.md being pushed if it
+          # exists. Otherwise, README.md is pushed.
+          readme_file: ''
+
+  PushQuayIoReadme:
+    runs-on: ubuntu-latest
+    name: Push README to quay.io
+    if: github.repository_owner == 'prometheus' || github.repository_owner == 'prometheus-community' # Don't run this workflow on forks.
+    steps:
+      - name: git checkout
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - name: Set quay.io org name
+        run: echo "DOCKER_REPO=$(echo quay.io/${GITHUB_REPOSITORY_OWNER} | tr -d '-')" >> $GITHUB_ENV
+      - name: Set quay.io repo name
+        run: echo "DOCKER_REPO_NAME=$(make docker-repo-name)" >> $GITHUB_ENV
+      - name: Push README to quay.io
+        uses: christian-korneck/update-container-description-action@d36005551adeaba9698d8d67a296bd16fa91f8e8 # v1
+        env:
+          DOCKER_APIKEY: ${{ secrets.QUAY_IO_API_TOKEN }}
+        with:
+          destination_container_repo: ${{ env.DOCKER_REPO_NAME }}
+          provider: quay
+          # Empty string results in README-containers.md being pushed if it
+          # exists. Otherwise, README.md is pushed.
+          readme_file: ''

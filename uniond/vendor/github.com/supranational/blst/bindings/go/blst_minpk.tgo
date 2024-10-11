@@ -15,8 +15,7 @@ func (pk *P1Affine) From(s *Scalar) *P1Affine {
 }
 
 func (pk *P1Affine) KeyValidate() bool {
-    return !bool(C.blst_p1_affine_is_inf(pk)) &&
-            bool(C.blst_p1_affine_in_g1(pk))
+    return bool(C.go_p1_affine_validate(pk, true))
 }
 
 // sigInfcheck, check for infinity, is a way to avoid going
@@ -24,10 +23,7 @@ func (pk *P1Affine) KeyValidate() bool {
 // always cryptographically safe, but application might want
 // to guard against obviously bogus individual[!] signatures.
 func (sig *P2Affine) SigValidate(sigInfcheck bool) bool {
-    if sigInfcheck && bool(C.blst_p2_affine_is_inf(sig)) {
-        return false
-    }
-    return bool(C.blst_p2_affine_in_g2(sig))
+    return bool(C.go_p2_affine_validate(sig, C.bool(sigInfcheck)))
 }
 
 //
@@ -111,9 +107,8 @@ func (sig *P2Affine) AggregateVerify(sigGroupcheck bool,
     pkFn := func(i uint32, _ *P1Affine) (*P1Affine, []byte) {
         if useAugs {
             return pks[i], augs[i]
-        } else {
-            return pks[i], nil
         }
+        return pks[i], nil
     }
 
     return coreAggregateVerifyPkInG1(sigFn, sigGroupcheck, pkFn, pksVerify,
@@ -122,7 +117,7 @@ func (sig *P2Affine) AggregateVerify(sigGroupcheck bool,
 
 // Aggregate verify with compressed signature and public keys
 // Uses a dummy signature to get the correct type
-func (dummy *P2Affine) AggregateVerifyCompressed(sig []byte, sigGroupcheck bool,
+func (_ *P2Affine) AggregateVerifyCompressed(sig []byte, sigGroupcheck bool,
         pks [][]byte, pksVerify bool, msgs []Message, dst []byte,
         optional ...bool) bool { // useHash bool, usePksAsAugs bool
 
@@ -184,13 +179,8 @@ func coreAggregateVerifyPkInG1(sigFn sigGetterP2, sigGroupcheck bool,
     }
 
     numCores := runtime.GOMAXPROCS(0)
-    numThreads := maxProcs
-    if numThreads > numCores {
-        numThreads = numCores
-    }
-    if numThreads > n {
-        numThreads = n
-    }
+    numThreads := numThreads(n)
+
     // Each thread will determine next message to process by atomically
     // incrementing curItem, process corresponding pk,msg[,aug] tuple and
     // repeat until n is exceeded.  The resulting accumulations will be
@@ -216,7 +206,7 @@ func coreAggregateVerifyPkInG1(sigFn sigGetterP2, sigGroupcheck bool,
                     // main thread has completed its miller loop before
                     // proceeding.
                     mutex.Lock()
-                    mutex.Unlock()
+                    mutex.Unlock() //nolint:staticcheck
                 }
 
                 // Pull Public Key and augmentation blob
@@ -287,12 +277,8 @@ func CoreVerifyPkInG1(pk *P1Affine, sig *P2Affine, hash_or_encode bool,
         msg Message, dst []byte, optional ...[]byte) int {
 
     var aug []byte
-    var uaug *C.byte
     if len(optional) > 0 {
         aug = optional[0]
-        if len(aug) > 0 {
-            uaug = (*C.byte)(&aug[0])
-        }
     }
 
     if runtime.NumGoroutine() < maxProcs {
@@ -309,19 +295,10 @@ func CoreVerifyPkInG1(pk *P1Affine, sig *P2Affine, hash_or_encode bool,
         return C.BLST_SUCCESS
     }
 
-    var udst *C.byte
-    if len(dst) > 0 {
-        udst = (*C.byte)(&dst[0])
-    }
-    var umsg *C.byte
-    if len(msg) > 0 {
-        umsg = (*C.byte)(&msg[0])
-    }
-
     return int(C.blst_core_verify_pk_in_g1(pk, sig, C.bool(hash_or_encode),
-                                           umsg, C.size_t(len(msg)),
-                                           udst, C.size_t(len(dst)),
-                                           uaug, C.size_t(len(aug))))
+                                           ptrOrNil(msg), C.size_t(len(msg)),
+                                           ptrOrNil(dst), C.size_t(len(dst)),
+                                           ptrOrNil(aug), C.size_t(len(aug))))
 }
 
 // pks are assumed to be verified for proof of possession,
@@ -346,7 +323,7 @@ func (sig *P2Affine) FastAggregateVerify(sigGroupcheck bool,
     return sig.Verify(sigGroupcheck, pkAff, false, msg, dst, optional...)
 }
 
-func (dummy *P2Affine) MultipleAggregateVerify(sigs []*P2Affine,
+func (_ *P2Affine) MultipleAggregateVerify(sigs []*P2Affine,
         sigsGroupcheck bool, pks []*P1Affine, pksVerify bool,
         msgs []Message, dst []byte, randFn func(*Scalar), randBits int,
         optional ...interface{}) bool { // useHash
@@ -363,7 +340,7 @@ func (dummy *P2Affine) MultipleAggregateVerify(sigs []*P2Affine,
     }
 
     paramsFn :=
-        func(work uint32, sig *P2Affine, pk *P1Affine, rand *Scalar) (
+        func(work uint32, _ *P2Affine, _ *P1Affine, rand *Scalar) (
             *P2Affine, *P1Affine, *Scalar, []byte) {
             randFn(rand)
             var aug []byte
@@ -394,14 +371,8 @@ func multipleAggregateVerifyPkInG1(paramsFn mulAggGetterPkInG1,
         useHash = optional[0]
     }
 
-    numCores := runtime.GOMAXPROCS(0)
-    numThreads := maxProcs
-    if numThreads > numCores {
-        numThreads = numCores
-    }
-    if numThreads > n {
-        numThreads = n
-    }
+    numThreads := numThreads(n)
+
     // Each thread will determine next message to process by atomically
     // incrementing curItem, process corresponding pk,msg[,aug] tuple and
     // repeat until n is exceeded.  The resulting accumulations will be
@@ -484,7 +455,16 @@ func (agg *P2Aggregate) Aggregate(elmts []*P2Affine,
         return true
     }
     getter := func(i uint32, _ *P2Affine) *P2Affine { return elmts[i] }
-    return agg.aggregate(getter, groupcheck, len(elmts))
+    return agg.coreAggregate(getter, groupcheck, len(elmts))
+}
+
+func (agg *P2Aggregate) AggregateWithRandomness(pointsIf interface{},
+        scalarsIf interface{}, nbits int, groupcheck bool) bool {
+    if groupcheck && !P2AffinesValidate(pointsIf) {
+        return false
+    }
+    agg.v = P2AffinesMult(pointsIf, scalarsIf, nbits)
+    return true
 }
 
 // Aggregate compressed elements
@@ -500,7 +480,7 @@ func (agg *P2Aggregate) AggregateCompressed(elmts [][]byte,
         }
         return p
     }
-    return agg.aggregate(getter, groupcheck, len(elmts))
+    return agg.coreAggregate(getter, groupcheck, len(elmts))
 }
 
 func (agg *P2Aggregate) AddAggregate(other *P2Aggregate) {
@@ -533,7 +513,7 @@ func (agg *P2Aggregate) ToAffine() *P2Affine {
     return agg.v.ToAffine()
 }
 
-func (agg *P2Aggregate) aggregate(getter aggGetterP2, groupcheck bool,
+func (agg *P2Aggregate) coreAggregate(getter aggGetterP2, groupcheck bool,
         n int) bool {
 
     if n == 0 {

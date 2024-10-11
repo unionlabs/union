@@ -1,0 +1,28 @@
+{{define "base"}}
+
+{{ $TypeTitle := print "E" .TotalDegree}}
+{{ $CurveNameCaps := toUpper .Curve.Name}}
+
+func Test{{$TypeTitle}}Div(t *testing.T) {
+
+    parameters := gopter.DefaultTestParameters()
+    properties := gopter.NewProperties(parameters)
+
+	genA := Gen{{$TypeTitle}}()
+    genB := Gen{{$TypeTitle}}()
+
+    properties.Property("[{{ $CurveNameCaps}}] dividing then multiplying by the same element does nothing", prop.ForAll(
+        func(a, b *{{$TypeTitle}}) bool {
+            var c {{$TypeTitle}}
+            c.Div(a, b)
+            c.Mul(&c, b)
+            return c.Equal(a)
+        },
+        genA,
+        genB,
+    ))
+
+    properties.TestingRun(t, gopter.ConsoleReporter(false))
+}
+
+{{end}}

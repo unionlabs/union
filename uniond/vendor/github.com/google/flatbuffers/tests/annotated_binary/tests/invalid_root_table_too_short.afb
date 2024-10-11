@@ -1,0 +1,21 @@
+// Annotated Flatbuffer Binary
+//
+// Schema file: annotated_binary.fbs
+// Binary file: tests/invalid_root_table_too_short.bin
+
+header:
+  +0x00 | 44 00 00 00             | UOffset32    | 0x00000044 (68) Loc: 0x44 | offset to root table `AnnotatedBinary.Foo`
+  +0x04 | 41 4E 4E 4F             | char[4]      | ANNO                      | File Identifier
+
+unknown (no known references):
+  +0x08 | 00 00 3A 00 68 00 0C 00 | ?uint8_t[60] | ..:.h...                  | WARN: nothing refers to this section.
+  +0x10 | 07 00 00 00 08 00 10 00 |              | ........
+  +0x18 | 14 00 30 00 34 00 09 00 |              | ..0.4...
+  +0x20 | 38 00 3C 00 40 00 44 00 |              | 8.<.@.D.
+  +0x28 | 00 00 00 00 48 00 4C 00 |              | ....H.L.
+  +0x30 | 50 00 54 00 58 00 0A 00 |              | P.T.X...
+  +0x38 | 5C 00 0B 00 60 00 00 00 |              | \...`...
+  +0x40 | 00 00 64 00             |              | ..d.
+
+root_table (AnnotatedBinary.Foo):
+  +0x44 | 3A 00                   | ?uint8_t[2]  | :.                        | ERROR: offset to vtable. Incomplete binary, expected to read 4 bytes.

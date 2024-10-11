@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package cosmos.auth.module.v1;
+
+import "cosmos/app/v1alpha1/module.proto";
+
+// Module is the config object for the auth module.
+message Module {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "github.com/cosmos/cosmos-sdk/x/auth"
+  };
+
+  // bech32_prefix is the bech32 account prefix for the app.
+  string bech32_prefix = 1;
+
+  // module_account_permissions are module account permissions.
+  repeated ModuleAccountPermission module_account_permissions = 2;
+
+  // authority defines the custom module authority. If not set, defaults to the governance module.
+  string authority = 3;
+}
+
+// ModuleAccountPermission represents permissions for a module account.
+message ModuleAccountPermission {
+  // account is the name of the module.
+  string account = 1;
+
+  // permissions are the permissions this module has. Currently recognized
+  // values are minter, burner and staking.
+  repeated string permissions = 2;
+}

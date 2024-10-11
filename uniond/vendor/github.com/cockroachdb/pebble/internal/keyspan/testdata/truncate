@@ -1,0 +1,318 @@
+build
+1:  b-d
+2:  d-f
+3:  f-h
+----
+1:  b-d
+2:    d-f
+3:      f-h
+
+
+truncate a-b
+----
+
+truncate a-c
+----
+1:  bc
+
+truncate a-d
+----
+1:  b-d
+
+truncate a-e
+----
+1:  b-d
+2:    de
+
+# The second range tombstone should be elided, as it starts after the
+# specified file end key.
+
+truncate a-e endKey=(d.SET.3)
+----
+1:  b-d
+
+# The second range tombstone should be back in the below example, as the
+# specified end key has a trailer (RANGEDEL.2) exactly matching that of the
+# rangedel tombstone's start key.
+
+truncate a-e endKey=(d.RANGEDEL.2)
+----
+1:  b-d
+2:    de
+
+truncate a-e endKey=(d.SET.1)
+----
+1:  b-d
+2:    de
+
+# Similarly, truncate range tombstones that end before the start key.
+
+truncate a-e startKey=(d.SET.3)
+----
+2:    de
+
+truncate a-e startKey=(c.SET.3)
+----
+1:  b-d
+2:    de
+
+truncate a-f
+----
+1:  b-d
+2:    d-f
+
+truncate a-g
+----
+1:  b-d
+2:    d-f
+3:      fg
+
+truncate a-h
+----
+1:  b-d
+2:    d-f
+3:      f-h
+
+
+truncate b-b
+----
+
+truncate b-c
+----
+1:  bc
+
+truncate b-d
+----
+1:  b-d
+
+truncate b-e
+----
+1:  b-d
+2:    de
+
+truncate b-f
+----
+1:  b-d
+2:    d-f
+
+truncate b-g
+----
+1:  b-d
+2:    d-f
+3:      fg
+
+truncate b-h
+----
+1:  b-d
+2:    d-f
+3:      f-h
+
+
+truncate c-c
+----
+
+truncate c-d
+----
+1:   cd
+
+truncate c-e
+----
+1:   cd
+2:    de
+
+truncate c-f
+----
+1:   cd
+2:    d-f
+
+truncate c-g
+----
+1:   cd
+2:    d-f
+3:      fg
+
+truncate c-h
+----
+1:   cd
+2:    d-f
+3:      f-h
+
+
+truncate d-d
+----
+
+truncate d-e
+----
+2:    de
+
+truncate d-f
+----
+2:    d-f
+
+truncate d-g
+----
+2:    d-f
+3:      fg
+
+truncate d-h
+----
+2:    d-f
+3:      f-h
+
+
+truncate e-e
+----
+
+truncate e-f
+----
+2:     ef
+
+truncate e-g
+----
+2:     ef
+3:      fg
+
+truncate e-h
+----
+2:     ef
+3:      f-h
+
+
+truncate f-f
+----
+
+truncate f-g
+----
+3:      fg
+
+truncate f-h
+----
+3:      f-h
+
+
+truncate g-g
+----
+
+truncate g-h
+----
+3:       gh
+
+# Regression test for https://github.com/cockroachdb/cockroach/issues/113973.
+
+truncate-and-save-iter a-dd
+----
+ok
+
+saved-iter
+first
+next
+next
+next
+----
+b-d:{(#1,RANGEDEL)}
+d-dd:{(#2,RANGEDEL)}
+<nil>
+<nil>
+
+saved-iter
+seek-ge e
+next
+next
+----
+<nil>
+<nil>
+<nil>
+
+saved-iter
+seek-ge e
+prev
+prev
+----
+<nil>
+d-dd:{(#2,RANGEDEL)}
+b-d:{(#1,RANGEDEL)}
+
+saved-iter
+seek-lt e
+prev
+prev
+----
+d-dd:{(#2,RANGEDEL)}
+b-d:{(#1,RANGEDEL)}
+<nil>
+
+saved-iter
+seek-lt e
+next
+next
+----
+d-dd:{(#2,RANGEDEL)}
+<nil>
+<nil>
+
+truncate-and-save-iter ee-h
+----
+ok
+
+saved-iter
+first
+next
+next
+next
+----
+ee-f:{(#2,RANGEDEL)}
+f-h:{(#3,RANGEDEL)}
+<nil>
+<nil>
+
+saved-iter
+seek-ge e
+next
+next
+----
+ee-f:{(#2,RANGEDEL)}
+f-h:{(#3,RANGEDEL)}
+<nil>
+
+saved-iter
+seek-ge e
+prev
+prev
+----
+ee-f:{(#2,RANGEDEL)}
+<nil>
+<nil>
+
+saved-iter
+seek-lt e
+prev
+prev
+----
+<nil>
+<nil>
+<nil>
+
+saved-iter
+seek-lt e
+next
+next
+----
+<nil>
+ee-f:{(#2,RANGEDEL)}
+f-h:{(#3,RANGEDEL)}
+
+
+truncate-and-save-iter a-g
+----
+ok
+
+saved-iter
+seek-ge h
+prev
+seek-lt h
+next
+----
+<nil>
+f-g:{(#3,RANGEDEL)}
+f-g:{(#3,RANGEDEL)}
+<nil>

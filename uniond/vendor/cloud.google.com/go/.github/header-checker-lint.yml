@@ -1,0 +1,26 @@
+allowedCopyrightHolders:
+  - 'Google LLC'
+allowedLicenses:
+  - 'Apache-2.0'
+sourceFileExtensions:
+  - 'go'
+  - 'proto'
+ignoreFiles:
+  # Automatically Generated
+  - "bigtable/cmd/cbt/cbtdoc.go"
+  # From https://github.com/golang/pkgsite.
+  - "third_party/pkgsite/print_type.go"
+  - "third_party/pkgsite/synopsis.go"
+  - "third_party/go/doc/comment.go"
+  - "third_party/go/doc/comment_test.go"
+  - "third_party/go/doc/doc.go"
+  - "third_party/go/doc/example.go"
+  - "third_party/go/doc/example_test.go"
+  - "third_party/go/doc/exports.go"
+  - "third_party/go/doc/filter.go"
+  - "third_party/go/doc/headscan.go"
+  - "third_party/go/doc/reader.go"
+  - "third_party/go/doc/synopsis.go"
+  - "third_party/go/doc/synopsis_test.go"
+  # Ignore all proto files
+  - "**/*.pb.go"

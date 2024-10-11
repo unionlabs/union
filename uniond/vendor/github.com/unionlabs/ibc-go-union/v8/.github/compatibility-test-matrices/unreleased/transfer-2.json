@@ -1,0 +1,32 @@
+{
+  "chain-a": [
+    "release-v7.3.x",
+    "release-v7.2.x",
+    "release-v6.2.x",
+    "release-v6.1.x",
+    "release-v5.3.x",
+    "release-v5.2.x",
+    "release-v4.5.x",
+    "release-v4.4.x"
+  ],
+  "chain-b": [
+    "release-v7.3.x",
+    "release-v7.2.x",
+    "release-v6.2.x",
+    "release-v6.1.x",
+    "release-v5.3.x",
+    "release-v5.2.x",
+    "release-v4.5.x",
+    "release-v4.4.x"
+  ],
+  "entrypoint": [
+    "TestTransferTestSuite"
+  ],
+  "test": [
+    "TestMsgTransfer_Timeout_Nonincentivized",
+    "TestMsgTransfer_WithMemo"
+  ],
+  "relayer-type": [
+    "hermes"
+  ]
+}

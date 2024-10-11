@@ -1,0 +1,55 @@
+define
+L3
+  010001:a.SET.1111-f.SET.1112 size=10
+  010002:g.SET.1111-l.SET.1112 size=10
+L4
+  001001:a.SET.111-f.SET.112 size=100
+  001002:g.SET.111-l.SET.112 size=100
+L5
+  000101:a.SET.11-f.SET.12 size=1000
+  000102:g.SET.11-l.SET.12 size=1000
+L6
+  000010:a.SET.1-f.SET.2 size=128000000
+  000011:g.SET.1-l.SET.2 size=128000000 range-deletions-bytes-estimate=28000000
+----
+3:
+  010001:[a#1111,SET-f#1112,SET]
+  010002:[g#1111,SET-l#1112,SET]
+4:
+  001001:[a#111,SET-f#112,SET]
+  001002:[g#111,SET-l#112,SET]
+5:
+  000101:[a#11,SET-f#12,SET]
+  000102:[g#11,SET-l#12,SET]
+6:
+  000010:[a#1,SET-f#2,SET]
+  000011:[g#1,SET-l#2,SET]
+
+# Max output file size should be 32MiB because Lbase is L3.
+pick-auto
+----
+L6 -> L6
+L6: 000011
+maxOutputFileSize: 33554432
+
+define
+L5
+  000101:a.SET.11-f.SET.12 size=1000
+  000102:g.SET.11-l.SET.12 size=1000
+L6
+  000010:a.SET.1-f.SET.2 size=128000000
+  000011:g.SET.1-l.SET.2 size=128000000 range-deletions-bytes-estimate=28000000
+----
+5:
+  000101:[a#11,SET-f#12,SET]
+  000102:[g#11,SET-l#12,SET]
+6:
+  000010:[a#1,SET-f#2,SET]
+  000011:[g#1,SET-l#2,SET]
+
+# Max output file size should be 8MiB because Lbase is L5.
+pick-auto
+----
+L6 -> L6
+L6: 000011
+maxOutputFileSize: 8388608

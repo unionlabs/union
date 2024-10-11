@@ -1,0 +1,22 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "beacon_block_converter_mock.go",
+        "duties_mock.go",
+        "genesis_mock.go",
+        "json_rest_handler_mock.go",
+        "state_validators_mock.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/validator/client/beacon-api/mock",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/rpc/eth/beacon:go_default_library",
+        "//beacon-chain/rpc/eth/shared:go_default_library",
+        "//beacon-chain/rpc/eth/validator:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_golang_mock//gomock:go_default_library",
+    ],
+)

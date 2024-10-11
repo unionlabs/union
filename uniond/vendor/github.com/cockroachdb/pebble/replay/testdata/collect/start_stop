@@ -1,0 +1,98 @@
+# This test exercises starting and stopping the collector twice.
+
+create-manifest filenum=000001
+----
+
+start
+----
+
+ingest
+000002
+000003
+000004
+----
+created src/000002.sst
+created src/000003.sst
+created src/000004.sst
+[JOB 0] ingested L0:000002 (10KB), L0:000003 (10KB), L0:000004 (10KB)
+
+
+wait
+----
+dst:
+  000002.sst
+  000003.sst
+  000004.sst
+  MANIFEST-000001
+
+clean
+src/000003.sst
+----
+
+stop
+----
+
+flush
+000005
+000006
+----
+created src/000005.sst
+created src/000006.sst
+[JOB 0] flushed 1 memtable (100B) to L0 [000005 000006] (20KB), in 0.1s (0.1s total), output rate 200KB/s
+
+# dst/ should now have the original insgested files (00000{2-4}.sst) and the
+# manifest, but not the more-recently flushed files (00000{5-6}.sst). src/
+# should not have 000003.sst, because it was cleaned (and collected).
+
+ls src dst
+----
+src:
+  000002.sst
+  000004.sst
+  000005.sst
+  000006.sst
+  MANIFEST-000001
+dst:
+  000002.sst
+  000003.sst
+  000004.sst
+  MANIFEST-000001
+
+start
+----
+
+# Cleaning one of the files created by the flush while we were not collecting
+# should result in its immediate removal.
+
+clean
+src/000005.sst
+----
+
+ls src
+----
+src:
+  000002.sst
+  000004.sst
+  000006.sst
+  MANIFEST-000001
+
+flush
+000007
+000008
+----
+created src/000007.sst
+created src/000008.sst
+[JOB 0] flushed 1 memtable (100B) to L0 [000007 000008] (20KB), in 0.1s (0.1s total), output rate 200KB/s
+
+wait
+----
+dst:
+  000002.sst
+  000003.sst
+  000004.sst
+  000007.sst
+  000008.sst
+  MANIFEST-000001
+
+stop
+----

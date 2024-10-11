@@ -1,0 +1,4 @@
+{{ $url := .Get 0}}
+{{ $alt := .Get 1}}
+
+<img src="{{ relURL $url }}" alt="{{ $alt }}" />

@@ -1,0 +1,227 @@
+reset
+----
+
+batch commit
+range-key-set a d @8 boop
+set a@2 a@2
+set a@3 a@3
+set a@9 a@9
+set a@10 a@10
+set b b
+----
+committed 6 keys
+
+combined-iter
+seek-prefix-ge a
+next
+next
+next
+next
+next
+----
+a: (., [a-"a\x00") @8=boop UPDATED)
+a@10: (a@10, [a-"a\x00") @8=boop)
+a@9: (a@9, [a-"a\x00") @8=boop)
+a@3: (a@3, [a-"a\x00") @8=boop)
+a@2: (a@2, [a-"a\x00") @8=boop)
+.
+
+# Perform the above iteration with range-key masking enabled at a suffix equal
+# to the range key's. The [a,d)@8 range key should serve as a masking, obscuring
+# the points a@3 and a@2.
+
+combined-iter mask-suffix=@8
+seek-prefix-ge a
+next
+next
+next
+----
+a: (., [a-"a\x00") @8=boop UPDATED)
+a@10: (a@10, [a-"a\x00") @8=boop)
+a@9: (a@9, [a-"a\x00") @8=boop)
+.
+
+# Perform the same thing but with a mask suffix below the range key's. All the
+# points should be visible again.
+#
+# Then use SetOptions to raise the mask. The masked points should disappear.
+
+combined-iter mask-suffix=@7
+seek-prefix-ge a
+next
+next
+next
+next
+next
+set-options key-types=both mask-suffix=@8
+seek-prefix-ge a
+next
+next
+next
+----
+a: (., [a-"a\x00") @8=boop UPDATED)
+a@10: (a@10, [a-"a\x00") @8=boop)
+a@9: (a@9, [a-"a\x00") @8=boop)
+a@3: (a@3, [a-"a\x00") @8=boop)
+a@2: (a@2, [a-"a\x00") @8=boop)
+.
+.
+a: (., [a-"a\x00") @8=boop UPDATED)
+a@10: (a@10, [a-"a\x00") @8=boop)
+a@9: (a@9, [a-"a\x00") @8=boop)
+.
+
+# Test that switching out of prefix iteration correctly expands the bounds
+# beyond the scope of the previous prefix.
+
+combined-iter
+seek-prefix-ge a
+next
+seek-ge a@3
+----
+a: (., [a-"a\x00") @8=boop UPDATED)
+a@10: (a@10, [a-"a\x00") @8=boop)
+a@3: (a@3, [a-d) @8=boop UPDATED)
+
+# Test a range key masking case where the range key is not immediately
+# masking point keys, but masks point keys once positioned beneath it.
+
+reset
+----
+
+batch commit
+range-key-set d e @5 boop
+set a@1 a1
+set b@3 b3
+set d@3 d3
+----
+committed 4 keys
+
+combined-iter mask-suffix=@9
+first
+next
+next
+next
+----
+a@1: (a1, .)
+b@3: (b3, .)
+d: (., [d-e) @5=boop UPDATED)
+.
+
+# Test a broad range key that masks all the point keys.
+
+reset block-size=20
+----
+
+batch commit
+range-key-set a z @5 boop
+set a@1 foo
+set b@3 foo
+set c@3 foo
+set d@1 foo
+set e@3 foo
+set f@3 foo
+set g@2 foo
+set h@2 foo
+set i@2 foo
+set j@2 foo
+set k@0 foo
+set l@2 foo
+set m@1 foo
+set n@3 foo
+set o@4 foo
+set p@2 foo
+set q@2 foo
+set r@1 foo
+set s@2 foo
+set t@3 foo
+set u@2 foo
+set v@0 foo
+set w@0 foo
+set x@2 foo
+set y@4 foo
+----
+committed 26 keys
+
+flush
+----
+
+combined-iter mask-suffix=@9
+first
+next
+stats
+----
+a: (., [a-z) @5=boop UPDATED)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 0B cached, 1.1KB not cached (read time: 0s); points: 25 (75B keys, 75B values), range keys: 1, contained points: 25 (25 skipped)
+
+# Repeat the above test, but with an iterator that uses a block-property filter
+# mask. The internal stats should reflect fewer bytes read and fewer points
+# visited by the internal iterators.
+
+combined-iter mask-suffix=@9 mask-filter
+first
+next
+stats
+----
+a: (., [a-z) @5=boop UPDATED)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 514B cached; points: 2 (6B keys, 6B values), range keys: 1, contained points: 2 (2 skipped)
+
+# Perform a similar comparison in reverse.
+
+combined-iter mask-suffix=@9
+last
+prev
+stats
+----
+a: (., [a-z) @5=boop UPDATED)
+.
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 1.1KB cached; points: 25 (75B keys, 75B values), range keys: 1, contained points: 25 (25 skipped)
+
+combined-iter mask-suffix=@9 mask-filter
+last
+prev
+stats
+----
+a: (., [a-z) @5=boop UPDATED)
+.
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 514B cached; points: 2 (6B keys, 6B values), range keys: 1, contained points: 2 (2 skipped)
+
+# Perform similar comparisons with seeks.
+
+combined-iter mask-suffix=@9
+seek-ge m
+next
+stats
+----
+m: (., [a-z) @5=boop UPDATED)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 789B cached; points: 13 (39B keys, 39B values), range keys: 1, contained points: 13 (13 skipped)
+
+combined-iter mask-suffix=@9 mask-filter
+seek-ge m
+next
+stats
+----
+m: (., [a-z) @5=boop UPDATED)
+.
+stats: seeked 1 times (1 internal); stepped 1 times (1 internal); blocks: 514B cached; points: 2 (6B keys, 6B values), range keys: 1, contained points: 2 (2 skipped)
+
+combined-iter mask-suffix=@9
+seek-lt m
+prev
+stats
+----
+a: (., [a-z) @5=boop UPDATED)
+.
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 789B cached; points: 12 (36B keys, 36B values), range keys: 1, contained points: 12 (12 skipped)
+
+combined-iter mask-suffix=@9 mask-filter
+seek-lt m
+prev
+stats
+----
+a: (., [a-z) @5=boop UPDATED)
+.
+stats: seeked 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); stepped 1 times (0 fwd/1 rev, internal: 0 fwd/1 rev); blocks: 539B cached; points: 2 (6B keys, 6B values), range keys: 1, contained points: 2 (2 skipped)

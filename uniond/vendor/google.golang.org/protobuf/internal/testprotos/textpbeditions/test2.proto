@@ -1,0 +1,301 @@
+// Copyright 2024 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Test Protobuf definitions with proto2 syntax.
+edition = "2023";
+
+package pbeditions;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "google.golang.org/protobuf/internal/testprotos/textpbeditions";
+option features.enum_type = CLOSED;
+option features.utf8_validation = NONE;
+
+// Scalars contains scalar fields.
+message Scalars {
+  bool opt_bool = 1;
+  int32 opt_int32 = 2;
+  int64 opt_int64 = 3;
+  uint32 opt_uint32 = 4;
+  uint64 opt_uint64 = 5;
+  sint32 opt_sint32 = 6;
+  sint64 opt_sint64 = 7;
+  fixed32 opt_fixed32 = 8;
+  fixed64 opt_fixed64 = 9;
+  sfixed32 opt_sfixed32 = 10;
+  sfixed64 opt_sfixed64 = 11;
+
+  // Textproto marshal outputs fields in the same order as this proto
+  // definition regardless of field number. Following fields are intended to
+  // test that assumption.
+
+  float opt_float = 20;
+  double opt_double = 21;
+
+  bytes opt_bytes = 14;
+  string opt_string = 13;
+}
+
+// ImplicitScalars contains scalar field types with implicit field_presence
+message ImplicitScalars {
+  bool s_bool = 1 [features.field_presence = IMPLICIT];
+  int32 s_int32 = 2 [features.field_presence = IMPLICIT];
+  int64 s_int64 = 3 [features.field_presence = IMPLICIT];
+  uint32 s_uint32 = 4 [features.field_presence = IMPLICIT];
+  uint64 s_uint64 = 5 [features.field_presence = IMPLICIT];
+  sint32 s_sint32 = 6 [features.field_presence = IMPLICIT];
+  sint64 s_sint64 = 7 [features.field_presence = IMPLICIT];
+  fixed32 s_fixed32 = 8 [features.field_presence = IMPLICIT];
+  fixed64 s_fixed64 = 9 [features.field_presence = IMPLICIT];
+  sfixed32 s_sfixed32 = 10 [features.field_presence = IMPLICIT];
+  sfixed64 s_sfixed64 = 11 [features.field_presence = IMPLICIT];
+
+  // Textproto marshal outputs fields in the same order as this proto
+  // definition regardless of field number. Following fields are intended to
+  // test that assumption.
+
+  float s_float = 20 [features.field_presence = IMPLICIT];
+  double s_double = 21 [features.field_presence = IMPLICIT];
+
+  bytes s_bytes = 14 [features.field_presence = IMPLICIT];
+  string s_string = 13 [features.field_presence = IMPLICIT];
+}
+
+enum Enum {
+  ONE = 1;
+  TWO = 2;
+  TEN = 10;
+}
+
+enum OpenEnum {
+  option features.enum_type = OPEN;
+
+  UNKNOWN = 0;
+  EINS = 1;
+  ZWEI = 2;
+  ZEHN = 10;
+}
+
+message UTF8Validated {
+  string validated_string = 1
+      [features.utf8_validation = VERIFY, features.field_presence = IMPLICIT];
+}
+
+message NestsUTF8Validated {
+  UTF8Validated validated_message = 1;
+}
+
+// Message contains enum fields.
+message Enums {
+  Enum opt_enum = 1;
+  repeated Enum rpt_enum = 2;
+  OpenEnum implicit_enum = 5 [features.field_presence = IMPLICIT];
+
+  enum NestedEnum {
+    UNO = 1;
+    DOS = 2;
+    DIEZ = 10;
+  }
+  enum NestedOpenEnum {
+    option features.enum_type = OPEN;
+
+    UNKNOWN = 0;
+    EINS = 1;
+    ZWEI = 2;
+    ZEHN = 10;
+  }
+  NestedEnum opt_nested_enum = 3;
+  repeated NestedEnum rpt_nested_enum = 4;
+  NestedOpenEnum implicit_nested_enum = 6 [features.field_presence = IMPLICIT];
+}
+
+// Message contains repeated fields.
+message Repeats {
+  repeated bool rpt_bool = 1;
+  repeated int32 rpt_int32 = 2;
+  repeated int64 rpt_int64 = 3;
+  repeated uint32 rpt_uint32 = 4;
+  repeated uint64 rpt_uint64 = 5;
+  repeated float rpt_float = 6;
+  repeated double rpt_double = 7;
+  repeated string rpt_string = 8;
+  repeated bytes rpt_bytes = 9;
+}
+
+// Message contains map fields.
+message Maps {
+  map<int32, string> int32_to_str = 1;
+  map<string, Nested> str_to_nested = 4;
+}
+
+// Message type used as submessage.
+message Nested {
+  string opt_string = 1;
+  Nested opt_nested = 2;
+}
+
+// Message contains message and group fields.
+message Nests {
+  Nested opt_nested = 1;
+  message OptGroup {
+    string opt_string = 1;
+    Nested opt_nested = 2;
+
+    message OptNestedGroup {
+      fixed32 opt_fixed32 = 1;
+    }
+    OptNestedGroup optnestedgroup = 3 [features.message_encoding = DELIMITED];
+    OptNestedGroup nested_delimited_field = 4
+        [features.message_encoding = DELIMITED];
+  }
+  OptGroup optgroup = 2 [features.message_encoding = DELIMITED];
+  OptGroup delimited_field = 3 [features.message_encoding = DELIMITED];
+
+  repeated Nested rpt_nested = 4;
+  message RptGroup {
+    repeated string rpt_string = 1;
+  }
+
+  repeated RptGroup rptgroup = 5 [
+    features.message_encoding = DELIMITED,
+    features.repeated_field_encoding = EXPANDED
+  ];
+
+  reserved reserved_field;
+}
+
+// Message contains required fields.
+message Requireds {
+  bool req_bool = 1 [features.field_presence = LEGACY_REQUIRED];
+  sfixed64 req_sfixed64 = 2 [features.field_presence = LEGACY_REQUIRED];
+  double req_double = 3 [features.field_presence = LEGACY_REQUIRED];
+  string req_string = 4 [features.field_presence = LEGACY_REQUIRED];
+  Enum req_enum = 5 [features.field_presence = LEGACY_REQUIRED];
+  Nested req_nested = 6 [features.field_presence = LEGACY_REQUIRED];
+}
+
+// Message contains both required and optional fields.
+message PartialRequired {
+  string req_string = 1 [features.field_presence = LEGACY_REQUIRED];
+  string opt_string = 2;
+}
+
+// Following messages are for testing required field nested in optional,
+// repeated and map fields.
+
+message NestedWithRequired {
+  string req_string = 1 [features.field_presence = LEGACY_REQUIRED];
+}
+
+message IndirectRequired {
+  NestedWithRequired opt_nested = 1 [features.field_presence = LEGACY_REQUIRED];
+  repeated NestedWithRequired rpt_nested = 2;
+  map<string, NestedWithRequired> str_to_nested = 3;
+
+  oneof union {
+    NestedWithRequired oneof_nested = 4;
+  }
+}
+
+// Following messages are for testing extensions.
+
+message Extensions {
+  string opt_string = 1;
+  extensions 20 to 100;
+  bool opt_bool = 101;
+  int32 opt_int32 = 2;
+}
+
+extend Extensions {
+  bool opt_ext_bool = 21;
+  string opt_ext_string = 22;
+  Enum opt_ext_enum = 23;
+  Nested opt_ext_nested = 24;
+  PartialRequired opt_ext_partial = 25;
+
+  repeated fixed32 rpt_ext_fixed32 = 31;
+  repeated Enum rpt_ext_enum = 32;
+  repeated Nested rpt_ext_nested = 33;
+}
+
+message ExtensionsContainer {
+  extend Extensions {
+    bool opt_ext_bool = 51;
+    string opt_ext_string = 52;
+    Enum opt_ext_enum = 53;
+    Nested opt_ext_nested = 54;
+    PartialRequired opt_ext_partial = 55;
+
+    repeated string rpt_ext_string = 61;
+    repeated Enum rpt_ext_enum = 62;
+    repeated Nested rpt_ext_nested = 63;
+  }
+}
+
+// Following messages are for testing MessageSet.
+
+message MessageSet {
+  option message_set_wire_format = true;
+
+  extensions 4 to max;
+}
+
+message MessageSetExtension {
+  string opt_string = 1;
+
+  extend MessageSet {
+    MessageSetExtension message_set_extension = 10;
+    MessageSetExtension not_message_set_extension = 20;
+    Nested ext_nested = 30;
+  }
+}
+
+message FakeMessageSet {
+  extensions 4 to max;
+}
+
+message FakeMessageSetExtension {
+  string opt_string = 1;
+
+  extend FakeMessageSet {
+    FakeMessageSetExtension message_set_extension = 10;
+  }
+}
+
+extend MessageSet {
+  FakeMessageSetExtension message_set_extension = 50;
+}
+
+// Message contains well-known type fields.
+message KnownTypes {
+  google.protobuf.BoolValue opt_bool = 1;
+  google.protobuf.Int32Value opt_int32 = 2;
+  google.protobuf.Int64Value opt_int64 = 3;
+  google.protobuf.UInt32Value opt_uint32 = 4;
+  google.protobuf.UInt64Value opt_uint64 = 5;
+  google.protobuf.FloatValue opt_float = 6;
+  google.protobuf.DoubleValue opt_double = 7;
+  google.protobuf.StringValue opt_string = 8;
+  google.protobuf.BytesValue opt_bytes = 9;
+
+  google.protobuf.Duration opt_duration = 20;
+  google.protobuf.Timestamp opt_timestamp = 21;
+
+  google.protobuf.Struct opt_struct = 25;
+  google.protobuf.ListValue opt_list = 26;
+  google.protobuf.Value opt_value = 27;
+  google.protobuf.NullValue opt_null = 28;
+
+  google.protobuf.Empty opt_empty = 30;
+  google.protobuf.Any opt_any = 32;
+
+  google.protobuf.FieldMask opt_fieldmask = 40;
+}

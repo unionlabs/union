@@ -1,0 +1,50 @@
+digraph "" {
+    subgraph "cluster_a" {
+      graph [fontsize="12.0", label="Module: a", penwidth="0.5", style="rounded"];
+      "cosmossdk.io/depinject_test.ModuleA.Provide"[color="lightgrey", fontcolor="dimgrey", penwidth="0.5", shape="box"];
+    }
+
+    subgraph "cluster_b" {
+      graph [fontsize="12.0", label="Module: b", penwidth="0.5", style="rounded"];
+      "cosmossdk.io/depinject_test.ModuleB.Provide"[color="black", fontcolor="black", penwidth="1.5", shape="box"];
+    }
+
+    subgraph "cluster_runtime" {
+      graph [fontsize="12.0", label="Module: runtime", penwidth="0.5", style="rounded"];
+      "cosmossdk.io/depinject_test.ProvideKVStoreKey"[color="black", fontcolor="black", penwidth="1.5", shape="box"];
+    }
+
+  "[]cosmossdk.io/depinject_test.Command"[color="lightgrey", comment="many-per-container", fontcolor="dimgrey", penwidth="0.5"];
+  "cosmossdk.io/depinject.ModuleKey"[color="black", fontcolor="black", penwidth="1.5"];
+  "cosmossdk.io/depinject.OwnModuleKey"[color="lightgrey", fontcolor="dimgrey", penwidth="0.5"];
+  "cosmossdk.io/depinject_test.KVStoreKey"[color="black", fontcolor="black", penwidth="1.5"];
+  "cosmossdk.io/depinject_test.KeeperA"[color="lightgrey", fontcolor="dimgrey", penwidth="0.5"];
+  "cosmossdk.io/depinject_test.KeeperB"[color="black", fontcolor="black", penwidth="1.5"];
+  "cosmossdk.io/depinject_test.ModuleA"[color="lightgrey", fontcolor="dimgrey", penwidth="0.5"];
+  "cosmossdk.io/depinject_test.ModuleB"[color="black", fontcolor="black", penwidth="1.5"];
+  "cosmossdk.io/depinject_test.MsgClientA"[color="black", fontcolor="black", penwidth="1.5"];
+  "cosmossdk.io/depinject_test.ProvideMsgClientA"[color="black", fontcolor="black", penwidth="1.5", shape="box"];
+  "cosmossdk.io/depinject_test.TestGraphAndLogOutput"[color="black", fontcolor="black", penwidth="1.5", shape="hexagon"];
+  "cosmossdk.io/depinject_test.init"[color="black", fontcolor="black", penwidth="1.5", shape="box"];
+  "map[string]cosmossdk.io/depinject_test.Handler"[color="lightgrey", comment="one-per-module", fontcolor="dimgrey", penwidth="0.5"];
+  "cosmossdk.io/depinject.ModuleKey" -> "cosmossdk.io/depinject_test.ProvideMsgClientA";
+  "cosmossdk.io/depinject_test.ProvideMsgClientA" -> "cosmossdk.io/depinject_test.MsgClientA";
+  "cosmossdk.io/depinject.ModuleKey" -> "cosmossdk.io/depinject_test.ProvideKVStoreKey";
+  "cosmossdk.io/depinject_test.ProvideKVStoreKey" -> "cosmossdk.io/depinject_test.KVStoreKey";
+  "cosmossdk.io/depinject_test.ModuleA" -> "cosmossdk.io/depinject_test.ModuleA.Provide";
+  "cosmossdk.io/depinject_test.KVStoreKey" -> "cosmossdk.io/depinject_test.ModuleA.Provide";
+  "cosmossdk.io/depinject.OwnModuleKey" -> "cosmossdk.io/depinject_test.ModuleA.Provide";
+  "cosmossdk.io/depinject_test.ModuleA.Provide" -> "cosmossdk.io/depinject_test.KeeperA";
+  "cosmossdk.io/depinject_test.ModuleA.Provide" -> "map[string]cosmossdk.io/depinject_test.Handler";
+  "cosmossdk.io/depinject_test.ModuleA.Provide" -> "[]cosmossdk.io/depinject_test.Command";
+  "cosmossdk.io/depinject_test.ModuleB" -> "cosmossdk.io/depinject_test.ModuleB.Provide";
+  "cosmossdk.io/depinject_test.KVStoreKey" -> "cosmossdk.io/depinject_test.ModuleB.Provide";
+  "cosmossdk.io/depinject_test.MsgClientA" -> "cosmossdk.io/depinject_test.ModuleB.Provide";
+  "cosmossdk.io/depinject_test.ModuleB.Provide" -> "cosmossdk.io/depinject_test.KeeperB";
+  "cosmossdk.io/depinject_test.ModuleB.Provide" -> "[]cosmossdk.io/depinject_test.Command";
+  "cosmossdk.io/depinject_test.ModuleB.Provide" -> "map[string]cosmossdk.io/depinject_test.Handler";
+  "cosmossdk.io/depinject_test.init" -> "cosmossdk.io/depinject_test.ModuleA";
+  "cosmossdk.io/depinject_test.init" -> "cosmossdk.io/depinject_test.ModuleB";
+  "cosmossdk.io/depinject_test.KeeperB" -> "cosmossdk.io/depinject_test.TestGraphAndLogOutput";
+}
+

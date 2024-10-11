@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("I ald*1/7")

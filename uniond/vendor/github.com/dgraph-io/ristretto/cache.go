@@ -36,40 +36,45 @@ var (
 	setBufSize = 32 * 1024
 )
 
-type itemCallback func(*Item)
+const itemSize = int64(unsafe.Sizeof(storeItem[any]{}))
 
-const itemSize = int64(unsafe.Sizeof(storeItem{}))
+func zeroValue[T any]() T {
+	var zero T
+	return zero
+}
+
+type Key = z.Key
 
 // Cache is a thread-safe implementation of a hashmap with a TinyLFU admission
 // policy and a Sampled LFU eviction policy. You can use the same Cache instance
 // from as many goroutines as you want.
-type Cache struct {
-	// store is the central concurrent hashmap where key-value items are stored.
-	store store
-	// policy determines what gets let in to the cache and what gets kicked out.
-	policy policy
+type Cache[K Key, V any] struct {
+	// storedItems is the central concurrent hashmap where key-value items are stored.
+	storedItems store[V]
+	// cachePolicy determines what gets let in to the cache and what gets kicked out.
+	cachePolicy policy[V]
 	// getBuf is a custom ring buffer implementation that gets pushed to when
 	// keys are read.
 	getBuf *ringBuffer
 	// setBuf is a buffer allowing us to batch/drop Sets during times of high
 	// contention.
-	setBuf chan *Item
+	setBuf chan *Item[V]
 	// onEvict is called for item evictions.
-	onEvict itemCallback
+	onEvict func(*Item[V])
 	// onReject is called when an item is rejected via admission policy.
-	onReject itemCallback
+	onReject func(*Item[V])
 	// onExit is called whenever a value goes out of scope from the cache.
-	onExit (func(interface{}))
+	onExit (func(V))
 	// KeyToHash function is used to customize the key hashing algorithm.
 	// Each key will be hashed using the provided function. If keyToHash value
 	// is not set, the default keyToHash function is used.
-	keyToHash func(interface{}) (uint64, uint64)
+	keyToHash func(K) (uint64, uint64)
 	// stop is used to stop the processItems goroutine.
 	stop chan struct{}
 	// indicates whether cache is closed.
-	isClosed bool
+	isClosed atomic.Bool
 	// cost calculates cost from a value.
-	cost func(value interface{}) int64
+	cost func(value V) int64
 	// ignoreInternalCost dictates whether to ignore the cost of internally storing
 	// the item in the cost calculation.
 	ignoreInternalCost bool
@@ -81,7 +86,7 @@ type Cache struct {
 }
 
 // Config is passed to NewCache for creating new Cache instances.
-type Config struct {
+type Config[K Key, V any] struct {
 	// NumCounters determines the number of counters (keys) to keep that hold
 	// access frequency information. It's generally a good idea to have more
 	// counters than the max cache capacity, as this will improve eviction
@@ -115,26 +120,28 @@ type Config struct {
 	Metrics bool
 	// OnEvict is called for every eviction and passes the hashed key, value,
 	// and cost to the function.
-	OnEvict func(item *Item)
+	OnEvict func(item *Item[V])
 	// OnReject is called for every rejection done via the policy.
-	OnReject func(item *Item)
+	OnReject func(item *Item[V])
 	// OnExit is called whenever a value is removed from cache. This can be
 	// used to do manual memory deallocation. Would also be called on eviction
 	// and rejection of the value.
-	OnExit func(val interface{})
+	OnExit func(val V)
 	// KeyToHash function is used to customize the key hashing algorithm.
 	// Each key will be hashed using the provided function. If keyToHash value
 	// is not set, the default keyToHash function is used.
-	KeyToHash func(key interface{}) (uint64, uint64)
+	KeyToHash func(key K) (uint64, uint64)
 	// Cost evaluates a value and outputs a corresponding cost. This function
 	// is ran after Set is called for a new item or an item update with a cost
 	// param of 0.
-	Cost func(value interface{}) int64
+	Cost func(value V) int64
 	// IgnoreInternalCost set to true indicates to the cache that the cost of
 	// internally storing the value should be ignored. This is useful when the
 	// cost passed to set is not using bytes as units. Keep in mind that setting
 	// this to true will increase the memory usage.
 	IgnoreInternalCost bool
+	// TtlTickerDurationInSec set the value of time ticker for cleanup keys on ttl
+	TtlTickerDurationInSec int64
 }
 
 type itemFlag byte
@@ -146,18 +153,18 @@ const (
 )
 
 // Item is passed to setBuf so items can eventually be added to the cache.
-type Item struct {
+type Item[V any] struct {
 	flag       itemFlag
 	Key        uint64
 	Conflict   uint64
-	Value      interface{}
+	Value      V
 	Cost       int64
 	Expiration time.Time
 	wg         *sync.WaitGroup
 }
 
 // NewCache returns a new Cache instance and any configuration errors, if any.
-func NewCache(config *Config) (*Cache, error) {
+func NewCache[K Key, V any](config *Config[K, V]) (*Cache[K, V], error) {
 	switch {
 	case config.NumCounters == 0:
 		return nil, errors.New("NumCounters can't be zero")
@@ -165,39 +172,42 @@ func NewCache(config *Config) (*Cache, error) {
 		return nil, errors.New("MaxCost can't be zero")
 	case config.BufferItems == 0:
 		return nil, errors.New("BufferItems can't be zero")
+	case config.TtlTickerDurationInSec == 0:
+		config.TtlTickerDurationInSec = bucketDurationSecs
 	}
-	policy := newPolicy(config.NumCounters, config.MaxCost)
-	cache := &Cache{
-		store:              newStore(),
-		policy:             policy,
+	policy := newPolicy[V](config.NumCounters, config.MaxCost)
+	cache := &Cache[K, V]{
+		storedItems:        newStore[V](),
+		cachePolicy:        policy,
 		getBuf:             newRingBuffer(policy, config.BufferItems),
-		setBuf:             make(chan *Item, setBufSize),
+		setBuf:             make(chan *Item[V], setBufSize),
 		keyToHash:          config.KeyToHash,
 		stop:               make(chan struct{}),
 		cost:               config.Cost,
 		ignoreInternalCost: config.IgnoreInternalCost,
-		cleanupTicker:      time.NewTicker(time.Duration(bucketDurationSecs) * time.Second / 2),
+		cleanupTicker:      time.NewTicker(time.Duration(config.TtlTickerDurationInSec) * time.Second / 2),
 	}
-	cache.onExit = func(val interface{}) {
-		if config.OnExit != nil && val != nil {
+	cache.onExit = func(val V) {
+		if config.OnExit != nil {
 			config.OnExit(val)
 		}
 	}
-	cache.onEvict = func(item *Item) {
+	cache.onEvict = func(item *Item[V]) {
 		if config.OnEvict != nil {
 			config.OnEvict(item)
 		}
 		cache.onExit(item.Value)
 	}
-	cache.onReject = func(item *Item) {
+	cache.onReject = func(item *Item[V]) {
 		if config.OnReject != nil {
 			config.OnReject(item)
 		}
 		cache.onExit(item.Value)
 	}
 	if cache.keyToHash == nil {
-		cache.keyToHash = z.KeyToHash
+		cache.keyToHash = z.KeyToHash[K]
 	}
+
 	if config.Metrics {
 		cache.collectMetrics()
 	}
@@ -208,26 +218,29 @@ func NewCache(config *Config) (*Cache, error) {
 	return cache, nil
 }
 
-func (c *Cache) Wait() {
-	if c == nil || c.isClosed {
+// Wait blocks until all buffered writes have been applied. This ensures a call to Set()
+// will be visible to future calls to Get().
+func (c *Cache[K, V]) Wait() {
+	if c == nil || c.isClosed.Load() {
 		return
 	}
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	c.setBuf <- &Item{wg: wg}
+	c.setBuf <- &Item[V]{wg: wg}
 	wg.Wait()
 }
 
 // Get returns the value (if any) and a boolean representing whether the
 // value was found or not. The value can be nil and the boolean can be true at
-// the same time.
-func (c *Cache) Get(key interface{}) (interface{}, bool) {
-	if c == nil || c.isClosed || key == nil {
-		return nil, false
+// the same time. Get will not return expired items.
+func (c *Cache[K, V]) Get(key K) (V, bool) {
+	if c == nil || c.isClosed.Load() {
+		return zeroValue[V](), false
 	}
 	keyHash, conflictHash := c.keyToHash(key)
+
 	c.getBuf.Push(keyHash)
-	value, ok := c.store.Get(keyHash, conflictHash)
+	value, ok := c.storedItems.Get(keyHash, conflictHash)
 	if ok {
 		c.Metrics.add(hit, keyHash, 1)
 	} else {
@@ -245,7 +258,7 @@ func (c *Cache) Get(key interface{}) (interface{}, bool) {
 // To dynamically evaluate the items cost using the Config.Coster function, set
 // the cost parameter to 0 and Coster will be ran when needed in order to find
 // the items true cost.
-func (c *Cache) Set(key, value interface{}, cost int64) bool {
+func (c *Cache[K, V]) Set(key K, value V, cost int64) bool {
 	return c.SetWithTTL(key, value, cost, 0*time.Second)
 }
 
@@ -253,8 +266,8 @@ func (c *Cache) Set(key, value interface{}, cost int64) bool {
 // after the specified TTL (time to live) has passed. A zero value means the value never
 // expires, which is identical to calling Set. A negative value is a no-op and the value
 // is discarded.
-func (c *Cache) SetWithTTL(key, value interface{}, cost int64, ttl time.Duration) bool {
-	if c == nil || c.isClosed || key == nil {
+func (c *Cache[K, V]) SetWithTTL(key K, value V, cost int64, ttl time.Duration) bool {
+	if c == nil || c.isClosed.Load() {
 		return false
 	}
 
@@ -264,14 +277,14 @@ func (c *Cache) SetWithTTL(key, value interface{}, cost int64, ttl time.Duration
 		// No expiration.
 		break
 	case ttl < 0:
-		// Treat this a a no-op.
+		// Treat this a no-op.
 		return false
 	default:
 		expiration = time.Now().Add(ttl)
 	}
 
 	keyHash, conflictHash := c.keyToHash(key)
-	i := &Item{
+	i := &Item[V]{
 		flag:       itemNew,
 		Key:        keyHash,
 		Conflict:   conflictHash,
@@ -281,18 +294,18 @@ func (c *Cache) SetWithTTL(key, value interface{}, cost int64, ttl time.Duration
 	}
 	// cost is eventually updated. The expiration must also be immediately updated
 	// to prevent items from being prematurely removed from the map.
-	if prev, ok := c.store.Update(i); ok {
+	if prev, ok := c.storedItems.Update(i); ok {
 		c.onExit(prev)
 		i.flag = itemUpdate
 	}
-	// Attempt to send item to policy.
+	// Attempt to send item to cachePolicy.
 	select {
 	case c.setBuf <- i:
 		return true
 	default:
 		if i.flag == itemUpdate {
 			// Return true if this was an update operation since we've already
-			// updated the store. For all the other operations (set/delete), we
+			// updated the storedItems. For all the other operations (set/delete), we
 			// return false which means the item was not inserted.
 			return true
 		}
@@ -302,19 +315,19 @@ func (c *Cache) SetWithTTL(key, value interface{}, cost int64, ttl time.Duration
 }
 
 // Del deletes the key-value item from the cache if it exists.
-func (c *Cache) Del(key interface{}) {
-	if c == nil || c.isClosed || key == nil {
+func (c *Cache[K, V]) Del(key K) {
+	if c == nil || c.isClosed.Load() {
 		return
 	}
 	keyHash, conflictHash := c.keyToHash(key)
 	// Delete immediately.
-	_, prev := c.store.Del(keyHash, conflictHash)
+	_, prev := c.storedItems.Del(keyHash, conflictHash)
 	c.onExit(prev)
 	// If we've set an item, it would be applied slightly later.
 	// So we must push the same item to `setBuf` with the deletion flag.
 	// This ensures that if a set is followed by a delete, it will be
 	// applied in the correct order.
-	c.setBuf <- &Item{
+	c.setBuf <- &Item[V]{
 		flag:     itemDelete,
 		Key:      keyHash,
 		Conflict: conflictHash,
@@ -323,18 +336,18 @@ func (c *Cache) Del(key interface{}) {
 
 // GetTTL returns the TTL for the specified key and a bool that is true if the
 // item was found and is not expired.
-func (c *Cache) GetTTL(key interface{}) (time.Duration, bool) {
-	if c == nil || key == nil {
+func (c *Cache[K, V]) GetTTL(key K) (time.Duration, bool) {
+	if c == nil {
 		return 0, false
 	}
 
 	keyHash, conflictHash := c.keyToHash(key)
-	if _, ok := c.store.Get(keyHash, conflictHash); !ok {
+	if _, ok := c.storedItems.Get(keyHash, conflictHash); !ok {
 		// not found
 		return 0, false
 	}
 
-	expiration := c.store.Expiration(keyHash)
+	expiration := c.storedItems.Expiration(keyHash)
 	if expiration.IsZero() {
 		// found but no expiration
 		return 0, true
@@ -349,8 +362,8 @@ func (c *Cache) GetTTL(key interface{}) (time.Duration, bool) {
 }
 
 // Close stops all goroutines and closes all channels.
-func (c *Cache) Close() {
-	if c == nil || c.isClosed {
+func (c *Cache[K, V]) Close() {
+	if c == nil || c.isClosed.Load() {
 		return
 	}
 	c.Clear()
@@ -359,15 +372,16 @@ func (c *Cache) Close() {
 	c.stop <- struct{}{}
 	close(c.stop)
 	close(c.setBuf)
-	c.policy.Close()
-	c.isClosed = true
+	c.cachePolicy.Close()
+	c.cleanupTicker.Stop()
+	c.isClosed.Store(true)
 }
 
-// Clear empties the hashmap and zeroes all policy counters. Note that this is
+// Clear empties the hashmap and zeroes all cachePolicy counters. Note that this is
 // not an atomic operation (but that shouldn't be a problem as it's assumed that
 // Set/Get calls won't be occurring until after this).
-func (c *Cache) Clear() {
-	if c == nil || c.isClosed {
+func (c *Cache[K, V]) Clear() {
+	if c == nil || c.isClosed.Load() {
 		return
 	}
 	// Block until processItems goroutine is returned.
@@ -383,7 +397,7 @@ loop:
 				continue
 			}
 			if i.flag != itemUpdate {
-				// In itemUpdate, the value is already set in the store.  So, no need to call
+				// In itemUpdate, the value is already set in the storedItems.  So, no need to call
 				// onEvict here.
 				c.onEvict(i)
 			}
@@ -392,9 +406,9 @@ loop:
 		}
 	}
 
-	// Clear value hashmap and policy data.
-	c.policy.Clear()
-	c.store.Clear(c.onEvict)
+	// Clear value hashmap and cachePolicy data.
+	c.cachePolicy.Clear()
+	c.storedItems.Clear(c.onEvict)
 	// Only reset metrics if they're enabled.
 	if c.Metrics != nil {
 		c.Metrics.Clear()
@@ -404,23 +418,23 @@ loop:
 }
 
 // MaxCost returns the max cost of the cache.
-func (c *Cache) MaxCost() int64 {
+func (c *Cache[K, V]) MaxCost() int64 {
 	if c == nil {
 		return 0
 	}
-	return c.policy.MaxCost()
+	return c.cachePolicy.MaxCost()
 }
 
 // UpdateMaxCost updates the maxCost of an existing cache.
-func (c *Cache) UpdateMaxCost(maxCost int64) {
+func (c *Cache[K, V]) UpdateMaxCost(maxCost int64) {
 	if c == nil {
 		return
 	}
-	c.policy.UpdateMaxCost(maxCost)
+	c.cachePolicy.UpdateMaxCost(maxCost)
 }
 
 // processItems is ran by goroutines processing the Set buffer.
-func (c *Cache) processItems() {
+func (c *Cache[K, V]) processItems() {
 	startTs := make(map[uint64]time.Time)
 	numToKeep := 100000 // TODO: Make this configurable via options.
 
@@ -438,7 +452,7 @@ func (c *Cache) processItems() {
 			}
 		}
 	}
-	onEvict := func(i *Item) {
+	onEvict := func(i *Item[V]) {
 		if ts, has := startTs[i.Key]; has {
 			c.Metrics.trackEviction(int64(time.Since(ts) / time.Second))
 			delete(startTs, i.Key)
@@ -466,29 +480,29 @@ func (c *Cache) processItems() {
 
 			switch i.flag {
 			case itemNew:
-				victims, added := c.policy.Add(i.Key, i.Cost)
+				victims, added := c.cachePolicy.Add(i.Key, i.Cost)
 				if added {
-					c.store.Set(i)
+					c.storedItems.Set(i)
 					c.Metrics.add(keyAdd, i.Key, 1)
 					trackAdmission(i.Key)
 				} else {
 					c.onReject(i)
 				}
 				for _, victim := range victims {
-					victim.Conflict, victim.Value = c.store.Del(victim.Key, 0)
+					victim.Conflict, victim.Value = c.storedItems.Del(victim.Key, 0)
 					onEvict(victim)
 				}
 
 			case itemUpdate:
-				c.policy.Update(i.Key, i.Cost)
+				c.cachePolicy.Update(i.Key, i.Cost)
 
 			case itemDelete:
-				c.policy.Del(i.Key) // Deals with metrics updates.
-				_, val := c.store.Del(i.Key, i.Conflict)
+				c.cachePolicy.Del(i.Key) // Deals with metrics updates.
+				_, val := c.storedItems.Del(i.Key, i.Conflict)
 				c.onExit(val)
 			}
 		case <-c.cleanupTicker.C:
-			c.store.Cleanup(c.policy, onEvict)
+			c.storedItems.Cleanup(c.cachePolicy, onEvict)
 		case <-c.stop:
 			return
 		}
@@ -497,9 +511,9 @@ func (c *Cache) processItems() {
 
 // collectMetrics just creates a new *Metrics instance and adds the pointers
 // to the cache and policy instances.
-func (c *Cache) collectMetrics() {
+func (c *Cache[K, V]) collectMetrics() {
 	c.Metrics = newMetrics()
-	c.policy.CollectMetrics(c.Metrics)
+	c.cachePolicy.CollectMetrics(c.Metrics)
 }
 
 type metricType int

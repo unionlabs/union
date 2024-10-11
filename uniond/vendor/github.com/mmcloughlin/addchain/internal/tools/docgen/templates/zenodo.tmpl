@@ -1,0 +1,29 @@
+{
+    "title": "{{ .Meta.FullName }}: {{ .Meta.ReleaseTag }}",
+    "description": "{{ .Meta.Description }}",
+    "version": "{{ .Meta.ReleaseVersion }}",
+    "publication_date": "{{ .Meta.ReleaseDate }}",
+    "upload_type": "software",
+    "access_right": "open",
+    "license": "BSD-3-Clause",
+    "creators": [
+        {
+            "name": "McLoughlin, Michael Ben",
+            "orcid": "0000-0003-2347-6258"
+        }
+    ],
+    "related_identifiers": [
+        {
+            "identifier": "https://github.com/mmcloughlin/addchain/tree/{{ .Meta.ReleaseTag }}",
+            "relation": "isSupplementTo",
+            "scheme": "url"
+        }
+    ],
+    "references": [
+        {{ range $i, $entry := .Bibliography -}}
+        {{- if $i }},
+        {{ end -}}
+        {{- printf "%q" $entry.Formatted -}}
+        {{- end }}
+    ]
+}

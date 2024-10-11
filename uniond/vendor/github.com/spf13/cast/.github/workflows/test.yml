@@ -1,0 +1,39 @@
+on:
+  push:
+    branches: [main]
+  pull_request:
+name: Test
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.20.x, 1.21.x, 1.22.x]
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+        shell: bash
+      - name: Update PATH
+        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+        shell: bash
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fmt
+        if: matrix.platform != 'windows-latest' # :(
+        run: "diff <(gofmt -d .) <(printf '')"
+        shell: bash
+      - name: Vet
+        run: go vet ./...
+      - name: Staticcheck
+        run: staticcheck ./...
+      - name: Test
+        run: go test -race ./...

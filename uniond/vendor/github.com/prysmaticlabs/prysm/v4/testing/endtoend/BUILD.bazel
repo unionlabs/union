@@ -1,0 +1,252 @@
+load("@prysm//tools/go:def.bzl", "go_test")
+
+# gazelle:exclude geth_deps.go
+# gazelle:exclude mainnet_e2e_test.go
+# gazelle:exclude mainnet_scenario_e2e_test.go
+# gazelle:exclude minimal_scenario_e2e_test.go
+# gazelle:exclude minimal_builder_e2e_test.go
+
+# Presubmit tests represent the group of endtoend tests that are run on pull
+# requests and must be passing before a pull request can merge.
+test_suite(
+    name = "presubmit",
+    tags = [
+        "manual",
+    ],
+    tests = [
+        ":go_default_test",
+    ],
+)
+
+# Postsubmit tests represent the group of endtoend tests that are run after a
+# pull request has merged.
+test_suite(
+    name = "postsubmit",
+    tags = [
+        "manual",
+    ],
+    tests = [
+        ":go_builder_test",
+        ":go_mainnet_test",
+    ],
+)
+
+# Scenario tests are run infrequently in CI to test specific scenarios.
+test_suite(
+    name = "scenario_tests",
+    tags = [
+        "manual",
+    ],
+    tests = [
+        ":go_mainnet_scenario_test",
+        ":go_minimal_scenario_test",
+    ],
+)
+
+common_deps = [
+    "//runtime/version:go_default_library",
+    "//api/client/beacon:go_default_library",
+    "//beacon-chain/blockchain/testing:go_default_library",
+    "//beacon-chain/core/transition:go_default_library",
+    "//beacon-chain/db/testing:go_default_library",
+    "//beacon-chain/operations/slashings/mock:go_default_library",
+    "//beacon-chain/startup:go_default_library",
+    "//beacon-chain/state/stategen/mock:go_default_library",
+    "//config/params:go_default_library",
+    "//consensus-types/primitives:go_default_library",
+    "//crypto/bls:go_default_library",
+    "//encoding/bytesutil:go_default_library",
+    "//io/file:go_default_library",
+    "//proto/eth/v1:go_default_library",
+    "//math:go_default_library",
+    "//proto/engine/v1:go_default_library",
+    "//proto/prysm/v1alpha1:go_default_library",
+    "//testing/assert:go_default_library",
+    "//testing/endtoend/components:go_default_library",
+    "//testing/endtoend/components/eth1:go_default_library",
+    "//testing/endtoend/evaluators:go_default_library",
+    "//testing/endtoend/evaluators/beaconapi:go_default_library",
+    "//testing/endtoend/helpers:go_default_library",
+    "//testing/endtoend/params:go_default_library",
+    "//testing/endtoend/types:go_default_library",
+    "//testing/require:go_default_library",
+    "//testing/slasher/simulator:go_default_library",
+    "//testing/util:go_default_library",
+    "//validator/helpers:go_default_library",
+    "//network/forks:go_default_library",
+    "@com_github_pkg_errors//:go_default_library",
+    "@com_github_sirupsen_logrus//:go_default_library",
+    "@com_github_sirupsen_logrus//hooks/test:go_default_library",
+    "@org_golang_google_grpc//:go_default_library",
+    "@org_golang_google_grpc//codes:go_default_library",
+    "@org_golang_google_grpc//status:go_default_library",
+    "@org_golang_google_protobuf//types/known/emptypb:go_default_library",
+    "@org_golang_x_sync//errgroup:go_default_library",
+]
+
+# gazelle:ignore
+go_test(
+    name = "go_default_test",
+    size = "large",
+    testonly = True,
+    srcs = [
+        "component_handler_test.go",
+        "endtoend_setup_test.go",
+        "endtoend_test.go",
+        "minimal_e2e_test.go",
+        "minimal_slashing_e2e_test.go",
+        "slasher_simulator_e2e_test.go",
+    ],
+    args = ["-test.v"],
+    data = [
+        "//:prysm_sh",
+        "//cmd/beacon-chain",
+        "//cmd/validator",
+        "//config/params:custom_configs",
+        "//tools/bootnode",
+        "@com_github_ethereum_go_ethereum//cmd/geth",
+        "@web3signer",
+    ],
+    eth_network = "minimal",
+    flaky = True,
+    shard_count = 2,
+    tags = [
+        "e2e",
+        "manual",
+        "minimal",
+        "requires-network",
+    ],
+    deps = common_deps,
+)
+
+# gazelle:ignore
+go_test(
+    name = "go_builder_test",
+    size = "large",
+    testonly = True,
+    srcs = [
+        "component_handler_test.go",
+        "endtoend_setup_test.go",
+        "endtoend_test.go",
+        "minimal_builder_e2e_test.go",
+    ],
+    args = ["-test.v"],
+    data = [
+        "//:prysm_sh",
+        "//cmd/beacon-chain",
+        "//cmd/validator",
+        "//config/params:custom_configs",
+        "//tools/bootnode",
+        "@com_github_ethereum_go_ethereum//cmd/geth",
+        "@web3signer",
+    ],
+    eth_network = "minimal",
+    flaky = True,
+    shard_count = 2,
+    tags = [
+        "e2e",
+        "manual",
+        "minimal",
+        "requires-network",
+    ],
+    deps = common_deps,
+)
+
+go_test(
+    name = "go_mainnet_test",
+    size = "large",
+    testonly = True,
+    srcs = [
+        "component_handler_test.go",
+        "endtoend_setup_test.go",
+        "endtoend_test.go",
+        "mainnet_e2e_test.go",
+    ],
+    args = ["-test.v"],
+    data = [
+        "//:prysm_sh",
+        "//cmd/beacon-chain",
+        "//cmd/validator",
+        "//config/params:custom_configs",
+        "//tools/bootnode",
+        "@com_github_ethereum_go_ethereum//cmd/geth",
+        "@web3signer",
+    ],
+    eth_network = "mainnet",
+    flaky = True,
+    shard_count = 2,
+    tags = [
+        "e2e",
+        "exclusive",
+        "mainnet",
+        "manual",
+        "requires-network",
+    ],
+    deps = common_deps,
+)
+
+go_test(
+    name = "go_mainnet_scenario_test",
+    size = "large",
+    testonly = True,
+    srcs = [
+        "component_handler_test.go",
+        "endtoend_setup_test.go",
+        "endtoend_test.go",
+        "mainnet_scenario_e2e_test.go",
+    ],
+    args = ["-test.v"],
+    data = [
+        "//:prysm_sh",
+        "//cmd/beacon-chain",
+        "//cmd/validator",
+        "//config/params:custom_configs",
+        "//tools/bootnode",
+        "@com_github_ethereum_go_ethereum//cmd/geth",
+        "@web3signer",
+    ],
+    eth_network = "mainnet",
+    flaky = True,
+    shard_count = 2,
+    tags = [
+        "exclusive",
+        "mainnet",
+        "manual",
+        "requires-network",
+        "scenario",
+    ],
+    deps = common_deps,
+)
+
+go_test(
+    name = "go_minimal_scenario_test",
+    size = "large",
+    testonly = True,
+    srcs = [
+        "component_handler_test.go",
+        "endtoend_setup_test.go",
+        "endtoend_test.go",
+        "minimal_scenario_e2e_test.go",
+    ],
+    args = ["-test.v"],
+    data = [
+        "//:prysm_sh",
+        "//cmd/beacon-chain",
+        "//cmd/validator",
+        "//config/params:custom_configs",
+        "//tools/bootnode",
+        "@com_github_ethereum_go_ethereum//cmd/geth",
+        "@web3signer",
+    ],
+    eth_network = "minimal",
+    flaky = True,
+    shard_count = 2,
+    tags = [
+        "exclusive",
+        "manual",
+        "minimal",
+        "requires-network",
+        "scenario",
+    ],
+    deps = common_deps,
+)

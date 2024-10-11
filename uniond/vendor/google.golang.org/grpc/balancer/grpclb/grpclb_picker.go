@@ -19,13 +19,13 @@
 package grpclb
 
 import (
+	"math/rand"
 	"sync"
 	"sync/atomic"
 
 	"google.golang.org/grpc/balancer"
 	lbpb "google.golang.org/grpc/balancer/grpclb/grpc_lb_v1"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/internal/grpcrand"
 	"google.golang.org/grpc/status"
 )
 
@@ -112,7 +112,7 @@ type rrPicker struct {
 func newRRPicker(readySCs []balancer.SubConn) *rrPicker {
 	return &rrPicker{
 		subConns:     readySCs,
-		subConnsNext: grpcrand.Intn(len(readySCs)),
+		subConnsNext: rand.Intn(len(readySCs)),
 	}
 }
 
@@ -147,7 +147,7 @@ func newLBPicker(serverList []*lbpb.Server, readySCs []balancer.SubConn, stats *
 	return &lbPicker{
 		serverList:   serverList,
 		subConns:     readySCs,
-		subConnsNext: grpcrand.Intn(len(readySCs)),
+		subConnsNext: rand.Intn(len(readySCs)),
 		stats:        stats,
 	}
 }

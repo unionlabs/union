@@ -66,20 +66,22 @@ static limb_t booth_encode(limb_t wval, size_t sz)
  * infinity "naturally," since resulting Z is product of original Z.]
  */
 #define POINT_MULT_SCALAR_WX_IMPL(ptype, SZ) \
-static void ptype##_gather_booth_w##SZ(ptype *restrict p, \
-                                       const ptype table[1<<(SZ-1)], \
-                                       limb_t booth_idx) \
+static bool_t ptype##_gather_booth_w##SZ(ptype *restrict p, \
+                                         const ptype table[1<<(SZ-1)], \
+                                         limb_t booth_idx) \
 { \
     size_t i; \
     bool_t booth_sign = (booth_idx >> SZ) & 1; \
 \
     booth_idx &= (1<<SZ) - 1; \
-    vec_zero(p, sizeof(ptype)); /* implicit infinity at table[-1] */\
+    vec_copy(p, table, sizeof(ptype)); \
     /* ~6% with -Os, ~2% with -O3 ... */\
-    for (i = 1; i <= 1<<(SZ-1); i++) \
+    for (i = 2; i <= 1<<(SZ-1); i++) \
         ptype##_ccopy(p, table + i - 1, byte_is_zero((byte)(i ^ booth_idx))); \
 \
     ptype##_cneg(p, booth_sign); \
+\
+    return byte_is_zero((byte)booth_idx); \
 } \
 \
 static void ptype##_precompute_w##SZ(ptype row[], const ptype *point) \
@@ -101,7 +103,8 @@ static void ptype##s_mult_w##SZ(ptype *ret, \
     limb_t wmask, wval; \
     size_t i, j, window, nbytes; \
     const byte *scalar, **scalar_s = scalars; \
-    ptype temp[1]; \
+    ptype sum[1], row[1]; \
+    bool_t sum_is_inf, row_is_inf, ret_is_inf; \
 \
     if (table == NULL) \
         table = (ptype (*)[1<<(SZ-1)])alloca((1<<(SZ-1)) * sizeof(ptype) * \
@@ -128,7 +131,7 @@ static void ptype##s_mult_w##SZ(ptype *ret, \
         wval = (scalar[0] << 1) & wmask; \
 \
     wval = booth_encode(wval, SZ); \
-    ptype##_gather_booth_w##SZ(ret, table[0], wval); \
+    ret_is_inf = ptype##_gather_booth_w##SZ(ret, table[0], wval); \
 \
     i = 1; \
     while (bits > 0) { \
@@ -136,8 +139,14 @@ static void ptype##s_mult_w##SZ(ptype *ret, \
             scalar = *scalar_s ? *scalar_s++ : scalar+nbytes; \
             wval = get_wval(scalar, bits - 1, window + 1) & wmask; \
             wval = booth_encode(wval, SZ); \
-            ptype##_gather_booth_w##SZ(temp, table[i], wval); \
-            ptype##_dadd(ret, ret, temp, NULL); \
+            row_is_inf = ptype##_gather_booth_w##SZ(row, table[i], wval); \
+            ptype##_dadd(sum, ret, row, NULL); \
+            ptype##_ccopy(ret, sum, (ret_is_inf | row_is_inf) ^ 1); \
+            sum_is_inf = vec_is_zero(ret->Z, sizeof(ret->Z)); \
+            ret_is_inf |= sum_is_inf; \
+            row_is_inf |= sum_is_inf; \
+            ptype##_ccopy(ret, row, ret_is_inf); \
+            ret_is_inf &= row_is_inf; \
         } \
 \
         for (j = 0; j < SZ; j++) \
@@ -153,9 +162,17 @@ static void ptype##s_mult_w##SZ(ptype *ret, \
         scalar = *scalar_s ? *scalar_s++ : scalar+nbytes; \
         wval = (scalar[0] << 1) & wmask; \
         wval = booth_encode(wval, SZ); \
-        ptype##_gather_booth_w##SZ(temp, table[i], wval); \
-        ptype##_dadd(ret, ret, temp, NULL); \
+        row_is_inf = ptype##_gather_booth_w##SZ(row, table[i], wval); \
+        ptype##_dadd(sum, ret, row, NULL); \
+        ptype##_ccopy(ret, sum, (ret_is_inf | row_is_inf) ^ 1); \
+        sum_is_inf = vec_is_zero(ret->Z, sizeof(ret->Z)); \
+        ret_is_inf |= sum_is_inf; \
+        row_is_inf |= sum_is_inf; \
+        ptype##_ccopy(ret, row, ret_is_inf); \
+        ret_is_inf &= row_is_inf; \
     } \
+\
+    vec_czero(ret->Z, sizeof(ret->Z), ret_is_inf); \
 } \
 \
 static void ptype##_mult_w##SZ(ptype *ret, const ptype *point, \
@@ -163,7 +180,8 @@ static void ptype##_mult_w##SZ(ptype *ret, const ptype *point, \
 { \
     limb_t wmask, wval; \
     size_t j, window; \
-    ptype temp[1]; \
+    ptype sum[1], row[1]; \
+    bool_t sum_is_inf, row_is_inf, ret_is_inf; \
     ptype table[1<<(SZ-1)]; \
 \
     ptype##_precompute_w##SZ(table, point); \
@@ -177,7 +195,7 @@ static void ptype##_mult_w##SZ(ptype *ret, const ptype *point, \
                 : (limb_t)scalar[0] << 1; \
     wval &= wmask; \
     wval = booth_encode(wval, SZ); \
-    ptype##_gather_booth_w##SZ(ret, table, wval); \
+    ret_is_inf = ptype##_gather_booth_w##SZ(ret, table, wval); \
 \
     while (bits > 0) { \
         for (j = 0; j < SZ; j++) \
@@ -191,10 +209,18 @@ static void ptype##_mult_w##SZ(ptype *ret, const ptype *point, \
                     : (limb_t)scalar[0] << 1; \
         wval &= wmask; \
         wval = booth_encode(wval, SZ); \
-        ptype##_gather_booth_w##SZ(temp, table, wval); \
-        if (bits > 0) ptype##_add(ret, ret, temp); \
-        else          ptype##_dadd(ret, ret, temp, NULL); \
+        row_is_inf = ptype##_gather_booth_w##SZ(row, table, wval); \
+        if (bits > 0) ptype##_add(sum, ret, row); \
+        else          ptype##_dadd(sum, ret, row, NULL); \
+        ptype##_ccopy(ret, sum, (ret_is_inf | row_is_inf) ^ 1); \
+        sum_is_inf = vec_is_zero(ret->Z, sizeof(ret->Z)); \
+        ret_is_inf |= sum_is_inf; \
+        row_is_inf |= sum_is_inf; \
+        ptype##_ccopy(ret, row, ret_is_inf); \
+        ret_is_inf &= row_is_inf; \
     } \
+\
+    vec_czero(ret->Z, sizeof(ret->Z), ret_is_inf); \
 }
 
 #if 0

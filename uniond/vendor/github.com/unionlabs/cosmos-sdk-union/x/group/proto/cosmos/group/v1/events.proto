@@ -1,0 +1,94 @@
+// Since: cosmos-sdk 0.46
+syntax = "proto3";
+
+package cosmos.group.v1;
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/group/v1/types.proto";
+
+option go_package = "cosmossdk.io/x/group";
+
+// EventCreateGroup is an event emitted when a group is created.
+message EventCreateGroup {
+
+  // group_id is the unique ID of the group.
+  uint64 group_id = 1;
+}
+
+// EventUpdateGroup is an event emitted when a group is updated.
+message EventUpdateGroup {
+
+  // group_id is the unique ID of the group.
+  uint64 group_id = 1;
+}
+
+// EventCreateGroupPolicy is an event emitted when a group policy is created.
+message EventCreateGroupPolicy {
+
+  // address is the account address of the group policy.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// EventUpdateGroupPolicy is an event emitted when a group policy is updated.
+message EventUpdateGroupPolicy {
+
+  // address is the account address of the group policy.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// EventSubmitProposal is an event emitted when a proposal is created.
+message EventSubmitProposal {
+
+  // proposal_id is the unique ID of the proposal.
+  uint64 proposal_id = 1;
+}
+
+// EventWithdrawProposal is an event emitted when a proposal is withdrawn.
+message EventWithdrawProposal {
+
+  // proposal_id is the unique ID of the proposal.
+  uint64 proposal_id = 1;
+}
+
+// EventVote is an event emitted when a voter votes on a proposal.
+message EventVote {
+
+  // proposal_id is the unique ID of the proposal.
+  uint64 proposal_id = 1;
+}
+
+// EventExec is an event emitted when a proposal is executed.
+message EventExec {
+
+  // proposal_id is the unique ID of the proposal.
+  uint64 proposal_id = 1;
+
+  // result is the proposal execution result.
+  ProposalExecutorResult result = 2;
+
+  // logs contains error logs in case the execution result is FAILURE.
+  string logs = 3;
+}
+
+// EventLeaveGroup is an event emitted when group member leaves the group.
+message EventLeaveGroup {
+
+  // group_id is the unique ID of the group.
+  uint64 group_id = 1;
+
+  // address is the account address of the group member.
+  string address = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// EventProposalPruned is an event emitted when a proposal is pruned.
+message EventProposalPruned {
+
+  // proposal_id is the unique ID of the proposal.
+  uint64 proposal_id = 1;
+
+  // status is the proposal status (UNSPECIFIED, SUBMITTED, ACCEPTED, REJECTED, ABORTED, WITHDRAWN).
+  ProposalStatus status = 2;
+
+  // tally_result is the proposal tally result (when applicable).
+  TallyResult tally_result = 3;
+}

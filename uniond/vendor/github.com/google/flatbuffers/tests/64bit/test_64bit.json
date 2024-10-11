@@ -1,0 +1,17 @@
+{
+  "far_vector": [1, 2, 3],
+  "a": 1234,
+  "far_string": "this is a far string which has a 64-bit offset",
+  "big_vector": [5, 6, 7, 8],
+  "near_string": "this is a near string which has a 32-bit offset",
+  "big_struct_vector": [
+    {
+      "a": 12,
+      "b": 3.456
+    },
+    { 
+      "a": 78,
+      "b": 9.10
+    }
+  ]
+}

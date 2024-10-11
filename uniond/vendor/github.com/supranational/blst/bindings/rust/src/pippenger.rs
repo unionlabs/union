@@ -43,6 +43,9 @@ macro_rules! pippenger_mult_impl {
         $generator:ident,
         $mult:ident,
         $add:ident,
+        $is_inf:ident,
+        $in_group:ident,
+        $from_affine:ident,
     ) => {
         pub struct $points {
             points: Vec<$point_affine>,
@@ -113,8 +116,22 @@ macro_rules! pippenger_mult_impl {
                 ret
             }
 
+            #[inline]
             pub fn mult(&self, scalars: &[u8], nbits: usize) -> $point {
-                let npoints = self.points.len();
+                self.as_slice().mult(scalars, nbits)
+            }
+
+            #[inline]
+            pub fn add(&self) -> $point {
+                self.as_slice().add()
+            }
+        }
+
+        impl MultiPoint for [$point_affine] {
+            type Output = $point;
+
+            fn mult(&self, scalars: &[u8], nbits: usize) -> $point {
+                let npoints = self.len();
                 let nbytes = (nbits + 7) / 8;
 
                 if scalars.len() < nbytes * npoints {
@@ -123,14 +140,14 @@ macro_rules! pippenger_mult_impl {
 
                 let pool = mt::da_pool();
                 let ncpus = pool.max_count();
-                if ncpus < 2 || npoints < 32 {
-                    let p: [*const $point_affine; 2] =
-                        [&self.points[0], ptr::null()];
+                if ncpus < 2 {
+                    let p: [*const $point_affine; 2] = [&self[0], ptr::null()];
                     let s: [*const u8; 2] = [&scalars[0], ptr::null()];
 
                     unsafe {
                         let mut scratch: Vec<u64> =
                             Vec::with_capacity($scratch_sizeof(npoints) / 8);
+                        #[allow(clippy::uninit_vec)]
                         scratch.set_len(scratch.capacity());
                         let mut ret = <$point>::default();
                         $multi_scalar_mult(
@@ -145,12 +162,60 @@ macro_rules! pippenger_mult_impl {
                     }
                 }
 
+                if npoints < 32 {
+                    let (tx, rx) = channel();
+                    let counter = Arc::new(AtomicUsize::new(0));
+                    let n_workers = core::cmp::min(ncpus, npoints);
+
+                    for _ in 0..n_workers {
+                        let tx = tx.clone();
+                        let counter = counter.clone();
+
+                        pool.joined_execute(move || {
+                            let mut acc = <$point>::default();
+                            let mut tmp = <$point>::default();
+                            let mut first = true;
+
+                            loop {
+                                let work =
+                                    counter.fetch_add(1, Ordering::Relaxed);
+                                if work >= npoints {
+                                    break;
+                                }
+
+                                unsafe {
+                                    $from_affine(&mut tmp, &self[work]);
+                                    let scalar = &scalars[nbytes * work];
+                                    if first {
+                                        $mult(&mut acc, &tmp, scalar, nbits);
+                                        first = false;
+                                    } else {
+                                        $mult(&mut tmp, &tmp, scalar, nbits);
+                                        $add_or_double(&mut acc, &acc, &tmp);
+                                    }
+                                }
+                            }
+
+                            tx.send(acc).expect("disaster");
+                        });
+                    }
+
+                    let mut ret = rx.recv().expect("disaster");
+                    for _ in 1..n_workers {
+                        let p = rx.recv().expect("disaster");
+                        unsafe { $add_or_double(&mut ret, &ret, &p) };
+                    }
+
+                    return ret;
+                }
+
                 let (nx, ny, window) =
                     breakdown(nbits, pippenger_window_size(npoints), ncpus);
 
                 // |grid[]| holds "coordinates" and place for result
                 let mut grid: Vec<(tile, Cell<$point>)> =
                     Vec::with_capacity(nx * ny);
+                #[allow(clippy::uninit_vec)]
                 unsafe { grid.set_len(grid.capacity()) };
                 let dx = npoints / nx;
                 let mut y = window * (ny - 1);
@@ -176,7 +241,7 @@ macro_rules! pippenger_mult_impl {
                 }
                 let grid = &grid[..];
 
-                let points = &self.points[..];
+                let points = &self[..];
                 let sz = unsafe { $scratch_sizeof(0) / 8 };
 
                 let mut row_sync: Vec<AtomicUsize> = Vec::with_capacity(ny);
@@ -260,13 +325,13 @@ macro_rules! pippenger_mult_impl {
                 ret
             }
 
-            pub fn add(&self) -> $point {
-                let npoints = self.points.len();
+            fn add(&self) -> $point {
+                let npoints = self.len();
 
                 let pool = mt::da_pool();
                 let ncpus = pool.max_count();
                 if ncpus < 2 || npoints < 384 {
-                    let p: [*const _; 2] = [&self.points[0], ptr::null()];
+                    let p: [*const _; 2] = [&self[0], ptr::null()];
                     let mut ret = <$point>::default();
                     unsafe { $add(&mut ret, &p[0], npoints) };
                     return ret;
@@ -293,7 +358,7 @@ macro_rules! pippenger_mult_impl {
                             if work >= npoints {
                                 break;
                             }
-                            p[0] = &self.points[work];
+                            p[0] = &self[work];
                             if work + chunk > npoints {
                                 chunk = npoints - work;
                             }
@@ -315,6 +380,66 @@ macro_rules! pippenger_mult_impl {
                 }
 
                 ret
+            }
+
+            fn validate(&self) -> Result<(), BLST_ERROR> {
+                fn check(point: &$point_affine) -> Result<(), BLST_ERROR> {
+                    if unsafe { $is_inf(point) } {
+                        return Err(BLST_ERROR::BLST_PK_IS_INFINITY);
+                    }
+                    if !unsafe { $in_group(point) } {
+                        return Err(BLST_ERROR::BLST_POINT_NOT_IN_GROUP);
+                    }
+                    Ok(())
+                }
+
+                let npoints = self.len();
+
+                let pool = mt::da_pool();
+                let n_workers = core::cmp::min(npoints, pool.max_count());
+                if n_workers < 2 {
+                    for i in 0..npoints {
+                        check(&self[i])?
+                    }
+                    return Ok(())
+                }
+
+                let counter = Arc::new(AtomicUsize::new(0));
+                let valid = Arc::new(AtomicBool::new(true));
+                let wg =
+                    Arc::new((Barrier::new(2), AtomicUsize::new(n_workers)));
+
+                for _ in 0..n_workers {
+                    let counter = counter.clone();
+                    let valid = valid.clone();
+                    let wg = wg.clone();
+
+                    pool.joined_execute(move || {
+                        while valid.load(Ordering::Relaxed) {
+                            let work = counter.fetch_add(1, Ordering::Relaxed);
+                            if work >= npoints {
+                                break;
+                            }
+
+                            if check(&self[work]).is_err() {
+                                valid.store(false, Ordering::Relaxed);
+                                break;
+                            }
+                        }
+
+                        if wg.1.fetch_sub(1, Ordering::AcqRel) == 1 {
+                            wg.0.wait();
+                        }
+                    });
+                }
+
+                wg.0.wait();
+
+                if valid.load(Ordering::Relaxed) {
+                    return Ok(());
+                } else {
+                    return Err(BLST_ERROR::BLST_POINT_NOT_IN_GROUP);
+                }
             }
         }
 
@@ -343,10 +468,13 @@ pippenger_mult_impl!(
     blst_p1s_tile_pippenger,
     blst_p1_add_or_double,
     blst_p1_double,
-    p1_multi_scalar,
+    p1_multi_point,
     blst_p1_generator,
     blst_p1_mult,
     blst_p1s_add,
+    blst_p1_affine_is_inf,
+    blst_p1_affine_in_g1,
+    blst_p1_from_affine,
 );
 
 pippenger_mult_impl!(
@@ -359,10 +487,13 @@ pippenger_mult_impl!(
     blst_p2s_tile_pippenger,
     blst_p2_add_or_double,
     blst_p2_double,
-    p2_multi_scalar,
+    p2_multi_point,
     blst_p2_generator,
     blst_p2_mult,
     blst_p2s_add,
+    blst_p2_affine_is_inf,
+    blst_p2_affine_in_g2,
+    blst_p2_from_affine,
 );
 
 fn num_bits(l: usize) -> usize {

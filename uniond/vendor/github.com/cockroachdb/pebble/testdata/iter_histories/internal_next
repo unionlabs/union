@@ -1,0 +1,374 @@
+reset
+----
+
+# For all prefixes a-z, write 3 keys at timestamps @1, @10, @100.
+# This populates a total of 26 * 3 = 78 keys.
+
+populate keylen=1 timestamps=(1, 10, 100)
+----
+wrote 78 keys
+
+combined-iter
+first
+next-prefix
+internal-next
+internal-next
+next
+next-prefix
+internal-next
+internal-next
+next
+internal-next
+next
+internal-next
+----
+a@100: (a@100, .)
+b@100: (b@100, .)
+.
+.
+b@10: (b@10, .)
+c@100: (c@100, .)
+.
+.
+c@10: (c@10, .)
+.
+c@1: (c@1, .)
+.
+
+combined-iter
+first
+next-prefix
+can-deterministically-single-delete
+can-deterministically-single-delete
+next
+next-prefix
+can-deterministically-single-delete
+next
+can-deterministically-single-delete
+next
+can-deterministically-single-delete
+----
+a@100: (a@100, .)
+b@100: (b@100, .)
+true
+err: pebble: CanDeterministicallySingleDelete called twice
+b@10: (b@10, .)
+c@100: (c@100, .)
+true
+c@10: (c@10, .)
+true
+c@1: (c@1, .)
+true
+
+# The start boundaries of range keys are interleaved and can cause the internal
+# iterator to be advanced ahead to look for a point at the same user key. This
+# is one of the few situations in which InternalNext may find the iterator is
+# already positioned at iterPosNext. Test this scenario.
+
+batch commit
+range-key-set a b @1 foo
+range-key-set bb c @2 bar
+----
+committed 2 keys
+
+combined-iter
+first
+internal-next
+next
+internal-next
+seek-ge b@10
+internal-next
+next
+internal-next
+internal-next
+next
+----
+a: (., [a-b) @1=foo UPDATED)
+.
+a@100: (a@100, [a-b) @1=foo)
+.
+b@10: (b@10, . UPDATED)
+.
+b@1: (b@1, .)
+.
+.
+bb: (., [bb-c) @2=bar UPDATED)
+
+combined-iter
+first
+can-deterministically-single-delete
+next
+can-deterministically-single-delete
+seek-ge b@10
+can-deterministically-single-delete
+next
+can-deterministically-single-delete
+next
+----
+a: (., [a-b) @1=foo UPDATED)
+true
+a@100: (a@100, [a-b) @1=foo)
+true
+b@10: (b@10, . UPDATED)
+true
+b@1: (b@1, .)
+true
+bb: (., [bb-c) @2=bar UPDATED)
+
+
+reset
+----
+
+batch commit
+set a a
+set b b
+range-key-set b c @1 foo
+set d d
+----
+committed 4 keys
+
+combined-iter
+first
+internal-next
+next
+internal-next
+next
+prev
+internal-next
+----
+a: (a, .)
+.
+b: (b, [b-c) @1=foo UPDATED)
+.
+d: (d, . UPDATED)
+b: (b, [b-c) @1=foo UPDATED)
+err: switching from reverse to forward via internalNext is prohibited
+
+combined-iter
+first
+can-deterministically-single-delete
+next
+can-deterministically-single-delete
+next
+prev
+can-deterministically-single-delete
+----
+a: (a, .)
+true
+b: (b, [b-c) @1=foo UPDATED)
+true
+d: (d, . UPDATED)
+b: (b, [b-c) @1=foo UPDATED)
+err: switching from reverse to forward via internalNext is prohibited
+
+# Perform a test where we produce two internal versions (both SETs) for each
+# user key. Note that this test disables automatic compactions, so the presence
+# of the internal keys will be deterministic.
+
+reset
+----
+
+populate keylen=1 timestamps=(1, 10, 100)
+----
+wrote 78 keys
+
+flush
+----
+
+populate keylen=1 timestamps=(1, 10, 100)
+----
+wrote 78 keys
+
+combined-iter
+first
+next-prefix
+internal-next
+internal-next
+next
+next-prefix
+internal-next
+internal-next
+next
+internal-next
+next
+internal-next
+----
+a@100: (a@100, .)
+b@100: (b@100, .)
+SET
+.
+b@10: (b@10, .)
+c@100: (c@100, .)
+SET
+.
+c@10: (c@10, .)
+SET
+c@1: (c@1, .)
+SET
+
+combined-iter
+seek-ge z
+internal-next
+next
+next
+internal-next
+internal-next
+next
+internal-next
+----
+z@100: (z@100, .)
+SET
+z@10: (z@10, .)
+z@1: (z@1, .)
+SET
+.
+.
+.
+
+combined-iter
+first
+next-prefix
+can-deterministically-single-delete
+next
+next-prefix
+can-deterministically-single-delete
+next
+can-deterministically-single-delete
+next
+can-deterministically-single-delete
+----
+a@100: (a@100, .)
+b@100: (b@100, .)
+false
+b@10: (b@10, .)
+c@100: (c@100, .)
+false
+c@10: (c@10, .)
+false
+c@1: (c@1, .)
+false
+
+# Test that a CanDeterministicallySingleDelete is true if the old SETs are all
+# deleted by a range delete.
+
+batch commit
+del-range a zzz
+----
+committed 1 keys
+
+populate keylen=1 timestamps=(1, 10, 100)
+----
+wrote 78 keys
+
+combined-iter
+first
+next-prefix
+can-deterministically-single-delete
+next
+next-prefix
+can-deterministically-single-delete
+next
+can-deterministically-single-delete
+next
+can-deterministically-single-delete
+----
+a@100: (a@100, .)
+b@100: (b@100, .)
+true
+b@10: (b@10, .)
+c@100: (c@100, .)
+true
+c@10: (c@10, .)
+true
+c@1: (c@1, .)
+true
+
+# Set fmv=FormatDeleteSizedAndObsolete.
+
+reset format-major-version=15
+----
+
+# Test that a SET > SINGLEDEL > SET sequence yields
+# CanDeterministicallySingleDelete() = true. This is okay because if the SET
+# consumes the SINGLEDEL, it becomes a SETWITHDEL. If a SINGLEDEL consumes a
+# SETWITHDEL, it becomes a DEL.
+
+batch commit
+set a a
+singledel a
+set a a
+----
+committed 3 keys
+
+combined-iter
+first
+internal-next
+internal-next
+first
+can-deterministically-single-delete
+----
+a: (a, .)
+SINGLEDEL
+SET
+a: (a, .)
+true
+
+# Deleting with a DEL[SIZED] should then allow deterministic single delete
+# again.
+
+batch commit
+del a
+set a a
+----
+committed 2 keys
+
+combined-iter
+first
+internal-next
+internal-next
+internal-next
+internal-next
+internal-next
+first
+can-deterministically-single-delete
+----
+a: (a, .)
+DEL
+SET
+SINGLEDEL
+SET
+.
+a: (a, .)
+true
+
+# The above case tested DEL. Explicitly test DELSIZED by setting the key again,
+# then writing a DELSIZED, then another key.
+
+batch commit
+del-sized a 1
+set a a
+----
+committed 2 keys
+
+combined-iter
+first
+internal-next
+internal-next
+internal-next
+internal-next
+internal-next
+internal-next
+internal-next
+first
+can-deterministically-single-delete
+----
+a: (a, .)
+DELSIZED
+SET
+DEL
+SET
+SINGLEDEL
+SET
+.
+a: (a, .)
+true

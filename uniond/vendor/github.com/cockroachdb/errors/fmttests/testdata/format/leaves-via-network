@@ -1,0 +1,1990 @@
+run
+assertion oneline twoline
+opaque
+
+require (?s)oneline.*twoline
+----
+&assert.withAssertionFailure{
+    cause: &errbase.opaqueWrapper{
+        cause:   &errutil.leafError{msg:"assertmsg ‹oneline›\n‹twoline›"},
+        prefix:  "",
+        details: errorspb.EncodedErrorDetails{
+            OriginalTypeName:  "github.com/cockroachdb/errors/withstack/*withstack.withStack",
+            ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/withstack/*withstack.withStack", Extension:""},
+            ReportablePayload: {"\ngithub.com/cockroachdb/errors/fmttests.glob...funcNN...\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective.func1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirectiveOrSubTest\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runTestInternal\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.RunTest\n\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk.func1\n\<path>:<lineno>\ntesting.tRunner\n\<path>:<lineno>\nruntime.goexit\n\<path>:<lineno>"},
+            FullDetails:       (*types.Any)(nil),
+        },
+        messageType: 0,
+    },
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&assert.withAssertionFailure{
+    cause: &errbase.opaqueWrapper{
+        cause:   &errutil.leafError{msg:"assertmsg ‹oneline›\n‹twoline›"},
+        prefix:  "",
+        details: errorspb.EncodedErrorDetails{
+            OriginalTypeName:  "github.com/cockroachdb/errors/withstack/*withstack.withStack",
+            ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/withstack/*withstack.withStack", Extension:""},
+            ReportablePayload: {"\ngithub.com/cockroachdb/errors/fmttests.glob...funcNN...\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective.func1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirectiveOrSubTest\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runTestInternal\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.RunTest\n\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk.func1\n\<path>:<lineno>\ntesting.tRunner\n\<path>:<lineno>\nruntime.goexit\n\<path>:<lineno>"},
+            FullDetails:       (*types.Any)(nil),
+        },
+        messageType: 0,
+    },
+}
+== Error()
+assertmsg oneline
+twoline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+assertmsg oneline
+(1) assertion failure
+Wraps: (2)
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/withstack/*withstack.withStack
+  | reportable 0:
+  |
+  | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective.func1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runTestInternal
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.RunTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk.func1
+  | <tab><path>:<lineno>
+  | testing.tRunner
+  | <tab><path>:<lineno>
+  | runtime.goexit
+  | <tab><path>:<lineno>
+Wraps: (3) assertmsg oneline
+  | twoline
+Error types: (1) *assert.withAssertionFailure (2) *errbase.opaqueWrapper (3) *errutil.leafError
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+assertmsg ‹oneline›
+‹twoline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+assertmsg ‹oneline›
+(1) assertion failure
+Wraps: (2)
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/withstack/*withstack.withStack
+  | reportable 0:
+  |
+  | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective.func1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runTestInternal
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.RunTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk.func1
+  | <tab><path>:<lineno>
+  | testing.tRunner
+  | <tab><path>:<lineno>
+  | runtime.goexit
+  | <tab><path>:<lineno>
+Wraps: (3) assertmsg ‹oneline›
+  | ‹twoline›
+Error types: (1) *assert.withAssertionFailure (2) *errbase.opaqueWrapper (3) *errutil.leafError
+=====
+===== Sentry reporting
+=====
+== Message payload
+<path>:<lineno>: assertmsg ×
+(1) assertion failure
+Wraps: (2)
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/withstack/*withstack.withStack
+  | reportable 0:
+  |
+  | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective.func1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runTestInternal
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.RunTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk.func1
+  | <tab><path>:<lineno>
+  | testing.tRunner
+  | <tab><path>:<lineno>
+  | runtime.goexit
+  | <tab><path>:<lineno>
+Wraps: (3) assertmsg ×
+  | ×
+Error types: (1) *assert.withAssertionFailure (2) *errbase.opaqueWrapper (3) *errutil.leafError
+-- report composition:
+*errutil.leafError: assertmsg ×
+<path>:<lineno>: *withstack.withStack (top exception)
+*assert.withAssertionFailure
+== Extra "error types"
+github.com/cockroachdb/errors/errutil/*errutil.leafError (*::)
+github.com/cockroachdb/errors/withstack/*withstack.withStack (*::)
+github.com/cockroachdb/errors/assert/*assert.withAssertionFailure (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "<path>:<lineno> ...funcNN...
+Title: "*errutil.leafError: assertmsg ×\nvia *withstack.withStack"
+<path>:<lineno>:
+   (runtime) goexit()
+<path>:<lineno>:
+   (testing) tRunner()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven.Walk)...funcNN...
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) Walk()
+<path>:<lineno>:
+   (github.com/cockroachdb/errors/fmttests.TestDatadriven)...funcNN...
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) RunTest()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) runTestInternal()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) runDirectiveOrSubTest()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) runDirective()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven.runDirective)...funcNN...
+<path>:<lineno>:
+   (github.com/cockroachdb/errors/fmttests.TestDatadriven.func2) 1()
+<path>:<lineno>:
+   (github.com/cockroachdb/errors/fmttests.glob.)...funcNN...
+
+run
+ctx-canceled oneline twoline
+opaque
+accept %\+v via Formattable.*IRREGULAR: not same as %\+v
+----
+&errors.errorString{s:"context canceled"}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errors.errorString{s:"context canceled"}
+== Error()
+context canceled
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v = Error(), ok
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() (IRREGULAR: not same as %+v)
+context canceled
+(1) context canceled
+Error types: (1) *errors.errorString
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+context canceled
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v via Formattable()
+context canceled
+(1) context canceled
+Error types: (1) *errors.errorString
+=====
+===== Sentry reporting
+=====
+== Message payload
+context canceled
+(1) context canceled
+Error types: (1) *errors.errorString
+-- report composition:
+*errors.errorString
+== Extra "error types"
+errors/*errors.errorString (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*errors.errorString"
+Title: "context canceled"
+(NO STACKTRACE)
+
+run
+ctx-deadline oneline twoline
+opaque
+accept %\+v via Formattable.*IRREGULAR: not same as %\+v
+----
+context.deadlineExceededError{}
+=====
+===== non-redactable formats
+=====
+== %#v
+context.deadlineExceededError{}
+== Error()
+context deadline exceeded
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v = Error(), ok
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() (IRREGULAR: not same as %+v)
+context deadline exceeded
+(1) context deadline exceeded
+Error types: (1) context.deadlineExceededError
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+context deadline exceeded
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v via Formattable()
+context deadline exceeded
+(1) context deadline exceeded
+Error types: (1) context.deadlineExceededError
+=====
+===== Sentry reporting
+=====
+== Message payload
+context deadline exceeded
+(1) context deadline exceeded
+Error types: (1) context.deadlineExceededError
+-- report composition:
+context.deadlineExceededError
+== Extra "error types"
+context/context.deadlineExceededError (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "context.deadlineExceededError"
+Title: "context deadline exceeded"
+(NO STACKTRACE)
+
+run
+fmt oneline twoline
+opaque
+
+require (?s)oneline.*twoline
+----
+&errbase.opaqueLeaf{
+    msg:     "oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errFmt",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errFmt", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errbase.opaqueLeaf{
+    msg:     "oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errFmt",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errFmt", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+== Error()
+oneline
+twoline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+oneline
+(1) oneline
+  | twoline
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errFmt
+Error types: (1) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹oneline›
+‹twoline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹oneline›
+(1) ‹oneline›
+  | ‹twoline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errFmt
+Error types: (1) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+×
+(1) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errFmt
+Error types: (1) *errbase.opaqueLeaf
+-- report composition:
+*fmttests.errFmt
+== Extra "error types"
+github.com/cockroachdb/errors/fmttests/*fmttests.errFmt (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*fmttests.errFmt"
+Title: "×"
+(NO STACKTRACE)
+
+run
+fmt-old oneline twoline
+opaque
+
+accept %\+v via Formattable.*IRREGULAR: not same as %\+v
+accept %\#v via Formattable.*IRREGULAR: not same as %\#v
+
+require (?s)oneline.*twoline
+----
+&errbase.opaqueLeaf{
+    msg:     "oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errFmto",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errFmto", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errbase.opaqueLeaf{
+    msg:     "oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errFmto",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errFmto", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+== Error()
+oneline
+twoline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+oneline
+(1) oneline
+  | twoline
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errFmto
+Error types: (1) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹oneline›
+‹twoline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹oneline›
+(1) ‹oneline›
+  | ‹twoline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errFmto
+Error types: (1) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+×
+(1) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errFmto
+Error types: (1) *errbase.opaqueLeaf
+-- report composition:
+*fmttests.errFmto
+== Extra "error types"
+github.com/cockroachdb/errors/fmttests/*fmttests.errFmto (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*fmttests.errFmto"
+Title: "×"
+(NO STACKTRACE)
+
+run
+fmt-old-delegate oneline twoline
+opaque
+
+accept %\+v via Formattable.*IRREGULAR: not same as %\+v
+accept %\#v via Formattable.*IRREGULAR: not same as %\#v
+
+require (?s)oneline.*twoline
+----
+&errbase.opaqueLeaf{
+    msg:     "oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errFmtoDelegate",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errFmtoDelegate", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errbase.opaqueLeaf{
+    msg:     "oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errFmtoDelegate",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errFmtoDelegate", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+== Error()
+oneline
+twoline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+oneline
+(1) oneline
+  | twoline
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errFmtoDelegate
+Error types: (1) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹oneline›
+‹twoline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹oneline›
+(1) ‹oneline›
+  | ‹twoline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errFmtoDelegate
+Error types: (1) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+×
+(1) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errFmtoDelegate
+Error types: (1) *errbase.opaqueLeaf
+-- report composition:
+*fmttests.errFmtoDelegate
+== Extra "error types"
+github.com/cockroachdb/errors/fmttests/*fmttests.errFmtoDelegate (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*fmttests.errFmtoDelegate"
+Title: "×"
+(NO STACKTRACE)
+
+run
+fmt-partial oneline twoline
+opaque
+
+require (?s)oneline.*twoline
+----
+&errbase.opaqueLeaf{
+    msg:     "oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errFmtp",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errFmtp", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errbase.opaqueLeaf{
+    msg:     "oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errFmtp",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errFmtp", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+== Error()
+oneline
+twoline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+oneline
+(1) oneline
+  | twoline
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errFmtp
+Error types: (1) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹oneline›
+‹twoline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹oneline›
+(1) ‹oneline›
+  | ‹twoline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errFmtp
+Error types: (1) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+×
+(1) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errFmtp
+Error types: (1) *errbase.opaqueLeaf
+-- report composition:
+*fmttests.errFmtp
+== Extra "error types"
+github.com/cockroachdb/errors/fmttests/*fmttests.errFmtp (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*fmttests.errFmtp"
+Title: "×"
+(NO STACKTRACE)
+
+run
+goerr oneline twoline
+opaque
+
+accept %\+v via Formattable.*IRREGULAR: not same as %\+v
+accept %\#v via Formattable.*IRREGULAR: not same as %\#v
+
+require (?s)oneline.*twoline
+----
+&errors.errorString{s:"oneline\ntwoline"}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errors.errorString{s:"oneline\ntwoline"}
+== Error()
+oneline
+twoline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v = Error(), ok
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() (IRREGULAR: not same as %+v)
+oneline
+(1) oneline
+  | twoline
+Error types: (1) *errors.errorString
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹oneline›
+‹twoline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v via Formattable()
+‹oneline›
+(1) ‹oneline›
+‹  | twoline›
+Error types: (1) *errors.errorString
+=====
+===== Sentry reporting
+=====
+== Message payload
+×
+(1) ×
+×
+Error types: (1) *errors.errorString
+-- report composition:
+*errors.errorString
+== Extra "error types"
+errors/*errors.errorString (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*errors.errorString"
+Title: "×"
+(NO STACKTRACE)
+
+run
+newf oneline twoline
+opaque
+
+require (?s)oneline.*twoline
+----
+&errbase.opaqueWrapper{
+    cause:   &errutil.leafError{msg:"new-style ‹oneline›\n‹twoline›"},
+    prefix:  "",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/withstack/*withstack.withStack",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/withstack/*withstack.withStack", Extension:""},
+        ReportablePayload: {"\ngithub.com/cockroachdb/errors/fmttests.glob...funcNN...\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective.func1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirectiveOrSubTest\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runTestInternal\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.RunTest\n\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk.func1\n\<path>:<lineno>\ntesting.tRunner\n\<path>:<lineno>\nruntime.goexit\n\<path>:<lineno>"},
+        FullDetails:       (*types.Any)(nil),
+    },
+    messageType: 0,
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errbase.opaqueWrapper{
+    cause:   &errutil.leafError{msg:"new-style ‹oneline›\n‹twoline›"},
+    prefix:  "",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/withstack/*withstack.withStack",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/withstack/*withstack.withStack", Extension:""},
+        ReportablePayload: {"\ngithub.com/cockroachdb/errors/fmttests.glob...funcNN...\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective.func1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirectiveOrSubTest\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runTestInternal\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.RunTest\n\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk.func1\n\<path>:<lineno>\ntesting.tRunner\n\<path>:<lineno>\nruntime.goexit\n\<path>:<lineno>"},
+        FullDetails:       (*types.Any)(nil),
+    },
+    messageType: 0,
+}
+== Error()
+new-style oneline
+twoline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+new-style oneline
+(1)
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/withstack/*withstack.withStack
+  | reportable 0:
+  |
+  | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective.func1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runTestInternal
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.RunTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk.func1
+  | <tab><path>:<lineno>
+  | testing.tRunner
+  | <tab><path>:<lineno>
+  | runtime.goexit
+  | <tab><path>:<lineno>
+Wraps: (2) new-style oneline
+  | twoline
+Error types: (1) *errbase.opaqueWrapper (2) *errutil.leafError
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+new-style ‹oneline›
+‹twoline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+new-style ‹oneline›
+(1)
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/withstack/*withstack.withStack
+  | reportable 0:
+  |
+  | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective.func1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runTestInternal
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.RunTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk.func1
+  | <tab><path>:<lineno>
+  | testing.tRunner
+  | <tab><path>:<lineno>
+  | runtime.goexit
+  | <tab><path>:<lineno>
+Wraps: (2) new-style ‹oneline›
+  | ‹twoline›
+Error types: (1) *errbase.opaqueWrapper (2) *errutil.leafError
+=====
+===== Sentry reporting
+=====
+== Message payload
+<path>:<lineno>: new-style ×
+(1)
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/withstack/*withstack.withStack
+  | reportable 0:
+  |
+  | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective.func1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runTestInternal
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.RunTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk.func1
+  | <tab><path>:<lineno>
+  | testing.tRunner
+  | <tab><path>:<lineno>
+  | runtime.goexit
+  | <tab><path>:<lineno>
+Wraps: (2) new-style ×
+  | ×
+Error types: (1) *errbase.opaqueWrapper (2) *errutil.leafError
+-- report composition:
+*errutil.leafError: new-style ×
+<path>:<lineno>: *withstack.withStack (top exception)
+== Extra "error types"
+github.com/cockroachdb/errors/errutil/*errutil.leafError (*::)
+github.com/cockroachdb/errors/withstack/*withstack.withStack (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "<path>:<lineno> ...funcNN...
+Title: "*errutil.leafError: new-style ×\nvia *withstack.withStack"
+<path>:<lineno>:
+   (runtime) goexit()
+<path>:<lineno>:
+   (testing) tRunner()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven.Walk)...funcNN...
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) Walk()
+<path>:<lineno>:
+   (github.com/cockroachdb/errors/fmttests.TestDatadriven)...funcNN...
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) RunTest()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) runTestInternal()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) runDirectiveOrSubTest()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) runDirective()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven.runDirective)...funcNN...
+<path>:<lineno>:
+   (github.com/cockroachdb/errors/fmttests.TestDatadriven.func2) 1()
+<path>:<lineno>:
+   (github.com/cockroachdb/errors/fmttests.glob.)...funcNN...
+
+run
+newf-attached oneline twoline
+opaque
+
+require (?s)oneline.*twoline
+----
+&errbase.opaqueWrapper{
+    cause: &secondary.withSecondaryError{
+        cause:          &errutil.leafError{msg:"new-style ‹oneline›\n‹twoline›: payload"},
+        secondaryError: &errbase.opaqueWrapper{
+            cause:   &errutil.leafError{msg:"payload"},
+            prefix:  "",
+            details: errorspb.EncodedErrorDetails{
+                OriginalTypeName:  "github.com/cockroachdb/errors/withstack/*withstack.withStack",
+                ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/withstack/*withstack.withStack", Extension:""},
+                ReportablePayload: {"\ngithub.com/cockroachdb/errors/fmttests.glob...funcNN...\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective.func1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirectiveOrSubTest\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runTestInternal\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.RunTest\n\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk.func1\n\<path>:<lineno>\ntesting.tRunner\n\<path>:<lineno>\nruntime.goexit\n\<path>:<lineno>"},
+                FullDetails:       (*types.Any)(nil),
+            },
+            messageType: 0,
+        },
+    },
+    prefix:  "",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/withstack/*withstack.withStack",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/withstack/*withstack.withStack", Extension:""},
+        ReportablePayload: {"\ngithub.com/cockroachdb/errors/fmttests.glob...funcNN...\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective.func1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirectiveOrSubTest\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runTestInternal\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.RunTest\n\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk.func1\n\<path>:<lineno>\ntesting.tRunner\n\<path>:<lineno>\nruntime.goexit\n\<path>:<lineno>"},
+        FullDetails:       (*types.Any)(nil),
+    },
+    messageType: 0,
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errbase.opaqueWrapper{
+    cause: &secondary.withSecondaryError{
+        cause:          &errutil.leafError{msg:"new-style ‹oneline›\n‹twoline›: payload"},
+        secondaryError: &errbase.opaqueWrapper{
+            cause:   &errutil.leafError{msg:"payload"},
+            prefix:  "",
+            details: errorspb.EncodedErrorDetails{
+                OriginalTypeName:  "github.com/cockroachdb/errors/withstack/*withstack.withStack",
+                ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/withstack/*withstack.withStack", Extension:""},
+                ReportablePayload: {"\ngithub.com/cockroachdb/errors/fmttests.glob...funcNN...\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective.func1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirectiveOrSubTest\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runTestInternal\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.RunTest\n\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk.func1\n\<path>:<lineno>\ntesting.tRunner\n\<path>:<lineno>\nruntime.goexit\n\<path>:<lineno>"},
+                FullDetails:       (*types.Any)(nil),
+            },
+            messageType: 0,
+        },
+    },
+    prefix:  "",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/withstack/*withstack.withStack",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/withstack/*withstack.withStack", Extension:""},
+        ReportablePayload: {"\ngithub.com/cockroachdb/errors/fmttests.glob...funcNN...\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective.func1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirectiveOrSubTest\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runTestInternal\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.RunTest\n\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk.func1\n\<path>:<lineno>\ntesting.tRunner\n\<path>:<lineno>\nruntime.goexit\n\<path>:<lineno>"},
+        FullDetails:       (*types.Any)(nil),
+    },
+    messageType: 0,
+}
+== Error()
+new-style oneline
+twoline: payload
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+new-style oneline
+(1)
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/withstack/*withstack.withStack
+  | reportable 0:
+  |
+  | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective.func1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runTestInternal
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.RunTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk.func1
+  | <tab><path>:<lineno>
+  | testing.tRunner
+  | <tab><path>:<lineno>
+  | runtime.goexit
+  | <tab><path>:<lineno>
+Wraps: (2) secondary error attachment
+  | payload
+  | (1)
+  |   | (opaque error wrapper)
+  |   | type name: github.com/cockroachdb/errors/withstack/*withstack.withStack
+  |   | reportable 0:
+  |   |
+  |   | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.runDirective.func1
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.runDirective
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.runTestInternal
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.RunTest
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.Walk
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.Walk.func1
+  |   | <tab><path>:<lineno>
+  |   | testing.tRunner
+  |   | <tab><path>:<lineno>
+  |   | runtime.goexit
+  |   | <tab><path>:<lineno>
+  | Wraps: (2) payload
+  | Error types: (1) *errbase.opaqueWrapper (2) *errutil.leafError
+Wraps: (3) new-style oneline
+  | twoline: payload
+Error types: (1) *errbase.opaqueWrapper (2) *secondary.withSecondaryError (3) *errutil.leafError
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+new-style ‹oneline›
+‹twoline›: payload
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+new-style ‹oneline›
+(1)
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/withstack/*withstack.withStack
+  | reportable 0:
+  |
+  | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective.func1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runTestInternal
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.RunTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk.func1
+  | <tab><path>:<lineno>
+  | testing.tRunner
+  | <tab><path>:<lineno>
+  | runtime.goexit
+  | <tab><path>:<lineno>
+Wraps: (2) secondary error attachment
+  | payload
+  | (1)
+  |   | (opaque error wrapper)
+  |   | type name: github.com/cockroachdb/errors/withstack/*withstack.withStack
+  |   | reportable 0:
+  |   |
+  |   | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.runDirective.func1
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.runDirective
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.runTestInternal
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.RunTest
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.Walk
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.Walk.func1
+  |   | <tab><path>:<lineno>
+  |   | testing.tRunner
+  |   | <tab><path>:<lineno>
+  |   | runtime.goexit
+  |   | <tab><path>:<lineno>
+  | Wraps: (2) payload
+  | Error types: (1) *errbase.opaqueWrapper (2) *errutil.leafError
+Wraps: (3) new-style ‹oneline›
+  | ‹twoline›: payload
+Error types: (1) *errbase.opaqueWrapper (2) *secondary.withSecondaryError (3) *errutil.leafError
+=====
+===== Sentry reporting
+=====
+== Message payload
+<path>:<lineno>: new-style ×
+(1)
+  | (opaque error wrapper)
+  | type name: github.com/cockroachdb/errors/withstack/*withstack.withStack
+  | reportable 0:
+  |
+  | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective.func1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runTestInternal
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.RunTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk.func1
+  | <tab><path>:<lineno>
+  | testing.tRunner
+  | <tab><path>:<lineno>
+  | runtime.goexit
+  | <tab><path>:<lineno>
+Wraps: (2) secondary error attachment
+  | payload
+  | (1)
+  |   | (opaque error wrapper)
+  |   | type name: github.com/cockroachdb/errors/withstack/*withstack.withStack
+  |   | reportable 0:
+  |   |
+  |   | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.runDirective.func1
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.runDirective
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.runTestInternal
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.RunTest
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.Walk
+  |   | <tab><path>:<lineno>
+  |   | github.com/cockroachdb/datadriven.Walk.func1
+  |   | <tab><path>:<lineno>
+  |   | testing.tRunner
+  |   | <tab><path>:<lineno>
+  |   | runtime.goexit
+  |   | <tab><path>:<lineno>
+  | Wraps: (2) payload
+  | Error types: (1) *errbase.opaqueWrapper (2) *errutil.leafError
+Wraps: (3) new-style ×
+  | ×: payload
+Error types: (1) *errbase.opaqueWrapper (2) *secondary.withSecondaryError (3) *errutil.leafError
+-- report composition:
+*errutil.leafError: new-style ×
+*secondary.withSecondaryError: details for github.com/cockroachdb/errors/withstack/*withstack.withStack:::
+<path>:<lineno>: *withstack.withStack (top exception)
+== Extra "error types"
+github.com/cockroachdb/errors/errutil/*errutil.leafError (*::)
+github.com/cockroachdb/errors/secondary/*secondary.withSecondaryError (*::)
+github.com/cockroachdb/errors/withstack/*withstack.withStack (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "<path>:<lineno> ...funcNN...
+Title: "*errutil.leafError: new-style ×\nvia *withstack.withStack"
+<path>:<lineno>:
+   (runtime) goexit()
+<path>:<lineno>:
+   (testing) tRunner()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven.Walk)...funcNN...
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) Walk()
+<path>:<lineno>:
+   (github.com/cockroachdb/errors/fmttests.TestDatadriven)...funcNN...
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) RunTest()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) runTestInternal()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) runDirectiveOrSubTest()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) runDirective()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven.runDirective)...funcNN...
+<path>:<lineno>:
+   (github.com/cockroachdb/errors/fmttests.TestDatadriven.func2) 1()
+<path>:<lineno>:
+   (github.com/cockroachdb/errors/fmttests.glob.)...funcNN...
+
+run
+nofmt oneline twoline
+opaque
+accept %\+v via Formattable.*IRREGULAR: not same as %\+v
+require (?s)oneline.*twoline
+----
+&errbase.opaqueLeaf{
+    msg:     "oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errbase.opaqueLeaf{
+    msg:     "oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+== Error()
+oneline
+twoline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+oneline
+(1) oneline
+  | twoline
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹oneline›
+‹twoline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹oneline›
+(1) ‹oneline›
+  | ‹twoline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+×
+(1) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt
+Error types: (1) *errbase.opaqueLeaf
+-- report composition:
+*fmttests.errNoFmt
+== Extra "error types"
+github.com/cockroachdb/errors/fmttests/*fmttests.errNoFmt (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*fmttests.errNoFmt"
+Title: "×"
+(NO STACKTRACE)
+
+run
+os-closed oneline twoline
+opaque
+accept %\+v via Formattable.*IRREGULAR: not same as %\+v
+----
+&errors.errorString{s:"file already closed"}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errors.errorString{s:"file already closed"}
+== Error()
+file already closed
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v = Error(), ok
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() (IRREGULAR: not same as %+v)
+file already closed
+(1) file already closed
+Error types: (1) *errors.errorString
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+file already closed
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v via Formattable()
+file already closed
+(1) file already closed
+Error types: (1) *errors.errorString
+=====
+===== Sentry reporting
+=====
+== Message payload
+file already closed
+(1) file already closed
+Error types: (1) *errors.errorString
+-- report composition:
+*errors.errorString
+== Extra "error types"
+errors/*errors.errorString (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*errors.errorString"
+Title: "file already closed"
+(NO STACKTRACE)
+
+run
+os-exist oneline twoline
+opaque
+accept %\+v via Formattable.*IRREGULAR: not same as %\+v
+----
+&errors.errorString{s:"file already exists"}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errors.errorString{s:"file already exists"}
+== Error()
+file already exists
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v = Error(), ok
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() (IRREGULAR: not same as %+v)
+file already exists
+(1) file already exists
+Error types: (1) *errors.errorString
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+file already exists
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v via Formattable()
+file already exists
+(1) file already exists
+Error types: (1) *errors.errorString
+=====
+===== Sentry reporting
+=====
+== Message payload
+file already exists
+(1) file already exists
+Error types: (1) *errors.errorString
+-- report composition:
+*errors.errorString
+== Extra "error types"
+errors/*errors.errorString (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*errors.errorString"
+Title: "file already exists"
+(NO STACKTRACE)
+
+run
+os-invalid oneline twoline
+opaque
+accept %\+v via Formattable.*IRREGULAR: not same as %\+v
+----
+&errors.errorString{s:"invalid argument"}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errors.errorString{s:"invalid argument"}
+== Error()
+invalid argument
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v = Error(), ok
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() (IRREGULAR: not same as %+v)
+invalid argument
+(1) invalid argument
+Error types: (1) *errors.errorString
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+invalid argument
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v via Formattable()
+invalid argument
+(1) invalid argument
+Error types: (1) *errors.errorString
+=====
+===== Sentry reporting
+=====
+== Message payload
+invalid argument
+(1) invalid argument
+Error types: (1) *errors.errorString
+-- report composition:
+*errors.errorString
+== Extra "error types"
+errors/*errors.errorString (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*errors.errorString"
+Title: "invalid argument"
+(NO STACKTRACE)
+
+run
+os-notexist oneline twoline
+opaque
+accept %\+v via Formattable.*IRREGULAR: not same as %\+v
+----
+&errors.errorString{s:"file does not exist"}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errors.errorString{s:"file does not exist"}
+== Error()
+file does not exist
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v = Error(), ok
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() (IRREGULAR: not same as %+v)
+file does not exist
+(1) file does not exist
+Error types: (1) *errors.errorString
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+file does not exist
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v via Formattable()
+file does not exist
+(1) file does not exist
+Error types: (1) *errors.errorString
+=====
+===== Sentry reporting
+=====
+== Message payload
+file does not exist
+(1) file does not exist
+Error types: (1) *errors.errorString
+-- report composition:
+*errors.errorString
+== Extra "error types"
+errors/*errors.errorString (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*errors.errorString"
+Title: "file does not exist"
+(NO STACKTRACE)
+
+run
+os-permission oneline twoline
+opaque
+accept %\+v via Formattable.*IRREGULAR: not same as %\+v
+----
+&errors.errorString{s:"permission denied"}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errors.errorString{s:"permission denied"}
+== Error()
+permission denied
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v = Error(), ok
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() (IRREGULAR: not same as %+v)
+permission denied
+(1) permission denied
+Error types: (1) *errors.errorString
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+permission denied
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v via Formattable()
+permission denied
+(1) permission denied
+Error types: (1) *errors.errorString
+=====
+===== Sentry reporting
+=====
+== Message payload
+permission denied
+(1) permission denied
+Error types: (1) *errors.errorString
+-- report composition:
+*errors.errorString
+== Extra "error types"
+errors/*errors.errorString (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*errors.errorString"
+Title: "permission denied"
+(NO STACKTRACE)
+
+run
+pkgerr oneline twoline
+opaque
+
+accept %x.*IRREGULAR: not same as hex Error
+accept %X.*IRREGULAR: not same as HEX Error
+accept %\#v via Formattable.*IRREGULAR: not same as %\#v
+accept %\+v via Formattable.*IRREGULAR: not same as %\+v
+require (?s)oneline.*twoline
+----
+&errbase.opaqueLeaf{
+    msg:     "oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/pkg/errors/*errors.fundamental",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/pkg/errors/*errors.fundamental", Extension:""},
+        ReportablePayload: {"\ngithub.com/cockroachdb/errors/fmttests.glob...funcNN...\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective.func1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirectiveOrSubTest\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runTestInternal\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.RunTest\n\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk.func1\n\<path>:<lineno>\ntesting.tRunner\n\<path>:<lineno>\nruntime.goexit\n\<path>:<lineno>"},
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errbase.opaqueLeaf{
+    msg:     "oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/pkg/errors/*errors.fundamental",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/pkg/errors/*errors.fundamental", Extension:""},
+        ReportablePayload: {"\ngithub.com/cockroachdb/errors/fmttests.glob...funcNN...\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective.func1\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirective\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runDirectiveOrSubTest\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.runTestInternal\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.RunTest\n\<path>:<lineno>\ngithub.com/cockroachdb/errors/fmttests.TestDatadriven.func2\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk\n\<path>:<lineno>\ngithub.com/cockroachdb/datadriven.Walk.func1\n\<path>:<lineno>\ntesting.tRunner\n\<path>:<lineno>\nruntime.goexit\n\<path>:<lineno>"},
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+== Error()
+oneline
+twoline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+oneline
+(1) oneline
+  | twoline
+  |
+  | (opaque error leaf)
+  | type name: github.com/pkg/errors/*errors.fundamental
+  | reportable 0:
+  |
+  | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective.func1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runTestInternal
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.RunTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk.func1
+  | <tab><path>:<lineno>
+  | testing.tRunner
+  | <tab><path>:<lineno>
+  | runtime.goexit
+  | <tab><path>:<lineno>
+Error types: (1) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹oneline›
+‹twoline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹oneline›
+(1) ‹oneline›
+  | ‹twoline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/pkg/errors/*errors.fundamental
+  | reportable 0:
+  |
+  | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective.func1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runTestInternal
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.RunTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk.func1
+  | <tab><path>:<lineno>
+  | testing.tRunner
+  | <tab><path>:<lineno>
+  | runtime.goexit
+  | <tab><path>:<lineno>
+Error types: (1) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+<path>:<lineno>: ×
+(1) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/pkg/errors/*errors.fundamental
+  | reportable 0:
+  |
+  | github.com/cockroachdb/errors/fmttests.glob...funcNN...
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2.1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective.func1
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirective
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runDirectiveOrSubTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.runTestInternal
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.RunTest
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/errors/fmttests.TestDatadriven.func2
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk
+  | <tab><path>:<lineno>
+  | github.com/cockroachdb/datadriven.Walk.func1
+  | <tab><path>:<lineno>
+  | testing.tRunner
+  | <tab><path>:<lineno>
+  | runtime.goexit
+  | <tab><path>:<lineno>
+Error types: (1) *errbase.opaqueLeaf
+-- report composition:
+<path>:<lineno>: *errors.fundamental (top exception)
+== Extra "error types"
+github.com/pkg/errors/*errors.fundamental (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "<path>:<lineno> ...funcNN...
+Title: "*errors.fundamental: ×"
+<path>:<lineno>:
+   (runtime) goexit()
+<path>:<lineno>:
+   (testing) tRunner()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven.Walk)...funcNN...
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) Walk()
+<path>:<lineno>:
+   (github.com/cockroachdb/errors/fmttests.TestDatadriven)...funcNN...
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) RunTest()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) runTestInternal()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) runDirectiveOrSubTest()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven) runDirective()
+<path>:<lineno>:
+   (github.com/cockroachdb/datadriven.runDirective)...funcNN...
+<path>:<lineno>:
+   (github.com/cockroachdb/errors/fmttests.TestDatadriven.func2) 1()
+<path>:<lineno>:
+   (github.com/cockroachdb/errors/fmttests.glob.)...funcNN...
+
+run
+safefmt oneline twoline
+opaque
+
+require (?s)oneline.*twoline
+----
+&errbase.opaqueLeaf{
+    msg:     "safe oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errSafeFormat",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errSafeFormat", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&errbase.opaqueLeaf{
+    msg:     "safe oneline\ntwoline",
+    details: errorspb.EncodedErrorDetails{
+        OriginalTypeName:  "github.com/cockroachdb/errors/fmttests/*fmttests.errSafeFormat",
+        ErrorTypeMark:     errorspb.ErrorTypeMark{FamilyName:"github.com/cockroachdb/errors/fmttests/*fmttests.errSafeFormat", Extension:""},
+        ReportablePayload: nil,
+        FullDetails:       (*types.Any)(nil),
+    },
+}
+== Error()
+safe oneline
+twoline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+safe oneline
+(1) safe oneline
+  | twoline
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errSafeFormat
+Error types: (1) *errbase.opaqueLeaf
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹safe oneline›
+‹twoline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹safe oneline›
+(1) ‹safe oneline›
+  | ‹twoline›
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errSafeFormat
+Error types: (1) *errbase.opaqueLeaf
+=====
+===== Sentry reporting
+=====
+== Message payload
+×
+(1) ×
+  | ×
+  |
+  | (opaque error leaf)
+  | type name: github.com/cockroachdb/errors/fmttests/*fmttests.errSafeFormat
+Error types: (1) *errbase.opaqueLeaf
+-- report composition:
+*fmttests.errSafeFormat
+== Extra "error types"
+github.com/cockroachdb/errors/fmttests/*fmttests.errSafeFormat (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*fmttests.errSafeFormat"
+Title: "×"
+(NO STACKTRACE)
+
+run
+unimplemented oneline twoline
+opaque
+
+require (?s)oneline.*twoline
+----
+&issuelink.unimplementedError{
+    msg:       "oneline\ntwoline",
+    IssueLink: issuelink.IssueLink{IssueURL:"https://mysite", Detail:"issuedetails"},
+}
+=====
+===== non-redactable formats
+=====
+== %#v
+&issuelink.unimplementedError{
+    msg:       "oneline\ntwoline",
+    IssueLink: issuelink.IssueLink{IssueURL:"https://mysite", Detail:"issuedetails"},
+}
+== Error()
+oneline
+twoline
+== %v = Error(), good
+== %s = Error(), good
+== %q = quoted Error(), good
+== %x = hex Error(), good
+== %X = HEX Error(), good
+== %+v
+oneline
+(1) oneline
+  | twoline
+  | unimplemented
+  | issue: https://mysite
+  | detail: issuedetails
+Error types: (1) *issuelink.unimplementedError
+== %#v via Formattable() = %#v, good
+== %v via Formattable() = Error(), good
+== %s via Formattable() = %v via Formattable(), good
+== %q via Formattable() = quoted %v via Formattable(), good
+== %+v via Formattable() == %+v, good
+=====
+===== redactable formats
+=====
+== printed via redact Print(), ok - congruent with %v
+‹oneline›
+‹twoline›
+== printed via redact Printf() %v = Print(), good
+== printed via redact Printf() %s = Print(), good
+== printed via redact Printf() %q, refused - good
+== printed via redact Printf() %x, refused - good
+== printed via redact Printf() %X, refused - good
+== printed via redact Printf() %+v, ok - congruent with %+v
+‹oneline›
+(1) ‹oneline›
+  | ‹twoline›
+  | unimplemented
+  | issue: https://mysite
+  | detail: issuedetails
+Error types: (1) *issuelink.unimplementedError
+=====
+===== Sentry reporting
+=====
+== Message payload
+×
+(1) ×
+  | ×
+  | unimplemented
+  | issue: https://mysite
+  | detail: issuedetails
+Error types: (1) *issuelink.unimplementedError
+-- report composition:
+*issuelink.unimplementedError: https://mysite
+== Extra "error types"
+github.com/cockroachdb/errors/issuelink/*issuelink.unimplementedError (*::)
+== Exception 1 (Module: "error domain: <none>")
+Type: "*issuelink.unimplementedError"
+Title: "×"
+(NO STACKTRACE)

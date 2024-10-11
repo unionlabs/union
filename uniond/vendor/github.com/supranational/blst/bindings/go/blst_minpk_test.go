@@ -13,7 +13,7 @@ import (
     "testing"
 )
 
-// Min PK
+// Min PK.
 type PublicKeyMinPk = P1Affine
 type SignatureMinPk = P2Affine
 type AggregateSignatureMinPk = P2Aggregate
@@ -29,12 +29,14 @@ func init() {
 }
 
 func TestInfinityMinPk(t *testing.T) {
+    t.Parallel()
     var infComp [48]byte
     infComp[0] |= 0xc0
     new(PublicKeyMinPk).Uncompress(infComp[:])
 }
 
 func TestSerdesMinPk(t *testing.T) {
+    t.Parallel()
     var ikm = [...]byte{
         0x93, 0xad, 0x7e, 0x65, 0xde, 0xad, 0x05, 0x2a,
         0x08, 0x3a, 0x91, 0x0c, 0x8b, 0x72, 0x85, 0x91,
@@ -80,6 +82,7 @@ func TestSerdesMinPk(t *testing.T) {
 }
 
 func TestSignVerifyMinPk(t *testing.T) {
+    t.Parallel()
     var ikm = [...]byte{
         0x93, 0xad, 0x7e, 0x65, 0xde, 0xad, 0x05, 0x2a,
         0x08, 0x3a, 0x91, 0x0c, 0x8b, 0x72, 0x85, 0x91,
@@ -154,6 +157,7 @@ func TestSignVerifyMinPk(t *testing.T) {
 }
 
 func TestSignVerifyAugMinPk(t *testing.T) {
+    t.Parallel()
     sk := genRandomKeyMinPk()
     pk := new(PublicKeyMinPk).From(sk)
     msg := []byte("hello foo")
@@ -173,6 +177,7 @@ func TestSignVerifyAugMinPk(t *testing.T) {
 }
 
 func TestSignVerifyEncodeMinPk(t *testing.T) {
+    t.Parallel()
     sk := genRandomKeyMinPk()
     pk := new(PublicKeyMinPk).From(sk)
     msg := []byte("hello foo")
@@ -189,6 +194,7 @@ func TestSignVerifyEncodeMinPk(t *testing.T) {
 }
 
 func TestSignVerifyAggregateMinPk(t *testing.T) {
+    t.Parallel()
     for size := 1; size < 20; size++ {
         sks, msgs, _, pubks, _, err :=
             generateBatchTestDataUncompressedMinPk(size)
@@ -242,6 +248,7 @@ func TestSignVerifyAggregateMinPk(t *testing.T) {
 }
 
 func TestSignMultipleVerifyAggregateMinPk(t *testing.T) {
+    t.Parallel()
     msgCount := 5
     for size := 1; size < 20; size++ {
         msgs := make([]Message, 0)
@@ -321,6 +328,7 @@ func TestSignMultipleVerifyAggregateMinPk(t *testing.T) {
 }
 
 func TestBatchUncompressMinPk(t *testing.T) {
+    t.Parallel()
     size := 128
     var points []*P2Affine
     var compPoints [][]byte
@@ -381,6 +389,7 @@ func BenchmarkCoreVerifyMinPk(b *testing.B) {
 func BenchmarkCoreVerifyAggregateMinPk(b *testing.B) {
     run := func(size int) func(b *testing.B) {
         return func(b *testing.B) {
+            b.Helper()
             msgs, _, pubks, agsig, err := generateBatchTestDataMinPk(size)
             if err {
                 b.Fatal("Error generating test data")
@@ -408,6 +417,7 @@ func BenchmarkCoreVerifyAggregateMinPk(b *testing.B) {
 func BenchmarkVerifyAggregateUncompressedMinPk(b *testing.B) {
     run := func(size int) func(b *testing.B) {
         return func(b *testing.B) {
+            b.Helper()
             _, msgs, _, pubks, agsig, err :=
                 generateBatchTestDataUncompressedMinPk(size)
             if err {
@@ -434,6 +444,7 @@ func BenchmarkVerifyAggregateUncompressedMinPk(b *testing.B) {
 func BenchmarkCoreAggregateMinPk(b *testing.B) {
     run := func(size int) func(b *testing.B) {
         return func(b *testing.B) {
+            b.Helper()
             _, sigs, _, _, err := generateBatchTestDataMinPk(size)
             if err {
                 b.Fatal("Error generating test data")
@@ -481,21 +492,21 @@ func generateBatchTestDataMinPk(size int) (msgs []Message,
     if !agProj.AggregateCompressed(sigs, true) {
         fmt.Println("AggregateCompressed unexpectedly returned nil")
         err = true
-        return
+        return //nolint:revive
     }
     agAff := agProj.ToAffine()
     if agAff == nil {
         fmt.Println("ToAffine unexpectedly returned nil")
         err = true
-        return
+        return //nolint:revive
     }
     agsig = agAff.Compress()
-    return
+    return //nolint:revive
 }
 
 func generateBatchTestDataUncompressedMinPk(size int) (sks []*SecretKey,
-    msgs []Message, sigs []*SignatureMinPk, pubks []*PublicKeyMinPk,
-    agsig *SignatureMinPk, err bool) {
+    msgs []Message, sigs []*SignatureMinPk, //nolint:unparam
+    pubks []*PublicKeyMinPk, agsig *SignatureMinPk, err bool) {
     err = false
     for i := 0; i < size; i++ {
         msg := Message(fmt.Sprintf("blst is a blast!! %d", i))
@@ -509,10 +520,10 @@ func generateBatchTestDataUncompressedMinPk(size int) (sks []*SecretKey,
     if !agProj.Aggregate(sigs, true) {
         fmt.Println("Aggregate unexpectedly returned nil")
         err = true
-        return
+        return //nolint:revive
     }
     agsig = agProj.ToAffine()
-    return
+    return //nolint:revive
 }
 
 func BenchmarkBatchUncompressMinPk(b *testing.B) {
@@ -549,6 +560,7 @@ func BenchmarkBatchUncompressMinPk(b *testing.B) {
 }
 
 func TestSignVerifyAggregateValidatesInfinitePubkeyMinPk(t *testing.T) {
+    t.Parallel()
     size := 20
     sks, msgs, _, pubks, _, err :=
       generateBatchTestDataUncompressedMinPk(size)
@@ -558,10 +570,9 @@ func TestSignVerifyAggregateValidatesInfinitePubkeyMinPk(t *testing.T) {
     }
 
     // All signers sign the same message
-    sigs := make([]*SignatureMinPk, 0)
-    for i := 0; i < size; i++ {
-        sigs = append(sigs, new(SignatureMinPk).Sign(sks[i], msgs[i],
-          dstMinPk))
+    sigs := make([]*SignatureMinPk, size)
+    for i := range sigs {
+        sigs[i] = new(SignatureMinPk).Sign(sks[i], msgs[i], dstMinPk)
     }
 
     // Single message: Infinite pubkeys and signature
@@ -595,6 +606,7 @@ func TestSignVerifyAggregateValidatesInfinitePubkeyMinPk(t *testing.T) {
 }
 
 func TestEmptyMessageMinPk(t *testing.T) {
+    t.Parallel()
     msg := []byte("")
     var sk_bytes = []byte {99, 64, 58, 175, 15, 139, 113, 184, 37, 222, 127,
         204, 233, 209, 34, 8, 61, 27, 85, 251, 68, 31, 255, 214, 8, 189, 190, 71,
@@ -609,6 +621,7 @@ func TestEmptyMessageMinPk(t *testing.T) {
 }
 
 func TestEmptySignatureMinPk(t *testing.T) {
+    t.Parallel()
     msg := []byte("message")
     var sk_bytes = []byte {99, 64, 58, 175, 15, 139, 113, 184, 37, 222, 127,
         204, 233, 209, 34, 8, 61, 27, 85, 251, 68, 31, 255, 214, 8, 189, 190, 71,
@@ -622,6 +635,7 @@ func TestEmptySignatureMinPk(t *testing.T) {
 }
 
 func TestMultiScalarP1(t *testing.T) {
+    t.Parallel()
     const npoints = 1027
     scalars := make([]byte, npoints*16)
     _, err := rand.Read(scalars)
@@ -635,6 +649,13 @@ func TestMultiScalarP1(t *testing.T) {
     for i := range points {
         points[i] = *generator.Mult(scalars[i*4:(i+1)*4])
         refs[i]   = *points[i].Mult(scalars[i*16:(i+1)*16], 128)
+        if i < 27 {
+            ref := P1s(refs[:i+1]).Add()
+            ret := P1s(points[:i+1]).Mult(scalars, 128)
+            if !ref.Equals(ret) {
+                t.Errorf("failed self-consistency multi-scalar test")
+            }
+        }
     }
     ref := P1s(refs).Add()
     ret := P1s(points).Mult(scalars, 128)
@@ -656,17 +677,18 @@ func BenchmarkMultiScalarP1(b *testing.B) {
         temp[i] = *generator.Mult(scalars[i*4:(i+1)*4])
     }
     points := P1s(temp).ToAffine()
-    run := func(size int) func(b *testing.B) {
+    run := func(points []P1Affine) func(b *testing.B) {
         return func(b *testing.B) {
+            b.Helper()
             for i:=0; i<b.N; i++ {
-                P1Affines(points[:size]).Mult(scalars, 255)
+                P1Affines(points).Mult(scalars, 255)
             }
         }
     }
-    b.Run(fmt.Sprintf("%d",npoints/8), run(npoints/8))
-    b.Run(fmt.Sprintf("%d",npoints/4), run(npoints/4))
-    b.Run(fmt.Sprintf("%d",npoints/2), run(npoints/2))
-    b.Run(fmt.Sprintf("%d",npoints), run(npoints))
+    b.Run(fmt.Sprintf("%d",npoints/8), run(points[:npoints/8]))
+    b.Run(fmt.Sprintf("%d",npoints/4), run(points[:npoints/4]))
+    b.Run(fmt.Sprintf("%d",npoints/2), run(points[:npoints/2]))
+    b.Run(fmt.Sprintf("%d",npoints), run(points))
 }
 
 func BenchmarkToP1Affines(b *testing.B) {
@@ -684,6 +706,7 @@ func BenchmarkToP1Affines(b *testing.B) {
     scratch := make([]P1Affine, npoints)
     run := func(size int) func(b *testing.B) {
         return func(b *testing.B) {
+            b.Helper()
             b.ResetTimer()
             for i:=0; i<b.N; i++ {
                 P1s(temp[:size]).ToAffine(scratch)

@@ -1,0 +1,53 @@
+// Copyright 2021 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package s2a.proto;
+
+option go_package = "github.com/google/s2a/internal/proto/s2a_context_go_proto";
+
+import "internal/proto/common/common.proto";
+
+message S2AContext {
+  // The application protocol negotiated for this connection, e.g., 'grpc'.
+  string application_protocol = 1;
+
+  // The TLS version number that the S2A's handshaker module used to set up the
+  // session.
+  TLSVersion tls_version = 2;
+
+  // The TLS ciphersuite negotiated by the S2A's handshaker module.
+  Ciphersuite ciphersuite = 3;
+
+  // The authenticated identity of the peer.
+  Identity peer_identity = 4;
+
+  // The local identity used during session setup. This could be:
+  // - The local identity that the client specifies in ClientSessionStartReq.
+  // - One of the local identities that the server specifies in
+  //   ServerSessionStartReq.
+  // - If neither client or server specifies local identities, the S2A picks the
+  //   default one. In this case, this field will contain that identity.
+  Identity local_identity = 5;
+
+  // The SHA256 hash of the peer certificate used in the handshake.
+  bytes peer_cert_fingerprint = 6;
+
+  // The SHA256 hash of the local certificate used in the handshake.
+  bytes local_cert_fingerprint = 7;
+
+  // Set to true if a cached session was reused to resume the handshake.
+  bool is_handshake_resumed = 8;
+}

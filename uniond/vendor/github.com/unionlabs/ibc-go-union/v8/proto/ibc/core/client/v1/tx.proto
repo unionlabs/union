@@ -1,0 +1,175 @@
+syntax = "proto3";
+
+package ibc.core.client.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/core/02-client/types";
+
+import "cosmos/msg/v1/msg.proto";
+import "cosmos/upgrade/v1beta1/upgrade.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "ibc/core/client/v1/client.proto";
+
+// Msg defines the ibc/client Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // CreateClient defines a rpc handler method for MsgCreateClient.
+  rpc CreateClient(MsgCreateClient) returns (MsgCreateClientResponse);
+
+  // UpdateClient defines a rpc handler method for MsgUpdateClient.
+  rpc UpdateClient(MsgUpdateClient) returns (MsgUpdateClientResponse);
+
+  // UpgradeClient defines a rpc handler method for MsgUpgradeClient.
+  rpc UpgradeClient(MsgUpgradeClient) returns (MsgUpgradeClientResponse);
+
+  // SubmitMisbehaviour defines a rpc handler method for MsgSubmitMisbehaviour.
+  rpc SubmitMisbehaviour(MsgSubmitMisbehaviour) returns (MsgSubmitMisbehaviourResponse);
+
+  // RecoverClient defines a rpc handler method for MsgRecoverClient.
+  rpc RecoverClient(MsgRecoverClient) returns (MsgRecoverClientResponse);
+
+  // IBCSoftwareUpgrade defines a rpc handler method for MsgIBCSoftwareUpgrade.
+  rpc IBCSoftwareUpgrade(MsgIBCSoftwareUpgrade) returns (MsgIBCSoftwareUpgradeResponse);
+
+  // UpdateClientParams defines a rpc handler method for MsgUpdateParams.
+  rpc UpdateClientParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgCreateClient defines a message to create an IBC client
+message MsgCreateClient {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // light client state
+  google.protobuf.Any client_state = 1;
+  // consensus state associated with the client that corresponds to a given
+  // height.
+  google.protobuf.Any consensus_state = 2;
+  // signer address
+  string signer = 3;
+}
+
+// MsgCreateClientResponse defines the Msg/CreateClient response type.
+message MsgCreateClientResponse {}
+
+// MsgUpdateClient defines an sdk.Msg to update a IBC client state using
+// the given client message.
+message MsgUpdateClient {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // client unique identifier
+  string client_id = 1;
+  // client message to update the light client
+  google.protobuf.Any client_message = 2;
+  // signer address
+  string signer = 3;
+}
+
+// MsgUpdateClientResponse defines the Msg/UpdateClient response type.
+message MsgUpdateClientResponse {}
+
+// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client
+// state
+message MsgUpgradeClient {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // client unique identifier
+  string client_id = 1;
+  // upgraded client state
+  google.protobuf.Any client_state = 2;
+  // upgraded consensus state, only contains enough information to serve as a
+  // basis of trust in update logic
+  google.protobuf.Any consensus_state = 3;
+  // proof that old chain committed to new client
+  bytes proof_upgrade_client = 4;
+  // proof that old chain committed to new consensus state
+  bytes proof_upgrade_consensus_state = 5;
+  // signer address
+  string signer = 6;
+}
+
+// MsgUpgradeClientResponse defines the Msg/UpgradeClient response type.
+message MsgUpgradeClientResponse {}
+
+// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
+// light client misbehaviour.
+// This message has been deprecated. Use MsgUpdateClient instead.
+message MsgSubmitMisbehaviour {
+  option deprecated             = true;
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // client unique identifier
+  string client_id = 1;
+  // misbehaviour used for freezing the light client
+  google.protobuf.Any misbehaviour = 2;
+  // signer address
+  string signer = 3;
+}
+
+// MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response
+// type.
+message MsgSubmitMisbehaviourResponse {}
+
+// MsgRecoverClient defines the message used to recover a frozen or expired client.
+message MsgRecoverClient {
+  option (gogoproto.goproto_getters) = false;
+  option (cosmos.msg.v1.signer)      = "signer";
+
+  // the client identifier for the client to be updated if the proposal passes
+  string subject_client_id = 1;
+  // the substitute client identifier for the client which will replace the subject
+  // client
+  string substitute_client_id = 2;
+
+  // signer address
+  string signer = 3;
+}
+
+// MsgRecoverClientResponse defines the Msg/RecoverClient response type.
+message MsgRecoverClientResponse {}
+
+// MsgIBCSoftwareUpgrade defines the message used to schedule an upgrade of an IBC client using a v1 governance proposal
+message MsgIBCSoftwareUpgrade {
+  option (cosmos.msg.v1.signer)    = "signer";
+  cosmos.upgrade.v1beta1.Plan plan = 1 [(gogoproto.nullable) = false];
+  // An UpgradedClientState must be provided to perform an IBC breaking upgrade.
+  // This will make the chain commit to the correct upgraded (self) client state
+  // before the upgrade occurs, so that connecting chains can verify that the
+  // new upgraded client is valid by verifying a proof on the previous version
+  // of the chain. This will allow IBC connections to persist smoothly across
+  // planned chain upgrades. Correspondingly, the UpgradedClientState field has been
+  // deprecated in the Cosmos SDK to allow for this logic to exist solely in
+  // the 02-client module.
+  google.protobuf.Any upgraded_client_state = 2;
+  // signer address
+  string signer = 3;
+}
+
+// MsgIBCSoftwareUpgradeResponse defines the Msg/IBCSoftwareUpgrade response type.
+message MsgIBCSoftwareUpgradeResponse {}
+
+// MsgUpdateParams defines the sdk.Msg type to update the client parameters.
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // signer address
+  string signer = 1;
+
+  // params defines the client parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+// MsgUpdateParamsResponse defines the MsgUpdateParams response type.
+message MsgUpdateParamsResponse {}

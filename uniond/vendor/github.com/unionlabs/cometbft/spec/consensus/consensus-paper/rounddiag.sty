@@ -1,0 +1,62 @@
+% ROUNDDIAG STYLE
+%    for LaTeX version 2e
+% by -- 2008 Martin Hutle <martin.hutle@epfl.ch>
+%
+% This style file is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public
+% License as published by the Free Software Foundation; either
+% version 2 of the License, or (at your option) any later version.
+%
+% This style file is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
+%
+% You should have received a copy of the GNU Lesser General Public
+% License along with this style file; if not, write to the
+% Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+% Boston, MA  02111-1307, USA.
+%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{rounddiag}
+\typeout{Document Style `rounddiag' - provides simple round diagrams}
+%
+\RequirePackage{ifthen}
+\RequirePackage{calc}
+\RequirePackage{tikz}
+
+\def\rdstretch{3}
+
+\tikzstyle{msg}=[->,thick,>=latex]
+\tikzstyle{rndline}=[dotted]
+\tikzstyle{procline}=[dotted]
+
+\newenvironment{rounddiag}[2]{
+\begin{center}
+\begin{tikzpicture}
+\foreach \i in {1,...,#1}{
+  \draw[procline] (0,#1-\i) node[xshift=-1em]{$p_{\i}$} -- (#2*\rdstretch+1,#1-\i);
+}
+\foreach \i in {0,...,#2}{
+  \draw[rndline] (\i*\rdstretch+0.5,0) -- (\i*\rdstretch+0.5,#1-1);
+}
+\newcommand{\rdat}[2]{
+  (##2*\rdstretch+0.5,#1-##1)
+}%
+\newcommand{\round}[2]{%
+  \def\rdround{##1}
+  \ifthenelse{\equal{##2}{}}{}{
+    \node[yshift=-1em] at ({##1*\rdstretch+0.5-0.5*\rdstretch},0) {##2};
+  }
+}%
+\newcommand{\rdmessage}[3]{\draw[msg]
+  (\rdround*\rdstretch-\rdstretch+0.5,#1-##1)  -- node[yshift=1.2ex]{##3}
+  (\rdround*\rdstretch+0.5,#1-##2);}%
+\newcommand{\rdalltoall}{%
+  \foreach \i in {1,...,#1}{
+    \foreach \j in {1,...,#1}{
+    {  \rdmessage{\i}{\j}{}}}}}%
+}{%
+\end{tikzpicture}
+\end{center}
+}

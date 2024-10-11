@@ -1,0 +1,17 @@
+{
+    "web": {
+        "auth_uri": "https://google.com/o/oauth2/auth",
+        "client_secret": "3Oknc4jS_wA2r9i",
+        "token_uri": "https://google.com/o/oauth2/token",
+        "client_email": "222-nprqovg5k43uum874cs9osjt2koe97g8@developer.gserviceaccount.com",
+        "redirect_uris": [
+            "https://www.example.com/oauth2callback"
+        ],
+        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/222-nprqovg5k43uum874cs9osjt2koe97g8@developer.gserviceaccount.com",
+        "client_id": "222-nprqovg5k43uum874cs9osjt2koe97g8.apps.googleusercontent.com",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "javascript_origins": [
+            "https://www.example.com"
+        ]
+    }
+}

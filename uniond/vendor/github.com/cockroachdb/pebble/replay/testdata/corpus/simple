@@ -1,0 +1,87 @@
+open
+----
+
+list-files build
+----
+build:
+  000002.log
+  CURRENT
+  LOCK
+  MANIFEST-000001
+  OPTIONS-000003
+  marker.format-version.000007.008
+  marker.manifest.000001.MANIFEST-000001
+
+commit
+set a a
+set b b
+set c c
+----
+
+flush
+----
+
+list-files build
+----
+build:
+  000002.log
+  000004.log
+  000005.sst
+  CURRENT
+  LOCK
+  MANIFEST-000001
+  OPTIONS-000003
+  marker.format-version.000007.008
+  marker.manifest.000001.MANIFEST-000001
+
+start
+----
+started
+
+list-files simple
+----
+simple:
+  checkpoint
+
+list-files simple/checkpoint
+----
+simple/checkpoint:
+  000004.log
+  000005.sst
+  MANIFEST-000001
+  OPTIONS-000003
+  marker.format-version.000001.008
+  marker.manifest.000001.MANIFEST-000001
+
+commit
+set d d
+set e e
+set f f
+set i i
+set h h
+set g g
+----
+
+flush
+----
+
+stop
+----
+stopped
+
+list-files simple
+----
+simple:
+  000007.sst
+  MANIFEST-000001
+  MANIFEST-000008
+  checkpoint
+
+stat simple/MANIFEST-000001 simple/MANIFEST-000008 simple/000007.sst
+----
+simple/MANIFEST-000001:
+  size: 98
+simple/MANIFEST-000008:
+  size: 122
+simple/000007.sst:
+  size: 686

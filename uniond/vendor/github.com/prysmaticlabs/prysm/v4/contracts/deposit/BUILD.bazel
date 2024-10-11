@@ -1,0 +1,53 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "contract.go",
+        "deposit.go",
+        "helper.go",
+        "logs.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/contracts/deposit",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/core/signing:go_default_library",
+        "//config/params:go_default_library",
+        "//crypto/bls:go_default_library",
+        "//crypto/hash:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_ethereum_go_ethereum//:go_default_library",
+        "@com_github_ethereum_go_ethereum//accounts/abi:go_default_library",
+        "@com_github_ethereum_go_ethereum//accounts/abi/bind:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+        "@com_github_ethereum_go_ethereum//core/types:go_default_library",
+        "@com_github_ethereum_go_ethereum//event:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "medium",
+    srcs = [
+        "contract_test.go",
+        "deposit_test.go",
+        "deposit_tree_test.go",
+    ],
+    deps = [
+        ":go_default_library",
+        "//beacon-chain/core/signing:go_default_library",
+        "//config/params:go_default_library",
+        "//container/trie:go_default_library",
+        "//contracts/deposit/mock:go_default_library",
+        "//crypto/bls:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//runtime/interop:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/util:go_default_library",
+        "@com_github_ethereum_go_ethereum//:go_default_library",
+        "@com_github_ethereum_go_ethereum//accounts/abi/bind:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+    ],
+)

@@ -1,0 +1,212 @@
+{
+  "unsafeptr": {
+    "exclude_files": {
+      "external/.*": "Unsafe third party code",
+      "rules_go_work-.*": "Third party code"
+    }
+  },
+  "unreachable": {
+    "exclude_files": {
+      "runtime/messagehandler/messagehandler_test.go": "Necessary panic before return for test",
+      "external/.*": "Unreachable third party code"
+    }
+  },
+  "lostcancel": {
+    "exclude_files": {
+      "validator/client/runner.go": "No need to cancel right when goroutines begin",
+      "external/.*": "Third party code"
+    }
+  },
+  "nilness": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code"
+    }
+  },
+  "pkgfact": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code"
+    }
+  },
+  "stdmethods": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "copylocks": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "composites": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      ".*testmain\\.go$": "Fuzz"
+    }
+  },
+  "cgocall": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "assign": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "structtag": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "maligned": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code",
+      "config/params/config.go": "This config struct needs to be organized for now",
+      "shared/featureconfig/config.go": "This config struct needs to be organized for now",
+      "proto/.*": "Excluding protobuf objects for now"
+    }
+  },
+  "errcheck": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code",
+      "shared/mock/.*\\.go": "Mocks are OK",
+      ".*/.*mock\\.go": "Mocks are OK",
+      ".*testmain\\.go$": "Fuzz",
+      "proto/.*": "Generated protobuf related code",
+      "tools/analyzers/properpermissions/testdata/.*": "Analyzer breaks rules"
+    }
+  },
+  "featureconfig": {
+    "only_files": {
+      ".*_test\\.go": "Only tests"
+    }
+  },
+  "interfacechecker": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code",
+      ".*/.*_test\\.go": "Tests are OK to ignore this check for"
+    }
+  },
+  "logruswitherror": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      ".*/testmain.go": "Generated/test code"
+    }
+  },
+  "cryptorand": {
+    "only_files": {
+      "beacon-chain/.*": "",
+      "shared/.*": "",
+      "slasher/.*": "",
+      "validator/.*": ""
+    },
+    "exclude_files": {
+      ".*/.*_test\\.go": "Tests are OK to use weak crypto",
+      "external/.*": "Third party code",
+      "crypto/rand/rand\\.go": "Abstracts CSPRNGs for common use",
+      "shared/aggregation/testing/bitlistutils.go": "Test-only package"
+    }
+  },
+  "comparesame": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code",
+      "tools/analyzers/comparesame/testdata/compare_len.go": "Analyzer testdata has to break rules"
+    }
+  },
+  "shadowpredecl": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code",
+      "tools/analyzers/shadowpredecl/testdata/shadow.go": "Analyzer testdata has to break rules"
+    }
+  },
+  "recursivelock": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code",
+      "tools/analyzers/recursivelock/testdata/.*": "Analyzer testdata has to break rules"
+    }
+  },
+  "nop": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code",
+      "tools/analyzers/nop/testdata/no_op.go": "Analyzer testdata has to break rules"
+    }
+  },
+  "slicedirect": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code",
+      "tools/analyzers/slicedirect/testdata/slice.go": "Analyzer testdata has to break rules"
+    }
+  },
+  "ineffassign": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code",
+      ".*\\.pb.*.go": "Generated code is ok",
+      ".*generated\\.ssz\\.go": "Generated code is ok"
+    }
+  },
+  "properpermissions": {
+    "only_files": {
+      "beacon-chain/.*": "",
+      "slasher/.*": "",
+      "shared/.*": "",
+      "validator/.*": ""
+    },
+    "exclude_files": {
+      ".*_test\\.go": "Tests are ok",
+      "io/file/fileutil.go": "Package which defines the proper rules",
+      "validator/web/site_data.go": "Generated web ui assets"
+    }
+  },
+  "uintcast": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code",
+      ".*_test\\.go": "Tests are ok"
+    }
+  },
+  "gocognit": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code",
+      ".*\\.pb.*.go": "Generated code is ok",
+      ".*generated\\.ssz\\.go": "Generated code is ok",
+      ".*_test\\.go": "Tests are ok (for now)",
+      "tools/analyzers/ineffassign/ineffassign\\.go": "3rd party code with a massive switch statement"
+    }
+  },
+  "shift": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code"
+    }
+  },
+  "reflectvaluecompare": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code"
+    }
+  },
+  "unusedwrite": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code"
+    }
+  },
+  "stringintconv": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code"
+    }
+  }
+}

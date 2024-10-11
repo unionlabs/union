@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Forcibly remove any stray UNIX sockets left behind from previous runs
+rm -rf /var/run/privval.sock /var/run/app.sock
+
+/usr/bin/app /cometbft/config/app.toml &
+
+sleep 1
+
+/usr/bin/cometbft "$@"

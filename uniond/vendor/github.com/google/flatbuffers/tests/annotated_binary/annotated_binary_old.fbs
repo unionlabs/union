@@ -1,0 +1,94 @@
+namespace AnnotatedBinary;
+
+enum Food : byte {
+  None = 0,
+  Apple = 1,
+  Banana = 2,
+  Kiwi = 3,
+}
+
+table Baz {
+  meal:Food = Banana;
+}
+
+table Bar {
+  a:double = 3.14;
+  b:float = 1.68;
+  c:Baz;
+}
+
+union BarBaz {
+  Bar, Baz
+}
+
+union Measurement {
+  Tolerance, Dimension
+}
+
+struct Tolerance {
+  width:uint8;
+}
+
+union Any {
+  Bar, Tolerance
+}
+
+struct Dimension {
+  values:[int:3];
+  tolerances:[Tolerance:3];
+}
+
+struct Building {
+  floors:int;
+  doors:int;
+  windows:int;
+  dimensions:Dimension;
+}
+
+struct Location {
+  latitude:double;
+  longitude:double;
+}
+
+table Foo {
+  counter:int;
+  healthy:bool;
+  level:long = 99;
+  meal:Food = Apple;
+  bar:Bar;
+  home:Building;
+  name:string;
+  // Vector of tables
+  bars:[Bar];
+  // Union of tables
+  bar_baz:BarBaz;
+  // Vector of Scalars
+  accounts:[uint16];
+  bob:string;
+  alice:string;
+  // Optional Scalars
+  maybe_i32: int32 = null;
+  default_i32: int32 = 42;
+  just_i32: int32;
+  // Vector of strings
+  names:[string];
+  // Vector of structs
+  points_of_interest:[Location];
+  // Vector of unions
+  foobars:[BarBaz];
+  // Union of structs
+  measurement:Measurement;
+  // Union of struct/table
+  anything:Any;
+  // Default floating point
+  temperature:float=98.6;
+  // Not present object
+  teetotaler:Bar;
+
+  // NOTE THIS IS A PURPOSELY OLD VERSION OF annotated_binary.fbs TO TEST 
+  // PROCESSING OF NEWER BINARIES THAN THE SCHEMA. DO NOT ADD TO THIS.
+}
+
+file_identifier "ANNO";
+
+root_type Foo;

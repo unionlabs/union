@@ -1,0 +1,19 @@
+{
+    "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/sa3@developer.gserviceaccount.com:generateAccessToken",
+    "delegates": [
+        "sa1@developer.gserviceaccount.com",
+        "sa2@developer.gserviceaccount.com"
+    ],
+    "source_credentials": {
+        "type": "service_account",
+        "project_id": "fake_project",
+        "private_key_id": "89asd789789uo473454c47543",
+        "private_key": "fake",
+        "client_email": "sa@fake_project.iam.gserviceaccount.com",
+        "client_id": "gopher",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token"
+    },
+    "type": "impersonated_service_account",
+    "universe_domain": "example.com"
+}

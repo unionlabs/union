@@ -1,0 +1,151 @@
+# Test iterator bounds provided via IterOptions.
+
+reset
+----
+
+batch commit
+set a a
+set b b
+set c c
+set d d
+set f f
+range-key-set a   ap  @6 foo
+range-key-set ap  c   @5 bar
+range-key-set cat zoo @3 bax
+----
+committed 8 keys
+
+# Ensure bounds provided at initialization are respected, and propagated to
+# cloned iterators.
+
+combined-iter lower=b upper=e
+first
+next
+next
+next
+next
+clone
+first
+next
+next
+next
+next
+----
+b: (b, [b-c) @5=bar UPDATED)
+c: (c, . UPDATED)
+cat: (., [cat-e) @3=bax UPDATED)
+d: (d, [cat-e) @3=bax)
+.
+.
+b: (b, [b-c) @5=bar UPDATED)
+c: (c, . UPDATED)
+cat: (., [cat-e) @3=bax UPDATED)
+d: (d, [cat-e) @3=bax)
+.
+
+# Ensure bounds provided during clone are propagated to cloned iterators.
+
+combined-iter lower=b upper=e
+first
+next
+next
+next
+next
+clone lower=a upper=cat key-types=both
+first
+next
+next
+next
+clone lower=a upper=cat key-types=point
+first
+next
+next
+next
+----
+b: (b, [b-c) @5=bar UPDATED)
+c: (c, . UPDATED)
+cat: (., [cat-e) @3=bax UPDATED)
+d: (d, [cat-e) @3=bax)
+.
+.
+a: (a, [a-ap) @6=foo UPDATED)
+ap: (., [ap-c) @5=bar UPDATED)
+b: (b, [ap-c) @5=bar)
+c: (c, . UPDATED)
+.
+a: (a, .)
+b: (b, .)
+c: (c, .)
+.
+
+# Test cloning an iterator that reads through an indexed batch.
+
+batch name=batchfoo
+del b
+set c c2
+range-key-unset b c @5
+----
+wrote 3 keys to batch "batchfoo"
+
+combined-iter reader=batchfoo name=itera
+seek-ge b
+seek-ge c
+----
+c: (c2, .)
+c: (c2, .)
+
+combined-iter
+seek-ge b
+seek-ge c
+----
+b: (b, [ap-c) @5=bar UPDATED)
+c: (c, . UPDATED)
+
+clone from=itera to=iterb refresh-batch=false
+----
+
+iter iter=iterb
+seek-ge b
+seek-ge c
+----
+c: (c2, .)
+c: (c2, .)
+
+mutate batch=batchfoo
+set c c3
+range-key-set b c @9 final
+----
+
+iter iter=itera
+seek-ge b
+seek-ge c
+----
+c: (c2, .)
+c: (c2, .)
+
+iter iter=iterb
+seek-ge b
+seek-ge c
+----
+c: (c2, .)
+c: (c2, .)
+
+clone from=iterb to=iterc refresh-batch=false
+----
+
+iter iter=iterc
+seek-ge b
+seek-ge c
+----
+c: (c2, .)
+c: (c2, .)
+
+clone from=iterb to=iterd refresh-batch=true
+----
+
+iter iter=iterd
+seek-ge b
+seek-ge c
+----
+b: (., [b-c) @9=final UPDATED)
+c: (c3, . UPDATED)

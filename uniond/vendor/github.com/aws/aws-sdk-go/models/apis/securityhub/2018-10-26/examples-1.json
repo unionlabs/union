@@ -1,0 +1,2495 @@
+{
+  "version": "1.0",
+  "examples": {
+    "AcceptAdministratorInvitation": [
+      {
+        "input": {
+          "AdministratorId": "123456789012",
+          "InvitationId": "7ab938c5d52d7904ad09f9e7c20cc4eb"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example demonstrates how an account can accept an invitation from the Security Hub administrator account to be a member account. This operation is applicable only to member accounts that are not added through AWS Organizations.",
+        "id": "to-accept-an-invitation-be-a-member-account-1674849870467",
+        "title": "To accept an invitation be a member account"
+      }
+    ],
+    "BatchDeleteAutomationRules": [
+      {
+        "input": {
+          "AutomationRulesArns": [
+            "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+            "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE22222"
+          ]
+        },
+        "output": {
+          "ProcessedAutomationRules": [
+            "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
+          ],
+          "UnprocessedAutomationRules": [
+            {
+              "ErrorCode": 500,
+              "ErrorMessage": "InternalException",
+              "RuleArn": "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE22222"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example deletes the specified automation rules.",
+        "id": "to-delete-one-or-more-automation-rules-1684769550318",
+        "title": "To delete one or more automation rules"
+      }
+    ],
+    "BatchDisableStandards": [
+      {
+        "input": {
+          "StandardsSubscriptionArns": [
+            "arn:aws:securityhub:us-west-1:123456789012:subscription/pci-dss/v/3.2.1"
+          ]
+        },
+        "output": {
+          "StandardsSubscriptions": [
+            {
+              "StandardsArn": "arn:aws:securityhub:eu-central-1::standards/pci-dss/v/3.2.1",
+              "StandardsInput": {
+              },
+              "StandardsStatus": "DELETING",
+              "StandardsSubscriptionArn": "arn:aws:securityhub:us-west-1:123456789012:subscription/pci-dss/v/3.2.1"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example disables a security standard in Security Hub.",
+        "id": "to-disable-one-or-more-security-standards-1674851507200",
+        "title": "To disable one or more security standards"
+      }
+    ],
+    "BatchEnableStandards": [
+      {
+        "input": {
+          "StandardsSubscriptionRequests": [
+            {
+              "StandardsArn": "arn:aws:securityhub:us-west-1::standards/pci-dss/v/3.2.1"
+            }
+          ]
+        },
+        "output": {
+          "StandardsSubscriptions": [
+            {
+              "StandardsArn": "arn:aws:securityhub:us-west-1::standards/pci-dss/v/3.2.1",
+              "StandardsInput": {
+              },
+              "StandardsStatus": "PENDING",
+              "StandardsSubscriptionArn": "arn:aws:securityhub:us-west-1:123456789012:subscription/pci-dss/v/3.2.1"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example enables the security standard specified by the StandardArn. You can use this operation to enable one or more Security Hub standards.",
+        "id": "to-enable-security-standards-1683233792239",
+        "title": "To enable security standards"
+      }
+    ],
+    "BatchGetAutomationRules": [
+      {
+        "input": {
+          "AutomationRulesArns": [
+            "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+            "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE22222"
+          ]
+        },
+        "output": {
+          "Rules": [
+            {
+              "Actions": [
+                {
+                  "FindingFieldsUpdate": {
+                    "Workflow": {
+                      "Status": "RESOLVED"
+                    }
+                  },
+                  "Type": "FINDING_FIELDS_UPDATE"
+                }
+              ],
+              "CreatedAt": "2022-08-31T01:52:33.250Z",
+              "CreatedBy": "AROAJURBUYQQNL5OL2TIM:TEST-16MJ75L9VBK14",
+              "Criteria": {
+                "AwsAccountId": [
+                  {
+                    "Comparison": "EQUALS",
+                    "Value": "111122223333"
+                  }
+                ],
+                "FirstObservedAt": [
+                  {
+                    "DateRange": {
+                      "Unit": "DAYS",
+                      "Value": 5
+                    }
+                  }
+                ],
+                "Type": [
+                  {
+                    "Comparison": "EQUALS",
+                    "Value": "Software and Configuration Checks/Industry and Regulatory Standards"
+                  }
+                ]
+              },
+              "Description": "sample rule description 1",
+              "RuleArn": "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+              "RuleName": "sample-rule-name-1",
+              "RuleOrder": 1,
+              "RuleStatus": "ENABLED",
+              "UpdatedAt": "2022-08-31T01:52:33.250Z"
+            },
+            {
+              "Actions": [
+                {
+                  "FindingFieldsUpdate": {
+                    "Workflow": {
+                      "Status": "RESOLVED"
+                    }
+                  },
+                  "Type": "FINDING_FIELDS_UPDATE"
+                }
+              ],
+              "CreatedAt": "2022-08-31T01:52:33.250Z",
+              "CreatedBy": "AROAJURBUYQQNL5OL2TIM:TEST-16MJ75L9VBK14",
+              "Criteria": {
+                "ResourceType": [
+                  {
+                    "Comparison": "EQUALS",
+                    "Value": "Ec2Instance"
+                  }
+                ],
+                "SeverityLabel": [
+                  {
+                    "Comparison": "EQUALS",
+                    "Value": "INFORMATIONAL"
+                  }
+                ]
+              },
+              "Description": "Sample rule description 2",
+              "RuleArn": "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE22222",
+              "RuleName": "sample-rule-name-2",
+              "RuleOrder": 2,
+              "RuleStatus": "ENABLED",
+              "UpdatedAt": "2022-08-31T01:52:33.250Z"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example updates the specified automation rules.",
+        "id": "to-update-one-ore-more-automation-rules-1684771025347",
+        "title": "To update one ore more automation rules"
+      }
+    ],
+    "BatchGetConfigurationPolicyAssociations": [
+      {
+        "input": {
+          "ConfigurationPolicyAssociationIdentifiers": [
+            {
+              "Target": {
+                "AccountId": "111122223333"
+              }
+            },
+            {
+              "Target": {
+                "RootId": "r-f6g7h8i9j0example"
+              }
+            }
+          ]
+        },
+        "output": {
+          "ConfigurationPolicyAssociations": [
+            {
+              "AssociationStatus": "SUCCESS",
+              "AssociationStatusMessage": "This field is only populated for a failed association",
+              "AssociationType": "INHERITED",
+              "ConfigurationPolicyId": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+              "TargetId": "111122223333",
+              "TargetType": "ACCOUNT",
+              "UpdatedAt": "2023-01-11T06:17:17.154Z"
+            }
+          ],
+          "UnprocessedConfigurationPolicyAssociations": [
+            {
+              "ConfigurationPolicyAssociationIdentifiers": {
+                "Target": {
+                  "RootId": "r-f6g7h8i9j0example"
+                }
+              },
+              "ErrorCode": "400",
+              "ErrorReason": "You do not have sufficient access to perform this action."
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This operation provides details about configuration associations for a batch of target accounts, organizational units, or the root.",
+        "id": "to-get-configuration-associations-for-a-batch-of-targets-1695178953302",
+        "title": "To get configuration associations for a batch of targets"
+      }
+    ],
+    "BatchGetSecurityControls": [
+      {
+        "input": {
+          "SecurityControlIds": [
+            "ACM.1",
+            "APIGateway.1"
+          ]
+        },
+        "output": {
+          "SecurityControls": [
+            {
+              "Description": "This AWS control checks whether ACM Certificates in your account are marked for expiration within a specified time period. Certificates provided by ACM are automatically renewed. ACM does not automatically renew certificates that you import.",
+              "LastUpdateReason": "Stayed with default value",
+              "Parameters": {
+                "daysToExpiration": {
+                  "Value": {
+                    "Integer": 30
+                  },
+                  "ValueType": "DEFAULT"
+                }
+              },
+              "RemediationUrl": "https://docs.aws.amazon.com/console/securityhub/ACM.1/remediation",
+              "SecurityControlArn": "arn:aws:securityhub:us-west-2:123456789012:security-control/ACM.1",
+              "SecurityControlId": "ACM.1",
+              "SecurityControlStatus": "ENABLED",
+              "SeverityRating": "MEDIUM",
+              "Title": "Imported and ACM-issued certificates should be renewed after a specified time period",
+              "UpdateStatus": "UPDATING"
+            },
+            {
+              "Description": "This control checks whether all stages of Amazon API Gateway REST and WebSocket APIs have logging enabled. The control fails if logging is not enabled for all methods of a stage or if loggingLevel is neither ERROR nor INFO.",
+              "LastUpdateReason": "Updated control parameters to comply with internal requirements",
+              "Parameters": {
+                "loggingLevel": {
+                  "Value": {
+                    "Enum": "ERROR"
+                  },
+                  "ValueType": "CUSTOM"
+                }
+              },
+              "RemediationUrl": "https://docs.aws.amazon.com/console/securityhub/APIGateway.1/remediation",
+              "SecurityControlArn": "arn:aws:securityhub:us-west-2:123456789012:security-control/APIGateway.1",
+              "SecurityControlId": "APIGateway.1",
+              "SecurityControlStatus": "ENABLED",
+              "SeverityRating": "MEDIUM",
+              "Title": "API Gateway REST and WebSocket API execution logging should be enabled",
+              "UpdateStatus": "UPDATING"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example gets details for the specified controls in the current AWS account and AWS Region.",
+        "id": "to-get-security-control-details--1683234478355",
+        "title": "To get security control details "
+      }
+    ],
+    "BatchGetStandardsControlAssociations": [
+      {
+        "input": {
+          "StandardsControlAssociationIds": [
+            {
+              "SecurityControlId": "CloudTrail.1",
+              "StandardsArn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0"
+            },
+            {
+              "SecurityControlId": "CloudWatch.12",
+              "StandardsArn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0"
+            }
+          ]
+        },
+        "output": {
+          "StandardsControlAssociationDetails": [
+            {
+              "AssociationStatus": "ENABLED",
+              "RelatedRequirements": [
+                "CIS AWS Foundations 2.1"
+              ],
+              "SecurityControlArn": "arn:aws:securityhub:us-west-2:110479873537:security-control/CloudTrail.1",
+              "SecurityControlId": "CloudTrail.1",
+              "StandardsArn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+              "StandardsControlDescription": "AWS CloudTrail is a web service that records AWS API calls for your account and delivers log files to you. The recorded information includes the identity of the API caller, the time of the API call, the source IP address of the API caller, the request parameters, and the response elements returned by the AWS service.",
+              "StandardsControlTitle": "Ensure CloudTrail is enabled in all regions",
+              "UpdatedAt": "2022-01-13T18:52:29.539000+00:00"
+            },
+            {
+              "AssociationStatus": "ENABLED",
+              "RelatedRequirements": [
+                "CIS AWS Foundations 3.12"
+              ],
+              "SecurityControlArn": "arn:aws:securityhub:us-west-2:110479873537:security-control/CloudWatch.12",
+              "SecurityControlId": "CloudWatch.12",
+              "StandardsArn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+              "StandardsControlDescription": "Real-time monitoring of API calls can be achieved by directing CloudTrail Logs to CloudWatch Logs and establishing corresponding metric filters and alarms. Network gateways are required to send/receive traffic to a destination outside of a VPC. It is recommended that a metric filter and alarm be established for changes to network gateways.",
+              "StandardsControlTitle": "Ensure a log metric filter and alarm exist for changes to network gateways",
+              "UpdatedAt": "2022-01-13T18:52:29.686000+00:00"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example retrieves the enablement status of the specified controls in the specified standards.",
+        "id": "to-get-enablement-status-of-a-batch-of-controls-1683301618357",
+        "title": "To get enablement status of a batch of controls"
+      }
+    ],
+    "BatchImportFindings": [
+      {
+        "input": {
+          "Findings": [
+            {
+              "AwsAccountId": "123456789012",
+              "CreatedAt": "2020-05-27T17:05:54.832Z",
+              "Description": "Vulnerability in a CloudTrail trail",
+              "FindingProviderFields": {
+                "Severity": {
+                  "Label": "LOW",
+                  "Original": "10"
+                },
+                "Types": [
+                  "Software and Configuration Checks/Vulnerabilities/CVE"
+                ]
+              },
+              "GeneratorId": "TestGeneratorId",
+              "Id": "Id1",
+              "ProductArn": "arn:aws:securityhub:us-west-1:123456789012:product/123456789012/default",
+              "Resources": [
+                {
+                  "Id": "arn:aws:cloudtrail:us-west-1:123456789012:trail/TrailName",
+                  "Partition": "aws",
+                  "Region": "us-west-1",
+                  "Type": "AwsCloudTrailTrail"
+                }
+              ],
+              "SchemaVersion": "2018-10-08",
+              "Title": "CloudTrail trail vulnerability",
+              "UpdatedAt": "2020-06-02T16:05:54.832Z"
+            }
+          ]
+        },
+        "output": {
+          "FailedCount": 123,
+          "FailedFindings": [
+
+          ],
+          "SuccessCount": 123
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example imports findings from a third party provider to Security Hub.",
+        "id": "to-import-security-findings-from-a-third-party-provider-to-security-hub-1675090935260",
+        "title": "To import security findings from a third party provider to Security Hub"
+      }
+    ],
+    "BatchUpdateAutomationRules": [
+      {
+        "input": {
+          "UpdateAutomationRulesRequestItems": [
+            {
+              "RuleArn": "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+              "RuleOrder": 15,
+              "RuleStatus": "ENABLED"
+            },
+            {
+              "RuleArn": "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE22222",
+              "RuleStatus": "DISABLED"
+            }
+          ]
+        },
+        "output": {
+          "ProcessedAutomationRules": [
+            "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+            "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE22222"
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example updates the specified automation rules.",
+        "id": "to-update-one-ore-more-automation-rules-1684771025347",
+        "title": "To update one ore more automation rules"
+      }
+    ],
+    "BatchUpdateFindings": [
+      {
+        "input": {
+          "Confidence": 80,
+          "Criticality": 80,
+          "FindingIdentifiers": [
+            {
+              "Id": "arn:aws:securityhub:us-west-1:123456789012:subscription/pci-dss/v/3.2.1/PCI.Lambda.2/finding/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+              "ProductArn": "arn:aws:securityhub:us-west-1::product/aws/securityhub"
+            },
+            {
+              "Id": "arn:aws:securityhub:us-west-1:123456789012:subscription/pci-dss/v/3.2.1/PCI.Lambda.2/finding/a1b2c3d4-5678-90ab-cdef-EXAMPLE22222",
+              "ProductArn": "arn:aws:securityhub:us-west-1::product/aws/securityhub"
+            }
+          ],
+          "Note": {
+            "Text": "Known issue that is not a risk.",
+            "UpdatedBy": "user1"
+          },
+          "RelatedFindings": [
+            {
+              "Id": "arn:aws:securityhub:us-west-1:123456789012:subscription/pci-dss/v/3.2.1/PCI.Lambda.2/finding/a1b2c3d4-5678-90ab-cdef-EXAMPLE33333",
+              "ProductArn": "arn:aws:securityhub:us-west-1::product/aws/securityhub"
+            }
+          ],
+          "Severity": {
+            "Label": "LOW"
+          },
+          "Types": [
+            "Software and Configuration Checks/Vulnerabilities/CVE"
+          ],
+          "UserDefinedFields": {
+            "reviewedByCio": "true"
+          },
+          "VerificationState": "TRUE_POSITIVE",
+          "Workflow": {
+            "Status": "RESOLVED"
+          }
+        },
+        "output": {
+          "ProcessedFindings": [
+            {
+              "Id": "arn:aws:securityhub:us-west-1:123456789012:subscription/pci-dss/v/3.2.1/PCI.Lambda.2/finding/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+              "ProductArn": "arn:aws:securityhub:us-west-1::product/aws/securityhub"
+            },
+            {
+              "Id": "arn:aws:securityhub:us-west-1:123456789012:subscription/pci-dss/v/3.2.1/PCI.Lambda.2/finding/a1b2c3d4-5678-90ab-cdef-EXAMPLE22222",
+              "ProductArn": "arn:aws:securityhub:us-west-1::product/aws/securityhub"
+            }
+          ],
+          "UnprocessedFindings": [
+
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example updates Security Hub findings. The finding identifier parameter specifies which findings to update. Only specific finding fields can be updated with this operation.",
+        "id": "to-update-security-hub-findings-1675183938248",
+        "title": "To update Security Hub findings"
+      }
+    ],
+    "BatchUpdateStandardsControlAssociations": [
+      {
+        "input": {
+          "StandardsControlAssociationUpdates": [
+            {
+              "AssociationStatus": "DISABLED",
+              "SecurityControlId": "CloudTrail.1",
+              "StandardsArn": "arn:aws:securityhub:::ruleset/sample-standard/v/1.1.0",
+              "UpdatedReason": "Not relevant to environment"
+            },
+            {
+              "AssociationStatus": "DISABLED",
+              "SecurityControlId": "CloudWatch.12",
+              "StandardsArn": "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0",
+              "UpdatedReason": "Not relevant to environment"
+            }
+          ]
+        },
+        "output": {
+          "UnprocessedAssociationUpdates": [
+            {
+              "ErrorCode": "INVALID_INPUT",
+              "ErrorReason": "Invalid Standards Arn: 'arn:aws:securityhub:::ruleset/sample-standard/v/1.1.0'",
+              "StandardsControlAssociationUpdate": {
+                "AssociationStatus": "DISABLED",
+                "SecurityControlId": "CloudTrail.1",
+                "StandardsArn": "arn:aws:securityhub:::ruleset/sample-standard/v/1.1.0",
+                "UpdatedReason": "Test Reason"
+              }
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example disables CloudWatch.12 in CIS AWS Foundations Benchmark v1.2.0. The example returns an error for CloudTrail.1 because an invalid standard ARN is provided.",
+        "id": "to-update-enablement-status-of-a-batch-of-controls-1683300378416",
+        "title": "To update enablement status of a batch of controls"
+      }
+    ],
+    "CreateActionTarget": [
+      {
+        "input": {
+          "Description": "Action to send the finding for remediation tracking",
+          "Id": "Remediation",
+          "Name": "Send to remediation"
+        },
+        "output": {
+          "ActionTargetArn": "arn:aws:securityhub:us-west-1:123456789012:action/custom/Remediation"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example creates a custom action target in Security Hub. Custom actions on findings and insights automatically trigger actions in Amazon CloudWatch Events.",
+        "id": "to-create-a-custom-action-target-1675184966299",
+        "title": "To create a custom action target"
+      }
+    ],
+    "CreateAutomationRule": [
+      {
+        "input": {
+          "Actions": [
+            {
+              "FindingFieldsUpdate": {
+                "Note": {
+                  "Text": "This is a critical S3 bucket, please look into this ASAP",
+                  "UpdatedBy": "test-user"
+                },
+                "Severity": {
+                  "Label": "CRITICAL"
+                }
+              },
+              "Type": "FINDING_FIELDS_UPDATE"
+            }
+          ],
+          "Criteria": {
+            "ComplianceStatus": [
+              {
+                "Comparison": "EQUALS",
+                "Value": "FAILED"
+              }
+            ],
+            "ProductName": [
+              {
+                "Comparison": "EQUALS",
+                "Value": "Security Hub"
+              }
+            ],
+            "RecordState": [
+              {
+                "Comparison": "EQUALS",
+                "Value": "ACTIVE"
+              }
+            ],
+            "ResourceId": [
+              {
+                "Comparison": "EQUALS",
+                "Value": "arn:aws:s3:::examplebucket/developers/design_info.doc"
+              }
+            ],
+            "WorkflowStatus": [
+              {
+                "Comparison": "EQUALS",
+                "Value": "NEW"
+              }
+            ]
+          },
+          "Description": "Elevate finding severity to Critical for important resources",
+          "IsTerminal": false,
+          "RuleName": "Elevate severity for important resources",
+          "RuleOrder": 1,
+          "RuleStatus": "ENABLED",
+          "Tags": {
+            "important-resources-rule": "s3-bucket"
+          }
+        },
+        "output": {
+          "RuleArn": "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example creates an automation rule.",
+        "id": "to-create-an-automation-rule-1684768393507",
+        "title": "To create an automation rule"
+      }
+    ],
+    "CreateConfigurationPolicy": [
+      {
+        "input": {
+          "ConfigurationPolicy": {
+            "SecurityHub": {
+              "EnabledStandardIdentifiers": [
+                "arn:aws:securityhub:us-east-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+                "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0"
+              ],
+              "SecurityControlsConfiguration": {
+                "DisabledSecurityControlIdentifiers": [
+                  "CloudWatch.1"
+                ],
+                "SecurityControlCustomParameters": [
+                  {
+                    "Parameters": {
+                      "daysToExpiration": {
+                        "Value": {
+                          "Integer": 14
+                        },
+                        "ValueType": "CUSTOM"
+                      }
+                    },
+                    "SecurityControlId": "ACM.1"
+                  }
+                ]
+              },
+              "ServiceEnabled": true
+            }
+          },
+          "Description": "Configuration policy for testing FSBP and CIS",
+          "Name": "TestConfigurationPolicy"
+        },
+        "output": {
+          "Arn": "arn:aws:securityhub:us-east-1:123456789012:configuration-policy/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "ConfigurationPolicy": {
+            "SecurityHub": {
+              "EnabledStandardIdentifiers": [
+                "arn:aws:securityhub:us-east-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+                "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0"
+              ],
+              "SecurityControlsConfiguration": {
+                "DisabledSecurityControlIdentifiers": [
+                  "CloudWatch.1"
+                ],
+                "SecurityControlCustomParameters": [
+                  {
+                    "Parameters": {
+                      "daysToExpiration": {
+                        "Value": {
+                          "Integer": 14
+                        },
+                        "ValueType": "CUSTOM"
+                      }
+                    },
+                    "SecurityControlId": "ACM.1"
+                  }
+                ]
+              },
+              "ServiceEnabled": true
+            }
+          },
+          "CreatedAt": "2023-01-11T06:17:17.154Z",
+          "Description": "Configuration policy for testing FSBP and CIS",
+          "Id": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "Name": "TestConfigurationPolicy",
+          "UpdatedAt": "2023-01-11T06:17:17.154Z"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This operation creates a configuration policy in Security Hub.",
+        "id": "to-create-a-configuration-policy-1695172470099",
+        "title": "To create a configuration policy"
+      }
+    ],
+    "CreateFindingAggregator": [
+      {
+        "input": {
+          "RegionLinkingMode": "SPECIFIED_REGIONS",
+          "Regions": [
+            "us-west-1",
+            "us-west-2"
+          ]
+        },
+        "output": {
+          "FindingAggregationRegion": "us-east-1",
+          "FindingAggregatorArn": "arn:aws:securityhub:us-east-1:222222222222:finding-aggregator/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "RegionLinkingMode": "SPECIFIED_REGIONS",
+          "Regions": [
+            "us-west-1",
+            "us-west-2"
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example creates a finding aggregator. This is required to enable cross-Region aggregation.",
+        "id": "to-enable-cross-region-aggregation-1674766716226",
+        "title": "To enable cross-Region aggregation"
+      }
+    ],
+    "CreateInsight": [
+      {
+        "input": {
+          "Filters": {
+            "ResourceType": [
+              {
+                "Comparison": "EQUALS",
+                "Value": "AwsIamRole"
+              }
+            ],
+            "SeverityLabel": [
+              {
+                "Comparison": "EQUALS",
+                "Value": "CRITICAL"
+              }
+            ]
+          },
+          "GroupByAttribute": "ResourceId",
+          "Name": "Critical role findings"
+        },
+        "output": {
+          "InsightArn": "arn:aws:securityhub:us-west-1:123456789012:insight/123456789012/custom/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example creates a custom insight in Security Hub. An insight is a collection of findings that relate to a security issue.",
+        "id": "to-create-a-custom-insight-1675354046628",
+        "title": "To create a custom insight"
+      }
+    ],
+    "CreateMembers": [
+      {
+        "input": {
+          "AccountDetails": [
+            {
+              "AccountId": "123456789012"
+            },
+            {
+              "AccountId": "111122223333"
+            }
+          ]
+        },
+        "output": {
+          "UnprocessedAccounts": [
+
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example creates a member association between the specified accounts and the administrator account (the account that makes the request). This operation is used to add accounts that aren't part of an organization.",
+        "id": "to-add-a-member-account-1675354709996",
+        "title": "To add a member account"
+      }
+    ],
+    "DeclineInvitations": [
+      {
+        "input": {
+          "AccountIds": [
+            "123456789012",
+            "111122223333"
+          ]
+        },
+        "output": {
+          "UnprocessedAccounts": [
+
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example declines an invitation from the Security Hub administrator account to become a member account. The invited account makes the request.",
+        "id": "to-decline-invitation-to-become-a-member-account-1675448487605",
+        "title": "To decline invitation to become a member account"
+      }
+    ],
+    "DeleteActionTarget": [
+      {
+        "input": {
+          "ActionTargetArn": "arn:aws:securityhub:us-west-1:123456789012:action/custom/Remediation"
+        },
+        "output": {
+          "ActionTargetArn": "arn:aws:securityhub:us-west-1:123456789012:action/custom/Remediation"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example deletes a custom action target that triggers target actions in Amazon CloudWatch Events. Deleting a custom action target doesn't affect findings or insights that were already sent to CloudWatch Events based on the custom action.",
+        "id": "to-delete-a-custom-action-target-1675449272793",
+        "title": "To delete a custom action target"
+      }
+    ],
+    "DeleteConfigurationPolicy": [
+      {
+        "input": {
+          "Identifier": "arn:aws:securityhub:us-east-1:123456789012:configuration-policy/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This operation deletes the specified configuration policy.",
+        "id": "to-delete-a-configuration-policy-1695174614062",
+        "title": "To delete a configuration policy"
+      }
+    ],
+    "DeleteFindingAggregator": [
+      {
+        "input": {
+          "FindingAggregatorArn": "arn:aws:securityhub:us-east-1:123456789012:finding-aggregator/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example deletes a finding aggregator in Security Hub. Deleting the finding aggregator stops cross-Region aggregation. This operation produces no output.",
+        "id": "to-delete-a-finding-aggregator-1675701750629",
+        "title": "To delete a finding aggregator"
+      }
+    ],
+    "DeleteInsight": [
+      {
+        "input": {
+          "InsightArn": "arn:aws:securityhub:us-west-1:123456789012:insight/123456789012/custom/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
+        },
+        "output": {
+          "InsightArn": "arn:aws:securityhub:eu-central-1:123456789012:insight/123456789012/custom/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example deletes a custom insight in Security Hub.",
+        "id": "to-delete-a-custom-insight-1675702697204",
+        "title": "To delete a custom insight"
+      }
+    ],
+    "DeleteInvitations": [
+      {
+        "input": {
+          "AccountIds": [
+            "123456789012"
+          ]
+        },
+        "output": {
+          "UnprocessedAccounts": [
+
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example deletes an invitation sent by the Security Hub administrator account to a prospective member account. This operation is used only for invitations sent to accounts that aren't part of an organization. Organization accounts don't receive invitations.",
+        "id": "to-delete-a-custom-insight-1675702697204",
+        "title": "To delete a custom insight"
+      }
+    ],
+    "DeleteMembers": [
+      {
+        "input": {
+          "AccountIds": [
+            "123456789111",
+            "123456789222"
+          ]
+        },
+        "output": {
+          "UnprocessedAccounts": [
+
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example deletes the specified member account from Security Hub. This operation can be used to delete member accounts that are part of an organization or that were invited manually.",
+        "id": "to-delete-a-member-account-1675883040513",
+        "title": "To delete a member account"
+      }
+    ],
+    "DescribeActionTargets": [
+      {
+        "input": {
+          "ActionTargetArns": [
+            "arn:aws:securityhub:us-west-1:123456789012:action/custom/Remediation"
+          ]
+        },
+        "output": {
+          "ActionTargets": [
+            {
+              "ActionTargetArn": "arn:aws:securityhub:us-west-1:123456789012:action/custom/Remediation",
+              "Description": "Action to send the finding for remediation tracking",
+              "Name": "Send to remediation"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns a list of custom action targets. You use custom actions on findings and insights in Security Hub to trigger target actions in Amazon CloudWatch Events.",
+        "id": "to-return-custom-action-targets-1675883682038",
+        "title": "To return custom action targets"
+      }
+    ],
+    "DescribeHub": [
+      {
+        "input": {
+          "HubArn": "arn:aws:securityhub:us-west-1:123456789012:hub/default"
+        },
+        "output": {
+          "AutoEnableControls": true,
+          "ControlFindingGenerator": "SECURITY_CONTROL",
+          "HubArn": "arn:aws:securityhub:us-west-1:123456789012:hub/default",
+          "SubscribedAt": "2019-11-19T23:15:10.046Z"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns details about the Hub resource in the calling account. The Hub resource represents the implementation of  the AWS Security Hub service in the calling account.",
+        "id": "to-return-details-about-hub-resource-1675884542597",
+        "title": "To return details about Hub resource"
+      }
+    ],
+    "DescribeOrganizationConfiguration": [
+      {
+        "input": {
+        },
+        "output": {
+          "AutoEnable": false,
+          "AutoEnableStandards": "NONE",
+          "MemberAccountLimitReached": false,
+          "OrganizationConfiguration": {
+            "ConfigurationType": "CENTRAL",
+            "Status": "ENABLED"
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This operation provides information about the way your organization is configured in Security Hub. Only a Security Hub administrator account can invoke this operation.",
+        "id": "to-get-information-about-organization-configuration-1676059786304",
+        "title": "To get information about organization configuration"
+      }
+    ],
+    "DescribeProducts": [
+      {
+        "input": {
+          "MaxResults": 1,
+          "NextToken": "NULL",
+          "ProductArn": "arn:aws:securityhub:us-east-1:517716713836:product/crowdstrike/crowdstrike-falcon"
+        },
+        "output": {
+          "NextToken": "U2FsdGVkX18vvPlOqb7RDrWRWVFBJI46MOIAb+nZmRJmR15NoRi2gm13sdQEn3O/pq/78dGs+bKpgA+7HMPHO0qX33/zoRI+uIG/F9yLNhcOrOWzFUdy36JcXLQji3Rpnn/cD1SVkGA98qI3zPOSDg==",
+          "Products": [
+            {
+              "ActivationUrl": "https://falcon.crowdstrike.com/support/documentation",
+              "Categories": [
+                "Endpoint Detection and Response (EDR)",
+                "AV Scanning and Sandboxing",
+                "Threat Intelligence Feeds and Reports",
+                "Endpoint Forensics",
+                "Network Forensics"
+              ],
+              "CompanyName": "CrowdStrike",
+              "Description": "CrowdStrike Falcon's single lightweight sensor unifies next-gen antivirus, endpoint detection and response, and 24/7 managed hunting, via the cloud.",
+              "IntegrationTypes": [
+                "SEND_FINDINGS_TO_SECURITY_HUB"
+              ],
+              "MarketplaceUrl": "https://aws.amazon.com/marketplace/seller-profile?id=a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+              "ProductArn": "arn:aws:securityhub:us-east-1:517716713836:product/crowdstrike/crowdstrike-falcon",
+              "ProductName": "CrowdStrike Falcon",
+              "ProductSubscriptionResourcePolicy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"123456789333\"},\"Action\":[\"securityhub:BatchImportFindings\"],\"Resource\":\"arn:aws:securityhub:us-west-1:123456789012:product-subscription/crowdstrike/crowdstrike-falcon\",\"Condition\":{\"StringEquals\":{\"securityhub:TargetAccount\":\"123456789012\"}}},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"123456789012\"},\"Action\":[\"securityhub:BatchImportFindings\"],\"Resource\":\"arn:aws:securityhub:us-west-1:123456789333:product/crowdstrike/crowdstrike-falcon\",\"Condition\":{\"StringEquals\":{\"securityhub:TargetAccount\":\"123456789012\"}}}]}"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns details about AWS services and third-party products that Security Hub integrates with.",
+        "id": "to-get-information-about-security-hub-integrations-1676061228533",
+        "title": "To get information about Security Hub integrations"
+      }
+    ],
+    "DescribeStandards": [
+      {
+        "input": {
+        },
+        "output": {
+          "Standards": [
+            {
+              "Description": "The AWS Foundational Security Best Practices standard is a set of automated security checks that detect when AWS accounts and deployed resources do not align to security best practices. The standard is defined by AWS security experts. This curated set of controls helps improve your security posture in AWS, and cover AWS's most popular and foundational services.",
+              "EnabledByDefault": true,
+              "Name": "AWS Foundational Security Best Practices v1.0.0",
+              "StandardsArn": "arn:aws:securityhub:us-west-1::standards/aws-foundational-security-best-practices/v/1.0.0"
+            },
+            {
+              "Description": "The Center for Internet Security (CIS) AWS Foundations Benchmark v1.2.0 is a set of security configuration best practices for AWS. This Security Hub standard automatically checks for your compliance readiness against a subset of CIS requirements.",
+              "EnabledByDefault": true,
+              "Name": "CIS AWS Foundations Benchmark v1.2.0",
+              "StandardsArn": "arn:aws:securityhub:us-west-1::ruleset/cis-aws-foundations-benchmark/v/1.2.0"
+            },
+            {
+              "Description": "The Center for Internet Security (CIS) AWS Foundations Benchmark v1.4.0 is a set of security configuration best practices for AWS. This Security Hub standard automatically checks for your compliance readiness against a subset of CIS requirements.",
+              "EnabledByDefault": false,
+              "Name": "CIS AWS Foundations Benchmark v1.4.0",
+              "StandardsArn": "arn:aws::securityhub:us-west-1::standards/cis-aws-foundations-benchmark/v/1.4.0"
+            },
+            {
+              "Description": "The Payment Card Industry Data Security Standard (PCI DSS) v3.2.1 is an information security standard for entities that store, process, and/or transmit cardholder data. This Security Hub standard automatically checks for your compliance readiness against a subset of PCI DSS requirements.",
+              "EnabledByDefault": false,
+              "Name": "PCI DSS v3.2.1",
+              "StandardsArn": "arn:aws:securityhub:us-west-1::standards/pci-dss/v/3.2.1"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns a list of available security standards in Security Hub.",
+        "id": "to-get-available-security-hub-standards-1676307464661",
+        "title": "To get available Security Hub standards"
+      }
+    ],
+    "DescribeStandardsControls": [
+      {
+        "input": {
+          "MaxResults": 2,
+          "NextToken": "NULL",
+          "StandardsSubscriptionArn": "arn:aws:securityhub:us-west-1:123456789012:subscription/pci-dss/v/3.2.1"
+        },
+        "output": {
+          "Controls": [
+            {
+              "ControlId": "PCI.AutoScaling.1",
+              "ControlStatus": "ENABLED",
+              "ControlStatusUpdatedAt": "2020-05-15T18:49:04.473000+00:00",
+              "Description": "This AWS control checks whether your Auto Scaling groups that are associated with a load balancer are using Elastic Load Balancing health checks.",
+              "RelatedRequirements": [
+                "PCI DSS 2.2"
+              ],
+              "RemediationUrl": "https://docs.aws.amazon.com/console/securityhub/PCI.AutoScaling.1/remediation",
+              "SeverityRating": "LOW",
+              "StandardsControlArn": "arn:aws:securityhub:us-west-1:123456789012:control/pci-dss/v/3.2.1/PCI.AutoScaling.1",
+              "Title": "Auto scaling groups associated with a load balancer should use health checks"
+            },
+            {
+              "ControlId": "PCI.CW.1",
+              "ControlStatus": "ENABLED",
+              "ControlStatusUpdatedAt": "2020-05-15T18:49:04.498000+00:00",
+              "Description": "This control checks for the CloudWatch metric filters using the following pattern { $.userIdentity.type = \"Root\" && $.userIdentity.invokedBy NOT EXISTS && $.eventType != \"AwsServiceEvent\" } It checks that the log group name is configured for use with active multi-region CloudTrail, that there is at least one Event Selector for a Trail with IncludeManagementEvents set to true and ReadWriteType set to All, and that there is at least one active subscriber to an SNS topic associated with the alarm.",
+              "RelatedRequirements": [
+                "PCI DSS 7.2.1"
+              ],
+              "RemediationUrl": "https://docs.aws.amazon.com/console/securityhub/PCI.CW.1/remediation",
+              "SeverityRating": "MEDIUM",
+              "StandardsControlArn": "arn:aws:securityhub:us-west-1:123456789012:control/pci-dss/v/3.2.1/PCI.CW.1",
+              "Title": "A log metric filter and alarm should exist for usage of the \"root\" user"
+            }
+          ],
+          "NextToken": "U2FsdGVkX1+eNkPoZHVl11ip5HUYQPWSWZGmftcmJiHL8JoKEsCDuaKayiPDyLK+LiTkShveoOdvfxXCkOBaGhohIXhsIedN+LSjQV/l7kfCfJcq4PziNC1N9xe9aq2pjlLVZnznTfSImrodT5bRNHe4fELCQq/z+5ka+5Lzmc11axcwTd5lKgQyQqmUVoeriHZhyIiBgWKf7oNYdBVG8OEortVWvSkoUTt+B2ThcnC7l43kI0UNxlkZ6sc64AsW"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns a list of security controls and control details that apply to a specified security standard. The list includes controls that are enabled and disabled in the standard.",
+        "id": "to-get-a-list-of-controls-for-a-security-standard-1676308027759",
+        "title": "To get a list of controls for a security standard"
+      }
+    ],
+    "DisableImportFindingsForProduct": [
+      {
+        "input": {
+          "ProductSubscriptionArn": "arn:aws:securityhub:us-east-1:517716713836:product/crowdstrike/crowdstrike-falcon"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example ends an integration between Security Hub and the specified product that sends findings to Security Hub. After the integration ends, the product no longer sends findings to Security  Hub.",
+        "id": "to-end-a-security-hub-integration-1676480035650",
+        "title": "To end a Security Hub integration"
+      }
+    ],
+    "DisableOrganizationAdminAccount": [
+      {
+        "input": {
+          "AdminAccountId": "123456789012"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example removes the Security Hub administrator account in the Region from which the operation was executed. This operation doesn't remove the delegated administrator account in AWS Organizations.",
+        "id": "to-remove-a-security-hub-administrator-account-1676480521876",
+        "title": "To remove a Security Hub administrator account"
+      }
+    ],
+    "DisableSecurityHub": [
+      {
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example deactivates Security Hub for the current account and Region.",
+        "id": "to-deactivate-security-hub-1676583894245",
+        "title": "To deactivate Security Hub"
+      }
+    ],
+    "DisassociateFromAdministratorAccount": [
+      {
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example dissociates the requesting account from its associated administrator account.",
+        "id": "to-disassociate-requesting-account-from-administrator-account-1676584168509",
+        "title": "To disassociate requesting account from administrator account"
+      }
+    ],
+    "DisassociateMembers": [
+      {
+        "input": {
+          "AccountIds": [
+            "123456789012",
+            "111122223333"
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example dissociates the specified member accounts from the associated administrator account.",
+        "id": "to-disassociate-member-accounts-from-administrator-account-1676918349164",
+        "title": "To disassociate member accounts from administrator account"
+      }
+    ],
+    "EnableImportFindingsForProduct": [
+      {
+        "input": {
+          "ProductArn": "arn:aws:securityhub:us-east-1:517716713836:product/crowdstrike/crowdstrike-falcon"
+        },
+        "output": {
+          "ProductSubscriptionArn": "arn:aws:securityhub:us-east-1:517716713836:product-subscription/crowdstrike/crowdstrike-falcon"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example activates an integration between Security Hub and a third party partner product that sends findings to Security Hub.",
+        "id": "to-activate-an-integration-1676918918114",
+        "title": "To activate an integration"
+      }
+    ],
+    "EnableOrganizationAdminAccount": [
+      {
+        "input": {
+          "AdminAccountId": "123456789012"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example designates the specified account as the Security Hub administrator account. The requesting account must be the organization management account.",
+        "id": "to-designate-a-security-hub-administrator-1676998319851",
+        "title": "To designate a Security Hub administrator"
+      }
+    ],
+    "EnableSecurityHub": [
+      {
+        "input": {
+          "EnableDefaultStandards": true,
+          "Tags": {
+            "Department": "Security"
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example activates the Security Hub service in the requesting AWS account. The service is activated in the current AWS Region or the Region that you specify in the request. Some standards are automatically turned on in your account unless you opt out. To determine which standards are automatically turned on, see the Security Hub documentation.",
+        "id": "to-activate-security-hub-1676998538599",
+        "title": "To activate Security Hub"
+      }
+    ],
+    "GetAdministratorAccount": [
+      {
+        "output": {
+          "Administrator": {
+            "AccountId": "123456789012",
+            "InvitationId": "7ab938c5d52d7904ad09f9e7c20cc4eb",
+            "InvitedAt": "2020-06-01T20:21:18.042000+00:00",
+            "MemberStatus": "ASSOCIATED"
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example provides details about the Security Hub administrator account for the requesting member account.",
+        "id": "to-get-details-about-the-security-hub-administrator-account-1676998997182",
+        "title": "To get details about the Security Hub administrator account"
+      }
+    ],
+    "GetConfigurationPolicy": [
+      {
+        "input": {
+          "Identifier": "arn:aws:securityhub:us-east-1:123456789012:configuration-policy/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
+        },
+        "output": {
+          "Arn": "arn:aws:securityhub:us-east-1:123456789012:configuration-policy/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "ConfigurationPolicy": {
+            "SecurityHub": {
+              "EnabledStandardIdentifiers": [
+                "arn:aws:securityhub:us-east-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+                "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0"
+              ],
+              "SecurityControlsConfiguration": {
+                "DisabledSecurityControlIdentifiers": [
+                  "CloudWatch.1"
+                ],
+                "SecurityControlCustomParameters": [
+                  {
+                    "Parameters": {
+                      "daysToExpiration": {
+                        "Value": {
+                          "Integer": 14
+                        },
+                        "ValueType": "CUSTOM"
+                      }
+                    },
+                    "SecurityControlId": "ACM.1"
+                  }
+                ]
+              },
+              "ServiceEnabled": true
+            }
+          },
+          "CreatedAt": "2023-01-11T06:17:17.154Z",
+          "Description": "Configuration policy for testing FSBP and CIS",
+          "Id": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "Name": "TestConfigurationPolicy",
+          "UpdatedAt": "2023-01-11T06:17:17.154Z"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This operation provides details about the specified configuration policy.",
+        "id": "to-get-details-about-a-configuration-policy-1695173701103",
+        "title": "To get details about a configuration policy"
+      }
+    ],
+    "GetConfigurationPolicyAssociation": [
+      {
+        "input": {
+          "Target": {
+            "AccountId": "111122223333"
+          }
+        },
+        "output": {
+          "AssociationStatus": "FAILED",
+          "AssociationStatusMessage": "Configuration Policy a1b2c3d4-5678-90ab-cdef-EXAMPLE11111 couldn’t be applied to account 111122223333 in us-east-1 Region. Retry your request.",
+          "AssociationType": "INHERITED",
+          "ConfigurationPolicyId": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "TargetId": "111122223333",
+          "TargetType": "ACCOUNT",
+          "UpdatedAt": "2023-01-11T06:17:17.154Z"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This operation provides details about configuration associations for a specific target account, organizational unit, or the root.",
+        "id": "to-get-details-about-a-configuration-association-1695177816371",
+        "title": "To get details about a configuration association"
+      }
+    ],
+    "GetEnabledStandards": [
+      {
+        "input": {
+          "StandardsSubscriptionArns": [
+            "arn:aws:securityhub:us-west-1:123456789012:subscription/pci-dss/v/3.2.1"
+          ]
+        },
+        "output": {
+          "StandardsSubscriptions": [
+            {
+              "StandardsArn": "arn:aws:securityhub:us-west-1::standards/pci-dss/v/3.2.1",
+              "StandardsInput": {
+              },
+              "StandardsStatus": "READY",
+              "StandardsSubscriptionArn": "arn:aws:securityhub:us-west-1:123456789012:subscription/pci-dss/v/3.2.1"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns a list of Security Hub standards that are currently enabled in your account.  ",
+        "id": "to-return-a-list-of-enabled-standards-1677090731129",
+        "title": "To return a list of enabled standards"
+      }
+    ],
+    "GetFindingAggregator": [
+      {
+        "input": {
+          "FindingAggregatorArn": "arn:aws:securityhub:us-east-1:123456789012:finding-aggregator/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
+        },
+        "output": {
+          "FindingAggregationRegion": "us-east-1",
+          "FindingAggregatorArn": "arn:aws:securityhub:us-east-1:123456789012:finding-aggregator/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "RegionLinkingMode": "SPECIFIED_REGIONS",
+          "Regions": [
+            "us-west-1",
+            "us-west-2"
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns cross-Region aggregation details for the requesting account. ",
+        "id": "to-get-cross-region-aggregation-details-1677091474868",
+        "title": "To get cross-Region aggregation details"
+      }
+    ],
+    "GetFindingHistory": [
+      {
+        "input": {
+          "EndTime": "2021-09-31T15:53:35.573Z",
+          "FindingIdentifier": {
+            "Id": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+            "ProductArn": "arn:aws:securityhub:us-west-2:123456789012:product/123456789012/default"
+          },
+          "MaxResults": 2,
+          "StartTime": "2021-09-30T15:53:35.573Z"
+        },
+        "output": {
+          "Records": [
+            {
+              "FindingCreated": false,
+              "FindingIdentifier": {
+                "Id": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+                "ProductArn": "arn:aws:securityhub:us-west-2:123456789012:product/123456789012/default"
+              },
+              "UpdateSource": {
+                "Identity": "arn:aws:iam::444455556666:role/Admin",
+                "Type": "BATCH_UPDATE_FINDINGS"
+              },
+              "UpdateTime": "2021-09-31T15:52:25.573Z",
+              "Updates": [
+                {
+                  "NewValue": "MEDIUM",
+                  "OldValue": "HIGH",
+                  "UpdatedField": "Severity"
+                }
+              ]
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example retrieves the history of the specified finding during the specified time frame. If the time frame permits, Security Hub returns finding history for the last 90 days.",
+        "id": "to-get-finding-history-1680270012186",
+        "title": "To get finding history"
+      }
+    ],
+    "GetFindings": [
+      {
+        "input": {
+          "Filters": {
+            "AwsAccountId": [
+              {
+                "Comparison": "PREFIX",
+                "Value": "123456789012"
+              }
+            ]
+          },
+          "MaxResults": 1
+        },
+        "output": {
+          "Findings": [
+            {
+              "AwsAccountId": "123456789012",
+              "CompanyName": "AWS",
+              "Compliance": {
+                "AssociatedStandards": [
+                  {
+                    "StandardsId": "standards/aws-foundational-security-best-practices/v/1.0.0"
+                  },
+                  {
+                    "StandardsId": "standards/pci-dss/v/3.2.1"
+                  },
+                  {
+                    "StandardsId": "ruleset/cis-aws-foundations-benchmark/v/1.2.0"
+                  },
+                  {
+                    "StandardsId": "standards/cis-aws-foundations-benchmark/v/1.4.0"
+                  },
+                  {
+                    "StandardsId": "standards/service-managed-aws-control-tower/v/1.0.0"
+                  }
+                ],
+                "RelatedRequirements": [
+                  "PCI DSS v3.2.1/3.4",
+                  "CIS AWS Foundations Benchmark v1.2.0/2.7",
+                  "CIS AWS Foundations Benchmark v1.4.0/3.7"
+                ],
+                "SecurityControlId": "CloudTrail.2",
+                "Status": "FAILED"
+              },
+              "CreatedAt": "2022-10-06T02:18:23.076Z",
+              "Description": "This AWS control checks whether AWS CloudTrail is configured to use the server side encryption (SSE) AWS Key Management Service (AWS KMS) customer master key (CMK) encryption. The check will pass if the KmsKeyId is defined.",
+              "FindingProviderFields": {
+                "Severity": {
+                  "Label": "MEDIUM",
+                  "Original": "MEDIUM"
+                },
+                "Types": [
+                  "Software and Configuration Checks/Industry and Regulatory Standards"
+                ]
+              },
+              "FirstObservedAt": "2022-10-06T02:18:23.076Z",
+              "GeneratorId": "security-control/CloudTrail.2",
+              "Id": "arn:aws:securityhub:us-east-2:123456789012:security-control/CloudTrail.2/finding/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+              "LastObservedAt": "2022-10-28T16:10:06.956Z",
+              "ProductArn": "arn:aws:securityhub:us-east-2::product/aws/securityhub",
+              "ProductFields": {
+                "RelatedAWSResources:0/name": "securityhub-cloud-trail-encryption-enabled-fe95bf3f",
+                "RelatedAWSResources:0/type": "AWS::Config::ConfigRule",
+                "Resources:0/Id": "arn:aws:cloudtrail:us-east-2:123456789012:trail/AWSMacieTrail-DO-NOT-EDIT",
+                "aws/securityhub/CompanyName": "AWS",
+                "aws/securityhub/FindingId": "arn:aws:securityhub:us-east-2::product/aws/securityhub/arn:aws:securityhub:us-east-2:123456789012:security-control/CloudTrail.2/finding/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+                "aws/securityhub/ProductName": "Security Hub"
+              },
+              "ProductName": "Security Hub",
+              "RecordState": "ACTIVE",
+              "Region": "us-east-2",
+              "Remediation": {
+                "Recommendation": {
+                  "Text": "For directions on how to correct this issue, consult the AWS Security Hub controls documentation.",
+                  "Url": "https://docs.aws.amazon.com/console/securityhub/CloudTrail.2/remediation"
+                }
+              },
+              "Resources": [
+                {
+                  "Id": "arn:aws:cloudtrail:us-east-2:123456789012:trail/AWSMacieTrail-DO-NOT-EDIT",
+                  "Partition": "aws",
+                  "Region": "us-east-2",
+                  "Type": "AwsCloudTrailTrail"
+                }
+              ],
+              "SchemaVersion": "2018-10-08",
+              "Severity": {
+                "Label": "MEDIUM",
+                "Normalized": 40,
+                "Original": "MEDIUM"
+              },
+              "Title": "CloudTrail should have encryption at-rest enabled",
+              "Types": [
+                "Software and Configuration Checks/Industry and Regulatory Standards"
+              ],
+              "UpdatedAt": "2022-10-28T16:10:00.093Z",
+              "Workflow": {
+                "Status": "NEW"
+              },
+              "WorkflowState": "NEW"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns a filtered and sorted list of Security Hub findings.",
+        "id": "to-get-a-list-of-findings-1677181069931",
+        "title": "To get a list of findings"
+      }
+    ],
+    "GetInsightResults": [
+      {
+        "input": {
+          "InsightArn": "arn:aws:securityhub:us-west-1:123456789012:insight/123456789012/custom/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
+        },
+        "output": {
+          "InsightResults": {
+            "GroupByAttribute": "ResourceId",
+            "InsightArn": "arn:aws:securityhub:us-west-1:123456789012:insight/123456789012/custom/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+            "ResultValues": [
+              {
+                "Count": 10,
+                "GroupByAttributeValue": "AWS::::Account:111122223333"
+              },
+              {
+                "Count": 3,
+                "GroupByAttributeValue": "AWS::::Account:444455556666"
+              }
+            ]
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns the results of the Security Hub insight specified by the insight ARN.",
+        "id": "to-get-the-results-of-a-security-hub-insight-1677182822019",
+        "title": "To get the results of a Security Hub insight"
+      }
+    ],
+    "GetInsights": [
+      {
+        "input": {
+          "InsightArns": [
+            "arn:aws:securityhub:us-west-1:123456789012:insight/123456789012/custom/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
+          ]
+        },
+        "output": {
+          "Insights": [
+            {
+              "Filters": {
+                "ResourceType": [
+                  {
+                    "Comparison": "EQUALS",
+                    "Value": "AwsIamRole"
+                  }
+                ],
+                "SeverityLabel": [
+                  {
+                    "Comparison": "EQUALS",
+                    "Value": "CRITICAL"
+                  }
+                ]
+              },
+              "GroupByAttribute": "ResourceId",
+              "InsightArn": "arn:aws:securityhub:us-west-1:123456789012:insight/123456789012/custom/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+              "Name": "Critical role findings"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns details of the Security Hub insight with the specified ARN.",
+        "id": "to-get-details-of-a-security-hub-insight-1677774127203",
+        "title": "To get details of a Security Hub insight"
+      }
+    ],
+    "GetInvitationsCount": [
+      {
+        "output": {
+          "InvitationsCount": 3
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns a count of invitations that the Security Hub administrator sent to the current member account, not including the currently accepted invitation.\n\n",
+        "id": "to-get-a-count-of-membership-invitations-1677774568793",
+        "title": "To get a count of membership invitations"
+      }
+    ],
+    "GetMembers": [
+      {
+        "input": {
+          "AccountIds": [
+            "444455556666",
+            "777788889999"
+          ]
+        },
+        "output": {
+          "Members": [
+            {
+              "AccountId": "444455556666",
+              "AdministratorId": "123456789012",
+              "InvitedAt": "2020-06-01T20:15:15.289000+00:00",
+              "MasterId": "123456789012",
+              "MemberStatus": "ASSOCIATED",
+              "UpdatedAt": "2020-06-01T20:15:15.289000+00:00"
+            },
+            {
+              "AccountId": "777788889999",
+              "AdministratorId": "123456789012",
+              "InvitedAt": "2020-06-01T20:15:15.289000+00:00",
+              "MasterId": "123456789012",
+              "MemberStatus": "ASSOCIATED",
+              "UpdatedAt": "2020-06-01T20:15:15.289000+00:00"
+            }
+          ],
+          "UnprocessedAccounts": [
+
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns details for the Security Hub member accounts with the specified AWS account IDs. An administrator account may be the delegated Security Hub administrator account for an organization or an administrator account that enabled Security Hub manually. The Security Hub administrator must call this operation.",
+        "id": "to-get-member-account-details-1677774956489",
+        "title": "To get member account details"
+      }
+    ],
+    "GetSecurityControlDefinition": [
+      {
+        "input": {
+          "SecurityControlId": "EC2.4"
+        },
+        "output": {
+          "SecurityControlDefinition": {
+            "CurrentRegionAvailability": "AVAILABLE",
+            "Description": "This control checks whether an Amazon EC2 instance has been stopped for longer than the allowed number of days. The control fails if an EC2 instance is stopped for longer than the maximum allowed time period. Unless you provide a custom parameter value for the maximum allowed time period, Security Hub uses a default value of 30 days.",
+            "ParameterDefinitions": {
+              "AllowedDays": {
+                "ConfigurationOptions": {
+                  "Integer": {
+                    "DefaultValue": 30,
+                    "Max": 365,
+                    "Min": 1
+                  }
+                },
+                "Description": "Number of days the EC2 instance is allowed to be in a stopped state before generating a failed finding"
+              }
+            },
+            "RemediationUrl": "https://docs.aws.amazon.com/console/securityhub/EC2.4/remediation",
+            "SecurityControlId": "EC2.4",
+            "SeverityRating": "MEDIUM",
+            "Title": "Stopped Amazon EC2 instances should be removed after a specified time period"
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example retrieves definition details for the specified security control.",
+        "id": "to-get-the-definition-of-a-security-control-1699283789356",
+        "title": "To get the definition of a security control."
+      }
+    ],
+    "InviteMembers": [
+      {
+        "input": {
+          "AccountIds": [
+            "111122223333",
+            "444455556666"
+          ]
+        },
+        "output": {
+          "UnprocessedAccounts": [
+
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example invites the specified AWS accounts to become member accounts associated with the calling Security Hub administrator account. You only use this operation to invite accounts that don't belong to an AWS Organizations organization.",
+        "id": "to-invite-accounts-to-become-members-1677775500860",
+        "title": "To invite accounts to become members"
+      }
+    ],
+    "ListAutomationRules": [
+      {
+        "input": {
+          "MaxResults": 2,
+          "NextToken": "example-token"
+        },
+        "output": {
+          "AutomationRulesMetadata": [
+            {
+              "CreatedAt": "2022-08-31T01:52:33.250Z",
+              "CreatedBy": "AROAJURBUYQQNL5OL2TIM:TEST-16MJ75L9VBK14",
+              "Description": "IAM.8 is a known issue and can be resolved",
+              "RuleArn": "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+              "RuleName": "sample-rule-name-1",
+              "RuleOrder": 1,
+              "RuleStatus": "ENABLED",
+              "UpdatedAt": "2022-08-31T01:52:33.250Z"
+            },
+            {
+              "CreatedAt": "2022-08-31T01:52:33.250Z",
+              "CreatedBy": "AROAJURBUYQQNL5OL2TIM:TEST-16MJ75L9VBK14",
+              "Description": "Lambda.2 is a known issue and can be resolved",
+              "RuleArn": "arn:aws:securityhub:us-east-1:123456789012:automation-rule/a1b2c3d4-5678-90ab-cdef-EXAMPLE22222",
+              "RuleName": "sample-rule-name-2",
+              "RuleOrder": 2,
+              "RuleStatus": "ENABLED",
+              "UpdatedAt": "2022-08-31T01:52:33.250Z"
+            }
+          ],
+          "NextToken": "example-token"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example lists automation rules and rule metadata in the calling account.",
+        "id": "to-list-automation-rules-1684770582059",
+        "title": "To list automation rules"
+      }
+    ],
+    "ListConfigurationPolicies": [
+      {
+        "input": {
+          "MaxResults": 1,
+          "NextToken": "U1FsdGVkX19nBV2zoh+Gou9NgnulLJHWpn9xnG4hqSOhvw3o2JqjI86QDxdf"
+        },
+        "output": {
+          "ConfigurationPolicySummaries": [
+            {
+              "Arn": "arn:aws:securityhub:us-east-1:123456789012:configuration-policy/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+              "Description": "Configuration policy for testing FSBP and CIS",
+              "Id": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+              "Name": "TestConfigurationPolicy",
+              "ServiceEnabled": true,
+              "UpdatedAt": "2023-01-11T06:17:17.154Z"
+            }
+          ],
+          "NextToken": "U1FsdGVkX19nBV2zoh+Gou9NgnulLJHWpn9xnG4hqSOfvw3o2JqjI86QDxef"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This operation provides a list of your configuration policies, including metadata for each policy.",
+        "id": "to-view-a-list-of-configuration-policies-1695173268602",
+        "title": "To view a list of configuration policies"
+      }
+    ],
+    "ListConfigurationPolicyAssociations": [
+      {
+        "input": {
+          "Filters": {
+            "AssociationType": "APPLIED"
+          },
+          "MaxResults": 1,
+          "NextToken": "U1FsdGVkX19nBV2zoh+Gou9NgnulLJHWpn9xnG4hqSOhvw3o2JqjI86QDxdf"
+        },
+        "output": {
+          "ConfigurationPolicyAssociationSummaries": [
+            {
+              "AssociationStatus": "PENDING",
+              "AssociationType": "APPLIED",
+              "ConfigurationPolicyId": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+              "TargetId": "123456789012",
+              "TargetType": "ACCOUNT",
+              "UpdatedAt": "2023-01-11T06:17:17.154Z"
+            }
+          ],
+          "NextToken": "U1FsdGVkX19nBV2zoh+Gou9NgnulLJHWpn9xnG4hqSOfvw3o2JqjI86QDxef"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This operation lists all of the associations between targets and configuration policies or self-managed behavior. Targets can include accounts, organizational units, or the root.",
+        "id": "to-list-configuration-associations-1695177309791",
+        "title": "To list configuration associations"
+      }
+    ],
+    "ListEnabledProductsForImport": [
+      {
+        "output": {
+          "ProductSubscriptions": [
+            "arn:aws:securityhub:us-east-1:517716713836:product-subscription/crowdstrike/crowdstrike-falcon",
+            "arn:aws:securityhub:us-east-1::product/3coresec/3coresec"
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns a list of subscription Amazon Resource Names (ARNs) for the product integrations that you have currently enabled in Security Hub.",
+        "id": "to-list-arns-for-enabled-integrations-1678294870020",
+        "title": "To list ARNs for enabled integrations"
+      }
+    ],
+    "ListFindingAggregators": [
+      {
+        "input": {
+        },
+        "output": {
+          "FindingAggregators": [
+            {
+              "FindingAggregatorArn": "arn:aws:securityhub:us-east-1:222222222222:finding-aggregator/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example disables the specified control in the specified security standard.",
+        "id": "to-update-the-enablement-status-of-a-standard-control-1678912506444",
+        "title": "To update the enablement status of a standard control"
+      }
+    ],
+    "ListInvitations": [
+      {
+        "output": {
+          "Invitations": [
+            {
+              "AccountId": "123456789012",
+              "InvitationId": "7ab938c5d52d7904ad09f9e7c20cc4eb",
+              "InvitedAt": "2020-06-01T20:21:18.042000+00:00",
+              "MemberStatus": "ASSOCIATED"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns a list of Security Hub member invitations sent to the calling AWS account. Only accounts that are invited manually use this operation. It's not for use by accounts that are managed through AWS Organizations.",
+        "id": "to-list-membership-invitations-to-calling-account-1678295758285",
+        "title": "To list membership invitations to calling account"
+      }
+    ],
+    "ListMembers": [
+      {
+        "output": {
+          "Members": [
+            {
+              "AccountId": "111122223333",
+              "AdministratorId": "123456789012",
+              "InvitedAt": "2020-06-01T20:15:15.289000+00:00",
+              "MasterId": "123456789012",
+              "MemberStatus": "ASSOCIATED",
+              "UpdatedAt": "2020-06-01T20:15:15.289000+00:00"
+            },
+            {
+              "AccountId": "444455556666",
+              "AdministratorId": "123456789012",
+              "InvitedAt": "2020-06-01T20:15:15.289000+00:00",
+              "MasterId": "123456789012",
+              "MemberStatus": "ASSOCIATED",
+              "UpdatedAt": "2020-06-01T20:15:15.289000+00:00"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns details about member accounts for the calling Security Hub administrator account. The response includes member accounts that are managed through AWS Organizations and those that were invited manually.",
+        "id": "to-list-member-account-details-1678385639113",
+        "title": "To list member account details"
+      }
+    ],
+    "ListOrganizationAdminAccounts": [
+      {
+        "output": {
+          "AdminAccounts": [
+            {
+              "AccountId": "777788889999"
+            },
+            {
+              "Status": "ENABLED"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example lists the Security  Hub administrator accounts for an organization. Only the organization management account can call this operation.",
+        "id": "to-list-administrator-acccounts-for-an-organization-1678386548110",
+        "title": "To list administrator acccounts for an organization"
+      }
+    ],
+    "ListSecurityControlDefinitions": [
+      {
+        "input": {
+          "MaxResults": 3,
+          "NextToken": "NULL",
+          "StandardsArn": "arn:aws:securityhub:::standards/aws-foundational-security-best-practices/v/1.0.0"
+        },
+        "output": {
+          "NextToken": "U2FsdGVkX1...",
+          "SecurityControlDefinitions": [
+            {
+              "CurrentRegionAvailability": "AVAILABLE",
+              "CustomizableProperties": [
+                "Parameters"
+              ],
+              "Description": "This AWS control checks whether ACM Certificates in your account are marked for expiration within a specified time period. Certificates provided by ACM are automatically renewed. ACM does not automatically renew certificates that you import.",
+              "RemediationUrl": "https://docs.aws.amazon.com/console/securityhub/ACM.1/remediation",
+              "SecurityControlId": "ACM.1",
+              "SeverityRating": "MEDIUM",
+              "Title": "Imported and ACM-issued certificates should be renewed after a specified time period"
+            },
+            {
+              "CurrentRegionAvailability": "AVAILABLE",
+              "CustomizableProperties": [
+                "Parameters"
+              ],
+              "Description": "This control checks whether all stages of Amazon API Gateway REST and WebSocket APIs have logging enabled. The control fails if logging is not enabled for all methods of a stage or if loggingLevel is neither ERROR nor INFO.",
+              "RemediationUrl": "https://docs.aws.amazon.com/console/securityhub/APIGateway.1/remediation",
+              "SecurityControlId": "APIGateway.1",
+              "SeverityRating": "MEDIUM",
+              "Title": "API Gateway REST and WebSocket API execution logging should be enabled"
+            },
+            {
+              "CurrentRegionAvailability": "AVAILABLE",
+              "Description": "This control checks whether Amazon API Gateway REST API stages have SSL certificates configured that backend systems can use to authenticate that incoming requests are from the API Gateway.",
+              "RemediationUrl": "https://docs.aws.amazon.com/console/securityhub/APIGateway.2/remediation",
+              "SecurityControlId": "APIGateway.2",
+              "SeverityRating": "MEDIUM",
+              "Title": "API Gateway REST API stages should be configured to use SSL certificates for backend authentication"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example lists security controls that apply to a specified Security Hub standard. ",
+        "id": "to-list-security-controls-that-apply-to-a-standard-1678386912894",
+        "title": "To list security controls that apply to a standard"
+      }
+    ],
+    "ListStandardsControlAssociations": [
+      {
+        "input": {
+          "SecurityControlId": "S3.1"
+        },
+        "output": {
+          "StandardsControlAssociationSummaries": [
+            {
+              "AssociationStatus": "ENABLED",
+              "RelatedRequirements": [
+                "PCI DSS 1.2.1",
+                "PCI DSS 1.3.1",
+                "PCI DSS 1.3.2",
+                "PCI DSS 1.3.4",
+                "PCI DSS 1.3.6"
+              ],
+              "SecurityControlArn": "arn:aws:securityhub:us-west-2:110479873537:security-control/S3.1",
+              "SecurityControlId": "S3.1",
+              "StandardsArn": "arn:aws:securityhub:us-west-2::standards/pci-dss/v/3.2.1",
+              "StandardsControlDescription": "This AWS control checks whether the following public access block settings are configured from account level: ignorePublicAcls: True, blockPublicPolicy: True, blockPublicAcls: True, restrictPublicBuckets: True.",
+              "StandardsControlTitle": "S3 Block Public Access setting should be enabled",
+              "UpdatedAt": "2022-01-13T23:03:46.648000+00:00"
+            },
+            {
+              "AssociationStatus": "DISABLED",
+              "RelatedRequirements": [
+
+              ],
+              "SecurityControlArn": "arn:aws:securityhub:us-west-2:110479873537:security-control/S3.1",
+              "SecurityControlId": "S3.1",
+              "StandardsArn": "arn:aws:securityhub:us-west-2::standards/aws-foundational-security-best-practices/v/1.0.0",
+              "StandardsControlDescription": "This AWS control checks whether the following public access block settings are configured from account level: ignorePublicAcls: True, blockPublicPolicy: True, blockPublicAcls: True, restrictPublicBuckets: True.",
+              "StandardsControlTitle": "S3 Block Public Access setting should be enabled",
+              "UpdatedAt": "2022-08-12T22:59:04.924000+00:00",
+              "UpdatedReason": "Not relevant to environment"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example specifies whether a control is currently enabled or disabled in each enabled standard in the calling account. The response also provides other details about the control.",
+        "id": "to-say-whether-standard-1678389297986",
+        "title": "To say whether standard"
+      }
+    ],
+    "ListTagsForResource": [
+      {
+        "input": {
+          "ResourceArn": "arn:aws:securityhub:us-west-1:123456789012:hub/default"
+        },
+        "output": {
+          "Tags": {
+            "Area": "USMidwest",
+            "Department": "Operations"
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example returns a list of tags associated with the specified resource.",
+        "id": "to-get-a-list-of-tags-for-a-resource-1678477883796",
+        "title": "To get a list of tags for a resource"
+      }
+    ],
+    "StartConfigurationPolicyAssociation": [
+      {
+        "input": {
+          "ConfigurationPolicyIdentifier": "arn:aws:securityhub:us-east-1:123456789012:configuration-policy/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "Target": {
+            "AccountId": "111122223333"
+          }
+        },
+        "output": {
+          "AssociationStatus": "SUCCESS",
+          "AssociationStatusMessage": "This field is populated only if the association fails",
+          "AssociationType": "APPLIED",
+          "ConfigurationPolicyId": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "TargetId": "111122223333",
+          "TargetType": "ACCOUNT",
+          "UpdatedAt": "2023-01-11T06:17:17.154Z"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This operation associates a configuration policy or self-managed behavior with the target account, organizational unit, or the root.",
+        "id": "to-associate-a-configuration-with-a-target-1695176455638",
+        "title": "To associate a configuration with a target"
+      }
+    ],
+    "StartConfigurationPolicyDisassociation": [
+      {
+        "input": {
+          "ConfigurationPolicyIdentifier": "SELF_MANAGED_SECURITY_HUB",
+          "Target": {
+            "RootId": "r-f6g7h8i9j0example"
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This operation disassociates a configuration policy or self-managed behavior from the target account, organizational unit, or the root.",
+        "id": "to-disassociate-a-configuration-from-a-target-1695177176748",
+        "title": "To disassociate a configuration from a target"
+      }
+    ],
+    "TagResource": [
+      {
+        "input": {
+          "ResourceArn": "arn:aws:securityhub:us-west-1:123456789012:hub/default",
+          "Tags": {
+            "Area": "USMidwest",
+            "Department": "Operations"
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example adds the 'Department' and 'Area' tags to the specified resource.",
+        "id": "to-tag-a-resource-1678478687320",
+        "title": "To tag a resource"
+      }
+    ],
+    "UntagResource": [
+      {
+        "input": {
+          "ResourceArn": "arn:aws:securityhub:us-west-1:123456789012:hub/default",
+          "TagKeys": [
+            "Department"
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example removes the 'Department' tag from the specified resource.",
+        "id": "to-remove-tags-from-a-resource-1678478903748",
+        "title": "To remove tags from a resource"
+      }
+    ],
+    "UpdateActionTarget": [
+      {
+        "input": {
+          "ActionTargetArn": "arn:aws:securityhub:us-west-1:123456789012:action/custom/Remediation",
+          "Description": "Sends specified findings to customer service chat",
+          "Name": "Chat custom action"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example updates the name and description of a custom action target in Security Hub. You can create custom actions to automatically respond to Security Hub findings using Amazon EventBridge. ",
+        "id": "to-update-the-name-and-description-of-a-custom-action-target-1678814873015",
+        "title": "To update the name and description of a custom action target"
+      }
+    ],
+    "UpdateConfigurationPolicy": [
+      {
+        "input": {
+          "ConfigurationPolicy": {
+            "SecurityHub": {
+              "EnabledStandardIdentifiers": [
+                "arn:aws:securityhub:us-east-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+                "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0"
+              ],
+              "SecurityControlsConfiguration": {
+                "DisabledSecurityControlIdentifiers": [
+                  "CloudWatch.1",
+                  "CloudWatch.2"
+                ],
+                "SecurityControlCustomParameters": [
+                  {
+                    "Parameters": {
+                      "daysToExpiration": {
+                        "Value": {
+                          "Integer": 21
+                        },
+                        "ValueType": "CUSTOM"
+                      }
+                    },
+                    "SecurityControlId": "ACM.1"
+                  }
+                ]
+              },
+              "ServiceEnabled": true
+            }
+          },
+          "Description": "Updated configuration policy for testing FSBP and CIS",
+          "Identifier": "arn:aws:securityhub:us-east-1:123456789012:configuration-policy/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "Name": "TestConfigurationPolicy",
+          "UpdatedReason": "Enabling ACM.2"
+        },
+        "output": {
+          "Arn": "arn:aws:securityhub:us-east-1:123456789012:configuration-policy/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "ConfigurationPolicy": {
+            "SecurityHub": {
+              "EnabledStandardIdentifiers": [
+                "arn:aws:securityhub:us-east-1::standards/aws-foundational-security-best-practices/v/1.0.0",
+                "arn:aws:securityhub:::ruleset/cis-aws-foundations-benchmark/v/1.2.0"
+              ],
+              "SecurityControlsConfiguration": {
+                "DisabledSecurityControlIdentifiers": [
+                  "CloudWatch.1",
+                  "CloudWatch.2"
+                ],
+                "SecurityControlCustomParameters": [
+                  {
+                    "Parameters": {
+                      "daysToExpiration": {
+                        "Value": {
+                          "Integer": 21
+                        },
+                        "ValueType": "CUSTOM"
+                      }
+                    },
+                    "SecurityControlId": "ACM.1"
+                  }
+                ]
+              },
+              "ServiceEnabled": true
+            }
+          },
+          "CreatedAt": "2023-01-11T06:17:17.154Z",
+          "Description": "Updated configuration policy for testing FSBP and CIS",
+          "Id": "a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "Name": "TestConfigurationPolicy",
+          "UpdatedAt": "2023-01-12T06:17:17.154Z"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This operation updates the specified configuration policy.",
+        "id": "to-update-a-configuration-policy-1695174120555",
+        "title": "To update a configuration policy"
+      }
+    ],
+    "UpdateFindingAggregator": [
+      {
+        "input": {
+          "FindingAggregatorArn": "arn:aws:securityhub:us-east-1:123456789012:finding-aggregator/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "RegionLinkingMode": "SPECIFIED_REGIONS",
+          "Regions": [
+            "us-west-1",
+            "us-west-2"
+          ]
+        },
+        "output": {
+          "FindingAggregationRegion": "us-east-1",
+          "FindingAggregatorArn": "arn:aws:securityhub:us-east-1:123456789012:finding-aggregator/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "RegionLinkingMode": "SPECIFIED_REGIONS",
+          "Regions": [
+            "us-west-1",
+            "us-west-2"
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example updates the cross-Region aggregation configuration. You use this operation to change the list of linked Regions and the treatment of new Regions. However, you cannot use this operation to change the aggregation Region.",
+        "id": "to-update-cross-region-aggregation-settings-1678815536396",
+        "title": "To update cross-Region aggregation settings"
+      }
+    ],
+    "UpdateInsight": [
+      {
+        "input": {
+          "Filters": {
+            "ResourceType": [
+              {
+                "Comparison": "EQUALS",
+                "Value": "AwsIamRole"
+              }
+            ],
+            "SeverityLabel": [
+              {
+                "Comparison": "EQUALS",
+                "Value": "HIGH"
+              }
+            ]
+          },
+          "InsightArn": "arn:aws:securityhub:us-west-1:123456789012:insight/123456789012/custom/a1b2c3d4-5678-90ab-cdef-EXAMPLE11111",
+          "Name": "High severity role findings"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example updates the specified Security Hub insight.",
+        "id": "to-update-an-insight-1678816280498",
+        "title": "To update an insight"
+      }
+    ],
+    "UpdateOrganizationConfiguration": [
+      {
+        "input": {
+          "AutoEnable": false,
+          "AutoEnableStandards": "NONE",
+          "OrganizationConfiguration": {
+            "ConfigurationType": "CENTRAL"
+          }
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This operation updates the way your organization is configured in Security Hub. Only a Security Hub administrator account can invoke this operation.",
+        "id": "to-update-organization-configuration-1678911630846",
+        "title": "To update organization configuration"
+      }
+    ],
+    "UpdateSecurityControl": [
+      {
+        "input": {
+          "LastUpdateReason": "Comply with internal requirements",
+          "Parameters": {
+            "maxCredentialUsageAge": {
+              "Value": {
+                "Integer": 15
+              },
+              "ValueType": "CUSTOM"
+            }
+          },
+          "SecurityControlId": "ACM.1"
+        },
+        "output": {
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example updates the specified security control. Specifically, this example updates control parameters.",
+        "id": "to-update-security-control-properties-1699282942434",
+        "title": "To update security control properties"
+      }
+    ],
+    "UpdateSecurityHubConfiguration": [
+      {
+        "input": {
+          "AutoEnableControls": true,
+          "ControlFindingGenerator": "SECURITY_CONTROL"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example updates Security Hub settings to turn on consolidated control findings, and to automatically enable new controls in enabled standards.",
+        "id": "to-update-security-hub-settings-1678912194496",
+        "title": "To update Security Hub settings"
+      }
+    ],
+    "UpdateStandardsControl": [
+      {
+        "input": {
+          "ControlStatus": "DISABLED",
+          "DisabledReason": "Not applicable to my service",
+          "StandardsControlArn": "arn:aws:securityhub:us-west-1:123456789012:control/pci-dss/v/3.2.1/PCI.AutoScaling.1"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "The following example disables the specified control in the specified security standard.",
+        "id": "to-update-the-enablement-status-of-a-standard-control-1678912506444",
+        "title": "To update the enablement status of a standard control"
+      }
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+---
+name: vet
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read  #  to fetch code (actions/checkout)
+
+jobs:
+  vet:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '1.20.x'
+    - name: Install tools
+      run: |
+        go install golang.org/x/lint/golint@latest && \
+        go install golang.org/x/tools/cmd/goimports@latest && \
+        go install honnef.co/go/tools/cmd/staticcheck@latest
+    - name: Execute vet.sh
+      run: ./.github/workflows/vet.sh

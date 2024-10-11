@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package cosmos.tx.config.v1;
+
+import "cosmos/app/v1alpha1/module.proto";
+
+// Config is the config object of the x/auth/tx package.
+message Config {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "github.com/cosmos/cosmos-sdk/x/auth/tx"
+  };
+}

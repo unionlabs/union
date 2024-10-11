@@ -1,0 +1,37 @@
+syntax = "proto3";
+option go_package = "examplepb";
+
+// Unannotated Echo Service
+// Similar to echo_service.proto but without annotations. See
+// unannotated_echo_service.yaml for the equivalent of the annotations in
+// gRPC API configuration format.
+//
+// Echo Service API consists of a single service which returns
+// a message.
+package grpc.gateway.examples.internal.examplepb;
+
+// Do not need annotations.proto, can still use well known types as usual
+import "google/protobuf/duration.proto";
+
+// UnannotatedSimpleMessage represents a simple message sent to the unannotated Echo service.
+message UnannotatedSimpleMessage {
+	// Id represents the message identifier.
+	string id = 1;
+	int64 num = 2;
+	google.protobuf.Duration duration = 3;
+}
+
+// Echo service responds to incoming echo requests.
+service UnannotatedEchoService {
+	// Echo method receives a simple message and returns it.
+	//
+	// The message posted as the id parameter will also be
+	// returned.
+	rpc Echo(UnannotatedSimpleMessage) returns (UnannotatedSimpleMessage);
+
+	// EchoBody method receives a simple message and returns it.
+	rpc EchoBody(UnannotatedSimpleMessage) returns (UnannotatedSimpleMessage);
+	
+	// EchoDelete method receives a simple message and returns it.
+	rpc EchoDelete(UnannotatedSimpleMessage) returns (UnannotatedSimpleMessage);
+}

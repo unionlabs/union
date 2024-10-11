@@ -1,0 +1,58 @@
+[
+  {
+    "packet": {
+      "sourceChannel": "channel-0",
+      "sourcePort": "transfer",
+      "destChannel": "channel-0",
+      "destPort": "transfer",
+      "data": {
+        "sender": "",
+        "receiver": "",
+        "amount": "1",
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          ""
+        ]
+      }
+    },
+    "handler": "OnRecvPacket",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      }
+    ],
+    "error": true
+  }
+]

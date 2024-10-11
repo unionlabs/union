@@ -1,0 +1,49 @@
+name: qrterminal release
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  Build:
+    runs-on: ubuntu-20.04
+    env:
+      DOCKER_BUILDKIT: 1
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "^1.20.4"
+      - name: Source checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Fetch all tags
+        run: git fetch --force --tags
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker
+          install: true
+      - name: GitHub Container Registry Login
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: goreleaser/goreleaser-action@v3
+        name: Publish qrterminal
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --timeout 50m
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_TOKEN_TAP: ${{ secrets.GORELEASER_TOKEN_TAP }}

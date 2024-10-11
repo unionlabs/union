@@ -381,6 +381,21 @@ static inline void vec_zero(void *ret, size_t num)
 #endif
 }
 
+static inline void vec_czero(void *ret, size_t num, bool_t cbit)
+{
+    limb_t *rp = (limb_t *)ret;
+    size_t i;
+    limb_t mask;
+
+    launder(cbit);
+    mask = (limb_t)0 - (cbit^1);
+
+    num /= sizeof(limb_t);
+
+    for (i = 0; i < num; i++)
+        rp[i] &= mask;
+}
+
 /*
  * Some compilers get arguably overzealous(*) when passing pointer to
  * multi-dimensional array [such as vec384x] as 'const' argument.

@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package cometbft.services.pruning.v1;
+
+// SetBlockRetainHeightRequest sets the retain height for blocks.
+message SetBlockRetainHeightRequest {
+  uint64 height = 1;
+}
+
+// SetBlockRetainHeightResponse is empty.
+message SetBlockRetainHeightResponse {}
+
+// GetBlockRetainHeightRequest is a request for the retain height.
+message GetBlockRetainHeightRequest {}
+
+// GetBlockRetainHeightResponse returns the retain height for blocks.
+message GetBlockRetainHeightResponse {
+  // The retain height set by the application.
+  uint64 app_retain_height = 1;
+
+  // The retain height set via the pruning service (e.g. by the data
+  // companion) specifically for blocks.
+  uint64 pruning_service_retain_height = 2;
+}
+
+// SetBlockResultsRetainHeightRequest sets the retain height for block results.
+message SetBlockResultsRetainHeightRequest {
+  uint64 height = 1;
+}
+
+// SetBlockResultsRetainHeightResponse is empty.
+message SetBlockResultsRetainHeightResponse {}
+
+// GetBlockResultsRetainHeightRequest is a request for the retain height.
+message GetBlockResultsRetainHeightRequest {}
+
+// GetBlockResultsRetainHeightResponse returns the retain height for block results.
+message GetBlockResultsRetainHeightResponse {
+  // The retain height set by the pruning service (e.g. by the data
+  // companion) specifically for block results.
+  uint64 pruning_service_retain_height = 1;
+}
+
+// SetTxIndexerRetainHeightRequest sets the retain height for the tx indexer.
+message SetTxIndexerRetainHeightRequest {
+  uint64 height = 1;
+}
+
+// SetTxIndexerRetainHeightResponse is empty.
+message SetTxIndexerRetainHeightResponse {}
+
+// GetTxIndexerRetainHeightRequest is a request for the retain height.
+message GetTxIndexerRetainHeightRequest {}
+
+// GetTxIndexerRetainHeightResponse returns the retain height for the tx indexer.
+message GetTxIndexerRetainHeightResponse {
+  uint64 height = 1;
+}
+
+// SetBlockIndexerRetainHeightRequest sets the retain height for the block indexer.
+message SetBlockIndexerRetainHeightRequest {
+  uint64 height = 1;
+}
+
+// SetBlockIndexerRetainHeightResponse is empty.
+message SetBlockIndexerRetainHeightResponse {}
+
+// GetBlockIndexerRetainHeightRequest is a request for the retain height.
+message GetBlockIndexerRetainHeightRequest {}
+
+// GetBlockIndexerRetainHeightResponse returns the retain height for the block indexer.
+message GetBlockIndexerRetainHeightResponse {
+  uint64 height = 1;
+}

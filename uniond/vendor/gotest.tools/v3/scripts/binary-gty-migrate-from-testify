@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+exec go build -o ./dist/gty-migrate-from-testify ./assert/cmd/gty-migrate-from-testify

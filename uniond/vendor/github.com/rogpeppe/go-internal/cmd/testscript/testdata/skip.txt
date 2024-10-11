@@ -1,0 +1,9 @@
+# should support skip
+unquote file.txt
+testscript -v file.txt
+stdout 'go version'
+! stderr .+
+
+-- file.txt --
+>go version
+>skip

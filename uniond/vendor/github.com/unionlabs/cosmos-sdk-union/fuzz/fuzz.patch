@@ -1,0 +1,81 @@
+diff --git a/types/address_test.go b/types/address_test.go
+index 014a48b73..99f9a1a86 100644
+--- a/types/address_test.go
++++ b/types/address_test.go
+@@ -26,10 +26,6 @@ type addressTestSuite struct {
+ 	suite.Suite
+ }
+ 
+-func TestAddressTestSuite(t *testing.T) {
+-	suite.Run(t, new(addressTestSuite))
+-}
+-
+ func (s *addressTestSuite) SetupSuite() {
+ 	s.T().Parallel()
+ }
+@@ -403,65 +399,6 @@ func (s *addressTestSuite) TestAddressInterface() {
+ 	}
+ }
+ 
+-func (s *addressTestSuite) TestBech32ifyAddressBytes() {
+-	type args struct {
+-		prefix string
+-		bs     []byte
+-	}
+-	tests := []struct {
+-		name    string
+-		args    args
+-		want    string
+-		wantErr bool
+-	}{
+-		{"empty address", args{"prefixa", []byte{}}, "", false},
+-		{"empty prefix", args{"", addr20byte}, "", true},
+-		{"10-byte address", args{"prefixa", addr10byte}, "prefixa1qqqsyqcyq5rqwzqf3953cc", false},
+-		{"10-byte address", args{"prefixb", addr10byte}, "prefixb1qqqsyqcyq5rqwzqf20xxpc", false},
+-		{"20-byte address", args{"prefixa", addr20byte}, "prefixa1qqqsyqcyq5rqwzqfpg9scrgwpugpzysn7hzdtn", false},
+-		{"20-byte address", args{"prefixb", addr20byte}, "prefixb1qqqsyqcyq5rqwzqfpg9scrgwpugpzysnrujsuw", false},
+-	}
+-	for _, tt := range tests {
+-		s.T().Run(tt.name, func(t *testing.T) {
+-			got, err := types.Bech32ifyAddressBytes(tt.args.prefix, tt.args.bs)
+-			if (err != nil) != tt.wantErr {
+-				t.Errorf("Bech32ifyBytes() error = %v, wantErr %v", err, tt.wantErr)
+-				return
+-			}
+-			require.Equal(t, tt.want, got)
+-		})
+-	}
+-}
+-
+-func (s *addressTestSuite) TestMustBech32ifyAddressBytes() {
+-	type args struct {
+-		prefix string
+-		bs     []byte
+-	}
+-	tests := []struct {
+-		name      string
+-		args      args
+-		want      string
+-		wantPanic bool
+-	}{
+-		{"empty address", args{"prefixa", []byte{}}, "", false},
+-		{"empty prefix", args{"", addr20byte}, "", true},
+-		{"10-byte address", args{"prefixa", addr10byte}, "prefixa1qqqsyqcyq5rqwzqf3953cc", false},
+-		{"10-byte address", args{"prefixb", addr10byte}, "prefixb1qqqsyqcyq5rqwzqf20xxpc", false},
+-		{"20-byte address", args{"prefixa", addr20byte}, "prefixa1qqqsyqcyq5rqwzqfpg9scrgwpugpzysn7hzdtn", false},
+-		{"20-byte address", args{"prefixb", addr20byte}, "prefixb1qqqsyqcyq5rqwzqfpg9scrgwpugpzysnrujsuw", false},
+-	}
+-	for _, tt := range tests {
+-		s.T().Run(tt.name, func(t *testing.T) {
+-			if tt.wantPanic {
+-				require.Panics(t, func() { types.MustBech32ifyAddressBytes(tt.args.prefix, tt.args.bs) })
+-				return
+-			}
+-			require.Equal(t, tt.want, types.MustBech32ifyAddressBytes(tt.args.prefix, tt.args.bs))
+-		})
+-	}
+-}
+-
+ func (s *addressTestSuite) TestAddressTypesEquals() {
+ 	addr1 := secp256k1.GenPrivKey().PubKey().Address()
+ 	accAddr1 := types.AccAddress(addr1)

@@ -1,0 +1,391 @@
+# Note that this test file uses a levelIterTestIter which combines a
+# point iterator and a range-del iterator, returning both results in a
+# single key:
+#
+#   <point-key>/<tombstone>#<point-seqnum,point-kind>
+
+# Verify that SeekGE, SeekLT, Next, and Prev all pause at table
+# boundaries in the presence of lower/upper bounds and range
+# tombstones. Verify that SeekPrefixGE pauses at a table boundary in
+# the presence of range tombstones.
+
+build
+a.SET.9:a
+b.SET.8:b
+----
+0: a#9,1-b#8,1
+
+build
+c.SET.7:c
+d.RANGEDEL.6:e
+f.SET.5:f
+----
+0: a#9,1-b#8,1
+1: c#7,1-f#5,1
+
+build
+g.SET.4:g
+h.SET.3:h
+----
+0: a#9,1-b#8,1
+1: c#7,1-f#5,1
+2: g#4,1-h#3,1
+
+iter
+seek-ge d
+----
+f/d-e:{(#6,RANGEDEL)}#5,1:f
+
+iter
+set-bounds upper=d
+seek-ge d
+----
+d/d-e:{(#6,RANGEDEL)}#72057594037927935,15:
+
+iter
+set-bounds upper=d
+seek-ge c
+next
+prev
+next
+next
+----
+c/d-e:{(#6,RANGEDEL)}#7,1:c
+d#72057594037927935,15:
+c#7,1:c
+d#72057594037927935,15:
+.
+
+# There is no point key with d, but since there is a rangedel, levelIter returns
+# the boundary key using the largest key, f, in the file.
+iter
+seek-prefix-ge d
+----
+f/d-e:{(#6,RANGEDEL)}#5,1:
+
+# Tests a sequence of SeekPrefixGE with monotonically increasing keys, some of
+# which are present and some not (so fail the bloom filter match). The seek to
+# cc returns a boundary key.
+iter
+seek-prefix-ge aa
+seek-prefix-ge c
+seek-prefix-ge cc
+seek-prefix-ge f
+seek-prefix-ge g
+seek-prefix-ge gg
+seek-prefix-ge h
+----
+./<invalid>#0,0:
+c/d-e:{(#6,RANGEDEL)}#7,1:c
+f/d-e:{(#6,RANGEDEL)}#5,1:
+f/<invalid>#5,1:f
+g/<invalid>#4,1:g
+./<invalid>#0,0:
+h/<invalid>#3,1:h
+
+# Test that when sequentially iterate through all 3 files, the stats
+# accumulate as we close a file and switch to the next one. Also, while in the
+# middle of the first file, a reset-stats propagates to the underlying
+# iterators, and when done iterating, a reset-stats does reset the local
+# state.
+iter
+seek-ge a
+stats
+reset-stats
+stats
+next
+stats
+next
+stats
+next
+stats
+next
+stats
+next
+stats
+next
+stats
+reset-stats
+stats
+----
+a/<invalid>#9,1:a
+{BlockBytes:56 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+{BlockBytes:0 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+b#8,1:b
+{BlockBytes:0 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+c#7,1:c
+{BlockBytes:56 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+f#5,1:f
+{BlockBytes:56 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+g#4,1:g
+{BlockBytes:112 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+h#3,1:h
+{BlockBytes:112 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+.
+{BlockBytes:112 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+{BlockBytes:0 BlockBytesInCache:0 BlockReadDuration:0s KeyBytes:0 ValueBytes:0 PointCount:0 PointsCoveredByRangeTombstones:0 SeparatedPointValue:{Count:0 ValueBytes:0 ValueBytesFetched:0}}
+
+iter
+set-bounds lower=d
+seek-lt d
+----
+d/d-e:{(#6,RANGEDEL)}#72057594037927935,15:
+
+iter
+set-bounds lower=d
+seek-lt g
+prev
+next
+prev
+prev
+----
+f/d-e:{(#6,RANGEDEL)}#5,1:f
+d#72057594037927935,15:
+f#5,1:f
+d#72057594037927935,15:
+.
+
+# Verify that First() in the presence of an upper-bound pauses at the
+# table containing the upper-bound.
+
+clear
+----
+
+build
+d.RANGEDEL.6:e
+f.SET.5:f
+----
+0: d#6,15-f#5,1
+
+iter
+set-bounds upper=f
+first
+----
+f#72057594037927935,15:
+
+# Verify that Last() in the presence of a lower-bound pauses at the
+# table containing the lower-bound.
+
+clear
+----
+
+build
+c.SET.7:c
+d.RANGEDEL.6:e
+----
+0: c#7,1-e#72057594037927935,15
+
+iter
+set-bounds lower=c
+last
+----
+c#7,1:c
+
+# Verify that a seek to a file with range tombstones as boundaries pauses on
+# those boundaries.
+
+clear
+----
+
+build
+a.RANGEDEL.5:b
+c.SET.7:c
+d.RANGEDEL.6:e
+----
+0: a#5,15-e#72057594037927935,15
+
+build
+f.SET.8:f
+g.SET.9:g
+----
+0: a#5,15-e#72057594037927935,15
+1: f#8,1-g#9,1
+
+iter
+seek-ge d
+prev
+next
+next
+----
+e/d-e:{(#6,RANGEDEL)}#72057594037927935,15:
+c#7,1:c
+e#72057594037927935,15:
+f#8,1:f
+
+iter
+seek-lt b
+next
+prev
+prev
+----
+a/a-b:{(#5,RANGEDEL)}#5,15:
+c#7,1:c
+a#5,15:
+.
+
+# Verify that prev when positioned at the largest boundary returns the
+# last key.
+
+clear
+----
+
+build
+a.SET.1:a
+b.SET.1:b
+d.RANGEDEL.2:e
+----
+0: a#1,1-e#72057594037927935,15
+
+iter
+seek-lt c
+seek-ge d
+prev
+----
+b/<invalid>#1,1:b
+e/d-e:{(#2,RANGEDEL)}#72057594037927935,15:
+b#1,1:b
+
+# Verify that next when positioned at the smallest boundary returns
+# the first key.
+
+clear
+----
+
+build
+a.RANGEDEL.1:b
+d.SET.2:d
+e.SET.2:e
+----
+0: a#1,15-e#2,1
+
+iter
+seek-ge d
+seek-lt d
+next
+----
+d/<invalid>#2,1:d
+a/a-b:{(#1,RANGEDEL)}#1,15:
+d#2,1:d
+
+# Verify SeekPrefixGE correctness with trySeekUsingNext=true
+clear
+----
+
+build
+a.SET.1:a
+b.SET.2:b
+c.RANGEDEL.4:e
+----
+0: a#1,1-e#72057594037927935,15
+
+build
+e.SET.4:e
+f.SINGLEDEL.5:
+f.SET.4:f
+g.SET.6:g
+h.SINGLEDEL.7:
+----
+0: a#1,1-e#72057594037927935,15
+1: e#4,1-h#7,7
+
+build
+h.SET.6:h
+i.SET.6:i
+----
+0: a#1,1-e#72057594037927935,15
+1: e#4,1-h#7,7
+2: h#6,1-i#6,1
+
+build
+j.SET.7:j
+----
+0: a#1,1-e#72057594037927935,15
+1: e#4,1-h#7,7
+2: h#6,1-i#6,1
+3: j#7,1-j#7,1
+
+# Seeks to immediately following keys.
+iter
+seek-prefix-ge a false
+seek-prefix-ge a true
+seek-prefix-ge b true
+next
+seek-prefix-ge c false
+seek-prefix-ge d true
+seek-prefix-ge f true
+seek-prefix-ge g true
+seek-prefix-ge h true
+seek-prefix-ge i true
+seek-prefix-ge j true
+----
+a/c-e:{(#4,RANGEDEL)}#1,1:a
+a/c-e:{(#4,RANGEDEL)}#1,1:a
+b/c-e:{(#4,RANGEDEL)}#2,1:b
+e#72057594037927935,15:
+e/c-e:{(#4,RANGEDEL)}#72057594037927935,15:
+e/c-e:{(#4,RANGEDEL)}#72057594037927935,15:
+f/<invalid>#5,7:
+g/<invalid>#6,1:g
+h/<invalid>#7,7:
+i/<invalid>#6,1:i
+j/<invalid>#7,1:j
+
+# Seeks to keys that are in the next file, so cannot use Next.
+iter
+seek-prefix-ge a false
+seek-prefix-ge e true
+seek-prefix-ge i true
+seek-prefix-ge j true
+----
+a/c-e:{(#4,RANGEDEL)}#1,1:a
+e/<invalid>#4,1:e
+i/<invalid>#6,1:i
+j/<invalid>#7,1:j
+
+# Verify that we do not open files that do not have point keys.
+
+clear
+----
+
+build
+a.SET.9:a
+b.SET.8:b
+----
+0: a#9,1-b#8,1
+
+build
+c.SET.7:c
+d.RANGEDEL.6:e
+f.SET.5:f
+----
+0: a#9,1-b#8,1
+1: c#7,1-f#5,1
+
+build format=pebblev2
+g.RANGEKEYDEL.6:h
+----
+0: a#9,1-b#8,1
+1: c#7,1-f#5,1
+2: g#6,19-h#72057594037927935,19
+
+build
+i.SET.4:i
+j.SET.3:j
+----
+0: a#9,1-b#8,1
+1: c#7,1-f#5,1
+2: g#6,19-h#72057594037927935,19
+3: i#4,1-j#3,1
+
+iter
+seek-ge f
+next
+----
+f/<invalid>#5,1:f
+i#4,1:i
+
+# The below count should be 2, as we skip over the rangekey-only file.
+
+iters-created
+----
+2

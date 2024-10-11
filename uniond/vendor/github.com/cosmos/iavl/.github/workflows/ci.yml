@@ -1,0 +1,30 @@
+name: Test
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # The Go version to download (if necessary) and use.
+
+        # Some tests, notably TestRandomOperations, are extremely slow in CI
+        # with the race detector enabled, so we use -short when -race is
+        # enabled to reduce the number of slow tests, and then run without
+        # -short with -race disabled for a larger test set. The same tests
+        # are run, just with smaller data sets.
+        #
+        # We also do a 32-bit run. Even though this is executed on a 64-bit
+        # system, it will use 32-bit instructions and semantics (e.g. 32-bit
+        # integer overflow).
+      - name: test & coverage report creation
+        run: |
+          go test ./... -mod=readonly -timeout 10m -short -race -coverprofile=coverage.txt -covermode=atomic
+          go test ./... -mod=readonly -timeout 15m
+          GOARCH=386 go test ./... -mod=readonly -timeout 15m

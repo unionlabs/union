@@ -1,0 +1,267 @@
+// Copyright 2021 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package s2a.proto;
+
+option go_package = "github.com/google/s2a/internal/proto/s2a_go_proto";
+
+import "internal/proto/common/common.proto";
+
+message AuthenticationMechanism {
+  // (Optional) Application may specify an identity associated to an
+  // authentication mechanism. Otherwise, S2A assumes that the authentication
+  // mechanism is associated with the default identity. If the default identity
+  // cannot be determined, session setup fails.
+  Identity identity = 1;
+
+  oneof mechanism_oneof {
+    // A token that the application uses to authenticate itself to the S2A.
+    string token = 2;
+  }
+}
+
+message ClientSessionStartReq {
+  // The application protocols supported by the client, e.g., "grpc".
+  repeated string application_protocols = 1;
+
+  // (Optional) The minimum TLS version number that the S2A's handshaker module
+  // will use to set up the session. If this field is not provided, S2A will use
+  // the minimum version it supports.
+  TLSVersion min_tls_version = 2;
+
+  // (Optional) The maximum TLS version number that the S2A's handshaker module
+  // will use to set up the session. If this field is not provided, S2A will use
+  // the maximum version it supports.
+  TLSVersion max_tls_version = 3;
+
+  // The TLS ciphersuites that the client is willing to support.
+  repeated Ciphersuite tls_ciphersuites = 4;
+
+  // (Optional) Describes which server identities are acceptable by the client.
+  // If target identities are provided and none of them matches the peer
+  // identity of the server, session setup fails.
+  repeated Identity target_identities = 5;
+
+  // (Optional) Application may specify a local identity. Otherwise, S2A chooses
+  // the default local identity. If the default identity cannot be determined,
+  // session setup fails.
+  Identity local_identity = 6;
+
+  // The target name that is used by S2A to configure SNI in the TLS handshake.
+  // It is also used to perform server authorization check if avaiable. This
+  // check is intended to verify that the peer authenticated identity is
+  // authorized to run a service with the target name.
+  // This field MUST only contain the host portion of the server address. It
+  // MUST not contain the scheme or the port number. For example, if the server
+  // address is dns://www.example.com:443, the value of this field should be
+  // set to www.example.com.
+  string target_name = 7;
+}
+
+message ServerSessionStartReq {
+  // The application protocols supported by the server, e.g., "grpc".
+  repeated string application_protocols = 1;
+
+  // (Optional) The minimum TLS version number that the S2A's handshaker module
+  // will use to set up the session. If this field is not provided, S2A will use
+  // the minimum version it supports.
+  TLSVersion min_tls_version = 2;
+
+  // (Optional) The maximum TLS version number that the S2A's handshaker module
+  // will use to set up the session. If this field is not provided, S2A will use
+  // the maximum version it supports.
+  TLSVersion max_tls_version = 3;
+
+  // The TLS ciphersuites that the server is willing to support.
+  repeated Ciphersuite tls_ciphersuites = 4;
+
+  // (Optional) A list of local identities supported by the server, if
+  // specified. Otherwise, S2A chooses the default local identity. If the
+  // default identity cannot be determined, session setup fails.
+  repeated Identity local_identities = 5;
+
+  // The byte representation of the first handshake message received from the
+  // client peer. It is possible that this first message is split into multiple
+  // chunks. In this case, the first chunk is sent using this field and the
+  // following chunks are sent using the in_bytes field of SessionNextReq
+  // Specifically, if the client peer is using S2A, this field contains the
+  // bytes in the out_frames field of SessionResp message that the client peer
+  // received from its S2A after initiating the handshake.
+  bytes in_bytes = 6;
+}
+
+message SessionNextReq {
+  // The byte representation of session setup, i.e., handshake messages.
+  // Specifically:
+  //  - All handshake messages sent from the server to the client.
+  //  - All, except for the first, handshake messages sent from the client to
+  //    the server. Note that the first message is communicated to S2A using the
+  //    in_bytes field of ServerSessionStartReq.
+  // If the peer is using S2A, this field contains the bytes in the out_frames
+  // field of SessionResp message that the peer received from its S2A.
+  bytes in_bytes = 1;
+}
+
+message ResumptionTicketReq {
+  // The byte representation of a NewSessionTicket message received from the
+  // server.
+  repeated bytes in_bytes = 1;
+
+  // A connection identifier that was created and sent by S2A at the end of a
+  // handshake.
+  uint64 connection_id = 2;
+
+  // The local identity that was used by S2A during session setup and included
+  // in |SessionResult|.
+  Identity local_identity = 3;
+}
+
+message SessionReq {
+  oneof req_oneof {
+    // The client session setup request message.
+    ClientSessionStartReq client_start = 1;
+
+    // The server session setup request message.
+    ServerSessionStartReq server_start = 2;
+
+    // The next session setup message request message.
+    SessionNextReq next = 3;
+
+    // The resumption ticket that is received from the server. This message is
+    // only accepted by S2A if it is running as a client and if it is received
+    // after session setup is complete. If S2A is running as a server and it
+    // receives this message, the session is terminated.
+    ResumptionTicketReq resumption_ticket = 4;
+  }
+
+  // (Optional) The authentication mechanisms that the client wishes to use to
+  // authenticate to the S2A, ordered by preference. The S2A will always use the
+  // first authentication mechanism that appears in the list and is supported by
+  // the S2A.
+  repeated AuthenticationMechanism auth_mechanisms = 5;
+}
+
+message SessionState {
+  // The TLS version number that the S2A's handshaker module used to set up the
+  // session.
+  TLSVersion tls_version = 1;
+
+  // The TLS ciphersuite negotiated by the S2A's handshaker module.
+  Ciphersuite tls_ciphersuite = 2;
+
+  // The sequence number of the next, incoming, TLS record.
+  uint64 in_sequence = 3;
+  // The sequence number of the next, outgoing, TLS record.
+  uint64 out_sequence = 4;
+
+  // The key for the inbound direction.
+  bytes in_key = 5;
+  // The key for the outbound direction.
+  bytes out_key = 6;
+
+  // The constant part of the record nonce for the outbound direction.
+  bytes in_fixed_nonce = 7;
+  // The constant part of the record nonce for the inbound direction.
+  bytes out_fixed_nonce = 8;
+
+  // A connection identifier that can be provided to S2A to perform operations
+  // related to this connection. This identifier will be stored by the record
+  // protocol, and included in the |ResumptionTicketReq| message that is later
+  // sent back to S2A. This field is set only for client-side connections.
+  uint64 connection_id = 9;
+
+  // Set to true if a cached session was reused to do an abbreviated handshake.
+  bool is_handshake_resumed = 10;
+}
+
+message SessionResult {
+  // The application protocol negotiated for this session.
+  string application_protocol = 1;
+
+  // The session state at the end. This state contains all cryptographic
+  // material required to initialize the record protocol object.
+  SessionState state = 2;
+
+  // The authenticated identity of the peer.
+  Identity peer_identity = 4;
+
+  // The local identity used during session setup. This could be:
+  // - The local identity that the client specifies in ClientSessionStartReq.
+  // - One of the local identities that the server specifies in
+  //   ServerSessionStartReq.
+  // - If neither client or server specifies local identities, the S2A picks the
+  //   default one. In this case, this field will contain that identity.
+  Identity local_identity = 5;
+
+  // The SHA256 hash of the local certificate used in the handshake.
+  bytes local_cert_fingerprint = 6;
+
+  // The SHA256 hash of the peer certificate used in the handshake.
+  bytes peer_cert_fingerprint = 7;
+}
+
+message SessionStatus {
+  // The status code that is specific to the application and the implementation
+  // of S2A, e.g., gRPC status code.
+  uint32 code = 1;
+
+  // The status details.
+  string details = 2;
+}
+
+message SessionResp {
+  // The local identity used during session setup. This could be:
+  // - The local identity that the client specifies in ClientSessionStartReq.
+  // - One of the local identities that the server specifies in
+  //   ServerSessionStartReq.
+  // - If neither client or server specifies local identities, the S2A picks the
+  //   default one. In this case, this field will contain that identity.
+  // If the SessionResult is populated, then this must coincide with the local
+  // identity specified in the SessionResult; otherwise, the handshake must
+  // fail.
+  Identity local_identity = 1;
+
+  // The byte representation of the frames that should be sent to the peer. May
+  // be empty if nothing needs to be sent to the peer or if in_bytes in the
+  // SessionReq is incomplete. All bytes in a non-empty out_frames must be sent
+  // to the peer even if the session setup status is not OK as these frames may
+  // contain appropriate alerts.
+  bytes out_frames = 2;
+
+  // Number of bytes in the in_bytes field that are consumed by S2A. It is
+  // possible that part of in_bytes is unrelated to the session setup process.
+  uint32 bytes_consumed = 3;
+
+  // This is set if the session is successfully set up. out_frames may
+  // still be set to frames that needs to be forwarded to the peer.
+  SessionResult result = 4;
+
+  // Status of session setup at the current stage.
+  SessionStatus status = 5;
+}
+
+service S2AService {
+  // S2A service accepts a stream of session setup requests and returns a stream
+  // of session setup responses. The client of this service is expected to send
+  // exactly one client_start or server_start message followed by at least one
+  // next message. Applications running TLS clients can send requests with
+  // resumption_ticket messages only after the session is successfully set up.
+  //
+  // Every time S2A client sends a request, this service sends a response.
+  // However, clients do not have to wait for service response before sending
+  // the next request.
+  rpc SetUpSession(stream SessionReq) returns (stream SessionResp) {}
+}

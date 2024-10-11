@@ -1,0 +1,883 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/dfatrafficking": {
+          "description": "View and manage your DoubleClick Campaign Manager's (DCM) display ad campaigns"
+        }
+      }
+    }
+  },
+  "basePath": "/dfareporting/v3.5/",
+  "baseUrl": "https://dfareporting.googleapis.com/dfareporting/v3.5/",
+  "batchPath": "batch",
+  "canonicalName": "Dfareporting",
+  "description": "Build applications to efficiently manage large or complex trafficking, reporting, and attribution workflows for Campaign Manager 360.",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://developers.google.com/doubleclick-advertisers/",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "dfareporting:v3.5",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://dfareporting.mtls.googleapis.com/",
+  "name": "dfareporting",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "media": {
+      "methods": {
+        "upload": {
+          "description": "Inserts a new creative asset.",
+          "flatPath": "userprofiles/{userprofilesId}/creativeAssets/{creativeAssetsId}/creativeAssets",
+          "httpMethod": "POST",
+          "id": "dfareporting.media.upload",
+          "mediaUpload": {
+            "accept": [
+              "*/*"
+            ],
+            "maxSize": "1073741824",
+            "protocols": {
+              "simple": {
+                "multipart": true,
+                "path": "/upload/dfareporting/v3.5/userprofiles/{+profileId}/creativeAssets/{+advertiserId}/creativeAssets"
+              }
+            }
+          },
+          "parameterOrder": [
+            "profileId",
+            "advertiserId"
+          ],
+          "parameters": {
+            "advertiserId": {
+              "description": "Advertiser ID of this creative. This is a required field.",
+              "format": "int64",
+              "location": "path",
+              "pattern": "^[^/]+$",
+              "required": true,
+              "type": "string"
+            },
+            "profileId": {
+              "description": "User profile ID associated with this request.",
+              "format": "int64",
+              "location": "path",
+              "pattern": "^[^/]+$",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "userprofiles/{+profileId}/creativeAssets/{+advertiserId}/creativeAssets",
+          "request": {
+            "$ref": "CreativeAssetMetadata"
+          },
+          "response": {
+            "$ref": "CreativeAssetMetadata"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/dfatrafficking"
+          ],
+          "supportsMediaUpload": true
+        }
+      }
+    }
+  },
+  "revision": "20240613",
+  "rootUrl": "https://dfareporting.googleapis.com/",
+  "schemas": {
+    "ClickTag": {
+      "description": "Creative Click Tag.",
+      "id": "ClickTag",
+      "properties": {
+        "clickThroughUrl": {
+          "$ref": "CreativeClickThroughUrl",
+          "description": "Parameter value for the specified click tag. This field contains a click-through url."
+        },
+        "eventName": {
+          "description": "Advertiser event name associated with the click tag. This field is used by DISPLAY_IMAGE_GALLERY and HTML5_BANNER creatives. Applicable to DISPLAY when the primary asset type is not HTML_IMAGE.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Parameter name for the specified click tag. For DISPLAY_IMAGE_GALLERY creative assets, this field must match the value of the creative asset's creativeAssetId.name field.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CreativeAssetId": {
+      "description": "Creative Asset ID.",
+      "id": "CreativeAssetId",
+      "properties": {
+        "name": {
+          "description": "Name of the creative asset. This is a required field while inserting an asset. After insertion, this assetIdentifier is used to identify the uploaded asset. Characters in the name must be alphanumeric or one of the following: \".-_ \". Spaces are allowed.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Type of asset to upload. This is a required field. FLASH and IMAGE are no longer supported for new uploads. All image assets should use HTML_IMAGE.",
+          "enum": [
+            "IMAGE",
+            "FLASH",
+            "VIDEO",
+            "HTML",
+            "HTML_IMAGE",
+            "AUDIO"
+          ],
+          "enumDescriptions": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CreativeAssetMetadata": {
+      "description": "CreativeAssets contains properties of a creative asset file which will be uploaded or has already been uploaded. Refer to the creative sample code for how to upload assets and insert a creative.",
+      "id": "CreativeAssetMetadata",
+      "properties": {
+        "assetIdentifier": {
+          "$ref": "CreativeAssetId",
+          "description": "ID of the creative asset. This is a required field."
+        },
+        "clickTags": {
+          "description": "List of detected click tags for assets. This is a read-only, auto-generated field. This field is empty for a rich media asset.",
+          "items": {
+            "$ref": "ClickTag"
+          },
+          "type": "array"
+        },
+        "counterCustomEvents": {
+          "description": "List of counter events configured for the asset. This is a read-only, auto-generated field and only applicable to a rich media asset.",
+          "items": {
+            "$ref": "CreativeCustomEvent"
+          },
+          "type": "array"
+        },
+        "detectedFeatures": {
+          "description": "List of feature dependencies for the creative asset that are detected by Campaign Manager. Feature dependencies are features that a browser must be able to support in order to render your HTML5 creative correctly. This is a read-only, auto-generated field.",
+          "items": {
+            "enum": [
+              "CSS_FONT_FACE",
+              "CSS_BACKGROUND_SIZE",
+              "CSS_BORDER_IMAGE",
+              "CSS_BORDER_RADIUS",
+              "CSS_BOX_SHADOW",
+              "CSS_FLEX_BOX",
+              "CSS_HSLA",
+              "CSS_MULTIPLE_BGS",
+              "CSS_OPACITY",
+              "CSS_RGBA",
+              "CSS_TEXT_SHADOW",
+              "CSS_ANIMATIONS",
+              "CSS_COLUMNS",
+              "CSS_GENERATED_CONTENT",
+              "CSS_GRADIENTS",
+              "CSS_REFLECTIONS",
+              "CSS_TRANSFORMS",
+              "CSS_TRANSFORMS3D",
+              "CSS_TRANSITIONS",
+              "APPLICATION_CACHE",
+              "CANVAS",
+              "CANVAS_TEXT",
+              "DRAG_AND_DROP",
+              "HASH_CHANGE",
+              "HISTORY",
+              "AUDIO",
+              "VIDEO",
+              "INDEXED_DB",
+              "INPUT_ATTR_AUTOCOMPLETE",
+              "INPUT_ATTR_AUTOFOCUS",
+              "INPUT_ATTR_LIST",
+              "INPUT_ATTR_PLACEHOLDER",
+              "INPUT_ATTR_MAX",
+              "INPUT_ATTR_MIN",
+              "INPUT_ATTR_MULTIPLE",
+              "INPUT_ATTR_PATTERN",
+              "INPUT_ATTR_REQUIRED",
+              "INPUT_ATTR_STEP",
+              "INPUT_TYPE_SEARCH",
+              "INPUT_TYPE_TEL",
+              "INPUT_TYPE_URL",
+              "INPUT_TYPE_EMAIL",
+              "INPUT_TYPE_DATETIME",
+              "INPUT_TYPE_DATE",
+              "INPUT_TYPE_MONTH",
+              "INPUT_TYPE_WEEK",
+              "INPUT_TYPE_TIME",
+              "INPUT_TYPE_DATETIME_LOCAL",
+              "INPUT_TYPE_NUMBER",
+              "INPUT_TYPE_RANGE",
+              "INPUT_TYPE_COLOR",
+              "LOCAL_STORAGE",
+              "POST_MESSAGE",
+              "SESSION_STORAGE",
+              "WEB_SOCKETS",
+              "WEB_SQL_DATABASE",
+              "WEB_WORKERS",
+              "GEO_LOCATION",
+              "INLINE_SVG",
+              "SMIL",
+              "SVG_HREF",
+              "SVG_CLIP_PATHS",
+              "TOUCH",
+              "WEBGL",
+              "SVG_FILTERS",
+              "SVG_FE_IMAGE"
+            ],
+            "enumDescriptions": [
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "exitCustomEvents": {
+          "description": "List of exit events configured for the asset. This is a read-only, auto-generated field and only applicable to a rich media asset.",
+          "items": {
+            "$ref": "CreativeCustomEvent"
+          },
+          "type": "array"
+        },
+        "id": {
+          "description": "Numeric ID of the asset. This is a read-only, auto-generated field.",
+          "format": "int64",
+          "type": "string"
+        },
+        "idDimensionValue": {
+          "$ref": "DimensionValue",
+          "description": "Dimension value for the numeric ID of the asset. This is a read-only, auto-generated field."
+        },
+        "kind": {
+          "description": "Identifies what kind of resource this is. Value: the fixed string \"dfareporting#creativeAssetMetadata\".",
+          "type": "string"
+        },
+        "mediaRequestInfo": {
+          "$ref": "MediaRequestInfo"
+        },
+        "mediaResponseInfo": {
+          "$ref": "MediaResponseInfo"
+        },
+        "richMedia": {
+          "description": "True if the uploaded asset is a rich media asset. This is a read-only, auto-generated field.",
+          "type": "boolean"
+        },
+        "timerCustomEvents": {
+          "description": "List of timer events configured for the asset. This is a read-only, auto-generated field and only applicable to a rich media asset.",
+          "items": {
+            "$ref": "CreativeCustomEvent"
+          },
+          "type": "array"
+        },
+        "warnedValidationRules": {
+          "description": "Rules validated during code generation that generated a warning. This is a read-only, auto-generated field. Possible values are: - \"ADMOB_REFERENCED\" - \"ASSET_FORMAT_UNSUPPORTED_DCM\" - \"ASSET_INVALID\" - \"CLICK_TAG_HARD_CODED\" - \"CLICK_TAG_INVALID\" - \"CLICK_TAG_IN_GWD\" - \"CLICK_TAG_MISSING\" - \"CLICK_TAG_MORE_THAN_ONE\" - \"CLICK_TAG_NON_TOP_LEVEL\" - \"COMPONENT_UNSUPPORTED_DCM\" - \"ENABLER_UNSUPPORTED_METHOD_DCM\" - \"EXTERNAL_FILE_REFERENCED\" - \"FILE_DETAIL_EMPTY\" - \"FILE_TYPE_INVALID\" - \"GWD_PROPERTIES_INVALID\" - \"HTML5_FEATURE_UNSUPPORTED\" - \"LINKED_FILE_NOT_FOUND\" - \"MAX_FLASH_VERSION_11\" - \"MRAID_REFERENCED\" - \"NOT_SSL_COMPLIANT\" - \"ORPHANED_ASSET\" - \"PRIMARY_HTML_MISSING\" - \"SVG_INVALID\" - \"ZIP_INVALID\" ",
+          "items": {
+            "enum": [
+              "CLICK_TAG_NON_TOP_LEVEL",
+              "CLICK_TAG_MISSING",
+              "CLICK_TAG_MORE_THAN_ONE",
+              "CLICK_TAG_INVALID",
+              "ORPHANED_ASSET",
+              "PRIMARY_HTML_MISSING",
+              "EXTERNAL_FILE_REFERENCED",
+              "MRAID_REFERENCED",
+              "ADMOB_REFERENCED",
+              "FILE_TYPE_INVALID",
+              "ZIP_INVALID",
+              "LINKED_FILE_NOT_FOUND",
+              "MAX_FLASH_VERSION_11",
+              "NOT_SSL_COMPLIANT",
+              "FILE_DETAIL_EMPTY",
+              "ASSET_INVALID",
+              "GWD_PROPERTIES_INVALID",
+              "ENABLER_UNSUPPORTED_METHOD_DCM",
+              "ASSET_FORMAT_UNSUPPORTED_DCM",
+              "COMPONENT_UNSUPPORTED_DCM",
+              "HTML5_FEATURE_UNSUPPORTED",
+              "CLICK_TAG_IN_GWD",
+              "CLICK_TAG_HARD_CODED",
+              "SVG_INVALID",
+              "CLICK_TAG_IN_RICH_MEDIA",
+              "MISSING_ENABLER_REFERENCE"
+            ],
+            "enumDescriptions": [
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "CreativeClickThroughUrl": {
+      "description": "Click-through URL",
+      "id": "CreativeClickThroughUrl",
+      "properties": {
+        "computedClickThroughUrl": {
+          "description": "Read-only convenience field representing the actual URL that will be used for this click-through. The URL is computed as follows: - If landingPageId is specified then that landing page's URL is assigned to this field. - Otherwise, the customClickThroughUrl is assigned to this field. ",
+          "type": "string"
+        },
+        "customClickThroughUrl": {
+          "description": "Custom click-through URL. Applicable if the landingPageId field is left unset.",
+          "type": "string"
+        },
+        "landingPageId": {
+          "description": "ID of the landing page for the click-through URL.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CreativeCustomEvent": {
+      "description": "Creative Custom Event.",
+      "id": "CreativeCustomEvent",
+      "properties": {
+        "advertiserCustomEventId": {
+          "description": "Unique ID of this event used by Reporting and Data Transfer. This is a read-only field.",
+          "format": "int64",
+          "type": "string"
+        },
+        "advertiserCustomEventName": {
+          "description": "User-entered name for the event.",
+          "type": "string"
+        },
+        "advertiserCustomEventType": {
+          "description": "Type of the event. This is a read-only field.",
+          "enum": [
+            "ADVERTISER_EVENT_TIMER",
+            "ADVERTISER_EVENT_EXIT",
+            "ADVERTISER_EVENT_COUNTER"
+          ],
+          "enumDescriptions": [
+            "",
+            "",
+            ""
+          ],
+          "type": "string"
+        },
+        "artworkLabel": {
+          "description": "Artwork label column, used to link events in Campaign Manager back to events in Studio. This is a required field and should not be modified after insertion.",
+          "type": "string"
+        },
+        "artworkType": {
+          "description": "Artwork type used by the creative.This is a read-only field.",
+          "enum": [
+            "ARTWORK_TYPE_FLASH",
+            "ARTWORK_TYPE_HTML5",
+            "ARTWORK_TYPE_MIXED",
+            "ARTWORK_TYPE_IMAGE"
+          ],
+          "enumDescriptions": [
+            "",
+            "",
+            "",
+            ""
+          ],
+          "type": "string"
+        },
+        "exitClickThroughUrl": {
+          "$ref": "CreativeClickThroughUrl",
+          "description": "Exit click-through URL for the event. This field is used only for exit events."
+        },
+        "id": {
+          "description": "ID of this event. This is a required field and should not be modified after insertion.",
+          "format": "int64",
+          "type": "string"
+        },
+        "popupWindowProperties": {
+          "$ref": "PopupWindowProperties",
+          "description": "Properties for rich media popup windows. This field is used only for exit events."
+        },
+        "targetType": {
+          "description": "Target type used by the event.",
+          "enum": [
+            "TARGET_BLANK",
+            "TARGET_TOP",
+            "TARGET_SELF",
+            "TARGET_PARENT",
+            "TARGET_POPUP"
+          ],
+          "enumDescriptions": [
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "type": "string"
+        },
+        "videoReportingId": {
+          "description": "Video reporting ID, used to differentiate multiple videos in a single creative. This is a read-only field.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DimensionValue": {
+      "description": "Represents a DimensionValue resource.",
+      "id": "DimensionValue",
+      "properties": {
+        "dimensionName": {
+          "description": "The name of the dimension.",
+          "type": "string"
+        },
+        "etag": {
+          "description": "The eTag of this response for caching purposes.",
+          "type": "string"
+        },
+        "id": {
+          "description": "The ID associated with the value if available.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "The kind of resource this is, in this case dfareporting#dimensionValue.",
+          "type": "string"
+        },
+        "matchType": {
+          "description": "Determines how the 'value' field is matched when filtering. If not specified, defaults to EXACT. If set to WILDCARD_EXPRESSION, '*' is allowed as a placeholder for variable length character sequences, and it can be escaped with a backslash. Note, only paid search dimensions ('dfa:paidSearch*') allow a matchType other than EXACT.",
+          "enum": [
+            "EXACT",
+            "BEGINS_WITH",
+            "CONTAINS",
+            "WILDCARD_EXPRESSION"
+          ],
+          "enumDescriptions": [
+            "",
+            "",
+            "",
+            ""
+          ],
+          "type": "string"
+        },
+        "value": {
+          "description": "The value of the dimension.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "MediaRequestInfo": {
+      "description": "Extra information added to operations that support Scotty media requests.",
+      "id": "MediaRequestInfo",
+      "properties": {
+        "currentBytes": {
+          "description": "The number of current bytes uploaded or downloaded.",
+          "format": "int64",
+          "type": "string"
+        },
+        "customData": {
+          "description": "Data to be copied to backend requests. Custom data is returned to Scotty in the agent_state field, which Scotty will then provide in subsequent upload notifications.",
+          "type": "string"
+        },
+        "diffObjectVersion": {
+          "description": "Set if the http request info is diff encoded. The value of this field is the version number of the base revision. This is corresponding to Apiary's mediaDiffObjectVersion (//depot/google3/java/com/google/api/server/media/variable/DiffObjectVersionVariable.java). See go/esf-scotty-diff-upload for more information.",
+          "type": "string"
+        },
+        "finalStatus": {
+          "description": "The existence of the final_status field indicates that this is the last call to the agent for this request_id. http://google3/uploader/agent/scotty_agent.proto?l=737\u0026rcl=347601929",
+          "format": "int32",
+          "type": "integer"
+        },
+        "notificationType": {
+          "description": "The type of notification received from Scotty.",
+          "enum": [
+            "START",
+            "PROGRESS",
+            "END",
+            "RESPONSE_SENT",
+            "ERROR"
+          ],
+          "enumDescriptions": [
+            "Such requests signals the start of a request containing media upload. Only the media field(s) in the inserted/updated resource are set. The response should either return an error or succeed. On success, responses don't need to contain anything.",
+            "Such requests signals that the upload has progressed and that the backend might want to access the media file specified in relevant fields in the resource. Only the media field(s) in the inserted/updated resource are set. The response should either return an error or succeed. On success, responses don't need to contain anything.",
+            "Such requests signals the end of a request containing media upload. END should be handled just like normal Insert/Upload requests, that is, they should process the request and return a complete resource in the response. Pointers to media data (a GFS path usually) appear in the relevant fields in the inserted/updated resource. See gdata.Media in data.proto.",
+            "Such requests occur after an END and signal that the response has been sent back to the client. RESPONSE_SENT is only sent to the backend if it is configured to receive them. The response does not need to contain anything.",
+            "Such requests indicate that an error occurred while processing the request. ERROR is only sent to the backend if it is configured to receive them. It is not guaranteed that all errors will result in this notification to the backend, even if the backend requests them. Since these requests are just for informational purposes, the response does not need to contain anything."
+          ],
+          "type": "string"
+        },
+        "requestId": {
+          "description": "The Scotty request ID.",
+          "type": "string"
+        },
+        "requestReceivedParamsServingInfo": {
+          "description": "The partition of the Scotty server handling this request. type is uploader_service.RequestReceivedParamsServingInfo LINT.IfChange(request_received_params_serving_info_annotations) LINT.ThenChange()",
+          "format": "byte",
+          "type": "string"
+        },
+        "totalBytes": {
+          "description": "The total size of the file.",
+          "format": "int64",
+          "type": "string"
+        },
+        "totalBytesIsEstimated": {
+          "description": "Whether the total bytes field contains an estimated data.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "MediaResponseInfo": {
+      "description": "This message is for backends to pass their scotty media specific fields to ESF. Backend will include this in their response message to ESF. Example: ExportFile is an rpc defined for upload using scotty from ESF. rpc ExportFile(ExportFileRequest) returns (ExportFileResponse) Message ExportFileResponse will include apiserving.MediaResponseInfo to tell ESF about data like dynamic_dropzone it needs to pass to Scotty. message ExportFileResponse { optional gdata.Media blob = 1; optional apiserving.MediaResponseInfo media_response_info = 2 }",
+      "id": "MediaResponseInfo",
+      "properties": {
+        "customData": {
+          "description": "Data to copy from backend response to the next backend requests. Custom data is returned to Scotty in the agent_state field, which Scotty will then provide in subsequent upload notifications.",
+          "type": "string"
+        },
+        "dataStorageTransform": {
+          "description": "Specifies any transformation to be applied to data before persisting it or retrieving from storage. E.g., encryption options for blobstore2. This should be of the form uploader_service.DataStorageTransform.",
+          "format": "byte",
+          "type": "string"
+        },
+        "dynamicDropTarget": {
+          "description": "Specifies the Scotty Drop Target to use for uploads. If present in a media response, Scotty does not upload to a standard drop zone. Instead, Scotty saves the upload directly to the location specified in this drop target. Unlike drop zones, the drop target is the final storage location for an upload. So, the agent does not need to clone the blob at the end of the upload. The agent is responsible for garbage collecting any orphaned blobs that may occur due to aborted uploads. For more information, see the drop target design doc here: http://goto/ScottyDropTarget This field will be preferred to dynamicDropzone. If provided, the identified field in the response must be of the type uploader.agent.DropTarget.",
+          "format": "byte",
+          "type": "string"
+        },
+        "dynamicDropzone": {
+          "description": "Specifies the Scotty dropzone to use for uploads.",
+          "type": "string"
+        },
+        "requestClass": {
+          "description": "Request class to use for all Blobstore operations for this request.",
+          "enum": [
+            "UNKNOWN_REQUEST_CLASS",
+            "LATENCY_SENSITIVE",
+            "PRODUCTION_BATCH",
+            "BEST_EFFORT"
+          ],
+          "enumDescriptions": [
+            "Unpopulated request_class in log files will be taken as 0 in dremel query. GoogleSQL will try to cast it to enum by default. An unused 0 value is added to avoid GoogleSQL casting error. Please refer to b/69677280.",
+            "A latency-sensitive request.",
+            "A request generated by a batch process.",
+            "A best-effort request."
+          ],
+          "type": "string"
+        },
+        "scottyAgentUserId": {
+          "description": "Requester ID passed along to be recorded in the Scotty logs",
+          "format": "int64",
+          "type": "string"
+        },
+        "scottyCustomerLog": {
+          "description": "Customer-specific data to be recorded in the Scotty logs type is logs_proto_scotty.CustomerLog",
+          "format": "byte",
+          "type": "string"
+        },
+        "trafficClassField": {
+          "description": "Specifies the TrafficClass that Scotty should use for any RPCs to fetch the response bytes. Will override the traffic class GTOS of the incoming http request. This is a temporary field to facilitate whitelisting and experimentation by the bigstore agent only. For instance, this does not apply to RTMP reads. WARNING: DO NOT USE WITHOUT PERMISSION FROM THE SCOTTY TEAM.",
+          "enum": [
+            "BE1",
+            "AF1",
+            "AF2",
+            "AF3",
+            "AF4",
+            "NC1",
+            "NC0",
+            "BE0",
+            "LLQ",
+            "LLQ1",
+            "LLQ2",
+            "LLQ3"
+          ],
+          "enumDescriptions": [
+            "Application-selectable traffic classes Best effort",
+            "Assured forwarding priority 1",
+            "Assured forwarding priority 2",
+            "Assured forwarding priority 3",
+            "Assured forwarding priority 4",
+            "Network control",
+            "Network control",
+            "Best effort at high packet loss",
+            "Low-latency queue (LLQ) best effort (go/llq)",
+            "LLQ assured forwarding priority 1 (go/llq2)",
+            "LLQ assured forwarding priority 2 (go/llq2)",
+            "LLQ assured forwarding priority 3 (go/llq3)"
+          ],
+          "type": "string"
+        },
+        "verifyHashFromHeader": {
+          "description": "Tells Scotty to verify hashes on the agent's behalf by parsing out the X-Goog-Hash header.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "OffsetPosition": {
+      "description": "Offset Position.",
+      "id": "OffsetPosition",
+      "properties": {
+        "left": {
+          "description": "Offset distance from left side of an asset or a window.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "top": {
+          "description": "Offset distance from top side of an asset or a window.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "PopupWindowProperties": {
+      "description": "Popup Window Properties.",
+      "id": "PopupWindowProperties",
+      "properties": {
+        "dimension": {
+          "$ref": "Size",
+          "description": "Popup dimension for a creative. This is a read-only field. Applicable to the following creative types: all RICH_MEDIA and all VPAID"
+        },
+        "offset": {
+          "$ref": "OffsetPosition",
+          "description": "Upper-left corner coordinates of the popup window. Applicable if positionType is COORDINATES."
+        },
+        "positionType": {
+          "description": "Popup window position either centered or at specific coordinate.",
+          "enum": [
+            "CENTER",
+            "COORDINATES"
+          ],
+          "enumDescriptions": [
+            "",
+            ""
+          ],
+          "type": "string"
+        },
+        "showAddressBar": {
+          "description": "Whether to display the browser address bar.",
+          "type": "boolean"
+        },
+        "showMenuBar": {
+          "description": "Whether to display the browser menu bar.",
+          "type": "boolean"
+        },
+        "showScrollBar": {
+          "description": "Whether to display the browser scroll bar.",
+          "type": "boolean"
+        },
+        "showStatusBar": {
+          "description": "Whether to display the browser status bar.",
+          "type": "boolean"
+        },
+        "showToolBar": {
+          "description": "Whether to display the browser tool bar.",
+          "type": "boolean"
+        },
+        "title": {
+          "description": "Title of popup window.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Size": {
+      "description": "Represents the dimensions of ads, placements, creatives, or creative assets.",
+      "id": "Size",
+      "properties": {
+        "height": {
+          "description": "Height of this size. Acceptable values are 0 to 32767, inclusive.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "iab": {
+          "description": "IAB standard size. This is a read-only, auto-generated field.",
+          "type": "boolean"
+        },
+        "id": {
+          "description": "ID of this size. This is a read-only, auto-generated field.",
+          "format": "int64",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Identifies what kind of resource this is. Value: the fixed string \"dfareporting#size\".",
+          "type": "string"
+        },
+        "width": {
+          "description": "Width of this size. Acceptable values are 0 to 32767, inclusive.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "dfareporting/v3.5/",
+  "title": "Campaign Manager 360 API",
+  "version": "v3.5"
+}

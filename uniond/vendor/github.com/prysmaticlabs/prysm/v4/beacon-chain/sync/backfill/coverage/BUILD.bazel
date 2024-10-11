@@ -1,0 +1,9 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["coverage.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/sync/backfill/coverage",
+    visibility = ["//visibility:public"],
+    deps = ["//consensus-types/primitives:go_default_library"],
+)

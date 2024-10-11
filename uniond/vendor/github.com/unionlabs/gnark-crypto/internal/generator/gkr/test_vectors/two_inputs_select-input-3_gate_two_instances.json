@@ -1,0 +1,45 @@
+{
+	"hash": {
+		"type": "const",
+		"val": -1
+	},
+	"circuit": "resources/two_inputs_select-input-3_gate.json",
+	"input": [
+		[
+			0,
+			1
+		],
+		[
+			2,
+			3
+		]
+	],
+	"output": [
+		[
+			2,
+			3
+		]
+	],
+	"proof": [
+		{
+			"finalEvalProof": [],
+			"partialSumPolys": []
+		},
+		{
+			"finalEvalProof": [],
+			"partialSumPolys": []
+		},
+		{
+			"finalEvalProof": [
+				-1,
+				1
+			],
+			"partialSumPolys": [
+				[
+					-3,
+					-16
+				]
+			]
+		}
+	]
+}

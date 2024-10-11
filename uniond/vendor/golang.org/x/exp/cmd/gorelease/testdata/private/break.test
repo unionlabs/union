@@ -1,0 +1,12 @@
+mod=example.com/private
+version=v1.0.2-break
+base=v1.0.1
+success=false
+-- want --
+# example.com/private/p
+## incompatible changes
+example.com/private/internal/i.I.Foo: added
+
+# summary
+Cannot suggest a release version.
+Incompatible changes were detected.

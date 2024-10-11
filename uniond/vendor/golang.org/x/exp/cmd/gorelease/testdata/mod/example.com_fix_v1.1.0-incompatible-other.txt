@@ -1,0 +1,13 @@
+-- go.mod --
+module example.com/fix
+
+go 1.13
+-- bad/bad.go --
+package bad
+
+func Broken() int { return 0 }
+func Bad() int { return 1 }
+-- good/good.go --
+package good
+
+func Good() string { return "1" }

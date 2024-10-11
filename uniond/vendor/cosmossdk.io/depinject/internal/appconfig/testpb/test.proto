@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package testpb;
+
+import "cosmos/app/v1alpha1/module.proto";
+
+option go_package = "cosmossdk.io/depinject/internal/appconfig/testpb";
+
+message TestRuntimeModule {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "cosmossdk.io/core/internal/testpb"
+  };
+}
+
+message TestModuleA {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "cosmossdk.io/core/internal/testpb"
+  };
+}
+
+message TestModuleB {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "cosmossdk.io/core/internal/testpb"
+  };
+}
+
+message TestUnregisteredModule {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "cosmossdk.io/core/internal/testpb"
+  };
+}
+
+message TestNoModuleOptionModule {}
+
+message TestNoGoImportModule {
+  option (cosmos.app.v1alpha1.module) = {
+  };
+}

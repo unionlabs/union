@@ -1,0 +1,51 @@
+name: Release
+# This workflow helps with creating releases.
+# This job will only be triggered when a tag (vX.X.x) is pushed
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+" # Push events to matching v*, i.e. v1.0, v20.15.10
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    permissions:
+      contents: write # for goreleaser/goreleaser-action to create a GitHub release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          check-latest: true
+      - name: Unshallow
+        run: git fetch --prune --unshallow
+      - name: Create release
+        uses: goreleaser/goreleaser-action@v3
+        with:
+          args: release --clean --release-notes ./RELEASE_NOTES.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-success:
+    needs: release
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack on success
+        uses: rtCamp/action-slack-notify@v2.3.0
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: cosmos-tech
+          SLACK_USERNAME: Cosmos SDK Release Bot
+          SLACK_ICON: https://avatars.githubusercontent.com/t/5997665?size=64
+          SLACK_COLOR: good
+          SLACK_TITLE: "Cosmos SDK ${{ github.ref_name }} is tagged :tada:"
+          SLACK_MESSAGE: "@channel :point_right: https://github.com/cosmos/cosmos-sdk/releases/tag/${{ github.ref_name }}"
+          SLACK_FOOTER: ""
+          SLACK_LINK_NAMES: true
+          MSG_MINIMAL: true

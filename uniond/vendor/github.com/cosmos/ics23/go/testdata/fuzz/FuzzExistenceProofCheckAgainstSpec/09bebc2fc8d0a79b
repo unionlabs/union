@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"Proof\":{\"leAf\":{\"prehAsh_vAlue\":1,\"length\":1,\"prefiX\":\"AA00\"},\"pAth\":[{\"hAsh\":1}]},\"SpeC\":{\"leAf_speC\":{\"prehAsh_vAlue\":1,\"length\":1,\"prefiX\":\"AA00\"},\"inner_speC\":{\"hAsh\":1}}}")

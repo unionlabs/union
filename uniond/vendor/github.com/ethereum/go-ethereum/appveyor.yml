@@ -1,0 +1,57 @@
+clone_depth: 5
+version: "{branch}.{build}"
+
+image:
+  - Ubuntu
+  - Visual Studio 2019
+
+environment:
+  matrix:
+    - GETH_ARCH: amd64
+      GETH_MINGW: 'C:\msys64\mingw64'
+    - GETH_ARCH: 386
+      GETH_MINGW: 'C:\msys64\mingw32'
+
+install:
+  - git submodule update --init --depth 1 --recursive
+  - go version
+
+for:
+  # Linux has its own script without -arch and -cc.
+  # The linux builder also runs lint.
+  - matrix:
+      only:
+        - image: Ubuntu
+    build_script:
+      - go run build/ci.go lint
+      - go run build/ci.go install -dlgo
+    test_script:
+      - go run build/ci.go test -dlgo
+
+  # linux/386 is disabled.
+  - matrix:
+      exclude:
+        - image: Ubuntu
+          GETH_ARCH: 386
+
+  # Windows builds for amd64 + 386.
+  - matrix:
+      only:
+        - image: Visual Studio 2019
+    environment:
+      # We use gcc from MSYS2 because it is the most recent compiler version available on
+      # AppVeyor. Note: gcc.exe only works properly if the corresponding bin/ directory is
+      # contained in PATH.
+      GETH_CC: '%GETH_MINGW%\bin\gcc.exe'
+      PATH: '%GETH_MINGW%\bin;C:\Program Files (x86)\NSIS\;%PATH%'
+    build_script:
+      - 'echo %GETH_ARCH%'
+      - 'echo %GETH_CC%'
+      - '%GETH_CC% --version'
+      - go run build/ci.go install -dlgo -arch %GETH_ARCH% -cc %GETH_CC%
+    after_build:
+      # Upload builds. Note that ci.go makes this a no-op PR builds.
+      - go run build/ci.go archive -arch %GETH_ARCH% -type zip -signer WINDOWS_SIGNING_KEY -upload gethstore/builds
+      - go run build/ci.go nsis -arch %GETH_ARCH% -signer WINDOWS_SIGNING_KEY -upload gethstore/builds
+    test_script:
+      - go run build/ci.go test -dlgo -arch %GETH_ARCH% -cc %GETH_CC% -short

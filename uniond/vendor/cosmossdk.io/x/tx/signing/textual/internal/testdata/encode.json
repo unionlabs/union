@@ -1,0 +1,43 @@
+[
+    {
+        "screens": [],
+        "encoding": "a10180"
+    },
+    {
+        "screens": [{}],
+        "encoding": "a10181a0"
+    },
+    {
+        "screens": [{"content": ""}, {"indent": 0}, {"expert": false}],
+        "encoding": "a10183a0a0a0"
+    },
+    {
+        "screens": [{"title": ""}, {"content": ""}, {"indent": 0}, {"expert": false}],
+        "encoding": "a10184a0a0a0a0"
+    },
+    {
+        "screens": [
+            {"title": "1"},
+            {"content": "a"},
+            {"indent": 1},
+            {"expert": true}
+        ],
+        "encoding": "a10184a1016131a1026161a10301a104f5"
+    },
+    {
+        "screens": [
+            {"title": "1", "content": "", "indent": 4, "expert": true},
+            {"title": "", "content": "a", "indent": 0, "expert": true},
+            {"title": "2", "content": "b", "indent": 5, "expert": false}
+        ],
+        "encoding": "a10183a3016131030404f5a202616104f5a30161320261620305"
+    },
+    {
+        "screens": [
+            {"title": "first", "content": "start"},
+            {"title": "then", "content": "middle", "indent": 1},
+            {"title": "last", "content": "end"}
+        ],
+        "encoding": "a10183a20165666972737402657374617274a301647468656e02666d6964646c650301a201646c6173740263656e64"
+    }
+]

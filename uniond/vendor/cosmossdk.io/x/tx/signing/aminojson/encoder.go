@@ -93,7 +93,7 @@ func nullSliceAsEmptyEncoder(enc *Encoder, v protoreflect.Value, w io.Writer) er
 func cosmosInlineJSON(_ *Encoder, v protoreflect.Value, w io.Writer) error {
 	switch bz := v.Interface().(type) {
 	case []byte:
-		json, err := sortedJsonStringify(bz)
+		json, err := sortedJSONStringify(bz)
 		if err != nil {
 			return errors.Wrap(err, "could not normalize JSON")
 		}
@@ -217,8 +217,8 @@ func sortedObject(obj interface{}) interface{} {
 	}
 }
 
-// sortedJsonStringify returns a JSON with objects sorted by key.
-func sortedJsonStringify(jsonBytes []byte) ([]byte, error) {
+// sortedJSONStringify returns a JSON with objects sorted by key.
+func sortedJSONStringify(jsonBytes []byte) ([]byte, error) {
 	var obj interface{}
 	if err := json.Unmarshal(jsonBytes, &obj); err != nil {
 		return nil, errors.New("invalid JSON bytes")

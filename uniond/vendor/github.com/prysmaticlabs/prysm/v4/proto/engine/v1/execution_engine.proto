@@ -1,0 +1,232 @@
+// Copyright 2022 Prysmatic Labs.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+
+package ethereum.engine.v1;
+
+import "proto/eth/ext/options.proto";
+
+option csharp_namespace = "Ethereum.Engine.V1";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/engine/v1;enginev1";
+option java_multiple_files = true;
+option java_outer_classname = "ExecutionEngineProto";
+option java_package = "org.ethereum.engine.v1";
+option php_namespace = "Ethereum\\Engine\\v1";
+
+message ExecutionPayload {
+	bytes parent_hash           = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes fee_recipient         = 2 [(ethereum.eth.ext.ssz_size) = "20"];
+	bytes state_root            = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes receipts_root         = 4 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes logs_bloom            = 5 [(ethereum.eth.ext.ssz_size) = "logs_bloom.size"];
+	bytes prev_randao           = 6 [(ethereum.eth.ext.ssz_size) = "32"];
+	uint64 block_number         = 7;
+	uint64 gas_limit            = 8;
+	uint64 gas_used             = 9;
+	uint64 timestamp            = 10;
+	bytes extra_data            = 11 [(ethereum.eth.ext.ssz_max) = "extra_data.size"];
+	bytes base_fee_per_gas      = 12 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes block_hash            = 13 [(ethereum.eth.ext.ssz_size) = "32"];
+	repeated bytes transactions = 14 [(ethereum.eth.ext.ssz_size) = "?,?", (ethereum.eth.ext.ssz_max)  = "1048576,1073741824"];
+}
+
+message ExecutionPayloadBodyV1 {
+	repeated bytes transactions = 1;
+	repeated Withdrawal withdrawals = 2;
+}
+
+message ExecutionPayloadCapella {
+	bytes parent_hash           = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes fee_recipient         = 2 [(ethereum.eth.ext.ssz_size) = "20"];
+	bytes state_root            = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes receipts_root         = 4 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes logs_bloom            = 5 [(ethereum.eth.ext.ssz_size) = "logs_bloom.size"];
+	bytes prev_randao           = 6 [(ethereum.eth.ext.ssz_size) = "32"];
+	uint64 block_number         = 7;
+	uint64 gas_limit            = 8;
+	uint64 gas_used             = 9;
+	uint64 timestamp            = 10;
+	bytes extra_data            = 11 [(ethereum.eth.ext.ssz_max) = "extra_data.size"];
+	bytes base_fee_per_gas      = 12 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes block_hash            = 13 [(ethereum.eth.ext.ssz_size) = "32"];
+	repeated bytes transactions = 14 [(ethereum.eth.ext.ssz_size) = "?,?", (ethereum.eth.ext.ssz_max)  = "1048576,1073741824"];
+	// MAX_WITHDRAWALS_PER_PAYLOAD
+	repeated Withdrawal withdrawals = 15 [(ethereum.eth.ext.ssz_max) = "withdrawal.size"]; // New in Capella.
+}
+
+message ExecutionPayloadDeneb {
+	bytes parent_hash           = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes fee_recipient         = 2 [(ethereum.eth.ext.ssz_size) = "20"];
+	bytes state_root            = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes receipts_root         = 4 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes logs_bloom            = 5 [(ethereum.eth.ext.ssz_size) = "logs_bloom.size"];
+	bytes prev_randao           = 6 [(ethereum.eth.ext.ssz_size) = "32"];
+	uint64 block_number         = 7;
+	uint64 gas_limit            = 8;
+	uint64 gas_used             = 9;
+	uint64 timestamp            = 10;
+	bytes extra_data            = 11 [(ethereum.eth.ext.ssz_max) = "extra_data.size"];
+	bytes base_fee_per_gas      = 12 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes block_hash            = 13 [(ethereum.eth.ext.ssz_size) = "32"];
+	repeated bytes transactions = 14 [(ethereum.eth.ext.ssz_size) = "?,?", (ethereum.eth.ext.ssz_max)  = "1048576,1073741824"];
+	// MAX_WITHDRAWALS_PER_PAYLOAD
+	repeated Withdrawal withdrawals = 15 [(ethereum.eth.ext.ssz_max) = "withdrawal.size"];
+	uint64 blob_gas_used  = 16;
+	uint64 excess_blob_gas  = 17;
+}
+
+message ExecutionPayloadCapellaWithValue {
+	ExecutionPayloadCapella payload = 1;
+	bytes value = 2;
+}
+
+message ExecutionPayloadDenebWithValueAndBlobsBundle {
+	ExecutionPayloadDeneb payload = 1;
+	bytes value = 2;
+	BlobsBundle blobs_bundle = 3;
+	bool should_override_builder = 4;
+}
+
+
+message ExecutionPayloadHeader {
+	bytes parent_hash       = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes fee_recipient     = 2 [(ethereum.eth.ext.ssz_size) = "20"];
+	bytes state_root        = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes receipts_root     = 4 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes logs_bloom        = 5 [(ethereum.eth.ext.ssz_size) = "logs_bloom.size"];
+	bytes prev_randao       = 6 [(ethereum.eth.ext.ssz_size) = "32"];
+	uint64 block_number     = 7;
+	uint64 gas_limit        = 8;
+	uint64 gas_used         = 9;
+	uint64 timestamp        = 10;
+	bytes extra_data        = 11 [(ethereum.eth.ext.ssz_max) = "extra_data.size"];
+	bytes base_fee_per_gas  = 12 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes block_hash        = 13 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes transactions_root = 14 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+message ExecutionPayloadHeaderCapella {
+	bytes parent_hash       = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes fee_recipient     = 2 [(ethereum.eth.ext.ssz_size) = "20"];
+	bytes state_root        = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes receipts_root     = 4 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes logs_bloom        = 5 [(ethereum.eth.ext.ssz_size) = "logs_bloom.size"];
+	bytes prev_randao       = 6 [(ethereum.eth.ext.ssz_size) = "32"];
+	uint64 block_number     = 7;
+	uint64 gas_limit        = 8;
+	uint64 gas_used         = 9;
+	uint64 timestamp        = 10;
+	bytes extra_data        = 11 [(ethereum.eth.ext.ssz_max) = "extra_data.size"];
+	bytes base_fee_per_gas  = 12 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes block_hash        = 13 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes transactions_root = 14 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes withdrawals_root  = 15 [(ethereum.eth.ext.ssz_size) = "32"]; // New in Capella.
+}
+
+message ExecutionPayloadHeaderDeneb {
+	bytes parent_hash       = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes fee_recipient     = 2 [(ethereum.eth.ext.ssz_size) = "20"];
+	bytes state_root        = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes receipts_root     = 4 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes logs_bloom        = 5 [(ethereum.eth.ext.ssz_size) = "logs_bloom.size"];
+	bytes prev_randao       = 6 [(ethereum.eth.ext.ssz_size) = "32"];
+	uint64 block_number     = 7;
+	uint64 gas_limit        = 8;
+	uint64 gas_used         = 9;
+	uint64 timestamp        = 10;
+	bytes extra_data        = 11 [(ethereum.eth.ext.ssz_max) = "extra_data.size"];
+	bytes base_fee_per_gas  = 12 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes block_hash        = 13 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes transactions_root = 14 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes withdrawals_root  = 15 [(ethereum.eth.ext.ssz_size) = "32"];
+	uint64 blob_gas_used  = 16;
+	uint64 excess_blob_gas  = 17;
+}
+
+message PayloadAttributes {
+	uint64 timestamp              = 1;
+	bytes prev_randao             = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes suggested_fee_recipient = 3 [(ethereum.eth.ext.ssz_size) = "20"];
+}
+
+message PayloadAttributesV2 {
+	uint64 timestamp                = 1;
+	bytes prev_randao               = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes suggested_fee_recipient   = 3 [(ethereum.eth.ext.ssz_size) = "20"];
+	repeated Withdrawal withdrawals = 4 [(ethereum.eth.ext.ssz_max) = "withdrawal.size"]; // New in Capella.
+}
+
+message PayloadAttributesV3 {
+	uint64 timestamp                = 1;
+	bytes prev_randao               = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes suggested_fee_recipient   = 3 [(ethereum.eth.ext.ssz_size) = "20"];
+	repeated Withdrawal withdrawals = 4 [(ethereum.eth.ext.ssz_max) = "withdrawal.size"];
+	bytes parent_beacon_block_root  = 5 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+message PayloadStatus {
+	Status status           = 1;
+	bytes latest_valid_hash = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+	string validation_error = 3;
+	enum Status {
+		UNKNOWN                 = 0;
+		VALID                   = 1;
+		INVALID                 = 2;
+		SYNCING                 = 3;
+		ACCEPTED                = 4;
+		INVALID_BLOCK_HASH      = 5;
+	}
+}
+
+message ForkchoiceState {
+	bytes head_block_hash      = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes safe_block_hash      = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+	bytes finalized_block_hash = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+// The withdrawal receipt with the recipient address and amount withdrawn
+message Withdrawal {
+	// Withdrawal index for accounting purposes
+	uint64 index = 1;
+
+	// Validator index for the withdrawal
+	uint64 validator_index = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+	// The execution address receiving the funds
+	bytes address = 3 [(ethereum.eth.ext.ssz_size) = "20"];
+
+	// The withdrawn amount in Gwei
+	uint64 amount = 4;
+}
+
+// BlobsBundle is retrieved through engine-api from the execution layer client.
+// It consists of the necessary components for constructing a blobs sidecar object to gossip through p2p.
+message BlobsBundle {
+	// The KZG commitments of the blobs.
+	repeated bytes kzg_commitments = 1 [(ethereum.eth.ext.ssz_size) = "?,48", (ethereum.eth.ext.ssz_max) = "max_blob_commitments.size"];
+	// The proofs of the blobs.
+	repeated bytes proofs = 2 [(ethereum.eth.ext.ssz_size) = "?,48", (ethereum.eth.ext.ssz_max) = "max_blob_commitments.size"];
+	// The blobs itself.
+	repeated bytes blobs = 3 [(ethereum.eth.ext.ssz_size) = "?,131072", (ethereum.eth.ext.ssz_max) = "max_blob_commitments.size"];
+}
+
+// Blob contains the data that is to be committed on chain.
+message Blob {
+	// Each blob consists of `BLS_FIELD_ELEMENT`(32) multiplies `FIELD_ELEMENTS_PER_BLOB`(4096)
+	bytes data = 1 [(ethereum.eth.ext.ssz_size) = "blob.size"];
+}
+
+message ExchangeCapabilities {
+	repeated string supported_methods = 1;
+}

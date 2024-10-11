@@ -1,0 +1,54 @@
+// Copyright 2021 Prysmatic Labs.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+
+package ethereum.eth.v1;
+
+import "google/protobuf/descriptor.proto";
+
+option csharp_namespace = "Ethereum.Eth.V1";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/eth/v1";
+option java_multiple_files = true;
+option java_outer_classname = "BeaconNodeProto";
+option java_package = "org.ethereum.eth.v1";
+option php_namespace = "Ethereum\\Eth\\v1";
+
+// Peer provides details of a peer on the network.
+message Peer {
+  // The peer id of the peer.
+  string peer_id = 1;
+  // The latest ENR of the peer that's in the record.
+  string enr = 2;
+  // The address of the peer, as a full multiaddr, for example:
+  // /ip4/37.221.192.134/tcp/13000/p2p/16Uiu2HAm8maLMjag1TAUM52zPfmLbVMGFdwUAWgoHu1HDQLR6e17
+  string last_seen_p2p_address = 3;
+  // The connection state of the peer at the moment of the request. (e.g. Connecting)
+  ConnectionState state = 4;
+  // The direction of the connection (inbound/outbound).
+  PeerDirection direction = 5;
+}
+
+// PeerDirection states the direction of the connection to a peer.
+enum PeerDirection {
+  INBOUND = 0;
+  OUTBOUND = 1;
+}
+
+// ConnectionState states the current status of the peer.
+enum ConnectionState {
+  DISCONNECTED = 0;
+  CONNECTING = 1;
+  CONNECTED = 2;
+  DISCONNECTING = 3;
+}

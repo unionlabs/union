@@ -1,0 +1,20 @@
+syntax = "proto3";
+option go_package = "examplepb";
+package grpc.gateway.examples.internal.examplepb;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "examples/internal/proto/examplepb/a_bit_of_everything.proto";
+
+// This file is run through a genrule.
+
+// Defines some more operations to be added to ABitOfEverythingService
+service GeneratedService {
+	rpc Create(ABitOfEverything) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			post: "/v1/example/a_bit_of_everything/generated_create"
+			body: "*"
+		};
+	}
+
+}

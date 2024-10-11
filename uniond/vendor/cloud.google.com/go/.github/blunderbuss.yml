@@ -1,0 +1,36 @@
+assign_issues_by:
+- labels:
+  - 'api: bigtable'
+  - 'api: datastore'
+  - 'api: firestore'
+  to:
+  - bhshkh
+- labels:
+  - 'api: storage'
+  to:
+  - tritone
+- labels:
+  - 'api: bigquery'
+  to:
+  - shollyman
+- labels:
+  - 'api: pubsub'
+  to:
+  - hongalex
+- labels:
+  - 'api: pubsublite'
+  to:
+  - tmdiep
+- labels:
+  - 'api: spanner'
+  to:
+  - harshachinta
+- labels:
+  - 'api: logging'
+  - 'api: clouderrorreporting'
+  to:
+  - googleapis/api-logging-go-reviewers
+- labels:
+  - 'api: cloudprofiler'
+  to:
+  - googleapis/api-profiler

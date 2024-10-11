@@ -1,0 +1,58 @@
+define
+a-b:{(#5,RANGEKEYSET) (#3,RANGEKEYSET)}
+----
+a-b:{(#5,RANGEKEYSET) (#3,RANGEKEYSET)}
+
+visible-at
+6
+5
+4
+3
+2
+1
+----
+6 : true
+5 : true
+4 : true
+3 : false
+2 : false
+1 : false
+
+# NB: #36028797018963996 and #36028797018963995 are sequence numbers with the
+# batch bit set. These keys should always be visible.
+
+define
+a-c:{(#36028797018963996,RANGEKEYSET) (#36028797018963995,RANGEKEYSET)}
+----
+a-c:{(#36028797018963996,RANGEKEYSET) (#36028797018963995,RANGEKEYSET)}
+
+visible-at
+5
+1
+----
+5 : true
+1 : true
+
+define
+a-c:{(#36028797018963996,RANGEKEYSET) (#36028797018963995,RANGEKEYSET) (#10,RANGEKEYSET) (#9,RANGEKEYSET) (#4,RANGEKEYSET) (#1,RANGEKEYSET)}
+----
+a-c:{(#36028797018963996,RANGEKEYSET) (#36028797018963995,RANGEKEYSET) (#10,RANGEKEYSET) (#9,RANGEKEYSET) (#4,RANGEKEYSET) (#1,RANGEKEYSET)}
+
+visible-at
+12
+10
+8
+7
+4
+3
+2
+1
+----
+12: true
+10: true
+8 : true
+7 : true
+4 : true
+3 : true
+2 : true
+1 : true

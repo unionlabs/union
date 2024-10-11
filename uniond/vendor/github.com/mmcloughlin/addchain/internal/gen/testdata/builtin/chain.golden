@@ -1,0 +1,267 @@
+  1: 0x1
+  2: 0x2
+  3: 0x3
+  4: 0x6
+  5: 0xc
+  6: 0xf
+  7: 0x1e
+  8: 0x3c
+  9: 0x78
+ 10: 0xf0
+ 11: 0xff
+ 12: 0x1fe
+ 13: 0x3fc
+ 14: 0x3ff
+ 15: 0x7fe
+ 16: 0xffc
+ 17: 0x1ff8
+ 18: 0x3ff0
+ 19: 0x7fe0
+ 20: 0xffc0
+ 21: 0x1ff80
+ 22: 0x3ff00
+ 23: 0x7fe00
+ 24: 0xffc00
+ 25: 0xfffff
+ 26: 0x1ffffe
+ 27: 0x3ffffc
+ 28: 0x7ffff8
+ 29: 0xfffff0
+ 30: 0x1ffffe0
+ 31: 0x3ffffc0
+ 32: 0x7ffff80
+ 33: 0xfffff00
+ 34: 0x1ffffe00
+ 35: 0x3ffffc00
+ 36: 0x3fffffff
+ 37: 0x7ffffffe
+ 38: 0xfffffffc
+ 39: 0x1fffffff8
+ 40: 0x3fffffff0
+ 41: 0x7ffffffe0
+ 42: 0xfffffffc0
+ 43: 0x1fffffff80
+ 44: 0x3fffffff00
+ 45: 0x7ffffffe00
+ 46: 0xfffffffc00
+ 47: 0x1fffffff800
+ 48: 0x3fffffff000
+ 49: 0x7ffffffe000
+ 50: 0xfffffffc000
+ 51: 0x1fffffff8000
+ 52: 0x3fffffff0000
+ 53: 0x7ffffffe0000
+ 54: 0xfffffffc0000
+ 55: 0x1fffffff80000
+ 56: 0x3fffffff00000
+ 57: 0x7ffffffe00000
+ 58: 0xfffffffc00000
+ 59: 0x1fffffff800000
+ 60: 0x3fffffff000000
+ 61: 0x7ffffffe000000
+ 62: 0xfffffffc000000
+ 63: 0x1fffffff8000000
+ 64: 0x3fffffff0000000
+ 65: 0x7ffffffe0000000
+ 66: 0xfffffffc0000000
+ 67: 0xfffffffffffffff
+ 68: 0x1ffffffffffffffe
+ 69: 0x3ffffffffffffffc
+ 70: 0x7ffffffffffffff8
+ 71: 0xfffffffffffffff0
+ 72: 0x1ffffffffffffffe0
+ 73: 0x3ffffffffffffffc0
+ 74: 0x7ffffffffffffff80
+ 75: 0xfffffffffffffff00
+ 76: 0x1ffffffffffffffe00
+ 77: 0x3ffffffffffffffc00
+ 78: 0x7ffffffffffffff800
+ 79: 0xfffffffffffffff000
+ 80: 0x1ffffffffffffffe000
+ 81: 0x3ffffffffffffffc000
+ 82: 0x7ffffffffffffff8000
+ 83: 0xfffffffffffffff0000
+ 84: 0x1ffffffffffffffe0000
+ 85: 0x3ffffffffffffffc0000
+ 86: 0x7ffffffffffffff80000
+ 87: 0xfffffffffffffff00000
+ 88: 0x1ffffffffffffffe00000
+ 89: 0x3ffffffffffffffc00000
+ 90: 0x7ffffffffffffff800000
+ 91: 0xfffffffffffffff000000
+ 92: 0x1ffffffffffffffe000000
+ 93: 0x3ffffffffffffffc000000
+ 94: 0x7ffffffffffffff8000000
+ 95: 0xfffffffffffffff0000000
+ 96: 0x1ffffffffffffffe0000000
+ 97: 0x3ffffffffffffffc0000000
+ 98: 0x7ffffffffffffff80000000
+ 99: 0xfffffffffffffff00000000
+100: 0x1ffffffffffffffe00000000
+101: 0x3ffffffffffffffc00000000
+102: 0x7ffffffffffffff800000000
+103: 0xfffffffffffffff000000000
+104: 0x1ffffffffffffffe000000000
+105: 0x3ffffffffffffffc000000000
+106: 0x7ffffffffffffff8000000000
+107: 0xfffffffffffffff0000000000
+108: 0x1ffffffffffffffe0000000000
+109: 0x3ffffffffffffffc0000000000
+110: 0x7ffffffffffffff80000000000
+111: 0xfffffffffffffff00000000000
+112: 0x1ffffffffffffffe00000000000
+113: 0x3ffffffffffffffc00000000000
+114: 0x7ffffffffffffff800000000000
+115: 0xfffffffffffffff000000000000
+116: 0x1ffffffffffffffe000000000000
+117: 0x3ffffffffffffffc000000000000
+118: 0x7ffffffffffffff8000000000000
+119: 0xfffffffffffffff0000000000000
+120: 0x1ffffffffffffffe0000000000000
+121: 0x3ffffffffffffffc0000000000000
+122: 0x7ffffffffffffff80000000000000
+123: 0xfffffffffffffff00000000000000
+124: 0x1ffffffffffffffe00000000000000
+125: 0x3ffffffffffffffc00000000000000
+126: 0x7ffffffffffffff800000000000000
+127: 0xfffffffffffffff000000000000000
+128: 0xffffffffffffffffffffffffffffff
+129: 0x1fffffffffffffffffffffffffffffe
+130: 0x3fffffffffffffffffffffffffffffc
+131: 0x7fffffffffffffffffffffffffffff8
+132: 0xffffffffffffffffffffffffffffff0
+133: 0x1fffffffffffffffffffffffffffffe0
+134: 0x3fffffffffffffffffffffffffffffc0
+135: 0x7fffffffffffffffffffffffffffff80
+136: 0xffffffffffffffffffffffffffffff00
+137: 0x1fffffffffffffffffffffffffffffe00
+138: 0x3fffffffffffffffffffffffffffffc00
+139: 0x7fffffffffffffffffffffffffffff800
+140: 0xffffffffffffffffffffffffffffff000
+141: 0x1fffffffffffffffffffffffffffffe000
+142: 0x3fffffffffffffffffffffffffffffc000
+143: 0x7fffffffffffffffffffffffffffff8000
+144: 0xffffffffffffffffffffffffffffff0000
+145: 0x1fffffffffffffffffffffffffffffe0000
+146: 0x3fffffffffffffffffffffffffffffc0000
+147: 0x7fffffffffffffffffffffffffffff80000
+148: 0xffffffffffffffffffffffffffffff00000
+149: 0x1fffffffffffffffffffffffffffffe00000
+150: 0x3fffffffffffffffffffffffffffffc00000
+151: 0x7fffffffffffffffffffffffffffff800000
+152: 0xffffffffffffffffffffffffffffff000000
+153: 0x1fffffffffffffffffffffffffffffe000000
+154: 0x3fffffffffffffffffffffffffffffc000000
+155: 0x7fffffffffffffffffffffffffffff8000000
+156: 0xffffffffffffffffffffffffffffff0000000
+157: 0x1fffffffffffffffffffffffffffffe0000000
+158: 0x3fffffffffffffffffffffffffffffc0000000
+159: 0x7fffffffffffffffffffffffffffff80000000
+160: 0xffffffffffffffffffffffffffffff00000000
+161: 0x1fffffffffffffffffffffffffffffe00000000
+162: 0x3fffffffffffffffffffffffffffffc00000000
+163: 0x7fffffffffffffffffffffffffffff800000000
+164: 0xffffffffffffffffffffffffffffff000000000
+165: 0x1fffffffffffffffffffffffffffffe000000000
+166: 0x3fffffffffffffffffffffffffffffc000000000
+167: 0x7fffffffffffffffffffffffffffff8000000000
+168: 0xffffffffffffffffffffffffffffff0000000000
+169: 0x1fffffffffffffffffffffffffffffe0000000000
+170: 0x3fffffffffffffffffffffffffffffc0000000000
+171: 0x7fffffffffffffffffffffffffffff80000000000
+172: 0xffffffffffffffffffffffffffffff00000000000
+173: 0x1fffffffffffffffffffffffffffffe00000000000
+174: 0x3fffffffffffffffffffffffffffffc00000000000
+175: 0x7fffffffffffffffffffffffffffff800000000000
+176: 0xffffffffffffffffffffffffffffff000000000000
+177: 0x1fffffffffffffffffffffffffffffe000000000000
+178: 0x3fffffffffffffffffffffffffffffc000000000000
+179: 0x7fffffffffffffffffffffffffffff8000000000000
+180: 0xffffffffffffffffffffffffffffff0000000000000
+181: 0x1fffffffffffffffffffffffffffffe0000000000000
+182: 0x3fffffffffffffffffffffffffffffc0000000000000
+183: 0x7fffffffffffffffffffffffffffff80000000000000
+184: 0xffffffffffffffffffffffffffffff00000000000000
+185: 0x1fffffffffffffffffffffffffffffe00000000000000
+186: 0x3fffffffffffffffffffffffffffffc00000000000000
+187: 0x7fffffffffffffffffffffffffffff800000000000000
+188: 0xffffffffffffffffffffffffffffff000000000000000
+189: 0x1fffffffffffffffffffffffffffffe000000000000000
+190: 0x3fffffffffffffffffffffffffffffc000000000000000
+191: 0x7fffffffffffffffffffffffffffff8000000000000000
+192: 0xffffffffffffffffffffffffffffff0000000000000000
+193: 0x1fffffffffffffffffffffffffffffe0000000000000000
+194: 0x3fffffffffffffffffffffffffffffc0000000000000000
+195: 0x7fffffffffffffffffffffffffffff80000000000000000
+196: 0xffffffffffffffffffffffffffffff00000000000000000
+197: 0x1fffffffffffffffffffffffffffffe00000000000000000
+198: 0x3fffffffffffffffffffffffffffffc00000000000000000
+199: 0x7fffffffffffffffffffffffffffff800000000000000000
+200: 0xffffffffffffffffffffffffffffff000000000000000000
+201: 0x1fffffffffffffffffffffffffffffe000000000000000000
+202: 0x3fffffffffffffffffffffffffffffc000000000000000000
+203: 0x7fffffffffffffffffffffffffffff8000000000000000000
+204: 0xffffffffffffffffffffffffffffff0000000000000000000
+205: 0x1fffffffffffffffffffffffffffffe0000000000000000000
+206: 0x3fffffffffffffffffffffffffffffc0000000000000000000
+207: 0x7fffffffffffffffffffffffffffff80000000000000000000
+208: 0xffffffffffffffffffffffffffffff00000000000000000000
+209: 0x1fffffffffffffffffffffffffffffe00000000000000000000
+210: 0x3fffffffffffffffffffffffffffffc00000000000000000000
+211: 0x7fffffffffffffffffffffffffffff800000000000000000000
+212: 0xffffffffffffffffffffffffffffff000000000000000000000
+213: 0x1fffffffffffffffffffffffffffffe000000000000000000000
+214: 0x3fffffffffffffffffffffffffffffc000000000000000000000
+215: 0x7fffffffffffffffffffffffffffff8000000000000000000000
+216: 0xffffffffffffffffffffffffffffff0000000000000000000000
+217: 0x1fffffffffffffffffffffffffffffe0000000000000000000000
+218: 0x3fffffffffffffffffffffffffffffc0000000000000000000000
+219: 0x7fffffffffffffffffffffffffffff80000000000000000000000
+220: 0xffffffffffffffffffffffffffffff00000000000000000000000
+221: 0x1fffffffffffffffffffffffffffffe00000000000000000000000
+222: 0x3fffffffffffffffffffffffffffffc00000000000000000000000
+223: 0x7fffffffffffffffffffffffffffff800000000000000000000000
+224: 0xffffffffffffffffffffffffffffff000000000000000000000000
+225: 0x1fffffffffffffffffffffffffffffe000000000000000000000000
+226: 0x3fffffffffffffffffffffffffffffc000000000000000000000000
+227: 0x7fffffffffffffffffffffffffffff8000000000000000000000000
+228: 0xffffffffffffffffffffffffffffff0000000000000000000000000
+229: 0x1fffffffffffffffffffffffffffffe0000000000000000000000000
+230: 0x3fffffffffffffffffffffffffffffc0000000000000000000000000
+231: 0x7fffffffffffffffffffffffffffff80000000000000000000000000
+232: 0xffffffffffffffffffffffffffffff00000000000000000000000000
+233: 0x1fffffffffffffffffffffffffffffe00000000000000000000000000
+234: 0x3fffffffffffffffffffffffffffffc00000000000000000000000000
+235: 0x7fffffffffffffffffffffffffffff800000000000000000000000000
+236: 0xffffffffffffffffffffffffffffff000000000000000000000000000
+237: 0x1fffffffffffffffffffffffffffffe000000000000000000000000000
+238: 0x3fffffffffffffffffffffffffffffc000000000000000000000000000
+239: 0x7fffffffffffffffffffffffffffff8000000000000000000000000000
+240: 0xffffffffffffffffffffffffffffff0000000000000000000000000000
+241: 0x1fffffffffffffffffffffffffffffe0000000000000000000000000000
+242: 0x3fffffffffffffffffffffffffffffc0000000000000000000000000000
+243: 0x7fffffffffffffffffffffffffffff80000000000000000000000000000
+244: 0xffffffffffffffffffffffffffffff00000000000000000000000000000
+245: 0x1fffffffffffffffffffffffffffffe00000000000000000000000000000
+246: 0x3fffffffffffffffffffffffffffffc00000000000000000000000000000
+247: 0x7fffffffffffffffffffffffffffff800000000000000000000000000000
+248: 0xffffffffffffffffffffffffffffff000000000000000000000000000000
+249: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+250: 0x1fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe
+251: 0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc
+252: 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff8
+253: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0
+254: 0x1fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0
+255: 0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc0
+256: 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff80
+257: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00
+258: 0x1fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe00
+259: 0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc00
+260: 0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+261: 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe
+262: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc
+263: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd
+264: 0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa
+265: 0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff4
+266: 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe8
+267: 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeb

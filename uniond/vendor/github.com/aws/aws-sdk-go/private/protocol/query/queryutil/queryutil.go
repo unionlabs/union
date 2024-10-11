@@ -122,8 +122,8 @@ func (q *queryParser) parseStruct(v url.Values, value reflect.Value, prefix stri
 }
 
 func (q *queryParser) parseList(v url.Values, value reflect.Value, prefix string, tag reflect.StructTag) error {
-	// If it's empty, generate an empty value
-	if !value.IsNil() && value.Len() == 0 {
+	// If it's empty, and not ec2, generate an empty value
+	if !value.IsNil() && value.Len() == 0 && !q.isEC2 {
 		v.Set(prefix, "")
 		return nil
 	}

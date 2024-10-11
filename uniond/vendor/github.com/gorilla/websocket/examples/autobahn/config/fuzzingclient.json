@@ -1,0 +1,29 @@
+{
+  "cases": ["*"],
+  "exclude-cases": [],
+  "exclude-agent-cases": {},
+  "outdir": "/reports",
+  "options": {"failByDrop": false},
+  "servers": [
+    {
+      "agent": "ReadAllWriteMessage",
+      "url": "ws://host.docker.internal:9000/m"
+    },
+    {
+      "agent": "ReadAllWritePreparedMessage",
+      "url": "ws://host.docker.internal:9000/p"
+    },
+    {
+      "agent": "CopyFull",
+      "url": "ws://host.docker.internal:9000/f"
+    },
+    {
+      "agent": "ReadAllWrite",
+      "url": "ws://host.docker.internal:9000/r"
+    },
+    {
+      "agent": "CopyWriterOnly",
+      "url": "ws://host.docker.internal:9000/c"
+    }
+  ]
+}

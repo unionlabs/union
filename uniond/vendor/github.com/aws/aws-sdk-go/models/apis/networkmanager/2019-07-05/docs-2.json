@@ -1,0 +1,2876 @@
+{
+  "version": "2.0",
+  "service": "<p>Amazon Web Services enables you to centrally manage your Amazon Web Services Cloud WAN core network and your Transit Gateway network across Amazon Web Services accounts, Regions, and on-premises locations.</p>",
+  "operations": {
+    "AcceptAttachment": "<p>Accepts a core network attachment request. </p> <p>Once the attachment request is accepted by a core network owner, the attachment is created and connected to a core network.</p>",
+    "AssociateConnectPeer": "<p>Associates a core network Connect peer with a device and optionally, with a link. </p> <p>If you specify a link, it must be associated with the specified device. You can only associate core network Connect peers that have been created on a core network Connect attachment on a core network. </p>",
+    "AssociateCustomerGateway": "<p>Associates a customer gateway with a device and optionally, with a link. If you specify a link, it must be associated with the specified device. </p> <p>You can only associate customer gateways that are connected to a VPN attachment on a transit gateway or core network registered in your global network. When you register a transit gateway or core network, customer gateways that are connected to the transit gateway are automatically included in the global network. To list customer gateways that are connected to a transit gateway, use the <a href=\"https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeVpnConnections.html\">DescribeVpnConnections</a> EC2 API and filter by <code>transit-gateway-id</code>.</p> <p>You cannot associate a customer gateway with more than one device and link. </p>",
+    "AssociateLink": "<p>Associates a link to a device. A device can be associated to multiple links and a link can be associated to multiple devices. The device and link must be in the same global network and the same site.</p>",
+    "AssociateTransitGatewayConnectPeer": "<p>Associates a transit gateway Connect peer with a device, and optionally, with a link. If you specify a link, it must be associated with the specified device. </p> <p>You can only associate transit gateway Connect peers that have been created on a transit gateway that's registered in your global network.</p> <p>You cannot associate a transit gateway Connect peer with more than one device and link. </p>",
+    "CreateConnectAttachment": "<p>Creates a core network Connect attachment from a specified core network attachment. </p> <p>A core network Connect attachment is a GRE-based tunnel attachment that you can use to establish a connection between a core network and an appliance. A core network Connect attachment uses an existing VPC attachment as the underlying transport mechanism.</p>",
+    "CreateConnectPeer": "<p>Creates a core network Connect peer for a specified core network connect attachment between a core network and an appliance. The peer address and transit gateway address must be the same IP address family (IPv4 or IPv6).</p>",
+    "CreateConnection": "<p>Creates a connection between two devices. The devices can be a physical or virtual appliance that connects to a third-party appliance in a VPC, or a physical appliance that connects to another physical appliance in an on-premises network.</p>",
+    "CreateCoreNetwork": "<p>Creates a core network as part of your global network, and optionally, with a core network policy.</p>",
+    "CreateDevice": "<p>Creates a new device in a global network. If you specify both a site ID and a location, the location of the site is used for visualization in the Network Manager console.</p>",
+    "CreateGlobalNetwork": "<p>Creates a new, empty global network.</p>",
+    "CreateLink": "<p>Creates a new link for a specified site.</p>",
+    "CreateSite": "<p>Creates a new site in a global network.</p>",
+    "CreateSiteToSiteVpnAttachment": "<p>Creates an Amazon Web Services site-to-site VPN attachment on an edge location of a core network.</p>",
+    "CreateTransitGatewayPeering": "<p>Creates a transit gateway peering connection.</p>",
+    "CreateTransitGatewayRouteTableAttachment": "<p>Creates a transit gateway route table attachment.</p>",
+    "CreateVpcAttachment": "<p>Creates a VPC attachment on an edge location of a core network.</p>",
+    "DeleteAttachment": "<p>Deletes an attachment. Supports all attachment types.</p>",
+    "DeleteConnectPeer": "<p>Deletes a Connect peer.</p>",
+    "DeleteConnection": "<p>Deletes the specified connection in your global network.</p>",
+    "DeleteCoreNetwork": "<p>Deletes a core network along with all core network policies. This can only be done if there are no attachments on a core network.</p>",
+    "DeleteCoreNetworkPolicyVersion": "<p>Deletes a policy version from a core network. You can't delete the current LIVE policy.</p>",
+    "DeleteDevice": "<p>Deletes an existing device. You must first disassociate the device from any links and customer gateways.</p>",
+    "DeleteGlobalNetwork": "<p>Deletes an existing global network. You must first delete all global network objects (devices, links, and sites), deregister all transit gateways, and delete any core networks.</p>",
+    "DeleteLink": "<p>Deletes an existing link. You must first disassociate the link from any devices and customer gateways.</p>",
+    "DeletePeering": "<p>Deletes an existing peering connection.</p>",
+    "DeleteResourcePolicy": "<p>Deletes a resource policy for the specified resource. This revokes the access of the principals specified in the resource policy.</p>",
+    "DeleteSite": "<p>Deletes an existing site. The site cannot be associated with any device or link.</p>",
+    "DeregisterTransitGateway": "<p>Deregisters a transit gateway from your global network. This action does not delete your transit gateway, or modify any of its attachments. This action removes any customer gateway associations.</p>",
+    "DescribeGlobalNetworks": "<p>Describes one or more global networks. By default, all global networks are described. To describe the objects in your global network, you must use the appropriate <code>Get*</code> action. For example, to list the transit gateways in your global network, use <a>GetTransitGatewayRegistrations</a>.</p>",
+    "DisassociateConnectPeer": "<p>Disassociates a core network Connect peer from a device and a link. </p>",
+    "DisassociateCustomerGateway": "<p>Disassociates a customer gateway from a device and a link.</p>",
+    "DisassociateLink": "<p>Disassociates an existing device from a link. You must first disassociate any customer gateways that are associated with the link.</p>",
+    "DisassociateTransitGatewayConnectPeer": "<p>Disassociates a transit gateway Connect peer from a device and link.</p>",
+    "ExecuteCoreNetworkChangeSet": "<p>Executes a change set on your core network. Deploys changes globally based on the policy submitted..</p>",
+    "GetConnectAttachment": "<p>Returns information about a core network Connect attachment.</p>",
+    "GetConnectPeer": "<p>Returns information about a core network Connect peer.</p>",
+    "GetConnectPeerAssociations": "<p>Returns information about a core network Connect peer associations.</p>",
+    "GetConnections": "<p>Gets information about one or more of your connections in a global network.</p>",
+    "GetCoreNetwork": "<p>Returns information about the LIVE policy for a core network.</p>",
+    "GetCoreNetworkChangeEvents": "<p>Returns information about a core network change event.</p>",
+    "GetCoreNetworkChangeSet": "<p>Returns a change set between the LIVE core network policy and a submitted policy.</p>",
+    "GetCoreNetworkPolicy": "<p>Returns details about a core network policy. You can get details about your current live policy or any previous policy version.</p>",
+    "GetCustomerGatewayAssociations": "<p>Gets the association information for customer gateways that are associated with devices and links in your global network.</p>",
+    "GetDevices": "<p>Gets information about one or more of your devices in a global network.</p>",
+    "GetLinkAssociations": "<p>Gets the link associations for a device or a link. Either the device ID or the link ID must be specified.</p>",
+    "GetLinks": "<p>Gets information about one or more links in a specified global network.</p> <p>If you specify the site ID, you cannot specify the type or provider in the same request. You can specify the type and provider in the same request.</p>",
+    "GetNetworkResourceCounts": "<p>Gets the count of network resources, by resource type, for the specified global network.</p>",
+    "GetNetworkResourceRelationships": "<p>Gets the network resource relationships for the specified global network.</p>",
+    "GetNetworkResources": "<p>Describes the network resources for the specified global network.</p> <p>The results include information from the corresponding Describe call for the resource, minus any sensitive information such as pre-shared keys.</p>",
+    "GetNetworkRoutes": "<p>Gets the network routes of the specified global network.</p>",
+    "GetNetworkTelemetry": "<p>Gets the network telemetry of the specified global network.</p>",
+    "GetResourcePolicy": "<p>Returns information about a resource policy.</p>",
+    "GetRouteAnalysis": "<p>Gets information about the specified route analysis.</p>",
+    "GetSiteToSiteVpnAttachment": "<p>Returns information about a site-to-site VPN attachment.</p>",
+    "GetSites": "<p>Gets information about one or more of your sites in a global network.</p>",
+    "GetTransitGatewayConnectPeerAssociations": "<p>Gets information about one or more of your transit gateway Connect peer associations in a global network.</p>",
+    "GetTransitGatewayPeering": "<p>Returns information about a transit gateway peer.</p>",
+    "GetTransitGatewayRegistrations": "<p>Gets information about the transit gateway registrations in a specified global network.</p>",
+    "GetTransitGatewayRouteTableAttachment": "<p>Returns information about a transit gateway route table attachment.</p>",
+    "GetVpcAttachment": "<p>Returns information about a VPC attachment.</p>",
+    "ListAttachments": "<p>Returns a list of core network attachments.</p>",
+    "ListConnectPeers": "<p>Returns a list of core network Connect peers.</p>",
+    "ListCoreNetworkPolicyVersions": "<p>Returns a list of core network policy versions.</p>",
+    "ListCoreNetworks": "<p>Returns a list of owned and shared core networks.</p>",
+    "ListOrganizationServiceAccessStatus": "<p>Gets the status of the Service Linked Role (SLR) deployment for the accounts in a given Amazon Web Services Organization.</p>",
+    "ListPeerings": "<p>Lists the peerings for a core network.</p>",
+    "ListTagsForResource": "<p>Lists the tags for a specified resource.</p>",
+    "PutCoreNetworkPolicy": "<p>Creates a new, immutable version of a core network policy. A subsequent change set is created showing the differences between the LIVE policy and the submitted policy.</p>",
+    "PutResourcePolicy": "<p>Creates or updates a resource policy.</p>",
+    "RegisterTransitGateway": "<p>Registers a transit gateway in your global network. Not all Regions support transit gateways for global networks. For a list of the supported Regions, see <a href=\"https://docs.aws.amazon.com/network-manager/latest/tgwnm/what-are-global-networks.html#nm-available-regions\">Region Availability</a> in the <i>Amazon Web Services Transit Gateways for Global Networks User Guide</i>. The transit gateway can be in any of the supported Amazon Web Services Regions, but it must be owned by the same Amazon Web Services account that owns the global network. You cannot register a transit gateway in more than one global network.</p>",
+    "RejectAttachment": "<p>Rejects a core network attachment request.</p>",
+    "RestoreCoreNetworkPolicyVersion": "<p>Restores a previous policy version as a new, immutable version of a core network policy. A subsequent change set is created showing the differences between the LIVE policy and restored policy.</p>",
+    "StartOrganizationServiceAccessUpdate": "<p>Enables the Network Manager service for an Amazon Web Services Organization. This can only be called by a management account within the organization. </p>",
+    "StartRouteAnalysis": "<p>Starts analyzing the routing path between the specified source and destination. For more information, see <a href=\"https://docs.aws.amazon.com/vpc/latest/tgw/route-analyzer.html\">Route Analyzer</a>.</p>",
+    "TagResource": "<p>Tags a specified resource.</p>",
+    "UntagResource": "<p>Removes tags from a specified resource.</p>",
+    "UpdateConnection": "<p>Updates the information for an existing connection. To remove information for any of the parameters, specify an empty string.</p>",
+    "UpdateCoreNetwork": "<p>Updates the description of a core network.</p>",
+    "UpdateDevice": "<p>Updates the details for an existing device. To remove information for any of the parameters, specify an empty string.</p>",
+    "UpdateGlobalNetwork": "<p>Updates an existing global network. To remove information for any of the parameters, specify an empty string.</p>",
+    "UpdateLink": "<p>Updates the details for an existing link. To remove information for any of the parameters, specify an empty string.</p>",
+    "UpdateNetworkResourceMetadata": "<p>Updates the resource metadata for the specified global network.</p>",
+    "UpdateSite": "<p>Updates the information for an existing site. To remove information for any of the parameters, specify an empty string.</p>",
+    "UpdateVpcAttachment": "<p>Updates a VPC attachment.</p>"
+  },
+  "shapes": {
+    "AWSAccountId": {
+      "base": null,
+      "refs": {
+        "Attachment$OwnerAccountId": "<p>The ID of the attachment account owner.</p>",
+        "CoreNetworkSummary$OwnerAccountId": "<p>The ID of the account owner.</p>",
+        "GetNetworkResourceRelationshipsRequest$AccountId": "<p>The Amazon Web Services account ID.</p>",
+        "GetNetworkResourcesRequest$AccountId": "<p>The Amazon Web Services account ID.</p>",
+        "GetNetworkTelemetryRequest$AccountId": "<p>The Amazon Web Services account ID.</p>",
+        "NetworkResource$AccountId": "<p>The Amazon Web Services account ID.</p>",
+        "NetworkTelemetry$AccountId": "<p>The Amazon Web Services account ID.</p>",
+        "Peering$OwnerAccountId": "<p>The ID of the account owner.</p>",
+        "RouteAnalysis$OwnerAccountId": "<p>The ID of the AWS account that created the route analysis.</p>"
+      }
+    },
+    "AWSLocation": {
+      "base": "<p>Specifies a location in Amazon Web Services.</p>",
+      "refs": {
+        "CreateDeviceRequest$AWSLocation": "<p>The Amazon Web Services location of the device, if applicable. For an on-premises device, you can omit this parameter.</p>",
+        "Device$AWSLocation": "<p>The Amazon Web Services location of the device.</p>",
+        "UpdateDeviceRequest$AWSLocation": "<p>The Amazon Web Services location of the device, if applicable. For an on-premises device, you can omit this parameter.</p>"
+      }
+    },
+    "AcceptAttachmentRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AcceptAttachmentResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AccessDeniedException": {
+      "base": "<p>You do not have sufficient access to perform this action.</p>",
+      "refs": {
+      }
+    },
+    "AccountId": {
+      "base": null,
+      "refs": {
+        "AccountStatus$AccountId": "<p>The ID of an account within the Amazon Web Services Organization.</p>"
+      }
+    },
+    "AccountStatus": {
+      "base": "<p>Describes the current status of an account within an Amazon Web Services Organization, including service-linked roles (SLRs).</p>",
+      "refs": {
+        "AccountStatusList$member": null
+      }
+    },
+    "AccountStatusList": {
+      "base": null,
+      "refs": {
+        "OrganizationStatus$AccountStatusList": "<p>The current service-linked role (SLR) deployment status for an Amazon Web Services Organization's accounts. This will be either <code>SUCCEEDED</code> or <code>IN_PROGRESS</code>.</p>"
+      }
+    },
+    "Action": {
+      "base": null,
+      "refs": {
+        "StartOrganizationServiceAccessUpdateRequest$Action": "<p>The action to take for the update request. This can be either <code>ENABLE</code> or <code>DISABLE</code>.</p>"
+      }
+    },
+    "AssociateConnectPeerRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateConnectPeerResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateCustomerGatewayRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateCustomerGatewayResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateLinkRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateLinkResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateTransitGatewayConnectPeerRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "AssociateTransitGatewayConnectPeerResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Attachment": {
+      "base": "<p>Describes a core network attachment.</p>",
+      "refs": {
+        "AcceptAttachmentResponse$Attachment": "<p>The response to the attachment request. </p>",
+        "AttachmentList$member": null,
+        "ConnectAttachment$Attachment": "<p>The attachment details.</p>",
+        "DeleteAttachmentResponse$Attachment": "<p>Information about the deleted attachment.</p>",
+        "RejectAttachmentResponse$Attachment": "<p>Describes the rejected attachment request.</p>",
+        "SiteToSiteVpnAttachment$Attachment": "<p>Provides details about a site-to-site VPN attachment.</p>",
+        "TransitGatewayRouteTableAttachment$Attachment": null,
+        "VpcAttachment$Attachment": "<p>Provides details about the VPC attachment.</p>"
+      }
+    },
+    "AttachmentId": {
+      "base": null,
+      "refs": {
+        "AcceptAttachmentRequest$AttachmentId": "<p>The ID of the attachment. </p>",
+        "Attachment$AttachmentId": "<p>The ID of the attachment.</p>",
+        "ConnectAttachment$TransportAttachmentId": "<p>The ID of the transport attachment.</p>",
+        "ConnectPeer$ConnectAttachmentId": "<p>The ID of the attachment to connect.</p>",
+        "ConnectPeerSummary$ConnectAttachmentId": "<p>The ID of a Connect peer attachment.</p>",
+        "CoreNetworkChangeEventValues$AttachmentId": "<p>The ID of the attachment if the change event is associated with an attachment. </p>",
+        "CreateConnectAttachmentRequest$TransportAttachmentId": "<p>The ID of the attachment between the two connections.</p>",
+        "CreateConnectPeerRequest$ConnectAttachmentId": "<p>The ID of the connection attachment.</p>",
+        "DeleteAttachmentRequest$AttachmentId": "<p>The ID of the attachment to delete.</p>",
+        "GetConnectAttachmentRequest$AttachmentId": "<p>The ID of the attachment.</p>",
+        "GetSiteToSiteVpnAttachmentRequest$AttachmentId": "<p>The ID of the attachment.</p>",
+        "GetTransitGatewayRouteTableAttachmentRequest$AttachmentId": "<p>The ID of the transit gateway route table attachment.</p>",
+        "GetVpcAttachmentRequest$AttachmentId": "<p>The ID of the attachment.</p>",
+        "ListConnectPeersRequest$ConnectAttachmentId": "<p>The ID of the attachment.</p>",
+        "NetworkRouteDestination$CoreNetworkAttachmentId": "<p>The ID of a core network attachment.</p>",
+        "RejectAttachmentRequest$AttachmentId": "<p>The ID of the attachment.</p>",
+        "UpdateVpcAttachmentRequest$AttachmentId": "<p>The ID of the attachment.</p>"
+      }
+    },
+    "AttachmentList": {
+      "base": null,
+      "refs": {
+        "ListAttachmentsResponse$Attachments": "<p>Describes the list of attachments.</p>"
+      }
+    },
+    "AttachmentState": {
+      "base": null,
+      "refs": {
+        "Attachment$State": "<p>The state of the attachment.</p>",
+        "ListAttachmentsRequest$State": "<p>The state of the attachment.</p>"
+      }
+    },
+    "AttachmentType": {
+      "base": null,
+      "refs": {
+        "Attachment$AttachmentType": "<p>The type of attachment.</p>",
+        "ListAttachmentsRequest$AttachmentType": "<p>The type of attachment.</p>"
+      }
+    },
+    "Bandwidth": {
+      "base": "<p>Describes bandwidth information.</p>",
+      "refs": {
+        "CreateLinkRequest$Bandwidth": "<p> The upload speed and download speed in Mbps. </p>",
+        "Link$Bandwidth": "<p>The bandwidth for the link.</p>",
+        "UpdateLinkRequest$Bandwidth": "<p>The upload and download speed in Mbps. </p>"
+      }
+    },
+    "BgpOptions": {
+      "base": "<p>Describes the BGP options.</p>",
+      "refs": {
+        "CreateConnectPeerRequest$BgpOptions": "<p>The Connect peer BGP options. This only applies only when the protocol is <code>GRE</code>.</p>"
+      }
+    },
+    "Boolean": {
+      "base": null,
+      "refs": {
+        "NetworkResourceSummary$IsMiddlebox": "<p>Indicates whether this is a middlebox appliance.</p>",
+        "RouteAnalysis$IncludeReturnPath": "<p>Indicates whether to analyze the return path. The return path is not analyzed if the forward path analysis does not succeed.</p>",
+        "RouteAnalysis$UseMiddleboxes": "<p>Indicates whether to include the location of middlebox appliances in the route analysis.</p>",
+        "StartRouteAnalysisRequest$IncludeReturnPath": "<p>Indicates whether to analyze the return path. The default is <code>false</code>.</p>",
+        "StartRouteAnalysisRequest$UseMiddleboxes": "<p>Indicates whether to include the location of middlebox appliances in the route analysis. The default is <code>false</code>.</p>",
+        "VpcOptions$Ipv6Support": "<p>Indicates whether IPv6 is supported.</p>",
+        "VpcOptions$ApplianceModeSupport": "<p>Indicates whether appliance mode is supported. If enabled, traffic flow between a source and destination use the same Availability Zone for the VPC attachment for the lifetime of that flow. The default value is <code>false</code>.</p>"
+      }
+    },
+    "ChangeAction": {
+      "base": null,
+      "refs": {
+        "CoreNetworkChange$Action": "<p>The action to take for a core network.</p>",
+        "CoreNetworkChangeEvent$Action": "<p>The action taken for the change event.</p>"
+      }
+    },
+    "ChangeSetState": {
+      "base": null,
+      "refs": {
+        "CoreNetworkPolicy$ChangeSetState": "<p>The state of a core network policy.</p>",
+        "CoreNetworkPolicyVersion$ChangeSetState": "<p>The status of the policy version change set.</p>"
+      }
+    },
+    "ChangeStatus": {
+      "base": null,
+      "refs": {
+        "CoreNetworkChangeEvent$Status": "<p>The status of the core network change event.</p>"
+      }
+    },
+    "ChangeType": {
+      "base": null,
+      "refs": {
+        "CoreNetworkChange$Type": "<p>The type of change.</p>",
+        "CoreNetworkChangeEvent$Type": "<p>Describes the type of change event. </p>"
+      }
+    },
+    "ClientToken": {
+      "base": null,
+      "refs": {
+        "CreateConnectAttachmentRequest$ClientToken": "<p>The client token associated with the request.</p>",
+        "CreateConnectPeerRequest$ClientToken": "<p>The client token associated with the request.</p>",
+        "CreateCoreNetworkRequest$ClientToken": "<p>The client token associated with a core network request.</p>",
+        "CreateSiteToSiteVpnAttachmentRequest$ClientToken": "<p>The client token associated with the request.</p>",
+        "CreateTransitGatewayPeeringRequest$ClientToken": "<p>The client token associated with the request.</p>",
+        "CreateTransitGatewayRouteTableAttachmentRequest$ClientToken": "<p>The client token associated with the request.</p>",
+        "CreateVpcAttachmentRequest$ClientToken": "<p>The client token associated with the request.</p>",
+        "PutCoreNetworkPolicyRequest$ClientToken": "<p>The client token associated with the request.</p>"
+      }
+    },
+    "ConflictException": {
+      "base": "<p>There was a conflict processing the request. Updating or deleting the resource can cause an inconsistent state.</p>",
+      "refs": {
+      }
+    },
+    "ConnectAttachment": {
+      "base": "<p>Describes a core network Connect attachment.</p>",
+      "refs": {
+        "CreateConnectAttachmentResponse$ConnectAttachment": "<p>The response to a Connect attachment request.</p>",
+        "GetConnectAttachmentResponse$ConnectAttachment": "<p>Details about the Connect attachment.</p>"
+      }
+    },
+    "ConnectAttachmentOptions": {
+      "base": "<p>Describes a core network Connect attachment options.</p>",
+      "refs": {
+        "ConnectAttachment$Options": "<p>Options for connecting an attachment.</p>",
+        "CreateConnectAttachmentRequest$Options": "<p>Options for creating an attachment.</p>"
+      }
+    },
+    "ConnectPeer": {
+      "base": "<p>Describes a core network Connect peer.</p>",
+      "refs": {
+        "CreateConnectPeerResponse$ConnectPeer": "<p>The response to the request.</p>",
+        "DeleteConnectPeerResponse$ConnectPeer": "<p>Information about the deleted Connect peer.</p>",
+        "GetConnectPeerResponse$ConnectPeer": "<p>Returns information about a core network Connect peer.</p>"
+      }
+    },
+    "ConnectPeerAssociation": {
+      "base": "<p>Describes a core network Connect peer association.</p>",
+      "refs": {
+        "AssociateConnectPeerResponse$ConnectPeerAssociation": "<p>The response to the Connect peer request.</p>",
+        "ConnectPeerAssociationList$member": null,
+        "DisassociateConnectPeerResponse$ConnectPeerAssociation": "<p>Describes the Connect peer association.</p>"
+      }
+    },
+    "ConnectPeerAssociationList": {
+      "base": null,
+      "refs": {
+        "GetConnectPeerAssociationsResponse$ConnectPeerAssociations": "<p>Displays a list of Connect peer associations.</p>"
+      }
+    },
+    "ConnectPeerAssociationState": {
+      "base": null,
+      "refs": {
+        "ConnectPeerAssociation$State": "<p>The state of the Connect peer association.</p>"
+      }
+    },
+    "ConnectPeerBgpConfiguration": {
+      "base": "<p>Describes a core network BGP configuration.</p>",
+      "refs": {
+        "ConnectPeerBgpConfigurationList$member": null
+      }
+    },
+    "ConnectPeerBgpConfigurationList": {
+      "base": null,
+      "refs": {
+        "ConnectPeerConfiguration$BgpConfigurations": "<p>The Connect peer BGP configurations.</p>"
+      }
+    },
+    "ConnectPeerConfiguration": {
+      "base": "<p>Describes a core network Connect peer configuration.</p>",
+      "refs": {
+        "ConnectPeer$Configuration": "<p>The configuration of the Connect peer.</p>"
+      }
+    },
+    "ConnectPeerId": {
+      "base": null,
+      "refs": {
+        "AssociateConnectPeerRequest$ConnectPeerId": "<p>The ID of the Connect peer.</p>",
+        "ConnectPeer$ConnectPeerId": "<p>The ID of the Connect peer.</p>",
+        "ConnectPeerAssociation$ConnectPeerId": "<p>The ID of the Connect peer.</p>",
+        "ConnectPeerIdList$member": null,
+        "ConnectPeerSummary$ConnectPeerId": "<p>The ID of a Connect peer.</p>",
+        "DeleteConnectPeerRequest$ConnectPeerId": "<p>The ID of the deleted Connect peer.</p>",
+        "DisassociateConnectPeerRequest$ConnectPeerId": "<p>The ID of the Connect peer to disassociate from a device.</p>",
+        "GetConnectPeerRequest$ConnectPeerId": "<p>The ID of the Connect peer.</p>"
+      }
+    },
+    "ConnectPeerIdList": {
+      "base": null,
+      "refs": {
+        "GetConnectPeerAssociationsRequest$ConnectPeerIds": "<p>The IDs of the Connect peers.</p>"
+      }
+    },
+    "ConnectPeerState": {
+      "base": null,
+      "refs": {
+        "ConnectPeer$State": "<p>The state of the Connect peer.</p>",
+        "ConnectPeerSummary$ConnectPeerState": "<p>The state of a Connect peer.</p>"
+      }
+    },
+    "ConnectPeerSummary": {
+      "base": "<p>Summary description of a Connect peer.</p>",
+      "refs": {
+        "ConnectPeerSummaryList$member": null
+      }
+    },
+    "ConnectPeerSummaryList": {
+      "base": null,
+      "refs": {
+        "ListConnectPeersResponse$ConnectPeers": "<p>Describes the Connect peers.</p>"
+      }
+    },
+    "Connection": {
+      "base": "<p>Describes a connection.</p>",
+      "refs": {
+        "ConnectionList$member": null,
+        "CreateConnectionResponse$Connection": "<p>Information about the connection.</p>",
+        "DeleteConnectionResponse$Connection": "<p>Information about the connection.</p>",
+        "UpdateConnectionResponse$Connection": "<p>Information about the connection.</p>"
+      }
+    },
+    "ConnectionArn": {
+      "base": null,
+      "refs": {
+        "Connection$ConnectionArn": "<p>The Amazon Resource Name (ARN) of the connection.</p>"
+      }
+    },
+    "ConnectionHealth": {
+      "base": "<p>Describes connection health.</p>",
+      "refs": {
+        "NetworkTelemetry$Health": "<p>The connection health.</p>"
+      }
+    },
+    "ConnectionId": {
+      "base": null,
+      "refs": {
+        "Connection$ConnectionId": "<p>The ID of the connection.</p>",
+        "ConnectionIdList$member": null,
+        "DeleteConnectionRequest$ConnectionId": "<p>The ID of the connection.</p>",
+        "UpdateConnectionRequest$ConnectionId": "<p>The ID of the connection.</p>"
+      }
+    },
+    "ConnectionIdList": {
+      "base": null,
+      "refs": {
+        "GetConnectionsRequest$ConnectionIds": "<p>One or more connection IDs.</p>"
+      }
+    },
+    "ConnectionList": {
+      "base": null,
+      "refs": {
+        "GetConnectionsResponse$Connections": "<p>Information about the connections.</p>"
+      }
+    },
+    "ConnectionState": {
+      "base": null,
+      "refs": {
+        "Connection$State": "<p>The state of the connection.</p>"
+      }
+    },
+    "ConnectionStatus": {
+      "base": null,
+      "refs": {
+        "ConnectionHealth$Status": "<p>The connection status.</p>"
+      }
+    },
+    "ConnectionType": {
+      "base": null,
+      "refs": {
+        "ConnectionHealth$Type": "<p>The connection type.</p>"
+      }
+    },
+    "ConstrainedString": {
+      "base": null,
+      "refs": {
+        "AWSLocation$Zone": "<p>The Zone that the device is located in. Specify the ID of an Availability Zone, Local Zone, Wavelength Zone, or an Outpost.</p>",
+        "Attachment$SegmentName": "<p>The name of the segment attachment.</p>",
+        "Connection$Description": "<p>The description of the connection.</p>",
+        "ConstrainedStringList$member": null,
+        "CoreNetwork$Description": "<p>The description of a core network.</p>",
+        "CoreNetworkChange$Identifier": "<p>The resource identifier.</p>",
+        "CoreNetworkChange$IdentifierPath": "<p>Uniquely identifies the path for a change within the changeset. For example, the <code>IdentifierPath</code> for a core network segment change might be <code>\"CORE_NETWORK_SEGMENT/us-east-1/devsegment\"</code>.</p>",
+        "CoreNetworkChangeEvent$IdentifierPath": "<p>Uniquely identifies the path for a change within the changeset. For example, the <code>IdentifierPath</code> for a core network segment change might be <code>\"CORE_NETWORK_SEGMENT/us-east-1/devsegment\"</code>.</p>",
+        "CoreNetworkChangeEventValues$SegmentName": "<p>The segment name if the change event is associated with a segment.</p>",
+        "CoreNetworkChangeEventValues$NetworkFunctionGroupName": "<p>The changed network function group name.</p>",
+        "CoreNetworkChangeEventValues$Cidr": "<p>For a <code>STATIC_ROUTE</code> event, this is the IP address.</p>",
+        "CoreNetworkChangeValues$SegmentName": "<p>The names of the segments in a core network.</p>",
+        "CoreNetworkChangeValues$NetworkFunctionGroupName": "<p>The network function group name if the change event is associated with a network function group.</p>",
+        "CoreNetworkChangeValues$Cidr": "<p>The IP addresses used for a core network.</p>",
+        "CoreNetworkChangeValues$DestinationIdentifier": "<p>The ID of the destination.</p>",
+        "CoreNetworkNetworkFunctionGroup$Name": "<p>The name of the network function group.</p>",
+        "CoreNetworkNetworkFunctionGroupIdentifier$NetworkFunctionGroupName": "<p>The network function group name.</p>",
+        "CoreNetworkPolicy$Description": "<p>The description of a core network policy.</p>",
+        "CoreNetworkPolicyVersion$Description": "<p>The description of a core network policy version.</p>",
+        "CoreNetworkSegment$Name": "<p>The name of a core network segment.</p>",
+        "CoreNetworkSegmentEdgeIdentifier$SegmentName": "<p>The name of the segment edge.</p>",
+        "CoreNetworkSummary$Description": "<p>The description of a core network.</p>",
+        "CreateConnectionRequest$Description": "<p>A description of the connection.</p> <p>Length Constraints: Maximum length of 256 characters.</p>",
+        "CreateCoreNetworkRequest$Description": "<p>The description of a core network.</p>",
+        "CreateDeviceRequest$Description": "<p>A description of the device.</p> <p>Constraints: Maximum length of 256 characters.</p>",
+        "CreateDeviceRequest$Type": "<p>The type of the device.</p>",
+        "CreateDeviceRequest$Vendor": "<p>The vendor of the device.</p> <p>Constraints: Maximum length of 128 characters.</p>",
+        "CreateDeviceRequest$Model": "<p>The model of the device.</p> <p>Constraints: Maximum length of 128 characters.</p>",
+        "CreateDeviceRequest$SerialNumber": "<p>The serial number of the device.</p> <p>Constraints: Maximum length of 128 characters.</p>",
+        "CreateGlobalNetworkRequest$Description": "<p>A description of the global network.</p> <p>Constraints: Maximum length of 256 characters.</p>",
+        "CreateLinkRequest$Description": "<p>A description of the link.</p> <p>Constraints: Maximum length of 256 characters.</p>",
+        "CreateLinkRequest$Type": "<p>The type of the link.</p> <p>Constraints: Maximum length of 128 characters. Cannot include the following characters: | \\ ^</p>",
+        "CreateLinkRequest$Provider": "<p>The provider of the link.</p> <p>Constraints: Maximum length of 128 characters. Cannot include the following characters: | \\ ^</p>",
+        "CreateSiteRequest$Description": "<p>A description of your site.</p> <p>Constraints: Maximum length of 256 characters.</p>",
+        "Device$Description": "<p>The description of the device.</p>",
+        "Device$Type": "<p>The device type.</p>",
+        "Device$Vendor": "<p>The device vendor.</p>",
+        "Device$Model": "<p>The device model.</p>",
+        "Device$SerialNumber": "<p>The device serial number.</p>",
+        "EdgeOverride$UseEdge": "<p>The edge that should be used when overriding the current edge order.</p>",
+        "EdgeSet$member": null,
+        "GetLinksRequest$Type": "<p>The link type.</p>",
+        "GetLinksRequest$Provider": "<p>The link provider.</p>",
+        "GetNetworkResourceCountsRequest$ResourceType": "<p>The resource type.</p> <p>The following are the supported resource types for Direct Connect:</p> <ul> <li> <p> <code>dxcon</code> </p> </li> <li> <p> <code>dx-gateway</code> </p> </li> <li> <p> <code>dx-vif</code> </p> </li> </ul> <p>The following are the supported resource types for Network Manager:</p> <ul> <li> <p> <code>attachment</code> </p> </li> <li> <p> <code>connect-peer</code> </p> </li> <li> <p> <code>connection</code> </p> </li> <li> <p> <code>core-network</code> </p> </li> <li> <p> <code>device</code> </p> </li> <li> <p> <code>link</code> </p> </li> <li> <p> <code>peering</code> </p> </li> <li> <p> <code>site</code> </p> </li> </ul> <p>The following are the supported resource types for Amazon VPC:</p> <ul> <li> <p> <code>customer-gateway</code> </p> </li> <li> <p> <code>transit-gateway</code> </p> </li> <li> <p> <code>transit-gateway-attachment</code> </p> </li> <li> <p> <code>transit-gateway-connect-peer</code> </p> </li> <li> <p> <code>transit-gateway-route-table</code> </p> </li> <li> <p> <code>vpn-connection</code> </p> </li> </ul>",
+        "GetNetworkResourceRelationshipsRequest$ResourceType": "<p>The resource type.</p> <p>The following are the supported resource types for Direct Connect:</p> <ul> <li> <p> <code>dxcon</code> </p> </li> <li> <p> <code>dx-gateway</code> </p> </li> <li> <p> <code>dx-vif</code> </p> </li> </ul> <p>The following are the supported resource types for Network Manager:</p> <ul> <li> <p> <code>attachment</code> </p> </li> <li> <p> <code>connect-peer</code> </p> </li> <li> <p> <code>connection</code> </p> </li> <li> <p> <code>core-network</code> </p> </li> <li> <p> <code>device</code> </p> </li> <li> <p> <code>link</code> </p> </li> <li> <p> <code>peering</code> </p> </li> <li> <p> <code>site</code> </p> </li> </ul> <p>The following are the supported resource types for Amazon VPC:</p> <ul> <li> <p> <code>customer-gateway</code> </p> </li> <li> <p> <code>transit-gateway</code> </p> </li> <li> <p> <code>transit-gateway-attachment</code> </p> </li> <li> <p> <code>transit-gateway-connect-peer</code> </p> </li> <li> <p> <code>transit-gateway-route-table</code> </p> </li> <li> <p> <code>vpn-connection</code> </p> </li> </ul>",
+        "GetNetworkResourcesRequest$ResourceType": "<p>The resource type.</p> <p>The following are the supported resource types for Direct Connect:</p> <ul> <li> <p> <code>dxcon</code> </p> </li> <li> <p> <code>dx-gateway</code> </p> </li> <li> <p> <code>dx-vif</code> </p> </li> </ul> <p>The following are the supported resource types for Network Manager:</p> <ul> <li> <p> <code>attachment</code> </p> </li> <li> <p> <code>connect-peer</code> </p> </li> <li> <p> <code>connection</code> </p> </li> <li> <p> <code>core-network</code> </p> </li> <li> <p> <code>device</code> </p> </li> <li> <p> <code>link</code> </p> </li> <li> <p> <code>peering</code> </p> </li> <li> <p> <code>site</code> </p> </li> </ul> <p>The following are the supported resource types for Amazon VPC:</p> <ul> <li> <p> <code>customer-gateway</code> </p> </li> <li> <p> <code>transit-gateway</code> </p> </li> <li> <p> <code>transit-gateway-attachment</code> </p> </li> <li> <p> <code>transit-gateway-connect-peer</code> </p> </li> <li> <p> <code>transit-gateway-route-table</code> </p> </li> <li> <p> <code>vpn-connection</code> </p> </li> </ul>",
+        "GetNetworkTelemetryRequest$ResourceType": "<p>The resource type. The following are the supported resource types:</p> <ul> <li> <p> <code>connect-peer</code> </p> </li> <li> <p> <code>transit-gateway-connect-peer</code> </p> </li> <li> <p> <code>vpn-connection</code> </p> </li> </ul>",
+        "GetRouteAnalysisRequest$RouteAnalysisId": "<p>The ID of the route analysis.</p>",
+        "GlobalNetwork$Description": "<p>The description of the global network.</p>",
+        "Link$Description": "<p>The description of the link.</p>",
+        "Link$Type": "<p>The type of the link.</p>",
+        "Link$Provider": "<p>The provider of the link.</p>",
+        "Location$Address": "<p>The physical address.</p>",
+        "Location$Latitude": "<p>The latitude.</p>",
+        "Location$Longitude": "<p>The longitude.</p>",
+        "NetworkFunctionGroup$Name": "<p>The name of the network function group.</p>",
+        "NetworkResource$ResourceType": "<p>The resource type.</p> <p>The following are the supported resource types for Direct Connect:</p> <ul> <li> <p> <code>dxcon</code> </p> </li> <li> <p> <code>dx-gateway</code> </p> </li> <li> <p> <code>dx-vif</code> </p> </li> </ul> <p>The following are the supported resource types for Network Manager:</p> <ul> <li> <p> <code>attachment</code> </p> </li> <li> <p> <code>connect-peer</code> </p> </li> <li> <p> <code>connection</code> </p> </li> <li> <p> <code>core-network</code> </p> </li> <li> <p> <code>device</code> </p> </li> <li> <p> <code>link</code> </p> </li> <li> <p> <code>peering</code> </p> </li> <li> <p> <code>site</code> </p> </li> </ul> <p>The following are the supported resource types for Amazon VPC:</p> <ul> <li> <p> <code>customer-gateway</code> </p> </li> <li> <p> <code>transit-gateway</code> </p> </li> <li> <p> <code>transit-gateway-attachment</code> </p> </li> <li> <p> <code>transit-gateway-connect-peer</code> </p> </li> <li> <p> <code>transit-gateway-route-table</code> </p> </li> <li> <p> <code>vpn-connection</code> </p> </li> </ul>",
+        "NetworkResource$ResourceId": "<p>The ID of the resource.</p>",
+        "NetworkResource$Definition": "<p>Information about the resource, in JSON format. Network Manager gets this information by describing the resource using its Describe API call.</p>",
+        "NetworkResourceCount$ResourceType": "<p>The resource type.</p>",
+        "NetworkResourceMetadataMap$key": null,
+        "NetworkResourceMetadataMap$value": null,
+        "NetworkResourceSummary$ResourceType": "<p>The resource type.</p>",
+        "NetworkResourceSummary$Definition": "<p>Information about the resource, in JSON format. Network Manager gets this information by describing the resource using its Describe API call.</p>",
+        "NetworkResourceSummary$NameTag": "<p>The value for the Name tag.</p>",
+        "NetworkRoute$DestinationCidrBlock": "<p>A unique identifier for the route, such as a CIDR block.</p>",
+        "NetworkRoute$PrefixListId": "<p>The ID of the prefix list.</p>",
+        "NetworkRouteDestination$SegmentName": "<p>The name of the segment.</p>",
+        "NetworkRouteDestination$NetworkFunctionGroupName": "<p>The network function group name associated with the destination.</p>",
+        "NetworkRouteDestination$ResourceType": "<p>The resource type.</p>",
+        "NetworkRouteDestination$ResourceId": "<p>The ID of the resource.</p>",
+        "NetworkTelemetry$ResourceType": "<p>The resource type.</p>",
+        "NetworkTelemetry$ResourceId": "<p>The ID of the resource.</p>",
+        "NetworkTelemetry$Address": "<p>The address.</p>",
+        "PathComponent$DestinationCidrBlock": "<p>The destination CIDR block in the route table.</p>",
+        "ProposedNetworkFunctionGroupChange$NetworkFunctionGroupName": "<p>The proposed name change for the network function group name.</p>",
+        "ProposedSegmentChange$SegmentName": "<p>The name of the segment to change.</p>",
+        "PutCoreNetworkPolicyRequest$Description": "<p>a core network policy description.</p>",
+        "Relationship$From": "<p>The ARN of the resource.</p>",
+        "Relationship$To": "<p>The ARN of the resource.</p>",
+        "RouteAnalysis$RouteAnalysisId": "<p>The ID of the route analysis.</p>",
+        "Site$Description": "<p>The description of the site.</p>",
+        "TransitGatewayRegistrationStateReason$Message": "<p>The message for the state reason.</p>",
+        "UpdateConnectionRequest$Description": "<p>A description of the connection.</p> <p>Length Constraints: Maximum length of 256 characters.</p>",
+        "UpdateCoreNetworkRequest$Description": "<p>The description of the update.</p>",
+        "UpdateDeviceRequest$Description": "<p>A description of the device.</p> <p>Constraints: Maximum length of 256 characters.</p>",
+        "UpdateDeviceRequest$Type": "<p>The type of the device.</p>",
+        "UpdateDeviceRequest$Vendor": "<p>The vendor of the device.</p> <p>Constraints: Maximum length of 128 characters.</p>",
+        "UpdateDeviceRequest$Model": "<p>The model of the device.</p> <p>Constraints: Maximum length of 128 characters.</p>",
+        "UpdateDeviceRequest$SerialNumber": "<p>The serial number of the device.</p> <p>Constraints: Maximum length of 128 characters.</p>",
+        "UpdateGlobalNetworkRequest$Description": "<p>A description of the global network.</p> <p>Constraints: Maximum length of 256 characters.</p>",
+        "UpdateLinkRequest$Description": "<p>A description of the link.</p> <p>Constraints: Maximum length of 256 characters.</p>",
+        "UpdateLinkRequest$Type": "<p>The type of the link.</p> <p>Constraints: Maximum length of 128 characters.</p>",
+        "UpdateLinkRequest$Provider": "<p>The provider of the link.</p> <p>Constraints: Maximum length of 128 characters.</p>",
+        "UpdateSiteRequest$Description": "<p>A description of your site.</p> <p>Constraints: Maximum length of 256 characters.</p>",
+        "WhenSentToSegmentsList$member": null
+      }
+    },
+    "ConstrainedStringList": {
+      "base": null,
+      "refs": {
+        "ConnectPeerConfiguration$InsideCidrBlocks": "<p>The inside IP addresses used for a Connect peer configuration.</p>",
+        "CoreNetworkChangeValues$InsideCidrBlocks": "<p>The inside IP addresses used for core network change values.</p>",
+        "CoreNetworkChangeValues$SharedSegments": "<p>The shared segments for a core network change value. </p>",
+        "CoreNetworkEdge$InsideCidrBlocks": "<p>The inside IP addresses used for core network edges.</p>",
+        "CoreNetworkSegment$SharedSegments": "<p>The shared segments of a core network.</p>",
+        "CreateConnectPeerRequest$InsideCidrBlocks": "<p>The inside IP addresses used for BGP peering.</p>",
+        "GetNetworkRoutesRequest$ExactCidrMatches": "<p>An exact CIDR block.</p>",
+        "GetNetworkRoutesRequest$LongestPrefixMatches": "<p>The most specific route that matches the traffic (longest prefix match).</p>",
+        "GetNetworkRoutesRequest$SubnetOfMatches": "<p>The routes with a subnet that match the specified CIDR filter.</p>",
+        "GetNetworkRoutesRequest$SupernetOfMatches": "<p>The routes with a CIDR that encompasses the CIDR filter. Example: If you specify 10.0.1.0/30, then the result returns 10.0.1.0/29.</p>",
+        "GetNetworkRoutesRequest$PrefixListIds": "<p>The IDs of the prefix lists.</p>",
+        "ServiceInsertionSegments$SendVia": "<p>The list of segments associated with the <code>send-via</code> action.</p>",
+        "ServiceInsertionSegments$SendTo": "<p>The list of segments associated with the <code>send-to</code> action.</p>"
+      }
+    },
+    "CoreNetwork": {
+      "base": "<p>Describes a core network.</p>",
+      "refs": {
+        "CreateCoreNetworkResponse$CoreNetwork": "<p>Returns details about a core network.</p>",
+        "DeleteCoreNetworkResponse$CoreNetwork": "<p>Information about the deleted core network.</p>",
+        "GetCoreNetworkResponse$CoreNetwork": "<p>Details about a core network.</p>",
+        "UpdateCoreNetworkResponse$CoreNetwork": "<p>Returns information about a core network update.</p>"
+      }
+    },
+    "CoreNetworkArn": {
+      "base": null,
+      "refs": {
+        "Attachment$CoreNetworkArn": "<p>The ARN of a core network.</p>",
+        "CoreNetwork$CoreNetworkArn": "<p>The ARN of a core network.</p>",
+        "CoreNetworkSummary$CoreNetworkArn": "<p>a core network ARN.</p>",
+        "Peering$CoreNetworkArn": "<p>The ARN of a core network.</p>"
+      }
+    },
+    "CoreNetworkChange": {
+      "base": "<p>Details describing a core network change.</p>",
+      "refs": {
+        "CoreNetworkChangeList$member": null
+      }
+    },
+    "CoreNetworkChangeEvent": {
+      "base": "<p>Describes a core network change event. This can be a change to a segment, attachment, route, etc.</p>",
+      "refs": {
+        "CoreNetworkChangeEventList$member": null
+      }
+    },
+    "CoreNetworkChangeEventList": {
+      "base": null,
+      "refs": {
+        "GetCoreNetworkChangeEventsResponse$CoreNetworkChangeEvents": "<p>The response to <code>GetCoreNetworkChangeEventsRequest</code>.</p>"
+      }
+    },
+    "CoreNetworkChangeEventValues": {
+      "base": "<p>Describes a core network change event.</p>",
+      "refs": {
+        "CoreNetworkChangeEvent$Values": "<p>Details of the change event.</p>"
+      }
+    },
+    "CoreNetworkChangeList": {
+      "base": null,
+      "refs": {
+        "GetCoreNetworkChangeSetResponse$CoreNetworkChanges": "<p>Describes a core network changes.</p>"
+      }
+    },
+    "CoreNetworkChangeValues": {
+      "base": "<p>Describes a core network change.</p>",
+      "refs": {
+        "CoreNetworkChange$PreviousValues": "<p>The previous values for a core network.</p>",
+        "CoreNetworkChange$NewValues": "<p>The new value for a core network</p>"
+      }
+    },
+    "CoreNetworkEdge": {
+      "base": "<p>Describes a core network edge.</p>",
+      "refs": {
+        "CoreNetworkEdgeList$member": null
+      }
+    },
+    "CoreNetworkEdgeList": {
+      "base": null,
+      "refs": {
+        "CoreNetwork$Edges": "<p>The edges within a core network.</p>"
+      }
+    },
+    "CoreNetworkId": {
+      "base": null,
+      "refs": {
+        "Attachment$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "ConnectPeer$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "ConnectPeerSummary$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "CoreNetwork$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "CoreNetworkNetworkFunctionGroupIdentifier$CoreNetworkId": "<p>The ID of the core network.</p>",
+        "CoreNetworkPolicy$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "CoreNetworkPolicyVersion$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "CoreNetworkSegmentEdgeIdentifier$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "CoreNetworkSummary$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "CreateConnectAttachmentRequest$CoreNetworkId": "<p>The ID of a core network where you want to create the attachment. </p>",
+        "CreateSiteToSiteVpnAttachmentRequest$CoreNetworkId": "<p>The ID of a core network where you're creating a site-to-site VPN attachment.</p>",
+        "CreateTransitGatewayPeeringRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "CreateVpcAttachmentRequest$CoreNetworkId": "<p>The ID of a core network for the VPC attachment.</p>",
+        "DeleteCoreNetworkPolicyVersionRequest$CoreNetworkId": "<p>The ID of a core network for the deleted policy.</p>",
+        "DeleteCoreNetworkRequest$CoreNetworkId": "<p>The network ID of the deleted core network.</p>",
+        "ExecuteCoreNetworkChangeSetRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "GetCoreNetworkChangeEventsRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "GetCoreNetworkChangeSetRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "GetCoreNetworkPolicyRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "GetCoreNetworkRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "GetNetworkResourceRelationshipsRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "GetNetworkResourcesRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "GetNetworkTelemetryRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "ListAttachmentsRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "ListConnectPeersRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "ListCoreNetworkPolicyVersionsRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "ListPeeringsRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "NetworkResource$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "NetworkTelemetry$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "Peering$CoreNetworkId": "<p>The ID of the core network for the peering request.</p>",
+        "PutCoreNetworkPolicyRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "RestoreCoreNetworkPolicyVersionRequest$CoreNetworkId": "<p>The ID of a core network.</p>",
+        "UpdateCoreNetworkRequest$CoreNetworkId": "<p>The ID of a core network.</p>"
+      }
+    },
+    "CoreNetworkNetworkFunctionGroup": {
+      "base": "<p>Describes a network function group.</p>",
+      "refs": {
+        "CoreNetworkNetworkFunctionGroupList$member": null
+      }
+    },
+    "CoreNetworkNetworkFunctionGroupIdentifier": {
+      "base": "<p>Describes a core network </p>",
+      "refs": {
+        "RouteTableIdentifier$CoreNetworkNetworkFunctionGroup": "<p>The route table identifier associated with the network function group.</p>"
+      }
+    },
+    "CoreNetworkNetworkFunctionGroupList": {
+      "base": null,
+      "refs": {
+        "CoreNetwork$NetworkFunctionGroups": "<p>The network function groups associated with a core network.</p>"
+      }
+    },
+    "CoreNetworkPolicy": {
+      "base": "<p>Describes a core network policy. You can have only one LIVE Core Policy.</p>",
+      "refs": {
+        "DeleteCoreNetworkPolicyVersionResponse$CoreNetworkPolicy": "<p>Returns information about the deleted policy version. </p>",
+        "GetCoreNetworkPolicyResponse$CoreNetworkPolicy": "<p>The details about a core network policy.</p>",
+        "PutCoreNetworkPolicyResponse$CoreNetworkPolicy": "<p>Describes the changed core network policy.</p>",
+        "RestoreCoreNetworkPolicyVersionResponse$CoreNetworkPolicy": "<p>Describes the restored core network policy.</p>"
+      }
+    },
+    "CoreNetworkPolicyAlias": {
+      "base": null,
+      "refs": {
+        "CoreNetworkPolicy$Alias": "<p>Whether a core network policy is the current LIVE policy or the most recently submitted policy.</p>",
+        "CoreNetworkPolicyVersion$Alias": "<p>Whether a core network policy is the current policy or the most recently submitted policy.</p>",
+        "GetCoreNetworkPolicyRequest$Alias": "<p>The alias of a core network policy </p>"
+      }
+    },
+    "CoreNetworkPolicyDocument": {
+      "base": null,
+      "refs": {
+        "CoreNetworkPolicy$PolicyDocument": "<p>Describes a core network policy.</p>",
+        "CreateCoreNetworkRequest$PolicyDocument": "<p>The policy document for creating a core network.</p>",
+        "PutCoreNetworkPolicyRequest$PolicyDocument": "<p>The policy document.</p>"
+      }
+    },
+    "CoreNetworkPolicyError": {
+      "base": "<p>Provides details about an error in a core network policy.</p>",
+      "refs": {
+        "CoreNetworkPolicyErrorList$member": null
+      }
+    },
+    "CoreNetworkPolicyErrorList": {
+      "base": null,
+      "refs": {
+        "CoreNetworkPolicy$PolicyErrors": "<p>Describes any errors in a core network policy.</p>",
+        "CoreNetworkPolicyException$Errors": "<p>Describes a core network policy exception.</p>"
+      }
+    },
+    "CoreNetworkPolicyException": {
+      "base": "<p>Describes a core network policy exception.</p>",
+      "refs": {
+      }
+    },
+    "CoreNetworkPolicyVersion": {
+      "base": "<p>Describes a core network policy version.</p>",
+      "refs": {
+        "CoreNetworkPolicyVersionList$member": null
+      }
+    },
+    "CoreNetworkPolicyVersionList": {
+      "base": null,
+      "refs": {
+        "ListCoreNetworkPolicyVersionsResponse$CoreNetworkPolicyVersions": "<p>Describes core network policy versions.</p>"
+      }
+    },
+    "CoreNetworkSegment": {
+      "base": "<p>Describes a core network segment, which are dedicated routes. Only attachments within this segment can communicate with each other.</p>",
+      "refs": {
+        "CoreNetworkSegmentList$member": null
+      }
+    },
+    "CoreNetworkSegmentEdgeIdentifier": {
+      "base": "<p>Returns details about a core network edge.</p>",
+      "refs": {
+        "GetNetworkRoutesResponse$CoreNetworkSegmentEdge": "<p>Describes a core network segment edge.</p>",
+        "RouteTableIdentifier$CoreNetworkSegmentEdge": "<p>The segment edge in a core network.</p>"
+      }
+    },
+    "CoreNetworkSegmentList": {
+      "base": null,
+      "refs": {
+        "CoreNetwork$Segments": "<p>The segments within a core network.</p>"
+      }
+    },
+    "CoreNetworkState": {
+      "base": null,
+      "refs": {
+        "CoreNetwork$State": "<p>The current state of a core network.</p>",
+        "CoreNetworkSummary$State": "<p>The state of a core network.</p>"
+      }
+    },
+    "CoreNetworkSummary": {
+      "base": "<p>Returns summary information about a core network.</p>",
+      "refs": {
+        "CoreNetworkSummaryList$member": null
+      }
+    },
+    "CoreNetworkSummaryList": {
+      "base": null,
+      "refs": {
+        "ListCoreNetworksResponse$CoreNetworks": "<p>Describes the list of core networks.</p>"
+      }
+    },
+    "CreateConnectAttachmentRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateConnectAttachmentResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateConnectPeerRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateConnectPeerResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateConnectionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateConnectionResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateCoreNetworkRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateCoreNetworkResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateDeviceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateDeviceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateGlobalNetworkRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateGlobalNetworkResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateLinkRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateLinkResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateSiteRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateSiteResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateSiteToSiteVpnAttachmentRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateSiteToSiteVpnAttachmentResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateTransitGatewayPeeringRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateTransitGatewayPeeringResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateTransitGatewayRouteTableAttachmentRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateTransitGatewayRouteTableAttachmentResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateVpcAttachmentRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateVpcAttachmentResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CustomerGatewayArn": {
+      "base": null,
+      "refs": {
+        "AssociateCustomerGatewayRequest$CustomerGatewayArn": "<p>The Amazon Resource Name (ARN) of the customer gateway.</p>",
+        "CustomerGatewayArnList$member": null,
+        "CustomerGatewayAssociation$CustomerGatewayArn": "<p>The Amazon Resource Name (ARN) of the customer gateway.</p>",
+        "DisassociateCustomerGatewayRequest$CustomerGatewayArn": "<p>The Amazon Resource Name (ARN) of the customer gateway.</p>"
+      }
+    },
+    "CustomerGatewayArnList": {
+      "base": null,
+      "refs": {
+        "GetCustomerGatewayAssociationsRequest$CustomerGatewayArns": "<p>One or more customer gateway Amazon Resource Names (ARNs). The maximum is 10.</p>"
+      }
+    },
+    "CustomerGatewayAssociation": {
+      "base": "<p>Describes the association between a customer gateway, a device, and a link.</p>",
+      "refs": {
+        "AssociateCustomerGatewayResponse$CustomerGatewayAssociation": "<p>The customer gateway association.</p>",
+        "CustomerGatewayAssociationList$member": null,
+        "DisassociateCustomerGatewayResponse$CustomerGatewayAssociation": "<p>Information about the customer gateway association.</p>"
+      }
+    },
+    "CustomerGatewayAssociationList": {
+      "base": null,
+      "refs": {
+        "GetCustomerGatewayAssociationsResponse$CustomerGatewayAssociations": "<p>The customer gateway associations.</p>"
+      }
+    },
+    "CustomerGatewayAssociationState": {
+      "base": null,
+      "refs": {
+        "CustomerGatewayAssociation$State": "<p>The association state.</p>"
+      }
+    },
+    "DateTime": {
+      "base": null,
+      "refs": {
+        "Attachment$CreatedAt": "<p>The timestamp when the attachment was created.</p>",
+        "Attachment$UpdatedAt": "<p>The timestamp when the attachment was last updated.</p>",
+        "ConnectPeer$CreatedAt": "<p>The timestamp when the Connect peer was created.</p>",
+        "ConnectPeerSummary$CreatedAt": "<p>The timestamp when a Connect peer was created.</p>",
+        "Connection$CreatedAt": "<p>The date and time that the connection was created.</p>",
+        "ConnectionHealth$Timestamp": "<p>The time the status was last updated.</p>",
+        "CoreNetwork$CreatedAt": "<p>The timestamp when a core network was created.</p>",
+        "CoreNetworkChangeEvent$EventTime": "<p>The timestamp for an event change in status.</p>",
+        "CoreNetworkPolicy$CreatedAt": "<p>The timestamp when a core network policy was created.</p>",
+        "CoreNetworkPolicyVersion$CreatedAt": "<p>The timestamp when a core network policy version was created.</p>",
+        "Device$CreatedAt": "<p>The date and time that the site was created.</p>",
+        "GetNetworkRoutesResponse$RouteTableTimestamp": "<p>The route table creation time.</p>",
+        "GlobalNetwork$CreatedAt": "<p>The date and time that the global network was created.</p>",
+        "Link$CreatedAt": "<p>The date and time that the link was created.</p>",
+        "NetworkResource$DefinitionTimestamp": "<p>The time that the resource definition was retrieved.</p>",
+        "Peering$CreatedAt": "<p>The timestamp when the attachment peer was created.</p>",
+        "RouteAnalysis$StartTimestamp": "<p>The time that the analysis started.</p>",
+        "Site$CreatedAt": "<p>The date and time that the site was created.</p>"
+      }
+    },
+    "DeleteAttachmentRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteAttachmentResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteConnectPeerRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteConnectPeerResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteConnectionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteConnectionResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteCoreNetworkPolicyVersionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteCoreNetworkPolicyVersionResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteCoreNetworkRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteCoreNetworkResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteDeviceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteDeviceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteGlobalNetworkRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteGlobalNetworkResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteLinkRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteLinkResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeletePeeringRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeletePeeringResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteResourcePolicyRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteResourcePolicyResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteSiteRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteSiteResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeregisterTransitGatewayRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeregisterTransitGatewayResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeGlobalNetworksRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeGlobalNetworksResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Device": {
+      "base": "<p>Describes a device.</p>",
+      "refs": {
+        "CreateDeviceResponse$Device": "<p>Information about the device.</p>",
+        "DeleteDeviceResponse$Device": "<p>Information about the device.</p>",
+        "DeviceList$member": null,
+        "UpdateDeviceResponse$Device": "<p>Information about the device.</p>"
+      }
+    },
+    "DeviceArn": {
+      "base": null,
+      "refs": {
+        "Device$DeviceArn": "<p>The Amazon Resource Name (ARN) of the device.</p>"
+      }
+    },
+    "DeviceId": {
+      "base": null,
+      "refs": {
+        "AssociateConnectPeerRequest$DeviceId": "<p>The ID of the device.</p>",
+        "AssociateCustomerGatewayRequest$DeviceId": "<p>The ID of the device.</p>",
+        "AssociateLinkRequest$DeviceId": "<p>The ID of the device.</p>",
+        "AssociateTransitGatewayConnectPeerRequest$DeviceId": "<p>The ID of the device.</p>",
+        "ConnectPeerAssociation$DeviceId": "<p>The ID of the device to connect to.</p>",
+        "Connection$DeviceId": "<p>The ID of the first device in the connection.</p>",
+        "Connection$ConnectedDeviceId": "<p>The ID of the second device in the connection.</p>",
+        "CreateConnectionRequest$DeviceId": "<p>The ID of the first device in the connection.</p>",
+        "CreateConnectionRequest$ConnectedDeviceId": "<p>The ID of the second device in the connection.</p>",
+        "CustomerGatewayAssociation$DeviceId": "<p>The ID of the device.</p>",
+        "DeleteDeviceRequest$DeviceId": "<p>The ID of the device.</p>",
+        "Device$DeviceId": "<p>The ID of the device.</p>",
+        "DeviceIdList$member": null,
+        "DisassociateLinkRequest$DeviceId": "<p>The ID of the device.</p>",
+        "GetConnectionsRequest$DeviceId": "<p>The ID of the device.</p>",
+        "GetLinkAssociationsRequest$DeviceId": "<p>The ID of the device.</p>",
+        "LinkAssociation$DeviceId": "<p>The device ID for the link association.</p>",
+        "TransitGatewayConnectPeerAssociation$DeviceId": "<p>The ID of the device.</p>",
+        "UpdateDeviceRequest$DeviceId": "<p>The ID of the device.</p>"
+      }
+    },
+    "DeviceIdList": {
+      "base": null,
+      "refs": {
+        "GetDevicesRequest$DeviceIds": "<p>One or more device IDs. The maximum is 10.</p>"
+      }
+    },
+    "DeviceList": {
+      "base": null,
+      "refs": {
+        "GetDevicesResponse$Devices": "<p>The devices.</p>"
+      }
+    },
+    "DeviceState": {
+      "base": null,
+      "refs": {
+        "Device$State": "<p>The device state.</p>"
+      }
+    },
+    "DisassociateConnectPeerRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateConnectPeerResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateCustomerGatewayRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateCustomerGatewayResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateLinkRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateLinkResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateTransitGatewayConnectPeerRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DisassociateTransitGatewayConnectPeerResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "EdgeOverride": {
+      "base": "<p>Describes the edge that's used for the override. </p>",
+      "refs": {
+        "WithEdgeOverridesList$member": null
+      }
+    },
+    "EdgeSet": {
+      "base": null,
+      "refs": {
+        "EdgeSetList$member": null
+      }
+    },
+    "EdgeSetList": {
+      "base": null,
+      "refs": {
+        "EdgeOverride$EdgeSets": "<p>The list of edge locations.</p>"
+      }
+    },
+    "ExceptionContextKey": {
+      "base": null,
+      "refs": {
+        "ExceptionContextMap$key": null
+      }
+    },
+    "ExceptionContextMap": {
+      "base": null,
+      "refs": {
+        "ResourceNotFoundException$Context": "<p>The specified resource could not be found.</p>"
+      }
+    },
+    "ExceptionContextValue": {
+      "base": null,
+      "refs": {
+        "ExceptionContextMap$value": null
+      }
+    },
+    "ExecuteCoreNetworkChangeSetRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ExecuteCoreNetworkChangeSetResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ExternalRegionCode": {
+      "base": null,
+      "refs": {
+        "Attachment$EdgeLocation": "<p>The Region where the edge is located.</p>",
+        "ConnectPeer$EdgeLocation": "<p>The Connect peer Regions where edges are located.</p>",
+        "ConnectPeerSummary$EdgeLocation": "<p>The Region where the edge is located.</p>",
+        "CoreNetworkChangeEventValues$EdgeLocation": "<p>The edge location for the core network change event.</p>",
+        "CoreNetworkEdge$EdgeLocation": "<p>The Region where a core network edge is located.</p>",
+        "CoreNetworkNetworkFunctionGroupIdentifier$EdgeLocation": "<p>The location for the core network edge.</p>",
+        "CoreNetworkSegmentEdgeIdentifier$EdgeLocation": "<p>The Region where the segment edge is located.</p>",
+        "CreateConnectAttachmentRequest$EdgeLocation": "<p>The Region where the edge is located.</p>",
+        "ExternalRegionCodeList$member": null,
+        "GetNetworkResourceRelationshipsRequest$AwsRegion": "<p>The Amazon Web Services Region.</p>",
+        "GetNetworkResourcesRequest$AwsRegion": "<p>The Amazon Web Services Region.</p>",
+        "GetNetworkTelemetryRequest$AwsRegion": "<p>The Amazon Web Services Region.</p>",
+        "ListAttachmentsRequest$EdgeLocation": "<p>The Region where the edge is located.</p>",
+        "ListPeeringsRequest$EdgeLocation": "<p>Returns a list edge locations for the </p>",
+        "NetworkResource$AwsRegion": "<p>The Amazon Web Services Region.</p>",
+        "NetworkRouteDestination$EdgeLocation": "<p>The edge location for the network destination.</p>",
+        "NetworkTelemetry$AwsRegion": "<p>The Amazon Web Services Region.</p>",
+        "Peering$EdgeLocation": "<p>The edge location for the peer.</p>"
+      }
+    },
+    "ExternalRegionCodeList": {
+      "base": null,
+      "refs": {
+        "CoreNetworkChangeValues$EdgeLocations": "<p>The Regions where edges are located in a core network. </p>",
+        "CoreNetworkNetworkFunctionGroup$EdgeLocations": "<p>The core network edge locations.</p>",
+        "CoreNetworkSegment$EdgeLocations": "<p>The Regions where the edges are located.</p>"
+      }
+    },
+    "FilterMap": {
+      "base": null,
+      "refs": {
+        "GetNetworkRoutesRequest$DestinationFilters": "<p>Filter by route table destination. Possible Values: TRANSIT_GATEWAY_ATTACHMENT_ID, RESOURCE_ID, or RESOURCE_TYPE.</p>"
+      }
+    },
+    "FilterName": {
+      "base": null,
+      "refs": {
+        "FilterMap$key": null
+      }
+    },
+    "FilterValue": {
+      "base": null,
+      "refs": {
+        "FilterValues$member": null
+      }
+    },
+    "FilterValues": {
+      "base": null,
+      "refs": {
+        "FilterMap$value": null
+      }
+    },
+    "GetConnectAttachmentRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetConnectAttachmentResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetConnectPeerAssociationsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetConnectPeerAssociationsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetConnectPeerRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetConnectPeerResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetConnectionsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetConnectionsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetCoreNetworkChangeEventsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetCoreNetworkChangeEventsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetCoreNetworkChangeSetRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetCoreNetworkChangeSetResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetCoreNetworkPolicyRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetCoreNetworkPolicyResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetCoreNetworkRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetCoreNetworkResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetCustomerGatewayAssociationsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetCustomerGatewayAssociationsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetDevicesRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetDevicesResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetLinkAssociationsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetLinkAssociationsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetLinksRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetLinksResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetNetworkResourceCountsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetNetworkResourceCountsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetNetworkResourceRelationshipsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetNetworkResourceRelationshipsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetNetworkResourcesRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetNetworkResourcesResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetNetworkRoutesRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetNetworkRoutesResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetNetworkTelemetryRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetNetworkTelemetryResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetResourcePolicyRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetResourcePolicyResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetRouteAnalysisRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetRouteAnalysisResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetSiteToSiteVpnAttachmentRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetSiteToSiteVpnAttachmentResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetSitesRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetSitesResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetTransitGatewayConnectPeerAssociationsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetTransitGatewayConnectPeerAssociationsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetTransitGatewayPeeringRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetTransitGatewayPeeringResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetTransitGatewayRegistrationsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetTransitGatewayRegistrationsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetTransitGatewayRouteTableAttachmentRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetTransitGatewayRouteTableAttachmentResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetVpcAttachmentRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GetVpcAttachmentResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "GlobalNetwork": {
+      "base": "<p>Describes a global network. This is a single private network acting as a high-level container for your network objects, including an Amazon Web Services-managed Core Network.</p>",
+      "refs": {
+        "CreateGlobalNetworkResponse$GlobalNetwork": "<p>Information about the global network object.</p>",
+        "DeleteGlobalNetworkResponse$GlobalNetwork": "<p>Information about the global network.</p>",
+        "GlobalNetworkList$member": null,
+        "UpdateGlobalNetworkResponse$GlobalNetwork": "<p>Information about the global network object.</p>"
+      }
+    },
+    "GlobalNetworkArn": {
+      "base": null,
+      "refs": {
+        "GlobalNetwork$GlobalNetworkArn": "<p>The Amazon Resource Name (ARN) of the global network.</p>"
+      }
+    },
+    "GlobalNetworkId": {
+      "base": null,
+      "refs": {
+        "AssociateConnectPeerRequest$GlobalNetworkId": "<p>The ID of your global network.</p>",
+        "AssociateCustomerGatewayRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "AssociateLinkRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "AssociateTransitGatewayConnectPeerRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "ConnectPeerAssociation$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "Connection$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "CoreNetwork$GlobalNetworkId": "<p>The ID of the global network that your core network is a part of. </p>",
+        "CoreNetworkSummary$GlobalNetworkId": "<p>The global network ID.</p>",
+        "CreateConnectionRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "CreateCoreNetworkRequest$GlobalNetworkId": "<p>The ID of the global network that a core network will be a part of. </p>",
+        "CreateDeviceRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "CreateLinkRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "CreateSiteRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "CustomerGatewayAssociation$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "DeleteConnectionRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "DeleteDeviceRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "DeleteGlobalNetworkRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "DeleteLinkRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "DeleteSiteRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "DeregisterTransitGatewayRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "Device$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "DisassociateConnectPeerRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "DisassociateCustomerGatewayRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "DisassociateLinkRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "DisassociateTransitGatewayConnectPeerRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetConnectPeerAssociationsRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetConnectionsRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetCustomerGatewayAssociationsRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetDevicesRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetLinkAssociationsRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetLinksRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetNetworkResourceCountsRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetNetworkResourceRelationshipsRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetNetworkResourcesRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetNetworkRoutesRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetNetworkTelemetryRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetRouteAnalysisRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetSitesRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetTransitGatewayConnectPeerAssociationsRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GetTransitGatewayRegistrationsRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GlobalNetwork$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "GlobalNetworkIdList$member": null,
+        "Link$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "LinkAssociation$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "RegisterTransitGatewayRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "RouteAnalysis$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "Site$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "StartRouteAnalysisRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "TransitGatewayConnectPeerAssociation$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "TransitGatewayRegistration$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "UpdateConnectionRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "UpdateDeviceRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "UpdateGlobalNetworkRequest$GlobalNetworkId": "<p>The ID of your global network.</p>",
+        "UpdateLinkRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "UpdateNetworkResourceMetadataRequest$GlobalNetworkId": "<p>The ID of the global network.</p>",
+        "UpdateSiteRequest$GlobalNetworkId": "<p>The ID of the global network.</p>"
+      }
+    },
+    "GlobalNetworkIdList": {
+      "base": null,
+      "refs": {
+        "DescribeGlobalNetworksRequest$GlobalNetworkIds": "<p>The IDs of one or more global networks. The maximum is 10.</p>"
+      }
+    },
+    "GlobalNetworkList": {
+      "base": null,
+      "refs": {
+        "DescribeGlobalNetworksResponse$GlobalNetworks": "<p>Information about the global networks.</p>"
+      }
+    },
+    "GlobalNetworkState": {
+      "base": null,
+      "refs": {
+        "GlobalNetwork$State": "<p>The state of the global network.</p>"
+      }
+    },
+    "IPAddress": {
+      "base": null,
+      "refs": {
+        "ConnectPeerBgpConfiguration$CoreNetworkAddress": "<p>The address of a core network.</p>",
+        "ConnectPeerBgpConfiguration$PeerAddress": "<p>The address of a core network Connect peer.</p>",
+        "ConnectPeerConfiguration$CoreNetworkAddress": "<p>The IP address of a core network.</p>",
+        "ConnectPeerConfiguration$PeerAddress": "<p>The IP address of the Connect peer.</p>",
+        "CreateConnectPeerRequest$CoreNetworkAddress": "<p>A Connect peer core network address. This only applies only when the protocol is <code>GRE</code>.</p>",
+        "CreateConnectPeerRequest$PeerAddress": "<p>The Connect peer address.</p>",
+        "RouteAnalysisEndpointOptions$IpAddress": "<p>The IP address.</p>",
+        "RouteAnalysisEndpointOptionsSpecification$IpAddress": "<p>The IP address.</p>"
+      }
+    },
+    "Integer": {
+      "base": null,
+      "refs": {
+        "Attachment$AttachmentPolicyRuleNumber": "<p>The policy rule number associated with the attachment.</p>",
+        "Bandwidth$UploadSpeed": "<p>Upload speed in Mbps.</p>",
+        "Bandwidth$DownloadSpeed": "<p>Download speed in Mbps.</p>",
+        "CoreNetworkPolicy$PolicyVersionId": "<p>The ID of the policy version.</p>",
+        "CoreNetworkPolicyVersion$PolicyVersionId": "<p>The ID of the policy version.</p>",
+        "DeleteCoreNetworkPolicyVersionRequest$PolicyVersionId": "<p>The version ID of the deleted policy.</p>",
+        "ExecuteCoreNetworkChangeSetRequest$PolicyVersionId": "<p>The ID of the policy version.</p>",
+        "GetCoreNetworkChangeEventsRequest$PolicyVersionId": "<p>The ID of the policy version.</p>",
+        "GetCoreNetworkChangeSetRequest$PolicyVersionId": "<p>The ID of the policy version.</p>",
+        "GetCoreNetworkPolicyRequest$PolicyVersionId": "<p>The ID of a core network policy version.</p>",
+        "NetworkResourceCount$Count": "<p>The resource count.</p>",
+        "PathComponent$Sequence": "<p>The sequence number in the path. The destination is 0.</p>",
+        "ProposedNetworkFunctionGroupChange$AttachmentPolicyRuleNumber": "<p>The proposed new attachment policy rule number for the network function group.</p>",
+        "ProposedSegmentChange$AttachmentPolicyRuleNumber": "<p>The rule number in the policy document that applies to this change.</p>",
+        "PutCoreNetworkPolicyRequest$LatestVersionId": "<p>The ID of a core network policy. </p>",
+        "RestoreCoreNetworkPolicyVersionRequest$PolicyVersionId": "<p>The ID of the policy version to restore.</p>"
+      }
+    },
+    "InternalServerException": {
+      "base": "<p>The request has failed due to an internal error.</p>",
+      "refs": {
+      }
+    },
+    "Link": {
+      "base": "<p>Describes a link.</p>",
+      "refs": {
+        "CreateLinkResponse$Link": "<p>Information about the link.</p>",
+        "DeleteLinkResponse$Link": "<p>Information about the link.</p>",
+        "LinkList$member": null,
+        "UpdateLinkResponse$Link": "<p>Information about the link.</p>"
+      }
+    },
+    "LinkArn": {
+      "base": null,
+      "refs": {
+        "Link$LinkArn": "<p>The Amazon Resource Name (ARN) of the link.</p>"
+      }
+    },
+    "LinkAssociation": {
+      "base": "<p>Describes the association between a device and a link.</p>",
+      "refs": {
+        "AssociateLinkResponse$LinkAssociation": "<p>The link association.</p>",
+        "DisassociateLinkResponse$LinkAssociation": "<p>Information about the link association.</p>",
+        "LinkAssociationList$member": null
+      }
+    },
+    "LinkAssociationList": {
+      "base": null,
+      "refs": {
+        "GetLinkAssociationsResponse$LinkAssociations": "<p>The link associations.</p>"
+      }
+    },
+    "LinkAssociationState": {
+      "base": null,
+      "refs": {
+        "LinkAssociation$LinkAssociationState": "<p>The state of the association.</p>"
+      }
+    },
+    "LinkId": {
+      "base": null,
+      "refs": {
+        "AssociateConnectPeerRequest$LinkId": "<p>The ID of the link.</p>",
+        "AssociateCustomerGatewayRequest$LinkId": "<p>The ID of the link.</p>",
+        "AssociateLinkRequest$LinkId": "<p>The ID of the link.</p>",
+        "AssociateTransitGatewayConnectPeerRequest$LinkId": "<p>The ID of the link.</p>",
+        "ConnectPeerAssociation$LinkId": "<p>The ID of the link.</p>",
+        "Connection$LinkId": "<p>The ID of the link for the first device in the connection.</p>",
+        "Connection$ConnectedLinkId": "<p>The ID of the link for the second device in the connection.</p>",
+        "CreateConnectionRequest$LinkId": "<p>The ID of the link for the first device.</p>",
+        "CreateConnectionRequest$ConnectedLinkId": "<p>The ID of the link for the second device.</p>",
+        "CustomerGatewayAssociation$LinkId": "<p>The ID of the link.</p>",
+        "DeleteLinkRequest$LinkId": "<p>The ID of the link.</p>",
+        "DisassociateLinkRequest$LinkId": "<p>The ID of the link.</p>",
+        "GetLinkAssociationsRequest$LinkId": "<p>The ID of the link.</p>",
+        "Link$LinkId": "<p>The ID of the link.</p>",
+        "LinkAssociation$LinkId": "<p>The ID of the link.</p>",
+        "LinkIdList$member": null,
+        "TransitGatewayConnectPeerAssociation$LinkId": "<p>The ID of the link.</p>",
+        "UpdateConnectionRequest$LinkId": "<p>The ID of the link for the first device in the connection.</p>",
+        "UpdateConnectionRequest$ConnectedLinkId": "<p>The ID of the link for the second device in the connection.</p>",
+        "UpdateLinkRequest$LinkId": "<p>The ID of the link.</p>"
+      }
+    },
+    "LinkIdList": {
+      "base": null,
+      "refs": {
+        "GetLinksRequest$LinkIds": "<p>One or more link IDs. The maximum is 10.</p>"
+      }
+    },
+    "LinkList": {
+      "base": null,
+      "refs": {
+        "GetLinksResponse$Links": "<p>The links.</p>"
+      }
+    },
+    "LinkState": {
+      "base": null,
+      "refs": {
+        "Link$State": "<p>The state of the link.</p>"
+      }
+    },
+    "ListAttachmentsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListAttachmentsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListConnectPeersRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListConnectPeersResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListCoreNetworkPolicyVersionsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListCoreNetworkPolicyVersionsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListCoreNetworksRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListCoreNetworksResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListOrganizationServiceAccessStatusRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListOrganizationServiceAccessStatusResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListPeeringsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListPeeringsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTagsForResourceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTagsForResourceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Location": {
+      "base": "<p>Describes a location.</p>",
+      "refs": {
+        "CreateDeviceRequest$Location": "<p>The location of the device.</p>",
+        "CreateSiteRequest$Location": "<p>The site location. This information is used for visualization in the Network Manager console. If you specify the address, the latitude and longitude are automatically calculated.</p> <ul> <li> <p> <code>Address</code>: The physical address of the site.</p> </li> <li> <p> <code>Latitude</code>: The latitude of the site. </p> </li> <li> <p> <code>Longitude</code>: The longitude of the site.</p> </li> </ul>",
+        "Device$Location": "<p>The site location.</p>",
+        "Site$Location": "<p>The location of the site.</p>",
+        "UpdateDeviceRequest$Location": null,
+        "UpdateSiteRequest$Location": "<p>The site location:</p> <ul> <li> <p> <code>Address</code>: The physical address of the site.</p> </li> <li> <p> <code>Latitude</code>: The latitude of the site. </p> </li> <li> <p> <code>Longitude</code>: The longitude of the site.</p> </li> </ul>"
+      }
+    },
+    "Long": {
+      "base": null,
+      "refs": {
+        "BgpOptions$PeerAsn": "<p>The Peer ASN of the BGP.</p>",
+        "ConnectPeerBgpConfiguration$CoreNetworkAsn": "<p>The ASN of the Coret Network.</p>",
+        "ConnectPeerBgpConfiguration$PeerAsn": "<p>The ASN of the Connect peer.</p>",
+        "CoreNetworkChangeValues$Asn": "<p>The ASN of a core network.</p>",
+        "CoreNetworkEdge$Asn": "<p>The ASN of a core network edge.</p>"
+      }
+    },
+    "MaxResults": {
+      "base": null,
+      "refs": {
+        "DescribeGlobalNetworksRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetConnectPeerAssociationsRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetConnectionsRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetCoreNetworkChangeEventsRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetCoreNetworkChangeSetRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetCustomerGatewayAssociationsRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetDevicesRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetLinkAssociationsRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetLinksRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetNetworkResourceCountsRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetNetworkResourceRelationshipsRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetNetworkResourcesRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetNetworkTelemetryRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetSitesRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetTransitGatewayConnectPeerAssociationsRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "GetTransitGatewayRegistrationsRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "ListAttachmentsRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "ListConnectPeersRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "ListCoreNetworkPolicyVersionsRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "ListCoreNetworksRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "ListOrganizationServiceAccessStatusRequest$MaxResults": "<p>The maximum number of results to return.</p>",
+        "ListPeeringsRequest$MaxResults": "<p>The maximum number of results to return.</p>"
+      }
+    },
+    "NetworkFunctionGroup": {
+      "base": "<p>Describes a network function group for service insertion.</p>",
+      "refs": {
+        "NetworkFunctionGroupList$member": null
+      }
+    },
+    "NetworkFunctionGroupList": {
+      "base": null,
+      "refs": {
+        "Via$NetworkFunctionGroups": "<p>The list of network function groups associated with the service insertion action.</p>"
+      }
+    },
+    "NetworkFunctionGroupName": {
+      "base": null,
+      "refs": {
+        "Attachment$NetworkFunctionGroupName": "<p>The name of the network function group.</p>"
+      }
+    },
+    "NetworkResource": {
+      "base": "<p>Describes a network resource.</p>",
+      "refs": {
+        "NetworkResourceList$member": null
+      }
+    },
+    "NetworkResourceCount": {
+      "base": "<p>Describes a resource count.</p>",
+      "refs": {
+        "NetworkResourceCountList$member": null
+      }
+    },
+    "NetworkResourceCountList": {
+      "base": null,
+      "refs": {
+        "GetNetworkResourceCountsResponse$NetworkResourceCounts": "<p>The count of resources.</p>"
+      }
+    },
+    "NetworkResourceList": {
+      "base": null,
+      "refs": {
+        "GetNetworkResourcesResponse$NetworkResources": "<p>The network resources.</p>"
+      }
+    },
+    "NetworkResourceMetadataMap": {
+      "base": null,
+      "refs": {
+        "NetworkResource$Metadata": "<p>The resource metadata.</p>",
+        "UpdateNetworkResourceMetadataRequest$Metadata": "<p>The resource metadata.</p>",
+        "UpdateNetworkResourceMetadataResponse$Metadata": "<p>The updated resource metadata.</p>"
+      }
+    },
+    "NetworkResourceSummary": {
+      "base": "<p>Describes a network resource.</p>",
+      "refs": {
+        "PathComponent$Resource": "<p>The resource.</p>"
+      }
+    },
+    "NetworkRoute": {
+      "base": "<p>Describes a network route.</p>",
+      "refs": {
+        "NetworkRouteList$member": null
+      }
+    },
+    "NetworkRouteDestination": {
+      "base": "<p>Describes the destination of a network route.</p>",
+      "refs": {
+        "NetworkRouteDestinationList$member": null
+      }
+    },
+    "NetworkRouteDestinationList": {
+      "base": null,
+      "refs": {
+        "NetworkRoute$Destinations": "<p>The destinations.</p>"
+      }
+    },
+    "NetworkRouteList": {
+      "base": null,
+      "refs": {
+        "GetNetworkRoutesResponse$NetworkRoutes": "<p>The network routes.</p>"
+      }
+    },
+    "NetworkTelemetry": {
+      "base": "<p>Describes the telemetry information for a resource.</p>",
+      "refs": {
+        "NetworkTelemetryList$member": null
+      }
+    },
+    "NetworkTelemetryList": {
+      "base": null,
+      "refs": {
+        "GetNetworkTelemetryResponse$NetworkTelemetry": "<p>The network telemetry.</p>"
+      }
+    },
+    "NextToken": {
+      "base": null,
+      "refs": {
+        "DescribeGlobalNetworksRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "DescribeGlobalNetworksResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetConnectPeerAssociationsRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetConnectPeerAssociationsResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetConnectionsRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetConnectionsResponse$NextToken": "<p>The token to use for the next page of results.</p>",
+        "GetCoreNetworkChangeEventsRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetCoreNetworkChangeEventsResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetCoreNetworkChangeSetRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetCoreNetworkChangeSetResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetCustomerGatewayAssociationsRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetCustomerGatewayAssociationsResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetDevicesRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetDevicesResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetLinkAssociationsRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetLinkAssociationsResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetLinksRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetLinksResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetNetworkResourceCountsRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetNetworkResourceCountsResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetNetworkResourceRelationshipsRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetNetworkResourceRelationshipsResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetNetworkResourcesRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetNetworkResourcesResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetNetworkTelemetryRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetNetworkTelemetryResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetSitesRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetSitesResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "GetTransitGatewayConnectPeerAssociationsRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetTransitGatewayConnectPeerAssociationsResponse$NextToken": "<p>The token to use for the next page of results.</p>",
+        "GetTransitGatewayRegistrationsRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "GetTransitGatewayRegistrationsResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "ListAttachmentsRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "ListAttachmentsResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "ListConnectPeersRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "ListConnectPeersResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "ListCoreNetworkPolicyVersionsRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "ListCoreNetworkPolicyVersionsResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "ListCoreNetworksRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "ListCoreNetworksResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "ListOrganizationServiceAccessStatusRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "ListOrganizationServiceAccessStatusResponse$NextToken": "<p>The token for the next page of results.</p>",
+        "ListPeeringsRequest$NextToken": "<p>The token for the next page of results.</p>",
+        "ListPeeringsResponse$NextToken": "<p>The token for the next page of results.</p>"
+      }
+    },
+    "OrganizationAwsServiceAccessStatus": {
+      "base": null,
+      "refs": {
+        "OrganizationStatus$OrganizationAwsServiceAccessStatus": "<p>The status of the organization's AWS service access. This will be <code>ENABLED</code> or <code>DISABLED</code>.</p>"
+      }
+    },
+    "OrganizationId": {
+      "base": null,
+      "refs": {
+        "OrganizationStatus$OrganizationId": "<p>The ID of an Amazon Web Services Organization.</p>"
+      }
+    },
+    "OrganizationStatus": {
+      "base": "<p>The status of an Amazon Web Services Organization and the accounts within that organization.</p>",
+      "refs": {
+        "ListOrganizationServiceAccessStatusResponse$OrganizationStatus": "<p>Displays the status of an Amazon Web Services Organization.</p>",
+        "StartOrganizationServiceAccessUpdateResponse$OrganizationStatus": "<p>The status of the service access update request for an Amazon Web Services Organization.</p>"
+      }
+    },
+    "PathComponent": {
+      "base": "<p>Describes a path component.</p>",
+      "refs": {
+        "PathComponentList$member": null
+      }
+    },
+    "PathComponentList": {
+      "base": null,
+      "refs": {
+        "RouteAnalysisPath$Path": "<p>The route analysis path.</p>"
+      }
+    },
+    "Peering": {
+      "base": "<p>Describes a peering connection.</p>",
+      "refs": {
+        "DeletePeeringResponse$Peering": "<p>Information about a deleted peering connection.</p>",
+        "PeeringList$member": null,
+        "TransitGatewayPeering$Peering": "<p>Describes a transit gateway peer connection.</p>"
+      }
+    },
+    "PeeringId": {
+      "base": null,
+      "refs": {
+        "CreateTransitGatewayRouteTableAttachmentRequest$PeeringId": "<p>The ID of the peer for the </p>",
+        "DeletePeeringRequest$PeeringId": "<p>The ID of the peering connection to delete.</p>",
+        "GetTransitGatewayPeeringRequest$PeeringId": "<p>The ID of the peering request.</p>",
+        "Peering$PeeringId": "<p>The ID of the peering attachment. </p>",
+        "TransitGatewayRouteTableAttachment$PeeringId": "<p>The ID of the peering attachment.</p>"
+      }
+    },
+    "PeeringList": {
+      "base": null,
+      "refs": {
+        "ListPeeringsResponse$Peerings": "<p>Lists the transit gateway peerings for the <code>ListPeerings</code> request.</p>"
+      }
+    },
+    "PeeringState": {
+      "base": null,
+      "refs": {
+        "ListPeeringsRequest$State": "<p>Returns a list of the peering request states.</p>",
+        "Peering$State": "<p>The current state of the peering connection. </p>"
+      }
+    },
+    "PeeringType": {
+      "base": null,
+      "refs": {
+        "ListPeeringsRequest$PeeringType": "<p>Returns a list of a peering requests.</p>",
+        "Peering$PeeringType": "<p>The type of peering. This will be <code>TRANSIT_GATEWAY</code>.</p>"
+      }
+    },
+    "ProposedNetworkFunctionGroupChange": {
+      "base": "<p>Describes proposed changes to a network function group. </p>",
+      "refs": {
+        "Attachment$ProposedNetworkFunctionGroupChange": "<p>Describes a proposed change to a network function group associated with the attachment.</p>"
+      }
+    },
+    "ProposedSegmentChange": {
+      "base": "<p>Describes a proposed segment change. In some cases, the segment change must first be evaluated and accepted. </p>",
+      "refs": {
+        "Attachment$ProposedSegmentChange": "<p>The attachment to move from one segment to another.</p>"
+      }
+    },
+    "PutCoreNetworkPolicyRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "PutCoreNetworkPolicyResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "PutResourcePolicyRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "PutResourcePolicyResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ReasonContextKey": {
+      "base": null,
+      "refs": {
+        "ReasonContextMap$key": null
+      }
+    },
+    "ReasonContextMap": {
+      "base": null,
+      "refs": {
+        "RouteAnalysisCompletion$ReasonContext": "<p>Additional information about the path. Available only if a connection is not found.</p>"
+      }
+    },
+    "ReasonContextValue": {
+      "base": null,
+      "refs": {
+        "ReasonContextMap$value": null
+      }
+    },
+    "RegisterTransitGatewayRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "RegisterTransitGatewayResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "RejectAttachmentRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "RejectAttachmentResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Relationship": {
+      "base": "<p>Describes a resource relationship.</p>",
+      "refs": {
+        "RelationshipList$member": null
+      }
+    },
+    "RelationshipList": {
+      "base": null,
+      "refs": {
+        "GetNetworkResourceRelationshipsResponse$Relationships": "<p>The resource relationships.</p>"
+      }
+    },
+    "ResourceArn": {
+      "base": null,
+      "refs": {
+        "Attachment$ResourceArn": "<p>The attachment resource ARN.</p>",
+        "DeleteResourcePolicyRequest$ResourceArn": "<p>The ARN of the policy to delete.</p>",
+        "GetNetworkResourceRelationshipsRequest$RegisteredGatewayArn": "<p>The ARN of the registered gateway.</p>",
+        "GetNetworkResourceRelationshipsRequest$ResourceArn": "<p>The ARN of the gateway.</p>",
+        "GetNetworkResourcesRequest$RegisteredGatewayArn": "<p>The ARN of the gateway.</p>",
+        "GetNetworkResourcesRequest$ResourceArn": "<p>The ARN of the resource.</p>",
+        "GetNetworkRoutesResponse$RouteTableArn": "<p>The ARN of the route table.</p>",
+        "GetNetworkTelemetryRequest$RegisteredGatewayArn": "<p>The ARN of the gateway.</p>",
+        "GetNetworkTelemetryRequest$ResourceArn": "<p>The ARN of the resource.</p>",
+        "GetResourcePolicyRequest$ResourceArn": "<p>The ARN of the resource.</p>",
+        "ListTagsForResourceRequest$ResourceArn": "<p>The Amazon Resource Name (ARN) of the resource.</p>",
+        "NetworkResource$RegisteredGatewayArn": "<p>The ARN of the gateway.</p>",
+        "NetworkResource$ResourceArn": "<p>The ARN of the resource.</p>",
+        "NetworkResourceSummary$RegisteredGatewayArn": "<p>The ARN of the gateway.</p>",
+        "NetworkResourceSummary$ResourceArn": "<p>The ARN of the resource.</p>",
+        "NetworkTelemetry$RegisteredGatewayArn": "<p>The ARN of the gateway.</p>",
+        "NetworkTelemetry$ResourceArn": "<p>The ARN of the resource.</p>",
+        "Peering$ResourceArn": "<p>The resource ARN of the peer.</p>",
+        "PutResourcePolicyRequest$ResourceArn": "<p>The ARN of the resource policy. </p>",
+        "TagResourceRequest$ResourceArn": "<p>The Amazon Resource Name (ARN) of the resource.</p>",
+        "UntagResourceRequest$ResourceArn": "<p>The Amazon Resource Name (ARN) of the resource.</p>",
+        "UpdateNetworkResourceMetadataRequest$ResourceArn": "<p>The ARN of the resource.</p>",
+        "UpdateNetworkResourceMetadataResponse$ResourceArn": "<p>The ARN of the resource.</p>"
+      }
+    },
+    "ResourceNotFoundException": {
+      "base": "<p>The specified resource could not be found.</p>",
+      "refs": {
+      }
+    },
+    "ResourcePolicyDocument": {
+      "base": null,
+      "refs": {
+        "GetResourcePolicyResponse$PolicyDocument": "<p>The resource policy document.</p>",
+        "PutResourcePolicyRequest$PolicyDocument": "<p>The JSON resource policy document.</p>"
+      }
+    },
+    "RestoreCoreNetworkPolicyVersionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "RestoreCoreNetworkPolicyVersionResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "RetryAfterSeconds": {
+      "base": null,
+      "refs": {
+        "InternalServerException$RetryAfterSeconds": "<p>Indicates when to retry the request.</p>",
+        "ThrottlingException$RetryAfterSeconds": "<p>Indicates when to retry the request.</p>"
+      }
+    },
+    "RouteAnalysis": {
+      "base": "<p>Describes a route analysis.</p>",
+      "refs": {
+        "GetRouteAnalysisResponse$RouteAnalysis": "<p>The route analysis.</p>",
+        "StartRouteAnalysisResponse$RouteAnalysis": "<p>The route analysis.</p>"
+      }
+    },
+    "RouteAnalysisCompletion": {
+      "base": "<p>Describes the status of an analysis at completion.</p>",
+      "refs": {
+        "RouteAnalysisPath$CompletionStatus": "<p>The status of the analysis at completion.</p>"
+      }
+    },
+    "RouteAnalysisCompletionReasonCode": {
+      "base": null,
+      "refs": {
+        "RouteAnalysisCompletion$ReasonCode": "<p>The reason code. Available only if a connection is not found.</p> <ul> <li> <p> <code>BLACKHOLE_ROUTE_FOR_DESTINATION_FOUND</code> - Found a black hole route with the destination CIDR block.</p> </li> <li> <p> <code>CYCLIC_PATH_DETECTED</code> - Found the same resource multiple times while traversing the path.</p> </li> <li> <p> <code>INACTIVE_ROUTE_FOR_DESTINATION_FOUND</code> - Found an inactive route with the destination CIDR block.</p> </li> <li> <p> <code>MAX_HOPS_EXCEEDED</code> - Analysis exceeded 64 hops without finding the destination.</p> </li> <li> <p> <code>ROUTE_NOT_FOUND</code> - Cannot find a route table with the destination CIDR block.</p> </li> <li> <p> <code>TGW_ATTACH_ARN_NO_MATCH</code> - Found an attachment, but not with the correct destination ARN.</p> </li> <li> <p> <code>TGW_ATTACH_NOT_FOUND</code> - Cannot find an attachment.</p> </li> <li> <p> <code>TGW_ATTACH_NOT_IN_TGW</code> - Found an attachment, but not to the correct transit gateway.</p> </li> <li> <p> <code>TGW_ATTACH_STABLE_ROUTE_TABLE_NOT_FOUND</code> - The state of the route table association is not associated.</p> </li> </ul>"
+      }
+    },
+    "RouteAnalysisCompletionResultCode": {
+      "base": null,
+      "refs": {
+        "RouteAnalysisCompletion$ResultCode": "<p>The result of the analysis. If the status is <code>NOT_CONNECTED</code>, check the reason code.</p>"
+      }
+    },
+    "RouteAnalysisEndpointOptions": {
+      "base": "<p>Describes a source or a destination.</p>",
+      "refs": {
+        "RouteAnalysis$Source": "<p>The source.</p>",
+        "RouteAnalysis$Destination": "<p>The destination.</p>"
+      }
+    },
+    "RouteAnalysisEndpointOptionsSpecification": {
+      "base": "<p>Describes a source or a destination.</p>",
+      "refs": {
+        "StartRouteAnalysisRequest$Source": "<p>The source from which traffic originates.</p>",
+        "StartRouteAnalysisRequest$Destination": "<p>The destination.</p>"
+      }
+    },
+    "RouteAnalysisPath": {
+      "base": "<p>Describes a route analysis path.</p>",
+      "refs": {
+        "RouteAnalysis$ForwardPath": "<p>The forward path.</p>",
+        "RouteAnalysis$ReturnPath": "<p>The return path.</p>"
+      }
+    },
+    "RouteAnalysisStatus": {
+      "base": null,
+      "refs": {
+        "RouteAnalysis$Status": "<p>The status of the route analysis.</p>"
+      }
+    },
+    "RouteState": {
+      "base": null,
+      "refs": {
+        "NetworkRoute$State": "<p>The route state. The possible values are <code>active</code> and <code>blackhole</code>.</p>",
+        "RouteStateList$member": null
+      }
+    },
+    "RouteStateList": {
+      "base": null,
+      "refs": {
+        "GetNetworkRoutesRequest$States": "<p>The route states.</p>"
+      }
+    },
+    "RouteTableIdentifier": {
+      "base": "<p>Describes a route table.</p>",
+      "refs": {
+        "GetNetworkRoutesRequest$RouteTableIdentifier": "<p>The ID of the route table.</p>"
+      }
+    },
+    "RouteTableType": {
+      "base": null,
+      "refs": {
+        "GetNetworkRoutesResponse$RouteTableType": "<p>The route table type.</p>"
+      }
+    },
+    "RouteType": {
+      "base": null,
+      "refs": {
+        "NetworkRoute$Type": "<p>The route type. The possible values are <code>propagated</code> and <code>static</code>.</p>",
+        "RouteTypeList$member": null
+      }
+    },
+    "RouteTypeList": {
+      "base": null,
+      "refs": {
+        "GetNetworkRoutesRequest$Types": "<p>The route types.</p>"
+      }
+    },
+    "SLRDeploymentStatus": {
+      "base": null,
+      "refs": {
+        "AccountStatus$SLRDeploymentStatus": "<p>The status of SLR deployment for the account.</p>",
+        "OrganizationStatus$SLRDeploymentStatus": "<p>The status of the SLR deployment for the account. This will be either <code>SUCCEEDED</code> or <code>IN_PROGRESS</code>.</p>"
+      }
+    },
+    "SegmentActionServiceInsertion": {
+      "base": null,
+      "refs": {
+        "ServiceInsertionAction$Action": "<p>The action the service insertion takes for traffic. <code>send-via</code> sends east-west traffic between attachments. <code>send-to</code> sends north-south traffic to the security appliance, and then from that to either the Internet or to an on-premesis location. </p>"
+      }
+    },
+    "SendViaMode": {
+      "base": null,
+      "refs": {
+        "ServiceInsertionAction$Mode": "<p>Describes the mode packets take for the <code>send-via</code> action. This is not used when the action is <code>send-to</code>. <code>dual-hop</code> packets traverse attachments in both the source to the destination core network edges. This mode requires that an inspection attachment must be present in all Regions of the service insertion-enabled segments. For <code>single-hop</code>, packets traverse a single intermediate inserted attachment. You can use <code>EdgeOverride</code> to specify a specific edge to use. </p>"
+      }
+    },
+    "ServerSideString": {
+      "base": null,
+      "refs": {
+        "AccessDeniedException$Message": null,
+        "ConflictException$Message": null,
+        "ConflictException$ResourceId": "<p>The ID of the resource.</p>",
+        "ConflictException$ResourceType": "<p>The resource type.</p>",
+        "CoreNetworkPolicyError$ErrorCode": "<p>The error code associated with a core network policy error.</p>",
+        "CoreNetworkPolicyError$Message": "<p>The message associated with a core network policy error code.</p>",
+        "CoreNetworkPolicyError$Path": "<p>The JSON path where the error was discovered in the policy document.</p>",
+        "CoreNetworkPolicyException$Message": null,
+        "InternalServerException$Message": null,
+        "ResourceNotFoundException$Message": null,
+        "ResourceNotFoundException$ResourceId": "<p>The ID of the resource.</p>",
+        "ResourceNotFoundException$ResourceType": "<p>The resource type.</p>",
+        "ServiceQuotaExceededException$Message": "<p>The error message.</p>",
+        "ServiceQuotaExceededException$ResourceId": "<p>The ID of the resource.</p>",
+        "ServiceQuotaExceededException$ResourceType": "<p>The resource type.</p>",
+        "ServiceQuotaExceededException$LimitCode": "<p>The limit code.</p>",
+        "ServiceQuotaExceededException$ServiceCode": "<p>The service code.</p>",
+        "ThrottlingException$Message": null,
+        "ValidationException$Message": null,
+        "ValidationExceptionField$Name": "<p>The name of the field.</p>",
+        "ValidationExceptionField$Message": "<p>The message for the field.</p>"
+      }
+    },
+    "ServiceInsertionAction": {
+      "base": "<p>Describes the action that the service insertion will take for any segments associated with it.</p>",
+      "refs": {
+        "ServiceInsertionActionList$member": null
+      }
+    },
+    "ServiceInsertionActionList": {
+      "base": null,
+      "refs": {
+        "CoreNetworkChangeValues$ServiceInsertionActions": "<p>Describes the service insertion action. </p>"
+      }
+    },
+    "ServiceInsertionSegments": {
+      "base": "<p>Describes the segments associated with the service insertion action.</p>",
+      "refs": {
+        "CoreNetworkNetworkFunctionGroup$Segments": "<p>The segments associated with the network function group.</p>"
+      }
+    },
+    "ServiceQuotaExceededException": {
+      "base": "<p>A service limit was exceeded.</p>",
+      "refs": {
+      }
+    },
+    "Site": {
+      "base": "<p>Describes a site.</p>",
+      "refs": {
+        "CreateSiteResponse$Site": "<p>Information about the site.</p>",
+        "DeleteSiteResponse$Site": "<p>Information about the site.</p>",
+        "SiteList$member": null,
+        "UpdateSiteResponse$Site": "<p>Information about the site.</p>"
+      }
+    },
+    "SiteArn": {
+      "base": null,
+      "refs": {
+        "Site$SiteArn": "<p>The Amazon Resource Name (ARN) of the site.</p>"
+      }
+    },
+    "SiteId": {
+      "base": null,
+      "refs": {
+        "CreateDeviceRequest$SiteId": "<p>The ID of the site.</p>",
+        "CreateLinkRequest$SiteId": "<p>The ID of the site.</p>",
+        "DeleteSiteRequest$SiteId": "<p>The ID of the site.</p>",
+        "Device$SiteId": "<p>The site ID.</p>",
+        "GetDevicesRequest$SiteId": "<p>The ID of the site.</p>",
+        "GetLinksRequest$SiteId": "<p>The ID of the site.</p>",
+        "Link$SiteId": "<p>The ID of the site.</p>",
+        "Site$SiteId": "<p>The ID of the site.</p>",
+        "SiteIdList$member": null,
+        "UpdateDeviceRequest$SiteId": "<p>The ID of the site.</p>",
+        "UpdateSiteRequest$SiteId": "<p>The ID of your site.</p>"
+      }
+    },
+    "SiteIdList": {
+      "base": null,
+      "refs": {
+        "GetSitesRequest$SiteIds": "<p>One or more site IDs. The maximum is 10.</p>"
+      }
+    },
+    "SiteList": {
+      "base": null,
+      "refs": {
+        "GetSitesResponse$Sites": "<p>The sites.</p>"
+      }
+    },
+    "SiteState": {
+      "base": null,
+      "refs": {
+        "Site$State": "<p>The state of the site.</p>"
+      }
+    },
+    "SiteToSiteVpnAttachment": {
+      "base": "<p>Creates a site-to-site VPN attachment.</p>",
+      "refs": {
+        "CreateSiteToSiteVpnAttachmentResponse$SiteToSiteVpnAttachment": "<p>Details about a site-to-site VPN attachment.</p>",
+        "GetSiteToSiteVpnAttachmentResponse$SiteToSiteVpnAttachment": "<p>Describes the site-to-site attachment.</p>"
+      }
+    },
+    "StartOrganizationServiceAccessUpdateRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StartOrganizationServiceAccessUpdateResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StartRouteAnalysisRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StartRouteAnalysisResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "SubnetArn": {
+      "base": null,
+      "refs": {
+        "AWSLocation$SubnetArn": "<p>The Amazon Resource Name (ARN) of the subnet that the device is located in.</p>",
+        "ConnectPeer$SubnetArn": "<p>The subnet ARN for the Connect peer. This only applies only when the protocol is NO_ENCAP.</p>",
+        "ConnectPeerSummary$SubnetArn": "<p>The subnet ARN for the Connect peer summary.</p>",
+        "CreateConnectPeerRequest$SubnetArn": "<p>The subnet ARN for the Connect peer. This only applies only when the protocol is NO_ENCAP.</p>",
+        "SubnetArnList$member": null
+      }
+    },
+    "SubnetArnList": {
+      "base": null,
+      "refs": {
+        "CreateVpcAttachmentRequest$SubnetArns": "<p>The subnet ARN of the VPC attachment.</p>",
+        "UpdateVpcAttachmentRequest$AddSubnetArns": "<p>Adds a subnet ARN to the VPC attachment.</p>",
+        "UpdateVpcAttachmentRequest$RemoveSubnetArns": "<p>Removes a subnet ARN from the attachment.</p>",
+        "VpcAttachment$SubnetArns": "<p>The subnet ARNs.</p>"
+      }
+    },
+    "Tag": {
+      "base": "<p>Describes a tag.</p>",
+      "refs": {
+        "TagList$member": null
+      }
+    },
+    "TagKey": {
+      "base": null,
+      "refs": {
+        "Tag$Key": "<p>The tag key.</p> <p>Constraints: Maximum length of 128 characters.</p>",
+        "TagKeyList$member": null
+      }
+    },
+    "TagKeyList": {
+      "base": null,
+      "refs": {
+        "UntagResourceRequest$TagKeys": "<p>The tag keys to remove from the specified resource.</p>"
+      }
+    },
+    "TagList": {
+      "base": null,
+      "refs": {
+        "Attachment$Tags": "<p>The tags associated with the attachment.</p>",
+        "ConnectPeer$Tags": "<p>The list of key-value tags associated with the Connect peer.</p>",
+        "ConnectPeerSummary$Tags": "<p>The list of key-value tags associated with the Connect peer summary.</p>",
+        "Connection$Tags": "<p>The tags for the connection.</p>",
+        "CoreNetwork$Tags": "<p>The list of key-value tags associated with a core network.</p>",
+        "CoreNetworkSummary$Tags": "<p>The key-value tags associated with a core network summary.</p>",
+        "CreateConnectAttachmentRequest$Tags": "<p>The list of key-value tags associated with the request.</p>",
+        "CreateConnectPeerRequest$Tags": "<p>The tags associated with the peer request.</p>",
+        "CreateConnectionRequest$Tags": "<p>The tags to apply to the resource during creation.</p>",
+        "CreateCoreNetworkRequest$Tags": "<p>Key-value tags associated with a core network request.</p>",
+        "CreateDeviceRequest$Tags": "<p>The tags to apply to the resource during creation.</p>",
+        "CreateGlobalNetworkRequest$Tags": "<p>The tags to apply to the resource during creation.</p>",
+        "CreateLinkRequest$Tags": "<p>The tags to apply to the resource during creation.</p>",
+        "CreateSiteRequest$Tags": "<p>The tags to apply to the resource during creation.</p>",
+        "CreateSiteToSiteVpnAttachmentRequest$Tags": "<p>The tags associated with the request.</p>",
+        "CreateTransitGatewayPeeringRequest$Tags": "<p>The list of key-value tags associated with the request.</p>",
+        "CreateTransitGatewayRouteTableAttachmentRequest$Tags": "<p>The list of key-value tags associated with the request.</p>",
+        "CreateVpcAttachmentRequest$Tags": "<p>The key-value tags associated with the request.</p>",
+        "Device$Tags": "<p>The tags for the device.</p>",
+        "GlobalNetwork$Tags": "<p>The tags for the global network.</p>",
+        "Link$Tags": "<p>The tags for the link.</p>",
+        "ListTagsForResourceResponse$TagList": "<p>The list of tags.</p>",
+        "NetworkResource$Tags": "<p>The tags.</p>",
+        "Peering$Tags": "<p>The list of key-value tags associated with the peering.</p>",
+        "ProposedNetworkFunctionGroupChange$Tags": "<p>The list of proposed changes to the key-value tags associated with the network function group.</p>",
+        "ProposedSegmentChange$Tags": "<p>The list of key-value tags that changed for the segment.</p>",
+        "Site$Tags": "<p>The tags for the site.</p>",
+        "TagResourceRequest$Tags": "<p>The tags to apply to the specified resource.</p>"
+      }
+    },
+    "TagResourceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "TagResourceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "TagValue": {
+      "base": null,
+      "refs": {
+        "Tag$Value": "<p>The tag value.</p> <p>Constraints: Maximum length of 256 characters.</p>"
+      }
+    },
+    "ThrottlingException": {
+      "base": "<p>The request was denied due to request throttling.</p>",
+      "refs": {
+      }
+    },
+    "TransitGatewayArn": {
+      "base": null,
+      "refs": {
+        "CreateTransitGatewayPeeringRequest$TransitGatewayArn": "<p>The ARN of the transit gateway for the peering request.</p>",
+        "DeregisterTransitGatewayRequest$TransitGatewayArn": "<p>The Amazon Resource Name (ARN) of the transit gateway.</p>",
+        "RegisterTransitGatewayRequest$TransitGatewayArn": "<p>The Amazon Resource Name (ARN) of the transit gateway.</p>",
+        "RouteAnalysisEndpointOptions$TransitGatewayArn": "<p>The ARN of the transit gateway.</p>",
+        "TransitGatewayArnList$member": null,
+        "TransitGatewayPeering$TransitGatewayArn": "<p>The ARN of the transit gateway.</p>",
+        "TransitGatewayRegistration$TransitGatewayArn": "<p>The Amazon Resource Name (ARN) of the transit gateway.</p>"
+      }
+    },
+    "TransitGatewayArnList": {
+      "base": null,
+      "refs": {
+        "GetTransitGatewayRegistrationsRequest$TransitGatewayArns": "<p>The Amazon Resource Names (ARNs) of one or more transit gateways. The maximum is 10.</p>"
+      }
+    },
+    "TransitGatewayAttachmentArn": {
+      "base": null,
+      "refs": {
+        "RouteAnalysisEndpointOptions$TransitGatewayAttachmentArn": "<p>The ARN of the transit gateway attachment.</p>",
+        "RouteAnalysisEndpointOptionsSpecification$TransitGatewayAttachmentArn": "<p>The ARN of the transit gateway attachment.</p>"
+      }
+    },
+    "TransitGatewayAttachmentId": {
+      "base": null,
+      "refs": {
+        "NetworkRouteDestination$TransitGatewayAttachmentId": "<p>The ID of the transit gateway attachment.</p>"
+      }
+    },
+    "TransitGatewayConnectPeerArn": {
+      "base": null,
+      "refs": {
+        "AssociateTransitGatewayConnectPeerRequest$TransitGatewayConnectPeerArn": "<p>The Amazon Resource Name (ARN) of the Connect peer.</p>",
+        "DisassociateTransitGatewayConnectPeerRequest$TransitGatewayConnectPeerArn": "<p>The Amazon Resource Name (ARN) of the transit gateway Connect peer.</p>",
+        "TransitGatewayConnectPeerArnList$member": null,
+        "TransitGatewayConnectPeerAssociation$TransitGatewayConnectPeerArn": "<p>The Amazon Resource Name (ARN) of the transit gateway Connect peer.</p>"
+      }
+    },
+    "TransitGatewayConnectPeerArnList": {
+      "base": null,
+      "refs": {
+        "GetTransitGatewayConnectPeerAssociationsRequest$TransitGatewayConnectPeerArns": "<p>One or more transit gateway Connect peer Amazon Resource Names (ARNs).</p>"
+      }
+    },
+    "TransitGatewayConnectPeerAssociation": {
+      "base": "<p>Describes a transit gateway Connect peer association.</p>",
+      "refs": {
+        "AssociateTransitGatewayConnectPeerResponse$TransitGatewayConnectPeerAssociation": "<p>The transit gateway Connect peer association.</p>",
+        "DisassociateTransitGatewayConnectPeerResponse$TransitGatewayConnectPeerAssociation": "<p>The transit gateway Connect peer association.</p>",
+        "TransitGatewayConnectPeerAssociationList$member": null
+      }
+    },
+    "TransitGatewayConnectPeerAssociationList": {
+      "base": null,
+      "refs": {
+        "GetTransitGatewayConnectPeerAssociationsResponse$TransitGatewayConnectPeerAssociations": "<p>Information about the transit gateway Connect peer associations.</p>"
+      }
+    },
+    "TransitGatewayConnectPeerAssociationState": {
+      "base": null,
+      "refs": {
+        "TransitGatewayConnectPeerAssociation$State": "<p>The state of the association.</p>"
+      }
+    },
+    "TransitGatewayPeering": {
+      "base": "<p>Describes a transit gateway peering attachment.</p>",
+      "refs": {
+        "CreateTransitGatewayPeeringResponse$TransitGatewayPeering": "<p>Returns information about the transit gateway peering connection request.</p>",
+        "GetTransitGatewayPeeringResponse$TransitGatewayPeering": "<p>Returns information about a transit gateway peering. </p>"
+      }
+    },
+    "TransitGatewayPeeringAttachmentId": {
+      "base": null,
+      "refs": {
+        "TransitGatewayPeering$TransitGatewayPeeringAttachmentId": "<p>The ID of the transit gateway peering attachment.</p>"
+      }
+    },
+    "TransitGatewayRegistration": {
+      "base": "<p>Describes the registration of a transit gateway to a global network.</p>",
+      "refs": {
+        "DeregisterTransitGatewayResponse$TransitGatewayRegistration": "<p>The transit gateway registration information.</p>",
+        "RegisterTransitGatewayResponse$TransitGatewayRegistration": "<p>Information about the transit gateway registration.</p>",
+        "TransitGatewayRegistrationList$member": null
+      }
+    },
+    "TransitGatewayRegistrationList": {
+      "base": null,
+      "refs": {
+        "GetTransitGatewayRegistrationsResponse$TransitGatewayRegistrations": "<p>The transit gateway registrations.</p>"
+      }
+    },
+    "TransitGatewayRegistrationState": {
+      "base": null,
+      "refs": {
+        "TransitGatewayRegistrationStateReason$Code": "<p>The code for the state reason.</p>"
+      }
+    },
+    "TransitGatewayRegistrationStateReason": {
+      "base": "<p>Describes the status of a transit gateway registration.</p>",
+      "refs": {
+        "TransitGatewayRegistration$State": "<p>The state of the transit gateway registration.</p>"
+      }
+    },
+    "TransitGatewayRouteTableArn": {
+      "base": null,
+      "refs": {
+        "CreateTransitGatewayRouteTableAttachmentRequest$TransitGatewayRouteTableArn": "<p>The ARN of the transit gateway route table for the attachment request. For example, <code>\"TransitGatewayRouteTableArn\": \"arn:aws:ec2:us-west-2:123456789012:transit-gateway-route-table/tgw-rtb-9876543210123456\"</code>.</p>",
+        "RouteTableIdentifier$TransitGatewayRouteTableArn": "<p>The ARN of the transit gateway route table for the attachment request. For example, <code>\"TransitGatewayRouteTableArn\": \"arn:aws:ec2:us-west-2:123456789012:transit-gateway-route-table/tgw-rtb-9876543210123456\"</code>.</p>",
+        "TransitGatewayRouteTableAttachment$TransitGatewayRouteTableArn": "<p>The ARN of the transit gateway attachment route table. For example, <code>\"TransitGatewayRouteTableArn\": \"arn:aws:ec2:us-west-2:123456789012:transit-gateway-route-table/tgw-rtb-9876543210123456\"</code>.</p>"
+      }
+    },
+    "TransitGatewayRouteTableAttachment": {
+      "base": "<p>Describes a transit gateway route table attachment.</p>",
+      "refs": {
+        "CreateTransitGatewayRouteTableAttachmentResponse$TransitGatewayRouteTableAttachment": "<p>The route table associated with the create transit gateway route table attachment request.</p>",
+        "GetTransitGatewayRouteTableAttachmentResponse$TransitGatewayRouteTableAttachment": "<p>Returns information about the transit gateway route table attachment.</p>"
+      }
+    },
+    "TunnelProtocol": {
+      "base": null,
+      "refs": {
+        "ConnectAttachmentOptions$Protocol": "<p>The protocol used for the attachment connection.</p>",
+        "ConnectPeerConfiguration$Protocol": "<p>The protocol used for a Connect peer configuration.</p>"
+      }
+    },
+    "UntagResourceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UntagResourceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateConnectionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateConnectionResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateCoreNetworkRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateCoreNetworkResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateDeviceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateDeviceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateGlobalNetworkRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateGlobalNetworkResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateLinkRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateLinkResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateNetworkResourceMetadataRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateNetworkResourceMetadataResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateSiteRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateSiteResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateVpcAttachmentRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateVpcAttachmentResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ValidationException": {
+      "base": "<p>The input fails to satisfy the constraints.</p>",
+      "refs": {
+      }
+    },
+    "ValidationExceptionField": {
+      "base": "<p>Describes a validation exception for a field.</p>",
+      "refs": {
+        "ValidationExceptionFieldList$member": null
+      }
+    },
+    "ValidationExceptionFieldList": {
+      "base": null,
+      "refs": {
+        "ValidationException$Fields": "<p>The fields that caused the error, if applicable.</p>"
+      }
+    },
+    "ValidationExceptionReason": {
+      "base": null,
+      "refs": {
+        "ValidationException$Reason": "<p>The reason for the error.</p>"
+      }
+    },
+    "Via": {
+      "base": "<p>The list of network function groups and edge overrides for the service insertion action. Used for both the <code>send-to</code> and <code>send-via</code> actions.</p>",
+      "refs": {
+        "ServiceInsertionAction$Via": "<p>The list of network function groups and any edge overrides for the chosen service insertion action. Used for both <code>send-to</code> or <code>send-via</code>.</p>"
+      }
+    },
+    "VpcArn": {
+      "base": null,
+      "refs": {
+        "CreateVpcAttachmentRequest$VpcArn": "<p>The ARN of the VPC.</p>"
+      }
+    },
+    "VpcAttachment": {
+      "base": "<p>Describes a VPC attachment.</p>",
+      "refs": {
+        "CreateVpcAttachmentResponse$VpcAttachment": "<p>Provides details about the VPC attachment.</p>",
+        "GetVpcAttachmentResponse$VpcAttachment": "<p>Returns details about a VPC attachment.</p>",
+        "UpdateVpcAttachmentResponse$VpcAttachment": "<p>Describes the updated VPC attachment.</p>"
+      }
+    },
+    "VpcOptions": {
+      "base": "<p>Describes the VPC options.</p>",
+      "refs": {
+        "CreateVpcAttachmentRequest$Options": "<p>Options for the VPC attachment.</p>",
+        "UpdateVpcAttachmentRequest$Options": "<p>Additional options for updating the VPC attachment. </p>",
+        "VpcAttachment$Options": "<p>Provides details about the VPC attachment.</p>"
+      }
+    },
+    "VpnConnectionArn": {
+      "base": null,
+      "refs": {
+        "CreateSiteToSiteVpnAttachmentRequest$VpnConnectionArn": "<p>The ARN identifying the VPN attachment.</p>",
+        "SiteToSiteVpnAttachment$VpnConnectionArn": "<p>The ARN of the site-to-site VPN attachment. </p>"
+      }
+    },
+    "WhenSentTo": {
+      "base": "<p>Displays a list of the destination segments. Used only when the service insertion action is <code>send-to</code>. </p>",
+      "refs": {
+        "ServiceInsertionAction$WhenSentTo": "<p>The list of destination segments if the service insertion action is <code>send-via</code>.</p>"
+      }
+    },
+    "WhenSentToSegmentsList": {
+      "base": null,
+      "refs": {
+        "WhenSentTo$WhenSentToSegmentsList": "<p>The list of destination segments when the service insertion action is <code>send-to</code>.</p>"
+      }
+    },
+    "WithEdgeOverridesList": {
+      "base": null,
+      "refs": {
+        "Via$WithEdgeOverrides": "<p>Describes any edge overrides. An edge override is a specific edge to be used for traffic.</p>"
+      }
+    }
+  }
+}

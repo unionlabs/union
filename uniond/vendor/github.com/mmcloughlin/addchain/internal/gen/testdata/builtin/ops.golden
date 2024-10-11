@@ -1,0 +1,266 @@
+[  0]    0+0    0x2
+[  1]    0+1    0x3
+[  2]    2+2    0x6
+[  3]    3+3    0xc
+[  4]    2+4    0xf
+[  5]    5+5    0x1e
+[  6]    6+6    0x3c
+[  7]    7+7    0x78
+[  8]    8+8    0xf0
+[  9]    5+9    0xff
+[ 10]   10+10   0x1fe
+[ 11]   11+11   0x3fc
+[ 12]    2+12   0x3ff
+[ 13]   13+13   0x7fe
+[ 14]   14+14   0xffc
+[ 15]   15+15   0x1ff8
+[ 16]   16+16   0x3ff0
+[ 17]   17+17   0x7fe0
+[ 18]   18+18   0xffc0
+[ 19]   19+19   0x1ff80
+[ 20]   20+20   0x3ff00
+[ 21]   21+21   0x7fe00
+[ 22]   22+22   0xffc00
+[ 23]   13+23   0xfffff
+[ 24]   24+24   0x1ffffe
+[ 25]   25+25   0x3ffffc
+[ 26]   26+26   0x7ffff8
+[ 27]   27+27   0xfffff0
+[ 28]   28+28   0x1ffffe0
+[ 29]   29+29   0x3ffffc0
+[ 30]   30+30   0x7ffff80
+[ 31]   31+31   0xfffff00
+[ 32]   32+32   0x1ffffe00
+[ 33]   33+33   0x3ffffc00
+[ 34]   13+34   0x3fffffff
+[ 35]   35+35   0x7ffffffe
+[ 36]   36+36   0xfffffffc
+[ 37]   37+37   0x1fffffff8
+[ 38]   38+38   0x3fffffff0
+[ 39]   39+39   0x7ffffffe0
+[ 40]   40+40   0xfffffffc0
+[ 41]   41+41   0x1fffffff80
+[ 42]   42+42   0x3fffffff00
+[ 43]   43+43   0x7ffffffe00
+[ 44]   44+44   0xfffffffc00
+[ 45]   45+45   0x1fffffff800
+[ 46]   46+46   0x3fffffff000
+[ 47]   47+47   0x7ffffffe000
+[ 48]   48+48   0xfffffffc000
+[ 49]   49+49   0x1fffffff8000
+[ 50]   50+50   0x3fffffff0000
+[ 51]   51+51   0x7ffffffe0000
+[ 52]   52+52   0xfffffffc0000
+[ 53]   53+53   0x1fffffff80000
+[ 54]   54+54   0x3fffffff00000
+[ 55]   55+55   0x7ffffffe00000
+[ 56]   56+56   0xfffffffc00000
+[ 57]   57+57   0x1fffffff800000
+[ 58]   58+58   0x3fffffff000000
+[ 59]   59+59   0x7ffffffe000000
+[ 60]   60+60   0xfffffffc000000
+[ 61]   61+61   0x1fffffff8000000
+[ 62]   62+62   0x3fffffff0000000
+[ 63]   63+63   0x7ffffffe0000000
+[ 64]   64+64   0xfffffffc0000000
+[ 65]   35+65   0xfffffffffffffff
+[ 66]   66+66   0x1ffffffffffffffe
+[ 67]   67+67   0x3ffffffffffffffc
+[ 68]   68+68   0x7ffffffffffffff8
+[ 69]   69+69   0xfffffffffffffff0
+[ 70]   70+70   0x1ffffffffffffffe0
+[ 71]   71+71   0x3ffffffffffffffc0
+[ 72]   72+72   0x7ffffffffffffff80
+[ 73]   73+73   0xfffffffffffffff00
+[ 74]   74+74   0x1ffffffffffffffe00
+[ 75]   75+75   0x3ffffffffffffffc00
+[ 76]   76+76   0x7ffffffffffffff800
+[ 77]   77+77   0xfffffffffffffff000
+[ 78]   78+78   0x1ffffffffffffffe000
+[ 79]   79+79   0x3ffffffffffffffc000
+[ 80]   80+80   0x7ffffffffffffff8000
+[ 81]   81+81   0xfffffffffffffff0000
+[ 82]   82+82   0x1ffffffffffffffe0000
+[ 83]   83+83   0x3ffffffffffffffc0000
+[ 84]   84+84   0x7ffffffffffffff80000
+[ 85]   85+85   0xfffffffffffffff00000
+[ 86]   86+86   0x1ffffffffffffffe00000
+[ 87]   87+87   0x3ffffffffffffffc00000
+[ 88]   88+88   0x7ffffffffffffff800000
+[ 89]   89+89   0xfffffffffffffff000000
+[ 90]   90+90   0x1ffffffffffffffe000000
+[ 91]   91+91   0x3ffffffffffffffc000000
+[ 92]   92+92   0x7ffffffffffffff8000000
+[ 93]   93+93   0xfffffffffffffff0000000
+[ 94]   94+94   0x1ffffffffffffffe0000000
+[ 95]   95+95   0x3ffffffffffffffc0000000
+[ 96]   96+96   0x7ffffffffffffff80000000
+[ 97]   97+97   0xfffffffffffffff00000000
+[ 98]   98+98   0x1ffffffffffffffe00000000
+[ 99]   99+99   0x3ffffffffffffffc00000000
+[100]  100+100  0x7ffffffffffffff800000000
+[101]  101+101  0xfffffffffffffff000000000
+[102]  102+102  0x1ffffffffffffffe000000000
+[103]  103+103  0x3ffffffffffffffc000000000
+[104]  104+104  0x7ffffffffffffff8000000000
+[105]  105+105  0xfffffffffffffff0000000000
+[106]  106+106  0x1ffffffffffffffe0000000000
+[107]  107+107  0x3ffffffffffffffc0000000000
+[108]  108+108  0x7ffffffffffffff80000000000
+[109]  109+109  0xfffffffffffffff00000000000
+[110]  110+110  0x1ffffffffffffffe00000000000
+[111]  111+111  0x3ffffffffffffffc00000000000
+[112]  112+112  0x7ffffffffffffff800000000000
+[113]  113+113  0xfffffffffffffff000000000000
+[114]  114+114  0x1ffffffffffffffe000000000000
+[115]  115+115  0x3ffffffffffffffc000000000000
+[116]  116+116  0x7ffffffffffffff8000000000000
+[117]  117+117  0xfffffffffffffff0000000000000
+[118]  118+118  0x1ffffffffffffffe0000000000000
+[119]  119+119  0x3ffffffffffffffc0000000000000
+[120]  120+120  0x7ffffffffffffff80000000000000
+[121]  121+121  0xfffffffffffffff00000000000000
+[122]  122+122  0x1ffffffffffffffe00000000000000
+[123]  123+123  0x3ffffffffffffffc00000000000000
+[124]  124+124  0x7ffffffffffffff800000000000000
+[125]  125+125  0xfffffffffffffff000000000000000
+[126]   66+126  0xffffffffffffffffffffffffffffff
+[127]  127+127  0x1fffffffffffffffffffffffffffffe
+[128]  128+128  0x3fffffffffffffffffffffffffffffc
+[129]  129+129  0x7fffffffffffffffffffffffffffff8
+[130]  130+130  0xffffffffffffffffffffffffffffff0
+[131]  131+131  0x1fffffffffffffffffffffffffffffe0
+[132]  132+132  0x3fffffffffffffffffffffffffffffc0
+[133]  133+133  0x7fffffffffffffffffffffffffffff80
+[134]  134+134  0xffffffffffffffffffffffffffffff00
+[135]  135+135  0x1fffffffffffffffffffffffffffffe00
+[136]  136+136  0x3fffffffffffffffffffffffffffffc00
+[137]  137+137  0x7fffffffffffffffffffffffffffff800
+[138]  138+138  0xffffffffffffffffffffffffffffff000
+[139]  139+139  0x1fffffffffffffffffffffffffffffe000
+[140]  140+140  0x3fffffffffffffffffffffffffffffc000
+[141]  141+141  0x7fffffffffffffffffffffffffffff8000
+[142]  142+142  0xffffffffffffffffffffffffffffff0000
+[143]  143+143  0x1fffffffffffffffffffffffffffffe0000
+[144]  144+144  0x3fffffffffffffffffffffffffffffc0000
+[145]  145+145  0x7fffffffffffffffffffffffffffff80000
+[146]  146+146  0xffffffffffffffffffffffffffffff00000
+[147]  147+147  0x1fffffffffffffffffffffffffffffe00000
+[148]  148+148  0x3fffffffffffffffffffffffffffffc00000
+[149]  149+149  0x7fffffffffffffffffffffffffffff800000
+[150]  150+150  0xffffffffffffffffffffffffffffff000000
+[151]  151+151  0x1fffffffffffffffffffffffffffffe000000
+[152]  152+152  0x3fffffffffffffffffffffffffffffc000000
+[153]  153+153  0x7fffffffffffffffffffffffffffff8000000
+[154]  154+154  0xffffffffffffffffffffffffffffff0000000
+[155]  155+155  0x1fffffffffffffffffffffffffffffe0000000
+[156]  156+156  0x3fffffffffffffffffffffffffffffc0000000
+[157]  157+157  0x7fffffffffffffffffffffffffffff80000000
+[158]  158+158  0xffffffffffffffffffffffffffffff00000000
+[159]  159+159  0x1fffffffffffffffffffffffffffffe00000000
+[160]  160+160  0x3fffffffffffffffffffffffffffffc00000000
+[161]  161+161  0x7fffffffffffffffffffffffffffff800000000
+[162]  162+162  0xffffffffffffffffffffffffffffff000000000
+[163]  163+163  0x1fffffffffffffffffffffffffffffe000000000
+[164]  164+164  0x3fffffffffffffffffffffffffffffc000000000
+[165]  165+165  0x7fffffffffffffffffffffffffffff8000000000
+[166]  166+166  0xffffffffffffffffffffffffffffff0000000000
+[167]  167+167  0x1fffffffffffffffffffffffffffffe0000000000
+[168]  168+168  0x3fffffffffffffffffffffffffffffc0000000000
+[169]  169+169  0x7fffffffffffffffffffffffffffff80000000000
+[170]  170+170  0xffffffffffffffffffffffffffffff00000000000
+[171]  171+171  0x1fffffffffffffffffffffffffffffe00000000000
+[172]  172+172  0x3fffffffffffffffffffffffffffffc00000000000
+[173]  173+173  0x7fffffffffffffffffffffffffffff800000000000
+[174]  174+174  0xffffffffffffffffffffffffffffff000000000000
+[175]  175+175  0x1fffffffffffffffffffffffffffffe000000000000
+[176]  176+176  0x3fffffffffffffffffffffffffffffc000000000000
+[177]  177+177  0x7fffffffffffffffffffffffffffff8000000000000
+[178]  178+178  0xffffffffffffffffffffffffffffff0000000000000
+[179]  179+179  0x1fffffffffffffffffffffffffffffe0000000000000
+[180]  180+180  0x3fffffffffffffffffffffffffffffc0000000000000
+[181]  181+181  0x7fffffffffffffffffffffffffffff80000000000000
+[182]  182+182  0xffffffffffffffffffffffffffffff00000000000000
+[183]  183+183  0x1fffffffffffffffffffffffffffffe00000000000000
+[184]  184+184  0x3fffffffffffffffffffffffffffffc00000000000000
+[185]  185+185  0x7fffffffffffffffffffffffffffff800000000000000
+[186]  186+186  0xffffffffffffffffffffffffffffff000000000000000
+[187]  187+187  0x1fffffffffffffffffffffffffffffe000000000000000
+[188]  188+188  0x3fffffffffffffffffffffffffffffc000000000000000
+[189]  189+189  0x7fffffffffffffffffffffffffffff8000000000000000
+[190]  190+190  0xffffffffffffffffffffffffffffff0000000000000000
+[191]  191+191  0x1fffffffffffffffffffffffffffffe0000000000000000
+[192]  192+192  0x3fffffffffffffffffffffffffffffc0000000000000000
+[193]  193+193  0x7fffffffffffffffffffffffffffff80000000000000000
+[194]  194+194  0xffffffffffffffffffffffffffffff00000000000000000
+[195]  195+195  0x1fffffffffffffffffffffffffffffe00000000000000000
+[196]  196+196  0x3fffffffffffffffffffffffffffffc00000000000000000
+[197]  197+197  0x7fffffffffffffffffffffffffffff800000000000000000
+[198]  198+198  0xffffffffffffffffffffffffffffff000000000000000000
+[199]  199+199  0x1fffffffffffffffffffffffffffffe000000000000000000
+[200]  200+200  0x3fffffffffffffffffffffffffffffc000000000000000000
+[201]  201+201  0x7fffffffffffffffffffffffffffff8000000000000000000
+[202]  202+202  0xffffffffffffffffffffffffffffff0000000000000000000
+[203]  203+203  0x1fffffffffffffffffffffffffffffe0000000000000000000
+[204]  204+204  0x3fffffffffffffffffffffffffffffc0000000000000000000
+[205]  205+205  0x7fffffffffffffffffffffffffffff80000000000000000000
+[206]  206+206  0xffffffffffffffffffffffffffffff00000000000000000000
+[207]  207+207  0x1fffffffffffffffffffffffffffffe00000000000000000000
+[208]  208+208  0x3fffffffffffffffffffffffffffffc00000000000000000000
+[209]  209+209  0x7fffffffffffffffffffffffffffff800000000000000000000
+[210]  210+210  0xffffffffffffffffffffffffffffff000000000000000000000
+[211]  211+211  0x1fffffffffffffffffffffffffffffe000000000000000000000
+[212]  212+212  0x3fffffffffffffffffffffffffffffc000000000000000000000
+[213]  213+213  0x7fffffffffffffffffffffffffffff8000000000000000000000
+[214]  214+214  0xffffffffffffffffffffffffffffff0000000000000000000000
+[215]  215+215  0x1fffffffffffffffffffffffffffffe0000000000000000000000
+[216]  216+216  0x3fffffffffffffffffffffffffffffc0000000000000000000000
+[217]  217+217  0x7fffffffffffffffffffffffffffff80000000000000000000000
+[218]  218+218  0xffffffffffffffffffffffffffffff00000000000000000000000
+[219]  219+219  0x1fffffffffffffffffffffffffffffe00000000000000000000000
+[220]  220+220  0x3fffffffffffffffffffffffffffffc00000000000000000000000
+[221]  221+221  0x7fffffffffffffffffffffffffffff800000000000000000000000
+[222]  222+222  0xffffffffffffffffffffffffffffff000000000000000000000000
+[223]  223+223  0x1fffffffffffffffffffffffffffffe000000000000000000000000
+[224]  224+224  0x3fffffffffffffffffffffffffffffc000000000000000000000000
+[225]  225+225  0x7fffffffffffffffffffffffffffff8000000000000000000000000
+[226]  226+226  0xffffffffffffffffffffffffffffff0000000000000000000000000
+[227]  227+227  0x1fffffffffffffffffffffffffffffe0000000000000000000000000
+[228]  228+228  0x3fffffffffffffffffffffffffffffc0000000000000000000000000
+[229]  229+229  0x7fffffffffffffffffffffffffffff80000000000000000000000000
+[230]  230+230  0xffffffffffffffffffffffffffffff00000000000000000000000000
+[231]  231+231  0x1fffffffffffffffffffffffffffffe00000000000000000000000000
+[232]  232+232  0x3fffffffffffffffffffffffffffffc00000000000000000000000000
+[233]  233+233  0x7fffffffffffffffffffffffffffff800000000000000000000000000
+[234]  234+234  0xffffffffffffffffffffffffffffff000000000000000000000000000
+[235]  235+235  0x1fffffffffffffffffffffffffffffe000000000000000000000000000
+[236]  236+236  0x3fffffffffffffffffffffffffffffc000000000000000000000000000
+[237]  237+237  0x7fffffffffffffffffffffffffffff8000000000000000000000000000
+[238]  238+238  0xffffffffffffffffffffffffffffff0000000000000000000000000000
+[239]  239+239  0x1fffffffffffffffffffffffffffffe0000000000000000000000000000
+[240]  240+240  0x3fffffffffffffffffffffffffffffc0000000000000000000000000000
+[241]  241+241  0x7fffffffffffffffffffffffffffff80000000000000000000000000000
+[242]  242+242  0xffffffffffffffffffffffffffffff00000000000000000000000000000
+[243]  243+243  0x1fffffffffffffffffffffffffffffe00000000000000000000000000000
+[244]  244+244  0x3fffffffffffffffffffffffffffffc00000000000000000000000000000
+[245]  245+245  0x7fffffffffffffffffffffffffffff800000000000000000000000000000
+[246]  246+246  0xffffffffffffffffffffffffffffff000000000000000000000000000000
+[247]  127+247  0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+[248]  248+248  0x1fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe
+[249]  249+249  0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc
+[250]  250+250  0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff8
+[251]  251+251  0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0
+[252]  252+252  0x1fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0
+[253]  253+253  0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc0
+[254]  254+254  0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff80
+[255]  255+255  0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00
+[256]  256+256  0x1fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe00
+[257]  257+257  0x3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc00
+[258]   13+258  0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+[259]  259+259  0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe
+[260]  260+260  0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc
+[261]    0+261  0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd
+[262]  262+262  0x1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa
+[263]  263+263  0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff4
+[264]  264+264  0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe8
+[265]    2+265  0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeb

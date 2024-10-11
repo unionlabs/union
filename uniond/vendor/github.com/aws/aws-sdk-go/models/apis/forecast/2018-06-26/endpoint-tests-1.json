@@ -1,0 +1,563 @@
+{
+    "testCases": [
+        {
+            "documentation": "For region ap-south-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.ap-south-1.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": true,
+                "Region": "ap-south-1"
+            }
+        },
+        {
+            "documentation": "For region ap-south-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.ap-south-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": true,
+                "Region": "ap-south-1"
+            }
+        },
+        {
+            "documentation": "For region ap-south-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.ap-south-1.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": false,
+                "Region": "ap-south-1"
+            }
+        },
+        {
+            "documentation": "For region ap-south-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.ap-south-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": false,
+                "Region": "ap-south-1"
+            }
+        },
+        {
+            "documentation": "For region eu-central-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.eu-central-1.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": true,
+                "Region": "eu-central-1"
+            }
+        },
+        {
+            "documentation": "For region eu-central-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.eu-central-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": true,
+                "Region": "eu-central-1"
+            }
+        },
+        {
+            "documentation": "For region eu-central-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.eu-central-1.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": false,
+                "Region": "eu-central-1"
+            }
+        },
+        {
+            "documentation": "For region eu-central-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.eu-central-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": false,
+                "Region": "eu-central-1"
+            }
+        },
+        {
+            "documentation": "For region us-west-2 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.us-west-2.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": true,
+                "Region": "us-west-2"
+            }
+        },
+        {
+            "documentation": "For region us-west-2 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.us-west-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": true,
+                "Region": "us-west-2"
+            }
+        },
+        {
+            "documentation": "For region us-west-2 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.us-west-2.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": false,
+                "Region": "us-west-2"
+            }
+        },
+        {
+            "documentation": "For region us-west-2 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.us-west-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": false,
+                "Region": "us-west-2"
+            }
+        },
+        {
+            "documentation": "For region eu-west-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.eu-west-1.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": true,
+                "Region": "eu-west-1"
+            }
+        },
+        {
+            "documentation": "For region eu-west-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.eu-west-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": true,
+                "Region": "eu-west-1"
+            }
+        },
+        {
+            "documentation": "For region eu-west-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.eu-west-1.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": false,
+                "Region": "eu-west-1"
+            }
+        },
+        {
+            "documentation": "For region eu-west-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.eu-west-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": false,
+                "Region": "eu-west-1"
+            }
+        },
+        {
+            "documentation": "For region ap-northeast-2 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.ap-northeast-2.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": true,
+                "Region": "ap-northeast-2"
+            }
+        },
+        {
+            "documentation": "For region ap-northeast-2 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.ap-northeast-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": true,
+                "Region": "ap-northeast-2"
+            }
+        },
+        {
+            "documentation": "For region ap-northeast-2 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.ap-northeast-2.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": false,
+                "Region": "ap-northeast-2"
+            }
+        },
+        {
+            "documentation": "For region ap-northeast-2 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.ap-northeast-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": false,
+                "Region": "ap-northeast-2"
+            }
+        },
+        {
+            "documentation": "For region ap-northeast-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.ap-northeast-1.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": true,
+                "Region": "ap-northeast-1"
+            }
+        },
+        {
+            "documentation": "For region ap-northeast-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.ap-northeast-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": true,
+                "Region": "ap-northeast-1"
+            }
+        },
+        {
+            "documentation": "For region ap-northeast-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.ap-northeast-1.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": false,
+                "Region": "ap-northeast-1"
+            }
+        },
+        {
+            "documentation": "For region ap-northeast-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.ap-northeast-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": false,
+                "Region": "ap-northeast-1"
+            }
+        },
+        {
+            "documentation": "For region ap-southeast-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.ap-southeast-1.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": true,
+                "Region": "ap-southeast-1"
+            }
+        },
+        {
+            "documentation": "For region ap-southeast-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.ap-southeast-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": true,
+                "Region": "ap-southeast-1"
+            }
+        },
+        {
+            "documentation": "For region ap-southeast-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.ap-southeast-1.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": false,
+                "Region": "ap-southeast-1"
+            }
+        },
+        {
+            "documentation": "For region ap-southeast-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.ap-southeast-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": false,
+                "Region": "ap-southeast-1"
+            }
+        },
+        {
+            "documentation": "For region ap-southeast-2 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.ap-southeast-2.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": true,
+                "Region": "ap-southeast-2"
+            }
+        },
+        {
+            "documentation": "For region ap-southeast-2 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.ap-southeast-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": true,
+                "Region": "ap-southeast-2"
+            }
+        },
+        {
+            "documentation": "For region ap-southeast-2 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.ap-southeast-2.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": false,
+                "Region": "ap-southeast-2"
+            }
+        },
+        {
+            "documentation": "For region ap-southeast-2 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.ap-southeast-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": false,
+                "Region": "ap-southeast-2"
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.us-east-1.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": true,
+                "Region": "us-east-1"
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": true,
+                "Region": "us-east-1"
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.us-east-1.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": false,
+                "Region": "us-east-1"
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.us-east-1.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": false,
+                "Region": "us-east-1"
+            }
+        },
+        {
+            "documentation": "For region us-east-2 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.us-east-2.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": true,
+                "Region": "us-east-2"
+            }
+        },
+        {
+            "documentation": "For region us-east-2 with FIPS enabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast-fips.us-east-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": true,
+                "Region": "us-east-2"
+            }
+        },
+        {
+            "documentation": "For region us-east-2 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.us-east-2.api.aws"
+                }
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": false,
+                "Region": "us-east-2"
+            }
+        },
+        {
+            "documentation": "For region us-east-2 with FIPS disabled and DualStack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://forecast.us-east-2.amazonaws.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": false,
+                "Region": "us-east-2"
+            }
+        },
+        {
+            "documentation": "For custom endpoint with fips disabled and dualstack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://example.com"
+                }
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": false,
+                "Region": "us-east-1",
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "For custom endpoint with fips enabled and dualstack disabled",
+            "expect": {
+                "error": "Invalid Configuration: FIPS and custom endpoint are not supported"
+            },
+            "params": {
+                "UseDualStack": false,
+                "UseFIPS": true,
+                "Region": "us-east-1",
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "For custom endpoint with fips disabled and dualstack enabled",
+            "expect": {
+                "error": "Invalid Configuration: Dualstack and custom endpoint are not supported"
+            },
+            "params": {
+                "UseDualStack": true,
+                "UseFIPS": false,
+                "Region": "us-east-1",
+                "Endpoint": "https://example.com"
+            }
+        }
+    ],
+    "version": "1.0"
+}

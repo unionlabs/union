@@ -1,0 +1,32 @@
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `👋 Thanks for reporting!
+
+            A maintainer will take a look at your issue shortly. 👀
+
+            In the meantime: We are working on **Viper v2** and we would love to hear your thoughts about what you like or don't like about Viper, so we can improve or fix those issues.
+
+            ⏰ If you have a couple minutes, please take some time and share your thoughts: https://forms.gle/R6faU74qPRPAzchZ9
+
+            📣 If you've already given us your feedback, you can still help by spreading the news,
+            either by sharing the above link or telling people about this on Twitter:
+
+            https://twitter.com/sagikazarmark/status/1306904078967074816
+
+            **Thank you!** ❤️
+            `,
+            })

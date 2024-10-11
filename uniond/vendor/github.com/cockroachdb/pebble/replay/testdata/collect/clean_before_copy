@@ -1,0 +1,40 @@
+# This tests a race between Clean and the workload collector. It creates an
+# sstable during a flush, and then immediately Cleans the file. The workload
+# collector's Cleaner must delay the cleaning of the file until it's been copied
+# and then delete it.
+
+start
+----
+
+create-manifest filenum=000001
+----
+
+flush
+000002
+----
+created src/000002.sst
+[JOB 0] flushed 1 memtable (100B) to L0 [000002] (10KB), in 0.1s (0.1s total), output rate 100KB/s
+
+clean
+src/000002.sst
+----
+
+wait
+----
+dst:
+  000002.sst
+  MANIFEST-000001
+
+# The file should now be both removed from src/ and a copy should be present in
+# dst/.
+
+ls src dst
+----
+src:
+  MANIFEST-000001
+dst:
+  000002.sst
+  MANIFEST-000001
+
+stop
+----

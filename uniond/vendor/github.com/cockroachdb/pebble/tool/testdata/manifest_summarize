@@ -1,0 +1,45 @@
+manifest summarize
+----
+requires at least 1 arg(s), only received 0
+
+manifest summarize
+../testdata/db-stage-2/MANIFEST-000001
+----
+MANIFEST-000001
+(no timestamps)
+---
+Estimated start time: 0001-01-01T00:00:00Z
+Estimated end time:   0001-01-01T00:00:00Z
+Estimated duration:   0s
+
+manifest summarize
+./testdata/find-db/MANIFEST-000001
+----
+MANIFEST-000001
+                     _______L0_______L1_______L2_______L3_______L4_______L5_______L6_____TOTAL
+2021-04-01T20:24:02Z
+        Ingest+Flush      2.4KB        .        .        .        .        .     808B    3.2KB
+        Ingest+Flush    2.4KB/s        .        .        .        .        .   808B/s  3.2KB/s
+       Compact (out)      2.4KB        .        .        .        .        .     898B    3.3KB
+       Compact (out)    2.4KB/s        .        .        .        .        .   898B/s  3.3KB/s
+2021-04-01T20:24:02Z
+---
+Estimated start time: 2021-04-01T20:24:02Z
+Estimated end time:   2021-04-01T20:24:02Z
+Estimated duration:   0s
+
+manifest summarize
+./testdata/mixed/MANIFEST-000001
+----
+MANIFEST-000001
+                     _______L0_______L1_______L2_______L3_______L4_______L5_______L6_____TOTAL
+2022-08-12T23:21:28Z
+        Ingest+Flush      1.1KB        .        .        .        .        .        .    1.1KB
+        Ingest+Flush    1.1KB/s        .        .        .        .        .        .  1.1KB/s
+       Compact (out)          .        .        .        .        .        .        .        .
+       Compact (out)          .        .        .        .        .        .        .        .
+2022-08-12T23:21:28Z
+---
+Estimated start time: 2022-08-12T23:21:28Z
+Estimated end time:   2022-08-12T23:21:28Z
+Estimated duration:   0s

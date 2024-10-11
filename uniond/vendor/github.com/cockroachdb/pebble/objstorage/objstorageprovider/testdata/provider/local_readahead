@@ -1,0 +1,184 @@
+open p1 1
+----
+<local fs> mkdir-all: p1 0755
+<local fs> open-dir: p1
+<local fs> open-dir: p1
+<local fs> create: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> create: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> close: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+
+create 1 local 1 2000000
+----
+<local fs> create: p1/000001.sst
+<local fs> sync-data: p1/000001.sst
+<local fs> sync-data: p1/000001.sst
+<local fs> close: p1/000001.sst
+
+# We should see prefetch calls, and eventually a reopen with sequential reads
+# option.
+read 1
+0 1000
+1000 15000
+16000 30000
+46000 10000
+56000 50000
+106000 30000
+140000 80000
+----
+<local fs> open: p1/000001.sst (options: *vfs.randomReadsOption)
+size: 2000000
+<local fs> read-at(0, 1000): p1/000001.sst
+0 1000: ok (salt 1)
+<local fs> read-at(1000, 15000): p1/000001.sst
+1000 15000: ok (salt 1)
+<local fs> prefetch(16000, 65536): p1/000001.sst
+<local fs> read-at(16000, 30000): p1/000001.sst
+16000 30000: ok (salt 1)
+<local fs> read-at(46000, 10000): p1/000001.sst
+46000 10000: ok (salt 1)
+<local fs> prefetch(56000, 131072): p1/000001.sst
+<local fs> read-at(56000, 50000): p1/000001.sst
+56000 50000: ok (salt 1)
+<local fs> read-at(106000, 30000): p1/000001.sst
+106000 30000: ok (salt 1)
+<local fs> open: p1/000001.sst (options: *vfs.sequentialReadsOption)
+<local fs> read-at(140000, 80000): p1/000001.sst
+140000 80000: ok (salt 1)
+<local fs> close: p1/000001.sst
+<local fs> close: p1/000001.sst
+
+# We should directly see a reopen with sequential reads option.
+read 1 for-compaction
+0 1000
+1000 15000
+----
+<local fs> open: p1/000001.sst (options: *vfs.randomReadsOption)
+<local fs> open: p1/000001.sst (options: *vfs.sequentialReadsOption)
+size: 2000000
+<local fs> read-at(0, 1000): p1/000001.sst
+0 1000: ok (salt 1)
+<local fs> read-at(1000, 15000): p1/000001.sst
+1000 15000: ok (salt 1)
+<local fs> close: p1/000001.sst
+<local fs> close: p1/000001.sst
+
+# Test non-default readahead modes.
+
+read 1 readahead=off
+0 1000
+1000 15000
+16000 30000
+46000 10000
+56000 50000
+106000 30000
+140000 80000
+----
+<local fs> open: p1/000001.sst (options: *vfs.randomReadsOption)
+size: 2000000
+<local fs> read-at(0, 1000): p1/000001.sst
+0 1000: ok (salt 1)
+<local fs> read-at(1000, 15000): p1/000001.sst
+1000 15000: ok (salt 1)
+<local fs> read-at(16000, 30000): p1/000001.sst
+16000 30000: ok (salt 1)
+<local fs> read-at(46000, 10000): p1/000001.sst
+46000 10000: ok (salt 1)
+<local fs> read-at(56000, 50000): p1/000001.sst
+56000 50000: ok (salt 1)
+<local fs> read-at(106000, 30000): p1/000001.sst
+106000 30000: ok (salt 1)
+<local fs> read-at(140000, 80000): p1/000001.sst
+140000 80000: ok (salt 1)
+<local fs> close: p1/000001.sst
+
+read 1 for-compaction readahead=off
+0 1000
+1000 15000
+16000 30000
+46000 10000
+56000 50000
+106000 30000
+140000 80000
+----
+<local fs> open: p1/000001.sst (options: *vfs.randomReadsOption)
+size: 2000000
+<local fs> read-at(0, 1000): p1/000001.sst
+0 1000: ok (salt 1)
+<local fs> read-at(1000, 15000): p1/000001.sst
+1000 15000: ok (salt 1)
+<local fs> read-at(16000, 30000): p1/000001.sst
+16000 30000: ok (salt 1)
+<local fs> read-at(46000, 10000): p1/000001.sst
+46000 10000: ok (salt 1)
+<local fs> read-at(56000, 50000): p1/000001.sst
+56000 50000: ok (salt 1)
+<local fs> read-at(106000, 30000): p1/000001.sst
+106000 30000: ok (salt 1)
+<local fs> read-at(140000, 80000): p1/000001.sst
+140000 80000: ok (salt 1)
+<local fs> close: p1/000001.sst
+
+read 1 readahead=sys-readahead
+0 1000
+1000 15000
+16000 30000
+46000 10000
+56000 50000
+106000 30000
+140000 80000
+----
+<local fs> open: p1/000001.sst (options: *vfs.randomReadsOption)
+size: 2000000
+<local fs> read-at(0, 1000): p1/000001.sst
+0 1000: ok (salt 1)
+<local fs> read-at(1000, 15000): p1/000001.sst
+1000 15000: ok (salt 1)
+<local fs> prefetch(16000, 65536): p1/000001.sst
+<local fs> read-at(16000, 30000): p1/000001.sst
+16000 30000: ok (salt 1)
+<local fs> read-at(46000, 10000): p1/000001.sst
+46000 10000: ok (salt 1)
+<local fs> prefetch(56000, 131072): p1/000001.sst
+<local fs> read-at(56000, 50000): p1/000001.sst
+56000 50000: ok (salt 1)
+<local fs> read-at(106000, 30000): p1/000001.sst
+106000 30000: ok (salt 1)
+<local fs> prefetch(140000, 262144): p1/000001.sst
+<local fs> read-at(140000, 80000): p1/000001.sst
+140000 80000: ok (salt 1)
+<local fs> close: p1/000001.sst
+
+# TODO(radu): for informed/sys-readahead, we should start with the maximum
+# prefetch window.
+read 1 for-compaction readahead=sys-readahead
+0 1000
+1000 15000
+16000 30000
+46000 10000
+56000 50000
+106000 30000
+140000 80000
+----
+<local fs> open: p1/000001.sst (options: *vfs.randomReadsOption)
+size: 2000000
+<local fs> read-at(0, 1000): p1/000001.sst
+0 1000: ok (salt 1)
+<local fs> read-at(1000, 15000): p1/000001.sst
+1000 15000: ok (salt 1)
+<local fs> prefetch(16000, 65536): p1/000001.sst
+<local fs> read-at(16000, 30000): p1/000001.sst
+16000 30000: ok (salt 1)
+<local fs> read-at(46000, 10000): p1/000001.sst
+46000 10000: ok (salt 1)
+<local fs> prefetch(56000, 131072): p1/000001.sst
+<local fs> read-at(56000, 50000): p1/000001.sst
+56000 50000: ok (salt 1)
+<local fs> read-at(106000, 30000): p1/000001.sst
+106000 30000: ok (salt 1)
+<local fs> prefetch(140000, 262144): p1/000001.sst
+<local fs> read-at(140000, 80000): p1/000001.sst
+140000 80000: ok (salt 1)
+<local fs> close: p1/000001.sst

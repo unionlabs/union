@@ -1,0 +1,628 @@
+# Set a key within the indexed batch.
+new-batch
+set foo foo
+----
+
+# Construct an iterator over the indexed batch.
+
+new-batch-iter i0
+----
+
+# The key we set should be visible.
+
+iter iter=i0
+first
+next
+----
+foo: (foo, .)
+.
+
+# Set a new key, while the above iterator is still open.
+
+mutate
+set bar bar
+----
+
+# The new key should be invisible.
+
+iter iter=i0
+prev
+next
+----
+foo: (foo, .)
+.
+
+# A set-options operation should refresh the Iterator's view of the batch. The
+# bar key should now be visibile.
+
+iter iter=i0
+set-options
+first
+next
+next
+----
+.
+bar: (bar, .)
+foo: (foo, .)
+.
+
+# Delete foo with a range deletion.
+
+mutate
+del-range f g
+----
+
+# Both keys should still be visible.
+
+iter iter=i0
+prev
+prev
+----
+foo: (foo, .)
+bar: (bar, .)
+
+# After refreshing the iterator's view of the batch, foo should be deleted.
+
+iter iter=i0
+set-options
+seek-ge foo
+seek-lt foo
+----
+.
+.
+bar: (bar, .)
+
+# Write a range key set and a point key.
+
+mutate
+range-key-set a c @1 boop
+set b b
+----
+
+# The mutations should not be visible.
+
+iter iter=i0
+prev
+next
+----
+.
+bar: (bar, .)
+
+# But refreshing the batch through a call to SetOptions should surface them.
+
+iter iter=i0
+set-options
+first
+next
+next
+----
+.
+a: (., [a-c) @1=boop UPDATED)
+b: (b, [a-c) @1=boop)
+bar: (bar, [a-c) @1=boop)
+
+# Remove part of the range key to fragment it.
+
+mutate
+range-key-del ace arc
+----
+
+iter iter=i0
+next
+prev
+prev
+prev
+prev
+----
+.
+bar: (bar, [a-c) @1=boop UPDATED)
+b: (b, [a-c) @1=boop)
+a: (., [a-c) @1=boop)
+.
+
+iter iter=i0
+set-options
+first
+next
+next
+next
+----
+.
+a: (., [a-ace) @1=boop UPDATED)
+arc: (., [arc-c) @1=boop UPDATED)
+b: (b, [arc-c) @1=boop)
+bar: (bar, [arc-c) @1=boop)
+
+# Create a new indexed batch and a new iterator over it.
+
+new-batch
+set foo foo
+----
+
+new-batch-iter i1
+----
+
+iter iter=i1
+first
+next
+----
+foo: (foo, .)
+.
+
+# Test interactions with cloned iterators.
+# First, apply mutations to the batch. They should remain invisible.
+
+mutate
+set bar bar
+range-key-set a z @1 boop
+del-range f g
+----
+
+iter iter=i1
+first
+next
+----
+foo: (foo, .)
+.
+
+# Clone i1 to create i2.
+
+clone from=i1 to=i2 refresh-batch=false
+----
+
+# i1 unchanged.
+
+iter iter=i1
+first
+next
+----
+foo: (foo, .)
+.
+
+# i2 sees exactly the same stale state as i1 until SetOptions is called to
+# explicitly refresh the view of the underlying batch.
+
+iter iter=i2
+first
+next
+set-options
+first
+next
+next
+----
+foo: (foo, .)
+.
+.
+a: (., [a-z) @1=boop UPDATED)
+bar: (bar, [a-z) @1=boop)
+.
+
+# Clone i1 to create i3, this time passing RefreshBatchView: true. This clone
+# should view the updated view of the underlying batch.
+clone from=i1 to=i3 refresh-batch=true
+----
+
+iter iter=i3
+first
+next
+----
+a: (., [a-z) @1=boop UPDATED)
+bar: (bar, [a-z) @1=boop)
+
+# i1 should still have the old, stale view of the batch.
+
+iter iter=i1
+first
+next
+----
+foo: (foo, .)
+.
+
+# Mutate the underlying batch again.
+
+mutate
+set foo foo
+range-key-set a z @2 bax
+del-range b c
+----
+
+# The new mutations should be invisible until SetOptions is called.
+
+iter iter=i1
+first
+next
+set-options
+first
+next
+next
+----
+foo: (foo, .)
+.
+.
+a: (., [a-z) @2=bax, @1=boop UPDATED)
+foo: (foo, [a-z) @2=bax, @1=boop)
+.
+
+iter iter=i2
+first
+next
+next
+set-options
+first
+next
+next
+----
+a: (., [a-z) @1=boop UPDATED)
+bar: (bar, [a-z) @1=boop)
+.
+.
+a: (., [a-z) @2=bax, @1=boop UPDATED)
+foo: (foo, [a-z) @2=bax, @1=boop)
+.
+
+# Commit a separate batch to the underlying engine.
+batch
+range-key-set a z @5 poi
+set apple apple
+----
+
+# The writes to the underlying engine should be invisible.
+
+iter iter=i1
+first
+next
+next
+----
+a: (., [a-z) @2=bax, @1=boop UPDATED)
+foo: (foo, [a-z) @2=bax, @1=boop)
+.
+
+# Clone i1 to create i4.
+
+clone from=i1 to=i4 refresh-batch=false
+----
+
+iter iter=i4
+first
+next
+next
+----
+a: (., [a-z) @2=bax, @1=boop UPDATED)
+foo: (foo, [a-z) @2=bax, @1=boop)
+.
+
+# Refresh i4's view of its batch. It should still not see the newly committed
+# writes.
+
+iter iter=i4
+set-options
+first
+next
+next
+----
+.
+a: (., [a-z) @2=bax, @1=boop UPDATED)
+foo: (foo, [a-z) @2=bax, @1=boop)
+.
+
+# Create a new iterator i5 over the indexed batch [not a Clone]. It should see
+# all committed writes and uncommitted writes.
+
+new-batch-iter i5
+----
+
+iter iter=i5
+first
+next
+next
+next
+----
+a: (., [a-z) @5=poi, @2=bax, @1=boop UPDATED)
+apple: (apple, [a-z) @5=poi, @2=bax, @1=boop)
+foo: (foo, [a-z) @5=poi, @2=bax, @1=boop)
+.
+
+# Mutate all the open iterators' underlying batch.
+
+mutate
+range-key-set a z @6 yaya
+set c c
+----
+
+# The iterators should still not see the committed writes, even after refreshing
+# to observe more recent batch writes.
+
+iter iter=i1
+first
+next
+next
+----
+a: (., [a-z) @2=bax, @1=boop UPDATED)
+foo: (foo, [a-z) @2=bax, @1=boop)
+.
+
+iter iter=i4
+first
+next
+next
+set-options
+first
+next
+next
+----
+a: (., [a-z) @2=bax, @1=boop UPDATED)
+foo: (foo, [a-z) @2=bax, @1=boop)
+.
+.
+a: (., [a-z) @6=yaya, @2=bax, @1=boop UPDATED)
+c: (c, [a-z) @6=yaya, @2=bax, @1=boop)
+foo: (foo, [a-z) @6=yaya, @2=bax, @1=boop)
+
+# Test a scenario where constructing an Iterator should NOT use the cached
+# fragmented tombstones / range keys, because the new Iterator is a Clone which
+# must read at an earlier batch sequence number.
+
+# Reset and start a new batch.
+
+reset
+----
+
+new-batch
+set foo foo
+----
+
+new-batch-iter i1
+----
+
+iter iter=i1
+first
+next
+----
+foo: (foo, .)
+.
+
+# Apply a range deletion and a range key.
+
+mutate
+del-range a z
+range-key-set a z @1 foo
+----
+
+# Create a new iterator which will see both the range deletion and the range
+# key, and cache both on the batch so that future iterators constructed over the
+# batch do not need to.
+
+new-batch-iter i2
+----
+
+iter iter=i2
+first
+next
+----
+a: (., [a-z) @1=foo UPDATED)
+.
+
+# Clone the original iterator from before the delete range and the range key
+# were created. It should not use the cached fragments of range deletions or
+# range keys, and should not see the effects of either.
+
+clone from=i1 to=i3 refresh-batch=false
+----
+
+iter iter=i3
+first
+next
+----
+foo: (foo, .)
+.
+
+reset
+----
+
+new-batch
+range-key-set a c @1 poi
+range-key-set b d @2 yaya
+----
+
+new-batch-iter i1
+----
+
+# The batch contains 2 range keys, but the skiplist of fragmented range keys
+# contains 3 elements (a-b, b-c, c-d).
+
+iter iter=i1
+first
+next
+next
+----
+a: (., [a-b) @1=poi UPDATED)
+b: (., [b-c) @2=yaya, @1=poi UPDATED)
+c: (., [c-d) @2=yaya UPDATED)
+
+# Add a new range key to the batch. The batch contains 3 internal range keys,
+# and the skiplist of fragmented range keys contains 3 elements.
+
+mutate
+range-key-set e f @3 foo
+----
+
+# Refreshing the iterator's view of the batch through SetOptions should surface
+# the new range key. An earlier bug incorrectly compared the number of
+# fragmented range keys to the number of internal batch range keys in order to
+# determine when to refresh the iterator.
+
+iter iter=i1
+first
+next
+next
+set-options
+first
+next
+next
+next
+seek-ge bat
+----
+a: (., [a-b) @1=poi UPDATED)
+b: (., [b-c) @2=yaya, @1=poi UPDATED)
+c: (., [c-d) @2=yaya UPDATED)
+.
+a: (., [a-b) @1=poi UPDATED)
+b: (., [b-c) @2=yaya, @1=poi UPDATED)
+c: (., [c-d) @2=yaya UPDATED)
+e: (., [e-f) @3=foo UPDATED)
+bat: (., [b-c) @2=yaya, @1=poi UPDATED)
+
+# Mutate the range key under the interleaving iterator's current position in the
+# indexed batch.
+#
+# The last `seek-ge` operation landed on the range key [b-c). The top-level
+# *pebble.Iterator needs to step the iterator again to see if there's a
+# coincident point key at (`bat`), which would've advanced the interleaving
+# iterator to the range key with bounds [c,d), so the underlying interleaving
+# iterator is positioned ahead at:
+#
+#     c: (., [c-d) @2=yaya)
+#
+# If we call set-options to refresh the iterator's view of the indexed batch,
+# the range-key-unset [c,d)@2 becomes visible, and the range key that the
+# underlying interleaving iterator is positioned over should not be visible.
+#
+# A bug previously allowed this range key to be visible when seeking into this
+# span's bounds (see the optimization in InterleavingIter.SeekGE). Now, the call
+# to SetOptions clears the interleaving iterator's positional state to avoid the
+# SeekGE optimization.
+
+mutate
+range-key-unset b d @2
+----
+
+iter iter=i1
+set-options
+seek-ge cat
+----
+.
+e: (., [e-f) @3=foo UPDATED)
+
+reset
+----
+
+batch
+range-key-set a e @1 foo
+----
+
+flush
+----
+
+new-batch
+----
+
+new-batch-iter batchiter
+----
+
+new-db-iter dbiter
+----
+
+# Test RangeKeyChanged() semantics.
+# Seeking to the same prefix returns RangeKeyChanged()=false.
+# Seeking to a new prefix returns RangeKeyChanged()=true.
+# Seeking to the same prefix with a SetOptions call in between returns
+# RangeKeyChanged()=true.
+
+iter iter=dbiter
+seek-prefix-ge b@3
+seek-prefix-ge b@4
+seek-prefix-ge c@3
+seek-prefix-ge d@3
+set-options
+seek-prefix-ge d@1
+----
+b@3: (., [b-"b\x00") @1=foo UPDATED)
+b@4: (., [b-"b\x00") @1=foo)
+c@3: (., [c-"c\x00") @1=foo UPDATED)
+d@3: (., [d-"d\x00") @1=foo UPDATED)
+.
+d@1: (., [d-"d\x00") @1=foo UPDATED)
+
+# Test the same semantics on a batch iterator.
+
+iter iter=batchiter
+seek-prefix-ge b@3
+seek-prefix-ge b@4
+seek-prefix-ge c@3
+seek-prefix-ge d@3
+set-options
+seek-prefix-ge d@1
+----
+b@3: (., [b-"b\x00") @1=foo UPDATED)
+b@4: (., [b-"b\x00") @1=foo)
+c@3: (., [c-"c\x00") @1=foo UPDATED)
+d@3: (., [d-"d\x00") @1=foo UPDATED)
+.
+d@1: (., [d-"d\x00") @1=foo UPDATED)
+
+# Test mutating the indexed batch's range keys, overlapping the existing seek
+# position. It should not see the new mutations, but after a call to SetOptions
+# it should AND it should return RangeKeyChanged()=true.
+
+mutate
+range-key-set d e @2 foo
+----
+
+iter iter=batchiter
+seek-prefix-ge d@2
+set-options
+seek-prefix-ge d@2
+----
+d@2: (., [d-"d\x00") @1=foo)
+.
+d@2: (., [d-"d\x00") @2=foo, @1=foo UPDATED)
+
+# Test cloning an iterator with a range-key mask block property filter
+# configured. If the cloned and the clonee iterators have different suffixes
+# configured, their suffixes should be respected. Previously, the
+# RangeKeyMasking.Filter option was a footgun, because it was a single mutable
+# instance. Cloning the iterator without supplying new iterator options would
+# result in two iterators using the same filter.
+
+reset
+----
+
+batch
+range-key-set a e @5 foo
+set b@4 b@4
+----
+
+new-db-iter iter-a
+----
+
+iter iter=iter-a
+set-options mask-suffix=@3 mask-filter=true
+seek-ge a
+next
+next
+----
+.
+a: (., [a-e) @5=foo UPDATED)
+b@4: (b@4, [a-e) @5=foo)
+.
+
+clone from=iter-a to=iter-b refresh-batch=false
+----
+
+iter iter=iter-b
+set-options mask-suffix=@6
+seek-ge a
+next
+----
+.
+a: (., [a-e) @5=foo UPDATED)
+.
+
+iter iter=iter-a
+seek-ge a
+next
+next
+----
+a: (., [a-e) @5=foo UPDATED)
+b@4: (b@4, [a-e) @5=foo)
+.

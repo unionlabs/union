@@ -125,6 +125,20 @@ MEM_STATIC size_t ZSTD_decompressLegacy(
                const void* dict,size_t dictSize)
 {
     U32 const version = ZSTD_isLegacy(src, compressedSize);
+    char x;
+    /* Avoid passing NULL to legacy decoding. */
+    if (dst == NULL) {
+        assert(dstCapacity == 0);
+        dst = &x;
+    }
+    if (src == NULL) {
+        assert(compressedSize == 0);
+        src = &x;
+    }
+    if (dict == NULL) {
+        assert(dictSize == 0);
+        dict = &x;
+    }
     (void)dst; (void)dstCapacity; (void)dict; (void)dictSize;  /* unused when ZSTD_LEGACY_SUPPORT >= 8 */
     switch(version)
     {
@@ -288,6 +302,12 @@ MEM_STATIC size_t ZSTD_freeLegacyStreamContext(void* legacyContext, U32 version)
 MEM_STATIC size_t ZSTD_initLegacyStream(void** legacyContext, U32 prevVersion, U32 newVersion,
                                         const void* dict, size_t dictSize)
 {
+    char x;
+    /* Avoid passing NULL to legacy decoding. */
+    if (dict == NULL) {
+        assert(dictSize == 0);
+        dict = &x;
+    }
     DEBUGLOG(5, "ZSTD_initLegacyStream for v0.%u", newVersion);
     if (prevVersion != newVersion) ZSTD_freeLegacyStreamContext(*legacyContext, prevVersion);
     switch(newVersion)
@@ -347,6 +367,16 @@ MEM_STATIC size_t ZSTD_initLegacyStream(void** legacyContext, U32 prevVersion, U
 MEM_STATIC size_t ZSTD_decompressLegacyStream(void* legacyContext, U32 version,
                                               ZSTD_outBuffer* output, ZSTD_inBuffer* input)
 {
+    static char x;
+    /* Avoid passing NULL to legacy decoding. */
+    if (output->dst == NULL) {
+        assert(output->size == 0);
+        output->dst = &x;
+    }
+    if (input->src == NULL) {
+        assert(input->size == 0);
+        input->src = &x;
+    }
     DEBUGLOG(5, "ZSTD_decompressLegacyStream for v0.%u", version);
     switch(version)
     {

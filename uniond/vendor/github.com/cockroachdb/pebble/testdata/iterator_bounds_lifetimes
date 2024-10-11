@@ -1,0 +1,83 @@
+new-iter label=first lower=bar upper=foo
+----
+first: ("bar", "foo") boundsBufIdx=1
+
+iter label=first
+first
+next
+----
+bb@29: (bb@29, .)
+bc@30: (bc@30, .)
+
+# Clone an iterator from the original iterator. The clone should have its own
+# copy of the bounds.
+
+clone from=first to=second
+----
+first: ("bar", "foo") boundsBufIdx=1
+second: ("bar", "foo") boundsBufIdx=1
+
+iter label=second
+last
+prev
+----
+fo@150: (fo@150, .)
+fn@149: (fn@149, .)
+
+# Changing the bounds on the original should leave the clone's bounds unchanged.
+
+set-bounds label=first lower=boop
+----
+first: ("boop", <nil>) boundsBufIdx=0
+second: ("bar", "foo") boundsBufIdx=1
+
+iter label=first
+seek-ge goop
+----
+gp@178: (gp@178, .)
+
+iter label=second
+prev
+----
+fm@148: (fm@148, .)
+
+set-bounds label=first lower=boop upper=bop
+----
+first: ("boop", "bop") boundsBufIdx=1
+second: ("bar", "foo") boundsBufIdx=1
+
+# Changing the bounds on the clone should leave the original's bounds unchanged.
+
+set-options label=second lower=a upper=z
+----
+first: ("boop", "bop") boundsBufIdx=1
+second: ("a", "z") boundsBufIdx=0
+
+# Test no-op set-options. The boundsBufIdx should remain unchanged, reflecting
+# that the bounds were not copied again.
+
+set-options label=second lower=a upper=z
+----
+first: ("boop", "bop") boundsBufIdx=1
+second: ("a", "z") boundsBufIdx=0
+
+# Test SetOptions with unchanged bounds but changes to other options. SetOptions
+# should hold onto the existing bounds buffers. The boundsBufIdx should still
+# remain unchanged, reflecting that the bounds were not copied.
+
+set-options label=second lower=a upper=z key-types=both
+----
+first: ("boop", "bop") boundsBufIdx=1
+second: ("a", "z") boundsBufIdx=0
+
+iter label=second
+seek-ge foo
+----
+fp@151: (fp@151, .)
+
+close label=first
+----
+second: ("a", "z") boundsBufIdx=0
+
+close label=second
+----

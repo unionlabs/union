@@ -1,3 +1,22 @@
+# 1.7.0 (May 24, 2024)
+
+ENHANCEMENTS:
+
+- Remove `reflect` dependency ([#91](https://github.com/hashicorp/go-version/pull/91))
+- Implement the `database/sql.Scanner` and `database/sql/driver.Value` interfaces for `Version` ([#133](https://github.com/hashicorp/go-version/pull/133))
+
+INTERNAL:
+
+- [COMPLIANCE] Add Copyright and License Headers ([#115](https://github.com/hashicorp/go-version/pull/115))
+- [COMPLIANCE] Update MPL-2.0 LICENSE ([#105](https://github.com/hashicorp/go-version/pull/105))
+- Bump actions/cache from 3.0.11 to 3.2.5 ([#116](https://github.com/hashicorp/go-version/pull/116))
+- Bump actions/checkout from 3.2.0 to 3.3.0 ([#111](https://github.com/hashicorp/go-version/pull/111))
+- Bump actions/upload-artifact from 3.1.1 to 3.1.2 ([#112](https://github.com/hashicorp/go-version/pull/112))
+- GHA Migration ([#103](https://github.com/hashicorp/go-version/pull/103))
+- github: Pin external GitHub Actions to hashes ([#107](https://github.com/hashicorp/go-version/pull/107))
+- SEC-090: Automated trusted workflow pinning (2023-04-05) ([#124](https://github.com/hashicorp/go-version/pull/124))
+- update readme ([#104](https://github.com/hashicorp/go-version/pull/104))
+
 # 1.6.0 (June 28, 2022)
 
 FEATURES:

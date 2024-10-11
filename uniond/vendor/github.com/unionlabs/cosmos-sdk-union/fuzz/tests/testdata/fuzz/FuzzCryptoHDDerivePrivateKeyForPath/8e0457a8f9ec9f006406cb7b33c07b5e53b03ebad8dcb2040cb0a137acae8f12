@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("*\u00a0\v\v\r\f\f\r\f\r\r\r\f\f\r\f\r\rm/4")

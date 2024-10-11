@@ -1,0 +1,17 @@
+mod=example.com/fix
+base=v1.0.0
+version=v1.1.0-compatible-same
+release=v1.0.1  # not actually valid, but gorelease can't tell
+-- want --
+# example.com/fix/bad
+## errors in base version:
+bad/bad.go:3:15: undefined: NOTYPE
+
+## incompatible changes
+Broken: changed from func() invalid type to func() int
+## compatible changes
+Worse: added
+
+# summary
+v1.0.1 is a valid semantic version for this release.
+Errors were found in the base version. Some API changes may be omitted.

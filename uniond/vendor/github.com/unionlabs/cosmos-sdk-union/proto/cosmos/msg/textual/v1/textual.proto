@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package cosmos.msg.textual.v1;
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.MessageOptions {
+  // expert_custom_renderer is an informative identifier to reference the
+  // algorithm used to generate the custom textual representation of the
+  // protobuf message where this annotation is applied. We recommend to use a
+  // short, versioned name as this identifier, e.g. "replace_with_username_v1".
+  // We also recommend providing a human-readable description as protobuf
+  // comments on this annotation, for example a short specification or a link
+  // to the relevant documentation.
+  //
+  // Also see the section on Custom Message Renderers in ADR-050.
+  string expert_custom_renderer = 11110009;
+}

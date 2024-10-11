@@ -1,0 +1,59 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "server.go",
+        "validator_count.go",
+        "validator_performance.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/prysm/validator",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/blockchain:go_default_library",
+        "//beacon-chain/db:go_default_library",
+        "//beacon-chain/rpc/core:go_default_library",
+        "//beacon-chain/rpc/eth/helpers:go_default_library",
+        "//beacon-chain/rpc/eth/shared:go_default_library",
+        "//beacon-chain/rpc/lookup:go_default_library",
+        "//beacon-chain/state/state-native:go_default_library",
+        "//beacon-chain/sync:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//consensus-types/validator:go_default_library",
+        "//network/httputil:go_default_library",
+        "//proto/eth/v1:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//time/slots:go_default_library",
+        "@com_github_gorilla_mux//:go_default_library",
+        "@io_opencensus_go//trace:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "validator_count_test.go",
+        "validator_performance_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//beacon-chain/blockchain/testing:go_default_library",
+        "//beacon-chain/core/epoch/precompute:go_default_library",
+        "//beacon-chain/core/helpers:go_default_library",
+        "//beacon-chain/rpc/core:go_default_library",
+        "//beacon-chain/rpc/lookup:go_default_library",
+        "//beacon-chain/rpc/testutil:go_default_library",
+        "//beacon-chain/state:go_default_library",
+        "//beacon-chain/sync/initial-sync/testing:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//network/httputil:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//runtime/version:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/util:go_default_library",
+        "@com_github_gorilla_mux//:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+    ],
+)

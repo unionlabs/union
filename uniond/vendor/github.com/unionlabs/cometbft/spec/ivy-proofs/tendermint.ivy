@@ -1,0 +1,420 @@
+#lang ivy1.7
+# ---
+# layout: page
+# title: Specification of Tendermint in Ivy
+# ---
+
+# This specification closely follows the pseudo-code given in "The latest
+# gossip on BFT consensus" by E. Buchman, J. Kwon, Z. Milosevic
+# <https://arxiv.org/abs/1807.04938>
+
+include domain_model
+include network_shim
+
+# We model the Tendermint protocol as an Ivy object. Like in Object-Oriented
+# Programming, the basic structuring unit in Ivy is the object. Objects have
+# internal state and actions (i.e. methods in OO parlance) that modify their
+# state. We model Tendermint as an object whose actions represent steps taken
+# by individual nodes in the protocol. Actions in Ivy can have preconditions,
+# and a valid execution is a sequence of actions whose preconditions are all
+# satisfied in the state in which they are called.
+
+# For technical reasons, we define below a `tendermint` module instead of an
+# object. Ivy modules are a little bit like classes in OO programs, and like
+# classes they can be instantiated to obtain objects. To instantiate the
+# `tendermint` module, we must provide an abstract-protocol object. This allows
+# us to use different abstract-protocol objects for different parts of the
+# proof, and to do so without too much notational burden (we could have used
+# Ivy monitors, but then we would need to prefix every variable name by the
+# name of the object containing it, which clutters things a bit compared to the
+# approach we took).
+
+# The abstract-protocol object is called by the resulting tendermint object so
+# as to run the abstract protocol alongside the concrete protocol. This allows
+# us to transfer properties proved of the abstract protocol to the concrete
+# protocol, as follows. First, we prove that running the abstract protocol in
+# this way results in a valid execution of the abstract protocol. This is done
+# by checking that all preconditions of the abstract actions are satisfied at
+# their call sites. Second, we establish a relation between abstract state and
+# concrete state (in the form of invariants of the resulting, two-object
+# transition system) that allow us to transfer properties proved in the
+# abstract protocol to the concrete protocol (for example, we prove that any
+# decision made in the Tendermint protocol is also made in the abstract
+# protocol; if the abstract protocol satisfies the agreement property, this
+# allows us to conclude that the Tendermint protocol also does).
+
+# The abstract protocol object that we will use is always the same, and only
+# the abstract properties that we prove about it change in the different
+# instantiations of the `tendermint` module. Thus we provide common invariants
+# that a) allow to prove that the abstract preconditions are met, and b)
+# provide a refinement relation (see end of the module) relating the state of
+# Tendermint to the state of the abstract protocol.
+
+# In the model, Byzantine nodes can send whatever messages they want, except
+# that they cannot forge sender identities. This reflects the fact that, in
+# practice, nodes use public key cryptography to sign their messages.
+
+# Finally, note that the observations that serve to adjudicate misbehavior are
+# defined only in the abstract protocol (they happen in the abstract actions).
+
+module tendermint(abstract_protocol) = {
+
+    # the initial value of a node:
+    function init_val(N:node): value
+
+    # the three type of steps
+    object step_t = {
+        type this = {propose, prevote, precommit}
+    } # refer to those e.g. as step_t.propose
+
+    object server(n:node) = {
+
+        # the current round of a node
+        individual round_p: round
+
+        individual step: step_t
+
+        individual decision: value
+
+        individual lockedValue: value
+        individual lockedRound: round
+
+        individual validValue: value
+        individual validRound: round
+
+
+        relation done_l34(R:round)
+        relation done_l36(R:round, V:value)
+        relation done_l47(R:round)
+
+        # variables for scheduling request
+        relation propose_timer_scheduled(R:round)
+        relation prevote_timer_scheduled(R:round)
+        relation precommit_timer_scheduled(R:round)
+
+        relation _recved_proposal(Sender:node, R:round, V:value, VR:round)
+        relation _recved_prevote(Sender:node, R:round, V:value)
+        relation _recved_precommit(Sender:node, R:round, V:value)
+
+        relation _has_started
+
+        after init {
+            round_p := 0;
+            step := step_t.propose;
+            decision := value.nil;
+
+            lockedValue := value.nil;
+            lockedRound := round.minus_one;
+
+            validValue := value.nil;
+            validRound := round.minus_one;
+
+            done_l34(R) := false;
+            done_l36(R, V) := false;
+            done_l47(R) := false;
+
+            propose_timer_scheduled(R) := false;
+            prevote_timer_scheduled(R) := false;
+            precommit_timer_scheduled(R) := false;
+
+            _recved_proposal(Sender, R, V, VR) := false;
+            _recved_prevote(Sender, R, V) := false;
+            _recved_precommit(Sender, R, V) := false;
+
+            _has_started := false;
+        }
+
+        action getValue returns (v:value) = {
+            v := init_val(n)
+        }
+
+        export action start = {
+            require ~_has_started;
+            _has_started := true;
+            # line 10
+            call startRound(0);
+        }
+
+        # line 11-21
+        action startRound(r:round) = {
+            # line 12
+            round_p := r;
+
+            # line 13
+            step := step_t.propose;
+
+            var proposal : value;
+
+            # line 14
+            if (proposers.get_proposer(r) = n) {
+                if validValue ~= value.nil {      # line 15
+                    proposal := validValue; # line 16
+                } else {
+                    proposal := getValue();   # line 18
+                };
+                call broadcast_proposal(r, proposal, validRound); # line 19
+            } else {
+                propose_timer_scheduled(r) := true; # line 21
+            };
+
+            call abstract_protocol.l_11(n, r);
+        }
+
+        # This action, as not exported, can only be called at specific call sites.
+        action broadcast_proposal(r:round, v:value, vr:round) = {
+            var m: msg;
+            m.m_kind := msg_kind.proposal;
+            m.m_src := n;
+            m.m_round := r;
+            m.m_value := v;
+            m.m_vround := vr;
+            call shim.broadcast(n,m);
+        }
+
+        implement shim.proposal_handler.handle(msg:msg) {
+            _recved_proposal(msg.m_src, msg.m_round, msg.m_value, msg.m_vround) := true;
+        }
+
+        # line 22-27
+        export action l_22(v:value) = {
+            require _has_started;
+            require _recved_proposal(proposers.get_proposer(round_p), round_p, v, round.minus_one);
+            require step = step_t.propose;
+
+            if (value.valid(v) & (lockedRound = round.minus_one | lockedValue = v)) {
+                call broadcast_prevote(round_p, v); # line 24
+                call abstract_protocol.l_22(n, round_p, v);
+            } else {
+                call broadcast_prevote(round_p, value.nil); # line 26
+                call abstract_protocol.l_22(n, round_p, value.nil);
+            };
+
+            # line 27
+            step := step_t.prevote;
+        }
+
+        # line 28-33
+        export action l_28(r:round, v:value, vr:round, q:nset) = {
+            require _has_started;
+            require r = round_p;
+            require _recved_proposal(proposers.get_proposer(r), r, v, vr);
+            require nset.is_quorum(q);
+            require nset.member(N,q) -> _recved_prevote(N,vr,v);
+            require step = step_t.propose;
+            require vr >= 0 & vr < r;
+
+            # line 29
+            if (value.valid(v) & (lockedRound <= vr | lockedValue = v)) {
+                call broadcast_prevote(r, v);
+            } else {
+                call broadcast_prevote(r, value.nil);
+            };
+
+            call abstract_protocol.l_28(n,r,v,vr,q);
+            step := step_t.prevote;
+        }
+
+        action broadcast_prevote(r:round, v:value) = {
+            var m: msg;
+            m.m_kind := msg_kind.prevote;
+            m.m_src := n;
+            m.m_round := r;
+            m.m_value := v;
+            call shim.broadcast(n,m);
+        }
+
+        implement shim.prevote_handler.handle(msg:msg) {
+            _recved_prevote(msg.m_src, msg.m_round, msg.m_value) := true;
+        }
+
+        # line 34-35
+        export action l_34(r:round, q:nset) = {
+            require _has_started;
+            require round_p = r;
+            require nset.is_quorum(q);
+            require exists V . nset.member(N,q) -> _recved_prevote(N,r,V);
+            require step = step_t.prevote;
+            require ~done_l34(r);
+            done_l34(r) := true;
+
+            prevote_timer_scheduled(r) := true;
+        }
+
+
+        # line 36-43
+        export action l_36(r:round, v:value, q:nset) = {
+            require _has_started;
+            require r = round_p;
+            require exists VR . round.minus_one <= VR & VR < r & _recved_proposal(proposers.get_proposer(r), r, v, VR);
+            require nset.is_quorum(q);
+            require nset.member(N,q) -> _recved_prevote(N,r,v);
+            require value.valid(v);
+            require step = step_t.prevote | step = step_t.precommit;
+
+            require ~done_l36(r,v);
+            done_l36(r, v) := true;
+
+            if step = step_t.prevote {
+                lockedValue := v; # line 38
+                lockedRound := r; # line 39
+                call broadcast_precommit(r, v); # line 40
+                step := step_t.precommit; # line 41
+                call abstract_protocol.l_36(n, r, v, q);
+            };
+
+            validValue := v; # line 42
+            validRound := r; # line 43
+        }
+
+        # line 44-46
+        export action l_44(r:round, q:nset) = {
+            require _has_started;
+            require r = round_p;
+            require nset.is_quorum(q);
+            require nset.member(N,q) -> _recved_prevote(N,r,value.nil);
+            require step = step_t.prevote;
+
+            call broadcast_precommit(r, value.nil); # line 45
+            step := step_t.precommit; # line 46
+
+            call abstract_protocol.l_44(n, r, q);
+        }
+
+        action broadcast_precommit(r:round, v:value) = {
+            var m: msg;
+            m.m_kind := msg_kind.precommit;
+            m.m_src := n;
+            m.m_round := r;
+            m.m_value := v;
+            call shim.broadcast(n,m);
+        }
+
+        implement shim.precommit_handler.handle(msg:msg) {
+            _recved_precommit(msg.m_src, msg.m_round, msg.m_value) := true;
+        }
+
+
+        # line 47-48
+        export action l_47(r:round, q:nset) = {
+            require _has_started;
+            require round_p = r;
+            require nset.is_quorum(q);
+            require nset.member(N,q) -> exists V . _recved_precommit(N,r,V);
+            require ~done_l47(r);
+            done_l47(r) := true;
+
+            precommit_timer_scheduled(r) := true;
+        }
+
+
+        # line 49-54
+        export action l_49_decide(r:round, v:value, q:nset) = {
+            require _has_started;
+            require exists VR . round.minus_one <= VR & VR < r & _recved_proposal(proposers.get_proposer(r), r, v, VR);
+            require nset.is_quorum(q);
+            require nset.member(N,q) -> _recved_precommit(N,r,v);
+            require decision = value.nil;
+
+            if value.valid(v) {
+                decision := v;
+                # MORE for next height
+                call abstract_protocol.decide(n, r, v, q);
+            }
+        }
+
+        # line 55-56
+        export action l_55(r:round, b:nset) = {
+            require _has_started;
+            require nset.is_blocking(b);
+            require nset.member(N,b) -> exists VR . round.minus_one <= VR & VR < r & exists V . _recved_proposal(N,r,V,VR) | _recved_prevote(N,r,V) | _recved_precommit(N,r,V);
+            require r > round_p;
+            call startRound(r); # line 56
+        }
+
+        # line 57-60
+        export action onTimeoutPropose(r:round) = {
+            require _has_started;
+            require propose_timer_scheduled(r);
+            require r = round_p;
+            require step = step_t.propose;
+            call broadcast_prevote(r,value.nil);
+            step := step_t.prevote;
+
+            call abstract_protocol.l_57(n,r);
+
+            propose_timer_scheduled(r) := false;
+        }
+
+        # line 61-64
+        export action onTimeoutPrevote(r:round) = {
+            require _has_started;
+            require prevote_timer_scheduled(r);
+            require r = round_p;
+            require step = step_t.prevote;
+            call broadcast_precommit(r,value.nil);
+            step := step_t.precommit;
+
+            call abstract_protocol.l_61(n,r);
+
+            prevote_timer_scheduled(r) := false;
+        }
+
+        # line 65-67
+        export action onTimeoutPrecommit(r:round) = {
+            require _has_started;
+            require precommit_timer_scheduled(r);
+            require r = round_p;
+            call startRound(round.incr(r));
+
+            precommit_timer_scheduled(r) := false;
+        }
+
+# The Byzantine actions
+# ---------------------
+
+# Byzantine nodes can send whatever they want, but they cannot send
+# messages on behalf of well-behaved nodes. In practice this is implemented
+# using cryptography (e.g. public-key cryptography).
+
+        export action byzantine_send(m:msg, dst:node) = {
+            require ~well_behaved(n);
+            require ~well_behaved(m.m_src); # cannot forge the identity of well-behaved nodes
+            call shim.send(n,dst,m);
+        }
+
+# Byzantine nodes can also report fake observations, as defined in the abstract protocol.
+        export action fake_observations = {
+            call abstract_protocol.misbehave
+        }
+
+# Invariants
+# ----------
+
+# We provide common invariants that a) allow to prove that the abstract
+# preconditions are met, and b) provide a refinement relation.
+
+
+        specification {
+
+            invariant 0 <= round_p
+            invariant abstract_protocol.left_round(n,R) <-> R < round_p
+
+            invariant lockedRound ~= round.minus_one -> forall R,V . abstract_protocol.locked(n,R,V) <-> R <= lockedRound & lockedValue = V
+            invariant lockedRound = round.minus_one -> forall R,V . ~abstract_protocol.locked(n,R,V)
+
+            invariant forall M:msg . well_behaved(M.m_src) & M.m_kind = msg_kind.prevote & shim.sent(M,N) -> abstract_protocol.prevoted(M.m_src,M.m_round,M.m_value)
+            invariant well_behaved(N) & _recved_prevote(N,R,V) -> abstract_protocol.prevoted(N,R,V)
+            invariant forall M:msg . well_behaved(M.m_src) & M.m_kind = msg_kind.precommit & shim.sent(M,N) -> abstract_protocol.precommitted(M.m_src,M.m_round,M.m_value)
+            invariant well_behaved(N) & _recved_precommit(N,R,V) -> abstract_protocol.precommitted(N,R,V)
+
+            invariant (step = step_t.prevote | step = step_t.propose) -> ~abstract_protocol.precommitted(n,round_p,V)
+            invariant step = step_t.propose -> ~abstract_protocol.prevoted(n,round_p,V)
+            invariant step = step_t.prevote -> exists V . abstract_protocol.prevoted(n,round_p,V)
+
+            invariant round_p < R -> ~(abstract_protocol.prevoted(n,R,V) | abstract_protocol.precommitted(n,R,V))
+            invariant ~_has_started -> step = step_t.propose & ~(abstract_protocol.prevoted(n,R,V) | abstract_protocol.precommitted(n,R,V)) & round_p = 0
+
+            invariant decision ~= value.nil -> exists R . abstract_protocol.decided(n,R,decision)
+        }
+    }
+}

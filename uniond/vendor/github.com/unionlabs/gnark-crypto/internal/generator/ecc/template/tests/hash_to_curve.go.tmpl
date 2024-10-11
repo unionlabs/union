@@ -1,0 +1,345 @@
+{{$CoordType := .Point.CoordType}}
+{{$CurveName := .Point.PointName}}
+{{$CurveTitle := toTitle $CurveName}}
+{{$CurveIndex := "2"}}
+{{if eq $CurveTitle "G1" }}{{$CurveIndex = "1"}}{{end}}
+{{$TowerDegree := .Field.Degree}}
+{{$isogenyNeeded := notNil .Isogeny}}
+{{$sswu := eq .MappingAlgorithm "SSWU"}}
+
+import (
+	"github.com/consensys/gnark-crypto/ecc/{{.Name}}/fp"
+	{{- if ne $TowerDegree 1}}
+	"github.com/consensys/gnark-crypto/ecc/{{.Name}}/internal/fptower"
+	"strings"
+	{{- end}}
+	"testing"
+	"github.com/leanovate/gopter"
+	"github.com/leanovate/gopter/prop"
+	"math/rand"
+)
+
+{{$fuzzer := "GenFp()"}}
+{{if eq $CoordType "fptower.E2" }}
+	{{$fuzzer = "GenE2()"}}
+{{- else if eq $CoordType "fptower.E4" }}
+	{{$fuzzer = "GenE4()"}}
+{{- end}}
+
+{{if $sswu}}
+func Test{{$CurveTitle}}SqrtRatio(t *testing.T) {
+	t.Parallel()
+	parameters := gopter.DefaultTestParameters()
+	if testing.Short() {
+		parameters.MinSuccessfulTests = nbFuzzShort
+	} else {
+		parameters.MinSuccessfulTests = nbFuzz
+	}
+
+
+	properties := gopter.NewProperties(parameters)
+
+	gen := {{$fuzzer}}
+
+
+	properties.Property("{{$CurveTitle}}SqrtRatio must square back to the right value", prop.ForAll(
+		func(u {{$CoordType}}, v {{$CoordType}}) bool {
+
+			var seen {{$CoordType}}
+			qr := {{$CurveName}}SqrtRatio(&seen, &u, &v) == 0
+
+			seen.
+				Square(&seen).
+				Mul(&seen, &v)
+
+			var ref {{$CoordType}}
+			if qr {
+				ref = u
+			} else {
+				{{$CurveName}}MulByZ(&ref, &u)
+			}
+
+			return seen.Equal(&ref)
+		}, gen, gen))
+
+	properties.TestingRun(t, gopter.ConsoleReporter(false))
+}
+{{end}}
+
+func TestHashToFp{{$CurveTitle}}(t *testing.T) {
+	for _, c := range encodeTo{{$CurveTitle}}Vector.cases {
+		elems, err := fp.Hash([]byte(c.msg), encodeTo{{$CurveTitle}}Vector.dst, {{$TowerDegree}})
+		if err != nil {
+			t.Error(err)
+		}
+		{{$CurveName}}TestMatchCoord(t, "u", c.msg, c.u, {{$CurveName}}CoordAt(elems, 0))
+	}
+
+	for _, c := range hashTo{{$CurveTitle}}Vector.cases {
+		elems, err := fp.Hash([]byte(c.msg), hashTo{{$CurveTitle}}Vector.dst, 2 * {{$TowerDegree}})
+		if err != nil {
+			t.Error(err)
+		}
+		{{$CurveName}}TestMatchCoord(t, "u0", c.msg, c.u0, {{$CurveName}}CoordAt(elems, 0))
+		{{$CurveName}}TestMatchCoord(t, "u1", c.msg, c.u1, {{$CurveName}}CoordAt(elems, 1))
+	}
+}
+
+func TestMapToCurve{{$CurveIndex}}(t *testing.T) {
+	t.Parallel()
+	parameters := gopter.DefaultTestParameters()
+	if testing.Short() {
+		parameters.MinSuccessfulTests = nbFuzzShort
+	} else {
+		parameters.MinSuccessfulTests = nbFuzz
+	}
+
+	properties := gopter.NewProperties(parameters)
+
+	properties.Property("[{{$CurveTitle}}] mapping output must be on curve", prop.ForAll(
+		func(a {{$CoordType}}) bool {
+
+			g := MapToCurve{{$CurveIndex}}(&a)
+
+			{{if $isogenyNeeded}}
+				if !isOnE{{$CurveIndex}}Prime(g) {
+					t.Log("Mapping output not on E' curve")
+					return false
+				}
+				{{$CurveName}}Isogeny(&g)
+			{{end}}
+
+			if !g.IsOnCurve() {
+				t.Log("{{select $isogenyNeeded "" "Isogeny∘"}}{{.MappingAlgorithm}} output not on curve")
+				return false
+			}
+
+			return true
+		},
+		{{$fuzzer}},
+	))
+
+	properties.TestingRun(t, gopter.ConsoleReporter(false))
+
+	{{$runIsogeny := select $isogenyNeeded "" (print $CurveName "Isogeny(&q)\n")}}
+
+	for _, c := range encodeTo{{$CurveTitle}}Vector.cases {
+		var u {{$CoordType}}
+		{{$CurveName}}CoordSetString(&u, c.u)
+		q := MapToCurve{{$CurveIndex}}(&u)
+		{{$runIsogeny}}{{$CurveName}}TestMatchPoint(t, "Q", c.msg, c.Q, &q)
+	}
+
+	for _, c := range hashTo{{$CurveTitle}}Vector.cases {
+		var u {{$CoordType}}
+		{{$CurveName}}CoordSetString(&u, c.u0)
+		q := MapToCurve{{$CurveIndex}}(&u)
+		{{$runIsogeny}}{{$CurveName}}TestMatchPoint(t, "Q0", c.msg, c.Q0, &q)
+
+		{{$CurveName}}CoordSetString(&u, c.u1)
+		q = MapToCurve{{$CurveIndex}}(&u)
+		{{$runIsogeny}}{{$CurveName}}TestMatchPoint(t, "Q1", c.msg, c.Q1, &q)
+	}
+}
+
+func TestMapTo{{$CurveTitle}}(t *testing.T) {
+	t.Parallel()
+	parameters := gopter.DefaultTestParameters()
+	if testing.Short() {
+		parameters.MinSuccessfulTests = nbFuzzShort
+	} else {
+		parameters.MinSuccessfulTests = nbFuzz
+	}
+
+	properties := gopter.NewProperties(parameters)
+
+	properties.Property("[{{$CurveTitle}}] mapping to curve should output point on the curve", prop.ForAll(
+		func(a {{ $CoordType}}) bool {
+			g := MapTo{{ $CurveTitle}}(a)
+			return g.IsInSubGroup()
+		},
+		{{$fuzzer}},
+	))
+
+	properties.Property("[{{$CurveTitle}}] mapping to curve should be deterministic", prop.ForAll(
+		func(a {{ $CoordType}}) bool {
+			g1 := MapTo{{$CurveTitle}}(a)
+			g2 := MapTo{{$CurveTitle}}(a)
+			return g1.Equal(&g2)
+		},
+		{{$fuzzer}},
+	))
+
+	properties.TestingRun(t, gopter.ConsoleReporter(false))
+}
+
+func TestEncodeTo{{$CurveTitle}}(t *testing.T) {
+	t.Parallel()
+	for _, c := range encodeTo{{$CurveTitle}}Vector.cases {
+		p, err := EncodeTo{{$CurveTitle}}([]byte(c.msg), encodeTo{{$CurveTitle}}Vector.dst)
+		if err != nil {
+			t.Fatal(err)
+		}
+		{{$CurveName}}TestMatchPoint(t, "P", c.msg, c.P, &p)
+	}
+}
+
+func TestHashTo{{$CurveTitle}}(t *testing.T) {
+	t.Parallel()
+	for _, c := range hashTo{{$CurveTitle}}Vector.cases {
+		p, err := HashTo{{$CurveTitle}}([]byte(c.msg), hashTo{{$CurveTitle}}Vector.dst)
+		if err != nil {
+			t.Fatal(err)
+		}
+		{{$CurveName}}TestMatchPoint(t, "P", c.msg, c.P, &p)
+	}
+}
+
+
+
+func BenchmarkEncodeTo{{$CurveTitle}}(b *testing.B) {
+	const size = 54
+	bytes := make([]byte, size)
+	dst := encodeTo{{$CurveTitle}}Vector.dst
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+
+		bytes[rand.Int()%size] = byte(rand.Int()) //#nosec G404 weak rng is fine here
+
+		if _, err := EncodeTo{{$CurveTitle}}(bytes, dst); err != nil {
+			b.Fail()
+		}
+	}
+}
+
+func BenchmarkHashTo{{$CurveTitle}}(b *testing.B) {
+	const size = 54
+	bytes := make([]byte, size)
+	dst := hashTo{{$CurveTitle}}Vector.dst
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+
+		bytes[rand.Int()%size] = byte(rand.Int()) //#nosec G404 weak rng is fine here
+
+		if _, err := HashTo{{$CurveTitle}}(bytes, dst); err != nil {
+			b.Fail()
+		}
+	}
+}
+
+{{/* tmplfunc */}}
+{{ define "setString x array"}}
+	{{.x}}.SetString(
+		{{- range $s := .array}}
+			"{{$s}}",
+		{{- end}}
+		)
+{{ end}}
+
+{{if $isogenyNeeded}}
+//TODO: Crude. Do something clever in Jacobian
+func isOnE{{$CurveIndex}}Prime(p {{$CurveTitle}}Affine) bool {
+
+	var A, B {{$CoordType}}
+
+	{{setString "A" .A}}
+	{{setString "B" .B}}
+
+	var LHS {{$CoordType}}
+	LHS.
+		Square(&p.Y).
+		Sub(&LHS, &B)
+
+	var RHS {{$CoordType}}
+	RHS.
+		Square(&p.X).
+		Add(&RHS, &A).
+		Mul(&RHS, &p.X)
+
+	return LHS.Equal(&RHS)
+}
+{{end}}
+
+//Only works on simple extensions (two-story towers)
+func {{$CurveName}}CoordSetString(z *{{$CoordType}}, s string) {
+{{- if eq $TowerDegree 1}}
+	z.SetString(s)
+{{- else}}
+	ssplit := strings.Split(s, ",")
+	if len(ssplit) != {{$TowerDegree}} {
+		panic("not equal to tower size")
+	}
+	z.SetString(
+		{{- range $i := interval 0 $TowerDegree}}
+		ssplit[{{$i}}],
+		{{- end}}
+	)
+{{- end}}
+}
+
+func {{$CurveName}}CoordAt(slice []fp.Element, i int) {{$CoordType}} {
+	{{- if eq $TowerDegree 1}}
+		return slice[i]
+	{{- else}}
+	return {{$CoordType}} {
+		{{- range $i := iterate 0 $TowerDegree}}
+			{{$.FieldCoordName}}{{$i}}: slice[i * {{$TowerDegree}} + {{$i}}],
+		{{- end}}
+	}
+	{{- end}}
+}
+
+func {{$CurveName}}TestMatchCoord(t *testing.T, coordName string, msg string, expectedStr string, seen {{$CoordType}}) {
+	var expected {{$CoordType}}
+
+	{{$CurveName}}CoordSetString(&expected, expectedStr)
+
+	if !expected.Equal(&seen) {
+		t.Errorf("mismatch on \"%s\", %s:\n\texpected %s\n\tsaw      %s", msg, coordName, expected.String(), &seen)
+	}
+}
+
+func {{$CurveName}}TestMatchPoint(t *testing.T, pointName string, msg string, expected point, seen *{{$CurveTitle}}Affine) {
+	{{$CurveName}}TestMatchCoord(t, pointName+".x", msg, expected.x, seen.X)
+	{{$CurveName}}TestMatchCoord(t, pointName+".y", msg, expected.y, seen.Y)
+}
+
+{{ if eq $CurveName "g1"}}
+
+type hashTestVector struct {
+	dst   []byte
+	cases []hashTestCase
+}
+
+type encodeTestVector struct {
+	dst   []byte
+	cases []encodeTestCase
+}
+
+type point struct {
+	x string
+	y string
+}
+
+type encodeTestCase struct {
+	msg string
+	P   point  //pY a coordinate of P, the final output
+	u   string //u hashed onto the field
+	Q   point  //Q map to curve output
+}
+
+type hashTestCase struct {
+	msg string
+	P   point  //pY a coordinate of P, the final output
+	u0  string //u0 hashed onto the field
+	u1  string //u1 extra hashed onto the field
+	Q0  point  //Q0 map to curve output
+	Q1  point  //Q1 extra map to curve output
+}
+
+{{end}}
+
+var encodeTo{{$CurveTitle}}Vector encodeTestVector
+var hashTo{{$CurveTitle}}Vector hashTestVector

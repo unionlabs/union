@@ -1,0 +1,31 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = [
+        "config.go",
+        "utils.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/testing/spectest/utils",
+    visibility = ["//testing/spectest:__subpackages__"],
+    deps = [
+        "//config/params:go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_ghodss_yaml//:go_default_library",
+        "@com_github_json_iterator_go//:go_default_library",
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = ["config_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//testing/require:go_default_library",
+    ],
+)

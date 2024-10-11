@@ -1,0 +1,4 @@
+snapshot_interval = 100
+persist_interval = 1
+chain_id = "test-chain"
+protocol = "builtin"

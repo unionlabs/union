@@ -1,0 +1,237 @@
+build block-size=1 index-block-size=1 filter
+a_xyz.SET.1:a
+b_xyz.SET.1:b
+c_xyz.SET.1:c
+----
+point:    [a_xyz#1,1-c_xyz#1,1]
+seqnums:  [1-1]
+
+rewrite from=xyz to=123 block-size=1 index-block-size=1 filter
+----
+rewrite failed: a valid splitter is required to rewrite suffixes
+
+rewrite from=xyz to=123 block-size=1 index-block-size=1 filter comparer-split-4b-suffix
+----
+rewrite failed: rewriting data blocks: mismatched Comparer leveldb.BytewiseComparator vs comparer-split-4b-suffix, replacement requires same splitter to copy filters
+
+build block-size=1 index-block-size=1 filter comparer-split-4b-suffix
+aa_xyz.SET.1:a
+ba_xyz.SET.1:b
+ca_xyz.SET.1:c
+----
+point:    [aa_xyz#1,1-ca_xyz#1,1]
+seqnums:  [1-1]
+
+rewrite from=yz to=23 block-size=1 index-block-size=1 filter comparer-split-4b-suffix
+----
+rewrite failed: rewriting data blocks: key has suffix "_xyz", expected "yz"
+
+rewrite from=a_xyz to=a_123 block-size=1 index-block-size=1 filter comparer-split-4b-suffix
+----
+rewrite failed: rewriting data blocks: key has suffix "_xyz", expected "a_xyz"
+
+build block-size=1 index-block-size=1 filter comparer-split-4b-suffix
+a_xyz.SET.1:a
+b_xyz.SET.1:b
+c_xyz.SET.1:c
+----
+point:    [a_xyz#1,1-c_xyz#1,1]
+seqnums:  [1-1]
+
+layout
+----
+         0  data (26)
+        31  data (26)
+        62  data (26)
+        93  filter (69)
+       167  index (22)
+       194  index (22)
+       221  index (22)
+       248  top-index (48)
+       301  properties (630)
+       936  meta-index (79)
+      1020  footer (53)
+      1073  EOF
+
+scan
+----
+a_xyz#1,1:a
+b_xyz#1,1:b
+c_xyz#1,1:c
+
+get
+b_xyz
+f_xyz
+c_xyz
+----
+b
+get f_xyz: pebble: not found
+c
+
+rewrite from=_xyz to=_123 block-size=1 index-block-size=1 filter comparer-split-4b-suffix
+----
+point:    [a_123#1,1-c_123#1,1]
+seqnums:  [1-1]
+
+layout
+----
+         0  data (26)
+        31  data (26)
+        62  data (26)
+        93  filter (69)
+       167  index (22)
+       194  index (22)
+       221  index (22)
+       248  top-index (48)
+       301  properties (630)
+       936  meta-index (79)
+      1020  footer (53)
+      1073  EOF
+
+scan
+----
+a_123#1,1:a
+b_123#1,1:b
+c_123#1,1:c
+
+get
+b_123
+f_123
+c_123
+----
+b
+get f_123: pebble: not found
+c
+
+rewrite from=_123 to=_456 block-size=1 index-block-size=1 filter comparer-split-4b-suffix concurrency=2
+----
+point:    [a_456#1,1-c_456#1,1]
+seqnums:  [1-1]
+
+layout
+----
+         0  data (26)
+        31  data (26)
+        62  data (26)
+        93  filter (69)
+       167  index (22)
+       194  index (22)
+       221  index (22)
+       248  top-index (48)
+       301  properties (630)
+       936  meta-index (79)
+      1020  footer (53)
+      1073  EOF
+
+scan
+----
+a_456#1,1:a
+b_456#1,1:b
+c_456#1,1:c
+
+get
+b_456
+f_456
+c_456
+----
+b
+get f_456: pebble: not found
+c
+
+rewrite from=_456 to=_xyz block-size=1 index-block-size=1 filter comparer-split-4b-suffix concurrency=3
+----
+point:    [a_xyz#1,1-c_xyz#1,1]
+seqnums:  [1-1]
+
+layout
+----
+         0  data (26)
+        31  data (26)
+        62  data (26)
+        93  filter (69)
+       167  index (22)
+       194  index (22)
+       221  index (22)
+       248  top-index (48)
+       301  properties (630)
+       936  meta-index (79)
+      1020  footer (53)
+      1073  EOF
+
+scan
+----
+a_xyz#1,1:a
+b_xyz#1,1:b
+c_xyz#1,1:c
+
+get
+b_xyz
+f_xyz
+c_xyz
+----
+b
+get f_xyz: pebble: not found
+c
+
+
+rewrite from=_xyz to=_123 block-size=1 index-block-size=1 filter comparer-split-4b-suffix concurrency=4
+----
+point:    [a_123#1,1-c_123#1,1]
+seqnums:  [1-1]
+
+layout
+----
+         0  data (26)
+        31  data (26)
+        62  data (26)
+        93  filter (69)
+       167  index (22)
+       194  index (22)
+       221  index (22)
+       248  top-index (48)
+       301  properties (630)
+       936  meta-index (79)
+      1020  footer (53)
+      1073  EOF
+
+scan
+----
+a_123#1,1:a
+b_123#1,1:b
+c_123#1,1:c
+
+get
+b_123
+f_123
+c_123
+----
+b
+get f_123: pebble: not found
+c
+
+# Rewrite a table that contain only range keys.
+
+build block-size=1 index-block-size=1 filter comparer-split-4b-suffix
+rangekey: a-b:{(#1,RANGEKEYSET,_xyz)}
+rangekey: b-c:{(#1,RANGEKEYSET,_xyz)}
+rangekey: c-d:{(#1,RANGEKEYSET,_xyz)}
+----
+rangekey: [a#1,21-d#72057594037927935,21]
+seqnums:  [1-1]
+
+scan-range-key
+----
+a-b:{(#1,RANGEKEYSET,_xyz)}
+b-c:{(#1,RANGEKEYSET,_xyz)}
+c-d:{(#1,RANGEKEYSET,_xyz)}
+
+rewrite from=_xyz to=_123 block-size=1 index-block-size=1 filter comparer-split-4b-suffix
+----
+rangekey: [a#1,21-d#72057594037927935,21]
+seqnums:  [1-1]
+
+scan-range-key
+----
+a-b:{(#1,RANGEKEYSET,_123)}
+b-c:{(#1,RANGEKEYSET,_123)}
+c-d:{(#1,RANGEKEYSET,_123)}

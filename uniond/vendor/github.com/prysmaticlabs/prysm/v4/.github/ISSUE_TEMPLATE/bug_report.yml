@@ -1,0 +1,66 @@
+name: 🐞 Bug report
+description: Report a bug or problem with running Prysm
+labels: ["Bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        To help us tend to your issue faster, please search our currently open issues before submitting a new one.
+        Existing issues often contain information about workarounds, resolution, or progress updates.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Describe the bug
+      description: |
+        A clear and concise description of the problem...
+    validations:
+      required: true
+  - type: textarea
+    id: previous-version
+    attributes:
+      label: Has this worked before in a previous version?
+      description: Did this behavior use to work in the previous version?
+      render: text
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: 🔬 Minimal Reproduction
+      description: |
+        Please let us know how we can reproduce this issue. 
+        Include the exact method you used to run Prysm along with any flags used in your beacon chain and/or validator. 
+        Make sure you don't upload any confidential files or private keys.
+      placeholder: |
+        Steps to reproduce:
+        
+        1. Start '...'
+        2. Then '...'
+        3. Check '...'
+        4. See error
+  - type: textarea
+    id: errors
+    attributes:
+      label: Error
+      description: |
+        If the issue is accompanied by an error, please share the error logs with us below. 
+        If you have a lot of logs, place make a paste bin with your logs and share the link with us here:
+      render: text
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform(s)
+      description: What platform(s) did this occur on?
+      multiple: true
+      options:
+        - Linux (x86)
+        - Linux (ARM)
+        - Mac (Intel)
+        - Mac (Apple Silicon)
+        - Windows (x86)
+        - Windows (ARM)
+  - type: input
+    attributes:
+      label: What version of Prysm are you running? (Which release)
+      description: You can check your Prysm version by running your beacon node or validator with the `--version` flag.
+  - type: textarea
+    attributes:
+      label: Anything else relevant (validator index / public key)?

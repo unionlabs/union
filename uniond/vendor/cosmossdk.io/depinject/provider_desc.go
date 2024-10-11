@@ -1,11 +1,11 @@
 package depinject
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"unicode"
 
-	"github.com/cockroachdb/errors"
 	"golang.org/x/exp/slices"
 )
 
@@ -65,32 +65,32 @@ func doExtractProviderDescriptor(ctr interface{}) (providerDescriptor, error) {
 	val := reflect.ValueOf(ctr)
 	typ := val.Type()
 	if typ.Kind() != reflect.Func {
-		return providerDescriptor{}, errors.Errorf("expected a Func type, got %v", typ)
+		return providerDescriptor{}, fmt.Errorf("expected a Func type, got %v", typ)
 	}
 
 	loc := LocationFromPC(val.Pointer()).(*location)
 	nameParts := strings.Split(loc.name, ".")
 	if len(nameParts) == 0 {
-		return providerDescriptor{}, errors.Errorf("missing function name %s", loc)
+		return providerDescriptor{}, fmt.Errorf("missing function name %s", loc)
 	}
 
 	lastNamePart := nameParts[len(nameParts)-1]
 
 	if unicode.IsLower([]rune(lastNamePart)[0]) {
-		return providerDescriptor{}, errors.Errorf("function must be exported: %s", loc)
+		return providerDescriptor{}, fmt.Errorf("function must be exported: %s", loc)
 	}
 
 	if strings.Contains(lastNamePart, "-") {
-		return providerDescriptor{}, errors.Errorf("function can't be used as a provider (it might be a bound instance method): %s", loc)
+		return providerDescriptor{}, fmt.Errorf("function can't be used as a provider (it might be a bound instance method): %s", loc)
 	}
 
 	pkgParts := strings.Split(loc.pkg, "/")
 	if slices.Contains(pkgParts, "internal") {
-		return providerDescriptor{}, errors.Errorf("function must not be in an internal package: %s", loc)
+		return providerDescriptor{}, fmt.Errorf("function must not be in an internal package: %s", loc)
 	}
 
 	if typ.IsVariadic() {
-		return providerDescriptor{}, errors.Errorf("variadic function can't be used as a provider: %s", loc)
+		return providerDescriptor{}, fmt.Errorf("variadic function can't be used as a provider: %s", loc)
 	}
 
 	numIn := typ.NumIn()
@@ -108,7 +108,7 @@ func doExtractProviderDescriptor(ctr interface{}) (providerDescriptor, error) {
 		t := typ.Out(i)
 		if t == errType {
 			if i != numOut-1 {
-				return providerDescriptor{}, errors.Errorf("output error parameter is not last parameter in function %s", loc)
+				return providerDescriptor{}, fmt.Errorf("output error parameter is not last parameter in function %s", loc)
 			}
 			errIdx = i
 		} else {

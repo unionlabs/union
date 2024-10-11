@@ -1,0 +1,22 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "custom_types.go",
+        "types.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/consensus-types/validator",
+    visibility = ["//visibility:public"],
+    deps = ["//consensus-types/primitives:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["custom_types_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//testing/require:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/yaml:go_default_library",
+    ],
+)

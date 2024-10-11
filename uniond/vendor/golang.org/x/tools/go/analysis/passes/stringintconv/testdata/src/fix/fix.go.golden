@@ -1,0 +1,16 @@
+-- Format the number as a decimal --
+package fix
+
+import "fmt"
+
+func _(x uint64) {
+     println(fmt.Sprint(x)) // want `conversion from uint64 to string yields...`
+}
+
+-- Convert a single rune to a string --
+package fix
+
+func _(x uint64) {
+     println(string(rune(x))) // want `conversion from uint64 to string yields...`
+}
+

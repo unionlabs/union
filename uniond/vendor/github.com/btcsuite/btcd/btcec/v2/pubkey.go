@@ -10,6 +10,8 @@ import (
 
 // These constants define the lengths of serialized public keys.
 const (
+	// PubKeyBytesLenCompressed is the bytes length of a serialized compressed
+	// public key.
 	PubKeyBytesLenCompressed = 33
 )
 
@@ -19,7 +21,7 @@ const (
 	pubkeyHybrid       byte = 0x6 // y_bit + x coord + y coord
 )
 
-// IsCompressedPubKey returns true the the passed serialized public key has
+// IsCompressedPubKey returns true the passed serialized public key has
 // been encoded in compressed format, and false otherwise.
 func IsCompressedPubKey(pubKey []byte) bool {
 	// The public key is only compressed if it is the correct length and
@@ -48,4 +50,39 @@ type PublicKey = secp.PublicKey
 // can be used to determine validity.
 func NewPublicKey(x, y *FieldVal) *PublicKey {
 	return secp.NewPublicKey(x, y)
+}
+
+// SerializedKey is a type for representing a public key in its compressed
+// serialized form.
+//
+// NOTE: This type is useful when using public keys as keys in maps.
+type SerializedKey [PubKeyBytesLenCompressed]byte
+
+// ToPubKey returns the public key parsed from the serialized key.
+func (s SerializedKey) ToPubKey() (*PublicKey, error) {
+	return ParsePubKey(s[:])
+}
+
+// SchnorrSerialized returns the Schnorr serialized, x-only 32-byte
+// representation of the serialized key.
+func (s SerializedKey) SchnorrSerialized() [32]byte {
+	var serializedSchnorr [32]byte
+	copy(serializedSchnorr[:], s[1:])
+	return serializedSchnorr
+}
+
+// CopyBytes returns a copy of the underlying array as a byte slice.
+func (s SerializedKey) CopyBytes() []byte {
+	c := make([]byte, PubKeyBytesLenCompressed)
+	copy(c, s[:])
+
+	return c
+}
+
+// ToSerialized serializes a public key into its compressed form.
+func ToSerialized(pubKey *PublicKey) SerializedKey {
+	var serialized SerializedKey
+	copy(serialized[:], pubKey.SerializeCompressed())
+
+	return serialized
 }

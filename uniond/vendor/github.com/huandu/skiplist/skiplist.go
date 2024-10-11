@@ -100,7 +100,7 @@ func (list *SkipList) SetRandSource(source rand.Source) {
 // Front returns the first element.
 //
 // The complexity is O(1).
-func (list *SkipList) Front() (front *Element) {
+func (list *SkipList) Front() *Element {
 	return list.levels[0]
 }
 

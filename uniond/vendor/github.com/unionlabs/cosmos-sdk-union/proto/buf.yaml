@@ -1,0 +1,26 @@
+# This module represents buf.build/cosmos/cosmos-sdk
+version: v1
+name: buf.build/cosmos/cosmos-sdk
+deps:
+  - buf.build/cometbft/cometbft:4a62c99d422068a5165429b62a7eb824df46cca9 
+  - buf.build/cosmos/cosmos-proto
+  - buf.build/cosmos/gogo-proto
+  - buf.build/googleapis/googleapis
+  - buf.build/protocolbuffers/wellknowntypes:v23.4
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT
+    - COMMENTS
+    - FILE_LOWER_SNAKE_CASE
+  except:
+    - UNARY_RPC
+    - COMMENT_FIELD
+    - SERVICE_SUFFIX
+    - PACKAGE_VERSION_SUFFIX
+    - RPC_REQUEST_STANDARD_NAME
+    - ENUM_NO_ALLOW_ALIAS
+  ignore:
+    - tendermint

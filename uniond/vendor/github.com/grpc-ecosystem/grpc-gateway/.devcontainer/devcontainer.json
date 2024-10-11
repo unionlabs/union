@@ -1,0 +1,23 @@
+{
+	"dockerFile": "../.circleci/Dockerfile",
+	"overrideCommand": true,
+	// Set *default* container specific settings.json values on container create.
+	"settings": {
+		"editor.formatOnSave": true,
+		"terminal.integrated.shell.linux": "/bin/bash",
+		"go.useGoProxyToCheckForToolUpdates": true,
+		"go.useLanguageServer": true,
+		"go.gopath": "/go",
+		"go.goroot": "/usr/local/go",
+		"go.toolsGopath": "/go/bin",
+		"bazel.buildifierExecutable": "/go/bin/buildifier",
+		"bazel.buildifierFixOnFormat": true,
+		"bazel.enableCodeLens": true,
+	},
+	// Add the IDs of extensions you want installed when the container is created.
+	"extensions": [
+		"golang.Go",
+		"bazelbuild.vscode-bazel",
+	],
+	"postCreateCommand": "cd $(mktemp -d) && GO111MODULE=on go get golang.org/x/tools/gopls@latest github.com/bazelbuild/buildtools/buildifier@latest && cd -",
+}

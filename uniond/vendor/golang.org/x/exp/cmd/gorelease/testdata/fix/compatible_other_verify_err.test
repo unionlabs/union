@@ -1,0 +1,21 @@
+mod=example.com/fix
+base=v1.0.0
+version=v1.1.0-compatible-other
+release=v1.0.1
+success=false
+-- want --
+# example.com/fix/bad
+## errors in base version:
+bad/bad.go:3:15: undefined: NOTYPE
+
+## incompatible changes
+Broken: changed from func() invalid type to func() int
+
+# example.com/fix/good
+## compatible changes
+Better: added
+
+# summary
+v1.0.1 is not a valid semantic version for this release.
+There are compatible changes, but the minor version is not incremented
+over the base version (v1.0.0).

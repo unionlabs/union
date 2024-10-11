@@ -1,0 +1,17 @@
+// Code created by gotmpl. DO NOT MODIFY.
+// source: internal/shared/otlp/otlptrace/header_test.go.tmpl
+
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package internal
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestGetUserAgentHeader(t *testing.T) {
+	require.Regexp(t, "OTel OTLP Exporter Go/1\\..*", GetUserAgentHeader())
+}

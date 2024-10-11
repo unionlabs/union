@@ -1,0 +1,132 @@
+# Basic provider tests with shared storage.
+
+# open <fs-dir> <creator-id>
+open p1 1
+----
+<local fs> mkdir-all: p1 0755
+<local fs> open-dir: p1
+<local fs> open-dir: p1
+<local fs> create: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> create: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> close: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+
+create 1 local 1 100
+----
+<local fs> create: p1/000001.sst
+<local fs> sync-data: p1/000001.sst
+<local fs> close: p1/000001.sst
+
+read 1
+0 100
+----
+<local fs> open: p1/000001.sst (options: *vfs.randomReadsOption)
+size: 100
+<local fs> read-at(0, 100): p1/000001.sst
+0 100: ok (salt 1)
+<local fs> close: p1/000001.sst
+
+create 2 shared 2 100
+----
+<remote> create object "a629-1-000002.sst"
+<remote> close writer for "a629-1-000002.sst" after 100 bytes
+<remote> create object "a629-1-000002.sst.ref.1.000002"
+<remote> close writer for "a629-1-000002.sst.ref.1.000002" after 0 bytes
+
+read 2
+0 100
+----
+<remote> size of object "a629-1-000002.sst.ref.1.000002": 0
+<remote> create reader for object "a629-1-000002.sst": 100 bytes
+size: 100
+<remote> read object "a629-1-000002.sst" at 0 (length 100)
+0 100: ok (salt 2)
+<remote> close reader for "a629-1-000002.sst"
+
+list
+----
+000001 -> p1/000001.sst
+000002 -> remote://a629-1-000002.sst
+
+close
+----
+<local fs> sync: p1
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> close: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> close: p1
+
+# Test that the objects are there on re-open.
+open p1 1
+----
+<local fs> mkdir-all: p1 0755
+<local fs> open-dir: p1
+<local fs> open-dir: p1
+<local fs> open: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> close: p1/REMOTE-OBJ-CATALOG-000001
+
+list
+----
+000001 -> p1/000001.sst
+000002 -> remote://a629-1-000002.sst
+
+remove 1
+----
+<local fs> remove: p1/000001.sst
+
+remove 2
+----
+<remote> delete object "a629-1-000002.sst.ref.1.000002"
+<remote> list (prefix="a629-1-000002.sst.ref.", delimiter="")
+<remote> delete object "a629-1-000002.sst"
+
+link-or-copy 3 local 3 100
+----
+<local fs> create: temp-file-1
+<local fs> close: temp-file-1
+<local fs> link: temp-file-1 -> p1/000003.sst
+
+read 3
+0 100
+----
+<local fs> open: p1/000003.sst (options: *vfs.randomReadsOption)
+size: 100
+<local fs> read-at(0, 100): p1/000003.sst
+0 100: ok (salt 3)
+<local fs> close: p1/000003.sst
+
+link-or-copy 4 shared 4 100
+----
+<local fs> create: temp-file-2
+<local fs> close: temp-file-2
+<remote> create object "2f2f-1-000004.sst"
+<local fs> open: temp-file-2 (options: *vfs.sequentialReadsOption)
+<remote> close writer for "2f2f-1-000004.sst" after 100 bytes
+<remote> create object "2f2f-1-000004.sst.ref.1.000004"
+<remote> close writer for "2f2f-1-000004.sst.ref.1.000004" after 0 bytes
+<local fs> close: temp-file-2
+
+read 4
+0 100
+----
+<remote> size of object "2f2f-1-000004.sst.ref.1.000004": 0
+<remote> create reader for object "2f2f-1-000004.sst": 100 bytes
+size: 100
+<remote> read object "2f2f-1-000004.sst" at 0 (length 100)
+0 100: ok (salt 4)
+<remote> close reader for "2f2f-1-000004.sst"
+
+close
+----
+<local fs> sync: p1
+<local fs> create: p1/REMOTE-OBJ-CATALOG-000002
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000002
+<local fs> create: p1/marker.remote-obj-catalog.000002.REMOTE-OBJ-CATALOG-000002
+<local fs> close: p1/marker.remote-obj-catalog.000002.REMOTE-OBJ-CATALOG-000002
+<local fs> remove: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1
+<local fs> remove: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000002
+<local fs> close: p1/REMOTE-OBJ-CATALOG-000002
+<local fs> close: p1

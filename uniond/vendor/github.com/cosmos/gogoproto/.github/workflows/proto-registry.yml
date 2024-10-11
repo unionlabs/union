@@ -1,0 +1,20 @@
+name: Buf-Push
+# Protobuf runs buf (https://buf.build/) push updated proto files to https://buf.build/cosmos/cosmos-sdk
+# This workflow is only run when a .proto file has been changed
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "gogoproto/**"
+      - ".github/workflows/proto-registry.yml"
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1.36.0
+      - uses: bufbuild/buf-push-action@v1
+        with:
+          buf_token: ${{ secrets.BUF_TOKEN }}

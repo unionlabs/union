@@ -1,0 +1,1 @@
+- `[metrics]` Added metrics to monitor block store access. ([\#1974](https://github.com/cometbft/cometbft/pull/1974))

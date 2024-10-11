@@ -1,0 +1,14 @@
+name: codespell
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+jobs:
+  codespell:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Codespell
+        run: make codespell

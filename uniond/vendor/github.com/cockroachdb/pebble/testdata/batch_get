@@ -1,0 +1,114 @@
+define
+set a 1
+----
+
+get a
+----
+1
+
+get b
+----
+pebble: not found
+
+define
+set a 1
+set a 2
+----
+
+get a
+----
+2
+
+define
+set a 1
+set a 2
+del a
+----
+
+get a
+----
+pebble: not found
+
+define
+set a 1
+set a 2
+del a
+set a 3
+----
+
+get a
+----
+3
+
+define
+merge a 1
+merge a 2
+merge a 3
+----
+
+get a
+----
+123
+
+commit
+----
+
+define
+merge a 4
+----
+
+get a
+----
+1234
+
+commit
+----
+
+define
+del a
+set a 5
+----
+
+get a
+----
+5
+
+define
+del-range a b
+----
+
+get a
+----
+pebble: not found
+
+commit
+----
+
+define
+----
+
+get a
+----
+pebble: not found
+
+define
+merge b 1
+merge b 2
+del-range b c
+merge b 3
+merge b 4
+----
+
+get b
+----
+34
+
+commit
+----
+
+define
+----
+
+get b
+----
+34

@@ -1,0 +1,5 @@
+# comment here
+[ default ]
+region = "foo-region" # another comment
+output = json # comment again
+bar = 123 ; comment with semi-colon

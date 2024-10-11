@@ -1,0 +1,60 @@
+name: Docker
+# Build & Push rebuilds the CometBFT docker image on every push to main and creation of tags
+# and pushes the image to https://hub.docker.com/r/cometbft/cometbft
+on:
+  push:
+    branches:
+      - v1.x
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"               # Push events to matching v*, i.e. v1.0, v20.15.10
+      - "v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+"  # e.g. v0.37.0-alpha.1, v0.38.0-alpha.10
+      - "v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"   # e.g. v0.37.0-beta.1, v0.38.0-beta.10
+      - "v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+"      # e.g. v0.37.0-rc1, v0.38.0-rc10
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare
+        id: prep
+        run: |
+          DOCKER_IMAGE=cometbft/cometbft
+          VERSION=noop
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          elif [[ $GITHUB_REF == refs/heads/* ]]; then
+            VERSION=$(echo ${GITHUB_REF#refs/heads/} | sed -r 's#/+#-#g')
+            if [ "${{ github.event.repository.default_branch }}" = "$VERSION" ]; then
+              VERSION=latest
+            fi
+          fi
+          TAGS="${DOCKER_IMAGE}:${VERSION}"
+          if [[ $VERSION =~ ^v[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+            TAGS="$TAGS,${DOCKER_IMAGE}:${VERSION}"
+          fi
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@master
+        with:
+          platforms: all
+
+      - name: Set up Docker Build
+        uses: docker/setup-buildx-action@v3.6.1
+
+      - name: Login to DockerHub
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@v3.3.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish to Docker Hub
+        uses: docker/build-push-action@v6.7.0
+        with:
+          context: .
+          file: ./DOCKER/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.prep.outputs.tags }}

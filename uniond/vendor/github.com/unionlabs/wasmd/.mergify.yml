@@ -1,0 +1,30 @@
+queue_rules:
+  - name: default
+    conditions:
+      - "#approved-reviews-by>0"
+
+pull_request_rules:
+  - name: backport patches to main branch
+    conditions:
+      - base=releases/v0.4x
+      - label=backport/main
+    actions:
+      backport:
+        branches:
+          - main
+  - name: backport patches to sdk45 release branch
+    conditions:
+      - base=main
+      - label=backport/v0.3x
+    actions:
+      backport:
+        branches:
+          - releases/v0.3x
+  - name: backport patches to sdk47 release branch
+    conditions:
+      - base=main
+      - label=backport/v0.4x
+    actions:
+      backport:
+        branches:
+          - releases/v0.4x

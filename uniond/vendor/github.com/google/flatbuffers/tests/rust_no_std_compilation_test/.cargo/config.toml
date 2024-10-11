@@ -1,0 +1,5 @@
+[build]
+target = "thumbv7m-none-eabi"
+
+[unstable]
+build-std = ["core", "alloc"]

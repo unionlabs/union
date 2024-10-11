@@ -1,0 +1,32 @@
+name: Verify
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  lint:
+    strategy:
+      matrix:
+        go: ['1.20','1.21']
+      fail-fast: true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Go ${{ matrix.go }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go }}
+          cache: false
+
+      - name: Run GolangCI-Lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.53
+          args: --timeout=5m

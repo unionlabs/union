@@ -1,0 +1,208 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+permissions: read-all
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        go-version: [1.21.x, 1.22.x, 1.23.x]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      CGO_ENABLED: 0
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5.0.2
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Vet
+      run: go vet ./...
+
+    - name: Test
+      run: go test ./...
+
+    - name: Test Noasm
+      run: go test -tags=noasm ./...
+
+    - name: Test Race 1 CPU
+      env:
+        CGO_ENABLED: 1
+      run: go test -cpu=1 -short -race -v ./...
+
+    - name: Test Race 4 CPU
+      env:
+        CGO_ENABLED: 1
+      run: go test -cpu=4 -short -race -v ./...
+
+  generate:
+    strategy:
+      matrix:
+        pkg: [s2, zstd, huff0]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5.0.2
+      with:
+        go-version: 1.23.x
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Generate
+      working-directory: ${{ matrix.pkg }}/_generate
+      run: go generate -v -x
+
+    - name: Git Status
+      run: |
+        git diff
+        test -z "$(git status --porcelain)"
+
+  build-special:
+    env:
+      CGO_ENABLED: 0
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5.0.2
+      with:
+        go-version: 1.23.x
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: fmt
+      run: diff <(gofmt -d .) <(printf "")
+
+    - name: Test 386
+      run: GOOS=linux GOARCH=386 go test -short ./...
+
+    - name: Build s2c
+      run: go build github.com/klauspost/compress/s2/cmd/s2c && go build github.com/klauspost/compress/s2/cmd/s2d&&./s2c -verify s2c &&./s2d s2c.s2&&rm ./s2c&&rm s2d&&rm s2c.s2
+
+    - name: goreleaser deprecation
+      run: curl -sfL https://git.io/goreleaser | VERSION=v1.20.0 sh -s -- check
+
+    - name: goreleaser snapshot
+      run: curl -sL https://git.io/goreleaser | VERSION=v1.20.0 sh -s -- --snapshot --skip-publish --rm-dist
+
+    - name: Test S2 GOAMD64 v3
+      env:
+        GOAMD64: v3
+      shell: bash {0}
+      run: go test . -test.run=None;if [ $? -eq 0 ]; then go test ./s2/...; else true; fi
+
+    - name: Test GOAMD64 v4
+      env:
+        GOAMD64: v4
+      shell: bash {0}
+      run: go test . -test.run=None;if [ $? -eq 0 ]; then go test ./s2/...; else true; fi
+
+  fuzz-s2:
+    env:
+      CGO_ENABLED: 0
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v5.0.2
+        with:
+          go-version: 1.23.x
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: S2/FuzzDictBlocks
+        run: go test -run=none -fuzz=FuzzDictBlocks -fuzztime=100000x -test.fuzzminimizetime=10ms ./s2/.
+
+      - name: S2/FuzzEncodingBlocks
+        run: go test -run=none -fuzz=FuzzEncodingBlocks -fuzztime=500000x -test.fuzzminimizetime=10ms ./s2/.
+
+      - name: S2/FuzzLZ4Block
+        run: go test -run=none -fuzz=FuzzLZ4Block -fuzztime=500000x -test.fuzzminimizetime=10ms ./s2/.
+
+      - name: S2/FuzzDictBlocks/noasm
+        run: go test -tags=noasm -run=none -fuzz=FuzzDictBlocks -fuzztime=100000x -test.fuzzminimizetime=10ms ./s2/.
+
+      - name: S2/FuzzEncodingBlocks/noasm
+        run: go test -tags=noasm -run=none -fuzz=FuzzEncodingBlocks -fuzztime=500000x -test.fuzzminimizetime=10ms ./s2/.
+
+      - name: S2/FuzzLZ4Block/noasm
+        run: go test -tags=noasm -run=none -fuzz=FuzzLZ4Block -fuzztime=500000x -test.fuzzminimizetime=10ms ./s2/.
+
+  fuzz-zstd:
+    env:
+      CGO_ENABLED: 0
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v5.0.2
+        with:
+          go-version: 1.22.x
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: zstd/FuzzDecodeAll
+        run: go test -run=none -fuzz=FuzzDecodeAll -fuzztime=500000x -test.fuzzminimizetime=10ms ./zstd/.
+
+      - name: zstd/FuzzDecAllNoBMI2
+        run: go test -run=none -fuzz=FuzzDecAllNoBMI2 -fuzztime=500000x -test.fuzzminimizetime=10ms ./zstd/.
+
+      - name: zstd/FuzzDecoder
+        run: go test -run=none -fuzz=FuzzDecoder -fuzztime=500000x -test.fuzzminimizetime=10ms ./zstd/.
+
+      - name: zstd/FuzzNoBMI2Dec
+        run: go test -run=none -fuzz=FuzzNoBMI2Dec -fuzztime=500000x -test.fuzzminimizetime=10ms ./zstd/.
+
+      - name: zstd/FuzzEncoding
+        run: cd zstd&&go test -run=none -fuzz=FuzzEncoding -fuzztime=250000x -test.fuzzminimizetime=10ms -fuzz-end=3&&cd ..
+
+      - name: zstd/FuzzDecodeAll/noasm
+        run: go test -tags=noasm -run=none -fuzz=FuzzDecodeAll -fuzztime=500000x -test.fuzzminimizetime=10ms ./zstd/.
+
+      - name: zstd/FuzzDecoder/noasm
+        run: go test -tags=noasm -run=none -fuzz=FuzzDecoder -fuzztime=500000x -test.fuzzminimizetime=10ms ./zstd/.
+
+      - name: zstd/FuzzEncoding/noasm
+        run: cd zstd&&go test -tags=noasm -run=none -fuzz=FuzzEncoding -fuzztime=250000x -test.fuzzminimizetime=10ms -fuzz-end=3&&cd ..
+
+      - name: zstd/FuzzEncodingBest
+        run: cd zstd&&go test -run=none -fuzz=FuzzEncoding -fuzztime=25000x -test.fuzzminimizetime=10ms -fuzz-start=4&&cd ..
+
+  fuzz-other:
+    env:
+      CGO_ENABLED: 0
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v5.0.2
+        with:
+          go-version: 1.23.x
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: flate/FuzzEncoding
+        run: go test -run=none -fuzz=FuzzEncoding -fuzztime=100000x -test.fuzzminimizetime=10ms ./flate/.
+
+      - name: flate/FuzzEncoding/noasm
+        run: go test -run=none -tags=noasm -fuzz=FuzzEncoding -fuzztime=100000x -test.fuzzminimizetime=10ms ./flate/.
+
+      - name: zip/FuzzReader
+        run: go test -run=none -fuzz=FuzzReader -fuzztime=500000x -test.fuzzminimizetime=10ms ./zip/.
+
+      - name: fse/FuzzCompress
+        run: go test -run=none -fuzz=FuzzCompress -fuzztime=1000000x -test.fuzzminimizetime=10ms ./fse/.
+
+      - name: fse/FuzzDecompress
+        run: go test -run=none -fuzz=FuzzDecompress -fuzztime=1000000x -test.fuzzminimizetime=10ms ./fse/.

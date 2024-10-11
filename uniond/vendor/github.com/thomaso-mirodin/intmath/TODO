@@ -1,0 +1,17 @@
+TODO: 
+
+- Decide how to deal with overflow. 
+    One option: make result equal to results of standard math package. 
+    This might get strange results though, see: http://play.golang.org/p/Bs2ioK8Rid
+    Another option: saturate. In other words: results bigger than the maximum/minimum number contained result in the maximum/minimum number
+
+- Find more functions that should be implemented (for example, do Sin 
+  and Cos make sense in a non-FPM integer context?)
+
+- Support for 16- and 8-bit types? Easy enough to port, but is it useful
+  in any way?
+
+Things not on the TODO list:
+
+- Fixed point math. Let's be honest: FPM is an even more niche optimisation than
+  integer math. If you need it, you probably want to hand-craft it to the precision you require.

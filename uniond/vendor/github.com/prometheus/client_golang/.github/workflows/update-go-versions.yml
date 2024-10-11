@@ -1,0 +1,33 @@
+---
+name: Generate Metric files for new Go version
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'
+
+jobs:
+  update-go-versions:
+    name: Update Go Versions and Generate Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Execute bash script
+        run: bash update-go-version.bash
+
+      # If there are no changes (i.e. no diff exists with the checked-out base branch),
+      # no pull request will be created and the action exits silently.
+      - name: Create a Pull Request
+        if: github.event_name != 'pull_request'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Update Go Collector metrics for new Go version"
+          title: "chore: Update metrics for new Go version"
+          branch: update-metrics-for-new-go-version
+          base: main
+          draft: false
+          delete-branch: true

@@ -1,0 +1,60 @@
+{
+  "types": {
+    "EIP712Domain": [
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "version",
+        "type": "string"
+      },
+      {
+        "name": "chainId",
+        "type": "uint256"
+      },
+      {
+        "name": "verifyingContract",
+        "type": "address"
+      }
+    ],
+    "Foo": [
+      {
+        "name": "addys",
+        "type": "address[]"
+      },
+      {
+        "name": "stringies",
+        "type": "string[]"
+      },
+      {
+        "name": "inties",
+        "type": "uint[]"
+      }
+    ]
+  },
+  "primaryType": "Foo",
+  "domain": {
+    "name": "Lorem",
+    "version": "1",
+    "chainId": "1",
+    "verifyingContract": "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
+  },
+  "message": {
+    "addys": [
+      "0x0000000000000000000000000000000000000001",
+      "0x0000000000000000000000000000000000000002",
+      "0x0000000000000000000000000000000000000003"
+    ],
+    "stringies": [
+      "lorem",
+      "ipsum",
+      "dolores"
+    ],
+    "inties": [
+      "0x0000000000000000000000000000000000000001",
+      "3",
+      4.0
+    ]
+  }
+}

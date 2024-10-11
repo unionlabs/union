@@ -1,0 +1,1440 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/cloud-platform": {
+          "description": "See, edit, configure, and delete your Google Cloud data and see the email address for your Google Account."
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://developerconnect.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "Developer Connect",
+  "description": "Connect third-party source code management to Google",
+  "discoveryVersion": "v1",
+  "documentationLink": "http://cloud.google.com/developer-connect/docs/overview",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "developerconnect:v1",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://developerconnect.mtls.googleapis.com/",
+  "name": "developerconnect",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "projects": {
+      "resources": {
+        "locations": {
+          "methods": {
+            "get": {
+              "description": "Gets information about a location.",
+              "flatPath": "v1/projects/{projectsId}/locations/{locationsId}",
+              "httpMethod": "GET",
+              "id": "developerconnect.projects.locations.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Resource name for the location.",
+                  "location": "path",
+                  "pattern": "^projects/[^/]+/locations/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v1/{+name}",
+              "response": {
+                "$ref": "Location"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            },
+            "list": {
+              "description": "Lists information about the supported locations for this service.",
+              "flatPath": "v1/projects/{projectsId}/locations",
+              "httpMethod": "GET",
+              "id": "developerconnect.projects.locations.list",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "filter": {
+                  "description": "A filter to narrow down results to a preferred subset. The filtering language accepts strings like `\"displayName=tokyo\"`, and is documented in more detail in [AIP-160](https://google.aip.dev/160).",
+                  "location": "query",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "The resource that owns the locations collection, if applicable.",
+                  "location": "path",
+                  "pattern": "^projects/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                },
+                "pageSize": {
+                  "description": "The maximum number of results to return. If not set, the service selects a default.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "A page token received from the `next_page_token` field in the response. Send that page token to receive the subsequent page.",
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "v1/{+name}/locations",
+              "response": {
+                "$ref": "ListLocationsResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            }
+          },
+          "resources": {
+            "connections": {
+              "methods": {
+                "create": {
+                  "description": "Creates a new Connection in a given project and location.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections",
+                  "httpMethod": "POST",
+                  "id": "developerconnect.projects.locations.connections.create",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "connectionId": {
+                      "description": "Required. Id of the requesting object If auto-generating Id server-side, remove this field and connection_id from the method_signature of Create RPC",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. Value for parent.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "description": "Optional. An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed. The server will guarantee that for at least 60 minutes since the first request. For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments. The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "validateOnly": {
+                      "description": "Optional. If set, validate the request, but do not actually post it.",
+                      "location": "query",
+                      "type": "boolean"
+                    }
+                  },
+                  "path": "v1/{+parent}/connections",
+                  "request": {
+                    "$ref": "Connection"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "delete": {
+                  "description": "Deletes a single Connection.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}",
+                  "httpMethod": "DELETE",
+                  "id": "developerconnect.projects.locations.connections.delete",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "etag": {
+                      "description": "Optional. The current etag of the Connection. If an etag is provided and does not match the current etag of the Connection, deletion will be blocked and an ABORTED error will be returned.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Required. Name of the resource",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "description": "Optional. An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed. The server will guarantee that for at least 60 minutes after the first request. For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments. The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "validateOnly": {
+                      "description": "Optional. If set, validate the request, but do not actually post it.",
+                      "location": "query",
+                      "type": "boolean"
+                    }
+                  },
+                  "path": "v1/{+name}",
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "fetchGitHubInstallations": {
+                  "description": "FetchGitHubInstallations returns the list of GitHub Installations that are available to be added to a Connection. For github.com, only installations accessible to the authorizer token are returned. For GitHub Enterprise, all installations are returned.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}:fetchGitHubInstallations",
+                  "httpMethod": "GET",
+                  "id": "developerconnect.projects.locations.connections.fetchGitHubInstallations",
+                  "parameterOrder": [
+                    "connection"
+                  ],
+                  "parameters": {
+                    "connection": {
+                      "description": "Required. The resource name of the connection in the format `projects/*/locations/*/connections/*`.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+connection}:fetchGitHubInstallations",
+                  "response": {
+                    "$ref": "FetchGitHubInstallationsResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "fetchLinkableGitRepositories": {
+                  "description": "FetchLinkableGitRepositories returns a list of git repositories from an SCM that are available to be added to a Connection.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}:fetchLinkableGitRepositories",
+                  "httpMethod": "GET",
+                  "id": "developerconnect.projects.locations.connections.fetchLinkableGitRepositories",
+                  "parameterOrder": [
+                    "connection"
+                  ],
+                  "parameters": {
+                    "connection": {
+                      "description": "Required. The name of the Connection. Format: `projects/*/locations/*/connections/*`.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "pageSize": {
+                      "description": "Optional. Number of results to return in the list. Defaults to 20.",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "Optional. Page start.",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+connection}:fetchLinkableGitRepositories",
+                  "response": {
+                    "$ref": "FetchLinkableGitRepositoriesResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "get": {
+                  "description": "Gets details of a single Connection.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}",
+                  "httpMethod": "GET",
+                  "id": "developerconnect.projects.locations.connections.get",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Name of the resource",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+name}",
+                  "response": {
+                    "$ref": "Connection"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "list": {
+                  "description": "Lists Connections in a given project and location.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections",
+                  "httpMethod": "GET",
+                  "id": "developerconnect.projects.locations.connections.list",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "filter": {
+                      "description": "Optional. Filtering results",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "orderBy": {
+                      "description": "Optional. Hint for how to order the results",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "pageSize": {
+                      "description": "Optional. Requested page size. Server may return fewer items than requested. If unspecified, server will pick an appropriate default.",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "Optional. A token identifying a page of results the server should return.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. Parent value for ListConnectionsRequest",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+parent}/connections",
+                  "response": {
+                    "$ref": "ListConnectionsResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "patch": {
+                  "description": "Updates the parameters of a single Connection.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}",
+                  "httpMethod": "PATCH",
+                  "id": "developerconnect.projects.locations.connections.patch",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "allowMissing": {
+                      "description": "Optional. If set to true, and the connection is not found a new connection will be created. In this situation `update_mask` is ignored. The creation will succeed only if the input connection has all the necessary information (e.g a github_config with both user_oauth_token and installation_id properties).",
+                      "location": "query",
+                      "type": "boolean"
+                    },
+                    "name": {
+                      "description": "Identifier. The resource name of the connection, in the format `projects/{project}/locations/{location}/connections/{connection_id}`.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "description": "Optional. An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed. The server will guarantee that for at least 60 minutes since the first request. For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments. The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "updateMask": {
+                      "description": "Required. Field mask is used to specify the fields to be overwritten in the Connection resource by the update. The fields specified in the update_mask are relative to the resource, not the full request. A field will be overwritten if it is in the mask. If the user does not provide a mask then all fields will be overwritten.",
+                      "format": "google-fieldmask",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "validateOnly": {
+                      "description": "Optional. If set, validate the request, but do not actually post it.",
+                      "location": "query",
+                      "type": "boolean"
+                    }
+                  },
+                  "path": "v1/{+name}",
+                  "request": {
+                    "$ref": "Connection"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                }
+              },
+              "resources": {
+                "gitRepositoryLinks": {
+                  "methods": {
+                    "create": {
+                      "description": "Creates a GitRepositoryLink. Upon linking a Git Repository, Developer Connect will configure the Git Repository to send webhook events to Developer Connect. Connections that use Firebase GitHub Application will have events forwarded to the Firebase service. All other Connections will have events forwarded to Cloud Build.",
+                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/gitRepositoryLinks",
+                      "httpMethod": "POST",
+                      "id": "developerconnect.projects.locations.connections.gitRepositoryLinks.create",
+                      "parameterOrder": [
+                        "parent"
+                      ],
+                      "parameters": {
+                        "gitRepositoryLinkId": {
+                          "description": "Required. The ID to use for the repository, which will become the final component of the repository's resource name. This ID should be unique in the connection. Allows alphanumeric characters and any of -._~%!$\u0026'()*+,;=@.",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "parent": {
+                          "description": "Required. Value for parent.",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "description": "Optional. An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed. The server will guarantee that for at least 60 minutes since the first request. For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments. The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "validateOnly": {
+                          "description": "Optional. If set, validate the request, but do not actually post it.",
+                          "location": "query",
+                          "type": "boolean"
+                        }
+                      },
+                      "path": "v1/{+parent}/gitRepositoryLinks",
+                      "request": {
+                        "$ref": "GitRepositoryLink"
+                      },
+                      "response": {
+                        "$ref": "Operation"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "delete": {
+                      "description": "Deletes a single GitRepositoryLink.",
+                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/gitRepositoryLinks/{gitRepositoryLinksId}",
+                      "httpMethod": "DELETE",
+                      "id": "developerconnect.projects.locations.connections.gitRepositoryLinks.delete",
+                      "parameterOrder": [
+                        "name"
+                      ],
+                      "parameters": {
+                        "etag": {
+                          "description": "Optional. This checksum is computed by the server based on the value of other fields, and may be sent on update and delete requests to ensure the client has an up-to-date value before proceeding.",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "name": {
+                          "description": "Required. Name of the resource",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+/gitRepositoryLinks/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "description": "Optional. An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed. The server will guarantee that for at least 60 minutes after the first request. For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments. The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "validateOnly": {
+                          "description": "Optional. If set, validate the request, but do not actually post it.",
+                          "location": "query",
+                          "type": "boolean"
+                        }
+                      },
+                      "path": "v1/{+name}",
+                      "response": {
+                        "$ref": "Operation"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "fetchGitRefs": {
+                      "description": "Fetch the list of branches or tags for a given repository.",
+                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/gitRepositoryLinks/{gitRepositoryLinksId}:fetchGitRefs",
+                      "httpMethod": "GET",
+                      "id": "developerconnect.projects.locations.connections.gitRepositoryLinks.fetchGitRefs",
+                      "parameterOrder": [
+                        "gitRepositoryLink"
+                      ],
+                      "parameters": {
+                        "gitRepositoryLink": {
+                          "description": "Required. The resource name of GitRepositoryLink in the format `projects/*/locations/*/connections/*/gitRepositoryLinks/*`.",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+/gitRepositoryLinks/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        },
+                        "pageSize": {
+                          "description": "Optional. Number of results to return in the list. Default to 20.",
+                          "format": "int32",
+                          "location": "query",
+                          "type": "integer"
+                        },
+                        "pageToken": {
+                          "description": "Optional. Page start.",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "refType": {
+                          "description": "Required. Type of refs to fetch.",
+                          "enum": [
+                            "REF_TYPE_UNSPECIFIED",
+                            "TAG",
+                            "BRANCH"
+                          ],
+                          "enumDescriptions": [
+                            "No type specified.",
+                            "To fetch tags.",
+                            "To fetch branches."
+                          ],
+                          "location": "query",
+                          "type": "string"
+                        }
+                      },
+                      "path": "v1/{+gitRepositoryLink}:fetchGitRefs",
+                      "response": {
+                        "$ref": "FetchGitRefsResponse"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "fetchReadToken": {
+                      "description": "Fetches read token of a given gitRepositoryLink.",
+                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/gitRepositoryLinks/{gitRepositoryLinksId}:fetchReadToken",
+                      "httpMethod": "POST",
+                      "id": "developerconnect.projects.locations.connections.gitRepositoryLinks.fetchReadToken",
+                      "parameterOrder": [
+                        "gitRepositoryLink"
+                      ],
+                      "parameters": {
+                        "gitRepositoryLink": {
+                          "description": "Required. The resource name of the gitRepositoryLink in the format `projects/*/locations/*/connections/*/gitRepositoryLinks/*`.",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+/gitRepositoryLinks/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v1/{+gitRepositoryLink}:fetchReadToken",
+                      "request": {
+                        "$ref": "FetchReadTokenRequest"
+                      },
+                      "response": {
+                        "$ref": "FetchReadTokenResponse"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "fetchReadWriteToken": {
+                      "description": "Fetches read/write token of a given gitRepositoryLink.",
+                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/gitRepositoryLinks/{gitRepositoryLinksId}:fetchReadWriteToken",
+                      "httpMethod": "POST",
+                      "id": "developerconnect.projects.locations.connections.gitRepositoryLinks.fetchReadWriteToken",
+                      "parameterOrder": [
+                        "gitRepositoryLink"
+                      ],
+                      "parameters": {
+                        "gitRepositoryLink": {
+                          "description": "Required. The resource name of the gitRepositoryLink in the format `projects/*/locations/*/connections/*/gitRepositoryLinks/*`.",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+/gitRepositoryLinks/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v1/{+gitRepositoryLink}:fetchReadWriteToken",
+                      "request": {
+                        "$ref": "FetchReadWriteTokenRequest"
+                      },
+                      "response": {
+                        "$ref": "FetchReadWriteTokenResponse"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "get": {
+                      "description": "Gets details of a single GitRepositoryLink.",
+                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/gitRepositoryLinks/{gitRepositoryLinksId}",
+                      "httpMethod": "GET",
+                      "id": "developerconnect.projects.locations.connections.gitRepositoryLinks.get",
+                      "parameterOrder": [
+                        "name"
+                      ],
+                      "parameters": {
+                        "name": {
+                          "description": "Required. Name of the resource",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+/gitRepositoryLinks/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v1/{+name}",
+                      "response": {
+                        "$ref": "GitRepositoryLink"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "list": {
+                      "description": "Lists GitRepositoryLinks in a given project, location, and connection.",
+                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/gitRepositoryLinks",
+                      "httpMethod": "GET",
+                      "id": "developerconnect.projects.locations.connections.gitRepositoryLinks.list",
+                      "parameterOrder": [
+                        "parent"
+                      ],
+                      "parameters": {
+                        "filter": {
+                          "description": "Optional. Filtering results",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "orderBy": {
+                          "description": "Optional. Hint for how to order the results",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "pageSize": {
+                          "description": "Optional. Requested page size. Server may return fewer items than requested. If unspecified, server will pick an appropriate default.",
+                          "format": "int32",
+                          "location": "query",
+                          "type": "integer"
+                        },
+                        "pageToken": {
+                          "description": "Optional. A token identifying a page of results the server should return.",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "parent": {
+                          "description": "Required. Parent value for ListGitRepositoryLinksRequest",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v1/{+parent}/gitRepositoryLinks",
+                      "response": {
+                        "$ref": "ListGitRepositoryLinksResponse"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "operations": {
+              "methods": {
+                "cancel": {
+                  "description": "Starts asynchronous cancellation on a long-running operation. The server makes a best effort to cancel the operation, but success is not guaranteed. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`. Clients can use Operations.GetOperation or other methods to check whether the cancellation succeeded or whether the operation completed despite cancellation. On successful cancellation, the operation is not deleted; instead, it becomes an operation with an Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}:cancel",
+                  "httpMethod": "POST",
+                  "id": "developerconnect.projects.locations.operations.cancel",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "The name of the operation resource to be cancelled.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+name}:cancel",
+                  "request": {
+                    "$ref": "CancelOperationRequest"
+                  },
+                  "response": {
+                    "$ref": "Empty"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "delete": {
+                  "description": "Deletes a long-running operation. This method indicates that the client is no longer interested in the operation result. It does not cancel the operation. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}",
+                  "httpMethod": "DELETE",
+                  "id": "developerconnect.projects.locations.operations.delete",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "The name of the operation resource to be deleted.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+name}",
+                  "response": {
+                    "$ref": "Empty"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "get": {
+                  "description": "Gets the latest state of a long-running operation. Clients can use this method to poll the operation result at intervals as recommended by the API service.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}",
+                  "httpMethod": "GET",
+                  "id": "developerconnect.projects.locations.operations.get",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "The name of the operation resource.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+name}",
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "list": {
+                  "description": "Lists operations that match the specified filter in the request. If the server doesn't support this method, it returns `UNIMPLEMENTED`.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/operations",
+                  "httpMethod": "GET",
+                  "id": "developerconnect.projects.locations.operations.list",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "filter": {
+                      "description": "The standard list filter.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "The name of the operation's parent resource.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "pageSize": {
+                      "description": "The standard list page size.",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "The standard list page token.",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+name}/operations",
+                  "response": {
+                    "$ref": "ListOperationsResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20240523",
+  "rootUrl": "https://developerconnect.googleapis.com/",
+  "schemas": {
+    "CancelOperationRequest": {
+      "description": "The request message for Operations.CancelOperation.",
+      "id": "CancelOperationRequest",
+      "properties": {},
+      "type": "object"
+    },
+    "Connection": {
+      "description": "Message describing Connection object",
+      "id": "Connection",
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. Allows clients to store small amounts of arbitrary data.",
+          "type": "object"
+        },
+        "createTime": {
+          "description": "Output only. [Output only] Create timestamp",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "deleteTime": {
+          "description": "Output only. [Output only] Delete timestamp",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "disabled": {
+          "description": "Optional. If disabled is set to true, functionality is disabled for this connection. Repository based API methods and webhooks processing for repositories in this connection will be disabled.",
+          "type": "boolean"
+        },
+        "etag": {
+          "description": "Optional. This checksum is computed by the server based on the value of other fields, and may be sent on update and delete requests to ensure the client has an up-to-date value before proceeding.",
+          "type": "string"
+        },
+        "githubConfig": {
+          "$ref": "GitHubConfig",
+          "description": "Configuration for connections to github.com."
+        },
+        "installationState": {
+          "$ref": "InstallationState",
+          "description": "Output only. Installation state of the Connection.",
+          "readOnly": true
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. Labels as key value pairs",
+          "type": "object"
+        },
+        "name": {
+          "description": "Identifier. The resource name of the connection, in the format `projects/{project}/locations/{location}/connections/{connection_id}`.",
+          "type": "string"
+        },
+        "reconciling": {
+          "description": "Output only. Set to true when the connection is being set up or updated in the background.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "uid": {
+          "description": "Output only. A system-assigned unique identifier for a the GitRepositoryLink.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "Output only. [Output only] Update timestamp",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Empty": {
+      "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); }",
+      "id": "Empty",
+      "properties": {},
+      "type": "object"
+    },
+    "FetchGitHubInstallationsResponse": {
+      "description": "Response of fetching github installations.",
+      "id": "FetchGitHubInstallationsResponse",
+      "properties": {
+        "installations": {
+          "description": "List of installations available to the OAuth user (for github.com) or all the installations (for GitHub enterprise).",
+          "items": {
+            "$ref": "Installation"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "FetchGitRefsResponse": {
+      "description": "Response for fetching git refs.",
+      "id": "FetchGitRefsResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token identifying a page of results the server should return.",
+          "type": "string"
+        },
+        "refNames": {
+          "description": "Name of the refs fetched.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "FetchLinkableGitRepositoriesResponse": {
+      "description": "Response message for FetchLinkableGitRepositories.",
+      "id": "FetchLinkableGitRepositoriesResponse",
+      "properties": {
+        "linkableGitRepositories": {
+          "description": "The git repositories that can be linked to the connection.",
+          "items": {
+            "$ref": "LinkableGitRepository"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token identifying a page of results the server should return.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "FetchReadTokenRequest": {
+      "description": "Message for fetching SCM read token.",
+      "id": "FetchReadTokenRequest",
+      "properties": {},
+      "type": "object"
+    },
+    "FetchReadTokenResponse": {
+      "description": "Message for responding to get read token.",
+      "id": "FetchReadTokenResponse",
+      "properties": {
+        "expirationTime": {
+          "description": "Expiration timestamp. Can be empty if unknown or non-expiring.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "gitUsername": {
+          "description": "The git_username to specify when making a git clone with the token. For example, for GitHub GitRepositoryLinks, this would be \"x-access-token\"",
+          "type": "string"
+        },
+        "token": {
+          "description": "The token content.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "FetchReadWriteTokenRequest": {
+      "description": "Message for fetching SCM read/write token.",
+      "id": "FetchReadWriteTokenRequest",
+      "properties": {},
+      "type": "object"
+    },
+    "FetchReadWriteTokenResponse": {
+      "description": "Message for responding to get read/write token.",
+      "id": "FetchReadWriteTokenResponse",
+      "properties": {
+        "expirationTime": {
+          "description": "Expiration timestamp. Can be empty if unknown or non-expiring.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "gitUsername": {
+          "description": "The git_username to specify when making a git clone with the token. For example, for GitHub GitRepositoryLinks, this would be \"x-access-token\"",
+          "type": "string"
+        },
+        "token": {
+          "description": "The token content.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GitHubConfig": {
+      "description": "Configuration for connections to github.com.",
+      "id": "GitHubConfig",
+      "properties": {
+        "appInstallationId": {
+          "description": "Optional. GitHub App installation id.",
+          "format": "int64",
+          "type": "string"
+        },
+        "authorizerCredential": {
+          "$ref": "OAuthCredential",
+          "description": "Optional. OAuth credential of the account that authorized the GitHub App. It is recommended to use a robot account instead of a human user account. The OAuth token must be tied to the GitHub App of this config."
+        },
+        "githubApp": {
+          "description": "Required. Immutable. The GitHub Application that was installed to the GitHub user or organization.",
+          "enum": [
+            "GIT_HUB_APP_UNSPECIFIED",
+            "DEVELOPER_CONNECT",
+            "FIREBASE"
+          ],
+          "enumDescriptions": [
+            "GitHub App not specified.",
+            "The Developer Connect GitHub Application.",
+            "The Firebase GitHub Application."
+          ],
+          "type": "string"
+        },
+        "installationUri": {
+          "description": "Output only. The URI to navigate to in order to manage the installation associated with this GitHubConfig.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GitRepositoryLink": {
+      "description": "Message describing the GitRepositoryLink object",
+      "id": "GitRepositoryLink",
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. Allows clients to store small amounts of arbitrary data.",
+          "type": "object"
+        },
+        "cloneUri": {
+          "description": "Required. Git Clone URI.",
+          "type": "string"
+        },
+        "createTime": {
+          "description": "Output only. [Output only] Create timestamp",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "deleteTime": {
+          "description": "Output only. [Output only] Delete timestamp",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "etag": {
+          "description": "Optional. This checksum is computed by the server based on the value of other fields, and may be sent on update and delete requests to ensure the client has an up-to-date value before proceeding.",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. Labels as key value pairs",
+          "type": "object"
+        },
+        "name": {
+          "description": "Identifier. Resource name of the repository, in the format `projects/*/locations/*/connections/*/gitRepositoryLinks/*`.",
+          "type": "string"
+        },
+        "reconciling": {
+          "description": "Output only. Set to true when the connection is being set up or updated in the background.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "uid": {
+          "description": "Output only. A system-assigned unique identifier for a the GitRepositoryLink.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "Output only. [Output only] Update timestamp",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Installation": {
+      "description": "Represents an installation of the GitHub App.",
+      "id": "Installation",
+      "properties": {
+        "id": {
+          "description": "ID of the installation in GitHub.",
+          "format": "int64",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the GitHub user or organization that owns this installation.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Either \"user\" or \"organization\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "InstallationState": {
+      "description": "Describes stage and necessary actions to be taken by the user to complete the installation. Used for GitHub and GitHub Enterprise based connections.",
+      "id": "InstallationState",
+      "properties": {
+        "actionUri": {
+          "description": "Output only. Link to follow for next action. Empty string if the installation is already complete.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "message": {
+          "description": "Output only. Message of what the user should do next to continue the installation. Empty string if the installation is already complete.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "stage": {
+          "description": "Output only. Current step of the installation process.",
+          "enum": [
+            "STAGE_UNSPECIFIED",
+            "PENDING_CREATE_APP",
+            "PENDING_USER_OAUTH",
+            "PENDING_INSTALL_APP",
+            "COMPLETE"
+          ],
+          "enumDescriptions": [
+            "No stage specified.",
+            "Only for GitHub Enterprise. An App creation has been requested. The user needs to confirm the creation in their GitHub enterprise host.",
+            "User needs to authorize the GitHub (or Enterprise) App via OAuth.",
+            "User needs to follow the link to install the GitHub (or Enterprise) App.",
+            "Installation process has been completed."
+          ],
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "LinkableGitRepository": {
+      "description": "LinkableGitRepository represents a git repository that can be linked to a connection.",
+      "id": "LinkableGitRepository",
+      "properties": {
+        "cloneUri": {
+          "description": "The clone uri of the repository.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListConnectionsResponse": {
+      "description": "Message for response to listing Connections",
+      "id": "ListConnectionsResponse",
+      "properties": {
+        "connections": {
+          "description": "The list of Connection",
+          "items": {
+            "$ref": "Connection"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token identifying a page of results the server should return.",
+          "type": "string"
+        },
+        "unreachable": {
+          "description": "Locations that could not be reached.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ListGitRepositoryLinksResponse": {
+      "description": "Message for response to listing GitRepositoryLinks",
+      "id": "ListGitRepositoryLinksResponse",
+      "properties": {
+        "gitRepositoryLinks": {
+          "description": "The list of GitRepositoryLinks",
+          "items": {
+            "$ref": "GitRepositoryLink"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token identifying a page of results the server should return.",
+          "type": "string"
+        },
+        "unreachable": {
+          "description": "Locations that could not be reached.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ListLocationsResponse": {
+      "description": "The response message for Locations.ListLocations.",
+      "id": "ListLocationsResponse",
+      "properties": {
+        "locations": {
+          "description": "A list of locations that matches the specified filter in the request.",
+          "items": {
+            "$ref": "Location"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "The standard List next-page token.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListOperationsResponse": {
+      "description": "The response message for Operations.ListOperations.",
+      "id": "ListOperationsResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "The standard List next-page token.",
+          "type": "string"
+        },
+        "operations": {
+          "description": "A list of operations that matches the specified filter in the request.",
+          "items": {
+            "$ref": "Operation"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Location": {
+      "description": "A resource that represents a Google Cloud location.",
+      "id": "Location",
+      "properties": {
+        "displayName": {
+          "description": "The friendly name for this location, typically a nearby city name. For example, \"Tokyo\".",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Cross-service attributes for the location. For example {\"cloud.googleapis.com/region\": \"us-east1\"}",
+          "type": "object"
+        },
+        "locationId": {
+          "description": "The canonical id for this location. For example: `\"us-east1\"`.",
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "Service-specific metadata. For example the available capacity at the given location.",
+          "type": "object"
+        },
+        "name": {
+          "description": "Resource name for the location, which may vary between implementations. For example: `\"projects/example-project/locations/us-east1\"`",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "OAuthCredential": {
+      "description": "Represents an OAuth token of the account that authorized the Connection, and associated metadata.",
+      "id": "OAuthCredential",
+      "properties": {
+        "oauthTokenSecretVersion": {
+          "description": "Required. A SecretManager resource containing the OAuth token that authorizes the connection. Format: `projects/*/secrets/*/versions/*`.",
+          "type": "string"
+        },
+        "username": {
+          "description": "Output only. The username associated with this token.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Operation": {
+      "description": "This resource represents a long-running operation that is the result of a network API call.",
+      "id": "Operation",
+      "properties": {
+        "done": {
+          "description": "If the value is `false`, it means the operation is still in progress. If `true`, the operation is completed, and either `error` or `response` is available.",
+          "type": "boolean"
+        },
+        "error": {
+          "$ref": "Status",
+          "description": "The error result of the operation in case of failure or cancellation."
+        },
+        "metadata": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "Service-specific metadata associated with the operation. It typically contains progress information and common metadata such as create time. Some services might not provide such metadata. Any method that returns a long-running operation should document the metadata type, if any.",
+          "type": "object"
+        },
+        "name": {
+          "description": "The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.",
+          "type": "string"
+        },
+        "response": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "OperationMetadata": {
+      "description": "Represents the metadata of the long-running operation.",
+      "id": "OperationMetadata",
+      "properties": {
+        "apiVersion": {
+          "description": "Output only. API version used to start the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "createTime": {
+          "description": "Output only. The time the operation was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "endTime": {
+          "description": "Output only. The time the operation finished running.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "requestedCancellation": {
+          "description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have been cancelled successfully have Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "statusMessage": {
+          "description": "Output only. Human-readable status of the operation, if any.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "target": {
+          "description": "Output only. Server-defined resource path for the target of the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "verb": {
+          "description": "Output only. Name of the verb executed by the operation.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Status": {
+      "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+      "id": "Status",
+      "properties": {
+        "code": {
+          "description": "The status code, which should be an enum value of google.rpc.Code.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "details": {
+          "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+          "items": {
+            "additionalProperties": {
+              "description": "Properties of the object. Contains field @type with type URL.",
+              "type": "any"
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "message": {
+          "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Developer Connect API",
+  "version": "v1",
+  "version_module": true
+}

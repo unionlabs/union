@@ -1,0 +1,70 @@
+version: 2.1
+
+jobs:
+  "test":
+    parameters:
+      version:
+        type: string
+        default: "latest"
+      golint:
+        type: boolean
+        default: true
+      modules:
+        type: boolean
+        default: true
+      goproxy:
+        type: string
+        default: ""
+    docker:
+      - image: "cimg/go:<< parameters.version >>"
+    working_directory: /home/circleci/project/go/src/github.com/gorilla/websocket
+    environment:
+      GO111MODULE: "on"
+      GOPROXY: "<< parameters.goproxy >>"
+    steps:
+      - checkout
+      - run:
+          name: "Print the Go version"
+          command: >
+            go version
+      - run:
+          name: "Fetch dependencies"
+          command: >
+            if [[ << parameters.modules >> = true ]]; then
+              go mod download
+              export GO111MODULE=on
+            else
+              go get -v ./...
+            fi
+      # Only run gofmt, vet & lint against the latest Go version
+      - run:
+          name: "Run golint"
+          command: >
+            if [ << parameters.version >> = "latest" ] && [ << parameters.golint >> = true ]; then
+              go get -u golang.org/x/lint/golint
+              golint ./...
+            fi
+      - run:
+          name: "Run gofmt"
+          command: >
+            if [[ << parameters.version >> = "latest" ]]; then
+              diff -u <(echo -n) <(gofmt -d -e .)
+            fi
+      - run:
+          name: "Run go vet"
+          command: >
+            if [[ << parameters.version >> = "latest" ]]; then
+              go vet -v ./...
+            fi
+      - run:
+          name: "Run go test (+ race detector)"
+          command: >
+            go test -v -race ./...
+
+workflows:
+  tests:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              version: ["1.18", "1.17", "1.16"]

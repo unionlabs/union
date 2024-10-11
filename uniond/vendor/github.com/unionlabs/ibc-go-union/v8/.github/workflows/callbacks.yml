@@ -1,0 +1,50 @@
+name: Callbacks Module
+# This workflow runs when a PR is opened that targets code that is part of the callbacks module.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - uses: actions/checkout@v4
+      - uses: golangci/golangci-lint-action@v3.7.0
+        with:
+          version: v1.54.2
+          args: --timeout 5m
+          working-directory: modules/apps/callbacks
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-arch: ['amd64', 'arm', 'arm64']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - name: Build callbacks-module
+        run: |
+          cd modules/apps/callbacks
+          GOARCH=${{ matrix.go-arch }} go build ./...
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - name: Go Test
+        run: |
+          cd modules/apps/callbacks
+          go test -v -mod=readonly ./...

@@ -1,0 +1,48 @@
+name: Nightly code coverage
+
+on:
+  schedule:
+    - cron: '00 08 * * * '
+  workflow_dispatch:
+
+jobs:
+  coverage-gen-and-publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          # By default, checkout merges the PR into the current master.
+          # Instead, we want to check out the PR as-is.
+          ref: ${{ github.event.pull_request.head.sha }}
+          # Fetch all branches and history (we'll need the origin/master ref and
+          # the base commit).
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.21"
+
+      - name: Generate coverage
+        run: scripts/code-coverage.sh
+
+      - name: Install lcov
+        run: |
+          sudo apt-get update
+          sudo apt-get install lcov
+
+      - name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.CODECOVER_SERVICE_ACCOUNT_KEY }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+        with:
+          version: '>= 363.0.0'
+
+      - name: Publish coverage
+        run: scripts/code-coverage-publish.sh

@@ -1,0 +1,336 @@
+[
+  {
+    "proto": null,
+    "text": "zero"
+  },
+  {
+    "proto": {"amount": "0", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "0 COSM"
+  },
+  {
+    "proto": {"amount": "1", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "0.000001 COSM"
+  },
+  {
+    "proto": {"amount": "10", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "0.00001 COSM"
+  },
+  {
+    "proto": {"amount": "100", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "0.0001 COSM"
+  },
+  {
+    "proto": {"amount": "1000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "0.001 COSM"
+  },
+  {
+    "proto": {"amount": "10000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "0.01 COSM"
+  },
+  {
+    "proto": {"amount": "100000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "0.1 COSM"
+  },
+  {
+    "proto": {"amount": "1000000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "1 COSM"
+  },
+  {
+    "proto": {"amount": "10000000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "10 COSM"
+  },
+  {
+    "proto": {"amount": "0", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}, {"denom":"stake", "exponent": 0}]},
+    "text": "0 COSM"
+  },
+  {
+    "proto": {"amount": "1", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}, {"denom":"stake", "exponent": 0}]},
+    "text": "0.000001 COSM"
+  },
+  {
+    "proto": {"amount": "10", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}, {"denom":"stake", "exponent": 0}]},
+    "text": "0.00001 COSM"
+  },
+  {
+    "proto": {"amount": "100", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}, {"denom":"stake", "exponent": 0}]},
+    "text": "0.0001 COSM"
+  },
+  {
+    "proto": {"amount": "1000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}, {"denom":"stake", "exponent": 0}]},
+    "text": "0.001 COSM"
+  },
+  {
+    "proto": {"amount": "10000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}, {"denom":"stake", "exponent": 0}]},
+    "text": "0.01 COSM"
+  },
+  {
+    "proto": {"amount": "100000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}, {"denom":"stake", "exponent": 0}]},
+    "text": "0.1 COSM"
+  },
+  {
+    "proto": {"amount": "1000000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}, {"denom":"stake", "exponent": 0}]},
+    "text": "1 COSM"
+  },
+  {
+    "proto": {"amount": "10000000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}, {"denom":"stake", "exponent": 0}]},
+    "text": "10 COSM"
+  },
+  {
+    "proto": {"amount": "0", "denom": "COSM"},
+    "metadata": {"display": "ucosm", "base":"COSM", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "0 ucosm"
+  },
+  {
+    "proto": {"amount": "1", "denom": "COSM"},
+    "metadata": {"display": "ucosm", "base":"COSM", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "1'000'000 ucosm"
+  },
+  {
+    "proto": {"amount": "10", "denom": "COSM"},
+    "metadata": {"display": "ucosm", "base":"COSM", "denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "10'000'000 ucosm"
+  },
+  {
+    "proto": {"amount": "0", "denom": "ucosm"},
+    "metadata": {"denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "0 ucosm"
+  },
+  {
+    "proto": {"amount": "1", "denom": "ucosm"},
+    "metadata": {"denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "1 ucosm"
+  },
+  {
+    "proto": {"amount": "10", "denom": "ucosm"},
+    "metadata": {"denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "10 ucosm"
+  },
+  {
+    "proto": {"amount": "100", "denom": "ucosm"},
+    "metadata": {"denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "100 ucosm"
+  },
+  {
+    "proto": {"amount": "1000", "denom": "ucosm"},
+    "metadata": {"denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "1'000 ucosm"
+  },
+  {
+    "proto": {"amount": "10000", "denom": "ucosm"},
+    "metadata": {"denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "10'000 ucosm"
+  },
+  {
+    "proto": {"amount": "100000", "denom": "ucosm"},
+    "metadata": {"denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "100'000 ucosm"
+  },
+  {
+    "proto": {"amount": "1000000", "denom": "ucosm"},
+    "metadata": {"denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "1'000'000 ucosm"
+  },
+  {
+    "proto": {"amount": "10000000", "denom": "ucosm"},
+    "metadata": {"denom_units": [{"denom": "COSM", "exponent": 6}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "10'000'000 ucosm"
+  },
+  {
+    "proto": {"amount": "0", "denom": "ucosm"},
+    "text": "0 ucosm"
+  },
+  {
+    "proto": {"amount": "1", "denom": "ucosm"},
+    "text": "1 ucosm"
+  },
+  {
+    "proto": {"amount": "10", "denom": "ucosm"},
+    "text": "10 ucosm"
+  },
+  {
+    "proto": {"amount": "100", "denom": "ucosm"},
+    "text": "100 ucosm"
+  },
+  {
+    "proto": {"amount": "1000", "denom": "ucosm"},
+    "text": "1'000 ucosm"
+  },
+  {
+    "proto": {"amount": "10000", "denom": "ucosm"},
+    "text": "10'000 ucosm"
+  },
+  {
+    "proto": {"amount": "100000", "denom": "ucosm"},
+    "text": "100'000 ucosm"
+  },
+  {
+    "proto": {"amount": "1000000", "denom": "ucosm"},
+    "text": "1'000'000 ucosm"
+  },
+  {
+    "proto": {"amount": "10000000", "denom": "ucosm"},
+    "text": "10'000'000 ucosm"
+  },
+  {
+    "proto": {"amount": "0", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}]},
+    "text": "0 ucosm"
+  },
+  {
+    "proto": {"amount": "1", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}]},
+    "text": "1 ucosm"
+  },
+  {
+    "proto": {"amount": "10", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}]},
+    "text": "10 ucosm"
+  },
+  {
+    "proto": {"amount": "100", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}]},
+    "text": "100 ucosm"
+  },
+  {
+    "proto": {"amount": "1000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}]},
+    "text": "1'000 ucosm"
+  },
+  {
+    "proto": {"amount": "10000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}]},
+    "text": "10'000 ucosm"
+  },
+  {
+    "proto": {"amount": "100000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}]},
+    "text": "100'000 ucosm"
+  },
+  {
+    "proto": {"amount": "1000000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}]},
+    "text": "1'000'000 ucosm"
+  },
+  {
+    "proto": {"amount": "10000000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}]},
+    "text": "10'000'000 ucosm"
+  },
+  {
+    "proto": {"amount": "0", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "0 COSM"
+  },
+  {
+    "proto": {"amount": "1", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "0.01 COSM"
+  },
+  {
+    "proto": {"amount": "10", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "0.1 COSM"
+  },
+  {
+    "proto": {"amount": "100", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "1 COSM"
+  },
+  {
+    "proto": {"amount": "1000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "10 COSM"
+  },
+  {
+    "proto": {"amount": "10000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "100 COSM"
+  },
+  {
+    "proto": {"amount": "100000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "1'000 COSM"
+  },
+  {
+    "proto": {"amount": "1000000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "10'000 COSM"
+  },
+  {
+    "proto": {"amount": "10000000", "denom": "ucosm"},
+    "metadata": {"display": "COSM", "base":"ucosm", "denom_units": [{"denom": "COSM", "exponent": 2}, {"denom": "ucosm", "exponent": 0}]},
+    "text": "100'000 COSM"
+  },
+  {
+    "proto": {"amount": "0", "denom": "point"},
+    "metadata": {"display": "POINT", "base": "point", "denom_units": [{"denom": "point", "exponent": 0}, {"denom": "POINT", "exponent": 0}]},
+    "text": "0 POINT"
+  },
+  {
+    "proto": {"amount": "1", "denom": "point"},
+    "metadata": {"display": "POINT", "base": "point", "denom_units": [{"denom": "point", "exponent": 0}, {"denom": "POINT", "exponent": 0}]},
+    "text": "1 POINT"
+  },
+  {
+    "proto": {"amount": "10", "denom": "point"},
+    "metadata": {"display": "POINT", "base": "point", "denom_units": [{"denom": "point", "exponent": 0}, {"denom": "POINT", "exponent": 0}]},
+    "text": "10 POINT"
+  },
+  {
+    "proto": {"amount": "100", "denom": "point"},
+    "metadata": {"display": "POINT", "base": "point", "denom_units": [{"denom": "point", "exponent": 0}, {"denom": "POINT", "exponent": 0}]},
+    "text": "100 POINT"
+  },
+  {
+    "proto": {"amount": "1000", "denom": "point"},
+    "metadata": {"display": "POINT", "base": "point", "denom_units": [{"denom": "point", "exponent": 0}, {"denom": "POINT", "exponent": 0}]},
+    "text": "1'000 POINT"
+  },
+  {
+    "proto": {"amount": "10000", "denom": "point"},
+    "metadata": {"display": "POINT", "base": "point", "denom_units": [{"denom": "point", "exponent": 0}, {"denom": "POINT", "exponent": 0}]},
+    "text": "10'000 POINT"
+  },
+  {
+    "proto": {"amount": "100000", "denom": "point"},
+    "metadata": {"display": "POINT", "base": "point", "denom_units": [{"denom": "point", "exponent": 0}, {"denom": "POINT", "exponent": 0}]},
+    "text": "100'000 POINT"
+  },
+  {
+    "proto": {"amount": "1000000", "denom": "point"},
+    "metadata": {"display": "POINT", "base": "point", "denom_units": [{"denom": "point", "exponent": 0}, {"denom": "POINT", "exponent": 0}]},
+    "text": "1'000'000 POINT"
+  },
+  {
+    "proto": {"amount": "10000000", "denom": "point"},
+    "metadata": {"display": "POINT", "base": "point", "denom_units": [{"denom": "point", "exponent": 0}, {"denom": "POINT", "exponent": 0}]},
+    "text": "10'000'000 POINT"
+  },
+  {"text":"", "error": true},
+  {"text":"1COSM", "error": true},
+  {"text":"1  COSM", "error": true},
+  {"text":" 1  COSM", "error": true},
+  {
+    "proto": {"amount": "10000000", "denom": "point, 222222 point"},
+    "metadata": {"display": "POINT", "base": "point", "denom_units": [{"denom": "point", "exponent": 0}, {"denom": "POINT", "exponent": 0}]},
+    "error": true
+  }
+]

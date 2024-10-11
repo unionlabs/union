@@ -1,0 +1,92 @@
+# Tests with the same shared object attached as multiple objects.
+
+open p1 1
+----
+<local fs> mkdir-all: p1 0755
+<local fs> open-dir: p1
+<local fs> open-dir: p1
+<local fs> create: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> create: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> close: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+
+create 1 shared 1 100
+----
+<remote> create object "61a6-1-000001.sst"
+<remote> close writer for "61a6-1-000001.sst" after 100 bytes
+<remote> create object "61a6-1-000001.sst.ref.1.000001"
+<remote> close writer for "61a6-1-000001.sst.ref.1.000001" after 0 bytes
+
+save-backing b1 1
+----
+
+open p2 2
+----
+<local fs> mkdir-all: p2 0755
+<local fs> open-dir: p2
+<local fs> open-dir: p2
+<local fs> create: p2/REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p2/REMOTE-OBJ-CATALOG-000001
+<local fs> create: p2/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> close: p2/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p2
+<local fs> sync: p2/REMOTE-OBJ-CATALOG-000001
+
+# We should create three ref markers to allow independent removal.
+attach
+b1 101
+b1 102
+b1 103
+----
+<remote> create object "61a6-1-000001.sst.ref.2.000101"
+<remote> close writer for "61a6-1-000001.sst.ref.2.000101" after 0 bytes
+<remote> size of object "61a6-1-000001.sst.ref.1.000001": 0
+<remote> create object "61a6-1-000001.sst.ref.2.000102"
+<remote> close writer for "61a6-1-000001.sst.ref.2.000102" after 0 bytes
+<remote> size of object "61a6-1-000001.sst.ref.1.000001": 0
+<remote> create object "61a6-1-000001.sst.ref.2.000103"
+<remote> close writer for "61a6-1-000001.sst.ref.2.000103" after 0 bytes
+<remote> size of object "61a6-1-000001.sst.ref.1.000001": 0
+<local fs> sync: p2/REMOTE-OBJ-CATALOG-000001
+000101 -> remote://61a6-1-000001.sst
+000102 -> remote://61a6-1-000001.sst
+000103 -> remote://61a6-1-000001.sst
+
+close-backing b1
+----
+
+# Remove original object.
+switch p1
+----
+
+remove 1
+----
+<remote> delete object "61a6-1-000001.sst.ref.1.000001"
+<remote> list (prefix="61a6-1-000001.sst.ref.", delimiter="")
+<remote>  - 61a6-1-000001.sst.ref.2.000101
+<remote>  - 61a6-1-000001.sst.ref.2.000102
+<remote>  - 61a6-1-000001.sst.ref.2.000103
+
+switch p2
+----
+
+remove 101
+----
+<remote> delete object "61a6-1-000001.sst.ref.2.000101"
+<remote> list (prefix="61a6-1-000001.sst.ref.", delimiter="")
+<remote>  - 61a6-1-000001.sst.ref.2.000102
+<remote>  - 61a6-1-000001.sst.ref.2.000103
+
+remove 103
+----
+<remote> delete object "61a6-1-000001.sst.ref.2.000103"
+<remote> list (prefix="61a6-1-000001.sst.ref.", delimiter="")
+<remote>  - 61a6-1-000001.sst.ref.2.000102
+
+remove 102
+----
+<remote> delete object "61a6-1-000001.sst.ref.2.000102"
+<remote> list (prefix="61a6-1-000001.sst.ref.", delimiter="")
+<remote> delete object "61a6-1-000001.sst"

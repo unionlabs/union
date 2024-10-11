@@ -1,0 +1,469 @@
+syntax = "proto3";
+
+package ibc.core.channel.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos/msg/v1/msg.proto";
+import "ibc/core/client/v1/client.proto";
+import "ibc/core/channel/v1/channel.proto";
+import "ibc/core/channel/v1/upgrade.proto";
+
+// Msg defines the ibc/channel Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // ChannelOpenInit defines a rpc handler method for MsgChannelOpenInit.
+  rpc ChannelOpenInit(MsgChannelOpenInit) returns (MsgChannelOpenInitResponse);
+
+  // ChannelOpenTry defines a rpc handler method for MsgChannelOpenTry.
+  rpc ChannelOpenTry(MsgChannelOpenTry) returns (MsgChannelOpenTryResponse);
+
+  // ChannelOpenAck defines a rpc handler method for MsgChannelOpenAck.
+  rpc ChannelOpenAck(MsgChannelOpenAck) returns (MsgChannelOpenAckResponse);
+
+  // ChannelOpenConfirm defines a rpc handler method for MsgChannelOpenConfirm.
+  rpc ChannelOpenConfirm(MsgChannelOpenConfirm) returns (MsgChannelOpenConfirmResponse);
+
+  // ChannelCloseInit defines a rpc handler method for MsgChannelCloseInit.
+  rpc ChannelCloseInit(MsgChannelCloseInit) returns (MsgChannelCloseInitResponse);
+
+  // ChannelCloseConfirm defines a rpc handler method for
+  // MsgChannelCloseConfirm.
+  rpc ChannelCloseConfirm(MsgChannelCloseConfirm) returns (MsgChannelCloseConfirmResponse);
+
+  // RecvPacket defines a rpc handler method for MsgRecvPacket.
+  rpc RecvPacket(MsgRecvPacket) returns (MsgRecvPacketResponse);
+
+  // Timeout defines a rpc handler method for MsgTimeout.
+  rpc Timeout(MsgTimeout) returns (MsgTimeoutResponse);
+
+  // TimeoutOnClose defines a rpc handler method for MsgTimeoutOnClose.
+  rpc TimeoutOnClose(MsgTimeoutOnClose) returns (MsgTimeoutOnCloseResponse);
+
+  // Acknowledgement defines a rpc handler method for MsgAcknowledgement.
+  rpc Acknowledgement(MsgAcknowledgement) returns (MsgAcknowledgementResponse);
+
+  // ChannelUpgradeInit defines a rpc handler method for MsgChannelUpgradeInit.
+  rpc ChannelUpgradeInit(MsgChannelUpgradeInit) returns (MsgChannelUpgradeInitResponse);
+
+  // ChannelUpgradeTry defines a rpc handler method for MsgChannelUpgradeTry.
+  rpc ChannelUpgradeTry(MsgChannelUpgradeTry) returns (MsgChannelUpgradeTryResponse);
+
+  // ChannelUpgradeAck defines a rpc handler method for MsgChannelUpgradeAck.
+  rpc ChannelUpgradeAck(MsgChannelUpgradeAck) returns (MsgChannelUpgradeAckResponse);
+
+  // ChannelUpgradeConfirm defines a rpc handler method for MsgChannelUpgradeConfirm.
+  rpc ChannelUpgradeConfirm(MsgChannelUpgradeConfirm) returns (MsgChannelUpgradeConfirmResponse);
+
+  // ChannelUpgradeOpen defines a rpc handler method for MsgChannelUpgradeOpen.
+  rpc ChannelUpgradeOpen(MsgChannelUpgradeOpen) returns (MsgChannelUpgradeOpenResponse);
+
+  // ChannelUpgradeTimeout defines a rpc handler method for MsgChannelUpgradeTimeout.
+  rpc ChannelUpgradeTimeout(MsgChannelUpgradeTimeout) returns (MsgChannelUpgradeTimeoutResponse);
+
+  // ChannelUpgradeCancel defines a rpc handler method for MsgChannelUpgradeCancel.
+  rpc ChannelUpgradeCancel(MsgChannelUpgradeCancel) returns (MsgChannelUpgradeCancelResponse);
+
+  // UpdateChannelParams defines a rpc handler method for MsgUpdateParams.
+  rpc UpdateChannelParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // PruneAcknowledgements defines a rpc handler method for MsgPruneAcknowledgements.
+  rpc PruneAcknowledgements(MsgPruneAcknowledgements) returns (MsgPruneAcknowledgementsResponse);
+}
+
+// ResponseResultType defines the possible outcomes of the execution of a message
+enum ResponseResultType {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // Default zero value enumeration
+  RESPONSE_RESULT_TYPE_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "UNSPECIFIED"];
+  // The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+  RESPONSE_RESULT_TYPE_NOOP = 1 [(gogoproto.enumvalue_customname) = "NOOP"];
+  // The message was executed successfully
+  RESPONSE_RESULT_TYPE_SUCCESS = 2 [(gogoproto.enumvalue_customname) = "SUCCESS"];
+  // The message was executed unsuccessfully
+  RESPONSE_RESULT_TYPE_FAILURE = 3 [(gogoproto.enumvalue_customname) = "FAILURE"];
+}
+
+// MsgChannelOpenInit defines an sdk.Msg to initialize a channel handshake. It
+// is called by a relayer on Chain A.
+message MsgChannelOpenInit {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string  port_id = 1;
+  Channel channel = 2 [(gogoproto.nullable) = false];
+  string  signer  = 3;
+}
+
+// MsgChannelOpenInitResponse defines the Msg/ChannelOpenInit response type.
+message MsgChannelOpenInitResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  string channel_id = 1;
+  string version    = 2;
+}
+
+// MsgChannelOpenInit defines a msg sent by a Relayer to try to open a channel
+// on Chain B. The version field within the Channel field has been deprecated. Its
+// value will be ignored by core IBC.
+message MsgChannelOpenTry {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string port_id = 1;
+  // Deprecated: this field is unused. Crossing hello's are no longer supported in core IBC.
+  string previous_channel_id = 2 [deprecated = true];
+  // NOTE: the version field within the channel has been deprecated. Its value will be ignored by core IBC.
+  Channel                   channel              = 3 [(gogoproto.nullable) = false];
+  string                    counterparty_version = 4;
+  bytes                     proof_init           = 5;
+  ibc.core.client.v1.Height proof_height         = 6 [(gogoproto.nullable) = false];
+  string                    signer               = 7;
+}
+
+// MsgChannelOpenTryResponse defines the Msg/ChannelOpenTry response type.
+message MsgChannelOpenTryResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  string version    = 1;
+  string channel_id = 2;
+}
+
+// MsgChannelOpenAck defines a msg sent by a Relayer to Chain A to acknowledge
+// the change of channel state to TRYOPEN on Chain B.
+// WARNING: a channel upgrade MUST NOT initialize an upgrade for this channel
+// in the same block as executing this message otherwise the counterparty will
+// be incapable of opening.
+message MsgChannelOpenAck {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string                    port_id                 = 1;
+  string                    channel_id              = 2;
+  string                    counterparty_channel_id = 3;
+  string                    counterparty_version    = 4;
+  bytes                     proof_try               = 5;
+  ibc.core.client.v1.Height proof_height            = 6 [(gogoproto.nullable) = false];
+  string                    signer                  = 7;
+}
+
+// MsgChannelOpenAckResponse defines the Msg/ChannelOpenAck response type.
+message MsgChannelOpenAckResponse {}
+
+// MsgChannelOpenConfirm defines a msg sent by a Relayer to Chain B to
+// acknowledge the change of channel state to OPEN on Chain A.
+message MsgChannelOpenConfirm {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string                    port_id      = 1;
+  string                    channel_id   = 2;
+  bytes                     proof_ack    = 3;
+  ibc.core.client.v1.Height proof_height = 4 [(gogoproto.nullable) = false];
+  string                    signer       = 5;
+}
+
+// MsgChannelOpenConfirmResponse defines the Msg/ChannelOpenConfirm response
+// type.
+message MsgChannelOpenConfirmResponse {}
+
+// MsgChannelCloseInit defines a msg sent by a Relayer to Chain A
+// to close a channel with Chain B.
+message MsgChannelCloseInit {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string port_id    = 1;
+  string channel_id = 2;
+  string signer     = 3;
+}
+
+// MsgChannelCloseInitResponse defines the Msg/ChannelCloseInit response type.
+message MsgChannelCloseInitResponse {}
+
+// MsgChannelCloseConfirm defines a msg sent by a Relayer to Chain B
+// to acknowledge the change of channel state to CLOSED on Chain A.
+message MsgChannelCloseConfirm {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string                    port_id                       = 1;
+  string                    channel_id                    = 2;
+  bytes                     proof_init                    = 3;
+  ibc.core.client.v1.Height proof_height                  = 4 [(gogoproto.nullable) = false];
+  string                    signer                        = 5;
+  uint64                    counterparty_upgrade_sequence = 6;
+}
+
+// MsgChannelCloseConfirmResponse defines the Msg/ChannelCloseConfirm response
+// type.
+message MsgChannelCloseConfirmResponse {}
+
+// MsgRecvPacket receives incoming IBC packet
+message MsgRecvPacket {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  Packet                    packet           = 1 [(gogoproto.nullable) = false];
+  bytes                     proof_commitment = 2;
+  ibc.core.client.v1.Height proof_height     = 3 [(gogoproto.nullable) = false];
+  string                    signer           = 4;
+}
+
+// MsgRecvPacketResponse defines the Msg/RecvPacket response type.
+message MsgRecvPacketResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  ResponseResultType result = 1;
+}
+
+// MsgTimeout receives timed-out packet
+message MsgTimeout {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  Packet                    packet             = 1 [(gogoproto.nullable) = false];
+  bytes                     proof_unreceived   = 2;
+  ibc.core.client.v1.Height proof_height       = 3 [(gogoproto.nullable) = false];
+  uint64                    next_sequence_recv = 4;
+  string                    signer             = 5;
+}
+
+// MsgTimeoutResponse defines the Msg/Timeout response type.
+message MsgTimeoutResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  ResponseResultType result = 1;
+}
+
+// MsgTimeoutOnClose timed-out packet upon counterparty channel closure.
+message MsgTimeoutOnClose {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  Packet                    packet                        = 1 [(gogoproto.nullable) = false];
+  bytes                     proof_unreceived              = 2;
+  bytes                     proof_close                   = 3;
+  ibc.core.client.v1.Height proof_height                  = 4 [(gogoproto.nullable) = false];
+  uint64                    next_sequence_recv            = 5;
+  string                    signer                        = 6;
+  uint64                    counterparty_upgrade_sequence = 7;
+}
+
+// MsgTimeoutOnCloseResponse defines the Msg/TimeoutOnClose response type.
+message MsgTimeoutOnCloseResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  ResponseResultType result = 1;
+}
+
+// MsgAcknowledgement receives incoming IBC acknowledgement
+message MsgAcknowledgement {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  Packet                    packet          = 1 [(gogoproto.nullable) = false];
+  bytes                     acknowledgement = 2;
+  bytes                     proof_acked     = 3;
+  ibc.core.client.v1.Height proof_height    = 4 [(gogoproto.nullable) = false];
+  string                    signer          = 5;
+}
+
+// MsgAcknowledgementResponse defines the Msg/Acknowledgement response type.
+message MsgAcknowledgementResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  ResponseResultType result = 1;
+}
+
+// MsgChannelUpgradeInit defines the request type for the ChannelUpgradeInit rpc
+// WARNING: Initializing a channel upgrade in the same block as opening the channel
+// may result in the counterparty being incapable of opening.
+message MsgChannelUpgradeInit {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string        port_id    = 1;
+  string        channel_id = 2;
+  UpgradeFields fields     = 3 [(gogoproto.nullable) = false];
+  string        signer     = 4;
+}
+
+// MsgChannelUpgradeInitResponse defines the MsgChannelUpgradeInit response type
+message MsgChannelUpgradeInitResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  Upgrade upgrade          = 1 [(gogoproto.nullable) = false];
+  uint64  upgrade_sequence = 2;
+}
+
+// MsgChannelUpgradeTry defines the request type for the ChannelUpgradeTry rpc
+message MsgChannelUpgradeTry {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string                    port_id                          = 1;
+  string                    channel_id                       = 2;
+  repeated string           proposed_upgrade_connection_hops = 3;
+  UpgradeFields             counterparty_upgrade_fields      = 4 [(gogoproto.nullable) = false];
+  uint64                    counterparty_upgrade_sequence    = 5;
+  bytes                     proof_channel                    = 6;
+  bytes                     proof_upgrade                    = 7;
+  ibc.core.client.v1.Height proof_height                     = 8 [(gogoproto.nullable) = false];
+  string                    signer                           = 9;
+}
+
+// MsgChannelUpgradeTryResponse defines the MsgChannelUpgradeTry response type
+message MsgChannelUpgradeTryResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  Upgrade            upgrade          = 1 [(gogoproto.nullable) = false];
+  uint64             upgrade_sequence = 2;
+  ResponseResultType result           = 3;
+}
+
+// MsgChannelUpgradeAck defines the request type for the ChannelUpgradeAck rpc
+message MsgChannelUpgradeAck {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters)             = false;
+  string                    port_id              = 1;
+  string                    channel_id           = 2;
+  Upgrade                   counterparty_upgrade = 3 [(gogoproto.nullable) = false];
+  bytes                     proof_channel        = 4;
+  bytes                     proof_upgrade        = 5;
+  ibc.core.client.v1.Height proof_height         = 6 [(gogoproto.nullable) = false];
+  string                    signer               = 7;
+}
+
+// MsgChannelUpgradeAckResponse defines MsgChannelUpgradeAck response type
+message MsgChannelUpgradeAckResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  ResponseResultType result = 1;
+}
+
+// MsgChannelUpgradeConfirm defines the request type for the ChannelUpgradeConfirm rpc
+message MsgChannelUpgradeConfirm {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters)                   = false;
+  string                    port_id                    = 1;
+  string                    channel_id                 = 2;
+  State                     counterparty_channel_state = 3;
+  Upgrade                   counterparty_upgrade       = 4 [(gogoproto.nullable) = false];
+  bytes                     proof_channel              = 5;
+  bytes                     proof_upgrade              = 6;
+  ibc.core.client.v1.Height proof_height               = 7 [(gogoproto.nullable) = false];
+  string                    signer                     = 8;
+}
+
+// MsgChannelUpgradeConfirmResponse defines MsgChannelUpgradeConfirm response type
+message MsgChannelUpgradeConfirmResponse {
+  option (gogoproto.goproto_getters) = false;
+
+  ResponseResultType result = 1;
+}
+
+// MsgChannelUpgradeOpen defines the request type for the ChannelUpgradeOpen rpc
+message MsgChannelUpgradeOpen {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters)                      = false;
+  string                    port_id                       = 1;
+  string                    channel_id                    = 2;
+  State                     counterparty_channel_state    = 3;
+  uint64                    counterparty_upgrade_sequence = 4;
+  bytes                     proof_channel                 = 5;
+  ibc.core.client.v1.Height proof_height                  = 6 [(gogoproto.nullable) = false];
+  string                    signer                        = 7;
+}
+
+// MsgChannelUpgradeOpenResponse defines the MsgChannelUpgradeOpen response type
+message MsgChannelUpgradeOpenResponse {}
+
+// MsgChannelUpgradeTimeout defines the request type for the ChannelUpgradeTimeout rpc
+message MsgChannelUpgradeTimeout {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string                    port_id              = 1;
+  string                    channel_id           = 2;
+  Channel                   counterparty_channel = 3 [(gogoproto.nullable) = false];
+  bytes                     proof_channel        = 4;
+  ibc.core.client.v1.Height proof_height         = 5 [(gogoproto.nullable) = false];
+  string                    signer               = 6;
+}
+
+// MsgChannelUpgradeTimeoutRepsonse defines the MsgChannelUpgradeTimeout response type
+message MsgChannelUpgradeTimeoutResponse {}
+
+// MsgChannelUpgradeCancel defines the request type for the ChannelUpgradeCancel rpc
+message MsgChannelUpgradeCancel {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string                    port_id             = 1;
+  string                    channel_id          = 2;
+  ErrorReceipt              error_receipt       = 3 [(gogoproto.nullable) = false];
+  bytes                     proof_error_receipt = 4;
+  ibc.core.client.v1.Height proof_height        = 5 [(gogoproto.nullable) = false];
+  string                    signer              = 6;
+}
+
+// MsgChannelUpgradeCancelResponse defines the MsgChannelUpgradeCancel response type
+message MsgChannelUpgradeCancelResponse {}
+
+// MsgUpdateParams is the MsgUpdateParams request type.
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1;
+
+  // params defines the channel parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+// MsgUpdateParamsResponse defines the MsgUpdateParams response type.
+message MsgUpdateParamsResponse {}
+
+// MsgPruneAcknowledgements defines the request type for the PruneAcknowledgements rpc.
+message MsgPruneAcknowledgements {
+  option (cosmos.msg.v1.signer)      = "signer";
+  option (gogoproto.goproto_getters) = false;
+
+  string port_id    = 1;
+  string channel_id = 2;
+  uint64 limit      = 3;
+  string signer     = 4;
+}
+
+// MsgPruneAcknowledgementsResponse defines the response type for the PruneAcknowledgements rpc.
+message MsgPruneAcknowledgementsResponse {
+  // Number of sequences pruned (includes both packet acknowledgements and packet receipts where appropriate).
+  uint64 total_pruned_sequences = 1;
+  // Number of sequences left after pruning.
+  uint64 total_remaining_sequences = 2;
+}

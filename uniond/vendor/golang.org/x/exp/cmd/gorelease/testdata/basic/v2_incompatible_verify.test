@@ -1,0 +1,18 @@
+mod=example.com/basic/v2
+version=v2.1.2
+base=v2.1.1
+success=false
+release=v2.1.2
+proxyVersions=example.com/basic/v2@v2.1.1
+-- want --
+# example.com/basic/v2/a
+## incompatible changes
+A2: removed
+
+# example.com/basic/v2/b
+## incompatible changes
+package removed
+
+# summary
+v2.1.2 is not a valid semantic version for this release.
+There are incompatible changes.

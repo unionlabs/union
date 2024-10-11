@@ -1,0 +1,109 @@
+---
+version: 2.1
+
+orbs:
+  go: circleci/go@1.7.1
+
+jobs:
+  test:
+    parameters:
+      go_version:
+        type: string
+      use_gomod_cache:
+        type: boolean
+        default: true
+    docker:
+      - image: cimg/go:<< parameters.go_version >>
+    environment:
+      # Override Go 1.18 security deprecations.
+      GODEBUG: "x509sha1=1,tls10default=1"
+    steps:
+      - checkout
+      - when:
+          condition: << parameters.use_gomod_cache >>
+          steps:
+            - go/load-cache:
+                key: v1-go<< parameters.go_version >>
+      - run: make test
+      - run: make -C sigv4 test
+      - when:
+          condition: << parameters.use_gomod_cache >>
+          steps:
+            - go/save-cache:
+                key: v1-go<< parameters.go_version >>
+      - store_test_results:
+          path: test-results
+  test-assets:
+    parameters:
+      go_version:
+        type: string
+      use_gomod_cache:
+        type: boolean
+        default: true
+    docker:
+      - image: cimg/go:<< parameters.go_version >>
+    steps:
+      - checkout
+      - when:
+          condition: << parameters.use_gomod_cache >>
+          steps:
+            - go/load-cache:
+                key: v1-go<< parameters.go_version >>
+      - run: make -C assets test
+      - when:
+          condition: << parameters.use_gomod_cache >>
+          steps:
+            - go/save-cache:
+                key: v1-go<< parameters.go_version >>
+      - store_test_results:
+          path: test-results
+  style:
+    parameters:
+      go_version:
+        type: string
+      use_gomod_cache:
+        type: boolean
+        default: true
+    docker:
+      - image: cimg/go:<< parameters.go_version >>
+    steps:
+      - checkout
+      - when:
+          condition: << parameters.use_gomod_cache >>
+          steps:
+            - go/load-cache:
+                key: v1-go<< parameters.go_version >>
+      - run: make style
+      - run: make -C sigv4 style
+      - run: make -C assets style
+      - run: make check-go-mod-version
+      - when:
+          condition: << parameters.use_gomod_cache >>
+          steps:
+            - go/save-cache:
+                key: v1-go<< parameters.go_version >>
+      - store_test_results:
+          path: test-results
+
+workflows:
+  version: 2
+  tests:
+    jobs:
+      # Supported Go versions are synced with github.com/prometheus/client_golang.
+      - test:
+          name: go-<< matrix.go_version >>
+          matrix:
+            parameters:
+              go_version:
+                - "1.20"
+                - "1.21"
+                - "1.22"
+      - test-assets:
+          name: assets-go-<< matrix.go_version >>
+          matrix:
+            parameters:
+              go_version:
+                - "1.22"
+      - style:
+          name: style
+          go_version: "1.22"

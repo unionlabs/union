@@ -1,0 +1,28 @@
+[req]
+distinguished_name = req_distinguished_name
+attributes = req_attributes
+
+[req_distinguished_name]
+
+[req_attributes]
+
+[test_ca]
+basicConstraints        = critical,CA:TRUE
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always,issuer:always
+keyUsage                = critical,keyCertSign
+
+[test_server]
+basicConstraints        = critical,CA:FALSE
+subjectKeyIdentifier    = hash
+keyUsage                = critical,digitalSignature,keyEncipherment,keyAgreement
+subjectAltName          = @server_alt_names
+
+[server_alt_names]
+DNS.1 = *.test.example.com
+
+[test_client]
+basicConstraints        = critical,CA:FALSE
+subjectKeyIdentifier    = hash
+keyUsage                = critical,nonRepudiation,digitalSignature,keyEncipherment
+extendedKeyUsage        = critical,clientAuth

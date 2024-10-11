@@ -110,19 +110,19 @@ func (itr *boltDBIterator) Next() {
 }
 
 // Key implements Iterator.
+// The caller should not modify the contents of the returned slice.
+// Instead, the caller should make a copy and work on the copy.
 func (itr *boltDBIterator) Key() []byte {
 	itr.assertIsValid()
-	return append([]byte{}, itr.currentKey...)
+	return itr.currentKey
 }
 
 // Value implements Iterator.
+// The caller should not modify the contents of the returned slice.
+// Instead, the caller should make a copy and work on the copy.
 func (itr *boltDBIterator) Value() []byte {
 	itr.assertIsValid()
-	var value []byte
-	if itr.currentValue != nil {
-		value = append([]byte{}, itr.currentValue...)
-	}
-	return value
+	return itr.currentValue
 }
 
 // Error implements Iterator.

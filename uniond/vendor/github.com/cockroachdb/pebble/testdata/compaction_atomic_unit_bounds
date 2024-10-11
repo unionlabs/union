@@ -1,0 +1,61 @@
+define
+a.SET.1-b.SET.2
+----
+
+atomic-unit-bounds 0
+----
+a-b
+
+define
+a.SET.1-b.SET.2
+c.SET.3-d.SET.4
+e.SET.5-f.SET.6
+----
+
+atomic-unit-bounds 0
+----
+a-b
+
+atomic-unit-bounds 1
+----
+c-d
+
+atomic-unit-bounds 2
+----
+e-f
+
+define
+a.SET.1-b.RANGEDEL.3
+b.SET.2-c.RANGEDEL.5
+c.SET.4-d.SET.6
+----
+
+atomic-unit-bounds 0
+----
+a-d
+
+atomic-unit-bounds 1
+----
+a-d
+
+atomic-unit-bounds 2
+----
+a-d
+
+define
+a.SET.1-b.RANGEDEL.72057594037927935
+b.SET.2-c.RANGEDEL.5
+c.SET.4-d.SET.6
+----
+
+atomic-unit-bounds 0
+----
+a-b
+
+atomic-unit-bounds 1
+----
+b-d
+
+atomic-unit-bounds 2
+----
+b-d

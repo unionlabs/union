@@ -71,6 +71,9 @@ $code.=<<___;
 div_3_limbs:
 .cfi_startproc
 .cfi_end_prologue
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	(%rdi),%r8		# load R.lo
 	mov	8(%rdi),%r9		# load R.hi
 	xor	%rax,%rax		# Q = 0
@@ -125,6 +128,9 @@ $code.=<<___;
 quot_rem_128:
 .cfi_startproc
 .cfi_end_prologue
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	%rdx, %rax
 	mov	%rdx, $quotient
 
@@ -175,6 +181,9 @@ quot_rem_128:
 quot_rem_64:
 .cfi_startproc
 .cfi_end_prologue
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	%rdx, %rax		# return quotient
 	imulq	0($divisor), %rdx	# divisor[0] * quotient
 

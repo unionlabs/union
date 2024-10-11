@@ -1,0 +1,305 @@
+[
+  {
+    "packet": {
+      "sourceChannel": "channel-0",
+      "sourcePort": "transfer",
+      "destChannel": "channel-0",
+      "destPort": "transfer",
+      "data": {
+        "sender": "a1",
+        "receiver": "a3",
+        "amount": "5",
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          "atom"
+        ]
+      }
+    },
+    "handler": "OnRecvPacket",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "atom"
+        ],
+        "amount": 5
+      }
+    ],
+    "error": false
+  },
+  {
+    "packet": {
+      "sourceChannel": "channel-1",
+      "sourcePort": "transfer",
+      "destChannel": "channel-0",
+      "destPort": "transfer",
+      "data": {
+        "sender": "a3",
+        "receiver": "a1",
+        "amount": "3",
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "atom"
+        ]
+      }
+    },
+    "handler": "SendTransfer",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "atom"
+        ],
+        "amount": 5
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "atom"
+        ],
+        "amount": 2
+      },
+      {
+        "address": [
+          "transfer",
+          "channel-1",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "atom"
+        ],
+        "amount": 3
+      }
+    ],
+    "error": false
+  },
+  {
+    "packet": {
+      "sourceChannel": "channel-0",
+      "sourcePort": "transfer",
+      "destChannel": "channel-1",
+      "destPort": "transfer",
+      "data": {
+        "sender": "a1",
+        "receiver": "a1",
+        "amount": "1",
+        "denom": [
+          "transfer",
+          "channel-0",
+          "transfer",
+          "channel-0",
+          "atom"
+        ]
+      }
+    },
+    "handler": "OnRecvPacket",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "atom"
+        ],
+        "amount": 2
+      },
+      {
+        "address": [
+          "transfer",
+          "channel-1",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "atom"
+        ],
+        "amount": 3
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a1"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "atom"
+        ],
+        "amount": 1
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "atom"
+        ],
+        "amount": 2
+      },
+      {
+        "address": [
+          "transfer",
+          "channel-1",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "atom"
+        ],
+        "amount": 2
+      }
+    ],
+    "error": false
+  }
+]

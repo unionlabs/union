@@ -1,0 +1,96 @@
+-- cuberoot-apd.decTest -- decimal cube root
+
+-- These tests are not part of the GDA test suite, but were written for
+-- apd. They are not as exhaustive as those tests, but do cover a number of
+-- useful results.
+
+extended: 0
+precision: 9
+rounding: half_up
+maxExponent: 999
+minExponent: -999
+
+-- basics
+cbtx001 cuberoot 1 -> 1
+cbtx002 cuberoot -1 -> -1
+cbtx003 cuberoot 1.00 -> 1.0
+cbtx004 cuberoot -1.00 -> -1.0
+cbtx005 cuberoot 0 -> 0
+cbtx006 cuberoot 00.0 -> 0
+cbtx007 cuberoot 0.00 -> 0
+cbtx008 cuberoot 00.00 -> 0
+cbtx009 cuberoot 00 -> 0
+
+cbtx010 cuberoot -2 -> -1.25992105 Inexact Rounded
+cbtx011 cuberoot 2 -> 1.25992105 Inexact Rounded
+cbtx012 cuberoot -2.00 -> -1.25992105 Inexact Rounded
+cbtx013 cuberoot 2.00 -> 1.25992105 Inexact Rounded
+cbtx014 cuberoot -0 -> -0
+cbtx015 cuberoot -0.00 -> -0.0
+cbtx016 cuberoot -00.0 -> -0.0
+cbtx017 cuberoot -0E+9 -> -0E+3
+cbtx018 cuberoot -0E+10 -> -0E+3
+cbtx019 cuberoot -0E+11 -> -0E+3
+cbtx020 cuberoot -0E+12 -> -0E+4
+cbtx021 cuberoot -00 -> -0
+cbtx022 cuberoot 0E+5 -> 0
+cbtx023 cuberoot 8.0 -> 2.0
+cbtx024 cuberoot 8.00 -> 2.0
+
+cbtx030 cuberoot +0.1 -> 0.464158883 Inexact Rounded
+cbtx031 cuberoot -0.1 -> -0.464158883 Inexact Rounded
+cbtx032 cuberoot +0.01 -> 0.215443469 Inexact Rounded
+cbtx033 cuberoot -0.01 -> -0.215443469 Inexact Rounded
+cbtx034 cuberoot +0.001 -> 0.1
+cbtx035 cuberoot -0.001 -> -0.1
+cbtx036 cuberoot +0.000001 -> 0.01
+cbtx037 cuberoot -0.000001 -> -0.01
+cbtx038 cuberoot +0.000000000001 -> 0.0001
+cbtx039 cuberoot -0.000000000001 -> -0.0001
+
+cbtx041 cuberoot 1.1 -> 1.03228012 Inexact Rounded
+cbtx042 cuberoot 1.10 -> 1.03228012 Inexact Rounded
+cbtx043 cuberoot 1.100 -> 1.03228012 Inexact Rounded
+cbtx044 cuberoot 1.110 -> 1.03539881 Inexact Rounded
+cbtx045 cuberoot -1.1 -> -1.03228012 Inexact Rounded
+cbtx046 cuberoot -1.10 -> -1.03228012 Inexact Rounded
+cbtx047 cuberoot -1.100 -> -1.03228012 Inexact Rounded
+cbtx048 cuberoot -1.110 -> -1.03539881 Inexact Rounded
+cbtx049 cuberoot 9.9 -> 2.14722917 Inexact Rounded
+cbtx050 cuberoot 9.90 -> 2.14722917 Inexact Rounded
+cbtx051 cuberoot 9.900 -> 2.14722917 Inexact Rounded
+cbtx052 cuberoot 9.990 -> 2.15371631 Inexact Rounded
+cbtx053 cuberoot -9.9 -> -2.14722917 Inexact Rounded
+cbtx054 cuberoot -9.90 -> -2.14722917 Inexact Rounded
+cbtx055 cuberoot -9.900 -> -2.14722917 Inexact Rounded
+cbtx056 cuberoot -9.990 -> -2.15371631 Inexact Rounded
+
+cbtx060 cuberoot 10.0 -> 2.15443469 Inexact Rounded
+cbtx061 cuberoot 10.00 -> 2.15443469 Inexact Rounded
+cbtx062 cuberoot 1000.0 -> 10.0
+cbtx063 cuberoot 1000.00 -> 10.0
+cbtx064 cuberoot 1.1000E+3 -> 10.3228012 Inexact Rounded
+cbtx065 cuberoot 1.10000E+3 -> 10.3228012 Inexact Rounded
+cbtx066 cuberoot -10.0 -> -2.15443469 Inexact Rounded
+cbtx067 cuberoot -10.00 -> -2.15443469 Inexact Rounded
+cbtx068 cuberoot -1000.0 -> -10.0
+cbtx069 cuberoot -1000.00 -> -10.0
+cbtx070 cuberoot -1.1000E+3 -> -10.3228012 Inexact Rounded
+cbtx071 cuberoot -1.10000E+3 -> -10.3228012 Inexact Rounded
+
+-- famous cubes
+cbtx080 cuberoot 1 -> 1
+cbtx081 cuberoot 8 -> 2
+cbtx082 cuberoot 27 -> 3
+cbtx083 cuberoot 64 -> 4
+cbtx084 cuberoot 125 -> 5
+cbtx085 cuberoot 216 -> 6
+cbtx086 cuberoot 343 -> 7
+cbtx087 cuberoot 512 -> 8
+cbtx088 cuberoot 729 -> 9
+cbtx089 cuberoot 1000 -> 10
+
+-- others
+precision: 5
+
+cbtx100 cuberoot 1.0001 -> 1.0000 Inexact Rounded

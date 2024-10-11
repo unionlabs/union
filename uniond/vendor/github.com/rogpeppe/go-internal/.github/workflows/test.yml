@@ -1,0 +1,41 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - '**'
+name: Test
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version:
+        - '1.22.x'
+        - '1.23.x'
+        os:
+        - ubuntu-latest
+        - macos-latest
+        - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+        cache: false # our tests are quick enough
+    - name: Test
+      run: |
+        go test ./...
+        go test -race ./...
+
+    - name: Tidy
+      if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.23.x' # no need to do this everywhere
+      run: |
+        go mod tidy
+
+        test -z "$(gofmt -d .)" || (gofmt -d . && false)
+        test -z "$(git status --porcelain)" || (git status; git diff && false)

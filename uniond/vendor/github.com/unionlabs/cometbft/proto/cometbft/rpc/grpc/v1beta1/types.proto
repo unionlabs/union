@@ -1,0 +1,30 @@
+syntax = "proto3";
+package cometbft.rpc.grpc.v1beta1;
+option  go_package = "github.com/cometbft/cometbft/api/cometbft/rpc/grpc/v1beta1";
+
+import "cometbft/abci/v1beta1/types.proto";
+
+// PingRequest is a request to confirm that the connection is alive.
+message RequestPing {}
+
+// RequestBroadcastTx is a request to broadcast the transaction.
+message RequestBroadcastTx {
+  bytes tx = 1;
+}
+
+// PingResponse is a response to confirm that the connection is alive.
+message ResponsePing {}
+
+// ResponseBroadcastTx is a response of broadcasting the transaction.
+message ResponseBroadcastTx {
+  cometbft.abci.v1beta1.ResponseCheckTx   check_tx   = 1;
+  cometbft.abci.v1beta1.ResponseDeliverTx deliver_tx = 2;
+}
+
+// BroadcastAPI is an API for broadcasting transactions.
+service BroadcastAPI {
+  // Ping the connection.
+  rpc Ping(RequestPing) returns (ResponsePing);
+  // BroadcastTx broadcasts the transaction.
+  rpc BroadcastTx(RequestBroadcastTx) returns (ResponseBroadcastTx);
+}

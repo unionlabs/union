@@ -1,0 +1,6 @@
+mod=example.com/errors
+version=v0.1.0
+base=upgrade
+error=true
+-- want --
+could not resolve version example.com/errors@upgrade: query is based on requirements in main go.mod file

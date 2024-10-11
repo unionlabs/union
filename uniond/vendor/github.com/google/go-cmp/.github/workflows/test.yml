@@ -1,0 +1,23 @@
+on: [push, pull_request]
+name: Test
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.18.x, 1.19.x, 1.20.x, 1.21.x]
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@bfdd3570ce990073878bf10f6b2d79082de49492 # v2.2.0
+      with:
+        go-version: ${{ matrix.go-version }}
+    - name: Checkout code
+      uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
+    - name: Test
+      run: go test -v -race ./...
+    - name: Format
+      if: matrix.go-version == '1.21.x'
+      run: diff -u <(echo -n) <(gofmt -d .)

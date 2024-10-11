@@ -1,0 +1,12 @@
++S mempool
++M mempool.max-txs
+-S rosetta
+-M rosetta.enable
+-M rosetta.address
+-M rosetta.blockchain
+-M rosetta.network
+-M rosetta.retries
+-M rosetta.offline
+-M rosetta.enable-fee-suggestion
+-M rosetta.gas-to-suggest
+-M rosetta.denom-to-suggest

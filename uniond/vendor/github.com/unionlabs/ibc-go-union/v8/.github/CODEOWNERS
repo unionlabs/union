@@ -1,0 +1,46 @@
+# CODEOWNERS: https://help.github.com/articles/about-codeowners/
+
+*       @colin-axner @AdityaSripal @crodriguezvega @charleenfei @damiannolan @chatton @DimitrisJim
+
+# Our appreciation and gratitude to past code owners: @fedekunze @seantking @tmsdkeys
+
+# Order is important; the last matching pattern takes the most
+# precedence. When someone opens a pull request that only
+# modifies 27-interchain-accounts files, only the interchain account owners 
+# and not the global owner(s) will be requested for a review.
+
+# CODEOWNERS for the CODEOWNER file
+
+/.github/CODEOWNERS @colin-axner @AdityaSripal @crodriguezvega @damiannolan
+
+# CODEOWNERS for the core IBC module
+
+/modules/core/ @colin-axner @AdityaSripal @damiannolan
+/proto/ibc/core/ @colin-axner @AdityaSripal @damiannolan
+
+# CODEOWNERS for the light-clients
+
+/modules/light-clients/ @colin-axner @AdityaSripal @damiannolan
+/proto/ibc/lightclients/ @colin-axner @AdityaSripal @damiannolan
+
+# CODEOWNERS for ICS 20
+
+/modules/apps/transfer/ @colin-axner @AdityaSripal @damiannolan
+/proto/ibc/applications/transfer/ @colin-axner @AdityaSripal @damiannolan
+
+# CODEOWNERS for interchain-accounts module
+
+/modules/apps/27-interchain-accounts/ @colin-axner @AdityaSripal @damiannolan
+/proto/ibc/applications/interchain_accounts/ @colin-axner @AdityaSripal @damiannolan
+
+# CODEOWNERS for fee module
+
+/modules/apps/29-fee/ @AdityaSripal @charleenfei @colin-axner @damiannolan 
+/proto/ibc/applications/fee/ @AdityaSripal @charleenfei @colin-axner @damiannolan
+
+# CODEOWNERS for docs
+/docs/ @colin-axner @AdityaSripal @crodriguezvega @charleenfei @damiannolan @chatton @DimitrisJim @srdtrk
+
+# CODEOWNERS for callbacks middleware
+
+/modules/apps/callbacks/ @colin-axner @AdityaSripal @damiannolan @srdtrk

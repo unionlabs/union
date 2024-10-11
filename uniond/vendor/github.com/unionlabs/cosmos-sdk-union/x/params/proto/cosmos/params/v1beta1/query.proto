@@ -1,0 +1,61 @@
+syntax = "proto3";
+package cosmos.params.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/params/v1beta1/params.proto";
+import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "cosmossdk.io/x/params/types/proposal";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Params queries a specific parameter of a module, given its subspace and
+  // key.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/cosmos/params/v1beta1/params";
+  }
+
+  // Subspaces queries for all registered subspaces and all keys for a subspace.
+  rpc Subspaces(QuerySubspacesRequest) returns (QuerySubspacesResponse) {
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
+    option (google.api.http).get          = "/cosmos/params/v1beta1/subspaces";
+  }
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {
+  // subspace defines the module to query the parameter for.
+  string subspace = 1;
+
+  // key defines the key of the parameter in the subspace.
+  string key = 2;
+}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // param defines the queried parameter.
+  ParamChange param = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QuerySubspacesRequest defines a request type for querying for all registered
+// subspaces and all keys for a subspace.
+message QuerySubspacesRequest {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+}
+
+// QuerySubspacesResponse defines the response types for querying for all
+// registered subspaces and all keys for a subspace.
+message QuerySubspacesResponse {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+  repeated Subspace subspaces            = 1;
+}
+
+// Subspace defines a parameter subspace name and all the keys that exist for
+// the subspace.
+message Subspace {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+  string          subspace               = 1;
+  repeated string keys                   = 2;
+}

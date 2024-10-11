@@ -1,0 +1,11 @@
+mod=example.com/basicfork
+base=example.com/basic@v1.1.1
+version=v1.1.2
+release=v1.1.2
+proxyVersions=example.com/basic@v1.1.1
+-- want --
+# example.com/basic/a
+## incompatible changes
+A2: removed
+## compatible changes
+A3: added

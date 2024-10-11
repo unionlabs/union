@@ -1,0 +1,8 @@
+{
+    "id": "6b25cc1a-38cf-4e22-9728-e8e169b9152b",
+    "type": "feature",
+    "description": "Add awsQueryCompatible error code translation support",
+    "modules": [
+        "."
+    ]
+}

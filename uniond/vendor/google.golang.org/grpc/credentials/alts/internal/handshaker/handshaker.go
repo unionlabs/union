@@ -128,7 +128,7 @@ type altsHandshaker struct {
 // NewClientHandshaker creates a core.Handshaker that performs a client-side
 // ALTS handshake by acting as a proxy between the peer and the ALTS handshaker
 // service in the metadata server.
-func NewClientHandshaker(ctx context.Context, conn *grpc.ClientConn, c net.Conn, opts *ClientHandshakerOptions) (core.Handshaker, error) {
+func NewClientHandshaker(_ context.Context, conn *grpc.ClientConn, c net.Conn, opts *ClientHandshakerOptions) (core.Handshaker, error) {
 	return &altsHandshaker{
 		stream:     nil,
 		conn:       c,
@@ -141,7 +141,7 @@ func NewClientHandshaker(ctx context.Context, conn *grpc.ClientConn, c net.Conn,
 // NewServerHandshaker creates a core.Handshaker that performs a server-side
 // ALTS handshake by acting as a proxy between the peer and the ALTS handshaker
 // service in the metadata server.
-func NewServerHandshaker(ctx context.Context, conn *grpc.ClientConn, c net.Conn, opts *ServerHandshakerOptions) (core.Handshaker, error) {
+func NewServerHandshaker(_ context.Context, conn *grpc.ClientConn, c net.Conn, opts *ServerHandshakerOptions) (core.Handshaker, error) {
 	return &altsHandshaker{
 		stream:     nil,
 		conn:       c,

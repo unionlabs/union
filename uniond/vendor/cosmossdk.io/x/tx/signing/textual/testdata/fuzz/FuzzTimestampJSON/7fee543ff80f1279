@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("[{\"proto\":{\"nAnos\":1000000000}}]")

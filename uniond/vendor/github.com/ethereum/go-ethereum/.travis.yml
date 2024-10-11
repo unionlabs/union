@@ -1,0 +1,177 @@
+language: go
+go_import_path: github.com/ethereum/go-ethereum
+sudo: false
+jobs:
+  allow_failures:
+    - stage: build
+      os: osx
+      env:
+        - azure-osx
+
+  include:
+    # This builder only tests code linters on latest version of Go
+    - stage: lint
+      os: linux
+      dist: bionic
+      go: 1.21.x
+      env:
+        - lint
+      git:
+        submodules: false # avoid cloning ethereum/tests
+      script:
+        - go run build/ci.go lint
+
+    # These builders create the Docker sub-images for multi-arch push and each
+    # will attempt to push the multi-arch image if they are the last builder
+    - stage: build
+      if: type = push
+      os: linux
+      arch: amd64
+      dist: bionic
+      go: 1.21.x
+      env:
+        - docker
+      services:
+        - docker
+      git:
+        submodules: false # avoid cloning ethereum/tests
+      before_install:
+        - export DOCKER_CLI_EXPERIMENTAL=enabled
+      script:
+        - go run build/ci.go docker -image -manifest amd64,arm64 -upload ethereum/client-go
+
+    - stage: build
+      if: type = push
+      os: linux
+      arch: arm64
+      dist: bionic
+      go: 1.21.x
+      env:
+        - docker
+      services:
+        - docker
+      git:
+        submodules: false # avoid cloning ethereum/tests
+      before_install:
+        - export DOCKER_CLI_EXPERIMENTAL=enabled
+      script:
+        - go run build/ci.go docker -image -manifest amd64,arm64 -upload ethereum/client-go
+
+    # This builder does the Linux Azure uploads
+    - stage: build
+      if: type = push
+      os: linux
+      dist: bionic
+      sudo: required
+      go: 1.21.x
+      env:
+        - azure-linux
+      git:
+        submodules: false # avoid cloning ethereum/tests
+      addons:
+        apt:
+          packages:
+            - gcc-multilib
+      script:
+        # Build for the primary platforms that Trusty can manage
+        - go run build/ci.go install -dlgo
+        - go run build/ci.go archive -type tar -signer LINUX_SIGNING_KEY -signify SIGNIFY_KEY -upload gethstore/builds
+        - go run build/ci.go install -dlgo -arch 386
+        - go run build/ci.go archive -arch 386 -type tar -signer LINUX_SIGNING_KEY -signify SIGNIFY_KEY -upload gethstore/builds
+
+        # Switch over GCC to cross compilation (breaks 386, hence why do it here only)
+        - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install gcc-arm-linux-gnueabi libc6-dev-armel-cross gcc-arm-linux-gnueabihf libc6-dev-armhf-cross gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+        - sudo ln -s /usr/include/asm-generic /usr/include/asm
+
+        - GOARM=5 go run build/ci.go install -dlgo -arch arm -cc arm-linux-gnueabi-gcc
+        - GOARM=5 go run build/ci.go archive -arch arm -type tar -signer LINUX_SIGNING_KEY -signify SIGNIFY_KEY -upload gethstore/builds
+        - GOARM=6 go run build/ci.go install -dlgo -arch arm -cc arm-linux-gnueabi-gcc
+        - GOARM=6 go run build/ci.go archive -arch arm -type tar -signer LINUX_SIGNING_KEY -signify SIGNIFY_KEY -upload gethstore/builds
+        - GOARM=7 go run build/ci.go install -dlgo -arch arm -cc arm-linux-gnueabihf-gcc
+        - GOARM=7 go run build/ci.go archive -arch arm -type tar -signer LINUX_SIGNING_KEY -signify SIGNIFY_KEY -upload gethstore/builds
+        - go run build/ci.go install -dlgo -arch arm64 -cc aarch64-linux-gnu-gcc
+        - go run build/ci.go archive -arch arm64 -type tar -signer LINUX_SIGNING_KEY -signify SIGNIFY_KEY -upload gethstore/builds
+
+    # This builder does the OSX Azure uploads
+    - stage: build
+      if: type = push
+      os: osx
+      go: 1.21.x
+      env:
+        - azure-osx
+      git:
+        submodules: false # avoid cloning ethereum/tests
+      script:
+        - go run build/ci.go install -dlgo
+        - go run build/ci.go archive -type tar -signer OSX_SIGNING_KEY -signify SIGNIFY_KEY -upload gethstore/builds
+
+    # These builders run the tests
+    - stage: build
+      os: linux
+      arch: amd64
+      dist: bionic
+      go: 1.21.x
+      script:
+        - travis_wait 30 go run build/ci.go test $TEST_PACKAGES
+
+    - stage: build
+      if: type = pull_request
+      os: linux
+      arch: arm64
+      dist: bionic
+      go: 1.20.x
+      script:
+        - travis_wait 30 go run build/ci.go test $TEST_PACKAGES
+
+    - stage: build
+      os: linux
+      dist: bionic
+      go: 1.20.x
+      script:
+        - travis_wait 30 go run build/ci.go test $TEST_PACKAGES
+
+    # This builder does the Ubuntu PPA nightly uploads
+    - stage: build
+      if: type = cron || (type = push && tag ~= /^v[0-9]/)
+      os: linux
+      dist: bionic
+      go: 1.21.x
+      env:
+        - ubuntu-ppa
+      git:
+        submodules: false # avoid cloning ethereum/tests
+      addons:
+        apt:
+          packages:
+            - devscripts
+            - debhelper
+            - dput
+            - fakeroot
+            - python-bzrlib
+            - python-paramiko
+      script:
+        - echo '|1|7SiYPr9xl3uctzovOTj4gMwAC1M=|t6ReES75Bo/PxlOPJ6/GsGbTrM0= ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA0aKz5UTUndYgIGG7dQBV+HaeuEZJ2xPHo2DS2iSKvUL4xNMSAY4UguNW+pX56nAQmZKIZZ8MaEvSj6zMEDiq6HFfn5JcTlM80UwlnyKe8B8p7Nk06PPQLrnmQt5fh0HmEcZx+JU9TZsfCHPnX7MNz4ELfZE6cFsclClrKim3BHUIGq//t93DllB+h4O9LHjEUsQ1Sr63irDLSutkLJD6RXchjROXkNirlcNVHH/jwLWR5RcYilNX7S5bIkK8NlWPjsn/8Ua5O7I9/YoE97PpO6i73DTGLh5H9JN/SITwCKBkgSDWUt61uPK3Y11Gty7o2lWsBjhBUm2Y38CBsoGmBw==' >> ~/.ssh/known_hosts
+        - go run build/ci.go debsrc -upload ethereum/ethereum -sftp-user geth-ci -signer "Go Ethereum Linux Builder <geth-ci@ethereum.org>"
+
+    # This builder does the Azure archive purges to avoid accumulating junk
+    - stage: build
+      if: type = cron
+      os: linux
+      dist: bionic
+      go: 1.21.x
+      env:
+        - azure-purge
+      git:
+        submodules: false # avoid cloning ethereum/tests
+      script:
+        - go run build/ci.go purge -store gethstore/builds -days 14
+
+    # This builder executes race tests
+    - stage: build
+      if: type = cron
+      os: linux
+      dist: bionic
+      go: 1.21.x
+      script:
+        - travis_wait 30 go run build/ci.go test  -race $TEST_PACKAGES
+

@@ -1,0 +1,16 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["mock.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/time/slots/testing",
+    visibility = ["//visibility:public"],
+    deps = ["//consensus-types/primitives:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["mock_test.go"],
+    embed = [":go_default_library"],
+    deps = ["//time/slots:go_default_library"],
+)

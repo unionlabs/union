@@ -1,0 +1,3213 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/cloud-platform": {
+          "description": "See, edit, configure, and delete your Google Cloud data and see the email address for your Google Account."
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://cloudbuild.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "Cloud Build",
+  "description": "Creates and manages builds on Google Cloud Platform.",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://cloud.google.com/cloud-build/docs/",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "cloudbuild:v2",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://cloudbuild.mtls.googleapis.com/",
+  "name": "cloudbuild",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "projects": {
+      "resources": {
+        "locations": {
+          "methods": {
+            "get": {
+              "description": "Gets information about a location.",
+              "flatPath": "v2/projects/{projectsId}/locations/{locationsId}",
+              "httpMethod": "GET",
+              "id": "cloudbuild.projects.locations.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Resource name for the location.",
+                  "location": "path",
+                  "pattern": "^projects/[^/]+/locations/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v2/{+name}",
+              "response": {
+                "$ref": "Location"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            },
+            "list": {
+              "description": "Lists information about the supported locations for this service.",
+              "flatPath": "v2/projects/{projectsId}/locations",
+              "httpMethod": "GET",
+              "id": "cloudbuild.projects.locations.list",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "filter": {
+                  "description": "A filter to narrow down results to a preferred subset. The filtering language accepts strings like `\"displayName=tokyo\"`, and is documented in more detail in [AIP-160](https://google.aip.dev/160).",
+                  "location": "query",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "The resource that owns the locations collection, if applicable.",
+                  "location": "path",
+                  "pattern": "^projects/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                },
+                "pageSize": {
+                  "description": "The maximum number of results to return. If not set, the service selects a default.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "A page token received from the `next_page_token` field in the response. Send that page token to receive the subsequent page.",
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "v2/{+name}/locations",
+              "response": {
+                "$ref": "ListLocationsResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            }
+          },
+          "resources": {
+            "connections": {
+              "methods": {
+                "create": {
+                  "description": "Creates a Connection.",
+                  "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections",
+                  "httpMethod": "POST",
+                  "id": "cloudbuild.projects.locations.connections.create",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "connectionId": {
+                      "description": "Required. The ID to use for the Connection, which will become the final component of the Connection's resource name. Names must be unique per-project per-location. Allows alphanumeric characters and any of -._~%!$\u0026'()*+,;=@.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. Project and location where the connection will be created. Format: `projects/*/locations/*`.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v2/{+parent}/connections",
+                  "request": {
+                    "$ref": "Connection"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "delete": {
+                  "description": "Deletes a single connection.",
+                  "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}",
+                  "httpMethod": "DELETE",
+                  "id": "cloudbuild.projects.locations.connections.delete",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "etag": {
+                      "description": "The current etag of the connection. If an etag is provided and does not match the current etag of the connection, deletion will be blocked and an ABORTED error will be returned.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Required. The name of the Connection to delete. Format: `projects/*/locations/*/connections/*`.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "validateOnly": {
+                      "description": "If set, validate the request, but do not actually post it.",
+                      "location": "query",
+                      "type": "boolean"
+                    }
+                  },
+                  "path": "v2/{+name}",
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "fetchLinkableRepositories": {
+                  "description": "FetchLinkableRepositories get repositories from SCM that are accessible and could be added to the connection.",
+                  "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}:fetchLinkableRepositories",
+                  "httpMethod": "GET",
+                  "id": "cloudbuild.projects.locations.connections.fetchLinkableRepositories",
+                  "parameterOrder": [
+                    "connection"
+                  ],
+                  "parameters": {
+                    "connection": {
+                      "description": "Required. The name of the Connection. Format: `projects/*/locations/*/connections/*`.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "pageSize": {
+                      "description": "Number of results to return in the list. Default to 20.",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "Page start.",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v2/{+connection}:fetchLinkableRepositories",
+                  "response": {
+                    "$ref": "FetchLinkableRepositoriesResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "get": {
+                  "description": "Gets details of a single connection.",
+                  "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}",
+                  "httpMethod": "GET",
+                  "id": "cloudbuild.projects.locations.connections.get",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. The name of the Connection to retrieve. Format: `projects/*/locations/*/connections/*`.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v2/{+name}",
+                  "response": {
+                    "$ref": "Connection"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "getIamPolicy": {
+                  "description": "Gets the access control policy for a resource. Returns an empty policy if the resource exists and does not have a policy set.",
+                  "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}:getIamPolicy",
+                  "httpMethod": "GET",
+                  "id": "cloudbuild.projects.locations.connections.getIamPolicy",
+                  "parameterOrder": [
+                    "resource"
+                  ],
+                  "parameters": {
+                    "options.requestedPolicyVersion": {
+                      "description": "Optional. The maximum policy version that will be used to format the policy. Valid values are 0, 1, and 3. Requests specifying an invalid value will be rejected. Requests for policies with any conditional role bindings must specify version 3. Policies with no conditional role bindings may specify any valid value or leave the field unset. The policy in the response might use the policy version that you specified, or it might use a lower policy version. For example, if you specify version 3, but the policy has no conditional role bindings, the response uses version 1. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "resource": {
+                      "description": "REQUIRED: The resource for which the policy is being requested. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v2/{+resource}:getIamPolicy",
+                  "response": {
+                    "$ref": "Policy"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "list": {
+                  "description": "Lists Connections in a given project and location.",
+                  "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections",
+                  "httpMethod": "GET",
+                  "id": "cloudbuild.projects.locations.connections.list",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "pageSize": {
+                      "description": "Number of results to return in the list.",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "Page start.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. The parent, which owns this collection of Connections. Format: `projects/*/locations/*`.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v2/{+parent}/connections",
+                  "response": {
+                    "$ref": "ListConnectionsResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "patch": {
+                  "description": "Updates a single connection.",
+                  "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}",
+                  "httpMethod": "PATCH",
+                  "id": "cloudbuild.projects.locations.connections.patch",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "allowMissing": {
+                      "description": "If set to true, and the connection is not found a new connection will be created. In this situation `update_mask` is ignored. The creation will succeed only if the input connection has all the necessary information (e.g a github_config with both user_oauth_token and installation_id properties).",
+                      "location": "query",
+                      "type": "boolean"
+                    },
+                    "etag": {
+                      "description": "The current etag of the connection. If an etag is provided and does not match the current etag of the connection, update will be blocked and an ABORTED error will be returned.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Immutable. The resource name of the connection, in the format `projects/{project}/locations/{location}/connections/{connection_id}`.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "updateMask": {
+                      "description": "The list of fields to be updated.",
+                      "format": "google-fieldmask",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v2/{+name}",
+                  "request": {
+                    "$ref": "Connection"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "processWebhook": {
+                  "description": "ProcessWebhook is called by the external SCM for notifying of events.",
+                  "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections:processWebhook",
+                  "httpMethod": "POST",
+                  "id": "cloudbuild.projects.locations.connections.processWebhook",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "parent": {
+                      "description": "Required. Project and location where the webhook will be received. Format: `projects/*/locations/*`.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    },
+                    "webhookKey": {
+                      "description": "Arbitrary additional key to find the maching repository for a webhook event if needed.",
+                      "location": "query",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v2/{+parent}/connections:processWebhook",
+                  "request": {
+                    "$ref": "HttpBody"
+                  },
+                  "response": {
+                    "$ref": "Empty"
+                  }
+                },
+                "setIamPolicy": {
+                  "description": "Sets the access control policy on the specified resource. Replaces any existing policy. Can return `NOT_FOUND`, `INVALID_ARGUMENT`, and `PERMISSION_DENIED` errors.",
+                  "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}:setIamPolicy",
+                  "httpMethod": "POST",
+                  "id": "cloudbuild.projects.locations.connections.setIamPolicy",
+                  "parameterOrder": [
+                    "resource"
+                  ],
+                  "parameters": {
+                    "resource": {
+                      "description": "REQUIRED: The resource for which the policy is being specified. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v2/{+resource}:setIamPolicy",
+                  "request": {
+                    "$ref": "SetIamPolicyRequest"
+                  },
+                  "response": {
+                    "$ref": "Policy"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "testIamPermissions": {
+                  "description": "Returns permissions that a caller has on the specified resource. If the resource does not exist, this will return an empty set of permissions, not a `NOT_FOUND` error. Note: This operation is designed to be used for building permission-aware UIs and command-line tools, not for authorization checking. This operation may \"fail open\" without warning.",
+                  "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}:testIamPermissions",
+                  "httpMethod": "POST",
+                  "id": "cloudbuild.projects.locations.connections.testIamPermissions",
+                  "parameterOrder": [
+                    "resource"
+                  ],
+                  "parameters": {
+                    "resource": {
+                      "description": "REQUIRED: The resource for which the policy detail is being requested. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v2/{+resource}:testIamPermissions",
+                  "request": {
+                    "$ref": "TestIamPermissionsRequest"
+                  },
+                  "response": {
+                    "$ref": "TestIamPermissionsResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                }
+              },
+              "resources": {
+                "repositories": {
+                  "methods": {
+                    "accessReadToken": {
+                      "description": "Fetches read token of a given repository.",
+                      "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/repositories/{repositoriesId}:accessReadToken",
+                      "httpMethod": "POST",
+                      "id": "cloudbuild.projects.locations.connections.repositories.accessReadToken",
+                      "parameterOrder": [
+                        "repository"
+                      ],
+                      "parameters": {
+                        "repository": {
+                          "description": "Required. The resource name of the repository in the format `projects/*/locations/*/connections/*/repositories/*`.",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+/repositories/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v2/{+repository}:accessReadToken",
+                      "request": {
+                        "$ref": "FetchReadTokenRequest"
+                      },
+                      "response": {
+                        "$ref": "FetchReadTokenResponse"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "accessReadWriteToken": {
+                      "description": "Fetches read/write token of a given repository.",
+                      "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/repositories/{repositoriesId}:accessReadWriteToken",
+                      "httpMethod": "POST",
+                      "id": "cloudbuild.projects.locations.connections.repositories.accessReadWriteToken",
+                      "parameterOrder": [
+                        "repository"
+                      ],
+                      "parameters": {
+                        "repository": {
+                          "description": "Required. The resource name of the repository in the format `projects/*/locations/*/connections/*/repositories/*`.",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+/repositories/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v2/{+repository}:accessReadWriteToken",
+                      "request": {
+                        "$ref": "FetchReadWriteTokenRequest"
+                      },
+                      "response": {
+                        "$ref": "FetchReadWriteTokenResponse"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "batchCreate": {
+                      "description": "Creates multiple repositories inside a connection.",
+                      "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/repositories:batchCreate",
+                      "httpMethod": "POST",
+                      "id": "cloudbuild.projects.locations.connections.repositories.batchCreate",
+                      "parameterOrder": [
+                        "parent"
+                      ],
+                      "parameters": {
+                        "parent": {
+                          "description": "Required. The connection to contain all the repositories being created. Format: projects/*/locations/*/connections/* The parent field in the CreateRepositoryRequest messages must either be empty or match this field.",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v2/{+parent}/repositories:batchCreate",
+                      "request": {
+                        "$ref": "BatchCreateRepositoriesRequest"
+                      },
+                      "response": {
+                        "$ref": "Operation"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "create": {
+                      "description": "Creates a Repository.",
+                      "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/repositories",
+                      "httpMethod": "POST",
+                      "id": "cloudbuild.projects.locations.connections.repositories.create",
+                      "parameterOrder": [
+                        "parent"
+                      ],
+                      "parameters": {
+                        "parent": {
+                          "description": "Required. The connection to contain the repository. If the request is part of a BatchCreateRepositoriesRequest, this field should be empty or match the parent specified there.",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        },
+                        "repositoryId": {
+                          "description": "Required. The ID to use for the repository, which will become the final component of the repository's resource name. This ID should be unique in the connection. Allows alphanumeric characters and any of -._~%!$\u0026'()*+,;=@.",
+                          "location": "query",
+                          "type": "string"
+                        }
+                      },
+                      "path": "v2/{+parent}/repositories",
+                      "request": {
+                        "$ref": "Repository"
+                      },
+                      "response": {
+                        "$ref": "Operation"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "delete": {
+                      "description": "Deletes a single repository.",
+                      "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/repositories/{repositoriesId}",
+                      "httpMethod": "DELETE",
+                      "id": "cloudbuild.projects.locations.connections.repositories.delete",
+                      "parameterOrder": [
+                        "name"
+                      ],
+                      "parameters": {
+                        "etag": {
+                          "description": "The current etag of the repository. If an etag is provided and does not match the current etag of the repository, deletion will be blocked and an ABORTED error will be returned.",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "name": {
+                          "description": "Required. The name of the Repository to delete. Format: `projects/*/locations/*/connections/*/repositories/*`.",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+/repositories/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        },
+                        "validateOnly": {
+                          "description": "If set, validate the request, but do not actually post it.",
+                          "location": "query",
+                          "type": "boolean"
+                        }
+                      },
+                      "path": "v2/{+name}",
+                      "response": {
+                        "$ref": "Operation"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "fetchGitRefs": {
+                      "description": "Fetch the list of branches or tags for a given repository.",
+                      "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/repositories/{repositoriesId}:fetchGitRefs",
+                      "httpMethod": "GET",
+                      "id": "cloudbuild.projects.locations.connections.repositories.fetchGitRefs",
+                      "parameterOrder": [
+                        "repository"
+                      ],
+                      "parameters": {
+                        "pageSize": {
+                          "description": "Optional. Number of results to return in the list. Default to 20.",
+                          "format": "int32",
+                          "location": "query",
+                          "type": "integer"
+                        },
+                        "pageToken": {
+                          "description": "Optional. Page start.",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "refType": {
+                          "description": "Type of refs to fetch",
+                          "enum": [
+                            "REF_TYPE_UNSPECIFIED",
+                            "TAG",
+                            "BRANCH"
+                          ],
+                          "enumDescriptions": [
+                            "No type specified.",
+                            "To fetch tags.",
+                            "To fetch branches."
+                          ],
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "repository": {
+                          "description": "Required. The resource name of the repository in the format `projects/*/locations/*/connections/*/repositories/*`.",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+/repositories/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v2/{+repository}:fetchGitRefs",
+                      "response": {
+                        "$ref": "FetchGitRefsResponse"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "get": {
+                      "description": "Gets details of a single repository.",
+                      "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/repositories/{repositoriesId}",
+                      "httpMethod": "GET",
+                      "id": "cloudbuild.projects.locations.connections.repositories.get",
+                      "parameterOrder": [
+                        "name"
+                      ],
+                      "parameters": {
+                        "name": {
+                          "description": "Required. The name of the Repository to retrieve. Format: `projects/*/locations/*/connections/*/repositories/*`.",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+/repositories/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v2/{+name}",
+                      "response": {
+                        "$ref": "Repository"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "list": {
+                      "description": "Lists Repositories in a given connection.",
+                      "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/connections/{connectionsId}/repositories",
+                      "httpMethod": "GET",
+                      "id": "cloudbuild.projects.locations.connections.repositories.list",
+                      "parameterOrder": [
+                        "parent"
+                      ],
+                      "parameters": {
+                        "filter": {
+                          "description": "A filter expression that filters resources listed in the response. Expressions must follow API improvement proposal [AIP-160](https://google.aip.dev/160). e.g. `remote_uri:\"https://github.com*\"`.",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "pageSize": {
+                          "description": "Number of results to return in the list.",
+                          "format": "int32",
+                          "location": "query",
+                          "type": "integer"
+                        },
+                        "pageToken": {
+                          "description": "Page start.",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "parent": {
+                          "description": "Required. The parent, which owns this collection of Repositories. Format: `projects/*/locations/*/connections/*`.",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/connections/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v2/{+parent}/repositories",
+                      "response": {
+                        "$ref": "ListRepositoriesResponse"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "operations": {
+              "methods": {
+                "cancel": {
+                  "description": "Starts asynchronous cancellation on a long-running operation. The server makes a best effort to cancel the operation, but success is not guaranteed. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`. Clients can use Operations.GetOperation or other methods to check whether the cancellation succeeded or whether the operation completed despite cancellation. On successful cancellation, the operation is not deleted; instead, it becomes an operation with an Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+                  "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}:cancel",
+                  "httpMethod": "POST",
+                  "id": "cloudbuild.projects.locations.operations.cancel",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "The name of the operation resource to be cancelled.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v2/{+name}:cancel",
+                  "request": {
+                    "$ref": "CancelOperationRequest"
+                  },
+                  "response": {
+                    "$ref": "Empty"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "get": {
+                  "description": "Gets the latest state of a long-running operation. Clients can use this method to poll the operation result at intervals as recommended by the API service.",
+                  "flatPath": "v2/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}",
+                  "httpMethod": "GET",
+                  "id": "cloudbuild.projects.locations.operations.get",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "The name of the operation resource.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/operations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v2/{+name}",
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20240616",
+  "rootUrl": "https://cloudbuild.googleapis.com/",
+  "schemas": {
+    "AuditConfig": {
+      "description": "Specifies the audit configuration for a service. The configuration determines which permission types are logged, and what identities, if any, are exempted from logging. An AuditConfig must have one or more AuditLogConfigs. If there are AuditConfigs for both `allServices` and a specific service, the union of the two AuditConfigs is used for that service: the log_types specified in each AuditConfig are enabled, and the exempted_members in each AuditLogConfig are exempted. Example Policy with multiple AuditConfigs: { \"audit_configs\": [ { \"service\": \"allServices\", \"audit_log_configs\": [ { \"log_type\": \"DATA_READ\", \"exempted_members\": [ \"user:jose@example.com\" ] }, { \"log_type\": \"DATA_WRITE\" }, { \"log_type\": \"ADMIN_READ\" } ] }, { \"service\": \"sampleservice.googleapis.com\", \"audit_log_configs\": [ { \"log_type\": \"DATA_READ\" }, { \"log_type\": \"DATA_WRITE\", \"exempted_members\": [ \"user:aliya@example.com\" ] } ] } ] } For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts `jose@example.com` from DATA_READ logging, and `aliya@example.com` from DATA_WRITE logging.",
+      "id": "AuditConfig",
+      "properties": {
+        "auditLogConfigs": {
+          "description": "The configuration for logging of each type of permission.",
+          "items": {
+            "$ref": "AuditLogConfig"
+          },
+          "type": "array"
+        },
+        "service": {
+          "description": "Specifies a service that will be enabled for audit logging. For example, `storage.googleapis.com`, `cloudsql.googleapis.com`. `allServices` is a special value that covers all services.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AuditLogConfig": {
+      "description": "Provides the configuration for logging a type of permissions. Example: { \"audit_log_configs\": [ { \"log_type\": \"DATA_READ\", \"exempted_members\": [ \"user:jose@example.com\" ] }, { \"log_type\": \"DATA_WRITE\" } ] } This enables 'DATA_READ' and 'DATA_WRITE' logging, while exempting jose@example.com from DATA_READ logging.",
+      "id": "AuditLogConfig",
+      "properties": {
+        "exemptedMembers": {
+          "description": "Specifies the identities that do not cause logging for this type of permission. Follows the same format of Binding.members.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "logType": {
+          "description": "The log type that this config enables.",
+          "enum": [
+            "LOG_TYPE_UNSPECIFIED",
+            "ADMIN_READ",
+            "DATA_WRITE",
+            "DATA_READ"
+          ],
+          "enumDescriptions": [
+            "Default case. Should never be this.",
+            "Admin reads. Example: CloudIAM getIamPolicy",
+            "Data writes. Example: CloudSQL Users create",
+            "Data reads. Example: CloudSQL Users list"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BatchCreateRepositoriesRequest": {
+      "description": "Message for creating repositoritories in batch.",
+      "id": "BatchCreateRepositoriesRequest",
+      "properties": {
+        "requests": {
+          "description": "Required. The request messages specifying the repositories to create.",
+          "items": {
+            "$ref": "CreateRepositoryRequest"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "BatchCreateRepositoriesResponse": {
+      "description": "Message for response of creating repositories in batch.",
+      "id": "BatchCreateRepositoriesResponse",
+      "properties": {
+        "repositories": {
+          "description": "Repository resources created.",
+          "items": {
+            "$ref": "Repository"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Binding": {
+      "description": "Associates `members`, or principals, with a `role`.",
+      "id": "Binding",
+      "properties": {
+        "condition": {
+          "$ref": "Expr",
+          "description": "The condition that is associated with this binding. If the condition evaluates to `true`, then this binding applies to the current request. If the condition evaluates to `false`, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies)."
+        },
+        "members": {
+          "description": "Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. Does not include identities that come from external identity providers (IdPs) through identity federation. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a Google service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `serviceAccount:{projectid}.svc.id.goog[{namespace}/{kubernetes-sa}]`: An identifier for a [Kubernetes service account](https://cloud.google.com/kubernetes-engine/docs/how-to/kubernetes-service-accounts). For example, `my-project.svc.id.goog[my-namespace/my-kubernetes-sa]`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`. * `principal://iam.googleapis.com/locations/global/workforcePools/{pool_id}/subject/{subject_attribute_value}`: A single identity in a workforce identity pool. * `principalSet://iam.googleapis.com/locations/global/workforcePools/{pool_id}/group/{group_id}`: All workforce identities in a group. * `principalSet://iam.googleapis.com/locations/global/workforcePools/{pool_id}/attribute.{attribute_name}/{attribute_value}`: All workforce identities with a specific attribute value. * `principalSet://iam.googleapis.com/locations/global/workforcePools/{pool_id}/*`: All identities in a workforce identity pool. * `principal://iam.googleapis.com/projects/{project_number}/locations/global/workloadIdentityPools/{pool_id}/subject/{subject_attribute_value}`: A single identity in a workload identity pool. * `principalSet://iam.googleapis.com/projects/{project_number}/locations/global/workloadIdentityPools/{pool_id}/group/{group_id}`: A workload identity pool group. * `principalSet://iam.googleapis.com/projects/{project_number}/locations/global/workloadIdentityPools/{pool_id}/attribute.{attribute_name}/{attribute_value}`: All identities in a workload identity pool with a certain attribute. * `principalSet://iam.googleapis.com/projects/{project_number}/locations/global/workloadIdentityPools/{pool_id}/*`: All identities in a workload identity pool. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding. * `deleted:principal://iam.googleapis.com/locations/global/workforcePools/{pool_id}/subject/{subject_attribute_value}`: Deleted single identity in a workforce identity pool. For example, `deleted:principal://iam.googleapis.com/locations/global/workforcePools/my-pool-id/subject/my-subject-attribute-value`.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "role": {
+          "description": "Role that is assigned to the list of `members`, or principals. For example, `roles/viewer`, `roles/editor`, or `roles/owner`. For an overview of the IAM roles and permissions, see the [IAM documentation](https://cloud.google.com/iam/docs/roles-overview). For a list of the available pre-defined roles, see [here](https://cloud.google.com/iam/docs/understanding-roles).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BitbucketCloudConfig": {
+      "description": "Configuration for connections to Bitbucket Cloud.",
+      "id": "BitbucketCloudConfig",
+      "properties": {
+        "authorizerCredential": {
+          "$ref": "UserCredential",
+          "description": "Required. An access token with the `webhook`, `repository`, `repository:admin` and `pullrequest` scope access. It can be either a workspace, project or repository access token. It's recommended to use a system account to generate these credentials."
+        },
+        "readAuthorizerCredential": {
+          "$ref": "UserCredential",
+          "description": "Required. An access token with the `repository` access. It can be either a workspace, project or repository access token. It's recommended to use a system account to generate the credentials."
+        },
+        "webhookSecretSecretVersion": {
+          "description": "Required. SecretManager resource containing the webhook secret used to verify webhook events, formatted as `projects/*/secrets/*/versions/*`.",
+          "type": "string"
+        },
+        "workspace": {
+          "description": "Required. The Bitbucket Cloud Workspace ID to be connected to Google Cloud Platform.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BitbucketDataCenterConfig": {
+      "description": "Configuration for connections to Bitbucket Data Center.",
+      "id": "BitbucketDataCenterConfig",
+      "properties": {
+        "authorizerCredential": {
+          "$ref": "UserCredential",
+          "description": "Required. A http access token with the `REPO_ADMIN` scope access."
+        },
+        "hostUri": {
+          "description": "Required. The URI of the Bitbucket Data Center instance or cluster this connection is for.",
+          "type": "string"
+        },
+        "readAuthorizerCredential": {
+          "$ref": "UserCredential",
+          "description": "Required. A http access token with the `REPO_READ` access."
+        },
+        "serverVersion": {
+          "description": "Output only. Version of the Bitbucket Data Center running on the `host_uri`.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "serviceDirectoryConfig": {
+          "$ref": "GoogleDevtoolsCloudbuildV2ServiceDirectoryConfig",
+          "description": "Optional. Configuration for using Service Directory to privately connect to a Bitbucket Data Center. This should only be set if the Bitbucket Data Center is hosted on-premises and not reachable by public internet. If this field is left empty, calls to the Bitbucket Data Center will be made over the public internet."
+        },
+        "sslCa": {
+          "description": "Optional. SSL certificate to use for requests to the Bitbucket Data Center.",
+          "type": "string"
+        },
+        "webhookSecretSecretVersion": {
+          "description": "Required. Immutable. SecretManager resource containing the webhook secret used to verify webhook events, formatted as `projects/*/secrets/*/versions/*`.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CancelOperationRequest": {
+      "description": "The request message for Operations.CancelOperation.",
+      "id": "CancelOperationRequest",
+      "properties": {},
+      "type": "object"
+    },
+    "Capabilities": {
+      "description": "Capabilities adds and removes POSIX capabilities from running containers.",
+      "id": "Capabilities",
+      "properties": {
+        "add": {
+          "description": "Optional. Added capabilities +optional",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "drop": {
+          "description": "Optional. Removed capabilities +optional",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ChildStatusReference": {
+      "description": "ChildStatusReference is used to point to the statuses of individual TaskRuns and Runs within this PipelineRun.",
+      "id": "ChildStatusReference",
+      "properties": {
+        "name": {
+          "description": "Name is the name of the TaskRun or Run this is referencing.",
+          "type": "string"
+        },
+        "pipelineTaskName": {
+          "description": "PipelineTaskName is the name of the PipelineTask this is referencing.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Output only. Type of the child reference.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "TASK_RUN"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "TaskRun."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "whenExpressions": {
+          "description": "WhenExpressions is the list of checks guarding the execution of the PipelineTask",
+          "items": {
+            "$ref": "WhenExpression"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Connection": {
+      "description": "A connection to a SCM like GitHub, GitHub Enterprise, Bitbucket Data Center, Bitbucket Cloud or GitLab.",
+      "id": "Connection",
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. Allows clients to store small amounts of arbitrary data.",
+          "type": "object"
+        },
+        "bitbucketCloudConfig": {
+          "$ref": "BitbucketCloudConfig",
+          "description": "Configuration for connections to Bitbucket Cloud."
+        },
+        "bitbucketDataCenterConfig": {
+          "$ref": "BitbucketDataCenterConfig",
+          "description": "Configuration for connections to Bitbucket Data Center."
+        },
+        "createTime": {
+          "description": "Output only. Server assigned timestamp for when the connection was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "disabled": {
+          "description": "Optional. If disabled is set to true, functionality is disabled for this connection. Repository based API methods and webhooks processing for repositories in this connection will be disabled.",
+          "type": "boolean"
+        },
+        "etag": {
+          "description": "This checksum is computed by the server based on the value of other fields, and may be sent on update and delete requests to ensure the client has an up-to-date value before proceeding.",
+          "type": "string"
+        },
+        "githubConfig": {
+          "$ref": "GitHubConfig",
+          "description": "Configuration for connections to github.com."
+        },
+        "githubEnterpriseConfig": {
+          "$ref": "GoogleDevtoolsCloudbuildV2GitHubEnterpriseConfig",
+          "description": "Configuration for connections to an instance of GitHub Enterprise."
+        },
+        "gitlabConfig": {
+          "$ref": "GoogleDevtoolsCloudbuildV2GitLabConfig",
+          "description": "Configuration for connections to gitlab.com or an instance of GitLab Enterprise."
+        },
+        "installationState": {
+          "$ref": "InstallationState",
+          "description": "Output only. Installation state of the Connection.",
+          "readOnly": true
+        },
+        "name": {
+          "description": "Immutable. The resource name of the connection, in the format `projects/{project}/locations/{location}/connections/{connection_id}`.",
+          "type": "string"
+        },
+        "reconciling": {
+          "description": "Output only. Set to true when the connection is being set up or updated in the background.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "updateTime": {
+          "description": "Output only. Server assigned timestamp for when the connection was updated.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CreateRepositoryRequest": {
+      "description": "Message for creating a Repository.",
+      "id": "CreateRepositoryRequest",
+      "properties": {
+        "parent": {
+          "description": "Required. The connection to contain the repository. If the request is part of a BatchCreateRepositoriesRequest, this field should be empty or match the parent specified there.",
+          "type": "string"
+        },
+        "repository": {
+          "$ref": "Repository",
+          "description": "Required. The repository to create."
+        },
+        "repositoryId": {
+          "description": "Required. The ID to use for the repository, which will become the final component of the repository's resource name. This ID should be unique in the connection. Allows alphanumeric characters and any of -._~%!$\u0026'()*+,;=@.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "EmbeddedTask": {
+      "description": "EmbeddedTask defines a Task that is embedded in a Pipeline.",
+      "id": "EmbeddedTask",
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "User annotations. See https://google.aip.dev/128#annotations",
+          "type": "object"
+        },
+        "taskSpec": {
+          "$ref": "TaskSpec",
+          "description": "Spec to instantiate this TaskRun."
+        }
+      },
+      "type": "object"
+    },
+    "Empty": {
+      "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); }",
+      "id": "Empty",
+      "properties": {},
+      "type": "object"
+    },
+    "EmptyDirVolumeSource": {
+      "description": "Represents an empty Volume source.",
+      "id": "EmptyDirVolumeSource",
+      "properties": {},
+      "type": "object"
+    },
+    "EnvVar": {
+      "description": "Environment variable.",
+      "id": "EnvVar",
+      "properties": {
+        "name": {
+          "description": "Name of the environment variable.",
+          "type": "string"
+        },
+        "value": {
+          "description": "Value of the environment variable.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ExecAction": {
+      "description": "ExecAction describes a \"run in container\" action.",
+      "id": "ExecAction",
+      "properties": {
+        "command": {
+          "description": "Optional. Command is the command line to execute inside the container, the working directory for the command is root ('/') in the container's filesystem. The command is simply exec'd, it is not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use a shell, you need to explicitly call out to that shell. Exit status of 0 is treated as live/healthy and non-zero is unhealthy. +optional",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Expr": {
+      "description": "Represents a textual expression in the Common Expression Language (CEL) syntax. CEL is a C-like expression language. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec. Example (Comparison): title: \"Summary size limit\" description: \"Determines if a summary is less than 100 chars\" expression: \"document.summary.size() \u003c 100\" Example (Equality): title: \"Requestor is owner\" description: \"Determines if requestor is the document owner\" expression: \"document.owner == request.auth.claims.email\" Example (Logic): title: \"Public documents\" description: \"Determine whether the document should be publicly visible\" expression: \"document.type != 'private' \u0026\u0026 document.type != 'internal'\" Example (Data Manipulation): title: \"Notification string\" description: \"Create a notification string with a timestamp.\" expression: \"'New message received at ' + string(document.create_time)\" The exact variables and functions that may be referenced within an expression are determined by the service that evaluates it. See the service documentation for additional information.",
+      "id": "Expr",
+      "properties": {
+        "description": {
+          "description": "Optional. Description of the expression. This is a longer text which describes the expression, e.g. when hovered over it in a UI.",
+          "type": "string"
+        },
+        "expression": {
+          "description": "Textual representation of an expression in Common Expression Language syntax.",
+          "type": "string"
+        },
+        "location": {
+          "description": "Optional. String indicating the location of the expression for error reporting, e.g. a file name and a position in the file.",
+          "type": "string"
+        },
+        "title": {
+          "description": "Optional. Title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "FetchGitRefsResponse": {
+      "description": "Response for fetching git refs",
+      "id": "FetchGitRefsResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token identifying a page of results the server should return.",
+          "type": "string"
+        },
+        "refNames": {
+          "description": "Name of the refs fetched.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "FetchLinkableRepositoriesResponse": {
+      "description": "Response message for FetchLinkableRepositories.",
+      "id": "FetchLinkableRepositoriesResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token identifying a page of results the server should return.",
+          "type": "string"
+        },
+        "repositories": {
+          "description": "repositories ready to be created.",
+          "items": {
+            "$ref": "Repository"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "FetchReadTokenRequest": {
+      "description": "Message for fetching SCM read token.",
+      "id": "FetchReadTokenRequest",
+      "properties": {},
+      "type": "object"
+    },
+    "FetchReadTokenResponse": {
+      "description": "Message for responding to get read token.",
+      "id": "FetchReadTokenResponse",
+      "properties": {
+        "expirationTime": {
+          "description": "Expiration timestamp. Can be empty if unknown or non-expiring.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "token": {
+          "description": "The token content.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "FetchReadWriteTokenRequest": {
+      "description": "Message for fetching SCM read/write token.",
+      "id": "FetchReadWriteTokenRequest",
+      "properties": {},
+      "type": "object"
+    },
+    "FetchReadWriteTokenResponse": {
+      "description": "Message for responding to get read/write token.",
+      "id": "FetchReadWriteTokenResponse",
+      "properties": {
+        "expirationTime": {
+          "description": "Expiration timestamp. Can be empty if unknown or non-expiring.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "token": {
+          "description": "The token content.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GitHubConfig": {
+      "description": "Configuration for connections to github.com.",
+      "id": "GitHubConfig",
+      "properties": {
+        "appInstallationId": {
+          "description": "Optional. GitHub App installation id.",
+          "format": "int64",
+          "type": "string"
+        },
+        "authorizerCredential": {
+          "$ref": "OAuthCredential",
+          "description": "Optional. OAuth credential of the account that authorized the Cloud Build GitHub App. It is recommended to use a robot account instead of a human user account. The OAuth token must be tied to the Cloud Build GitHub App."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV2Condition": {
+      "description": "Conditions defines a readiness condition for a Knative resource.",
+      "id": "GoogleDevtoolsCloudbuildV2Condition",
+      "properties": {
+        "lastTransitionTime": {
+          "description": "LastTransitionTime is the last time the condition transitioned from one status to another.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "message": {
+          "description": "A human readable message indicating details about the transition.",
+          "type": "string"
+        },
+        "reason": {
+          "description": "The reason for the condition's last transition.",
+          "type": "string"
+        },
+        "severity": {
+          "description": "Severity with which to treat failures of this type of condition.",
+          "enum": [
+            "SEVERITY_UNSPECIFIED",
+            "WARNING",
+            "INFO"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "Severity is warning.",
+            "Severity is informational only."
+          ],
+          "type": "string"
+        },
+        "status": {
+          "description": "Status of the condition.",
+          "enum": [
+            "UNKNOWN",
+            "TRUE",
+            "FALSE"
+          ],
+          "enumDescriptions": [
+            "Default enum type indicating execution is still ongoing.",
+            "Success",
+            "Failure"
+          ],
+          "type": "string"
+        },
+        "type": {
+          "description": "Type of condition.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV2GitHubEnterpriseConfig": {
+      "description": "Configuration for connections to an instance of GitHub Enterprise.",
+      "id": "GoogleDevtoolsCloudbuildV2GitHubEnterpriseConfig",
+      "properties": {
+        "apiKey": {
+          "description": "Required. API Key used for authentication of webhook events.",
+          "type": "string"
+        },
+        "appId": {
+          "description": "Optional. Id of the GitHub App created from the manifest.",
+          "format": "int64",
+          "type": "string"
+        },
+        "appInstallationId": {
+          "description": "Optional. ID of the installation of the GitHub App.",
+          "format": "int64",
+          "type": "string"
+        },
+        "appSlug": {
+          "description": "Optional. The URL-friendly name of the GitHub App.",
+          "type": "string"
+        },
+        "hostUri": {
+          "description": "Required. The URI of the GitHub Enterprise host this connection is for.",
+          "type": "string"
+        },
+        "privateKeySecretVersion": {
+          "description": "Optional. SecretManager resource containing the private key of the GitHub App, formatted as `projects/*/secrets/*/versions/*`.",
+          "type": "string"
+        },
+        "serverVersion": {
+          "description": "Output only. GitHub Enterprise version installed at the host_uri.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "serviceDirectoryConfig": {
+          "$ref": "GoogleDevtoolsCloudbuildV2ServiceDirectoryConfig",
+          "description": "Optional. Configuration for using Service Directory to privately connect to a GitHub Enterprise server. This should only be set if the GitHub Enterprise server is hosted on-premises and not reachable by public internet. If this field is left empty, calls to the GitHub Enterprise server will be made over the public internet."
+        },
+        "sslCa": {
+          "description": "Optional. SSL certificate to use for requests to GitHub Enterprise.",
+          "type": "string"
+        },
+        "webhookSecretSecretVersion": {
+          "description": "Optional. SecretManager resource containing the webhook secret of the GitHub App, formatted as `projects/*/secrets/*/versions/*`.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV2GitLabConfig": {
+      "description": "Configuration for connections to gitlab.com or an instance of GitLab Enterprise.",
+      "id": "GoogleDevtoolsCloudbuildV2GitLabConfig",
+      "properties": {
+        "authorizerCredential": {
+          "$ref": "UserCredential",
+          "description": "Required. A GitLab personal access token with the `api` scope access."
+        },
+        "hostUri": {
+          "description": "Optional. The URI of the GitLab Enterprise host this connection is for. If not specified, the default value is https://gitlab.com.",
+          "type": "string"
+        },
+        "readAuthorizerCredential": {
+          "$ref": "UserCredential",
+          "description": "Required. A GitLab personal access token with the minimum `read_api` scope access."
+        },
+        "serverVersion": {
+          "description": "Output only. Version of the GitLab Enterprise server running on the `host_uri`.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "serviceDirectoryConfig": {
+          "$ref": "GoogleDevtoolsCloudbuildV2ServiceDirectoryConfig",
+          "description": "Optional. Configuration for using Service Directory to privately connect to a GitLab Enterprise server. This should only be set if the GitLab Enterprise server is hosted on-premises and not reachable by public internet. If this field is left empty, calls to the GitLab Enterprise server will be made over the public internet."
+        },
+        "sslCa": {
+          "description": "Optional. SSL certificate to use for requests to GitLab Enterprise.",
+          "type": "string"
+        },
+        "webhookSecretSecretVersion": {
+          "description": "Required. Immutable. SecretManager resource containing the webhook secret of a GitLab Enterprise project, formatted as `projects/*/secrets/*/versions/*`.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV2OperationMetadata": {
+      "description": "Represents the metadata of the long-running operation.",
+      "id": "GoogleDevtoolsCloudbuildV2OperationMetadata",
+      "properties": {
+        "apiVersion": {
+          "description": "Output only. API version used to start the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "createTime": {
+          "description": "Output only. The time the operation was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "endTime": {
+          "description": "Output only. The time the operation finished running.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "requestedCancellation": {
+          "description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have successfully been cancelled have Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "statusMessage": {
+          "description": "Output only. Human-readable status of the operation, if any.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "target": {
+          "description": "Output only. Server-defined resource path for the target of the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "verb": {
+          "description": "Output only. Name of the verb executed by the operation.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV2ServiceDirectoryConfig": {
+      "description": "ServiceDirectoryConfig represents Service Directory configuration for a connection.",
+      "id": "GoogleDevtoolsCloudbuildV2ServiceDirectoryConfig",
+      "properties": {
+        "service": {
+          "description": "Required. The Service Directory service name. Format: projects/{project}/locations/{location}/namespaces/{namespace}/services/{service}.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "HttpBody": {
+      "description": "Message that represents an arbitrary HTTP body. It should only be used for payload formats that can't be represented as JSON, such as raw binary or an HTML page. This message can be used both in streaming and non-streaming API methods in the request as well as the response. It can be used as a top-level request field, which is convenient if one wants to extract parameters from either the URL or HTTP template into the request fields and also want access to the raw HTTP body. Example: message GetResourceRequest { // A unique request id. string request_id = 1; // The raw HTTP body is bound to this field. google.api.HttpBody http_body = 2; } service ResourceService { rpc GetResource(GetResourceRequest) returns (google.api.HttpBody); rpc UpdateResource(google.api.HttpBody) returns (google.protobuf.Empty); } Example with streaming methods: service CaldavService { rpc GetCalendar(stream google.api.HttpBody) returns (stream google.api.HttpBody); rpc UpdateCalendar(stream google.api.HttpBody) returns (stream google.api.HttpBody); } Use of this type only changes how the request and response bodies are handled, all other features will continue to work unchanged.",
+      "id": "HttpBody",
+      "properties": {
+        "contentType": {
+          "description": "The HTTP Content-Type header value specifying the content type of the body.",
+          "type": "string"
+        },
+        "data": {
+          "description": "The HTTP request/response body as raw binary.",
+          "format": "byte",
+          "type": "string"
+        },
+        "extensions": {
+          "description": "Application specific response metadata. Must be set in the first response for streaming APIs.",
+          "items": {
+            "additionalProperties": {
+              "description": "Properties of the object. Contains field @type with type URL.",
+              "type": "any"
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "InstallationState": {
+      "description": "Describes stage and necessary actions to be taken by the user to complete the installation. Used for GitHub and GitHub Enterprise based connections.",
+      "id": "InstallationState",
+      "properties": {
+        "actionUri": {
+          "description": "Output only. Link to follow for next action. Empty string if the installation is already complete.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "message": {
+          "description": "Output only. Message of what the user should do next to continue the installation. Empty string if the installation is already complete.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "stage": {
+          "description": "Output only. Current step of the installation process.",
+          "enum": [
+            "STAGE_UNSPECIFIED",
+            "PENDING_CREATE_APP",
+            "PENDING_USER_OAUTH",
+            "PENDING_INSTALL_APP",
+            "COMPLETE"
+          ],
+          "enumDescriptions": [
+            "No stage specified.",
+            "Only for GitHub Enterprise. An App creation has been requested. The user needs to confirm the creation in their GitHub enterprise host.",
+            "User needs to authorize the GitHub (or Enterprise) App via OAuth.",
+            "User needs to follow the link to install the GitHub (or Enterprise) App.",
+            "Installation process has been completed."
+          ],
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListConnectionsResponse": {
+      "description": "Message for response to listing Connections.",
+      "id": "ListConnectionsResponse",
+      "properties": {
+        "connections": {
+          "description": "The list of Connections.",
+          "items": {
+            "$ref": "Connection"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token identifying a page of results the server should return.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListLocationsResponse": {
+      "description": "The response message for Locations.ListLocations.",
+      "id": "ListLocationsResponse",
+      "properties": {
+        "locations": {
+          "description": "A list of locations that matches the specified filter in the request.",
+          "items": {
+            "$ref": "Location"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "The standard List next-page token.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListRepositoriesResponse": {
+      "description": "Message for response to listing Repositories.",
+      "id": "ListRepositoriesResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token identifying a page of results the server should return.",
+          "type": "string"
+        },
+        "repositories": {
+          "description": "The list of Repositories.",
+          "items": {
+            "$ref": "Repository"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Location": {
+      "description": "A resource that represents a Google Cloud location.",
+      "id": "Location",
+      "properties": {
+        "displayName": {
+          "description": "The friendly name for this location, typically a nearby city name. For example, \"Tokyo\".",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Cross-service attributes for the location. For example {\"cloud.googleapis.com/region\": \"us-east1\"}",
+          "type": "object"
+        },
+        "locationId": {
+          "description": "The canonical id for this location. For example: `\"us-east1\"`.",
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "Service-specific metadata. For example the available capacity at the given location.",
+          "type": "object"
+        },
+        "name": {
+          "description": "Resource name for the location, which may vary between implementations. For example: `\"projects/example-project/locations/us-east1\"`",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "OAuthCredential": {
+      "description": "Represents an OAuth token of the account that authorized the Connection, and associated metadata.",
+      "id": "OAuthCredential",
+      "properties": {
+        "oauthTokenSecretVersion": {
+          "description": "Optional. A SecretManager resource containing the OAuth token that authorizes the Cloud Build connection. Format: `projects/*/secrets/*/versions/*`.",
+          "type": "string"
+        },
+        "username": {
+          "description": "Output only. The username associated to this token.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Operation": {
+      "description": "This resource represents a long-running operation that is the result of a network API call.",
+      "id": "Operation",
+      "properties": {
+        "done": {
+          "description": "If the value is `false`, it means the operation is still in progress. If `true`, the operation is completed, and either `error` or `response` is available.",
+          "type": "boolean"
+        },
+        "error": {
+          "$ref": "Status",
+          "description": "The error result of the operation in case of failure or cancellation."
+        },
+        "metadata": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "Service-specific metadata associated with the operation. It typically contains progress information and common metadata such as create time. Some services might not provide such metadata. Any method that returns a long-running operation should document the metadata type, if any.",
+          "type": "object"
+        },
+        "name": {
+          "description": "The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.",
+          "type": "string"
+        },
+        "response": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "OperationMetadata": {
+      "description": "Represents the metadata of the long-running operation.",
+      "id": "OperationMetadata",
+      "properties": {
+        "apiVersion": {
+          "description": "Output only. API version used to start the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "cancelRequested": {
+          "description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have been cancelled successfully have Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "createTime": {
+          "description": "Output only. The time the operation was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "endTime": {
+          "description": "Output only. The time the operation finished running.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "statusDetail": {
+          "description": "Output only. Human-readable status of the operation, if any.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "target": {
+          "description": "Output only. Server-defined resource path for the target of the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "verb": {
+          "description": "Output only. Name of the verb executed by the operation.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Param": {
+      "description": "Param defined with name and value. PipelineRef can be used to refer to a specific instance of a Pipeline.",
+      "id": "Param",
+      "properties": {
+        "name": {
+          "description": "Name of the parameter.",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "ParamValue",
+          "description": "Value of the parameter."
+        }
+      },
+      "type": "object"
+    },
+    "ParamSpec": {
+      "description": "ParamSpec defines parameters needed beyond typed inputs (such as resources). Parameter values are provided by users as inputs on a TaskRun or PipelineRun.",
+      "id": "ParamSpec",
+      "properties": {
+        "default": {
+          "$ref": "ParamValue",
+          "description": "The default value a parameter takes if no input value is supplied"
+        },
+        "description": {
+          "description": "Description of the ParamSpec",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the ParamSpec",
+          "type": "string"
+        },
+        "type": {
+          "description": "Type of ParamSpec",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "STRING",
+            "ARRAY"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "Default",
+            "Arrary type."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ParamValue": {
+      "description": "Parameter value.",
+      "id": "ParamValue",
+      "properties": {
+        "arrayVal": {
+          "description": "Value of the parameter if type is array.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "stringVal": {
+          "description": "Value of the parameter if type is string.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Type of parameter.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "STRING",
+            "ARRAY"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "Default",
+            "Array type"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PipelineRef": {
+      "description": "PipelineRef can be used to refer to a specific instance of a Pipeline.",
+      "id": "PipelineRef",
+      "properties": {
+        "name": {
+          "deprecated": true,
+          "description": "Name of the Pipeline.",
+          "type": "string"
+        },
+        "params": {
+          "description": "Params contains the parameters used to identify the referenced Tekton resource. Example entries might include \"repo\" or \"path\" but the set of params ultimately depends on the chosen resolver.",
+          "items": {
+            "$ref": "Param"
+          },
+          "type": "array"
+        },
+        "resolver": {
+          "description": "Resolver is the name of the resolver that should perform resolution of the referenced Tekton resource.",
+          "enum": [
+            "RESOLVER_NAME_UNSPECIFIED",
+            "BUNDLES",
+            "GCB_REPO",
+            "GIT",
+            "DEVELOPER_CONNECT",
+            "DEFAULT"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "Bundles resolver. https://tekton.dev/docs/pipelines/bundle-resolver/",
+            "GCB repo resolver.",
+            "Simple Git resolver. https://tekton.dev/docs/pipelines/git-resolver/",
+            "Developer Connect resolver.",
+            "Default resolver."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PipelineResult": {
+      "description": "A value produced by a Pipeline.",
+      "id": "PipelineResult",
+      "properties": {
+        "description": {
+          "description": "Output only. Description of the result.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "name": {
+          "description": "Output only. Name of the result.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "type": {
+          "description": "Output only. The type of data that the result holds.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "STRING",
+            "ARRAY",
+            "OBJECT"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "Default",
+            "Array type",
+            "Object type"
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "value": {
+          "$ref": "ResultValue",
+          "description": "Output only. Value of the result.",
+          "readOnly": true
+        }
+      },
+      "type": "object"
+    },
+    "PipelineRun": {
+      "description": "Message describing PipelineRun object",
+      "id": "PipelineRun",
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "User annotations. See https://google.aip.dev/128#annotations",
+          "type": "object"
+        },
+        "childReferences": {
+          "description": "Output only. List of TaskRun and Run names and PipelineTask names for children of this PipelineRun.",
+          "items": {
+            "$ref": "ChildStatusReference"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "completionTime": {
+          "description": "Output only. Time the pipeline completed.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "conditions": {
+          "description": "Output only. Kubernetes Conditions convention for PipelineRun status and error.",
+          "items": {
+            "$ref": "GoogleDevtoolsCloudbuildV2Condition"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "createTime": {
+          "description": "Output only. Time at which the request to create the `PipelineRun` was received.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "etag": {
+          "description": "Needed for declarative-friendly resources.",
+          "type": "string"
+        },
+        "finallyStartTime": {
+          "description": "Output only. FinallyStartTime is when all non-finally tasks have been completed and only finally tasks are being executed. +optional",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "gcbParams": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Output only. GCB default params.",
+          "readOnly": true,
+          "type": "object"
+        },
+        "name": {
+          "description": "Output only. The `PipelineRun` name with format `projects/{project}/locations/{location}/pipelineRuns/{pipeline_run}`",
+          "readOnly": true,
+          "type": "string"
+        },
+        "params": {
+          "description": "Params is a list of parameter names and values.",
+          "items": {
+            "$ref": "Param"
+          },
+          "type": "array"
+        },
+        "pipelineRef": {
+          "$ref": "PipelineRef",
+          "description": "PipelineRef refer to a specific instance of a Pipeline."
+        },
+        "pipelineRunStatus": {
+          "description": "Pipelinerun status the user can provide. Used for cancellation.",
+          "enum": [
+            "PIPELINE_RUN_STATUS_UNSPECIFIED",
+            "PIPELINE_RUN_CANCELLED"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "Cancelled status."
+          ],
+          "type": "string"
+        },
+        "pipelineSpec": {
+          "$ref": "PipelineSpec",
+          "description": "PipelineSpec defines the desired state of Pipeline."
+        },
+        "pipelineSpecYaml": {
+          "description": "Output only. Inline pipelineSpec yaml string, used by workflow run requests.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "Provenance",
+          "description": "Optional. Provenance configuration."
+        },
+        "record": {
+          "description": "Output only. The `Record` of this `PipelineRun`. Format: `projects/{project}/locations/{location}/results/{result_id}/records/{record_id}`",
+          "readOnly": true,
+          "type": "string"
+        },
+        "resolvedPipelineSpec": {
+          "$ref": "PipelineSpec",
+          "description": "Output only. The exact PipelineSpec used to instantiate the run.",
+          "readOnly": true
+        },
+        "results": {
+          "description": "Optional. Output only. List of results written out by the pipeline's containers",
+          "items": {
+            "$ref": "PipelineRunResult"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "security": {
+          "$ref": "Security",
+          "description": "Optional. Security configuration."
+        },
+        "serviceAccount": {
+          "deprecated": true,
+          "description": "Service account used in the Pipeline. Deprecated; please use security.service_account instead.",
+          "type": "string"
+        },
+        "skippedTasks": {
+          "description": "Output only. List of tasks that were skipped due to when expressions evaluating to false.",
+          "items": {
+            "$ref": "SkippedTask"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "startTime": {
+          "description": "Output only. Time the pipeline is actually started.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "timeouts": {
+          "$ref": "TimeoutFields",
+          "description": "Time after which the Pipeline times out. Currently three keys are accepted in the map pipeline, tasks and finally with Timeouts.pipeline \u003e= Timeouts.tasks + Timeouts.finally"
+        },
+        "uid": {
+          "description": "Output only. A unique identifier for the `PipelineRun`.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "Output only. Time at which the request to update the `PipelineRun` was received.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "worker": {
+          "$ref": "Worker",
+          "description": "Optional. Worker configuration."
+        },
+        "workerPool": {
+          "description": "Output only. The WorkerPool used to run this PipelineRun.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "workflow": {
+          "description": "Output only. The Workflow used to create this PipelineRun.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "workspaces": {
+          "description": "Workspaces is a list of WorkspaceBindings from volumes to workspaces.",
+          "items": {
+            "$ref": "WorkspaceBinding"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PipelineRunResult": {
+      "description": "PipelineRunResult used to describe the results of a pipeline",
+      "id": "PipelineRunResult",
+      "properties": {
+        "name": {
+          "description": "Output only. Name of the TaskRun",
+          "readOnly": true,
+          "type": "string"
+        },
+        "value": {
+          "$ref": "ResultValue",
+          "description": "Output only. Value of the result.",
+          "readOnly": true
+        }
+      },
+      "type": "object"
+    },
+    "PipelineSpec": {
+      "description": "PipelineSpec defines the desired state of Pipeline.",
+      "id": "PipelineSpec",
+      "properties": {
+        "finallyTasks": {
+          "description": "List of Tasks that execute just before leaving the Pipeline i.e. either after all Tasks are finished executing successfully or after a failure which would result in ending the Pipeline.",
+          "items": {
+            "$ref": "PipelineTask"
+          },
+          "type": "array"
+        },
+        "generatedYaml": {
+          "description": "Output only. auto-generated yaml that is output only for display purpose for workflows using pipeline_spec, used by UI/gcloud cli for Workflows.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "params": {
+          "description": "List of parameters.",
+          "items": {
+            "$ref": "ParamSpec"
+          },
+          "type": "array"
+        },
+        "results": {
+          "description": "Optional. Output only. List of results written out by the pipeline's containers",
+          "items": {
+            "$ref": "PipelineResult"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "tasks": {
+          "description": "List of Tasks that execute when this Pipeline is run.",
+          "items": {
+            "$ref": "PipelineTask"
+          },
+          "type": "array"
+        },
+        "workspaces": {
+          "description": "Workspaces declares a set of named workspaces that are expected to be provided by a PipelineRun.",
+          "items": {
+            "$ref": "PipelineWorkspaceDeclaration"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PipelineTask": {
+      "description": "PipelineTask defines a task in a Pipeline.",
+      "id": "PipelineTask",
+      "properties": {
+        "name": {
+          "description": "Name of the task.",
+          "type": "string"
+        },
+        "params": {
+          "description": "Params is a list of parameter names and values.",
+          "items": {
+            "$ref": "Param"
+          },
+          "type": "array"
+        },
+        "retries": {
+          "description": "Retries represents how many times this task should be retried in case of task failure.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "runAfter": {
+          "description": "RunAfter is the list of PipelineTask names that should be executed before this Task executes. (Used to force a specific ordering in graph execution.)",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "taskRef": {
+          "$ref": "TaskRef",
+          "description": "Reference to a specific instance of a task."
+        },
+        "taskSpec": {
+          "$ref": "EmbeddedTask",
+          "description": "Spec to instantiate this TaskRun."
+        },
+        "timeout": {
+          "description": "Time after which the TaskRun times out. Defaults to 1 hour. Specified TaskRun timeout should be less than 24h.",
+          "format": "google-duration",
+          "type": "string"
+        },
+        "whenExpressions": {
+          "description": "Conditions that need to be true for the task to run.",
+          "items": {
+            "$ref": "WhenExpression"
+          },
+          "type": "array"
+        },
+        "workspaces": {
+          "description": "Workspaces maps workspaces from the pipeline spec to the workspaces declared in the Task.",
+          "items": {
+            "$ref": "WorkspacePipelineTaskBinding"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PipelineWorkspaceDeclaration": {
+      "description": "Workspaces declares a set of named workspaces that are expected to be provided by a PipelineRun.",
+      "id": "PipelineWorkspaceDeclaration",
+      "properties": {
+        "description": {
+          "description": "Description is a human readable string describing how the workspace will be used in the Pipeline.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is the name of a workspace to be provided by a PipelineRun.",
+          "type": "string"
+        },
+        "optional": {
+          "description": "Optional marks a Workspace as not being required in PipelineRuns. By default this field is false and so declared workspaces are required.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "Policy": {
+      "description": "An Identity and Access Management (IAM) policy, which specifies access controls for Google Cloud resources. A `Policy` is a collection of `bindings`. A `binding` binds one or more `members`, or principals, to a single `role`. Principals can be user accounts, service accounts, Google groups, and domains (such as G Suite). A `role` is a named list of permissions; each `role` can be an IAM predefined role or a user-created custom role. For some types of Google Cloud resources, a `binding` can also specify a `condition`, which is a logical expression that allows access to a resource only if the expression evaluates to `true`. A condition can add constraints based on attributes of the request, the resource, or both. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies). **JSON example:** ``` { \"bindings\": [ { \"role\": \"roles/resourcemanager.organizationAdmin\", \"members\": [ \"user:mike@example.com\", \"group:admins@example.com\", \"domain:google.com\", \"serviceAccount:my-project-id@appspot.gserviceaccount.com\" ] }, { \"role\": \"roles/resourcemanager.organizationViewer\", \"members\": [ \"user:eve@example.com\" ], \"condition\": { \"title\": \"expirable access\", \"description\": \"Does not grant access after Sep 2020\", \"expression\": \"request.time \u003c timestamp('2020-10-01T00:00:00.000Z')\", } } ], \"etag\": \"BwWWja0YfJA=\", \"version\": 3 } ``` **YAML example:** ``` bindings: - members: - user:mike@example.com - group:admins@example.com - domain:google.com - serviceAccount:my-project-id@appspot.gserviceaccount.com role: roles/resourcemanager.organizationAdmin - members: - user:eve@example.com role: roles/resourcemanager.organizationViewer condition: title: expirable access description: Does not grant access after Sep 2020 expression: request.time \u003c timestamp('2020-10-01T00:00:00.000Z') etag: BwWWja0YfJA= version: 3 ``` For a description of IAM and its features, see the [IAM documentation](https://cloud.google.com/iam/docs/).",
+      "id": "Policy",
+      "properties": {
+        "auditConfigs": {
+          "description": "Specifies cloud audit logging configuration for this policy.",
+          "items": {
+            "$ref": "AuditConfig"
+          },
+          "type": "array"
+        },
+        "bindings": {
+          "description": "Associates a list of `members`, or principals, with a `role`. Optionally, may specify a `condition` that determines how and when the `bindings` are applied. Each of the `bindings` must contain at least one principal. The `bindings` in a `Policy` can refer to up to 1,500 principals; up to 250 of these principals can be Google groups. Each occurrence of a principal counts towards these limits. For example, if the `bindings` grant 50 different roles to `user:alice@example.com`, and not to any other principal, then you can add another 1,450 principals to the `bindings` in the `Policy`.",
+          "items": {
+            "$ref": "Binding"
+          },
+          "type": "array"
+        },
+        "etag": {
+          "description": "`etag` is used for optimistic concurrency control as a way to help prevent simultaneous updates of a policy from overwriting each other. It is strongly suggested that systems make use of the `etag` in the read-modify-write cycle to perform policy updates in order to avoid race conditions: An `etag` is returned in the response to `getIamPolicy`, and systems are expected to put that etag in the request to `setIamPolicy` to ensure that their change will be applied to the same version of the policy. **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost.",
+          "format": "byte",
+          "type": "string"
+        },
+        "version": {
+          "description": "Specifies the format of the policy. Valid values are `0`, `1`, and `3`. Requests that specify an invalid value are rejected. Any operation that affects conditional role bindings must specify version `3`. This requirement applies to the following operations: * Getting a policy that includes a conditional role binding * Adding a conditional role binding to a policy * Changing a conditional role binding in a policy * Removing any role binding, with or without a condition, from a policy that includes conditions **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost. If a policy does not include any conditions, operations on that policy may specify any valid version or leave the field unset. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "Probe": {
+      "description": "Probe describes a health check to be performed against a container to determine whether it is alive or ready to receive traffic.",
+      "id": "Probe",
+      "properties": {
+        "exec": {
+          "$ref": "ExecAction",
+          "description": "Optional. Exec specifies the action to take. +optional"
+        },
+        "periodSeconds": {
+          "description": "Optional. How often (in seconds) to perform the probe. Default to 10 seconds. Minimum value is 1. +optional",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "PropertySpec": {
+      "description": "PropertySpec holds information about a property in an object.",
+      "id": "PropertySpec",
+      "properties": {
+        "type": {
+          "description": "A type for the object.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "STRING"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "Default"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Provenance": {
+      "description": "Provenance configuration.",
+      "id": "Provenance",
+      "properties": {
+        "enabled": {
+          "description": "Optional. Provenance push mode.",
+          "enum": [
+            "ENABLED_UNSPECIFIED",
+            "REQUIRED",
+            "OPTIMISTIC",
+            "DISABLED"
+          ],
+          "enumDescriptions": [
+            "Default to disabled (before AA regionalization), optimistic after",
+            "Provenance failures would fail the run",
+            "GCB will attempt to push to artifact analaysis and build state would not be impacted by the push failures.",
+            "Disable the provenance push entirely."
+          ],
+          "type": "string"
+        },
+        "region": {
+          "description": "Optional. Provenance region.",
+          "enum": [
+            "REGION_UNSPECIFIED",
+            "GLOBAL"
+          ],
+          "enumDescriptions": [
+            "The PipelineRun/TaskRun/Workflow will be rejected. Update this comment to push to the same region as the run in Artifact Analysis when it's regionalized.",
+            "Push provenance to Artifact Analysis in global region."
+          ],
+          "type": "string"
+        },
+        "storage": {
+          "description": "Optional. Where provenance is stored.",
+          "enum": [
+            "STORAGE_UNSPECIFIED",
+            "PREFER_ARTIFACT_PROJECT",
+            "ARTIFACT_PROJECT_ONLY",
+            "BUILD_PROJECT_ONLY"
+          ],
+          "enumDescriptions": [
+            "Default PREFER_ARTIFACT_PROJECT.",
+            "GCB will attempt to push provenance to the artifact project. If it is not available, fallback to build project.",
+            "Only push to artifact project.",
+            "Only push to build project."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Repository": {
+      "description": "A repository associated to a parent connection.",
+      "id": "Repository",
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. Allows clients to store small amounts of arbitrary data.",
+          "type": "object"
+        },
+        "createTime": {
+          "description": "Output only. Server assigned timestamp for when the connection was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "etag": {
+          "description": "This checksum is computed by the server based on the value of other fields, and may be sent on update and delete requests to ensure the client has an up-to-date value before proceeding.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Immutable. Resource name of the repository, in the format `projects/*/locations/*/connections/*/repositories/*`.",
+          "type": "string"
+        },
+        "remoteUri": {
+          "description": "Required. Git Clone HTTPS URI.",
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "Output only. Server assigned timestamp for when the connection was updated.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "webhookId": {
+          "description": "Output only. External ID of the webhook created for the repository.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ResultValue": {
+      "description": "ResultValue holds different types of data for a single result.",
+      "id": "ResultValue",
+      "properties": {
+        "arrayVal": {
+          "description": "Value of the result if type is array.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "objectVal": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Value of the result if type is object.",
+          "type": "object"
+        },
+        "stringVal": {
+          "description": "Value of the result if type is string.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Output only. The type of data that the result holds.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "STRING",
+            "ARRAY",
+            "OBJECT"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "Default",
+            "Array type",
+            "Object type"
+          ],
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "RunWorkflowCustomOperationMetadata": {
+      "description": "Represents the custom metadata of the RunWorkflow long-running operation.",
+      "id": "RunWorkflowCustomOperationMetadata",
+      "properties": {
+        "apiVersion": {
+          "description": "Output only. API version used to start the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "createTime": {
+          "description": "Output only. The time the operation was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "endTime": {
+          "description": "Output only. The time the operation finished running.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "pipelineRunId": {
+          "description": "Output only. ID of the pipeline run created by RunWorkflow.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "requestedCancellation": {
+          "description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have successfully been cancelled have Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+          "readOnly": true,
+          "type": "boolean"
+        },
+        "target": {
+          "description": "Output only. Server-defined resource path for the target of the operation.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "verb": {
+          "description": "Output only. Name of the verb executed by the operation.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SecretVolumeSource": {
+      "description": "Secret Volume Source.",
+      "id": "SecretVolumeSource",
+      "properties": {
+        "secretName": {
+          "description": "Name of the secret referenced by the WorkspaceBinding.",
+          "type": "string"
+        },
+        "secretVersion": {
+          "description": "Output only. Resource name of the SecretVersion. In format: projects/*/secrets/*/versions/*",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Security": {
+      "description": "Security configuration.",
+      "id": "Security",
+      "properties": {
+        "privilegeMode": {
+          "description": "Optional. Privilege mode.",
+          "enum": [
+            "PRIVILEGE_MODE_UNSPECIFIED",
+            "PRIVILEGED",
+            "UNPRIVILEGED"
+          ],
+          "enumDescriptions": [
+            "Default to PRIVILEGED.",
+            "Privileged mode.",
+            "Unprivileged mode."
+          ],
+          "type": "string"
+        },
+        "serviceAccount": {
+          "description": "IAM service account whose credentials will be used at runtime.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SecurityContext": {
+      "description": "Security options the container should be run with.",
+      "id": "SecurityContext",
+      "properties": {
+        "allowPrivilegeEscalation": {
+          "description": "Optional. AllowPrivilegeEscalation controls whether a process can gain more privileges than its parent process. This bool directly controls if the no_new_privs flag will be set on the container process. AllowPrivilegeEscalation is true always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN Note that this field cannot be set when spec.os.name is windows. +optional",
+          "type": "boolean"
+        },
+        "capabilities": {
+          "$ref": "Capabilities",
+          "description": "Optional. Adds and removes POSIX capabilities from running containers."
+        },
+        "privileged": {
+          "description": "Run container in privileged mode.",
+          "type": "boolean"
+        },
+        "runAsGroup": {
+          "description": "Optional. The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows. +optional",
+          "format": "int64",
+          "type": "string"
+        },
+        "runAsNonRoot": {
+          "description": "Optional. Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. +optional",
+          "type": "boolean"
+        },
+        "runAsUser": {
+          "description": "Optional. The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows. +optional",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SetIamPolicyRequest": {
+      "description": "Request message for `SetIamPolicy` method.",
+      "id": "SetIamPolicyRequest",
+      "properties": {
+        "policy": {
+          "$ref": "Policy",
+          "description": "REQUIRED: The complete policy to be applied to the `resource`. The size of the policy is limited to a few 10s of KB. An empty policy is a valid policy but certain Google Cloud services (such as Projects) might reject them."
+        },
+        "updateMask": {
+          "description": "OPTIONAL: A FieldMask specifying which fields of the policy to modify. Only the fields in the mask will be modified. If no mask is provided, the following default mask is used: `paths: \"bindings, etag\"`",
+          "format": "google-fieldmask",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Sidecar": {
+      "description": "Sidecars run alongside the Task's step containers.",
+      "id": "Sidecar",
+      "properties": {
+        "args": {
+          "description": "Arguments to the entrypoint.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "command": {
+          "description": "Entrypoint array.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "env": {
+          "description": "List of environment variables to set in the container.",
+          "items": {
+            "$ref": "EnvVar"
+          },
+          "type": "array"
+        },
+        "image": {
+          "description": "Docker image name.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the Sidecar.",
+          "type": "string"
+        },
+        "readinessProbe": {
+          "$ref": "Probe",
+          "description": "Optional. Periodic probe of Sidecar service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes +optional"
+        },
+        "script": {
+          "description": "The contents of an executable file to execute.",
+          "type": "string"
+        },
+        "securityContext": {
+          "$ref": "SecurityContext",
+          "description": "Optional. Security options the container should be run with."
+        },
+        "volumeMounts": {
+          "description": "Pod volumes to mount into the container's filesystem.",
+          "items": {
+            "$ref": "VolumeMount"
+          },
+          "type": "array"
+        },
+        "workingDir": {
+          "description": "Container's working directory.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SkippedTask": {
+      "description": "SkippedTask is used to describe the Tasks that were skipped due to their When Expressions evaluating to False.",
+      "id": "SkippedTask",
+      "properties": {
+        "name": {
+          "description": "Name is the Pipeline Task name",
+          "type": "string"
+        },
+        "reason": {
+          "description": "Output only. Reason is the cause of the PipelineTask being skipped.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "whenExpressions": {
+          "description": "WhenExpressions is the list of checks guarding the execution of the PipelineTask",
+          "items": {
+            "$ref": "WhenExpression"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Status": {
+      "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+      "id": "Status",
+      "properties": {
+        "code": {
+          "description": "The status code, which should be an enum value of google.rpc.Code.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "details": {
+          "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+          "items": {
+            "additionalProperties": {
+              "description": "Properties of the object. Contains field @type with type URL.",
+              "type": "any"
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "message": {
+          "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Step": {
+      "description": "Step embeds the Container type, which allows it to include fields not provided by Container.",
+      "id": "Step",
+      "properties": {
+        "args": {
+          "description": "Arguments to the entrypoint.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "command": {
+          "description": "Entrypoint array.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "env": {
+          "description": "List of environment variables to set in the container.",
+          "items": {
+            "$ref": "EnvVar"
+          },
+          "type": "array"
+        },
+        "image": {
+          "description": "Docker image name.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the container specified as a DNS_LABEL.",
+          "type": "string"
+        },
+        "onError": {
+          "description": "Optional. OnError defines the exiting behavior on error can be set to [ continue | stopAndFail ]",
+          "enum": [
+            "ON_ERROR_TYPE_UNSPECIFIED",
+            "STOP_AND_FAIL",
+            "CONTINUE"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "StopAndFail indicates exit if the step/task exits with non-zero exit code",
+            "Continue indicates continue executing the rest of the steps/tasks irrespective of the exit code"
+          ],
+          "type": "string"
+        },
+        "params": {
+          "description": "Optional. Optional parameters passed to the StepAction.",
+          "items": {
+            "$ref": "Param"
+          },
+          "type": "array"
+        },
+        "ref": {
+          "$ref": "StepRef",
+          "description": "Optional. Optional reference to a remote StepAction."
+        },
+        "script": {
+          "description": "The contents of an executable file to execute.",
+          "type": "string"
+        },
+        "securityContext": {
+          "$ref": "SecurityContext",
+          "description": "Optional. SecurityContext defines the security options the Step should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/ +optional"
+        },
+        "timeout": {
+          "description": "Time after which the Step times out. Defaults to never.",
+          "format": "google-duration",
+          "type": "string"
+        },
+        "volumeMounts": {
+          "description": "Pod volumes to mount into the container's filesystem.",
+          "items": {
+            "$ref": "VolumeMount"
+          },
+          "type": "array"
+        },
+        "workingDir": {
+          "description": "Container's working directory.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "StepRef": {
+      "description": "A reference to a remote Step, i.e. a StepAction.",
+      "id": "StepRef",
+      "properties": {
+        "name": {
+          "description": "Optional. Name of the step.",
+          "type": "string"
+        },
+        "params": {
+          "description": "Optional. Parameters used to control the resolution.",
+          "items": {
+            "$ref": "Param"
+          },
+          "type": "array"
+        },
+        "resolver": {
+          "description": "Optional. Type of the resolver.",
+          "enum": [
+            "RESOLVER_NAME_UNSPECIFIED",
+            "BUNDLES",
+            "GCB_REPO",
+            "GIT",
+            "DEVELOPER_CONNECT",
+            "DEFAULT"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "Bundles resolver. https://tekton.dev/docs/pipelines/bundle-resolver/",
+            "GCB repo resolver.",
+            "Simple Git resolver. https://tekton.dev/docs/pipelines/git-resolver/",
+            "Developer Connect resolver.",
+            "Default resolver."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "StepTemplate": {
+      "description": "StepTemplate can be used as the basis for all step containers within the Task, so that the steps inherit settings on the base container.",
+      "id": "StepTemplate",
+      "properties": {
+        "env": {
+          "description": "Optional. List of environment variables to set in the Step. Cannot be updated.",
+          "items": {
+            "$ref": "EnvVar"
+          },
+          "type": "array"
+        },
+        "volumeMounts": {
+          "description": "Optional. Pod volumes to mount into the container's filesystem.",
+          "items": {
+            "$ref": "VolumeMount"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "TaskRef": {
+      "description": "TaskRef can be used to refer to a specific instance of a task. PipelineRef can be used to refer to a specific instance of a Pipeline.",
+      "id": "TaskRef",
+      "properties": {
+        "name": {
+          "deprecated": true,
+          "description": "Name of the task.",
+          "type": "string"
+        },
+        "params": {
+          "description": "Params contains the parameters used to identify the referenced Tekton resource. Example entries might include \"repo\" or \"path\" but the set of params ultimately depends on the chosen resolver.",
+          "items": {
+            "$ref": "Param"
+          },
+          "type": "array"
+        },
+        "resolver": {
+          "description": "Resolver is the name of the resolver that should perform resolution of the referenced Tekton resource.",
+          "enum": [
+            "RESOLVER_NAME_UNSPECIFIED",
+            "BUNDLES",
+            "GCB_REPO",
+            "GIT",
+            "DEVELOPER_CONNECT",
+            "DEFAULT"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "Bundles resolver. https://tekton.dev/docs/pipelines/bundle-resolver/",
+            "GCB repo resolver.",
+            "Simple Git resolver. https://tekton.dev/docs/pipelines/git-resolver/",
+            "Developer Connect resolver.",
+            "Default resolver."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TaskResult": {
+      "description": "TaskResult is used to describe the results of a task.",
+      "id": "TaskResult",
+      "properties": {
+        "description": {
+          "description": "Description of the result.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the result.",
+          "type": "string"
+        },
+        "properties": {
+          "additionalProperties": {
+            "$ref": "PropertySpec"
+          },
+          "description": "When type is OBJECT, this map holds the names of fields inside that object along with the type of data each field holds.",
+          "type": "object"
+        },
+        "type": {
+          "description": "The type of data that the result holds.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "STRING",
+            "ARRAY",
+            "OBJECT"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "Default",
+            "Array type",
+            "Object type"
+          ],
+          "type": "string"
+        },
+        "value": {
+          "$ref": "ParamValue",
+          "description": "Optional. Optionally used to initialize a Task's result with a Step's result."
+        }
+      },
+      "type": "object"
+    },
+    "TaskSpec": {
+      "description": "TaskSpec contains the Spec to instantiate a TaskRun.",
+      "id": "TaskSpec",
+      "properties": {
+        "description": {
+          "description": "Description of the task.",
+          "type": "string"
+        },
+        "managedSidecars": {
+          "description": "Sidecars that run alongside the Task’s step containers that should be added to this Task.",
+          "items": {
+            "enum": [
+              "MANAGED_SIDECAR_UNSPECIFIED",
+              "PRIVILEGED_DOCKER_DAEMON"
+            ],
+            "enumDescriptions": [
+              "Default enum type; should not be used.",
+              "Sidecar for a privileged docker daemon."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "params": {
+          "description": "List of parameters.",
+          "items": {
+            "$ref": "ParamSpec"
+          },
+          "type": "array"
+        },
+        "results": {
+          "description": "Values that this Task can output.",
+          "items": {
+            "$ref": "TaskResult"
+          },
+          "type": "array"
+        },
+        "sidecars": {
+          "description": "Sidecars that run alongside the Task's step containers.",
+          "items": {
+            "$ref": "Sidecar"
+          },
+          "type": "array"
+        },
+        "stepTemplate": {
+          "$ref": "StepTemplate",
+          "description": "Optional. StepTemplate can be used as the basis for all step containers within the Task, so that the steps inherit settings on the base container."
+        },
+        "steps": {
+          "description": "Steps of the task.",
+          "items": {
+            "$ref": "Step"
+          },
+          "type": "array"
+        },
+        "volumes": {
+          "description": "A collection of volumes that are available to mount into steps.",
+          "items": {
+            "$ref": "VolumeSource"
+          },
+          "type": "array"
+        },
+        "workspaces": {
+          "description": "The volumes that this Task requires.",
+          "items": {
+            "$ref": "WorkspaceDeclaration"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "TestIamPermissionsRequest": {
+      "description": "Request message for `TestIamPermissions` method.",
+      "id": "TestIamPermissionsRequest",
+      "properties": {
+        "permissions": {
+          "description": "The set of permissions to check for the `resource`. Permissions with wildcards (such as `*` or `storage.*`) are not allowed. For more information see [IAM Overview](https://cloud.google.com/iam/docs/overview#permissions).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "TestIamPermissionsResponse": {
+      "description": "Response message for `TestIamPermissions` method.",
+      "id": "TestIamPermissionsResponse",
+      "properties": {
+        "permissions": {
+          "description": "A subset of `TestPermissionsRequest.permissions` that the caller is allowed.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "TimeoutFields": {
+      "description": "TimeoutFields allows granular specification of pipeline, task, and finally timeouts",
+      "id": "TimeoutFields",
+      "properties": {
+        "finally": {
+          "description": "Finally sets the maximum allowed duration of this pipeline's finally",
+          "format": "google-duration",
+          "type": "string"
+        },
+        "pipeline": {
+          "description": "Pipeline sets the maximum allowed duration for execution of the entire pipeline. The sum of individual timeouts for tasks and finally must not exceed this value.",
+          "format": "google-duration",
+          "type": "string"
+        },
+        "tasks": {
+          "description": "Tasks sets the maximum allowed duration of this pipeline's tasks",
+          "format": "google-duration",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "UserCredential": {
+      "description": "Represents a personal access token that authorized the Connection, and associated metadata.",
+      "id": "UserCredential",
+      "properties": {
+        "userTokenSecretVersion": {
+          "description": "Required. A SecretManager resource containing the user token that authorizes the Cloud Build connection. Format: `projects/*/secrets/*/versions/*`.",
+          "type": "string"
+        },
+        "username": {
+          "description": "Output only. The username associated to this token.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "VolumeMount": {
+      "description": "Pod volumes to mount into the container's filesystem.",
+      "id": "VolumeMount",
+      "properties": {
+        "mountPath": {
+          "description": "Path within the container at which the volume should be mounted. Must not contain ':'.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the volume.",
+          "type": "string"
+        },
+        "readOnly": {
+          "description": "Mounted read-only if true, read-write otherwise (false or unspecified).",
+          "type": "boolean"
+        },
+        "subPath": {
+          "description": "Path within the volume from which the container's volume should be mounted. Defaults to \"\" (volume's root).",
+          "type": "string"
+        },
+        "subPathExpr": {
+          "description": "Expanded path within the volume from which the container's volume should be mounted. Behaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment. Defaults to \"\" (volume's root).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "VolumeSource": {
+      "description": "Volumes available to mount.",
+      "id": "VolumeSource",
+      "properties": {
+        "emptyDir": {
+          "$ref": "EmptyDirVolumeSource",
+          "description": "A temporary directory that shares a pod's lifetime."
+        },
+        "name": {
+          "description": "Name of the Volume. Must be a DNS_LABEL and unique within the pod. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "WhenExpression": {
+      "description": "Conditions that need to be true for the task to run.",
+      "id": "WhenExpression",
+      "properties": {
+        "expressionOperator": {
+          "description": "Operator that represents an Input's relationship to the values",
+          "enum": [
+            "EXPRESSION_OPERATOR_UNSPECIFIED",
+            "IN",
+            "NOT_IN"
+          ],
+          "enumDescriptions": [
+            "Default enum type; should not be used.",
+            "Input is in values.",
+            "Input is not in values."
+          ],
+          "type": "string"
+        },
+        "input": {
+          "description": "Input is the string for guard checking which can be a static input or an output from a parent Task.",
+          "type": "string"
+        },
+        "values": {
+          "description": "Values is an array of strings, which is compared against the input, for guard checking.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Worker": {
+      "description": "Configuration for the worker.",
+      "id": "Worker",
+      "properties": {
+        "machineType": {
+          "description": "Optional. Machine type of a worker, default is \"e2-standard-2\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "WorkspaceBinding": {
+      "description": "WorkspaceBinding maps a workspace to a Volume. PipelineRef can be used to refer to a specific instance of a Pipeline.",
+      "id": "WorkspaceBinding",
+      "properties": {
+        "name": {
+          "description": "Name of the workspace.",
+          "type": "string"
+        },
+        "secret": {
+          "$ref": "SecretVolumeSource",
+          "description": "Secret Volume Source."
+        },
+        "subPath": {
+          "description": "Optional. SubPath is optionally a directory on the volume which should be used for this binding (i.e. the volume will be mounted at this sub directory). +optional",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "WorkspaceDeclaration": {
+      "description": "WorkspaceDeclaration is a declaration of a volume that a Task requires.",
+      "id": "WorkspaceDeclaration",
+      "properties": {
+        "description": {
+          "description": "Description is a human readable description of this volume.",
+          "type": "string"
+        },
+        "mountPath": {
+          "description": "MountPath overrides the directory that the volume will be made available at.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is the name by which you can bind the volume at runtime.",
+          "type": "string"
+        },
+        "optional": {
+          "description": "Optional. Optional marks a Workspace as not being required in TaskRuns. By default this field is false and so declared workspaces are required.",
+          "type": "boolean"
+        },
+        "readOnly": {
+          "description": "ReadOnly dictates whether a mounted volume is writable.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "WorkspacePipelineTaskBinding": {
+      "description": "WorkspacePipelineTaskBinding maps workspaces from the PipelineSpec to the workspaces declared in the Task.",
+      "id": "WorkspacePipelineTaskBinding",
+      "properties": {
+        "name": {
+          "description": "Name of the workspace as declared by the task.",
+          "type": "string"
+        },
+        "subPath": {
+          "description": "Optional. SubPath is optionally a directory on the volume which should be used for this binding (i.e. the volume will be mounted at this sub directory). +optional",
+          "type": "string"
+        },
+        "workspace": {
+          "description": "Name of the workspace declared by the pipeline.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Cloud Build API",
+  "version": "v2",
+  "version_module": true
+}

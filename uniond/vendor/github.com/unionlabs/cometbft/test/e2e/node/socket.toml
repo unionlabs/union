@@ -1,0 +1,5 @@
+snapshot_interval = 100
+persist_interval = 1
+chain_id = "test-chain"
+protocol = "socket"
+listen = "tcp://127.0.0.1:26658"

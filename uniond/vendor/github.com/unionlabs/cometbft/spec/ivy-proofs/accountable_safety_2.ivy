@@ -1,0 +1,52 @@
+#lang ivy1.7
+
+include tendermint
+include abstract_tendermint
+
+# Here we prove the second accountability property: no well-behaved node is
+# ever observed to violate the accountability properties.
+
+# The proof is done in two steps: first we prove the the abstract specification
+# satisfies the property, and then we show by refinement that this property
+# also holds in the concrete specification.
+
+# To see what is checked in the refinement proof, use `ivy_show isolate=accountable_safety_2 accountable_safety_2.ivy`
+# To see what is checked in the abstract correctness proof, use `ivy_show isolate=abstract_accountable_safety_2 accountable_safety_2.ivy`
+# To check the whole proof, use `ivy_check complete=fo accountable_safety_2.ivy`.
+
+# Proof that the property holds in the abstract specification
+# ============================================================
+
+isolate abstract_accountable_safety_2 = {
+
+    instantiate abstract_tendermint
+
+# the main property:
+    invariant [wb_never_punished] well_behaved(N) -> ~(observed_equivocation(N) | observed_unlawful_prevote(N))
+
+# the main invariant for proving wb_not_punished:
+    invariant well_behaved(N) & precommitted(N,R,V) & ~locked(N,R,V) & V ~= value.nil -> exists R2,V2 . V2 ~= value.nil & R < R2 & precommitted(N,R2,V2) & locked(N,R2,V2)
+
+    invariant (exists N . well_behaved(N) & precommitted(N,R,V) & V ~= value.nil) -> exists Q . nset.is_quorum(Q) & forall N . nset.member(N,Q) -> observed_prevoted(N,R,V)
+
+    invariant well_behaved(N) -> (observed_prevoted(N,R,V) <-> prevoted(N,R,V))
+    invariant well_behaved(N) -> (observed_precommitted(N,R,V) <-> precommitted(N,R,V))
+
+# nodes stop prevoting or precommitting in lower rounds when doing so in a higher round:
+    invariant well_behaved(N) & prevoted(N,R2,V2) & R1 < R2 -> left_round(N,R1)
+    invariant well_behaved(N) & locked(N,R2,V2) & R1 < R2 -> left_round(N,R1)
+
+    invariant [precommit_unique_per_round] well_behaved(N) & precommitted(N,R,V1) & precommitted(N,R,V2) -> V1 = V2
+
+} with nset, round, abstract_accountable_safety_2.defs.observed_equivocation_def, abstract_accountable_safety_2.defs.observed_unlawful_prevote_def
+
+# Proof that the property holds in the concrete specification
+# ===========================================================
+
+isolate accountable_safety_2 = {
+
+    instantiate tendermint(abstract_accountable_safety_2)
+
+    invariant well_behaved(N) -> ~(abstract_accountable_safety_2.observed_equivocation(N) | abstract_accountable_safety_2.observed_unlawful_prevote(N))
+
+} with round, value, shim, abstract_accountable_safety_2, abstract_accountable_safety_2.defs.observed_equivocation_def, abstract_accountable_safety_2.defs.observed_unlawful_prevote_def

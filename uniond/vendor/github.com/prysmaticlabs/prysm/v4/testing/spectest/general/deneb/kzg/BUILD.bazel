@@ -1,0 +1,20 @@
+load("@prysm//tools/go:def.bzl", "go_test")
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = ["verify_blob_kzg_proof_batch_test.go"],
+    data = [
+        "@consensus_spec_tests_general//:test_data",
+    ],
+    tags = ["spectest"],
+    deps = [
+        "//beacon-chain/blockchain/kzg:go_default_library",
+        "//consensus-types/blocks:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/spectest/utils:go_default_library",
+        "//testing/util:go_default_library",
+        "@com_github_ghodss_yaml//:go_default_library",
+    ],
+)

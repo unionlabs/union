@@ -1,0 +1,65 @@
+commit
+set a a
+set b b
+set c c
+----
+
+flush
+----
+a.SET: a
+b.SET: b
+c.SET: c
+
+# Test that the keys in the batch are in the same order they were originally
+# committed, not sorted by user key.
+
+commit
+set c c
+set b b
+set a a
+----
+
+flush
+----
+c.SET: c
+b.SET: b
+a.SET: a
+
+# Test that the keys in the batch are in the same order they were originally
+# committed, not sorted by user key.
+
+commit
+set c c
+del b
+del-range d f
+singledel a
+----
+
+flush
+----
+c.SET: c
+b.DEL
+d.RANGEDEL-f
+a.SINGLEDEL
+
+commit
+set x foo
+range-key-del a z
+range-key-unset g h @3
+range-key-set l m @1 foo
+set a bar
+del y
+----
+
+flush
+----
+x.SET: foo
+a.RANGEKEYDEL-g
+g.RANGEKEYDEL-h
+h.RANGEKEYDEL-l
+l.RANGEKEYDEL-m
+m.RANGEKEYDEL-z
+g.RANGEKEYUNSET-h: @3
+l.RANGEKEYSET-m: @1 → foo
+a.SET: bar
+y.DEL

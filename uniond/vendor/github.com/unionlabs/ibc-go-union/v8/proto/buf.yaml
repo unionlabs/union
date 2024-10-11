@@ -1,0 +1,23 @@
+version: v1
+name: buf.build/cosmos/ibc
+deps:
+  - buf.build/cosmos/cosmos-sdk:aa25660f4ff746388669ce36b3778442
+  - buf.build/cosmos/cosmos-proto:1935555c206d4afb9e94615dfd0fad31
+  - buf.build/cosmos/gogo-proto:a14993478f40695898ed8a86931094b6656e8a5d
+  - buf.build/googleapis/googleapis:8d7204855ec14631a499bd7393ce1970
+  - buf.build/cosmos/ics23:b1abd8678aab07165efd453c96796a179eb3131f
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT
+    - COMMENTS
+    - FILE_LOWER_SNAKE_CASE
+  except:
+    - UNARY_RPC
+    - COMMENT_FIELD
+    - SERVICE_SUFFIX
+    - PACKAGE_VERSION_SUFFIX
+    - RPC_REQUEST_STANDARD_NAME
+    - RPC_RESPONSE_STANDARD_NAME

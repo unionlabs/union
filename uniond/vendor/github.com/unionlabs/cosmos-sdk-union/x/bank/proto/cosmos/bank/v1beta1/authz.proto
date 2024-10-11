@@ -1,0 +1,29 @@
+syntax = "proto3";
+package cosmos.bank.v1beta1;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "cosmossdk.io/x/bank/types";
+
+// SendAuthorization allows the grantee to spend up to spend_limit coins from
+// the granter's account.
+message SendAuthorization {
+  option (cosmos_proto.message_added_in)     = "cosmos-sdk 0.43";
+  option (cosmos_proto.implements_interface) = "cosmos.authz.v1beta1.Authorization";
+  option (amino.name)                        = "cosmos-sdk/SendAuthorization";
+
+  repeated cosmos.base.v1beta1.Coin spend_limit = 1 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (amino.encoding)         = "legacy_coins",
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+
+  // allow_list specifies an optional list of addresses to whom the grantee can send tokens on behalf of the
+  // granter. If omitted, any recipient is allowed.
+  repeated string allow_list = 2
+      [(cosmos_proto.scalar) = "cosmos.AddressString", (cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+}

@@ -1,0 +1,18 @@
+enum AB:byte (private) {
+  A,
+  B,
+}
+
+struct Object (private) {
+    value: int;
+}
+
+union Any (private) { Game, Annotations }
+
+table Game (private) {
+    value: int;
+}
+
+table Annotations (private) {
+    value: int;
+}

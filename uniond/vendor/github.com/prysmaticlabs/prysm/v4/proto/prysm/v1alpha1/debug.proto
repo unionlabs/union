@@ -1,0 +1,174 @@
+syntax = "proto3";
+
+package ethereum.eth.v1alpha1;
+
+import "proto/eth/ext/options.proto";
+import "proto/prysm/v1alpha1/node.proto";
+import "proto/prysm/v1alpha1/p2p_messages.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+option csharp_namespace = "Ethereum.Eth.V1alpha1";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1;eth";
+option java_multiple_files = true;
+option java_outer_classname = "DebugProto";
+option java_package = "org.ethereum.eth.v1alpha1";
+option php_namespace = "Ethereum\\Eth\\v1alpha1";
+
+// Debug service API
+//
+// The debug service in Prysm provides API access to various utilities
+// for debugging the beacon node's functionality at runtime, such as being able
+// to retrieve the beacon state by block root or state root from the node directly.
+service Debug {
+    // Returns a beacon state by filter criteria from the beacon node.
+    rpc GetBeaconState(BeaconStateRequest) returns (SSZResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/debug/state"
+        };
+    }
+    // Returns a beacon state by filter criteria from the beacon node.
+    rpc GetBlock(BlockRequestByRoot) returns (SSZResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/debug/block"
+        };
+    }
+    // SetLoggingLevel sets the log-level of the beacon node programmatically.
+    rpc SetLoggingLevel(LoggingLevelRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/debug/logging"
+        };
+    }
+    // Returns all the related data for every peer tracked by the host node.
+    rpc ListPeers(google.protobuf.Empty) returns (DebugPeerResponses){
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/debug/peers"
+        };
+    }
+    // Returns requested peer with specified peer id if it exists.
+    rpc GetPeer(ethereum.eth.v1alpha1.PeerRequest) returns (DebugPeerResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/debug/peer"
+        };
+    }
+
+    // Returns the inclusion slot of a given attester id and slot.
+    // DEPRECATED: This endpoint doesn't appear to be used and have been marked for deprecation.
+    rpc GetInclusionSlot(InclusionSlotRequest) returns (InclusionSlotResponse) {
+        option deprecated = true;
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/debug/inclusion"
+        };
+    }
+}
+
+message InclusionSlotRequest {
+    uint64 id = 1;
+    uint64 slot = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+}
+
+message InclusionSlotResponse {
+    uint64 slot = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+}
+
+message BeaconStateRequest {
+    oneof query_filter {
+        // The slot corresponding to a desired beacon state.
+        uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+        // The block root corresponding to a desired beacon state.
+        bytes block_root = 2;
+    }
+}
+
+message BlockRequestByRoot {
+    bytes block_root = 1;
+}
+
+message SSZResponse {
+    // Returns an ssz-encoded byte slice as a response.
+    bytes encoded = 1;
+}
+
+message LoggingLevelRequest {
+    // The logging levels available in Prysm as an enum.
+    enum Level {
+        INFO = 0;
+        DEBUG = 1;
+        TRACE = 2;
+    }
+    Level level = 1;
+}
+
+message DebugPeerResponses {
+ repeated DebugPeerResponse responses = 1;
+}
+
+message DebugPeerResponse {
+    // Peer related metadata that is useful for debugging.
+    message PeerInfo {
+        // Metadata of the peer, containing their bitfield
+        // and sequence number.
+        MetaDataV0 metadataV0 = 1;
+        MetaDataV1 metadataV1 = 2;
+        // List of protocols the peer supports.
+        repeated string protocols = 3;
+        // Number of times peer has been penalised.
+        uint64 fault_count = 4;
+        // Protocol Version peer is running.
+        string protocol_version = 5;
+        // Agent Version peer is running.
+        string agent_version = 6;
+        // Latency of responses from peer(in ms).
+        uint64 peer_latency = 7;
+    }
+    // Listening addresses know of the peer.
+    repeated string listening_addresses = 1;
+    // Direction of current connection.
+    ethereum.eth.v1alpha1.PeerDirection direction = 2;
+    // Current connection between host and peer.
+    ethereum.eth.v1alpha1.ConnectionState connection_state = 3;
+    // Peer ID of peer.
+    string peer_id = 4;
+    // ENR of peer at the current moment.
+    string enr = 5;
+    // Peer Info of the peer containing all relevant metadata.
+    PeerInfo peer_info = 6;
+    // Peer Status of the peer.
+    Status peer_status = 7;
+    // Last know update time for peer status.
+    uint64 last_updated = 8;
+    // Score Info of the peer.
+    ScoreInfo score_info = 9;
+}
+
+// The Scoring related information of the particular peer.
+message ScoreInfo {
+    float overall_score = 1;
+    // Amount of processed blocks provided by
+    // the peer.
+    uint64 processed_blocks = 2;
+    // Related block provider score.
+    float block_provider_score = 3;
+    // Relevant scores by particular topic.
+    map<string,TopicScoreSnapshot> topic_scores = 4;
+    // Gossip Score for peer.
+    float gossip_score = 5;
+    // Behaviour penalty of peer.
+    float behaviour_penalty = 6;
+    // Returns the current validation error(if it exists).
+    string validation_error = 7;
+}
+
+message TopicScoreSnapshot {
+    // Time a peer has spent in the gossip mesh.
+    uint64 time_in_mesh = 1;
+    // This is the number of first message deliveries in the topic.
+    float first_message_deliveries = 2;
+    // This is the number of message deliveries in the mesh, within the MeshMessageDeliveriesWindow of
+    // message validation.It effectively tracks first and near-first
+    // deliveries, ie a message seen from a mesh peer before we have forwarded it to them.
+    float mesh_message_deliveries = 3;
+    // This is the number of invalid messages in the topic from the peer.
+    float invalid_message_deliveries = 4;
+}

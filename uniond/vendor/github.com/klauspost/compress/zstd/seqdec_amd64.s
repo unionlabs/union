@@ -1814,7 +1814,7 @@ TEXT ·sequenceDecs_decodeSync_amd64(SB), $64-32
 	MOVQ    40(SP), AX
 	ADDQ    AX, 48(SP)
 
-	// Calculate poiter to s.out[cap(s.out)] (a past-end pointer)
+	// Calculate pointer to s.out[cap(s.out)] (a past-end pointer)
 	ADDQ R10, 32(SP)
 
 	// outBase += outPosition
@@ -2376,7 +2376,7 @@ TEXT ·sequenceDecs_decodeSync_bmi2(SB), $64-32
 	MOVQ    40(SP), CX
 	ADDQ    CX, 48(SP)
 
-	// Calculate poiter to s.out[cap(s.out)] (a past-end pointer)
+	// Calculate pointer to s.out[cap(s.out)] (a past-end pointer)
 	ADDQ R9, 32(SP)
 
 	// outBase += outPosition
@@ -2896,7 +2896,7 @@ TEXT ·sequenceDecs_decodeSync_safe_amd64(SB), $64-32
 	MOVQ    40(SP), AX
 	ADDQ    AX, 48(SP)
 
-	// Calculate poiter to s.out[cap(s.out)] (a past-end pointer)
+	// Calculate pointer to s.out[cap(s.out)] (a past-end pointer)
 	ADDQ R10, 32(SP)
 
 	// outBase += outPosition
@@ -3560,7 +3560,7 @@ TEXT ·sequenceDecs_decodeSync_safe_bmi2(SB), $64-32
 	MOVQ    40(SP), CX
 	ADDQ    CX, 48(SP)
 
-	// Calculate poiter to s.out[cap(s.out)] (a past-end pointer)
+	// Calculate pointer to s.out[cap(s.out)] (a past-end pointer)
 	ADDQ R9, 32(SP)
 
 	// outBase += outPosition

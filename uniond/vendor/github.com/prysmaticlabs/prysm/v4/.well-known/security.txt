@@ -1,0 +1,26 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Contact: mailto:security@prysmaticlabs.com
+Encryption: openpgp4fpr:0AE0051D647BA3C1A917AF4072E33E4DF1A5036E
+Encryption: openpgp4fpr:CD08DE68C60B82D3EE2A3F7D95452A701810FEDB
+Encryption: openpgp4fpr:317D6E91058F8F3C2303BA7756313E44581297A6
+Encryption: openpgp4fpr:79C59A585E3FD3AFFA00F5C22940A6479DA7C9EC
+Preferred-Languages: en
+Canonical: https://github.com/prysmaticlabs/prysm/tree/master/.well-known/security.txt
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCgAdFiEECuAFHWR7o8GpF69AcuM+TfGlA24FAmGOfiYACgkQcuM+TfGl
+A24YwRAAiQk3w6yzqSEggrOlNoNn04iu/rWZdn5ihkQgzACXy8XH2D1gdKLChE/X
+7e5bUtgE2aCuHryQjwoKxqZakviBJFstVmHgF64rXv2zKhpqA30Mj4fI+T3zn8I+
++FpFV0TTsxNLDx+AcR1eQ1nSayO7ImUDIfOQNDDnSZZy42Bc+F+QIGKB3aH/8bpG
+kT+bDTZrXvX+TE1gZTbAtZG8sH8g/zadoWEHIhfXUuYb0kTz+DRzAxoqU4j4Z4ee
+1zSfFAgfJwxJP4kWD7s4xkE1sBbCgGBeD6cW/C2lbcfIei+XSizLpHW3jD9dNqh4
+fLkmEspSa/LV/iXFq8nFzu/GLww4q+sQZDzzDKZyws54CrATinRitZMhzoIL0bTn
+yFZVOGHosFAMEVZ36dl1Aw2+B2W6tr2CVr9c5zfV+kup5/KZH1EmT5nYY/zFwfg2
+jYCFB5wmYeiyWZvuprgJXRArgVZLZaJxwWazlPVk4i/4vPvRgvfHqOwHCBe8DXy0
+VHPhpewwb/ECYek1KoaNQflgR8iH2GMHkC5RjhGDAt1S0AQDtite5m4ZYt1kvO9E
+k/znkv89dduhL9CKDvZvnI+DICwsTrf//4KJ8PM/qaPAJa4GvtiUU/eS/jKBivtv
+OP5dZQtX6KPc9ewqqZgn622uHSezoBidgeTkdZsJ6tw2eIu0lsY=
+=V7L0
+-----END PGP SIGNATURE-----

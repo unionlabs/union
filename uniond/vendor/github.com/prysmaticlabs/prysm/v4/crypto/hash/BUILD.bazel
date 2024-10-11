@@ -1,0 +1,32 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["hash.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/crypto/hash",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//encoding/bytesutil:go_default_library",
+        "@com_github_minio_highwayhash//:go_default_library",
+        "@com_github_minio_sha256_simd//:go_default_library",
+        "@com_github_prysmaticlabs_fastssz//:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
+        "@org_golang_x_crypto//sha3:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = ["hash_test.go"],
+    deps = [
+        ":go_default_library",
+        "//crypto/bls:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/testing:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_google_gofuzz//:go_default_library",
+    ],
+)

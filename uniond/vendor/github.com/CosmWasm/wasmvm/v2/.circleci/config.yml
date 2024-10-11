@@ -1,0 +1,514 @@
+version: 2.1
+
+orbs:
+  win: circleci/windows@5.0
+
+jobs:
+  # All checks on the codebase that can run in parallel to build_shared_library
+  libwasmvm_sanity:
+    docker:
+      - image: cimg/rust:1.74.0
+    steps:
+      - checkout
+      - run:
+          name: Show Rust version information
+          command: rustc --version; cargo --version; rustup --version
+      - run:
+          name: Add Rust components
+          command: rustup component add rustfmt
+      - restore_cache:
+          keys:
+            - cargocache-v3-libwasmvm_sanity-rust:1.74.0-{{ checksum "libwasmvm/Cargo.lock" }}
+            - cargocache-v3-libwasmvm_sanity-rust:1.74.0-
+      - run:
+          name: Ensure libwasmvm/bindings.h is up-to-date
+          working_directory: libwasmvm
+          command: |
+            cargo check
+            CHANGES_IN_REPO=$(git status --porcelain bindings.h)
+            if [[ -n "$CHANGES_IN_REPO" ]]; then
+              echo "Repository is dirty. Showing 'git status' and 'git --no-pager diff' for debugging now:"
+              git status && git --no-pager diff
+              exit 1
+            fi
+      - run:
+          # It is easy to update libwasmvm/bindings.h as part of the development but forget `make update-bindings`
+          name: Ensure internal/api/bindings.h is up to date
+          command: diff libwasmvm/bindings.h internal/api/bindings.h
+      - run:
+          name: Check Rust formatting
+          working_directory: libwasmvm
+          command: cargo fmt -- --check
+      - run:
+          name: Run unit tests
+          working_directory: libwasmvm
+          command: cargo test
+      - run:
+          name: Build docs
+          working_directory: libwasmvm
+          command: cargo doc --no-deps
+      - run:
+          name: Test docs
+          working_directory: libwasmvm
+          command: |
+            sed -i  '/^crate-type = \["cdylib"\]/d' Cargo.toml
+            cargo test --doc
+      - save_cache:
+          paths:
+            - ~/.cargo/registry
+            - libwasmvm/target/debug/.fingerprint
+            - libwasmvm/target/debug/build
+            - libwasmvm/target/debug/deps
+            - libwasmvm/target/release/.fingerprint
+            - libwasmvm/target/release/build
+            - libwasmvm/target/release/deps
+          key: cargocache-v3-libwasmvm_sanity-rust:1.74.0-{{ checksum "libwasmvm/Cargo.lock" }}
+
+  libwasmvm_clippy:
+    parameters:
+      rust-version:
+        type: string
+    docker:
+      - image: rust:<< parameters.rust-version >>
+    steps:
+      - checkout
+      - run:
+          name: Version information
+          command: rustc --version && cargo --version
+      - restore_cache:
+          keys:
+            - v3-libwasmvm_clippy-rust:<< parameters.rust-version >>-{{ checksum "libwasmvm/Cargo.lock" }}
+            - v3-libwasmvm_clippy-rust:<< parameters.rust-version >>-
+      - run:
+          name: Add clippy component
+          command: rustup component add clippy
+      - run:
+          name: Run clippy
+          working_directory: libwasmvm
+          command: cargo clippy --all-targets -- -D warnings
+      - save_cache:
+          paths:
+            - ~/.cargo/registry
+            - libwasmvm/target/debug/.fingerprint
+            - libwasmvm/target/debug/build
+            - libwasmvm/target/debug/deps
+            - libwasmvm/target/release/.fingerprint
+            - libwasmvm/target/release/build
+            - libwasmvm/target/release/deps
+          key: v3-libwasmvm_clippy-rust:<< parameters.rust-version >>-{{ checksum "libwasmvm/Cargo.lock" }}
+
+  # This performs all the Rust debug builds on Windows. Similar to libwasmvm_sanity
+  # but avoids duplicating things that are not platform dependent.
+  libwasmvm_sanity_windows:
+    executor:
+      name: win/default
+      shell: bash.exe
+    steps:
+      - checkout
+      - run:
+          name: Reset git config set by CircleCI to make Cargo work
+          command: git config --global --unset url.ssh://git@github.com.insteadof
+      - run:
+          name: Install Rust
+          command: |
+            set -o errexit
+            curl -sS --output rustup-init.exe https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe
+            ./rustup-init.exe --no-modify-path --profile minimal --default-toolchain 1.74.0 -y
+            echo 'export PATH="$PATH;$USERPROFILE/.cargo/bin"' >> "$BASH_ENV"
+      - run:
+          name: Show Rust version information
+          command: rustc --version; cargo --version; rustup --version
+      - restore_cache:
+          keys:
+            - cachev4-libwasmvm_sanity_windows-rust:1.74.0-{{ checksum "libwasmvm/Cargo.lock" }}
+            - cachev4-libwasmvm_sanity_windows-rust:1.74.0-
+      - run:
+          name: Run unit tests
+          working_directory: libwasmvm
+          command: cargo test
+      - save_cache:
+          paths:
+            # ".." is the easiest way to get $HOME here (pwd is $HOME\project)
+            - ../.cargo/registry
+            - libwasmvm/target/debug/.fingerprint
+            - libwasmvm/target/debug/build
+            - libwasmvm/target/debug/deps
+          key: cachev4-libwasmvm_sanity_windows-rust:1.74.0-{{ checksum "libwasmvm/Cargo.lock" }}
+
+  libwasmvm_audit:
+    docker:
+      # The audit tool might use a more modern Rust version than the build jobs. See
+      # "Tooling Rust compiler" in docs/COMPILER_VERSIONS.md
+      - image: cimg/rust:1.75.0
+    steps:
+      - checkout
+      - run:
+          name: Install OpenSSL
+          command: |
+            sudo apt update
+            sudo apt install libssl-dev
+      - run:
+          name: Show Rust version information
+          command: rustc --version; cargo --version; rustup --version
+      - restore_cache:
+          keys:
+            - v3-libwasmvm_audit-rust:1.75.0-{{ checksum "libwasmvm/Cargo.lock" }}
+            - v3-libwasmvm_audit-rust:1.75.0-
+      - run:
+          name: Install cargo-audit
+          command: cargo install --debug cargo-audit --version 0.17.6
+      - run:
+          name: Run cargo-audit
+          working_directory: libwasmvm
+          command: cargo audit
+      - save_cache:
+          paths:
+            - ~/.cargo/registry
+          key: v3-libwasmvm_audit-rust:1.75.0-{{ checksum "libwasmvm/Cargo.lock" }}
+
+  format-go:
+    docker:
+      - image: cimg/go:1.21.4
+    steps:
+      - run:
+          name: Install gofumpt
+          command: go install mvdan.cc/gofumpt@v0.4.0
+      - checkout
+      - run:
+          name: Check Go formatting with gofmt
+          command: |
+            [ "$(gofmt -l .)" = "" ] || (gofmt -d . && exit 1)
+      - run:
+          name: Check Go formatting with gofumpt
+          command: |
+            [ "$(gofumpt -l .)" = "" ] || (gofumpt -d . && exit 1)
+
+  # Build types and cosmwam package without cgo
+  wasmvm_no_cgo:
+    docker:
+      - image: cimg/go:1.21.4
+    steps:
+      - checkout
+      - run:
+          name: Build package "types" without cgo
+          command: CGO_ENABLED=0 go build ./types
+      - run:
+          name: Build package "cosmwasm" without cgo
+          command: CGO_ENABLED=0 go build .
+      - run:
+          name: Test package "types" without cgo
+          command: CGO_ENABLED=0 go test ./types
+      - run:
+          name: Test package "cosmwasm" without cgo
+          command: CGO_ENABLED=0 go test .
+
+  # Build types and cosmwasm with libwasmvm linking disabled
+  nolink_libwasmvm:
+    docker:
+      - image: cimg/go:1.21.4
+    steps:
+      - checkout
+      - run:
+          name: Build package "types" with libwasmvm linking disabled
+          command: go build -tags "nolink_libwasmvm" ./types
+      - run:
+          name: Build package "cosmwasm" with libwasmvm linking disabled
+          command: go build -tags "nolink_libwasmvm" .
+      - run:
+          name: Test package "types" with libwasmvm linking disabled
+          command: go test -tags "nolink_libwasmvm" ./types
+      - run:
+          name: Test package "cosmwasm" with libwasmvm linking disabled
+          command: go test -tags "nolink_libwasmvm" .
+
+  tidy-go:
+    docker:
+      - image: cimg/go:1.21.4
+    steps:
+      - checkout
+      - run:
+          name: Check go mod tidy
+          # Use --check or --exit-code when available (Go 1.22?)
+          # https://github.com/golang/go/issues/27005
+          command: |
+            go mod tidy
+            CHANGES_IN_REPO=$(git status --porcelain)
+            if [[ -n "$CHANGES_IN_REPO" ]]; then
+              echo "Repository is dirty. Showing 'git status' and 'git --no-pager diff' for debugging now:"
+              git status && git --no-pager diff
+              exit 1
+            fi
+
+  format-scripts:
+    docker:
+      - image: cimg/go:1.21.4
+    steps:
+      - run:
+          name: Install shfmt
+          command: GO111MODULE=on go install mvdan.cc/sh/v3/cmd/shfmt@v3.7.0
+      - checkout
+      - run:
+          name: Run shfmt
+          command: shfmt --diff .
+
+  lint-scripts:
+    docker:
+      - image: ubuntu:20.04
+    steps:
+      - run:
+          name: Install packages
+          command: |
+            apt update
+            apt install -y git shellcheck
+      - checkout
+      - run:
+          name: Run shellcheck
+          command: find . -name "*.sh" -exec shellcheck {} +
+
+  build_shared_library:
+    docker:
+      - image: cimg/rust:1.74.0
+    steps:
+      - checkout
+      - run:
+          name: Show version information
+          command: rustc --version; cargo --version; rustup --version
+      - restore_cache:
+          keys:
+            - cargocache-v3-build_shared_library-rust:1.74.0-{{ checksum "libwasmvm/Cargo.lock" }}
+            - cargocache-v3-build_shared_library-rust:1.74.0-
+      - run:
+          name: Create release build of libwasmvm
+          command: make build-rust
+      - persist_to_workspace:
+          root: ./internal/api
+          paths:
+            - libwasmvm.x86_64.so
+      - save_cache:
+          paths:
+            - ~/.cargo/registry
+            - libwasmvm/target/debug/.fingerprint
+            - libwasmvm/target/debug/build
+            - libwasmvm/target/debug/deps
+            - libwasmvm/target/release/.fingerprint
+            - libwasmvm/target/release/build
+            - libwasmvm/target/release/deps
+          key: cargocache-v3-build_shared_library-rust:1.74.0-{{ checksum "libwasmvm/Cargo.lock" }}
+
+  # Test the Go project and run benchmarks
+  wasmvm_test:
+    docker:
+      - image: cimg/go:1.21.4
+    environment:
+      GORACE: "halt_on_error=1"
+      BUILD_VERSION: $(echo ${CIRCLE_SHA1} | cut -c 1-10)
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /tmp/builds
+      - run:
+          name: Copy .so build
+          command: cp /tmp/builds/libwasmvm.x86_64.so ./internal/api
+      # Debugging step to better understand what is linked here
+      - run:
+          name: Check .so files
+          command: |
+            ls -lA ./internal/api/libwasmvm.*.so
+            sha256sum ./internal/api/libwasmvm.*.so
+            ldd ./internal/api/libwasmvm.x86_64.so
+      - run:
+          name: Build Go project
+          command: make build-go
+      - run:
+          name: Go integration tests
+          command: make test
+      - run:
+          name: Go tests with cgo and race condition safety checks
+          command: make test-safety
+      - run:
+          name: Go benchmarks
+          command: make bench
+
+  test_alpine_build:
+    machine:
+      image: ubuntu-2004:2022.10.1
+    steps:
+      - checkout
+      - run: make test-alpine
+      - run:
+          name: Debug build results
+          command: ls -l ./internal/api
+
+  deploy_to_git:
+    machine:
+      image: ubuntu-2004:2022.10.1
+    resource_class: xlarge
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            # Custom read/write deployment key with private key stored on CircleCI
+            # (see https://app.circleci.com/settings/project/github/CosmWasm/wasmvm/ssh and https://github.com/CosmWasm/wasmvm/settings/keys)
+            - "31:de:e5:84:1b:12:81:94:aa:06:50:c0:cb:bd:79:f0"
+      - checkout
+      - run:
+          name: Build shared library for Linux
+          command: make release-build-linux
+      - run:
+          name: Build shared library for macOS
+          command: make release-build-macos
+      # Shared libraries for Windows (.dll) currently do not work (https://github.com/CosmWasm/wasmvm/issues/389)
+      # and .dll builds are not deterministic.
+      # Deactivating this step to avoid polluting the git hostory.
+      #
+      # - run:
+      #     name: Build shared library for Windows
+      #     command: make release-build-windows
+      - run:
+          name: Debug build results
+          command: ls -l ./internal/api
+      - run:
+          name: Configure git user
+          # This is not a GitHub user and no permissions can be configured other than "push access", which
+          # we can configure for Deploy keys at https://github.com/CosmWasm/wasmvm/settings/keys
+          command: |
+            git config user.email "wasmvm@circleci.confio.example.com"
+            git config user.name "Deployer"
+      - run:
+          name: Check-in and push new libraries
+          command: |
+            git status
+            git add ./internal/api
+            git commit --allow-empty -m '[skip ci] Built release libraries'
+            git push origin $CIRCLE_BRANCH
+
+  build_static_lib:
+    machine:
+      image: ubuntu-2004:2022.10.1
+    resource_class: xlarge
+    steps:
+      - run:
+          name: Check Go version # needed for ghr installation
+          command: go version
+      - run:
+          name: Install ghr
+          command: |
+            go install github.com/tcnksm/ghr@v0.16.0
+            ghr --version
+      - checkout
+      - run:
+          name: Build static library for Alpine
+          command: make release-build-alpine
+      - run:
+          name: Build static library for MacOS
+          command: make release-build-macos-static
+      - run:
+          name: Debug build results
+          command: ls -l ./internal/api
+      # Deploy to GitHub releases on tag builds. At some point we might want to extract
+      # those steps into a separate job for better maintainability.
+      - when:
+          condition: << pipeline.git.tag >>
+          steps:
+            - run:
+                name: Collect artifacts
+                command: |
+                  mkdir artifacts
+
+                  # Static (from build)
+                  cp ./internal/api/libwasmvm_muslc.x86_64.a artifacts/
+                  cp ./internal/api/libwasmvm_muslc.aarch64.a artifacts/
+                  cp ./internal/api/libwasmvmstatic_darwin.a artifacts/
+
+                  # Shared (from git)
+                  cp ./internal/api/libwasmvm.aarch64.so artifacts/
+                  cp ./internal/api/libwasmvm.x86_64.so artifacts/
+                  cp ./internal/api/libwasmvm.dylib artifacts/
+            - run:
+                name: Create checksums
+                working_directory: artifacts
+                command: sha256sum * > checksums.txt && cat checksums.txt
+            - run:
+                name: Publish artifacts on GitHub
+                command: |
+                  TAG="$CIRCLE_TAG"
+                  TITLE="$TAG"
+                  BODY="Build artifacts generated at this tag."
+                  # Check if tag is a version without suffix (e.g. -rc or -beta) and
+                  # set prerelease flag accordingly
+                  [[ "$TAG" =~ ^v[0-9]+.[0-9]+.[0-9]+$ ]] || PRERELEASE=-prerelease
+                  ghr -t "$GITHUB_TOKEN" \
+                    -u "$CIRCLE_PROJECT_USERNAME" -r "$CIRCLE_PROJECT_REPONAME" \
+                    -c "$CIRCLE_SHA1" \
+                    -n "$TITLE" -b "$BODY" \
+                    -delete \
+                    $PRERELEASE \
+                    "$TAG" ./artifacts/
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - libwasmvm_sanity
+      # Temporarily disabled. This check is still running on main.
+      # - libwasmvm_sanity_windows
+      - libwasmvm_clippy:
+          matrix:
+            parameters:
+              # Run with MSRV and some modern stable Rust
+              rust-version: ["1.74.0", "1.80.0"]
+      - libwasmvm_audit
+      - format-go
+      - wasmvm_no_cgo
+      - nolink_libwasmvm
+      - tidy-go
+      - format-scripts
+      - lint-scripts
+      - build_shared_library:
+          filters: # required since other jobs with tag filters require this one
+            tags:
+              only: /.*/
+      - wasmvm_test:
+          requires:
+            - build_shared_library
+      - build_static_lib:
+          requires:
+            - build_shared_library
+          filters:
+            # tags and branches are OR combined
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+            branches:
+              only:
+                # long living branches
+                - main
+                - 0.14-dev
+      # This is long running, so only double-check on merge commits
+      # ensures that all code works on alpine linux
+      - test_alpine_build:
+          filters:
+            tags:
+              ignore:
+                - /.*/
+            branches:
+              only:
+                # long living branches
+                - main
+                # Development
+                - GoIter-creation
+      # Run only on main, not on tags (auto-build on merge PR)
+      - deploy_to_git:
+          requires:
+            - libwasmvm_sanity
+            - format-go
+            - tidy-go
+            - format-scripts
+            - lint-scripts
+            - wasmvm_test
+          filters:
+            tags:
+              ignore:
+                - /.*/
+            branches:
+              only:
+                - main
+                - /^release\/.*/

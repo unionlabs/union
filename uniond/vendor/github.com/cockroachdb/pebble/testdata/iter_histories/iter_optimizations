@@ -1,0 +1,719 @@
+# Test repeated seeks into the same range key, while TrySeekUsingNext=true.
+# Test for regression fixed in #1849.
+
+reset
+----
+
+batch commit
+range-key-set a c @5 boop
+range-key-set c e @5 beep
+----
+committed 2 keys
+
+combined-iter
+seek-ge a
+seek-ge b
+----
+a: (., [a-c) @5=boop UPDATED)
+b: (., [a-c) @5=boop)
+
+# Ensure that no-op optimizations do not reuse range key iterator state across
+# SetOptions calls. No-op optimizations have the potential to fail to update
+# RangeKeyChanged().
+
+reset
+----
+
+batch commit
+range-key-set p s @1 foo
+----
+committed 1 keys
+
+combined-iter lower=n@9 upper=x@5
+seek-lt y@3
+set-options lower=n@9 upper=x@5
+seek-lt-limit t o
+----
+p: (., [p-s) @1=foo UPDATED)
+.
+p: valid (., [p-s) @1=foo UPDATED)
+
+combined-iter lower=n@9 upper=x@5
+seek-ge o
+set-options lower=n@9 upper=x@5
+seek-ge oat
+----
+p: (., [p-s) @1=foo UPDATED)
+.
+p: (., [p-s) @1=foo UPDATED)
+
+combined-iter lower=n@9 upper=x@5
+seek-prefix-ge p@5
+set-options lower=n@9 upper=x@5
+seek-prefix-ge p
+----
+p@5: (., [p-"p\x00") @1=foo UPDATED)
+.
+p: (., [p-"p\x00") @1=foo UPDATED)
+
+# Regression test for #1963 / cockroachdb/cockroach#88296.
+#
+# The iterators in this test move their bounds monotonically forward
+# [a,b)→[b,e). This enables the sstable iterator optimization for monotonically
+# moving bounds (see boundsCmp in sstable/reader.go). With this optimization,
+# the first seek after the SetBounds may use the fact that the bounds moved
+# forward monotonically to avoid re-seeking within the index.
+#
+# The test cases below exercise a seek to a key, followed by a seek to a smaller
+# key. The second seek should not make use of the bounds optimization because
+# doing so may incorrectly skip all keys between the lower bound and the first
+# seek key. Previously, the code paths that handled block-property filtering on
+# a two-level iterator could leave the iterator in a state such that the second
+# seek would improperly also exercise the monotonic bounds optimization. In the
+# test cases below, this would result in the key 'b' not being found. Each test
+# case exercises a different combination of seek-ge and seek-prefix-ge.
+
+reset block-size=1 index-block-size=1
+----
+
+batch commit
+set a a
+set b b
+set b@4 b@4
+set z@6 z@6
+----
+committed 4 keys
+
+flush
+----
+
+combined-iter lower=a upper=b point-key-filter=(1,4)
+seek-ge a
+set-bounds lower=b upper=e
+seek-prefix-ge d@5
+seek-prefix-ge b
+----
+a: (a, .)
+.
+.
+b: (b, .)
+
+combined-iter lower=a upper=b point-key-filter=(1,4)
+seek-ge a
+set-bounds lower=b upper=e
+seek-ge d@5
+seek-prefix-ge b
+----
+a: (a, .)
+.
+.
+b: (b, .)
+
+combined-iter lower=a upper=b point-key-filter=(1,4)
+seek-ge a
+set-bounds lower=b upper=e
+seek-ge d@5
+seek-ge b
+----
+a: (a, .)
+.
+.
+b: (b, .)
+
+combined-iter lower=a upper=b point-key-filter=(1,4)
+seek-ge a
+set-bounds lower=b upper=e
+seek-prefix-ge d@5
+seek-ge b
+----
+a: (a, .)
+.
+.
+b: (b, .)
+
+# Test a similar case with range key masking. The previous bug did not apply to
+# this case, because range-key masking never skips blocks on a seek.
+
+reset block-size=1 index-block-size=1
+----
+
+batch commit
+set a a
+set b b
+set b@4 b@4
+set z@6 z@6
+range-key-set a z @9 v
+----
+committed 5 keys
+
+flush
+----
+
+combined-iter lower=a upper=b mask-suffix=@10 mask-filter
+seek-ge a
+set-bounds lower=b upper=e
+seek-prefix-ge d@5
+seek-ge b
+----
+a: (a, [a-b) @9=v UPDATED)
+.
+d@5: (., [d-"d\x00") @9=v UPDATED)
+b: (b, [b-e) @9=v UPDATED)
+
+# Test TrySeekUsingNext across no-op SetOptions when reading through an indexed
+# batch with modifications. The seek-prefix-ges after the first should make use
+# of the TrySeekUsingNext optimization.
+#
+# TODO(jackson): The iterator stats don't signal the use of try-seek-using-next,
+# so we inspect lastPositioningOp as a proxy since that's the
+# try-seek-using-next prerequisite that previously regressed. Is there a way to
+# adapt to this test so that the absence of the try-seek-using-next optimization
+# is visible in the iterator statistics?
+#
+# Regression test for cockroachdb/cockroach#88819.
+
+reset
+----
+
+batch commit
+set b@5 b@5
+set c@3 c@3
+set d@9 d@9
+set e@8 e@8
+set f@8 f@8
+----
+committed 5 keys
+
+flush
+----
+
+batch name=foo
+set g@4 g@4
+----
+wrote 1 keys to batch "foo"
+
+combined-iter reader=foo name=fooiter
+inspect lastPositioningOp
+seek-prefix-ge b@10
+stats
+----
+lastPositioningOp="unknown"
+b@5: (b@5, .)
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal); blocks: 0B cached, 119B not cached (read time: 0s); points: 1 (3B keys, 3B values)
+
+mutate batch=foo
+set h@2 h@2
+----
+
+iter iter=fooiter
+set-options
+inspect lastPositioningOp
+seek-prefix-ge c@10
+stats
+----
+.
+lastPositioningOp="seekprefixge"
+c@3: (c@3, .)
+stats: seeked 2 times (2 internal); stepped 0 times (0 internal); blocks: 0B cached, 119B not cached (read time: 0s); points: 2 (6B keys, 6B values)
+
+mutate batch=foo
+set i@1 i@1
+----
+
+iter iter=fooiter
+set-options
+inspect lastPositioningOp
+seek-prefix-ge d@10
+stats
+----
+.
+lastPositioningOp="seekprefixge"
+d@9: (d@9, .)
+stats: seeked 3 times (3 internal); stepped 0 times (0 internal); blocks: 0B cached, 119B not cached (read time: 0s); points: 3 (9B keys, 9B values)
+
+mutate batch=foo
+set j@6 j@6
+----
+
+iter iter=fooiter
+set-options
+inspect lastPositioningOp
+seek-prefix-ge e@10
+stats
+----
+.
+lastPositioningOp="seekprefixge"
+e@8: (e@8, .)
+stats: seeked 4 times (4 internal); stepped 0 times (0 internal); blocks: 0B cached, 119B not cached (read time: 0s); points: 4 (12B keys, 12B values)
+
+# Ensure that a case eligible for TrySeekUsingNext across a SetOptions correctly
+# sees new batch mutations. The batch iterator should ignore the
+# TrySeekUsingNext designation.
+
+reset
+----
+
+batch commit
+set b@3 b@3
+set c@3 c@3
+----
+committed 2 keys
+
+batch name=b1
+----
+wrote 0 keys to batch "b1"
+
+combined-iter name=i1 reader=b1
+seek-prefix-ge b@6
+----
+b@3: (b@3, .)
+
+mutate batch=b1
+set b@4 b@4
+----
+
+iter iter=i1
+set-options
+inspect lastPositioningOp
+seek-prefix-ge b@5
+----
+.
+lastPositioningOp="seekprefixge"
+b@4: (b@4, .)
+
+# Similar case with SeekGE.
+
+iter iter=i1
+seek-ge b@2
+----
+c@3: (c@3, .)
+
+mutate batch=b1
+set c@9 c@9
+----
+
+iter iter=i1
+set-options
+inspect lastPositioningOp
+seek-ge b@1
+----
+.
+lastPositioningOp="seekge"
+c@9: (c@9, .)
+
+# Test a case similar to the above, but with an intermediate switch to
+# range-key-only iteration, so that the batchIter is not re-seeked.
+
+reset
+----
+
+batch commit
+set b@5 b@5
+set c@3 c@3
+----
+committed 2 keys
+
+batch name=b1
+----
+wrote 0 keys to batch "b1"
+
+combined-iter name=i1 reader=b1
+seek-ge b@9
+----
+b@5: (b@5, .)
+
+mutate batch=b1
+set b@6 b@6
+----
+
+iter iter=i1
+set-options key-types=range
+seek-ge b@8
+set-options key-types=both
+inspect lastPositioningOp
+seek-ge b@7
+----
+.
+.
+.
+lastPositioningOp="invalidate"
+b@6: (b@6, .)
+
+reset
+----
+
+batch commit
+set b@2 b@2
+set c@3 c@3
+----
+committed 2 keys
+
+batch name=b1
+----
+wrote 0 keys to batch "b1"
+
+combined-iter name=i1 reader=b1
+seek-prefix-ge b@1
+----
+.
+
+mutate batch=b1
+set c@4 c@4
+----
+
+iter iter=i1
+set-options
+inspect lastPositioningOp
+seek-prefix-ge c@8
+----
+.
+lastPositioningOp="seekprefixge"
+c@4: (c@4, .)
+
+# Regression test for #2084.
+#
+# The optimization added in #2058 began using an enabled TrySeekUsingNext flag
+# to avoid re-seeking within a level's file metadata. This optimization was
+# dependent on the invariant that the iterator remained positioned at the
+# previous seek key, so that a subsequent seek to a larger key does not need to
+# backtrack.
+#
+# This invariant wasn't strictly preserved by the levelIter during SeekPrefixGE
+# calls. During a SeekPrefixGE, the sstable iterator may return nil despite the
+# existence of sstable keys greater than the seek key if the sstable's bloom
+# filter excludes the seek prefix. If the sstable DOES NOT contain any range
+# tombstones, the levelIter does not advance to the next file if the file's
+# largest bound has a prefix larger than the seek prefix, returning nil, else it
+# does advance since the next file could contain the seek prefix.
+#
+# However, if the file DOES contain range tombstones, the levelIter returns a
+# synthetic largest boundary key so that the file remains open until the merging
+# iterator passes beyond its bounds. This ensures the file's range deletions'
+# effects on other keys are observed. If another level returned a key greater
+# than this largest boundary key (eg, because the other level doesn't restrict
+# results to the seek prefix), the merging iterator could step beyond the
+# level's synthetic boundary key.  This step could advance the levelIter to the
+# next file, despite its irrelevance to the current prefix. This step would also
+# break the invariant that the level iterator remained positioned at the seek
+# key.
+#
+# The bug was fixed by comparing the synthetic boundary key to the seek prefix,
+# avoiding ever Next-ing the level iterator beyond the seek prefix.
+
+# Set 100 bloom-filter bits per key to ensure the bloom-filter exclusivity
+# checks successfully exclude prefixes that aren't present.
+reset bloom-bits-per-key=100
+----
+
+# [a           -d)
+#    b@3          d@1
+batch commit
+del-range a d
+set b@3 b@3
+set d@1 d@1
+----
+committed 3 keys
+
+flush
+----
+
+# c@0 e@0
+batch commit
+del c@0
+set e@0 e@0
+----
+committed 2 keys
+
+flush
+----
+
+lsm
+----
+0.1:
+  000007:[c@0#13,DEL-e@0#14,SET]
+0.0:
+  000005:[a#10,RANGEDEL-d@1#12,SET]
+
+# The first SeekPrefixGE(b@3) positions each level iterator over their
+# respective files and correctly finds b@3.
+#
+# The second SeekPrefixGE(c@5) seeks in both files. The 0.0 level iterator finds
+# that its file does not contain the prefix 'c', so it returns nil. Since the file
+# contains a range deletion, it returns a synthetic boundary key with user key
+# d@1 to ensure the file stays open until the iterator has moved beyond the
+# file's bounds. The seek in level 0.1 finds a key with the prefix 'c': a point
+# tombstone c@0#4,DEL. This gets bubbled up to the Iterator, which skips it
+# because it's a point tombstone, nexting within 000007 to e@0#5.
+#
+# Previously, in the bug highlighted by #2084, the merging iterator would then
+# see that level 0.0's synthetic boundary key at d@1 was at the top of the heap
+# and move to the next file in 0.0. The subsequent call to SeekPrefixGE(d@1,
+# TrySeekUsingNext=true) would incorrectly use the current position within the
+# 0.0 file metadata (nil), and miss the d@1 key.
+
+combined-iter
+seek-prefix-ge b@3
+seek-prefix-ge c@5
+seek-prefix-ge d@1
+----
+b@3: (b@3, .)
+.
+d@1: (d@1, .)
+
+
+# Test an instance where unequal application of TrySeekUsingNext optimizations
+# among a merging iterator's levels can result in surfacing deleted keys.
+# Regression test for #2101.
+
+reset
+----
+
+batch commit
+set b b
+----
+committed 1 keys
+
+flush
+----
+
+compact a-h
+----
+6:
+  000005:[b#10,SET-b#10,SET]
+
+batch commit
+set g g
+----
+committed 1 keys
+
+flush
+----
+
+compact a-h
+----
+6:
+  000005:[b#10,SET-b#10,SET]
+  000007:[g#11,SET-g#11,SET]
+
+batch commit
+del-range b d
+----
+committed 1 keys
+
+flush
+----
+
+batch commit
+set e e
+----
+committed 1 keys
+
+flush
+----
+
+lsm
+----
+0.0:
+  000009:[b#12,RANGEDEL-d#inf,RANGEDEL]
+  000011:[e#13,SET-e#13,SET]
+6:
+  000005:[b#10,SET-b#10,SET]
+  000007:[g#11,SET-g#11,SET]
+
+# The `seek-ge b` could incorrectly return `b` if the level 0.0 levelIter obeys
+# the TrySeekUsingNext optimization but the level 6 levelIter does not. The
+# TrySeekUsingNext optimization must be applied equally across all the levels of
+# a merging iterator.
+
+combined-iter
+seek-ge a
+seek-ge b
+----
+e: (e, .)
+e: (e, .)
+
+# Regression test for #2118, where a MERGE pushes child iterators to the next
+# key, and possibly past a file that contained a range tombstone that we
+# should have paused at in a SeekPrefixGE, affecting future TrySeekUsingNexts.
+# This test constructs this example (suffixes ignored), where square brackets
+# consist of one SST:
+#
+# L0: [(b, MERGE)  (c-d, RANGEDEL)] [(m, DEL)]
+# L6: [(c, SET) (c-e, RANGEKEYSET)] [(j, SET)]
+#
+# We create an iterator with L6 filters enabled and create relatively large
+# bloom filter blocks to reduce the false positive rate. Then we SeekPrefixGE(b)
+# and end up with the L0 levelIter landing on the (b, MERGE), and the L6 iterator
+# is exhausted as no SST filter blocks match the prefix. The top-level iterator
+# then Next()s to find the next internal key at b if there is any, we land
+# on the pause key at (d, RANGEDELSENTINEL). Crucially since there are no
+# more items in the mergingIter heap and the merging iter is set to elide
+# range tombstones, we Next() the level iter again as part of the same top-level
+# iterator Next(), and land on (m, DEL). The type of the key here doesn't really
+# matter.
+#
+# We then do a SeekPrefixGE(c), and since c > b, in the buggy scenario we
+# TrySeekUsingNext. The bottom levelIter correctly finds the sstable containing
+# the set, but the upper levelIter is already past the sstable containing the
+# rangedel, so it just returns (m, DEL) again, and we surface the (c, SET) that
+# should have been deleted.
+
+reset bloom-bits-per-key=100
+----
+
+batch commit
+set c@2 foo
+range-key-set c e @5 bar
+----
+committed 2 keys
+
+flush
+----
+
+compact a-z
+----
+6:
+  000005:[c#11,RANGEKEYSET-e#inf,RANGEKEYSET]
+
+batch commit
+set j k
+----
+committed 1 keys
+
+flush
+----
+
+compact a-z
+----
+6:
+  000005:[c#11,RANGEKEYSET-e#inf,RANGEKEYSET]
+  000007:[j#12,SET-j#12,SET]
+
+batch commit
+del-range c@2 d
+merge b@2 g
+----
+committed 2 keys
+
+flush
+----
+
+batch commit
+del m
+----
+committed 1 keys
+
+flush
+----
+
+lsm
+----
+0.0:
+  000009:[b@2#14,MERGE-d#inf,RANGEDEL]
+  000011:[m#15,DEL-m#15,DEL]
+6:
+  000005:[c#11,RANGEKEYSET-e#inf,RANGEKEYSET]
+  000007:[j#12,SET-j#12,SET]
+
+combined-iter upper=z@3 mask-suffix=@3 mask-filter use-l6-filter
+seek-prefix-ge b@2
+seek-prefix-ge c@2
+----
+b@2: (g, .)
+c@2: (., [c-"c\x00") @5=bar UPDATED)
+
+# Regression test for Cockroachdb#92205. This test constructs this scenario:
+#
+# A DEL in a middle level (L0.0) that we SeekPrefixGE directly for. Note that
+# this DEL is not deleted by any range deletes; it gets exposed to the
+# Iterator. There's a key after this DEL in the L0.0 levelIter, and there's a
+# level above it (L0.1) that has a rangedel deleting that key, but not the DEL
+# we SeekPrefixGE for. In the lowest level, there's a SET at L6 that is to the
+# right of the DEL in L0.0, but is also not deleted by the RANGEDEL in L0.1.
+# Our second SeekPrefixGE will be for this SET. Visualization, where square
+# brackets are files:
+#
+# L0.1                 [dd-ee#RANGEDEL]
+# L0.0    [b#DEL          e#SET]
+# L6            [d#SET]       [f#SET g#SET]
+#
+# When the Iterator encounters the above DEL internal key in the SeekPrefixGE, it
+# calls Iterator.nextUserKey in the Iterator.findNextEntry call that was part of the
+# SeekPrefixGE call. While Iterator.findNextEntry has a conditional to exit
+# out of the loop if we're in prefix iteration and have gone past the prefix,
+# this break only happens _after_ nextUserKey() has run. As a result we Next()
+# the levelIter in L0.0, land on e#SET, and the mergingIter realizes that it
+# is deleted by the rangedel in a higher level (L0.1). The mergingIter does not
+# see d#SET because that sstable was excluded by the bloom filter. We then do a relative
+# seek of all levels below L0.1 to ee (the end key of the rangedel), and in that
+# process we advance the L6 levelIter to the second file.
+#
+# When we do the second SeekPrefixGE for d, the outer Iterator thinks d > b and
+# so TrySeekUsingNext can work. However, the L6 levelIter has already advanced
+# past the file containing d#SET, so we don't surface it even though we should
+# have.
+
+reset bloom-bits-per-key=100
+----
+
+batch commit
+set d@4 foo
+----
+committed 1 keys
+
+flush
+----
+
+compact a-f
+----
+6:
+  000005:[d@4#10,SET-d@4#10,SET]
+
+batch commit
+set f@5 bar
+set g@5 baz
+----
+committed 2 keys
+
+flush
+----
+
+compact e-k
+----
+6:
+  000005:[d@4#10,SET-d@4#10,SET]
+  000007:[f@5#11,SET-g@5#12,SET]
+
+batch commit
+del b@5
+set e@4 foobar
+----
+committed 2 keys
+
+flush
+----
+
+batch commit
+del-range dd ee
+----
+committed 1 keys
+
+flush
+----
+
+lsm
+----
+0.1:
+  000011:[dd#15,RANGEDEL-ee#inf,RANGEDEL]
+0.0:
+  000009:[b@5#13,DEL-e@4#14,SET]
+6:
+  000005:[d@4#10,SET-d@4#10,SET]
+  000007:[f@5#11,SET-g@5#12,SET]
+
+combined-iter upper=z@3 use-l6-filter
+seek-prefix-ge b@6
+seek-prefix-ge d@5
+----
+.
+d@4: (foo, .)

@@ -1,0 +1,126 @@
+\section{Definitions} \label{sec:definitions}
+
+\subsection{Model}
+
+We consider a system of processes that communicate by exchanging messages.
+Processes can be correct or faulty, where a faulty process can behave in an
+arbitrary way, i.e., we consider Byzantine faults. We assume that each process
+has some amount of voting power (voting power of a process can be $0$).
+Processes in our model are not part of a single administrative domain;
+therefore we cannot enforce a direct network connectivity between all
+processes. Instead, we assume that each process is connected to a subset of
+processes called peers, such that there is an indirect communication channel
+between all correct processes. Communication between processes is established
+using a gossip protocol \cite{Dem1987:gossip}.
+
+Formally, we model the network communication using a variant of the \emph{partially
+synchronous system model}~\cite{DLS88:jacm}: in all executions of the system
+there is a bound $\Delta$ and an instant GST (Global Stabilization Time) such
+that all communication among correct processes after GST is reliable and
+$\Delta$-timely, i.e., if a correct process $p$ sends message $m$ at time $t
+\ge GST$ to a correct process $q$, then $q$ will receive $m$ before $t +
+\Delta$\footnote{Note that as we do not assume direct communication channels
+    among all correct processes, this implies that before the message $m$
+    reaches $q$, it might pass through a number of correct processes that will
+forward the message $m$ using gossip protocol towards $q$.}. 
+In addition to the standard \emph{partially
+	synchronous system model}~\cite{DLS88:jacm}, we assume an auxiliary property 
+that captures gossip-based nature of communication\footnote{The details of the Tendermint gossip protocol will be discussed in a separate
+	technical report. }:
+
+
+\begin{itemize} \item \emph{Gossip communication:} If a correct process $p$
+	sends some message $m$ at time $t$, all correct processes will receive
+	$m$ before $max\{t, GST\} + \Delta$. Furthermore, if a correct process $p$
+	receives some message $m$ at time $t$, all correct processes will receive
+	$m$ before $max\{t, GST\} + \Delta$.    \end{itemize}
+
+
+The bound $\Delta$ and GST are system
+parameters whose values are not required to be known for the safety of our
+algorithm. Termination of the algorithm is guaranteed within a bounded duration
+after GST.  In practice, the algorithm will work correctly in the slightly
+weaker variant of the model where the system alternates between (long enough)
+good periods (corresponds to the \emph{after} GST period where system is
+reliable and $\Delta$-timely) and bad periods (corresponds to the period
+\emph{before} GST during which the system is asynchronous and messages can be
+lost), but consideration of the GST model simplifies the discussion.  
+
+We assume that process steps (which might include sending and receiving
+messages) take zero time.  Processes are equipped with clocks so they can
+measure local timeouts.  
+Spoofing/impersonation attacks are assumed to be impossible at all times due to
+the use of public-key cryptography, i.e., we assume that all protocol messages contains a digital signature.
+Therefore, when a correct
+process $q$ receives a signed message $m$ from its peer, the process $q$ can
+verify who was the original sender of the message $m$ and if the message signature is valid.
+We do not explicitly state a signature verification step in the pseudo-code of the algorithm to improve readability;
+we assume that only messages with the valid signature are considered at that level (and messages with invalid signatures
+are dropped).  
+
+
+
+%Messages that are being gossiped are created by the consensus layer. We can
+    %think about consensus protocol as a content creator, which %defines what
+    %messages should be disseminated using the gossip protocol. A correct
+    %process creates the message for dissemination either i) %explicitly, by
+    %invoking \emph{send} function as part of the consensus protocol or ii)
+    %implicitly, by receiving a message from some other %process. Note that in
+    %the case ii) gossiping of messages is implicit, i.e., it happens without
+    %explicit send clause in the consensus algorithm %whenever a correct
+    %process receives some messages in the consensus algorithm\footnote{If a
+    %message is received by a correct process at %the consensus level then it
+    %is considered valid from the protocol point of view, i.e., it has a
+    %correct signature, a proper message structure %and a valid height and
+    %round number.}. 
+
+%\item Processes keep resending messages (in case of failures or message loss)
+    %until all its peers get them. This ensures that every message %sent or
+    %received by a correct process is eventually received by all correct
+    %processes. 
+
+\subsection{State Machine Replication}
+
+State machine replication (SMR) is a general approach for replicating services
+modeled as a deterministic state machine~\cite{Lam78:cacm,Sch90:survey}.  The
+key idea of this approach is to guarantee that all replicas start in the same
+state and then apply requests from clients in the same order, thereby
+guaranteeing that the replicas' states will not diverge.  Following
+Schneider~\cite{Sch90:survey}, we note that the following is key for
+implementing a replicated state machine tolerant to (Byzantine) faults:
+
+\begin{itemize} \item \emph{Replica Coordination.} All [non-faulty] replicas
+    receive and process the same sequence of requests.  \end{itemize}
+
+Moreover, as Schneider also notes, this property can be decomposed into two
+parts, \emph{Agreement} and \emph{Order}: Agreement requires all (non-faulty)
+replicas to receive all requests, and Order requires that the order of received
+requests is the same at all replicas.
+
+There is an additional requirement that needs to be ensured by Byzantine
+tolerant state machine replication: only requests (called transactions in the
+Tendermint terminology) proposed by clients are executed. In Tendermint,
+transaction verification is the responsibility of the service that is being
+replicated; upon receiving a transaction from the client, the Tendermint
+process will ask the service if the request is valid, and only valid requests
+will be processed. 
+
+ \subsection{Consensus} \label{sec:consensus}
+
+Tendermint solves state machine replication by sequentially executing consensus
+instances to agree on each block of transactions that are
+then executed by the service being replicated. We consider a variant of the
+Byzantine consensus problem called Validity Predicate-based Byzantine consensus
+that is motivated by blockchain systems~\cite{GLR17:red-belly-bc}. The problem
+is defined by an agreement, a termination, and a validity property.
+
+ \begin{itemize} \item \emph{Agreement:} No two correct processes decide on
+         different values.  \item \emph{Termination:} All correct processes
+         eventually decide on a value.  \item \emph{Validity:} A decided value
+             is valid, i.e., it satisfies the predefined predicate denoted
+             \emph{valid()}.  \end{itemize}
+
+ This variant of the Byzantine consensus problem has an application-specific
+ \emph{valid()} predicate to indicate whether a value is valid. In the context
+ of blockchain systems, for example, a value is not valid if it does not
+ contain an appropriate hash of the last value (block) added to the blockchain.

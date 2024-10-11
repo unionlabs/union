@@ -1,0 +1,17 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = [
+        "mock.go",
+        "replayer.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/stategen/mock",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/state:go_default_library",
+        "//beacon-chain/state/stategen:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+    ],
+)

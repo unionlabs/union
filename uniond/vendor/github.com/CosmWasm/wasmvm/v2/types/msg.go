@@ -121,9 +121,10 @@ type BurnMsg struct {
 }
 
 type IBCMsg struct {
-	Transfer     *TransferMsg     `json:"transfer,omitempty"`
-	SendPacket   *SendPacketMsg   `json:"send_packet,omitempty"`
-	CloseChannel *CloseChannelMsg `json:"close_channel,omitempty"`
+	Transfer             *TransferMsg             `json:"transfer,omitempty"`
+	SendPacket           *SendPacketMsg           `json:"send_packet,omitempty"`
+	WriteAcknowledgement *WriteAcknowledgementMsg `json:"write_acknowledgement,omitempty"`
+	CloseChannel         *CloseChannelMsg         `json:"close_channel,omitempty"`
 }
 
 type GovMsg struct {
@@ -239,6 +240,15 @@ type SendPacketMsg struct {
 	ChannelID string     `json:"channel_id"`
 	Data      []byte     `json:"data"`
 	Timeout   IBCTimeout `json:"timeout"`
+}
+
+type WriteAcknowledgementMsg struct {
+	// The acknowledgement to send back
+	Ack IBCAcknowledgement `json:"ack"`
+	// Existing channel where the packet was received
+	ChannelID string `json:"channel_id"`
+	// Sequence number of the packet that was received
+	PacketSequence uint64 `json:"packet_sequence"`
 }
 
 type CloseChannelMsg struct {

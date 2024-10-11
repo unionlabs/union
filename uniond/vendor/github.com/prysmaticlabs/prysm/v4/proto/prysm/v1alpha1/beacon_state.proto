@@ -1,0 +1,361 @@
+syntax = "proto3";
+
+package ethereum.eth.v1alpha1;
+
+import "proto/prysm/v1alpha1/attestation.proto";
+import "proto/prysm/v1alpha1/beacon_block.proto";
+import "proto/prysm/v1alpha1/validator.proto";
+import "proto/engine/v1/execution_engine.proto";
+import "proto/eth/ext/options.proto";
+
+option csharp_namespace = "Ethereum.Eth.V1Alpha1";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1;eth";
+option java_multiple_files = true;
+option java_outer_classname = "BeaconStateProto";
+option java_package = "org.ethereum.eth.v1alpha1";
+option php_namespace = "Ethereum\\Eth\\v1alpha1";
+
+message BeaconState {
+  // Versioning [1001-2000]
+  uint64 genesis_time = 1001;
+  bytes genesis_validators_root = 1002 [(ethereum.eth.ext.ssz_size) = "32"];
+  uint64 slot = 1003 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+  Fork fork = 1004;
+
+  // History [2001-3000]
+  BeaconBlockHeader latest_block_header = 2001;
+  repeated bytes block_roots = 2002 [(ethereum.eth.ext.ssz_size) = "block_roots.size"];
+  repeated bytes state_roots = 2003 [(ethereum.eth.ext.ssz_size) = "state_roots.size"];
+  repeated bytes historical_roots = 2004 [(ethereum.eth.ext.ssz_size) = "?,32", (ethereum.eth.ext.ssz_max)  = "16777216"];
+
+  // Eth1 [3001-4000]
+  Eth1Data eth1_data = 3001;
+  repeated Eth1Data eth1_data_votes = 3002 [(ethereum.eth.ext.ssz_max) = "eth1_data_votes.size"];
+  uint64 eth1_deposit_index = 3003;
+
+  // Registry [4001-5000]
+  repeated Validator validators = 4001 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+  repeated uint64 balances = 4002 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+
+  // Randomness [5001-6000]
+  repeated bytes randao_mixes = 5001 [(ethereum.eth.ext.ssz_size) = "randao_mixes.size"];
+
+  // Slashings [6001-7000]
+  repeated uint64 slashings = 6001 [(ethereum.eth.ext.ssz_size) = "slashings.size"];
+
+  // Attestations [7001-8000]
+  repeated PendingAttestation previous_epoch_attestations = 7001 [(ethereum.eth.ext.ssz_max) = "previous_epoch_attestations.max"];
+  repeated PendingAttestation current_epoch_attestations = 7002 [(ethereum.eth.ext.ssz_max) = "current_epoch_attestations.max"];
+
+  // Finality [8001-9000]
+  // Spec type [4]Bitvector which means this would be a fixed size of 4 bits.
+  bytes justification_bits = 8001 [(ethereum.eth.ext.ssz_size) = "1", (ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector4"];
+  Checkpoint previous_justified_checkpoint = 8002;
+  Checkpoint current_justified_checkpoint = 8003;
+  Checkpoint finalized_checkpoint = 8004;
+}
+
+// The beacon state for Altair hard fork 1.
+// Reference: https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/beacon-chain.md#beaconstate
+message BeaconStateAltair {
+  // Versioning [1001-2000]
+  uint64 genesis_time = 1001;
+  bytes genesis_validators_root = 1002 [(ethereum.eth.ext.ssz_size) = "32"];
+  uint64 slot = 1003 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+  Fork fork = 1004;
+
+  // History [2001-3000]
+  BeaconBlockHeader latest_block_header = 2001;
+  repeated bytes block_roots = 2002 [(ethereum.eth.ext.ssz_size) = "block_roots.size"];
+  repeated bytes state_roots = 2003 [(ethereum.eth.ext.ssz_size) = "state_roots.size"];
+  repeated bytes historical_roots = 2004 [(ethereum.eth.ext.ssz_size) = "?,32", (ethereum.eth.ext.ssz_max)  = "16777216"];
+
+  // Eth1 [3001-4000]
+  Eth1Data eth1_data = 3001;
+  repeated Eth1Data eth1_data_votes = 3002 [(ethereum.eth.ext.ssz_max) = "eth1_data_votes.size"];
+  uint64 eth1_deposit_index = 3003;
+
+  // Registry [4001-5000]
+  repeated Validator validators = 4001 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+  repeated uint64 balances = 4002 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+
+  // Randomness [5001-6000]
+  repeated bytes randao_mixes = 5001 [(ethereum.eth.ext.ssz_size) = "randao_mixes.size"];
+
+  // Slashings [6001-7000]
+  repeated uint64 slashings = 6001 [(ethereum.eth.ext.ssz_size) = "slashings.size"];
+
+  // Participation [7001-8000]
+  bytes previous_epoch_participation = 7001 [(ethereum.eth.ext.ssz_max) = "1099511627776"]; // [New in Altair, replaced previous_epoch_attestations]
+  bytes current_epoch_participation = 7002 [(ethereum.eth.ext.ssz_max) = "1099511627776"]; // [New in Altair, replaced current_epoch_attestations]
+
+  // Finality [8001-9000]
+  // Spec type [4]Bitvector which means this would be a fixed size of 4 bits.
+  bytes justification_bits = 8001 [(ethereum.eth.ext.ssz_size) = "1", (ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector4"];
+  Checkpoint previous_justified_checkpoint = 8002;
+  Checkpoint current_justified_checkpoint = 8003;
+  Checkpoint finalized_checkpoint = 8004;
+
+  // New Altair fields [9001-10000]
+  repeated uint64 inactivity_scores = 9001 [(ethereum.eth.ext.ssz_max) = "1099511627776"]; // [New in Altair]
+  SyncCommittee current_sync_committee = 9002; // [New in Altair]
+  SyncCommittee next_sync_committee = 9003; // [New in Altair]
+}
+
+message Fork {
+  bytes previous_version = 1 [(ethereum.eth.ext.ssz_size) = "4"];
+  bytes current_version = 2 [(ethereum.eth.ext.ssz_size) = "4"];
+  uint64 epoch = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+}
+
+message PendingAttestation {
+  // Bitfield representation of validator indices that have voted exactly
+  // the same vote and have been aggregated into this attestation.
+  bytes aggregation_bits = 1 [(ethereum.eth.ext.ssz_max) = "2048", (ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
+  AttestationData data = 2;
+  // The difference of when attestation gets created and get included on chain.
+  uint64 inclusion_delay = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+  // The proposer who included the attestation in the block.
+  uint64 proposer_index = 4 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+}
+
+message HistoricalBatch {
+  repeated bytes block_roots = 1 [(ethereum.eth.ext.ssz_size) = "block_roots.size"];
+  repeated bytes state_roots = 2 [(ethereum.eth.ext.ssz_size) = "state_roots.size"];
+}
+
+// The state summary object is defined for summarizing a state
+// of a given slot. The summary facilitates regeneration of a
+// specific state to allow easy playback using pre-saved state
+// and blocks.
+message StateSummary {
+  // The slot of the state.
+  uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+  // The block root of the state.
+  bytes root = 2;
+}
+
+message SigningData {
+  // The root of the object being signed.
+  bytes object_root = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+  // The domain for the particular object being signed.
+  bytes domain = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+message ForkData {
+  // The current version of the fork.
+  bytes current_version = 4 [(ethereum.eth.ext.ssz_size) = "4"];
+  // The genesis validators root of the fork.
+  bytes genesis_validators_root = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+message CheckPtInfo {
+  // The randao seed which the check point refers to, this will be used to retrieve shuffled indices.
+  bytes seed = 1;
+  // The genesis root which the check point refers to. This ensures same seed can't happen on different chain.
+  bytes genesis_root = 2;
+  // Validators that were active at that check point.
+  repeated uint64 active_indices = 3;
+  // Validators public keys at that check point.
+  repeated bytes pub_keys = 4;
+  // The fork data at that check point. This will be used to verify signatures.
+  Fork fork = 5;
+}
+
+// DepositMessage serves as a subset of deposit data in order to derive the signing root.
+message DepositMessage {
+  // 48 byte BLS public key of the validator.
+  bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+
+  // A 32 byte hash of the withdrawal address public key.
+  bytes withdrawal_credentials = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // Deposit amount in gwei.
+  uint64 amount = 3;
+}
+
+// SyncCommittee serves as committees to facilitate light client syncing to beacon chain.
+message SyncCommittee {
+  repeated bytes pubkeys = 1  [(ethereum.eth.ext.ssz_size) = "sync_committee_bits.size,48"];
+  bytes aggregate_pubkey = 2 [(ethereum.eth.ext.ssz_size) = "48"];
+}
+
+// SyncAggregatorSelectionData is used to sign over and then check whether the aggregator is selected within a subcommittee.
+message SyncAggregatorSelectionData {
+  // Slot of this signing data.
+  uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+  // Subcommittee index of this signing data.
+  uint64 subcommittee_index = 2;
+}
+
+message BeaconStateBellatrix {
+  // Versioning [1001-2000]
+  uint64 genesis_time = 1001;
+  bytes genesis_validators_root = 1002 [(ethereum.eth.ext.ssz_size) = "32"];
+  uint64 slot = 1003 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+  Fork fork = 1004;
+
+  // History [2001-3000]
+  BeaconBlockHeader latest_block_header = 2001;
+  repeated bytes block_roots = 2002 [(ethereum.eth.ext.ssz_size) = "block_roots.size"];
+  repeated bytes state_roots = 2003 [(ethereum.eth.ext.ssz_size) = "state_roots.size"];
+  repeated bytes historical_roots = 2004 [(ethereum.eth.ext.ssz_size) = "?,32", (ethereum.eth.ext.ssz_max)  = "16777216"];
+
+  // Eth1 [3001-4000]
+  Eth1Data eth1_data = 3001;
+  repeated Eth1Data eth1_data_votes = 3002 [(ethereum.eth.ext.ssz_max) = "eth1_data_votes.size"];
+  uint64 eth1_deposit_index = 3003;
+
+  // Registry [4001-5000]
+  repeated Validator validators = 4001 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+  repeated uint64 balances = 4002 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+
+  // Randomness [5001-6000]
+  repeated bytes randao_mixes = 5001 [(ethereum.eth.ext.ssz_size) = "randao_mixes.size"];
+
+  // Slashings [6001-7000]
+  repeated uint64 slashings = 6001 [(ethereum.eth.ext.ssz_size) = "slashings.size"];
+
+  // Participation [7001-8000]
+  bytes previous_epoch_participation = 7001 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+  bytes current_epoch_participation = 7002 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+
+  // Finality [8001-9000]
+  // Spec type [4]Bitvector which means this would be a fixed size of 4 bits.
+  bytes justification_bits = 8001 [(ethereum.eth.ext.ssz_size) = "1", (ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector4"];
+  Checkpoint previous_justified_checkpoint = 8002;
+  Checkpoint current_justified_checkpoint = 8003;
+  Checkpoint finalized_checkpoint = 8004;
+
+  // Altair fields [9001-10000]
+  repeated uint64 inactivity_scores = 9001 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+  SyncCommittee current_sync_committee = 9002; // [New in Altair]
+  SyncCommittee next_sync_committee = 9003; // [New in Altair]
+
+  // Bellatrix fields [10001-11000]
+  ethereum.engine.v1.ExecutionPayloadHeader latest_execution_payload_header = 10001; // [New in Bellatrix]
+}
+
+message BeaconStateCapella {
+  // Versioning [1001-2000]
+  uint64 genesis_time = 1001;
+  bytes genesis_validators_root = 1002 [(ethereum.eth.ext.ssz_size) = "32"];
+  uint64 slot = 1003 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+  Fork fork = 1004;
+
+  // History [2001-3000]
+  BeaconBlockHeader latest_block_header = 2001;
+  repeated bytes block_roots = 2002 [(ethereum.eth.ext.ssz_size) = "block_roots.size"];
+  repeated bytes state_roots = 2003 [(ethereum.eth.ext.ssz_size) = "state_roots.size"];
+  repeated bytes historical_roots = 2004 [(ethereum.eth.ext.ssz_size) = "?,32", (ethereum.eth.ext.ssz_max)  = "16777216"];
+
+  // Eth1 [3001-4000]
+  Eth1Data eth1_data = 3001;
+  repeated Eth1Data eth1_data_votes = 3002 [(ethereum.eth.ext.ssz_max) = "eth1_data_votes.size"];
+  uint64 eth1_deposit_index = 3003;
+
+  // Registry [4001-5000]
+  repeated Validator validators = 4001 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+  repeated uint64 balances = 4002 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+
+  // Randomness [5001-6000]
+  repeated bytes randao_mixes = 5001 [(ethereum.eth.ext.ssz_size) = "randao_mixes.size"];
+
+  // Slashings [6001-7000]
+  repeated uint64 slashings = 6001 [(ethereum.eth.ext.ssz_size) = "slashings.size"];
+
+  // Participation [7001-8000]
+  bytes previous_epoch_participation = 7001 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+  bytes current_epoch_participation = 7002 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+
+  // Finality [8001-9000]
+  // Spec type [4]Bitvector which means this would be a fixed size of 4 bits.
+  bytes justification_bits = 8001 [(ethereum.eth.ext.ssz_size) = "1", (ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector4"];
+  Checkpoint previous_justified_checkpoint = 8002;
+  Checkpoint current_justified_checkpoint = 8003;
+  Checkpoint finalized_checkpoint = 8004;
+
+  // Altair fields [9001-10000]
+  repeated uint64 inactivity_scores = 9001 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+  SyncCommittee current_sync_committee = 9002; // [New in Altair]
+  SyncCommittee next_sync_committee = 9003; // [New in Altair]
+
+  // Bellatrix fields [10001-11000]
+  ethereum.engine.v1.ExecutionPayloadHeaderCapella latest_execution_payload_header = 10001; // [New in Bellatrix]
+
+  // Capella fields [11001-12000]
+  uint64 next_withdrawal_index = 11001; // [New in Capella]
+  uint64 next_withdrawal_validator_index = 11002 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"]; // [New in Capella]
+  repeated HistoricalSummary historical_summaries = 11003 [(ethereum.eth.ext.ssz_max) = "16777216"]; // [New in Capella]
+}
+
+message BeaconStateDeneb {
+  // Versioning [1001-2000]
+  uint64 genesis_time = 1001;
+  bytes genesis_validators_root = 1002 [(ethereum.eth.ext.ssz_size) = "32"];
+  uint64 slot = 1003 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+  Fork fork = 1004;
+
+  // History [2001-3000]
+  BeaconBlockHeader latest_block_header = 2001;
+  repeated bytes block_roots = 2002 [(ethereum.eth.ext.ssz_size) = "block_roots.size"];
+  repeated bytes state_roots = 2003 [(ethereum.eth.ext.ssz_size) = "state_roots.size"];
+  repeated bytes historical_roots = 2004 [(ethereum.eth.ext.ssz_size) = "?,32", (ethereum.eth.ext.ssz_max)  = "16777216"];
+
+  // Eth1 [3001-4000]
+  Eth1Data eth1_data = 3001;
+  repeated Eth1Data eth1_data_votes = 3002 [(ethereum.eth.ext.ssz_max) = "eth1_data_votes.size"];
+  uint64 eth1_deposit_index = 3003;
+
+  // Registry [4001-5000]
+  repeated Validator validators = 4001 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+  repeated uint64 balances = 4002 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+
+  // Randomness [5001-6000]
+  repeated bytes randao_mixes = 5001 [(ethereum.eth.ext.ssz_size) = "randao_mixes.size"];
+
+  // Slashings [6001-7000]
+  repeated uint64 slashings = 6001 [(ethereum.eth.ext.ssz_size) = "slashings.size"];
+
+  // Participation [7001-8000]
+  bytes previous_epoch_participation = 7001 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+  bytes current_epoch_participation = 7002 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+
+  // Finality [8001-9000]
+  // Spec type [4]Bitvector which means this would be a fixed size of 4 bits.
+  bytes justification_bits = 8001 [(ethereum.eth.ext.ssz_size) = "1", (ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector4"];
+  Checkpoint previous_justified_checkpoint = 8002;
+  Checkpoint current_justified_checkpoint = 8003;
+  Checkpoint finalized_checkpoint = 8004;
+
+  // Fields introduced in Altair fork [9001-10000]
+  repeated uint64 inactivity_scores = 9001 [(ethereum.eth.ext.ssz_max) = "1099511627776"];
+  SyncCommittee current_sync_committee = 9002;
+  SyncCommittee next_sync_committee = 9003;
+
+  // Fields introduced in Bellatrix fork [10001-11000]
+  ethereum.engine.v1.ExecutionPayloadHeaderDeneb latest_execution_payload_header = 10001; // [New in Deneb]
+
+  // Fields introduced in Capella fork [11001-12000]
+  uint64 next_withdrawal_index = 11001;
+  uint64 next_withdrawal_validator_index = 11002 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"]; 
+  repeated HistoricalSummary historical_summaries = 11003 [(ethereum.eth.ext.ssz_max) = "16777216"];
+}
+
+// PowBlock is a definition from Bellatrix fork choice spec to represent a block with total difficulty in the PoW chain.
+// Spec:
+// class PowBlock(Container):
+//    block_hash: Hash32
+//    parent_hash: Hash32
+//    total_difficulty: uint256
+message PowBlock {
+  bytes block_hash = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+  bytes parent_hash = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+  bytes total_difficulty = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+// HistoricalSummary matches the components of the phase0 `HistoricalBatch` making the two hash_tree_root-compatible.
+message HistoricalSummary {
+  bytes block_summary_root = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+  bytes state_summary_root = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+}

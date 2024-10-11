@@ -1,0 +1,36 @@
+name: Build and Test
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches:
+      - main
+      - release/**
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.2"
+      - name: Build
+        run: make build
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.2"
+      - name: Test
+        run: make test

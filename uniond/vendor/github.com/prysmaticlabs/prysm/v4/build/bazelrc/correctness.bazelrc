@@ -1,0 +1,56 @@
+# Don't allow network access for build actions in the sandbox.
+# Ensures that you don't accidentally make non-hermetic actions/tests which depend on remote
+# services.
+# Developers should tag targets with `tags=["requires-network"]` to opt-out of the enforcement.
+# Docs: https://bazel.build/reference/command-line-reference#flag--sandbox_default_allow_network
+build --sandbox_default_allow_network=false
+test --sandbox_default_allow_network=false
+
+# Warn if a test's timeout is significantly longer than the test's actual execution time.
+# Bazel's default for test_timeout is medium (5 min), but most tests should instead be short (1 min).
+# While a test's timeout should be set such that it is not flaky, a test that has a highly
+# over-generous timeout can hide real problems that crop up unexpectedly.
+# For instance, a test that normally executes in a minute or two should not have a timeout of
+# ETERNAL or LONG as these are much, much too generous.
+# Docs: https://bazel.build/docs/user-manual#test-verbose-timeout-warnings
+test --test_verbose_timeout_warnings
+
+# Allow the Bazel server to check directory sources for changes. Ensures that the Bazel server
+# notices when a directory changes, if you have a directory listed in the srcs of some target.
+# Recommended when using
+# [copy_directory](https://github.com/aspect-build/bazel-lib/blob/main/docs/copy_directory.md) and
+# [rules_js](https://github.com/aspect-build/rules_js) since npm package are source directories
+# inputs to copy_directory actions.
+# Docs: https://bazel.build/reference/command-line-reference#flag--host_jvm_args
+startup --host_jvm_args=-DBAZEL_TRACK_SOURCE_DIRECTORIES=1
+
+# Allow exclusive tests to run in the sandbox. Fixes a bug where Bazel doesn't enable sandboxing for
+# tests with `tags=["exclusive"]`.
+# Docs: https://bazel.build/reference/command-line-reference#flag--incompatible_exclusive_test_sandboxed
+test --incompatible_exclusive_test_sandboxed
+
+# Use a static value for `PATH` and does not inherit `LD_LIBRARY_PATH`. Doesn't let environment
+# variables like `PATH` sneak into the build, which can cause massive cache misses when they change.
+# Use `--action_env=ENV_VARIABLE` if you want to inherit specific environment variables from the
+# client, but note that doing so can prevent cross-user caching if a shared cache is used.
+# Docs: https://bazel.build/reference/command-line-reference#flag--incompatible_strict_action_env
+build --incompatible_strict_action_env
+
+# Propagate tags from a target declaration to the actions' execution requirements.
+# Ensures that tags applied in your BUILD file, like `tags=["no-remote"]`
+# get propagated to actions created by the rule.
+# Without this option, you rely on rules authors to manually check the tags you passed
+# and apply relevant ones to the actions they create.
+# See https://github.com/bazelbuild/bazel/issues/8830 for details.
+# Docs: https://bazel.build/reference/command-line-reference#flag--experimental_allow_tags_propagation
+build --experimental_allow_tags_propagation
+fetch --experimental_allow_tags_propagation
+query --experimental_allow_tags_propagation
+
+# Do not automatically create `__init__.py` files in the runfiles of Python targets. Fixes the wrong
+# default that comes from Google's internal monorepo by using `__init__.py` to delimit a Python
+# package. Precisely, when a `py_binary` or `py_test` target has `legacy_create_init` set to `auto (the
+# default), it is treated as false if and only if this flag is set. See
+# https://github.com/bazelbuild/bazel/issues/10076.
+# Docs: https://bazel.build/reference/command-line-reference#flag--incompatible_default_to_explicit_init_py
+build --incompatible_default_to_explicit_init_py

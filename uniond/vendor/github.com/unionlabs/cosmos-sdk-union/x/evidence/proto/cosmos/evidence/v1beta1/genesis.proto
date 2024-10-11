@@ -1,0 +1,12 @@
+syntax = "proto3";
+package cosmos.evidence.v1beta1;
+
+option go_package = "cosmossdk.io/x/evidence/types";
+
+import "google/protobuf/any.proto";
+
+// GenesisState defines the evidence module's genesis state.
+message GenesisState {
+  // evidence defines all the evidence at genesis.
+  repeated google.protobuf.Any evidence = 1;
+}

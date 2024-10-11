@@ -1,0 +1,977 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/content": {
+          "description": "Manage your product listings and accounts for Google Shopping"
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://merchantapi.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "Merchant",
+  "description": "Programmatically manage your Merchant Center Accounts.",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://developers.devsite.corp.google.com/merchant/api",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "merchantapi:promotions_v1beta",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://merchantapi.mtls.googleapis.com/",
+  "name": "merchantapi",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "accounts": {
+      "resources": {
+        "promotions": {
+          "methods": {
+            "get": {
+              "description": "Retrieves the promotion from your Merchant Center account. After inserting or updating a promotion input, it may take several minutes before the updated promotion can be retrieved.",
+              "flatPath": "promotions/v1beta/accounts/{accountsId}/promotions/{promotionsId}",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.promotions.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the promotion to retrieve. Format: `accounts/{account}/promotions/{promotions}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+/promotions/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "promotions/v1beta/{+name}",
+              "response": {
+                "$ref": "Promotion"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "insert": {
+              "description": "Inserts a promotion for your Merchant Center account. If the promotion already exists, then it updates the promotion instead.",
+              "flatPath": "promotions/v1beta/accounts/{accountsId}/promotions:insert",
+              "httpMethod": "POST",
+              "id": "merchantapi.accounts.promotions.insert",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "parent": {
+                  "description": "Required. The account where the promotion will be inserted. Format: accounts/{account}",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "promotions/v1beta/{+parent}/promotions:insert",
+              "request": {
+                "$ref": "InsertPromotionRequest"
+              },
+              "response": {
+                "$ref": "Promotion"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            },
+            "list": {
+              "description": "Lists the promotions in your Merchant Center account. The response might contain fewer items than specified by `pageSize`. Rely on `pageToken` to determine if there are more items to be requested. After inserting or updating a promotion, it may take several minutes before the updated processed promotion can be retrieved.",
+              "flatPath": "promotions/v1beta/accounts/{accountsId}/promotions",
+              "httpMethod": "GET",
+              "id": "merchantapi.accounts.promotions.list",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "pageSize": {
+                  "description": "Output only. The maximum number of promotions to return. The service may return fewer than this value. The maximum value is 1000; values above 1000 will be coerced to 1000. If unspecified, the maximum number of promotions will be returned.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "Output only. A page token, received from a previous `ListPromotions` call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to `ListPromotions` must match the call that provided the page token.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "parent": {
+                  "description": "Required. The account to list processed promotions for. Format: `accounts/{account}`",
+                  "location": "path",
+                  "pattern": "^accounts/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "promotions/v1beta/{+parent}/promotions",
+              "response": {
+                "$ref": "ListPromotionsResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/content"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20240613",
+  "rootUrl": "https://merchantapi.googleapis.com/",
+  "schemas": {
+    "Attributes": {
+      "description": "Attributes.",
+      "id": "Attributes",
+      "properties": {
+        "brandExclusion": {
+          "description": "Optional. Product filter by [brand exclusion](https://support.google.com/merchants/answer/13861679?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion. The product filter attributes only applies when the products eligible for promotion product applicability `product_applicability` attribute is set to [specific_products](https://support.google.com/merchants/answer/13837299?ref_topic=13773355\u0026sjid=17642868584668136159-NC).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "brandInclusion": {
+          "description": "Optional. Product filter by brand for the promotion. The product filter attributes only applies when the products eligible for promotion product applicability `product_applicability` attribute is set to [specific_products](https://support.google.com/merchants/answer/13837299?ref_topic=13773355\u0026sjid=17642868584668136159-NC).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "couponValueType": {
+          "description": "Required. The [coupon value type] (https://support.google.com/merchants/answer/13861986?ref_topic=13773355\u0026sjid=17642868584668136159-NC) attribute to signal the type of promotion that you are running. Depending on type of the selected coupon value [some attributes are required](https://support.google.com/merchants/answer/6393006?ref_topic=7322920).",
+          "enum": [
+            "COUPON_VALUE_TYPE_UNSPECIFIED",
+            "MONEY_OFF",
+            "PERCENT_OFF",
+            "BUY_M_GET_N_MONEY_OFF",
+            "BUY_M_GET_N_PERCENT_OFF",
+            "BUY_M_GET_MONEY_OFF",
+            "BUY_M_GET_PERCENT_OFF",
+            "FREE_GIFT",
+            "FREE_GIFT_WITH_VALUE",
+            "FREE_GIFT_WITH_ITEM_ID",
+            "FREE_SHIPPING_STANDARD",
+            "FREE_SHIPPING_OVERNIGHT",
+            "FREE_SHIPPING_TWO_DAY"
+          ],
+          "enumDescriptions": [
+            "Indicates that the coupon value type is unspecified.",
+            "Money off coupon value type.",
+            "Percent off coupon value type.",
+            "Buy M quantity, get N money off coupon value type. `minimum_purchase_quantity` and `get_this_quantity_discounted` must be present. `money_off_amount` must also be present.",
+            "Buy M quantity, get N percent off coupon value type. `minimum_purchase_quantity` and `get_this_quantity_discounted` must be present. `percent_off_percentage` must also be present.",
+            "Buy M quantity, get money off. `minimum_purchase_quantity` and `money_off_amount` must be present.",
+            "Buy M quantity, get money off. `minimum_purchase_quantity` and `percent_off_percentage` must be present.",
+            "Free gift with description only.",
+            "Free gift with monetary value.",
+            "Free gift with item ID.",
+            "Standard free shipping coupon value type.",
+            "Overnight free shipping coupon value type.",
+            "Two day free shipping coupon value type."
+          ],
+          "type": "string"
+        },
+        "freeGiftDescription": {
+          "description": "Optional. [Free gift description](https://support.google.com/merchants/answer/13847245?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion.",
+          "type": "string"
+        },
+        "freeGiftItemId": {
+          "description": "Optional. [Free gift item ID](https://support.google.com/merchants/answer/13857152?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion.",
+          "type": "string"
+        },
+        "freeGiftValue": {
+          "$ref": "Price",
+          "description": "Optional. [Free gift value](https://support.google.com/merchants/answer/13844477?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion."
+        },
+        "genericRedemptionCode": {
+          "description": "Optional. Generic redemption code for the promotion. To be used with the `offerType` field and must meet the [minimum requirements](https://support.google.com/merchants/answer/13837405?ref_topic=13773355\u0026sjid=17642868584668136159-NC).",
+          "type": "string"
+        },
+        "getThisQuantityDiscounted": {
+          "description": "Optional. The number of items discounted in the promotion. The attribute is set when `couponValueType` is equal to `buy_m_get_n_money_off` or `buy_m_get_n_percent_off`.",
+          "format": "int64",
+          "type": "string"
+        },
+        "itemGroupIdExclusion": {
+          "description": "Optional. Product filter by [item group ID](https://support.google.com/merchants/answer/13837298?ref_topic=13773355\u0026sjid=17642868584668136159-NC). The product filter attributes only applies when the products eligible for promotion product applicability `product_applicability` attribute is set to [specific_products](https://support.google.com/merchants/answer/13837299?ref_topic=13773355\u0026sjid=17642868584668136159-NC). exclusion for the promotion.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "itemGroupIdInclusion": {
+          "description": "Optional. Product filter by item group ID for the promotion. The product filter attributes only applies when the products eligible for promotion product applicability [product_applicability] attribute is set to [specific_products](https://support.google.com/merchants/answer/13837299?ref_topic=13773355\u0026sjid=17642868584668136159-NC).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "itemIdExclusion": {
+          "description": "Optional. Product filter by [item ID exclusion](https://support.google.com/merchants/answer/13863524?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion. The product filter attributes only applies when the products eligible for promotion product applicability `product_applicability` attribute is set to [specific_products](https://support.google.com/merchants/answer/13837299?ref_topic=13773355\u0026sjid=17642868584668136159-NC).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "itemIdInclusion": {
+          "description": "Optional. Product filter by [item ID](https://support.google.com/merchants/answer/13861565?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion. The product filter attributes only applies when the products eligible for promotion product applicability `product_applicability` attribute is set to [specific_products](https://support.google.com/merchants/answer/13837299?ref_topic=13773355\u0026sjid=17642868584668136159-NC).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "limitQuantity": {
+          "description": "Optional. [Maximum purchase quantity](https://support.google.com/merchants/answer/13861564?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion.",
+          "format": "int64",
+          "type": "string"
+        },
+        "limitValue": {
+          "$ref": "Price",
+          "description": "Optional. [Maximum product price](https://support.google.com/merchants/answer/2906014) for promotion."
+        },
+        "longTitle": {
+          "description": "Required. [Long title](https://support.google.com/merchants/answer/13838102?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion.",
+          "type": "string"
+        },
+        "minimumPurchaseAmount": {
+          "$ref": "Price",
+          "description": "Optional. [Minimum purchase amount](https://support.google.com/merchants/answer/13837705?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion."
+        },
+        "minimumPurchaseQuantity": {
+          "description": "Optional. [Minimum purchase quantity](https://support.google.com/merchants/answer/13838182?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion.",
+          "format": "int64",
+          "type": "string"
+        },
+        "moneyOffAmount": {
+          "$ref": "Price",
+          "description": "Optional. The [money off amount](https://support.google.com/merchants/answer/13838101?ref_topic=13773355\u0026sjid=17642868584668136159-NC) offered in the promotion."
+        },
+        "offerType": {
+          "description": "Required. [Type](https://support.google.com/merchants/answer/13837405?ref_topic=13773355\u0026sjid=17642868584668136159-NC) of the promotion. Use this attribute to indicate whether or not customers need a coupon code to redeem your promotion.",
+          "enum": [
+            "OFFER_TYPE_UNSPECIFIED",
+            "NO_CODE",
+            "GENERIC_CODE"
+          ],
+          "enumDescriptions": [
+            "Unknown offer type.",
+            "Offer type without a code.",
+            "Offer type with a code. Generic redemption code for the promotion is required when `offerType` = `GENERIC_CODE`."
+          ],
+          "type": "string"
+        },
+        "percentOff": {
+          "description": "Optional. The [percentage discount](https://support.google.com/merchants/answer/13837404?sjid=17642868584668136159-NC) offered in the promotion.",
+          "format": "int64",
+          "type": "string"
+        },
+        "productApplicability": {
+          "description": "Required. Applicability of the promotion to either all products or [only specific products](https://support.google.com/merchants/answer/6396257?ref_topic=6396150\u0026sjid=17642868584668136159-NC).",
+          "enum": [
+            "PRODUCT_APPLICABILITY_UNSPECIFIED",
+            "ALL_PRODUCTS",
+            "SPECIFIC_PRODUCTS"
+          ],
+          "enumDescriptions": [
+            "Which products the promotion applies to is unknown.",
+            "Applicable to all products.",
+            "Applicable to only a single product or list of products."
+          ],
+          "type": "string"
+        },
+        "productTypeExclusion": {
+          "description": "Optional. Product filter by [product type exclusion](https://support.google.com/merchants/answer/13863746?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion. The product filter attributes only applies when the products eligible for promotion product applicability `product_applicability` attribute is set to [specific_products](https://support.google.com/merchants/answer/13837299?ref_topic=13773355\u0026sjid=17642868584668136159-NC).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "productTypeInclusion": {
+          "description": "Optional. Product filter by product type for the promotion. The product filter attributes only applies when the products eligible for promotion product applicability `product_applicability` attribute is set to [specific_products](https://support.google.com/merchants/answer/13837299?ref_topic=13773355\u0026sjid=17642868584668136159-NC).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "promotionDestinations": {
+          "description": "Required. The list of destinations where the promotion applies to. If you don't specify a destination by including a supported value in your data source, your promotion will display in Shopping ads and free listings by default. You may have previously submitted the following values as destinations for your products: Shopping Actions, Surfaces across Google, Local surfaces across Google. To represent these values use `FREE_LISTINGS`, `FREE_LOCAL_LISTINGS`, `LOCAL_INVENTORY_ADS`. For more details see [Promotion destination](https://support.google.com/merchants/answer/13837465?sjid=5155774230887277618-NC)",
+          "items": {
+            "enum": [
+              "DESTINATION_ENUM_UNSPECIFIED",
+              "SHOPPING_ADS",
+              "DISPLAY_ADS",
+              "LOCAL_INVENTORY_ADS",
+              "FREE_LISTINGS",
+              "FREE_LOCAL_LISTINGS",
+              "YOUTUBE_SHOPPING"
+            ],
+            "enumDescriptions": [
+              "Not specified.",
+              "[Shopping ads](https://support.google.com/google-ads/answer/2454022).",
+              "[Display ads](https://support.google.com/merchants/answer/6069387).",
+              "[Local inventory ads](https://support.google.com/merchants/answer/3057972).",
+              "[Free listings](https://support.google.com/merchants/answer/9199328).",
+              "[Free local product listings](https://support.google.com/merchants/answer/9825611).",
+              "[YouTube Shopping](https://support.google.com/merchants/answer/12362804)."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "promotionDisplayTimePeriod": {
+          "$ref": "Interval",
+          "description": "Optional. `TimePeriod` representation of the promotion's display dates. This attribute specifies the date and time frame when the promotion will be live on Google.com and Shopping ads. If the display time period for promotion `promotion_display_time_period` attribute is not specified, the promotion effective time period `promotion_effective_time_period` determines the date and time frame when the promotion will be live on Google.com and Shopping ads."
+        },
+        "promotionEffectiveTimePeriod": {
+          "$ref": "Interval",
+          "description": "Required. `TimePeriod` representation of the promotion's effective dates. This attribute specifies that the promotion can be tested on your online store during this time period."
+        },
+        "promotionUrl": {
+          "description": "Optional. URL to the page on the merchant's site where the promotion shows. Local Inventory ads promotions throw an error if no `promotion_url` is included. URL is used to confirm that the promotion is valid and can be redeemed.",
+          "type": "string"
+        },
+        "storeApplicability": {
+          "description": "Optional. Whether the promotion applies to [all stores, or only specified stores](https://support.google.com/merchants/answer/13857563?sjid=17642868584668136159-NC). Local Inventory ads promotions throw an error if no store applicability is included. An `INVALID_ARGUMENT` error is thrown if `store_applicability` is set to `ALL_STORES` and `store_codes_inclusion` or `score_code_exclusion` is set to a value.",
+          "enum": [
+            "STORE_APPLICABILITY_UNSPECIFIED",
+            "ALL_STORES",
+            "SPECIFIC_STORES"
+          ],
+          "enumDescriptions": [
+            "Which store codes the promotion applies to is unknown.",
+            "Promotion applies to all stores.",
+            "Promotion applies to only the specified stores."
+          ],
+          "type": "string"
+        },
+        "storeCodesExclusion": {
+          "description": "Optional. [Store codes to exclude](https://support.google.com/merchants/answer/13859586?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion. The store filter attributes only applies when the `store_applicability` attribute is set to [specific_stores](https://support.google.com/merchants/answer/13857563?ref_topic=13773355\u0026sjid=17642868584668136159-NC).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "storeCodesInclusion": {
+          "description": "Optional. [Store codes to include](https://support.google.com/merchants/answer/13857470?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion. The store filter attributes only applies when the `store_applicability` attribute is set to [specific_stores](https://support.google.com/merchants/answer/13857563?ref_topic=13773355\u0026sjid=17642868584668136159-NC). Store code (the store ID from your Business Profile) of the physical store the product is sold in. See the [Local product inventory data specification](https://support.google.com/merchants/answer/3061342) for more information.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "CustomAttribute": {
+      "description": "A message that represents custom attributes. Exactly one of `value` or `group_values` must not be empty.",
+      "id": "CustomAttribute",
+      "properties": {
+        "groupValues": {
+          "description": "Subattributes within this attribute group. If `group_values` is not empty, `value` must be empty.",
+          "items": {
+            "$ref": "CustomAttribute"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The name of the attribute.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value of the attribute. If `value` is not empty, `group_values` must be empty.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DestinationStatus": {
+      "description": "The status for the specified destination.",
+      "id": "DestinationStatus",
+      "properties": {
+        "reportingContext": {
+          "description": "Output only. The name of the promotion destination.",
+          "enum": [
+            "REPORTING_CONTEXT_ENUM_UNSPECIFIED",
+            "SHOPPING_ADS",
+            "DISCOVERY_ADS",
+            "DEMAND_GEN_ADS",
+            "DEMAND_GEN_ADS_DISCOVER_SURFACE",
+            "VIDEO_ADS",
+            "DISPLAY_ADS",
+            "LOCAL_INVENTORY_ADS",
+            "VEHICLE_INVENTORY_ADS",
+            "FREE_LISTINGS",
+            "FREE_LOCAL_LISTINGS",
+            "FREE_LOCAL_VEHICLE_LISTINGS",
+            "YOUTUBE_SHOPPING",
+            "CLOUD_RETAIL",
+            "LOCAL_CLOUD_RETAIL"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "[Shopping ads](https://support.google.com/merchants/answer/6149970).",
+            "Deprecated: Use `DEMAND_GEN_ADS` instead. [Discovery and Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads on Discover surface](https://support.google.com/merchants/answer/13389785).",
+            "[Video ads](https://support.google.com/google-ads/answer/6340491).",
+            "[Display ads](https://support.google.com/merchants/answer/6069387).",
+            "[Local inventory ads](https://support.google.com/merchants/answer/3271956).",
+            "[Vehicle inventory ads](https://support.google.com/merchants/answer/11544533).",
+            "[Free product listings](https://support.google.com/merchants/answer/9199328).",
+            "[Free local product listings](https://support.google.com/merchants/answer/9825611).",
+            "[Free local vehicle listings](https://support.google.com/merchants/answer/11544533).",
+            "[YouTube Shopping](https://support.google.com/merchants/answer/13478370).",
+            "[Cloud retail](https://cloud.google.com/solutions/retail).",
+            "[Local cloud retail](https://cloud.google.com/solutions/retail)."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "status": {
+          "description": "Output only. The status for the specified destination.",
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "IN_REVIEW",
+            "REJECTED",
+            "LIVE",
+            "STOPPED",
+            "EXPIRED",
+            "PENDING"
+          ],
+          "enumDescriptions": [
+            "Unknown promotion state.",
+            "The promotion is under review.",
+            "The promotion is disapproved.",
+            "The promotion is approved and active.",
+            "The promotion is stopped by merchant.",
+            "The promotion is no longer active.",
+            "The promotion is not stopped, and all reviews are approved, but the active date is in the future."
+          ],
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "InsertPromotionRequest": {
+      "description": "Request message for the `InsertPromotion` method.",
+      "id": "InsertPromotionRequest",
+      "properties": {
+        "dataSource": {
+          "description": "Required. The data source of the [promotion](https://support.google.com/merchants/answer/6396268?sjid=5155774230887277618-NC) Format: `accounts/{account}/dataSources/{datasource}`.",
+          "type": "string"
+        },
+        "promotion": {
+          "$ref": "Promotion",
+          "description": "Required. The promotion to insert."
+        }
+      },
+      "type": "object"
+    },
+    "Interval": {
+      "description": "Represents a time interval, encoded as a Timestamp start (inclusive) and a Timestamp end (exclusive). The start must be less than or equal to the end. When the start equals the end, the interval is empty (matches no time). When both start and end are unspecified, the interval matches any time.",
+      "id": "Interval",
+      "properties": {
+        "endTime": {
+          "description": "Optional. Exclusive end of the interval. If specified, a Timestamp matching this interval will have to be before the end.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "startTime": {
+          "description": "Optional. Inclusive start of the interval. If specified, a Timestamp matching this interval will have to be the same or after the start.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ItemLevelIssue": {
+      "description": "The issue associated with the promotion.",
+      "id": "ItemLevelIssue",
+      "properties": {
+        "applicableCountries": {
+          "description": "Output only. List of country codes (ISO 3166-1 alpha-2) where issue applies to the offer.",
+          "items": {
+            "type": "string"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "attribute": {
+          "description": "Output only. The attribute's name, if the issue is caused by a single attribute.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "code": {
+          "description": "Output only. The error code of the issue.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "description": {
+          "description": "Output only. A short issue description in English.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "detail": {
+          "description": "Output only. A detailed issue description in English.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "documentation": {
+          "description": "Output only. The URL of a web page to help with resolving this issue.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "reportingContext": {
+          "description": "Output only. The destination the issue applies to.",
+          "enum": [
+            "REPORTING_CONTEXT_ENUM_UNSPECIFIED",
+            "SHOPPING_ADS",
+            "DISCOVERY_ADS",
+            "DEMAND_GEN_ADS",
+            "DEMAND_GEN_ADS_DISCOVER_SURFACE",
+            "VIDEO_ADS",
+            "DISPLAY_ADS",
+            "LOCAL_INVENTORY_ADS",
+            "VEHICLE_INVENTORY_ADS",
+            "FREE_LISTINGS",
+            "FREE_LOCAL_LISTINGS",
+            "FREE_LOCAL_VEHICLE_LISTINGS",
+            "YOUTUBE_SHOPPING",
+            "CLOUD_RETAIL",
+            "LOCAL_CLOUD_RETAIL"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "[Shopping ads](https://support.google.com/merchants/answer/6149970).",
+            "Deprecated: Use `DEMAND_GEN_ADS` instead. [Discovery and Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads on Discover surface](https://support.google.com/merchants/answer/13389785).",
+            "[Video ads](https://support.google.com/google-ads/answer/6340491).",
+            "[Display ads](https://support.google.com/merchants/answer/6069387).",
+            "[Local inventory ads](https://support.google.com/merchants/answer/3271956).",
+            "[Vehicle inventory ads](https://support.google.com/merchants/answer/11544533).",
+            "[Free product listings](https://support.google.com/merchants/answer/9199328).",
+            "[Free local product listings](https://support.google.com/merchants/answer/9825611).",
+            "[Free local vehicle listings](https://support.google.com/merchants/answer/11544533).",
+            "[YouTube Shopping](https://support.google.com/merchants/answer/13478370).",
+            "[Cloud retail](https://cloud.google.com/solutions/retail).",
+            "[Local cloud retail](https://cloud.google.com/solutions/retail)."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "resolution": {
+          "description": "Output only. Whether the issue can be resolved by the merchant.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "severity": {
+          "description": "Output only. How this issue affects serving of the promotion.",
+          "enum": [
+            "SEVERITY_UNSPECIFIED",
+            "NOT_IMPACTED",
+            "DEMOTED",
+            "DISAPPROVED"
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "This issue represents a warning and does not have a direct affect on the promotion.",
+            "The promotion is demoted and most likely have limited performance in search results",
+            "Issue disapproves the promotion."
+          ],
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListPromotionsResponse": {
+      "description": "Response message for the `ListPromotions` method.",
+      "id": "ListPromotionsResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        },
+        "promotions": {
+          "description": "The processed promotions from the specified account.",
+          "items": {
+            "$ref": "Promotion"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Price": {
+      "description": "The price represented as a number and currency.",
+      "id": "Price",
+      "properties": {
+        "amountMicros": {
+          "description": "The price represented as a number in micros (1 million micros is an equivalent to one's currency standard unit, for example, 1 USD = 1000000 micros).",
+          "format": "int64",
+          "type": "string"
+        },
+        "currencyCode": {
+          "description": "The currency of the price using three-letter acronyms according to [ISO 4217](http://en.wikipedia.org/wiki/ISO_4217).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductChange": {
+      "description": "The change that happened to the product including old value, new value, country code as the region code and reporting context.",
+      "id": "ProductChange",
+      "properties": {
+        "newValue": {
+          "description": "The new value of the changed resource or attribute.",
+          "type": "string"
+        },
+        "oldValue": {
+          "description": "The old value of the changed resource or attribute.",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "Countries that have the change (if applicable)",
+          "type": "string"
+        },
+        "reportingContext": {
+          "description": "Reporting contexts that have the change (if applicable)",
+          "enum": [
+            "REPORTING_CONTEXT_ENUM_UNSPECIFIED",
+            "SHOPPING_ADS",
+            "DISCOVERY_ADS",
+            "DEMAND_GEN_ADS",
+            "DEMAND_GEN_ADS_DISCOVER_SURFACE",
+            "VIDEO_ADS",
+            "DISPLAY_ADS",
+            "LOCAL_INVENTORY_ADS",
+            "VEHICLE_INVENTORY_ADS",
+            "FREE_LISTINGS",
+            "FREE_LOCAL_LISTINGS",
+            "FREE_LOCAL_VEHICLE_LISTINGS",
+            "YOUTUBE_SHOPPING",
+            "CLOUD_RETAIL",
+            "LOCAL_CLOUD_RETAIL"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "[Shopping ads](https://support.google.com/merchants/answer/6149970).",
+            "Deprecated: Use `DEMAND_GEN_ADS` instead. [Discovery and Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads](https://support.google.com/merchants/answer/13389785).",
+            "[Demand Gen ads on Discover surface](https://support.google.com/merchants/answer/13389785).",
+            "[Video ads](https://support.google.com/google-ads/answer/6340491).",
+            "[Display ads](https://support.google.com/merchants/answer/6069387).",
+            "[Local inventory ads](https://support.google.com/merchants/answer/3271956).",
+            "[Vehicle inventory ads](https://support.google.com/merchants/answer/11544533).",
+            "[Free product listings](https://support.google.com/merchants/answer/9199328).",
+            "[Free local product listings](https://support.google.com/merchants/answer/9825611).",
+            "[Free local vehicle listings](https://support.google.com/merchants/answer/11544533).",
+            "[YouTube Shopping](https://support.google.com/merchants/answer/13478370).",
+            "[Cloud retail](https://cloud.google.com/solutions/retail).",
+            "[Local cloud retail](https://cloud.google.com/solutions/retail)."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ProductStatusChangeMessage": {
+      "description": "The message that the merchant will receive to notify about product status change event",
+      "id": "ProductStatusChangeMessage",
+      "properties": {
+        "account": {
+          "description": "The target account that owns the entity that changed. Format : `accounts/{merchant_id}`",
+          "type": "string"
+        },
+        "attribute": {
+          "description": "The attribute in the resource that changed, in this case it will be always `Status`.",
+          "enum": [
+            "ATTRIBUTE_UNSPECIFIED",
+            "STATUS"
+          ],
+          "enumDescriptions": [
+            "Unspecified attribute",
+            "Status of the changed entity"
+          ],
+          "type": "string"
+        },
+        "changes": {
+          "description": "A message to describe the change that happened to the product",
+          "items": {
+            "$ref": "ProductChange"
+          },
+          "type": "array"
+        },
+        "managingAccount": {
+          "description": "The account that manages the merchant's account. can be the same as merchant id if it is standalone account. Format : `accounts/{service_provider_id}`",
+          "type": "string"
+        },
+        "resource": {
+          "description": "The product name. Format: `{product.name=accounts/{account}/products/{product}}`",
+          "type": "string"
+        },
+        "resourceId": {
+          "description": "The product id.",
+          "type": "string"
+        },
+        "resourceType": {
+          "description": "The resource that changed, in this case it will always be `Product`.",
+          "enum": [
+            "RESOURCE_UNSPECIFIED",
+            "PRODUCT"
+          ],
+          "enumDescriptions": [
+            "Unspecified resource",
+            "Resource type : product"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Promotion": {
+      "description": "Represents a promotion. See the following articles for more details. Required promotion input attributes to pass data validation checks are primarily defined below: * [Promotions data specification](https://support.google.com/merchants/answer/2906014) * [Local promotions data specification](https://support.google.com/merchants/answer/10146130) After inserting, updating a promotion input, it may take several minutes before the final promotion can be retrieved.",
+      "id": "Promotion",
+      "properties": {
+        "attributes": {
+          "$ref": "Attributes",
+          "description": "Optional. A list of promotion attributes."
+        },
+        "contentLanguage": {
+          "description": "Required. The two-letter [ISO 639-1](http://en.wikipedia.org/wiki/ISO_639-1) language code for the promotion. Promotions is only for [selected languages](https://support.google.com/merchants/answer/4588281?ref_topic=6396150\u0026sjid=18314938579342094533-NC#option3\u0026zippy=).",
+          "type": "string"
+        },
+        "customAttributes": {
+          "description": "Optional. A list of custom (merchant-provided) attributes. It can also be used for submitting any attribute of the data specification in its generic form (for example, `{ \"name\": \"size type\", \"value\": \"regular\" }`). This is useful for submitting attributes not explicitly exposed by the API.",
+          "items": {
+            "$ref": "CustomAttribute"
+          },
+          "type": "array"
+        },
+        "dataSource": {
+          "description": "Output only. The primary data source of the promotion.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "name": {
+          "description": "Identifier. The name of the promotion. Format: `accounts/{account}/promotions/{promotion}`",
+          "type": "string"
+        },
+        "promotionId": {
+          "description": "Required. The user provided promotion ID to uniquely identify the promotion. Follow [minimum requirements](https://support.google.com/merchants/answer/7050148?ref_topic=7322920\u0026sjid=871860036916537104-NC#minimum_requirements) to prevent promotion disapprovals.",
+          "type": "string"
+        },
+        "promotionStatus": {
+          "$ref": "PromotionStatus",
+          "description": "Output only. The [status of a promotion](https://support.google.com/merchants/answer/3398326?ref_topic=7322924\u0026sjid=5155774230887277618-NC), data validation issues, that is, information about a promotion computed asynchronously.",
+          "readOnly": true
+        },
+        "redemptionChannel": {
+          "description": "Required. [Redemption channel](https://support.google.com/merchants/answer/13837674?ref_topic=13773355\u0026sjid=17642868584668136159-NC) for the promotion. At least one channel is required.",
+          "items": {
+            "enum": [
+              "REDEMPTION_CHANNEL_UNSPECIFIED",
+              "IN_STORE",
+              "ONLINE"
+            ],
+            "enumDescriptions": [
+              "Indicates that the channel is unspecified.",
+              "Indicates that the channel is in store. This is same as `local` channel used for `products`.",
+              "Indicates that the channel is online."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "targetCountry": {
+          "description": "Required. The target country used as part of the unique identifier. Represented as a [CLDR territory code](https://github.com/unicode-org/cldr/blob/latest/common/main/en.xml). Promotions are only available in selected countries, [Free Listings and Shopping ads](https://support.google.com/merchants/answer/4588460) [Local Inventory ads](https://support.google.com/merchants/answer/10146326)",
+          "type": "string"
+        },
+        "versionNumber": {
+          "description": "Optional. Represents the existing version (freshness) of the promotion, which can be used to preserve the right order when multiple updates are done at the same time. If set, the insertion is prevented when version number is lower than the current version number of the existing promotion. Re-insertion (for example, promotion refresh after 30 days) can be performed with the current `version_number`. If the operation is prevented, the aborted exception will be thrown.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PromotionStatus": {
+      "description": "The status of the promotion.",
+      "id": "PromotionStatus",
+      "properties": {
+        "creationDate": {
+          "description": "Output only. Date on which the promotion has been created in [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601) format: Date, time, and offset, for example `2020-01-02T09:00:00+01:00` or `2020-01-02T09:00:00Z`",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "destinationStatuses": {
+          "description": "Output only. The intended destinations for the promotion.",
+          "items": {
+            "$ref": "DestinationStatus"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "itemLevelIssues": {
+          "description": "Output only. A list of issues associated with the promotion.",
+          "items": {
+            "$ref": "ItemLevelIssue"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "lastUpdateDate": {
+          "description": "Output only. Date on which the promotion status has been last updated in [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601) format: Date, time, and offset, for example `2020-01-02T09:00:00+01:00` or `2020-01-02T09:00:00Z`",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Merchant API",
+  "version": "promotions_v1beta",
+  "version_module": true
+}

@@ -1,0 +1,62 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+syntax = "proto3";
+
+package grpctest;
+
+option go_package = "./grpctest";
+
+import "google/protobuf/empty.proto";
+
+message TestRequest {
+    int32 Input = 1;
+}
+
+message TestResponse {
+    int32 Output = 2;
+}
+
+message PrintKVRequest {
+    string Key = 1;
+    oneof Value {
+        string ValueString = 2;
+        int32 ValueInt = 3;
+    }
+}
+
+message PrintKVResponse {
+
+}
+
+message BidirectionalRequest {
+    uint32 id = 1;
+}
+
+message BidirectionalResponse {
+    uint32 id = 1;
+}
+
+message PrintStdioRequest {
+    bytes stdout = 1;
+    bytes stderr = 2;
+}
+
+service Test {
+    rpc Double(TestRequest) returns (TestResponse) {}
+    rpc PrintKV(PrintKVRequest) returns (PrintKVResponse) {}
+    rpc Bidirectional(BidirectionalRequest) returns (BidirectionalResponse) {}
+    rpc Stream(stream TestRequest) returns (stream TestResponse) {}
+    rpc PrintStdio(PrintStdioRequest) returns (google.protobuf.Empty) {}
+}
+
+message PingRequest {
+}
+
+message PongResponse {
+    string msg = 1;
+}
+
+service PingPong {
+    rpc Ping(PingRequest) returns (PongResponse) {}
+}

@@ -1,0 +1,9 @@
+// Sample .proto file that we can not translate to the corresponding .fbs because it has non-positive ids.
+
+option some_option = is_ignored;
+
+package proto.test;
+
+message ProtoMessage {
+  optional uint64 NonPositiveId = -1;
+}

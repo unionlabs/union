@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+paths=${@:-$(go list ./... | grep -v '/vendor/')}
+TESTFLAGS=${TESTFLAGS-}
+TESTTIMEOUT=${TESTTIMEOUT-30s}
+go test -test.timeout "$TESTTIMEOUT" $TESTFLAGS -v $paths

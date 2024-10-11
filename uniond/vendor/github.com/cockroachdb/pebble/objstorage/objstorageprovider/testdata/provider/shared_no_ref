@@ -1,0 +1,178 @@
+# Tests with shared storage when ref tracking is disabled.
+
+# open <fs-dir> <creator-id>
+open p1 1
+----
+<local fs> mkdir-all: p1 0755
+<local fs> open-dir: p1
+<local fs> open-dir: p1
+<local fs> create: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> create: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> close: p1/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p1
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+
+create 1 shared 1 100 no-ref-tracking
+----
+<remote> create object "61a6-1-000001.sst"
+<remote> close writer for "61a6-1-000001.sst" after 100 bytes
+
+read 1
+0 100
+----
+<remote> create reader for object "61a6-1-000001.sst": 100 bytes
+size: 100
+<remote> read object "61a6-1-000001.sst" at 0 (length 100)
+0 100: ok (salt 1)
+<remote> close reader for "61a6-1-000001.sst"
+
+create 2 shared 2 100 no-ref-tracking
+----
+<remote> create object "a629-1-000002.sst"
+<remote> close writer for "a629-1-000002.sst" after 100 bytes
+
+read 2
+0 100
+----
+<remote> create reader for object "a629-1-000002.sst": 100 bytes
+size: 100
+<remote> read object "a629-1-000002.sst" at 0 (length 100)
+0 100: ok (salt 2)
+<remote> close reader for "a629-1-000002.sst"
+
+list
+----
+000001 -> remote://61a6-1-000001.sst
+000002 -> remote://a629-1-000002.sst
+
+link-or-copy 3 shared 3 100 no-ref-tracking
+----
+<local fs> create: temp-file-1
+<local fs> close: temp-file-1
+<remote> create object "eaac-1-000003.sst"
+<local fs> open: temp-file-1 (options: *vfs.sequentialReadsOption)
+<remote> close writer for "eaac-1-000003.sst" after 100 bytes
+<local fs> close: temp-file-1
+
+read 3
+0 100
+----
+<remote> create reader for object "eaac-1-000003.sst": 100 bytes
+size: 100
+<remote> read object "eaac-1-000003.sst" at 0 (length 100)
+0 100: ok (salt 3)
+<remote> close reader for "eaac-1-000003.sst"
+
+close
+----
+<local fs> sync: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> close: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> close: p1
+
+# Test that the objects are there on re-open.
+open p1 1
+----
+<local fs> mkdir-all: p1 0755
+<local fs> open-dir: p1
+<local fs> open-dir: p1
+<local fs> open: p1/REMOTE-OBJ-CATALOG-000001
+<local fs> close: p1/REMOTE-OBJ-CATALOG-000001
+
+list
+----
+000001 -> remote://61a6-1-000001.sst
+000002 -> remote://a629-1-000002.sst
+000003 -> remote://eaac-1-000003.sst
+
+read 1
+0 100
+----
+<remote> create reader for object "61a6-1-000001.sst": 100 bytes
+size: 100
+<remote> read object "61a6-1-000001.sst" at 0 (length 100)
+0 100: ok (salt 1)
+<remote> close reader for "61a6-1-000001.sst"
+
+read 2
+0 100
+----
+<remote> create reader for object "a629-1-000002.sst": 100 bytes
+size: 100
+<remote> read object "a629-1-000002.sst" at 0 (length 100)
+0 100: ok (salt 2)
+<remote> close reader for "a629-1-000002.sst"
+
+read 3
+0 100
+----
+<remote> create reader for object "eaac-1-000003.sst": 100 bytes
+size: 100
+<remote> read object "eaac-1-000003.sst" at 0 (length 100)
+0 100: ok (salt 3)
+<remote> close reader for "eaac-1-000003.sst"
+
+save-backing b1 1
+----
+
+save-backing b2 1
+----
+
+open p2 2
+----
+<local fs> mkdir-all: p2 0755
+<local fs> open-dir: p2
+<local fs> open-dir: p2
+<local fs> create: p2/REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p2/REMOTE-OBJ-CATALOG-000001
+<local fs> create: p2/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> close: p2/marker.remote-obj-catalog.000001.REMOTE-OBJ-CATALOG-000001
+<local fs> sync: p2
+<local fs> sync: p2/REMOTE-OBJ-CATALOG-000001
+
+attach
+b1 101
+b2 102
+----
+<local fs> sync: p2/REMOTE-OBJ-CATALOG-000001
+000101 -> remote://61a6-1-000001.sst
+000102 -> remote://61a6-1-000001.sst
+
+list
+----
+000101 -> remote://61a6-1-000001.sst
+000102 -> remote://61a6-1-000001.sst
+
+read 101
+0 100
+----
+<remote> create reader for object "61a6-1-000001.sst": 100 bytes
+size: 100
+<remote> read object "61a6-1-000001.sst" at 0 (length 100)
+0 100: ok (salt 1)
+<remote> close reader for "61a6-1-000001.sst"
+
+read 102
+0 100
+----
+<remote> create reader for object "61a6-1-000001.sst": 100 bytes
+size: 100
+<remote> read object "61a6-1-000001.sst" at 0 (length 100)
+0 100: ok (salt 1)
+<remote> close reader for "61a6-1-000001.sst"
+
+# In this mode, all removes should be no-ops on the shared backend.
+remove 101
+----
+
+remove 102
+----
+
+switch p1
+----
+
+remove 1
+----
+
+remove 2
+----

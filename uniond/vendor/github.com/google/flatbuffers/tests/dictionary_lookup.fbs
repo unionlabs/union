@@ -1,0 +1,11 @@
+namespace DictionaryLookup;
+
+table LongFloatEntry {
+  key: long (key);
+  value: float;
+}
+
+table LongFloatMap {
+  entries: [LongFloatEntry];
+}
+root_type LongFloatMap;

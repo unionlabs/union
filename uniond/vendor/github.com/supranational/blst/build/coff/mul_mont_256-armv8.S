@@ -7,11 +7,11 @@
 .endef
 .p2align	5
 mul_mont_sparse_256:
-	stp	x29,x30,[sp,#-64]!
+	stp	x29,x30,[sp,#-8*__SIZEOF_POINTER__]!
 	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
-	stp	x23,x24,[sp,#48]
+	stp	x19,x20,[sp,#2*__SIZEOF_POINTER__]
+	stp	x21,x22,[sp,#4*__SIZEOF_POINTER__]
+	stp	x23,x24,[sp,#6*__SIZEOF_POINTER__]
 
 	ldp	x10,x11,[x1]
 	ldr	x9,        [x2]
@@ -187,10 +187,10 @@ mul_mont_sparse_256:
 	stp	x19,x20,[x0]
 	stp	x21,x22,[x0,#16]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldp	x23,x24,[x29,#48]
-	ldr	x29,[sp],#64
+	ldp	x19,x20,[x29,#2*__SIZEOF_POINTER__]
+	ldp	x21,x22,[x29,#4*__SIZEOF_POINTER__]
+	ldp	x23,x24,[x29,#6*__SIZEOF_POINTER__]
+	ldr	x29,[sp],#8*__SIZEOF_POINTER__
 	ret
 
 .globl	sqr_mont_sparse_256
@@ -201,10 +201,10 @@ mul_mont_sparse_256:
 .p2align	5
 sqr_mont_sparse_256:
 .long	3573752639
-	stp	x29,x30,[sp,#-48]!
+	stp	x29,x30,[sp,#-6*__SIZEOF_POINTER__]!
 	add	x29,sp,#0
-	stp	x19,x20,[sp,#16]
-	stp	x21,x22,[sp,#32]
+	stp	x19,x20,[sp,#2*__SIZEOF_POINTER__]
+	stp	x21,x22,[sp,#4*__SIZEOF_POINTER__]
 
 	ldp	x5,x6,[x1]
 	ldp	x7,x8,[x1,#16]
@@ -276,7 +276,7 @@ sqr_mont_sparse_256:
 	adc	x22,x22,x8
 
 	bl	__mul_by_1_mont_256
-	ldr	x30,[x29,#8]
+	ldr	x30,[x29,#__SIZEOF_POINTER__]
 
 	adds	x10,x10,x19	// accumulate upper half
 	adcs	x11,x11,x20
@@ -298,9 +298,9 @@ sqr_mont_sparse_256:
 	stp	x10,x11,[x0]
 	stp	x12,x13,[x0,#16]
 
-	ldp	x19,x20,[x29,#16]
-	ldp	x21,x22,[x29,#32]
-	ldr	x29,[sp],#48
+	ldp	x19,x20,[x29,#2*__SIZEOF_POINTER__]
+	ldp	x21,x22,[x29,#4*__SIZEOF_POINTER__]
+	ldr	x29,[sp],#6*__SIZEOF_POINTER__
 .long	3573752767
 	ret
 
@@ -312,7 +312,7 @@ sqr_mont_sparse_256:
 .p2align	5
 from_mont_256:
 .long	3573752639
-	stp	x29,x30,[sp,#-16]!
+	stp	x29,x30,[sp,#-2*__SIZEOF_POINTER__]!
 	add	x29,sp,#0
 
 	mov	x4,x3
@@ -320,7 +320,7 @@ from_mont_256:
 	ldp	x12,x13,[x1,#16]
 
 	bl	__mul_by_1_mont_256
-	ldr	x30,[x29,#8]
+	ldr	x30,[x29,#__SIZEOF_POINTER__]
 
 	subs	x14,x10,x5
 	sbcs	x15,x11,x6
@@ -335,7 +335,7 @@ from_mont_256:
 	stp	x10,x11,[x0]
 	stp	x12,x13,[x0,#16]
 
-	ldr	x29,[sp],#16
+	ldr	x29,[sp],#2*__SIZEOF_POINTER__
 .long	3573752767
 	ret
 
@@ -348,7 +348,7 @@ from_mont_256:
 .p2align	5
 redc_mont_256:
 .long	3573752639
-	stp	x29,x30,[sp,#-16]!
+	stp	x29,x30,[sp,#-2*__SIZEOF_POINTER__]!
 	add	x29,sp,#0
 
 	mov	x4,x3
@@ -356,7 +356,7 @@ redc_mont_256:
 	ldp	x12,x13,[x1,#16]
 
 	bl	__mul_by_1_mont_256
-	ldr	x30,[x29,#8]
+	ldr	x30,[x29,#__SIZEOF_POINTER__]
 
 	ldp	x14,x15,[x1,#32]
 	ldp	x16,x17,[x1,#48]
@@ -381,7 +381,7 @@ redc_mont_256:
 	stp	x10,x11,[x0]
 	stp	x12,x13,[x0,#16]
 
-	ldr	x29,[sp],#16
+	ldr	x29,[sp],#2*__SIZEOF_POINTER__
 .long	3573752767
 	ret
 

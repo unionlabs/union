@@ -1,0 +1,282 @@
+# This is not actually a manual compaction test, and simply uses manual
+# compaction to demonstrate single delete semantics when used with
+# set-with-delete.
+
+# Define a sequence of SET=>SET=>DEL=>SET=>SINGLEDEL.
+define target-file-sizes=(1, 1, 1, 1, 1)
+L1
+  a.SINGLEDEL.10:
+L2
+  a.SET.9:v3
+L3
+  a.DEL.8:
+L4
+  a.SET.7:v2
+L5
+  a.SET.6:v1
+----
+1:
+  000004:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+2:
+  000005:[a#9,SET-a#9,SET]
+3:
+  000006:[a#8,DEL-a#8,DEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+5:
+  000008:[a#6,SET-a#6,SET]
+
+# No data.
+iter
+first
+----
+.
+
+# Compact away the DEL.
+compact a-b L2
+----
+1:
+  000004:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+3:
+  000009:[a#9,SETWITHDEL-a#9,SETWITHDEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+5:
+  000008:[a#6,SET-a#6,SET]
+
+# No data.
+iter
+first
+----
+.
+
+# Do two compactions to compact away the SINGLEDEL and 1 SET.
+compact a-b L1
+----
+2:
+  000010:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+3:
+  000009:[a#9,SETWITHDEL-a#9,SETWITHDEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+5:
+  000008:[a#6,SET-a#6,SET]
+
+compact a-b L2
+----
+3:
+  000011:[a#10,DEL-a#10,DEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+5:
+  000008:[a#6,SET-a#6,SET]
+
+# Deleted data is not resurrected.
+iter
+first
+----
+.
+
+# Define a sequence of SET=>SINGLEDEL=>SET=>SINGLEDEL.
+define target-file-sizes=(1, 1, 1, 1, 1)
+L1
+  a.SINGLEDEL.10:
+L2
+  a.SET.9:v3
+L3
+  a.SINGLEDEL.8:
+L4
+  a.SET.7:v2
+----
+1:
+  000004:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+2:
+  000005:[a#9,SET-a#9,SET]
+3:
+  000006:[a#8,SINGLEDEL-a#8,SINGLEDEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+
+# No data.
+iter
+first
+----
+.
+
+# Compact away the older SINGLEDEL.
+compact a-b L2
+----
+1:
+  000004:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+3:
+  000008:[a#9,SETWITHDEL-a#9,SETWITHDEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+
+# No data.
+iter
+first
+----
+.
+
+# Do two compactions to compact away the newer SINGLEDEL and 1 SET.
+compact a-b L1
+----
+2:
+  000009:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+3:
+  000008:[a#9,SETWITHDEL-a#9,SETWITHDEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+
+compact a-b L2
+----
+3:
+  000010:[a#10,DEL-a#10,DEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+
+# Deleted data is not resurrected.
+iter
+first
+----
+.
+
+# Define a sequence of SET=>DEL=>SET=>SINGLEDEL, such that the DEL and
+# SINGLEDEL meet in a compaction. Disable multilevel compaction to exercise the proper test case.
+define snapshots=(9) disable-multi-level
+L1
+  a.SINGLEDEL.10:
+L2
+  a.SET.9:v3
+L3
+  a.DEL.8:
+L4
+  a.SET.7:v2
+----
+1:
+  000004:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+2:
+  000005:[a#9,SET-a#9,SET]
+3:
+  000006:[a#8,DEL-a#8,DEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+
+# No data.
+iter
+first
+----
+.
+
+# Compact L2 and L3. The snapshot prevents the DEL=>SET from being collapsed.
+compact a-b L2
+----
+1:
+  000004:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+3:
+  000008:[a#9,SET-a#8,DEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+
+# No data.
+iter
+first
+----
+.
+
+close-snapshots
+----
+
+compact a-b L1
+----
+2:
+  000004:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+3:
+  000008:[a#9,SET-a#8,DEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+
+# The DEL survives.
+compact a-b L2
+----
+3:
+  000009:[a#8,DEL-a#8,DEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+
+# No data
+iter
+first
+----
+.
+
+# Define a sequence of SET=>SINGLEDEL=>SET=>SINGLEDEL, such that the two
+# SINGLEDELs meet in a compaction.
+# To test surface the right test case, disable multi level compaction.
+define snapshots=(9) disable-multi-level
+L1
+  a.SINGLEDEL.10:
+L2
+  a.SET.9:v3
+L3
+  a.SINGLEDEL.8:
+L4
+  a.SET.7:v2
+----
+1:
+  000004:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+2:
+  000005:[a#9,SET-a#9,SET]
+3:
+  000006:[a#8,SINGLEDEL-a#8,SINGLEDEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+
+# No data.
+iter
+first
+----
+.
+
+# Compact L2 and L3. The snapshot prevents the SINGLEDEL=>SET from being collapsed.
+compact a-b L2
+----
+1:
+  000004:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+3:
+  000008:[a#9,SET-a#8,SINGLEDEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+
+# No data.
+iter
+first
+----
+.
+
+close-snapshots
+----
+
+compact a-b L1
+----
+2:
+  000004:[a#10,SINGLEDEL-a#10,SINGLEDEL]
+3:
+  000008:[a#9,SET-a#8,SINGLEDEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+
+# The SINGLEDEL survives.
+compact a-b L2
+----
+3:
+  000009:[a#8,SINGLEDEL-a#8,SINGLEDEL]
+4:
+  000007:[a#7,SET-a#7,SET]
+
+# No data
+iter
+first
+----
+.

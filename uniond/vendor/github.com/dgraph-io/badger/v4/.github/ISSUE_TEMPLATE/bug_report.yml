@@ -1,0 +1,62 @@
+name: "🐞 Bug Report"
+description: File a bug report
+title: "[BUG]: <Title>"
+labels: ["kind/bug", "status/triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue.
+        If you suspect this could be a bug, please follow this template.
+  - type: textarea
+    attributes:
+      label: What version of Badger are you using?
+      description: Copy and paste the tag or commit hash used in your application's go.mod file.
+      placeholder: |
+        Paste here.
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: What version of Go are you using?
+      description: Copy and paste all you see using the command 'go version'.
+      placeholder: |
+        Paste here.
+    validations:
+      required: false
+  - type: dropdown
+    attributes:
+      label: Have you tried reproducing the issue with the latest release?
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: What is the hardware spec (RAM, CPU, OS)?
+      description: Share all possible context of your machine.
+      placeholder: |
+        Type here.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What steps will reproduce the bug?
+      description: Enter details about your bug (command/config used to set up Ristretto).
+      placeholder: |
+        Type here.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected behavior and actual result.
+      description: Enter details about your expectations.
+      placeholder: |
+        Type here.
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Additional information
+      description: Tell us anything else you think we should know.

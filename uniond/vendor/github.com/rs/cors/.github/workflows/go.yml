@@ -1,0 +1,34 @@
+on: [push]
+name: Test
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ["1.17", "1.21"]
+    steps:
+    - name: Set up Go ${{ matrix.go }}
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go }}
+      id: go
+
+    - name: Check out code
+      uses: actions/checkout@v3
+    
+    - name: Get dependencies
+      run: go get -v -t -d ./...
+    
+    - name: Test
+      run: go test ./...
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Update coverage report
+      uses: ncruces/go-coverage-report@main
+      with:
+        report: 'true'
+        chart: 'true'
+        amend: 'true'
+      continue-on-error: true

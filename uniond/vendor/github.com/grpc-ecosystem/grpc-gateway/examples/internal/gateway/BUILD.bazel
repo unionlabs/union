@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "doc.go",
+        "gateway.go",
+        "handlers.go",
+        "main.go",
+    ],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/examples/internal/gateway",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//examples/internal/proto/examplepb:go_default_library",
+        "//runtime:go_default_library",
+        "@com_github_golang_glog//:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//connectivity:go_default_library",
+    ],
+)

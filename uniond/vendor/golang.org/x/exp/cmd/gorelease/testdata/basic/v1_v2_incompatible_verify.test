@@ -1,0 +1,18 @@
+mod=example.com/basic
+version=v1.1.2
+base=v1.1.1
+release=v2.0.0
+success=false
+-- want --
+# example.com/basic/a
+## incompatible changes
+A2: removed
+
+# example.com/basic/b
+## incompatible changes
+package removed
+
+# summary
+v2.0.0 is not a valid semantic version for this release.
+The module path does not end with the major version suffix /v2,
+which is required for major versions v2 or greater.

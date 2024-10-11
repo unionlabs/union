@@ -1,0 +1,17 @@
+# Check that unknown commands output a useful error message
+
+! testscript notfound
+stdout 'unknown command "notexist"'
+
+! testscript negation
+stdout 'unknown command "!exists" \(did you mean "! exists"\?\)'
+
+! testscript misspelled
+stdout 'unknown command "exits" \(did you mean "exists"\?\)'
+
+-- notfound/script.txt --
+notexist
+-- negation/script.txt --
+!exists file
+-- misspelled/script.txt --
+exits file

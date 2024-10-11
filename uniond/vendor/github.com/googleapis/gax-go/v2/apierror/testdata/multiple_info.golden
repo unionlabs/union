@@ -1,0 +1,6 @@
+rpc error: code = Canceled desc = Request cancelled by client
+error details: name = BadRequest field = Foo desc = Bar
+error details: name = PreconditionFailure type = Foo subj = Bar desc = desc
+error details: name = QuotaFailure subj = Foo desc = Bar
+error details: name = RequestInfo id = Foo data = Bar
+error details: retry in 10.00000001s

@@ -1,0 +1,17 @@
+{
+  "jsonrpc": "2.0",
+  "method": "account_signTransaction",
+  "params": [
+    {
+      "from": "0x8A8eAFb1cf62BfBeb1741769DAE1a9dd47996192",
+      "to": "0x8A8eAFb1cf62BfBeb1741769DAE1a9dd47996192",
+      "gas": "0x333",
+      "maxPriorityFeePerGas": "0x123",
+      "maxFeePerGas": "0x123",
+      "nonce": "0x0",
+      "value": "0x10",
+      "data": "0x4401a6e40000000000000000000000000000000000000000000000000000000000000012"
+    }
+  ],
+  "id": 67
+}

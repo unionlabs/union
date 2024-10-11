@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package offchain;
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+
+// MsgSignArbitraryData defines an arbitrary, general-purpose, off-chain message
+message MsgSignArbitraryData {
+  option (amino.name)           = "offchain/MsgSignArbitraryData";
+  option (cosmos.msg.v1.signer) = "signer";
+  // AppDomain is the application requesting off-chain message signing
+  string app_domain = 1;
+  // Signer is the sdk.AccAddress of the message signer
+  string signer = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // Data represents the raw bytes of the content that is signed (text, json, etc)
+  string data = 3;
+}

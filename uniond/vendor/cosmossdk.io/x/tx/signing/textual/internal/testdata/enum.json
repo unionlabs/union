@@ -1,0 +1,10 @@
+[
+	{ "proto": { "ee": 0 }, "text": "One" },
+	{ "proto": { "ee": 1 }, "text": "Two" },
+	{ "proto": { "ee": 127 }, "text": "EXTERNAL_ENUM_THREE" },
+	{ "proto": { "ie": 0 }, "text": "Four" },
+	{ "proto": { "ie": 1 }, "text": "Five" },
+	{ "proto": { "option": 0 }, "text": "BALLOT_OPTION_UNSPECIFIED" },
+	{ "proto": { "option": 1 }, "text": "BALLOT_OPTION_YES" },
+	{ "proto": { "option": 4 }, "text": "BALLOT_OPTION_NO_WITH_VETO" }
+]

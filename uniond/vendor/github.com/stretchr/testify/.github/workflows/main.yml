@@ -1,0 +1,38 @@
+name: All builds
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go_version:
+          - stable
+          - oldstable
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go_version }}
+      - run: ./.ci.gogenerate.sh
+      - run: ./.ci.gofmt.sh
+      - run: ./.ci.govet.sh
+      - run: go test -v -race ./...
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go_version:
+          - "1.17"
+          - "1.18"
+          - "1.19"
+          - "1.20"
+          - "1.21"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go_version }}
+      - run: go test -v -race ./...

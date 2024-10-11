@@ -1,0 +1,112 @@
+# non-verbose, non-continue
+! testscript scripts
+cmpenv stdout expect-stdout.txt
+
+# verbose
+! testscript -v scripts
+cmpenv stdout expect-stdout-v.txt
+
+# continue
+! testscript -continue scripts
+cmpenv stdout expect-stdout-c.txt
+
+# verbose, continue
+! testscript -v -continue scripts
+cmpenv stdout expect-stdout-vc.txt
+
+-- scripts/testscript.txt --
+# comment 1
+printargs section1
+
+# comment 2
+printargs section2
+
+# comment 3
+printargs section3
+status 1
+
+# comment 4
+printargs section3
+
+# comment 5
+printargs section5
+status 1
+
+-- expect-stdout.txt --
+** RUN testscript **
+# comment 1 (0.000s)
+# comment 2 (0.000s)
+# comment 3 (0.000s)
+> printargs section3
+[stdout]
+["printargs" "section3"]
+> status 1
+[exit status 1]
+FAIL: $$WORK${/}scripts${/}testscript.txt:9: unexpected command failure
+-- expect-stdout-v.txt --
+** RUN testscript **
+# comment 1 (0.000s)
+> printargs section1
+[stdout]
+["printargs" "section1"]
+# comment 2 (0.000s)
+> printargs section2
+[stdout]
+["printargs" "section2"]
+# comment 3 (0.000s)
+> printargs section3
+[stdout]
+["printargs" "section3"]
+> status 1
+[exit status 1]
+FAIL: $$WORK${/}scripts${/}testscript.txt:9: unexpected command failure
+-- expect-stdout-c.txt --
+** RUN testscript **
+# comment 1 (0.000s)
+# comment 2 (0.000s)
+# comment 3 (0.000s)
+> printargs section3
+[stdout]
+["printargs" "section3"]
+> status 1
+[exit status 1]
+FAIL: $$WORK${/}scripts${/}testscript.txt:9: unexpected command failure
+# comment 4 (0.000s)
+> printargs section3
+[stdout]
+["printargs" "section3"]
+# comment 5 (0.000s)
+> printargs section5
+[stdout]
+["printargs" "section5"]
+> status 1
+[exit status 1]
+FAIL: $$WORK${/}scripts${/}testscript.txt:16: unexpected command failure
+-- expect-stdout-vc.txt --
+** RUN testscript **
+# comment 1 (0.000s)
+> printargs section1
+[stdout]
+["printargs" "section1"]
+# comment 2 (0.000s)
+> printargs section2
+[stdout]
+["printargs" "section2"]
+# comment 3 (0.000s)
+> printargs section3
+[stdout]
+["printargs" "section3"]
+> status 1
+[exit status 1]
+FAIL: $$WORK${/}scripts${/}testscript.txt:9: unexpected command failure
+# comment 4 (0.000s)
+> printargs section3
+[stdout]
+["printargs" "section3"]
+# comment 5 (0.000s)
+> printargs section5
+[stdout]
+["printargs" "section5"]
+> status 1
+[exit status 1]
+FAIL: $$WORK${/}scripts${/}testscript.txt:16: unexpected command failure

@@ -1,0 +1,239 @@
+// Since: cosmos-sdk 0.46
+syntax = "proto3";
+package cosmos.gov.v1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "google/api/annotations.proto";
+import "cosmos/gov/v1/gov.proto";
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "cosmossdk.io/x/gov/types/v1";
+
+// Query defines the gRPC querier service for gov module
+service Query {
+  // Constitution queries the chain's constitution.
+  rpc Constitution(QueryConstitutionRequest) returns (QueryConstitutionResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1/constitution";
+  }
+
+  // Proposal queries proposal details based on ProposalID.
+  rpc Proposal(QueryProposalRequest) returns (QueryProposalResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1/proposals/{proposal_id}";
+  }
+
+  // Proposals queries all proposals based on given status.
+  rpc Proposals(QueryProposalsRequest) returns (QueryProposalsResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1/proposals";
+  }
+
+  // Vote queries voted information based on proposalID, voterAddr.
+  rpc Vote(QueryVoteRequest) returns (QueryVoteResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1/proposals/{proposal_id}/votes/{voter}";
+  }
+
+  // Votes queries votes of a given proposal.
+  rpc Votes(QueryVotesRequest) returns (QueryVotesResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1/proposals/{proposal_id}/votes";
+  }
+
+  // Params queries all parameters of the gov module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1/params";
+  }
+
+  // Deposit queries single deposit information based on proposalID, depositAddr.
+  rpc Deposit(QueryDepositRequest) returns (QueryDepositResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1/proposals/{proposal_id}/deposits/{depositor}";
+  }
+
+  // Deposits queries all deposits of a single proposal.
+  rpc Deposits(QueryDepositsRequest) returns (QueryDepositsResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1/proposals/{proposal_id}/deposits";
+  }
+
+  // TallyResult queries the tally of a proposal vote.
+  rpc TallyResult(QueryTallyResultRequest) returns (QueryTallyResultResponse) {
+    option (google.api.http).get = "/cosmos/gov/v1/proposals/{proposal_id}/tally";
+  }
+
+  // ProposalVoteOptions queries the valid voting options for a proposal.
+  rpc ProposalVoteOptions(QueryProposalVoteOptionsRequest) returns (QueryProposalVoteOptionsResponse) {
+    option (google.api.http).get          = "/cosmos/gov/v1/proposals/{proposal_id}/vote_options";
+    option (cosmos_proto.method_added_in) = "x/gov v0.2.0";
+  }
+
+  // MessageBasedParams queries the message specific governance params based on a msg url.
+  rpc MessageBasedParams(QueryMessageBasedParamsRequest) returns (QueryMessageBasedParamsResponse) {
+    option (google.api.http).get          = "/cosmos/gov/v1/params/{msg_url}";
+    option (cosmos_proto.method_added_in) = "x/gov v0.2.0";
+  }
+}
+
+// QueryConstitutionRequest is the request type for the Query/Constitution RPC method
+message QueryConstitutionRequest {}
+
+// QueryConstitutionResponse is the response type for the Query/Constitution RPC method
+message QueryConstitutionResponse {
+  string constitution = 1;
+}
+
+// QueryProposalRequest is the request type for the Query/Proposal RPC method.
+message QueryProposalRequest {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+}
+
+// QueryProposalResponse is the response type for the Query/Proposal RPC method.
+message QueryProposalResponse {
+  // proposal is the requested governance proposal.
+  Proposal proposal = 1;
+}
+
+// QueryProposalsRequest is the request type for the Query/Proposals RPC method.
+message QueryProposalsRequest {
+  // proposal_status defines the status of the proposals.
+  ProposalStatus proposal_status = 1;
+
+  // voter defines the voter address for the proposals.
+  string voter = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // depositor defines the deposit addresses from the proposals.
+  string depositor = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 4;
+}
+
+// QueryProposalsResponse is the response type for the Query/Proposals RPC
+// method.
+message QueryProposalsResponse {
+  // proposals defines all the requested governance proposals.
+  repeated Proposal proposals = 1;
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryVoteRequest is the request type for the Query/Vote RPC method.
+message QueryVoteRequest {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+
+  // voter defines the voter address for the proposals.
+  string voter = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// QueryVoteResponse is the response type for the Query/Vote RPC method.
+message QueryVoteResponse {
+  // vote defines the queried vote.
+  Vote vote = 1;
+}
+
+// QueryVotesRequest is the request type for the Query/Votes RPC method.
+message QueryVotesRequest {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryVotesResponse is the response type for the Query/Votes RPC method.
+message QueryVotesResponse {
+  // votes defines the queried votes.
+  repeated Vote votes = 1;
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {
+  // params_type defines which parameters to query for, can be one of "voting",
+  // "tallying" or "deposit".
+  // Deprecated: all params are stored in Params.
+  string params_type = 1 [deprecated = true];
+  ;
+}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // Deprecated: Prefer to use `params` instead.
+  // voting_params defines the parameters related to voting.
+  VotingParams voting_params = 1 [deprecated = true];
+  // Deprecated: Prefer to use `params` instead.
+  // deposit_params defines the parameters related to deposit.
+  DepositParams deposit_params = 2 [deprecated = true];
+  // Deprecated: Prefer to use `params` instead.
+  // tally_params defines the parameters related to tally.
+  TallyParams tally_params = 3 [deprecated = true];
+  // params defines all the parameters of x/gov module.
+  Params params = 4 [(cosmos_proto.field_added_in) = "cosmos-sdk v0.47"];
+}
+
+// QueryDepositRequest is the request type for the Query/Deposit RPC method.
+message QueryDepositRequest {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+
+  // depositor defines the deposit addresses from the proposals.
+  string depositor = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// QueryDepositResponse is the response type for the Query/Deposit RPC method.
+message QueryDepositResponse {
+  // deposit defines the requested deposit.
+  Deposit deposit = 1;
+}
+
+// QueryDepositsRequest is the request type for the Query/Deposits RPC method.
+message QueryDepositsRequest {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryDepositsResponse is the response type for the Query/Deposits RPC method.
+message QueryDepositsResponse {
+  // deposits defines the requested deposits.
+  repeated Deposit deposits = 1;
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryTallyResultRequest is the request type for the Query/Tally RPC method.
+message QueryTallyResultRequest {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+}
+
+// QueryTallyResultResponse is the response type for the Query/Tally RPC method.
+message QueryTallyResultResponse {
+  // tally defines the requested tally.
+  TallyResult tally = 1;
+}
+
+// QueryProposalVoteOptionsRequest is the request type for the Query/ProposalVoteOptions RPC method.
+message QueryProposalVoteOptionsRequest {
+  // proposal_id defines the unique id of the proposal.
+  uint64 proposal_id = 1;
+}
+
+// QueryProposalVoteOptionsResponse is the response type for the Query/ProposalVoteOptions RPC method.
+message QueryProposalVoteOptionsResponse {
+  // vote_options defines the valid voting options for a proposal.
+  ProposalVoteOptions vote_options = 1;
+}
+
+// QueryMessageBasedParamsRequest is the request type for the Query/MessageBasedParams RPC method.
+message QueryMessageBasedParamsRequest {
+  string msg_url = 1 [(cosmos_proto.field_added_in) = "x/gov 1.0.0"];
+}
+
+// QueryMessageBasedParamsResponse is the response for the Query/MessageBasedParams RPC method.
+message QueryMessageBasedParamsResponse {
+  MessageBasedParams params = 1 [(cosmos_proto.field_added_in) = "x/gov 1.0.0"];
+}

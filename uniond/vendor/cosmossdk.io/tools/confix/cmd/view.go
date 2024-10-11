@@ -17,6 +17,7 @@ func ViewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "view [config]",
 		Short: "View the config file",
+		Long:  "View the config file. The [config] argument must be the path of the file when using the `confix` tool standalone, otherwise it must be the name of the config file without the .toml extension.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			filename := args[0]

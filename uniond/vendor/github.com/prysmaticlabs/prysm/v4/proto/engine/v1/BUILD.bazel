@@ -1,0 +1,132 @@
+##############################################################################
+# Common
+##############################################################################
+
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+##############################################################################
+# Go
+##############################################################################
+# gazelle:ignore
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("//proto:ssz_proto_library.bzl", "ssz_proto_files")
+load("//tools:ssz.bzl", "SSZ_DEPS", "ssz_gen_marshal")
+
+proto_library(
+    name = "proto",
+    srcs = [
+        ":ssz_proto_files",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto/eth/ext:proto",
+        "@googleapis//google/api:annotations_proto",
+    ],
+)
+
+##############################################################################
+# Go
+##############################################################################
+ssz_gen_marshal(
+    name = "ssz_generated_files",
+    go_proto = ":go_proto",
+    includes = [
+        "//consensus-types/primitives:go_default_library",
+    ],
+    objs = [
+        "ExecutionPayload",
+        "ExecutionPayloadCapella",
+        "ExecutionPayloadHeader",
+        "ExecutionPayloadHeaderCapella",
+        "ExecutionPayloadHeaderDeneb",
+        "ExecutionPayloadDeneb",
+        "BlindedBlobsBundle",
+        "BlobsBundle",
+        "Withdrawal",
+    ],
+)
+
+go_proto_library(
+    name = "go_proto",
+    compilers = [
+        "@com_github_prysmaticlabs_protoc_gen_go_cast//:go_cast_grpc",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/proto/engine/v1",
+    proto = ":proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//consensus-types/primitives:go_default_library",
+        "//proto/eth/ext:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@googleapis//google/api:annotations_go_proto",
+        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
+        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
+        "@org_golang_google_protobuf//runtime/protoimpl:go_default_library",
+    ],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "json_marshal_unmarshal.go",
+        ":ssz_generated_files",  # keep
+    ],
+    embed = [
+        ":go_proto",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/proto/engine/v1",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//config/fieldparams:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//proto/eth/ext:go_default_library",
+        "//runtime/version:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
+        "@com_github_ethereum_go_ethereum//core/types:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_prysmaticlabs_fastssz//:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+        "@googleapis//google/api:annotations_go_proto",
+        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
+        "@io_bazel_rules_go//proto/wkt:timestamp_go_proto",
+        "@org_golang_google_protobuf//encoding/protojson:go_default_library",
+        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
+        "@org_golang_google_protobuf//runtime/protoimpl:go_default_library",
+    ],  # keep
+)
+
+ssz_proto_files(
+    name = "ssz_proto_files",
+    srcs = [
+        "execution_engine.proto",
+    ],
+    config = select({
+        "//conditions:default": "mainnet",
+        "//proto:ssz_mainnet": "mainnet",
+        "//proto:ssz_minimal": "minimal",
+    }),
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "json_marshal_unmarshal_test.go",
+    ],
+    deps = [
+        ":go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
+        "@com_github_ethereum_go_ethereum//core/types:go_default_library",
+        "@com_github_holiman_uint256//:go_default_library",
+    ],
+)

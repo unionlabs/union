@@ -1,0 +1,34 @@
+name: Mark stale issues and pull requests
+
+on:
+  schedule:
+  - cron: "0 11 * * 1-4"
+  workflow_dispatch:
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+    - uses: actions/stale@v3
+      with:
+        operations-per-run: 1000
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        stale-issue-message: |
+           We have marked this issue as stale because it has been inactive for
+           18 months. If this issue is still relevant, removing the stale label
+           or adding a comment will keep it active. Otherwise, we'll close it
+           in 10 days to keep the issue queue tidy. Thank you for your
+           contribution to Pebble!
+        stale-pr-message: 'Stale pull request message'
+        stale-issue-label: 'no-issue-activity'
+        stale-pr-label: 'no-pr-activity'
+        close-issue-label: 'X-stale'
+        close-pr-label: 'X-stale'
+        # Disable this for PR's, by setting a very high bar
+        days-before-pr-stale: 99999
+        days-before-issue-stale: 540
+        days-before-close: 10
+        exempt-issue-labels: 'X-nostale'

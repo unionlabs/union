@@ -1,0 +1,9 @@
+[!exec:cat] stop
+
+# hello world
+exec cat hello.text
+stdout 'hello world\n'
+! stderr .
+
+-- hello.text --
+hello world

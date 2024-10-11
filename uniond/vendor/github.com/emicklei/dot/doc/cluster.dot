@@ -1,0 +1,22 @@
+digraph  {
+	subgraph cluster_s2 {
+		label="Cluster A";
+		n3[label="one"];
+		n4[label="two"];
+		
+	}
+	subgraph cluster_s5 {
+		label="Cluster B";
+		n7[label="four"];
+		n6[label="three"];
+		
+	}
+	
+	n1[label="Outside"];
+	n1->n7;
+	n7->n3;
+	n3->n4;
+	n6->n1;
+	n4->n6;
+	
+}

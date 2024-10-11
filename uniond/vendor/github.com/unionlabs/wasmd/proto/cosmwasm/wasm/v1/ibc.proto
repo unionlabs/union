@@ -1,0 +1,40 @@
+syntax = "proto3";
+package cosmwasm.wasm.v1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/wasm/types";
+option (gogoproto.goproto_getters_all) = false;
+
+// MsgIBCSend
+message MsgIBCSend {
+  // the channel by which the packet will be sent
+  string channel = 2 [ (gogoproto.moretags) = "yaml:\"source_channel\"" ];
+
+  // Timeout height relative to the current block height.
+  // The timeout is disabled when set to 0.
+  uint64 timeout_height = 4
+      [ (gogoproto.moretags) = "yaml:\"timeout_height\"" ];
+  // Timeout timestamp (in nanoseconds) relative to the current block timestamp.
+  // The timeout is disabled when set to 0.
+  uint64 timeout_timestamp = 5
+      [ (gogoproto.moretags) = "yaml:\"timeout_timestamp\"" ];
+
+  // Data is the payload to transfer. We must not make assumption what format or
+  // content is in here.
+  bytes data = 6;
+}
+
+// MsgIBCSendResponse
+message MsgIBCSendResponse {
+  // Sequence number of the IBC packet sent
+  uint64 sequence = 1;
+}
+
+// MsgIBCWriteAcknowledgementResponse
+message MsgIBCWriteAcknowledgementResponse {}
+
+// MsgIBCCloseChannel port and channel need to be owned by the contract
+message MsgIBCCloseChannel {
+  string channel = 2 [ (gogoproto.moretags) = "yaml:\"source_channel\"" ];
+}

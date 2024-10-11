@@ -1,0 +1,11 @@
+[
+    {"text": ""},
+    {"text": "x"},
+    {"text": "foo"},
+    {"text": "\"able"},
+    {"text": "unresolved\nambiguities\r\ncost\rbillions"},
+    {"text": "stealth whitespace is significant   "},
+    {"text": "stealth whitespace snailed for your protection  @@"},
+    {"text": "co\u00F6peration"},
+    {"text": "JSON limits unicode to 16 bits, surrogates must be transmitted as-is \uD852\uDF62"}
+]

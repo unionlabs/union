@@ -1,0 +1,11 @@
+syntax = "proto3";
+package tendermint.services.version.v1;
+
+message GetVersionRequest {}
+
+message GetVersionResponse {
+  string node  = 1;  // The semantic version of the node software.
+  string abci  = 2;  // The version of ABCI used by the node.
+  uint64 p2p   = 3;  // The version of the P2P protocol.
+  uint64 block = 4;  // The version of the block protocol.
+}

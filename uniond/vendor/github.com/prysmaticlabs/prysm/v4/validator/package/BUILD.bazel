@@ -1,0 +1,52 @@
+load("@rules_pkg//:pkg.bzl", "pkg_deb", "pkg_tar")
+
+pkg_tar(
+    name = "validator-bin",
+    srcs = [
+        "//cmd/validator",
+    ],
+    mode = "0755",
+    package_dir = "/usr/bin",
+)
+
+pkg_tar(
+    name = "validator-config",
+    srcs = glob(["validator.yaml"]),
+    mode = "0640",
+    package_dir = "/etc/prysm",
+)
+
+pkg_tar(
+    name = "validator-service",
+    srcs = glob(["prysm-validator.service"]),
+    mode = "0640",
+    package_dir = "/usr/lib/systemd/system",
+)
+
+pkg_tar(
+    name = "debian-data",
+    extension = "tar.gz",
+    deps = [
+        ":validator-bin",
+        ":validator-config",
+        ":validator-service",
+    ],
+)
+
+pkg_deb(
+    name = "deb",
+    architecture = "amd64",
+    conffiles = [
+        "etc/prysm/validator.yaml",
+    ],
+    data = ":debian-data",
+    description = "Prysm Validator Client - Ethereum consensus",
+    homepage = "https://prysmaticlabs.com/",
+    maintainer = "Prysmatic Labs <contact@prysmaticlabs.com>",
+    package = "prysm-validator",
+    postinst = "postinst.sh",
+    preinst = "preinst.sh",
+    tags = ["no-remote"],
+    version_file = "//runtime:version_file",
+    visibility = ["//validator:__pkg__"],
+)

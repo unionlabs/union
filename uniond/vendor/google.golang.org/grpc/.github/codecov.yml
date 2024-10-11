@@ -1,0 +1,25 @@
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+ignore:
+  # All 'pb.go's.
+  - "**/*.pb.go"
+  # Tests and test related files.
+  - "**/test"
+  - "**/testdata"
+  - "**/testutils"
+  - "benchmark"
+  - "interop"
+  # Other submodules.
+  - "cmd"
+  - "examples"
+  - "gcp"
+  - "security"
+  - "stats/opencensus"
+comment:
+  layout: "header, diff, files"

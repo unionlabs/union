@@ -1,0 +1,21 @@
+{
+  "chain-a": [
+    "main"
+  ],
+  "chain-b": [
+    "main",
+    "v7.3.0",
+    "v7.2.1",
+    "v7.2.0"
+  ],
+  "entrypoint": [
+    "LocalhostInterchainAccountsTestSuite"
+  ],
+  "test": [
+    "TestInterchainAccounts_Localhost",
+    "TestInterchainAccounts_ReopenChannel_Localhost"
+  ],
+  "relayer-type": [
+    "hermes"
+  ]
+}

@@ -19,6 +19,9 @@ _add_mod_256:
 .cfi_adjust_cfa_offset	8
 
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -57,7 +60,15 @@ L$oaded_a_add_mod_256:
 	leaq	24(%rsp),%rsp
 .cfi_adjust_cfa_offset	-24
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -83,6 +94,9 @@ _mul_by_3_mod_256:
 
 
 	movq	%rdx,%rcx
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -101,7 +115,15 @@ _mul_by_3_mod_256:
 	leaq	24(%rsp),%rsp
 .cfi_adjust_cfa_offset	-24
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -132,7 +154,15 @@ __lshift_mod_256:
 	cmovcq	%rbx,%r10
 	cmovcq	%rbp,%r11
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rax
+	lfence
+	jmpq	*%rax
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc
 
 
@@ -157,6 +187,9 @@ _lshift_mod_256:
 .cfi_offset	%r12,-32
 
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -181,7 +214,15 @@ L$oop_lshift_mod_256:
 	leaq	24(%rsp),%rsp
 .cfi_adjust_cfa_offset	-24
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -205,6 +246,9 @@ _rshift_mod_256:
 .cfi_adjust_cfa_offset	8
 
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%rbp
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -261,7 +305,15 @@ L$oop_rshift_mod_256:
 	leaq	24(%rsp),%rsp
 .cfi_adjust_cfa_offset	-24
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -286,6 +338,9 @@ _cneg_mod_256:
 .cfi_offset	%r12,-32
 
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r12
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -331,7 +386,15 @@ _cneg_mod_256:
 	leaq	24(%rsp),%rsp
 .cfi_adjust_cfa_offset	-24
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -355,6 +418,9 @@ _sub_mod_256:
 .cfi_adjust_cfa_offset	8
 
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -391,7 +457,15 @@ _sub_mod_256:
 	leaq	24(%rsp),%rsp
 .cfi_adjust_cfa_offset	-24
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -405,6 +479,9 @@ _check_mod_256:
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rdi),%rax
 	movq	8(%rdi),%r9
 	movq	16(%rdi),%r10
@@ -426,7 +503,15 @@ _check_mod_256:
 	cmovneq	%rdx,%rax
 	andq	%rsi,%rax
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -450,6 +535,9 @@ _add_n_check_mod_256:
 .cfi_adjust_cfa_offset	8
 
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -493,7 +581,15 @@ _add_n_check_mod_256:
 	leaq	24(%rsp),%rsp
 .cfi_adjust_cfa_offset	-24
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 
 
@@ -517,6 +613,9 @@ _sub_n_check_mod_256:
 .cfi_adjust_cfa_offset	8
 
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -559,6 +658,14 @@ _sub_n_check_mod_256:
 	leaq	24(%rsp),%rsp
 .cfi_adjust_cfa_offset	-24
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 

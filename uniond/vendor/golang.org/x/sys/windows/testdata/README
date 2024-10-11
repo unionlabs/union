@@ -1,0 +1,21 @@
+This folder contains various pre-generated artifacts for testing. Descriptions
+of each follow below.
+
+## ev-signed-file.exe
+
+This was generated with:
+
+  int main(void)
+  {
+      puts("Hello Gophers!");
+      return 0;
+  }
+
+And then a simple clang/mingw compilation:
+
+  i686-w64-mingw32-gcc -Os -s a.c
+
+After, it was copied to a Windows computer where it was signed with an EV
+certificate using:
+
+  signtool sign /sha1 <ID of certificate> /fd sha256 /tr http://timestamp.digicert.com /td sha256 /d "Go Project EV Signing Test" a.exe

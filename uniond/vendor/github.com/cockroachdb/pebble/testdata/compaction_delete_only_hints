@@ -1,0 +1,417 @@
+# The first few cases are adapted from this ASCII example. The y-axis is
+# sequence numbers and the x-axis is the user key space. LSM levels are
+# omitted from the visualization.
+#
+# 250
+#       +--------00004 (fragmented)------+
+#       V                                |
+#       |-b...230:h-|                    |
+# _______________________________________V_____________ snapshot #210
+# 200               |--h.RANGEDEL.200:r--|
+#
+# _____________________________________________________ snapshot #180
+#
+# 150                     +--------+
+#           +---------+   | 000006 |
+#           | 000005  |   |        |
+#           +_________+   |        |
+# 100_____________________|________|___________________ snapshot #100
+#                         +--------+
+# _____________________________________________________ snapshot #70
+#                             +---------------+
+#  50                         | 000007        |
+#                             |               |
+#                             +---------------+
+# ______________________________________________________________
+#     a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+define snapshots=(70, 100, 180, 210)
+L0
+b.RANGEDEL.230:h h.RANGEDEL.200:r
+L2
+d.SET.110:d i.SET.140:i
+L3
+k.SET.90:k o.SET.150:o
+L4
+m.SET.30:m u.SET.60:u
+----
+0.0:
+  000004:[b#230,RANGEDEL-r#inf,RANGEDEL]
+2:
+  000005:[d#110,SET-i#140,SET]
+3:
+  000006:[k#90,SET-o#150,SET]
+4:
+  000007:[m#30,SET-u#60,SET]
+
+# Test a hint that is blocked by open snapshots. No compaction should occur
+# and the hint should not be removed.
+
+get-hints
+----
+L0.000004 b-r seqnums(tombstone=200-230, file-smallest=90, type=point-key-only)
+
+maybe-compact
+----
+Deletion hints:
+  L0.000004 b-r seqnums(tombstone=200-230, file-smallest=90, type=point-key-only)
+Compactions:
+  (none)
+
+# Adopt the same LSM but without snapshots 100, 180 and 210.
+
+define snapshots=(70)
+L0
+b.RANGEDEL.230:h h.RANGEDEL.200:r
+L2
+d.SET.110:d i.SET.140:i
+L3
+k.SET.90:k o.SET.150:o
+L4
+m.SET.30:m u.SET.60:u
+----
+0.0:
+  000004:[b#230,RANGEDEL-r#inf,RANGEDEL]
+2:
+  000005:[d#110,SET-i#140,SET]
+3:
+  000006:[k#90,SET-o#150,SET]
+4:
+  000007:[m#30,SET-u#60,SET]
+
+get-hints
+----
+L0.000004 b-r seqnums(tombstone=200-230, file-smallest=90, type=point-key-only)
+
+maybe-compact
+----
+Deletion hints:
+  (none)
+Compactions:
+  [JOB 100] compacted(delete-only) L2 [000005] (677B) Score=0.00 + L3 [000006] (677B) Score=0.00 -> L6 [] (0B), in 1.0s (2.0s total), output rate 0B/s
+
+# Verify that compaction correctly handles the presence of multiple
+# overlapping hints which might delete a file multiple times. All of the
+# resolvable hints should be removed.
+
+define snapshots=(70)
+L0
+a.RANGEDEL.300:k
+L1
+b.RANGEDEL.230:h h.RANGEDEL.200:r
+L2
+d.SET.110:d i.SET.140:i
+L3
+k.SET.90:k o.SET.150:o
+L4
+m.SET.30:m u.SET.60:u
+----
+0.0:
+  000004:[a#300,RANGEDEL-k#inf,RANGEDEL]
+1:
+  000005:[b#230,RANGEDEL-r#inf,RANGEDEL]
+2:
+  000006:[d#110,SET-i#140,SET]
+3:
+  000007:[k#90,SET-o#150,SET]
+4:
+  000008:[m#30,SET-u#60,SET]
+
+get-hints
+----
+L0.000004 a-k seqnums(tombstone=300-300, file-smallest=110, type=point-key-only)
+L1.000005 b-r seqnums(tombstone=200-230, file-smallest=90, type=point-key-only)
+
+maybe-compact
+----
+Deletion hints:
+  (none)
+Compactions:
+  [JOB 100] compacted(delete-only) L2 [000006] (677B) Score=0.00 + L3 [000007] (677B) Score=0.00 -> L6 [] (0B), in 1.0s (2.0s total), output rate 0B/s
+
+# Test a range tombstone that is already compacted into L6.
+
+define snapshots=(70)
+L0
+m.SET.300:m b.RANGEDEL.230:h h.RANGEDEL.200:r
+L2
+d.SET.110:d i.SET.140:i
+L3
+k.SET.90:k o.SET.150:o
+L4
+m.SET.30:m u.SET.60:u
+----
+0.0:
+  000004:[b#230,RANGEDEL-r#inf,RANGEDEL]
+2:
+  000005:[d#110,SET-i#140,SET]
+3:
+  000006:[k#90,SET-o#150,SET]
+4:
+  000007:[m#30,SET-u#60,SET]
+
+get-hints
+----
+L0.000004 b-r seqnums(tombstone=200-230, file-smallest=90, type=point-key-only)
+
+compact a-z
+----
+5:
+  000008:[b#230,RANGEDEL-u#0,SET]
+
+maybe-compact
+----
+Deletion hints:
+  (none)
+Compactions:
+  (none)
+
+# The same test case, without snapshots, with a table (000008) that exists
+# within the range del user key bounds, but above it in the LSM.
+
+define
+L1
+b.RANGEDEL.230:h h.RANGEDEL.200:r
+L2
+d.SET.110:d i.SET.140:i
+L3
+k.SET.90:k o.SET.150:o
+L4
+m.SET.30:m u.SET.60:u
+L0
+e.SET.240:e m.SET.260:m
+----
+0.0:
+  000008:[e#240,SET-m#260,SET]
+1:
+  000004:[b#230,RANGEDEL-r#inf,RANGEDEL]
+2:
+  000005:[d#110,SET-i#140,SET]
+3:
+  000006:[k#90,SET-o#150,SET]
+4:
+  000007:[m#30,SET-u#60,SET]
+
+get-hints
+----
+L1.000004 b-r seqnums(tombstone=200-230, file-smallest=90, type=point-key-only)
+
+# Tables 000005 and 000006 can be deleted as their largest sequence numbers fall
+# below the smallest sequence number of the range del. Table 000007 falls
+# outside the user key bounds, and table 000008 exists at a sequence number
+# above the range del, so neither are deleted.
+
+maybe-compact
+----
+Deletion hints:
+  (none)
+Compactions:
+  [JOB 100] compacted(delete-only) L2 [000005] (677B) Score=0.00 + L3 [000006] (677B) Score=0.00 -> L6 [] (0B), in 1.0s (2.0s total), output rate 0B/s
+
+# A deletion hint present on an sstable in a higher level should NOT result in a
+# deletion-only compaction incorrectly removing an sstable in L6 following an
+# elision-only compaction that zeroes the sequence numbers in an L6 table.
+#
+# This is a regression test for pebble#1285.
+
+# Create an sstable at L6. We expect that the SET survives the following
+# sequence of compactions.
+define snapshots=(10, 25)
+L6
+a.SET.20:b a.RANGEDEL.15:z
+----
+6:
+  000004:[a#20,SETWITHDEL-z#inf,RANGEDEL]
+
+# Note that this test depends on stats being present on the sstables, so we
+# collect hints here. We expect none, as the table is in L6.
+get-hints
+----
+(none)
+
+# Place a compaction hint on a non-existent table in a higher level in the LSM.
+#
+# The selection of the sequence numbers for the hints is nuanced, and warrants
+# some explanation. The largest tombstone sequence number (27) and file smallest
+# sequence number (0) were chosen such that they fall into different snapshot
+# stripes, which ensures the hint is not resolved and dropped. The deletion
+# range 5-27 is also chosen such that it covers the sequence number range from
+# the table, i.e. 15-20, which *appears* to make the keys eligible for deletion.
+force-set-hints
+L0.000001 a-z 0 5-27 point_key_only
+----
+L0.000001 a-z seqnums(tombstone=5-27, file-smallest=0, type=point-key-only)
+
+# Hints on the table are unchanged, as the new sstable is at L6, and hints are
+# not generated on tables at this level.
+get-hints
+----
+L0.000001 a-z seqnums(tombstone=5-27, file-smallest=0, type=point-key-only)
+
+# Closing snapshot 10 triggers an elision-only compaction in L6 rather than a
+# deletion-only compaction, as the earliest snapshot that remains open is 25,
+# preventing the delete compaction hint from being resolved as it does not exist
+# in the same snapshot stripe as the table in L6.
+close-snapshot
+10
+----
+[JOB 100] compacted(elision-only) L6 [000004] (741B) Score=0.00 + L6 [] (0B) Score=0.00 -> L6 [000005] (662B), in 1.0s (2.0s total), output rate 662B/s
+
+# The deletion hint was removed by the elision-only compaction.
+get-hints
+----
+(none)
+
+# The LSM contains the key, as expected.
+iter
+first
+next
+----
+a: (b, .)
+.
+
+# Closing the next snapshot should NOT trigger another compaction, as the
+# deletion hint was removed in the elision-only compaction.
+close-snapshot
+25
+----
+(none)
+
+# The key remains in the LSM.
+iter
+first
+next
+----
+a: (b, .)
+.
+
+# Construct a scenario with tables containing a mixture of range dels and range
+# key dels that sit within different types of hints.
+#
+#   +------- 000013 (internally fragmented spans) ----|
+#   |                                                 V
+#   |                       |-------------------------| m.RANGEKEYDEL:z
+#   |               |-------|                           i.RANGEKEYDEL:m
+#   V         |-----------------------|                 f.RANGEDEL:r
+#   |---------|                                         a.RANGEDEL:f
+#               +-+             +---+             +---+
+#               | | 000006      |   | 000009      |   | 000012 <- Point keys only.
+#               +-+             +---+             +---+
+#         +---+           +---+             +---+
+#         |   | 000005    |   | 000008      |   | 000011       <- Range keys only.
+#         +---+           +---+             +---+
+#   +---+           +---+             +---+
+#   |   | 000004    |   | 000007      |   | 000010             <- Point and range keys.
+#   +---+           +---+             +---+
+# __________________________________________________________
+#   a b c d e f g h i j k l m n o p q r s t u v w x y z
+#
+# Note that table 000013 contains both range dels and range key dels that have
+# been internally fragmented. After defragmentation there are three hints
+# created:
+# - [a, i) - a point-key-only hint
+# - [i, r) - a point-and-range-key hint
+# - [r, z) - a range-key-only hint
+#
+# Based on the defragmented hints, the following tables can be deleted:
+# - 000006: covered by range del hint [a, i), table contains only point keys.
+# - 000007: covered by mixed hint [i, r), table contains point and range keys.
+# - 000008: covered by mixed hint [i, r), table contains only range keys.
+# - 000009: covered by mixed hint [i, r), table contains only point keys.
+# - 000011: covered by range key hint [r, z), table contains only range keys.
+#
+
+# NOTE: the LSM shown in the example above is created bottom-up via ingestions.
+
+reset
+----
+
+ingest ext
+set a a
+range-key-set a c @1 foo
+set c c
+----
+OK
+
+ingest ext
+range-key-set d f @2 bar
+----
+OK
+
+ingest ext
+set g g
+set h h
+----
+OK
+
+ingest ext
+set i i
+range-key-set i k @1 v1
+set k k
+----
+OK
+
+ingest ext
+range-key-set l n @2 bar
+----
+OK
+
+ingest ext
+set o o
+set q q
+----
+OK
+
+ingest ext
+set r r
+range-key-set r t @1 v1
+set t t
+----
+OK
+
+ingest ext
+range-key-set u w @2 bar
+----
+OK
+
+ingest ext
+set x x
+set z z
+----
+OK
+
+ingest ext
+del-range a f
+del-range f r
+range-key-del i m
+range-key-del m z
+----
+OK
+
+describe-lsm
+----
+0.0:
+  000013:[a#19,RANGEDEL-z#inf,RANGEKEYDEL]
+6:
+  000004:[a#10,RANGEKEYSET-c#10,SET]
+  000005:[d#11,RANGEKEYSET-f#inf,RANGEKEYSET]
+  000006:[g#12,SET-h#12,SET]
+  000007:[i#13,RANGEKEYSET-k#13,SET]
+  000008:[l#14,RANGEKEYSET-n#inf,RANGEKEYSET]
+  000009:[o#15,SET-q#15,SET]
+  000010:[r#16,RANGEKEYSET-t#16,SET]
+  000011:[u#17,RANGEKEYSET-w#inf,RANGEKEYSET]
+  000012:[x#18,SET-z#18,SET]
+
+get-hints
+----
+L0.000013 a-i seqnums(tombstone=19-19, file-smallest=12, type=point-key-only)
+L0.000013 i-r seqnums(tombstone=19-19, file-smallest=13, type=point-and-range-key)
+L0.000013 r-z seqnums(tombstone=19-19, file-smallest=17, type=range-key-only)
+
+maybe-compact
+----
+Deletion hints:
+  (none)
+Compactions:
+  [JOB 100] compacted(delete-only) L6 [000006 000007 000008 000009 000011] (3.9KB) Score=0.00 -> L6 [] (0B), in 1.0s (2.0s total), output rate 0B/s

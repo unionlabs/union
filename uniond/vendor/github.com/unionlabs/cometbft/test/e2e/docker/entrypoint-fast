@@ -1,0 +1,5 @@
+#!/busybox/sh
+
+rm -rf /var/run/privval.sock /var/run/app.sock
+/app /cometbft/config/app.toml # > /dev/null
+

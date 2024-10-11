@@ -1,0 +1,8 @@
+{{ $currentBranch := getenv "CURRENT_BRANCH" }}
+
+<a
+  class="edit-btn"
+  target="_blank"
+  href="https://github.com/dgraph-io/badger/issues/new?body=*%20Doc%20page:%20[{{ .File.Path }}]({{ .Permalink }})%0A*%20Doc version:%20`{{ $currentBranch }}`%0A%0A">
+    <i class="fa fa-warning"></i> Report Issue
+</a>

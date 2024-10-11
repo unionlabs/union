@@ -1,0 +1,69 @@
+### This builds, packages, signs, performs AV and malware scanning, and
+### creates a new GitHub release for the newest version of go-getter. 
+### The GitHub release step performs the actions outlined in 
+### release.goreleaser.yml. A release is triggered when a new tag 
+### is pushed in the format vX.X.X
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+        with:
+          fetch-depth: 0
+      - name: Setup go
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
+        with:
+          go-version: '^1.15'
+      - name: Setup signore
+        uses: hashicorp/setup-signore@v1
+        with:
+          github-token: ${{secrets.SIGNORE_TOKEN}}
+    
+      - name: Install wget & clamAV antivirus scanner
+        run : |
+           sudo apt-get update
+           sudo apt-get -qq install -y ca-certificates wget clamav
+           wget --version
+      - name: Install maldet malware scanner
+        run: |
+          wget --no-verbose -O maldet-$VERSION.tar.gz https://github.com/rfxn/linux-malware-detect/archive/$VERSION.tar.gz
+          sha256sum -c - <<< "$SHA256SUM  maldet-$VERSION.tar.gz"
+          sudo mkdir -p maldet-$VERSION
+          sudo tar -xzf maldet-$VERSION.tar.gz --strip-components=1 -C maldet-$VERSION
+          cd maldet-$VERSION
+          sudo ./install.sh
+          sudo maldet -u
+        env: 
+          VERSION: 1.6.4
+          SHA256SUM: 3ad66eebd443d32dd6c811dcf2d264b78678c75ed1d40c15434180d4453e60d2
+      - name: GitHub Release
+        uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # v5.0.0
+        with:
+          version: latest
+          args: release --skip-validate --timeout "60m"
+        env:
+          PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
+          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+          CIRCLE_TOKEN: ${{ secrets.CIRCLE_TOKEN }}
+          SIGNORE_SIGNER: ${{secrets.SIGNORE_SIGNER}}
+          SIGNORE_CLIENT_ID: ${{secrets.SIGNORE_CLIENT_ID}}
+          SIGNORE_CLIENT_SECRET: ${{secrets.SIGNORE_CLIENT_SECRET}}
+      - name: Run clamAV antivirus scanner
+        run: sudo clamscan /home/runner/work/$REPO/$REPO/dist/
+        env:
+          REPO: ${{ github.event.repository.name }}
+      - name: Run maldet malware scanner
+        run: sudo maldet -a /home/runner/work/$REPO/$REPO/dist/
+        env:
+          REPO: ${{ github.event.repository.name }}

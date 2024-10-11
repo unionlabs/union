@@ -1,0 +1,36 @@
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - main: ./testing/simapp/simd/main.go
+    binary: simd
+    flags:
+      - -tags=netgo ledger
+      - -mod=readonly
+    ldflags:
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=sim -X github.com/cosmos/cosmos-sdk/version.AppName=simd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X "github.com/cosmos/cosmos-sdk/version.BuildTags=netgo,ledger" 
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    # for goarch use defaults: 386, amd64 and arm64.
+    
+checksum:
+  name_template: SHA256SUMS-{{.Version}}.txt
+  algorithm: sha256
+
+release:
+  mode: keep-existing
+  prerelease: auto
+
+archives:
+  - name_template: "{{ .ProjectName }}_simd_v{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+      - RELEASES.md
+      - SECURITY.md
+      - CHANGELOG.md

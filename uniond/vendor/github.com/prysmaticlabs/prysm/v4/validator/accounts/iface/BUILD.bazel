@@ -1,0 +1,16 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["wallet.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/validator/accounts/iface",
+    visibility = [
+        "//cmd:__subpackages__",
+        "//validator:__pkg__",
+        "//validator:__subpackages__",
+    ],
+    deps = [
+        "//validator/keymanager:go_default_library",
+        "//validator/keymanager/remote-web3signer:go_default_library",
+    ],
+)

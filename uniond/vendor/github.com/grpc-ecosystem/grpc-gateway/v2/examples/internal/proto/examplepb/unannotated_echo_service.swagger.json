@@ -1,0 +1,588 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Unannotated Echo",
+    "description": "Unannotated Echo Service\nSimilar to echo_service.proto but without annotations. See\nunannotated_echo_service.yaml for the equivalent of the annotations in\ngRPC API configuration format.\n\nEcho Service API consists of a single service which returns\na message.",
+    "version": "1.0",
+    "contact": {
+      "name": "gRPC-Gateway project",
+      "url": "https://github.com/grpc-ecosystem/grpc-gateway",
+      "email": "none@example.com"
+    },
+    "license": {
+      "name": "BSD 3-Clause License",
+      "url": "https://github.com/grpc-ecosystem/grpc-gateway/blob/main/LICENSE.txt"
+    },
+    "x-something-something": "yadda"
+  },
+  "tags": [
+    {
+      "name": "UnannotatedEchoService",
+      "description": "UnannotatedEchoService description -- which should not be used in place of the documentation comment!",
+      "externalDocs": {
+        "description": "Find out more about UnannotatedEchoService",
+        "url": "https://github.com/grpc-ecosystem/grpc-gateway"
+      }
+    },
+    {
+      "name": "Echo",
+      "description": "Echo description"
+    },
+    {
+      "name": "Internal",
+      "description": "Internal description",
+      "x-traitTag": true
+    }
+  ],
+  "schemes": [
+    "http",
+    "https",
+    "wss"
+  ],
+  "consumes": [
+    "application/json",
+    "application/x-foo-mime"
+  ],
+  "produces": [
+    "application/json",
+    "application/x-foo-mime"
+  ],
+  "paths": {
+    "/v1/example/echo/{id}": {
+      "post": {
+        "summary": "Summary: Echo rpc",
+        "description": "Description Echo",
+        "operationId": "UnannotatedEchoService_Echo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbUnannotatedSimpleMessage"
+            },
+            "examples": {
+              "application/json": {
+                "value": "the input value"
+              }
+            }
+          },
+          "403": {
+            "description": "Returned when the user does not have permission to access the resource.",
+            "schema": {}
+          },
+          "404": {
+            "description": "Returned when the resource does not exist.",
+            "schema": {
+              "type": "integer",
+              "format": "integer"
+            }
+          },
+          "503": {
+            "description": "Returned when the resource is temporarily unavailable.",
+            "schema": {},
+            "x-number": 100
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "Id represents the message identifier.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "num",
+            "description": "Int value field",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "format": "int64",
+            "default": "42"
+          },
+          {
+            "name": "duration",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "lineNum",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "status.progress",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "status.note",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "en",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "no.progress",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "no.note",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "resourceId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UnannotatedEchoService"
+        ],
+        "externalDocs": {
+          "description": "Find out more Echo",
+          "url": "https://github.com/grpc-ecosystem/grpc-gateway"
+        }
+      }
+    },
+    "/v1/example/echo/{id}/{num}": {
+      "get": {
+        "summary": "Summary: Echo rpc",
+        "description": "Description Echo",
+        "operationId": "UnannotatedEchoService_Echo2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbUnannotatedSimpleMessage"
+            },
+            "examples": {
+              "application/json": {
+                "value": "the input value"
+              }
+            }
+          },
+          "403": {
+            "description": "Returned when the user does not have permission to access the resource.",
+            "schema": {}
+          },
+          "404": {
+            "description": "Returned when the resource does not exist.",
+            "schema": {
+              "type": "integer",
+              "format": "integer"
+            }
+          },
+          "503": {
+            "description": "Returned when the resource is temporarily unavailable.",
+            "schema": {},
+            "x-number": 100
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "Id represents the message identifier.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "num",
+            "description": "Int value field",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64",
+            "default": "42"
+          },
+          {
+            "name": "duration",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "lineNum",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "status.progress",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "status.note",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "en",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "no.progress",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "no.note",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "resourceId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UnannotatedEchoService"
+        ],
+        "externalDocs": {
+          "description": "Find out more Echo",
+          "url": "https://github.com/grpc-ecosystem/grpc-gateway"
+        }
+      }
+    },
+    "/v1/example/echo_body": {
+      "post": {
+        "summary": "EchoBody method receives a simple message and returns it.",
+        "operationId": "UnannotatedEchoService_EchoBody",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbUnannotatedSimpleMessage"
+            }
+          },
+          "403": {
+            "description": "Returned when the user does not have permission to access the resource.",
+            "schema": {}
+          },
+          "404": {
+            "description": "Returned when the resource does not exist.",
+            "schema": {
+              "type": "string",
+              "format": "string"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "A simple message with many types",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbUnannotatedSimpleMessage"
+            }
+          }
+        ],
+        "tags": [
+          "UnannotatedEchoService"
+        ]
+      }
+    },
+    "/v1/example/echo_delete": {
+      "delete": {
+        "summary": "EchoDelete method receives a simple message and returns it.",
+        "operationId": "UnannotatedEchoService_EchoDelete",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbUnannotatedSimpleMessage"
+            }
+          },
+          "403": {
+            "description": "Returned when the user does not have permission to access the resource.",
+            "schema": {}
+          },
+          "404": {
+            "description": "Returned when the resource does not exist.",
+            "schema": {
+              "type": "string",
+              "format": "string"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "Id represents the message identifier.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "num",
+            "description": "Int value field",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "format": "int64",
+            "default": "42"
+          },
+          {
+            "name": "duration",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "lineNum",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "status.progress",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "status.note",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "en",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "no.progress",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "no.note",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "resourceId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UnannotatedEchoService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "examplepbUnannotatedEmbedded": {
+      "type": "object",
+      "properties": {
+        "progress": {
+          "type": "string",
+          "format": "int64"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "description": "Embedded represents a message embedded in SimpleMessage."
+    },
+    "examplepbUnannotatedSimpleMessage": {
+      "type": "object",
+      "example": {
+        "id": "myid"
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Id represents the message identifier."
+        },
+        "num": {
+          "type": "string",
+          "format": "int64",
+          "default": "42",
+          "description": "Int value field"
+        },
+        "duration": {
+          "type": "string"
+        },
+        "lineNum": {
+          "type": "string",
+          "format": "int64"
+        },
+        "lang": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/examplepbUnannotatedEmbedded"
+        },
+        "en": {
+          "type": "string",
+          "format": "int64"
+        },
+        "no": {
+          "$ref": "#/definitions/examplepbUnannotatedEmbedded"
+        },
+        "resourceId": {
+          "type": "string"
+        }
+      },
+      "description": "A simple message with many types",
+      "title": "A bit of everything",
+      "externalDocs": {
+        "description": "Find out more about UnannotatedSimpleMessage",
+        "url": "https://github.com/grpc-ecosystem/grpc-gateway"
+      },
+      "required": [
+        "id",
+        "num"
+      ]
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "ApiKeyAuth": {
+      "type": "apiKey",
+      "name": "X-API-Key",
+      "in": "header",
+      "x-amazon-apigateway-authorizer": {
+        "authorizerResultTtlInSeconds": 60,
+        "type": "token"
+      },
+      "x-amazon-apigateway-authtype": "oauth2"
+    },
+    "BasicAuth": {
+      "type": "basic"
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": [],
+      "BasicAuth": []
+    },
+    {
+      "ApiKeyAuth": [],
+      "OAuth2": [
+        "read",
+        "write"
+      ]
+    }
+  ],
+  "externalDocs": {
+    "description": "More about gRPC-Gateway",
+    "url": "https://github.com/grpc-ecosystem/grpc-gateway"
+  },
+  "x-grpc-gateway-baz-list": [
+    "one",
+    true
+  ],
+  "x-grpc-gateway-foo": "bar"
+}

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package ibc.applications.fee.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/types";
+
+// IncentivizedAcknowledgement is the acknowledgement format to be used by applications wrapped in the fee middleware
+message IncentivizedAcknowledgement {
+  // the underlying app acknowledgement bytes
+  bytes app_acknowledgement = 1;
+  // the relayer address which submits the recv packet message
+  string forward_relayer_address = 2;
+  // success flag of the base application callback
+  bool underlying_app_success = 3;
+}

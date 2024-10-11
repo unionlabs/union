@@ -1,0 +1,81 @@
+# When collection begins, it should start from the most recent manifest.
+
+create-manifest filenum=000001
+----
+
+create-manifest filenum=000002
+----
+
+# Since collection hasn't started yet, cleaning the old manifest should
+# immediately remove it.
+
+clean
+src/MANIFEST-000001
+----
+
+ls src
+----
+src:
+  MANIFEST-000002
+
+start
+----
+
+stat src/MANIFEST-000002
+----
+src/MANIFEST-000002:
+  size: 100
+
+flush
+000003
+----
+created src/000003.sst
+[JOB 0] flushed 1 memtable (100B) to L0 [000003] (10KB), in 0.1s (0.1s total), output rate 100KB/s
+
+wait
+----
+dst:
+  000003.sst
+  MANIFEST-000002
+
+# The new file should have a larger size than it did when we stat'd the src
+# manifest because a version edit should've been appended by the flush, and
+# copied while copying the flushed sstables.
+
+stat dst/MANIFEST-000002
+----
+dst/MANIFEST-000002:
+  size: 125
+
+cmp-files src/MANIFEST-000002 dst/MANIFEST-000002
+----
+equal
+
+# Test a manifest rotation.
+
+create-manifest filenum=000004
+----
+
+flush
+000005
+000006
+----
+created src/000005.sst
+created src/000006.sst
+[JOB 0] flushed 1 memtable (100B) to L0 [000005 000006] (20KB), in 0.1s (0.1s total), output rate 200KB/s
+
+wait
+----
+dst:
+  000003.sst
+  000005.sst
+  000006.sst
+  MANIFEST-000002
+  MANIFEST-000004
+
+cmp-files src/MANIFEST-000004 dst/MANIFEST-000004
+----
+equal
+
+stop
+----

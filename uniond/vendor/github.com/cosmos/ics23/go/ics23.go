@@ -132,6 +132,10 @@ func CombineProofs(proofs []*CommitmentProof) (*CommitmentProof, error) {
 }
 
 func getExistProofForKey(proof *CommitmentProof, key []byte) *ExistenceProof {
+	if proof == nil {
+		return nil
+	}
+
 	switch p := proof.Proof.(type) {
 	case *CommitmentProof_Exist:
 		ep := p.Exist

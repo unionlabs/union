@@ -1,0 +1,19 @@
+syntax = "proto3";
+package goproto.proto.test3;
+
+option go_package = "github.com/cosmos/cosmos-proto/internal/testprotos/test3";
+
+message MultiLayeredNesting {
+  message Nested1 {
+    message Nested2 {
+      message Nested3 {
+        oneof nested3_oneof {
+          string nested_3_string = 1;
+          int32  nested_3_int32 = 2;
+        }
+      }
+      Nested3 nested_3 = 1;
+    }
+  }
+  Nested1 nested1 = 1;
+}

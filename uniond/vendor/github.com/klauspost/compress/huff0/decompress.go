@@ -1136,7 +1136,7 @@ func (s *Scratch) matches(ct cTable, w io.Writer) {
 			errs++
 		}
 		if errs > 0 {
-			fmt.Fprintf(w, "%d errros in base, stopping\n", errs)
+			fmt.Fprintf(w, "%d errors in base, stopping\n", errs)
 			continue
 		}
 		// Ensure that all combinations are covered.
@@ -1152,7 +1152,7 @@ func (s *Scratch) matches(ct cTable, w io.Writer) {
 				errs++
 			}
 			if errs > 20 {
-				fmt.Fprintf(w, "%d errros, stopping\n", errs)
+				fmt.Fprintf(w, "%d errors, stopping\n", errs)
 				break
 			}
 		}

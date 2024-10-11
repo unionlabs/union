@@ -1,0 +1,317 @@
+
+define auto-compactions=off
+L0
+  a.SET.4:4
+L1
+  a.SET.3:3
+L2
+  d.SET.2:2
+L3
+  b.SET.1:1
+  c.SET.1:1
+  d.SET.1:1
+  e.SET.1:1
+----
+0.0:
+  000004:[a#4,SET-a#4,SET]
+1:
+  000005:[a#3,SET-a#3,SET]
+2:
+  000006:[d#2,SET-d#2,SET]
+3:
+  000007:[b#1,SET-e#1,SET]
+
+# Simple case: three successive seeks, at increasing keys. Should use
+# trySeekUsingNext.
+
+iter
+seek-ge a
+----
+a: (4, .)
+stats: seeked 1 times (1 internal); stepped 0 times (0 internal)
+SeekGEs with trySeekUsingNext: 0
+SeekPrefixGEs with trySeekUsingNext: 0
+
+iter
+seek-ge b
+----
+b: (1, .)
+stats: seeked 2 times (2 internal); stepped 0 times (0 internal)
+SeekGEs with trySeekUsingNext: 2
+SeekPrefixGEs with trySeekUsingNext: 0
+
+iter
+seek-ge c
+----
+c: (1, .)
+stats: seeked 3 times (3 internal); stepped 0 times (0 internal)
+SeekGEs with trySeekUsingNext: 4
+SeekPrefixGEs with trySeekUsingNext: 0
+
+# Seek at a lower key. Should not call with trySeekUsingNext = true.
+
+iter
+seek-ge bb
+----
+c: (1, .)
+stats: seeked 4 times (4 internal); stepped 0 times (0 internal)
+SeekGEs with trySeekUsingNext: 4
+SeekPrefixGEs with trySeekUsingNext: 0
+
+# Seek at a greater key than last seek, but lands on the same key. Should
+# not call internalIterator at all.
+
+iter
+seek-ge bbb
+----
+c: (1, .)
+stats: seeked 5 times (4 internal); stepped 0 times (0 internal)
+SeekGEs with trySeekUsingNext: 4
+SeekPrefixGEs with trySeekUsingNext: 0
+
+# A step followed by a seek should not call with trySeekUsingNext = true.
+
+iter
+next
+seek-ge e
+----
+d: (2, .)
+e: (1, .)
+stats: seeked 6 times (5 internal); stepped 1 times (1 internal)
+SeekGEs with trySeekUsingNext: 4
+SeekPrefixGEs with trySeekUsingNext: 0
+
+iter
+prev
+seek-ge b
+----
+d: (2, .)
+b: (1, .)
+stats: seeked 7 times (6 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 4
+SeekPrefixGEs with trySeekUsingNext: 0
+
+# SeekPrefixGE simple case.
+
+iter
+seek-prefix-ge a
+----
+a: (4, .)
+stats: seeked 8 times (7 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 4
+SeekPrefixGEs with trySeekUsingNext: 0
+
+iter
+seek-prefix-ge b
+----
+b: (1, .)
+stats: seeked 9 times (8 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 4
+SeekPrefixGEs with trySeekUsingNext: 2
+
+iter
+seek-prefix-ge c
+----
+c: (1, .)
+stats: seeked 10 times (9 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 4
+SeekPrefixGEs with trySeekUsingNext: 4
+
+# Seek at a lower key. Should not call with trySeekUsingNext = true.
+
+iter
+seek-prefix-ge bb
+----
+.
+stats: seeked 11 times (10 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 4
+SeekPrefixGEs with trySeekUsingNext: 4
+
+# Shifting bounds followed by SeekGEs. The one immediately after a bounds change
+# does not use trySeekUsingNext, but successive ones do (while still respecting
+# bounds).
+
+iter
+set-bounds lower=a upper=aa
+seek-ge a
+----
+.
+a: (4, .)
+stats: seeked 12 times (11 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 4
+SeekPrefixGEs with trySeekUsingNext: 4
+
+iter
+set-bounds lower=a upper=c
+seek-ge b
+----
+.
+b: (1, .)
+stats: seeked 13 times (12 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 4
+SeekPrefixGEs with trySeekUsingNext: 4
+
+iter
+seek-ge bb
+----
+.
+stats: seeked 14 times (13 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 5
+SeekPrefixGEs with trySeekUsingNext: 4
+
+iter
+set-bounds lower=a upper=d
+seek-ge bbb
+----
+.
+c: (1, .)
+stats: seeked 15 times (14 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 5
+SeekPrefixGEs with trySeekUsingNext: 4
+
+iter
+seek-ge cc
+----
+.
+stats: seeked 16 times (15 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 6
+SeekPrefixGEs with trySeekUsingNext: 4
+
+# Shifting bounds, with non-overlapping and monotonic bounds. A set-bounds sits
+# between every two seeks. We don't call trySeekUsingNext=true when the bounds
+# are set to unequal bounds, but the results are still correct and within
+# bounds. We do call trySeekUsingNext=true when the set bounds are identical.
+
+iter
+set-bounds lower=a upper=c
+seek-ge b
+----
+.
+b: (1, .)
+stats: seeked 17 times (16 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 6
+SeekPrefixGEs with trySeekUsingNext: 4
+
+iter
+set-bounds lower=c upper=e
+seek-ge c
+----
+.
+c: (1, .)
+stats: seeked 18 times (17 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 6
+SeekPrefixGEs with trySeekUsingNext: 4
+
+# NB: Equal bounds.
+
+iter
+set-bounds lower=c upper=e
+seek-ge d
+----
+.
+d: (2, .)
+stats: seeked 19 times (18 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 8
+SeekPrefixGEs with trySeekUsingNext: 4
+
+iter
+set-bounds lower=a upper=c
+seek-prefix-ge b
+----
+.
+b: (1, .)
+stats: seeked 20 times (19 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 8
+SeekPrefixGEs with trySeekUsingNext: 4
+
+iter
+set-bounds lower=c upper=e
+seek-prefix-ge c
+----
+.
+c: (1, .)
+stats: seeked 21 times (20 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 8
+SeekPrefixGEs with trySeekUsingNext: 4
+
+# NB: Equal bounds.
+
+iter
+set-bounds lower=c upper=e
+seek-prefix-ge d
+----
+.
+d: (2, .)
+stats: seeked 22 times (21 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 8
+SeekPrefixGEs with trySeekUsingNext: 6
+
+# Shifting bounds, with non-overlapping and monotonic bounds, but using
+# SetOptions. A set-options sits between every two seeks. We don't call
+# trySeekUsingNext=true when the bounds are set to unequal bounds, but the
+# results are still correct and within bounds. We do call trySeekUsingNext=true
+# when the set bounds are identical.
+
+iter
+set-options lower=a upper=c
+seek-ge b
+----
+.
+b: (1, .)
+stats: seeked 23 times (22 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 8
+SeekPrefixGEs with trySeekUsingNext: 6
+
+iter
+set-options lower=c upper=e
+seek-ge c
+----
+.
+c: (1, .)
+stats: seeked 24 times (23 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 8
+SeekPrefixGEs with trySeekUsingNext: 6
+
+# NB: Equal bounds.
+
+iter
+set-options lower=c upper=e
+seek-ge d
+----
+.
+d: (2, .)
+stats: seeked 25 times (24 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 10
+SeekPrefixGEs with trySeekUsingNext: 6
+
+iter
+set-options lower=a upper=c
+seek-prefix-ge b
+----
+.
+b: (1, .)
+stats: seeked 26 times (25 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 10
+SeekPrefixGEs with trySeekUsingNext: 6
+
+iter
+set-options lower=c upper=e
+seek-prefix-ge c
+----
+.
+c: (1, .)
+stats: seeked 27 times (26 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 10
+SeekPrefixGEs with trySeekUsingNext: 6
+
+# NB: Equal bounds.
+
+iter
+set-options lower=c upper=e
+seek-prefix-ge d
+----
+.
+d: (2, .)
+stats: seeked 28 times (27 internal); stepped 2 times (1 fwd/1 rev, internal: 1 fwd/3 rev)
+SeekGEs with trySeekUsingNext: 10
+SeekPrefixGEs with trySeekUsingNext: 8

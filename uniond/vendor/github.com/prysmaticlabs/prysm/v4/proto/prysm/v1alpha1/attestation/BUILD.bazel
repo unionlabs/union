@@ -1,0 +1,33 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["attestation_utils.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/attestation",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/core/signing:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//crypto/bls:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+        "@io_opencensus_go//trace:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["attestation_utils_test.go"],
+    deps = [
+        ":go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+    ],
+)

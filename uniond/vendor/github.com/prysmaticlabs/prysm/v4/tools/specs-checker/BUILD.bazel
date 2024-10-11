@@ -1,0 +1,31 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "check.go",
+        "download.go",
+        "main.go",
+    ],
+    embedsrcs = [
+        "data/specs/phase0/beacon-chain.md",
+        "data/specs/phase0/fork-choice.md",
+        "data/specs/phase0/validator.md",
+        "data/specs/phase0/weak-subjectivity.md",
+        "data/ssz/merkle-proofs.md",
+        "data/extra.md",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/tools/specs-checker",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//config/params:go_default_library",
+        "@com_github_urfave_cli_v2//:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "specs-checker",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)

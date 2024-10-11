@@ -1,0 +1,212 @@
+{
+  "basePath": "",
+  "baseUrl": "https://safebrowsing.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "Safebrowsing",
+  "description": "Enables client applications to check web resources (most commonly URLs) against Google-generated lists of unsafe web resources. The Safe Browsing APIs are for non-commercial use only. If you need to use APIs to detect malicious URLs for commercial purposes – meaning “for sale or revenue-generating purposes” – please refer to the Web Risk API.",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://developers.google.com/safe-browsing/",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "safebrowsing:v5",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://safebrowsing.mtls.googleapis.com/",
+  "name": "safebrowsing",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "hashes": {
+      "methods": {
+        "search": {
+          "description": "Search for full hashes matching the specified prefixes. This is a custom method as defined by https://google.aip.dev/136 (the custom method refers to this method having a custom name within Google's general API development nomenclature; it does not refer to using a custom HTTP method).",
+          "flatPath": "v5/hashes:search",
+          "httpMethod": "GET",
+          "id": "safebrowsing.hashes.search",
+          "parameterOrder": [],
+          "parameters": {
+            "hashPrefixes": {
+              "description": "Required. The hash prefixes to be looked up. Clients MUST NOT send more than 1000 hash prefixes. However, following the URL processing procedure, clients SHOULD NOT need to send more than 30 hash prefixes. Currently each hash prefix is required to be exactly 4 bytes long. This MAY be relaxed in the future.",
+              "format": "byte",
+              "location": "query",
+              "repeated": true,
+              "type": "string"
+            }
+          },
+          "path": "v5/hashes:search",
+          "response": {
+            "$ref": "GoogleSecuritySafebrowsingV5SearchHashesResponse"
+          }
+        }
+      }
+    }
+  },
+  "revision": "20240505",
+  "rootUrl": "https://safebrowsing.googleapis.com/",
+  "schemas": {
+    "GoogleSecuritySafebrowsingV5FullHash": {
+      "description": "The full hash identified with one or more matches.",
+      "id": "GoogleSecuritySafebrowsingV5FullHash",
+      "properties": {
+        "fullHash": {
+          "description": "The matching full hash. This is the SHA256 hash. The length will be exactly 32 bytes.",
+          "format": "byte",
+          "type": "string"
+        },
+        "fullHashDetails": {
+          "description": "Unordered list. A repeated field identifying the details relevant to this full hash.",
+          "items": {
+            "$ref": "GoogleSecuritySafebrowsingV5FullHashFullHashDetail"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleSecuritySafebrowsingV5FullHashFullHashDetail": {
+      "description": "Details about a matching full hash. An important note about forward compatibility: new threat types and threat attributes may be added by the server at any time; those additions are considered minor version changes. It is Google's policy not to expose minor version numbers in APIs (see https://cloud.google.com/apis/design/versioning for the versioning policy), so clients MUST be prepared to receive `FullHashDetail` messages containing `ThreatType` enum values or `ThreatAttribute` enum values that are considered invalid by the client. Therefore, it is the client's responsibility to check for the validity of all `ThreatType` and `ThreatAttribute` enum values; if any value is considered invalid, the client MUST disregard the entire `FullHashDetail` message.",
+      "id": "GoogleSecuritySafebrowsingV5FullHashFullHashDetail",
+      "properties": {
+        "attributes": {
+          "description": "Unordered list. Additional attributes about those full hashes. This may be empty.",
+          "items": {
+            "enum": [
+              "THREAT_ATTRIBUTE_UNSPECIFIED",
+              "CANARY",
+              "FRAME_ONLY"
+            ],
+            "enumDescriptions": [
+              "Unknown attribute. If this is returned by the server, the client shall disregard the enclosing `FullHashDetail` altogether.",
+              "Indicates that the threat_type should not be used for enforcement.",
+              "Indicates that the threat_type should only be used for enforcement on frames."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "threatType": {
+          "description": "The type of threat. This field will never be empty.",
+          "enum": [
+            "THREAT_TYPE_UNSPECIFIED",
+            "MALWARE",
+            "SOCIAL_ENGINEERING",
+            "UNWANTED_SOFTWARE",
+            "POTENTIALLY_HARMFUL_APPLICATION"
+          ],
+          "enumDescriptions": [
+            "Unknown threat type. If this is returned by the server, the client shall disregard the enclosing `FullHashDetail` altogether.",
+            "Malware threat type. Malware is any software or mobile application specifically designed to harm a computer, a mobile device, the software it's running, or its users. Malware exhibits malicious behavior that can include installing software without user consent and installing harmful software such as viruses. More information can be found [here](https://developers.google.com/search/docs/monitor-debug/security/malware).",
+            "Social engineering threat type. Social engineering pages falsely purport to act on behalf of a third party with the intention of confusing viewers into performing an action with which the viewer would only trust a true agent of that third party. Phishing is a type of social engineering that tricks the viewer into performing the specific action of providing information, such as login credentials. More information can be found [here](https://developers.google.com/search/docs/monitor-debug/security/social-engineering).",
+            "Unwanted software threat type. Unwanted software is any software that does not adhere to [Google's Software Principles](https://www.google.com/about/software-principles.html) but isn't malware.",
+            "Potentially harmful application threat type [as used by Google Play Protect for the Play Store](https://developers.google.com/android/play-protect/potentially-harmful-applications)."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleSecuritySafebrowsingV5SearchHashesResponse": {
+      "description": "The response returned after searching threat hashes. If nothing is found, the server will return an OK status (HTTP status code 200) with the `full_hashes` field empty, rather than returning a NOT_FOUND status (HTTP status code 404). **What's new in V5**: There is a separation between `FullHash` and `FullHashDetail`. In the case when a hash represents a site having multiple threats (e.g. both MALWARE and SOCIAL_ENGINEERING), the full hash does not need to be sent twice as in V4. Furthermore, the cache duration has been simplified into a single `cache_duration` field.",
+      "id": "GoogleSecuritySafebrowsingV5SearchHashesResponse",
+      "properties": {
+        "cacheDuration": {
+          "description": "The client-side cache duration. The client MUST add this duration to the current time to determine the expiration time. The expiration time then applies to every hash prefix queried by the client in the request, regardless of how many full hashes are returned in the response. Even if the server returns no full hashes for a particular hash prefix, this fact MUST also be cached by the client. If and only if the field `full_hashes` is empty, the client MAY increase the `cache_duration` to determine a new expiration that is later than that specified by the server. In any case, the increased cache duration must not be longer than 24 hours. Important: the client MUST NOT assume that the server will return the same cache duration for all responses. The server MAY choose different cache durations for different responses depending on the situation.",
+          "format": "google-duration",
+          "type": "string"
+        },
+        "fullHashes": {
+          "description": "Unordered list. The unordered list of full hashes found.",
+          "items": {
+            "$ref": "GoogleSecuritySafebrowsingV5FullHash"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Safe Browsing API",
+  "version": "v5",
+  "version_module": true
+}

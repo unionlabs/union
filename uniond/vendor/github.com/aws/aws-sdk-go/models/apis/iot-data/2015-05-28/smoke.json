@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "defaultRegion": "us-west-2",
+    "defaultEndpoint": "https://data.iot.us-west-2.amazonaws.com",
+    "testCases": [
+        {
+            "operationName": "GetThingShadow",
+            "input": {
+                "thingName": "fake-thing"
+            },
+            "errorExpectedFromService": true
+        }
+    ]
+}

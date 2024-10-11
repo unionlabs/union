@@ -1,0 +1,1920 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/cloud-platform": {
+          "description": "See, edit, configure, and delete your Google Cloud data and see the email address for your Google Account."
+        },
+        "https://www.googleapis.com/auth/maps-platform.places": {
+          "description": "Private Service: https://www.googleapis.com/auth/maps-platform.places"
+        },
+        "https://www.googleapis.com/auth/maps-platform.places.autocomplete": {
+          "description": "Private Service: https://www.googleapis.com/auth/maps-platform.places.autocomplete"
+        },
+        "https://www.googleapis.com/auth/maps-platform.places.details": {
+          "description": "Private Service: https://www.googleapis.com/auth/maps-platform.places.details"
+        },
+        "https://www.googleapis.com/auth/maps-platform.places.nearbysearch": {
+          "description": "Private Service: https://www.googleapis.com/auth/maps-platform.places.nearbysearch"
+        },
+        "https://www.googleapis.com/auth/maps-platform.places.textsearch": {
+          "description": "Private Service: https://www.googleapis.com/auth/maps-platform.places.textsearch"
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://places.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "Maps Places",
+  "description": "",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://mapsplatform.google.com/maps-products/#places-section",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "places:v1",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://places.mtls.googleapis.com/",
+  "name": "places",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "places": {
+      "methods": {
+        "autocomplete": {
+          "description": "Returns predictions for the given input.",
+          "flatPath": "v1/places:autocomplete",
+          "httpMethod": "POST",
+          "id": "places.places.autocomplete",
+          "parameterOrder": [],
+          "parameters": {},
+          "path": "v1/places:autocomplete",
+          "request": {
+            "$ref": "GoogleMapsPlacesV1AutocompletePlacesRequest"
+          },
+          "response": {
+            "$ref": "GoogleMapsPlacesV1AutocompletePlacesResponse"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/maps-platform.places",
+            "https://www.googleapis.com/auth/maps-platform.places.autocomplete"
+          ]
+        },
+        "get": {
+          "description": "Get the details of a place based on its resource name, which is a string in the `places/{place_id}` format.",
+          "flatPath": "v1/places/{placesId}",
+          "httpMethod": "GET",
+          "id": "places.places.get",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "languageCode": {
+              "description": "Optional. Place details will be displayed with the preferred language if available. Current list of supported languages: https://developers.google.com/maps/faq#languagesupport.",
+              "location": "query",
+              "type": "string"
+            },
+            "name": {
+              "description": "Required. The resource name of a place, in the `places/{place_id}` format.",
+              "location": "path",
+              "pattern": "^places/[^/]+$",
+              "required": true,
+              "type": "string"
+            },
+            "regionCode": {
+              "description": "Optional. The Unicode country/region code (CLDR) of the location where the request is coming from. This parameter is used to display the place details, like region-specific place name, if available. The parameter can affect results based on applicable law. For more information, see https://www.unicode.org/cldr/charts/latest/supplemental/territory_language_information.html. Note that 3-digit region codes are not currently supported.",
+              "location": "query",
+              "type": "string"
+            },
+            "sessionToken": {
+              "description": "Optional. A string which identifies an Autocomplete session for billing purposes. Must be a URL and filename safe base64 string with at most 36 ASCII characters in length. Otherwise an INVALID_ARGUMENT error is returned. The session begins when the user starts typing a query, and concludes when they select a place and a call to Place Details or Address Validation is made. Each session can have multiple queries, followed by one Place Details or Address Validation request. The credentials used for each request within a session must belong to the same Google Cloud Console project. Once a session has concluded, the token is no longer valid; your app must generate a fresh token for each session. If the `session_token` parameter is omitted, or if you reuse a session token, the session is charged as if no session token was provided (each request is billed separately). We recommend the following guidelines: * Use session tokens for all Place Autocomplete calls. * Generate a fresh token for each session. Using a version 4 UUID is recommended. * Ensure that the credentials used for all Place Autocomplete, Place Details, and Address Validation requests within a session belong to the same Cloud Console project. * Be sure to pass a unique session token for each new session. Using the same token for more than one session will result in each request being billed individually.",
+              "location": "query",
+              "type": "string"
+            }
+          },
+          "path": "v1/{+name}",
+          "response": {
+            "$ref": "GoogleMapsPlacesV1Place"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/maps-platform.places",
+            "https://www.googleapis.com/auth/maps-platform.places.details"
+          ]
+        },
+        "searchNearby": {
+          "description": "Search for places near locations.",
+          "flatPath": "v1/places:searchNearby",
+          "httpMethod": "POST",
+          "id": "places.places.searchNearby",
+          "parameterOrder": [],
+          "parameters": {},
+          "path": "v1/places:searchNearby",
+          "request": {
+            "$ref": "GoogleMapsPlacesV1SearchNearbyRequest"
+          },
+          "response": {
+            "$ref": "GoogleMapsPlacesV1SearchNearbyResponse"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/maps-platform.places",
+            "https://www.googleapis.com/auth/maps-platform.places.nearbysearch"
+          ]
+        },
+        "searchText": {
+          "description": "Text query based place search.",
+          "flatPath": "v1/places:searchText",
+          "httpMethod": "POST",
+          "id": "places.places.searchText",
+          "parameterOrder": [],
+          "parameters": {},
+          "path": "v1/places:searchText",
+          "request": {
+            "$ref": "GoogleMapsPlacesV1SearchTextRequest"
+          },
+          "response": {
+            "$ref": "GoogleMapsPlacesV1SearchTextResponse"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/maps-platform.places",
+            "https://www.googleapis.com/auth/maps-platform.places.textsearch"
+          ]
+        }
+      },
+      "resources": {
+        "photos": {
+          "methods": {
+            "getMedia": {
+              "description": "Get a photo media with a photo reference string.",
+              "flatPath": "v1/places/{placesId}/photos/{photosId}/media",
+              "httpMethod": "GET",
+              "id": "places.places.photos.getMedia",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "maxHeightPx": {
+                  "description": "Optional. Specifies the maximum desired height, in pixels, of the image. If the image is smaller than the values specified, the original image will be returned. If the image is larger in either dimension, it will be scaled to match the smaller of the two dimensions, restricted to its original aspect ratio. Both the max_height_px and max_width_px properties accept an integer between 1 and 4800, inclusively. If the value is not within the allowed range, an INVALID_ARGUMENT error will be returned. At least one of max_height_px or max_width_px needs to be specified. If neither max_height_px nor max_width_px is specified, an INVALID_ARGUMENT error will be returned.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "maxWidthPx": {
+                  "description": "Optional. Specifies the maximum desired width, in pixels, of the image. If the image is smaller than the values specified, the original image will be returned. If the image is larger in either dimension, it will be scaled to match the smaller of the two dimensions, restricted to its original aspect ratio. Both the max_height_px and max_width_px properties accept an integer between 1 and 4800, inclusively. If the value is not within the allowed range, an INVALID_ARGUMENT error will be returned. At least one of max_height_px or max_width_px needs to be specified. If neither max_height_px nor max_width_px is specified, an INVALID_ARGUMENT error will be returned.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "name": {
+                  "description": "Required. The resource name of a photo media in the format: `places/{place_id}/photos/{photo_reference}/media`. The resource name of a photo as returned in a Place object's `photos.name` field comes with the format `places/{place_id}/photos/{photo_reference}`. You need to append `/media` at the end of the photo resource to get the photo media resource name.",
+                  "location": "path",
+                  "pattern": "^places/[^/]+/photos/[^/]+/media$",
+                  "required": true,
+                  "type": "string"
+                },
+                "skipHttpRedirect": {
+                  "description": "Optional. If set, skip the default HTTP redirect behavior and render a text format (for example, in JSON format for HTTP use case) response. If not set, an HTTP redirect will be issued to redirect the call to the image media. This option is ignored for non-HTTP requests.",
+                  "location": "query",
+                  "type": "boolean"
+                }
+              },
+              "path": "v1/{+name}",
+              "response": {
+                "$ref": "GoogleMapsPlacesV1PhotoMedia"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform",
+                "https://www.googleapis.com/auth/maps-platform.places"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20240519",
+  "rootUrl": "https://places.googleapis.com/",
+  "schemas": {
+    "GoogleGeoTypeViewport": {
+      "description": "A latitude-longitude viewport, represented as two diagonally opposite `low` and `high` points. A viewport is considered a closed region, i.e. it includes its boundary. The latitude bounds must range between -90 to 90 degrees inclusive, and the longitude bounds must range between -180 to 180 degrees inclusive. Various cases include: - If `low` = `high`, the viewport consists of that single point. - If `low.longitude` \u003e `high.longitude`, the longitude range is inverted (the viewport crosses the 180 degree longitude line). - If `low.longitude` = -180 degrees and `high.longitude` = 180 degrees, the viewport includes all longitudes. - If `low.longitude` = 180 degrees and `high.longitude` = -180 degrees, the longitude range is empty. - If `low.latitude` \u003e `high.latitude`, the latitude range is empty. Both `low` and `high` must be populated, and the represented box cannot be empty (as specified by the definitions above). An empty viewport will result in an error. For example, this viewport fully encloses New York City: { \"low\": { \"latitude\": 40.477398, \"longitude\": -74.259087 }, \"high\": { \"latitude\": 40.91618, \"longitude\": -73.70018 } }",
+      "id": "GoogleGeoTypeViewport",
+      "properties": {
+        "high": {
+          "$ref": "GoogleTypeLatLng",
+          "description": "Required. The high point of the viewport."
+        },
+        "low": {
+          "$ref": "GoogleTypeLatLng",
+          "description": "Required. The low point of the viewport."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1AuthorAttribution": {
+      "description": "Information about the author of the UGC data. Used in Photo, and Review.",
+      "id": "GoogleMapsPlacesV1AuthorAttribution",
+      "properties": {
+        "displayName": {
+          "description": "Name of the author of the Photo or Review.",
+          "type": "string"
+        },
+        "photoUri": {
+          "description": "Profile photo URI of the author of the Photo or Review.",
+          "type": "string"
+        },
+        "uri": {
+          "description": "URI of the author of the Photo or Review.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1AutocompletePlacesRequest": {
+      "description": "Request proto for AutocompletePlaces.",
+      "id": "GoogleMapsPlacesV1AutocompletePlacesRequest",
+      "properties": {
+        "includeQueryPredictions": {
+          "description": "Optional. If true, the response will include both Place and query predictions. Otherwise the response will only return Place predictions.",
+          "type": "boolean"
+        },
+        "includedPrimaryTypes": {
+          "description": "Optional. Included primary Place type (for example, \"restaurant\" or \"gas_station\") in Place Types (https://developers.google.com/maps/documentation/places/web-service/place-types), or only `(regions)`, or only `(cities)`. A Place is only returned if its primary type is included in this list. Up to 5 values can be specified. If no types are specified, all Place types are returned.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "includedRegionCodes": {
+          "description": "Optional. Only include results in the specified regions, specified as up to 15 CLDR two-character region codes. An empty set will not restrict the results. If both `location_restriction` and `included_region_codes` are set, the results will be located in the area of intersection.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "input": {
+          "description": "Required. The text string on which to search.",
+          "type": "string"
+        },
+        "inputOffset": {
+          "description": "Optional. A zero-based Unicode character offset of `input` indicating the cursor position in `input`. The cursor position may influence what predictions are returned. If empty, defaults to the length of `input`.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "languageCode": {
+          "description": "Optional. The language in which to return results. Defaults to en-US. The results may be in mixed languages if the language used in `input` is different from `language_code` or if the returned Place does not have a translation from the local language to `language_code`.",
+          "type": "string"
+        },
+        "locationBias": {
+          "$ref": "GoogleMapsPlacesV1AutocompletePlacesRequestLocationBias",
+          "description": "Optional. Bias results to a specified location. At most one of `location_bias` or `location_restriction` should be set. If neither are set, the results will be biased by IP address, meaning the IP address will be mapped to an imprecise location and used as a biasing signal."
+        },
+        "locationRestriction": {
+          "$ref": "GoogleMapsPlacesV1AutocompletePlacesRequestLocationRestriction",
+          "description": "Optional. Restrict results to a specified location. At most one of `location_bias` or `location_restriction` should be set. If neither are set, the results will be biased by IP address, meaning the IP address will be mapped to an imprecise location and used as a biasing signal."
+        },
+        "origin": {
+          "$ref": "GoogleTypeLatLng",
+          "description": "Optional. The origin point from which to calculate geodesic distance to the destination (returned as `distance_meters`). If this value is omitted, geodesic distance will not be returned."
+        },
+        "regionCode": {
+          "description": "Optional. The region code, specified as a CLDR two-character region code. This affects address formatting, result ranking, and may influence what results are returned. This does not restrict results to the specified region. To restrict results to a region, use `region_code_restriction`.",
+          "type": "string"
+        },
+        "sessionToken": {
+          "description": "Optional. A string which identifies an Autocomplete session for billing purposes. Must be a URL and filename safe base64 string with at most 36 ASCII characters in length. Otherwise an INVALID_ARGUMENT error is returned. The session begins when the user starts typing a query, and concludes when they select a place and a call to Place Details or Address Validation is made. Each session can have multiple queries, followed by one Place Details or Address Validation request. The credentials used for each request within a session must belong to the same Google Cloud Console project. Once a session has concluded, the token is no longer valid; your app must generate a fresh token for each session. If the `session_token` parameter is omitted, or if you reuse a session token, the session is charged as if no session token was provided (each request is billed separately). We recommend the following guidelines: * Use session tokens for all Place Autocomplete calls. * Generate a fresh token for each session. Using a version 4 UUID is recommended. * Ensure that the credentials used for all Place Autocomplete, Place Details, and Address Validation requests within a session belong to the same Cloud Console project. * Be sure to pass a unique session token for each new session. Using the same token for more than one session will result in each request being billed individually.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1AutocompletePlacesRequestLocationBias": {
+      "description": "The region to search. The results may be biased around the specified region.",
+      "id": "GoogleMapsPlacesV1AutocompletePlacesRequestLocationBias",
+      "properties": {
+        "circle": {
+          "$ref": "GoogleMapsPlacesV1Circle",
+          "description": "A circle defined by a center point and radius."
+        },
+        "rectangle": {
+          "$ref": "GoogleGeoTypeViewport",
+          "description": "A viewport defined by a northeast and a southwest corner."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1AutocompletePlacesRequestLocationRestriction": {
+      "description": "The region to search. The results will be restricted to the specified region.",
+      "id": "GoogleMapsPlacesV1AutocompletePlacesRequestLocationRestriction",
+      "properties": {
+        "circle": {
+          "$ref": "GoogleMapsPlacesV1Circle",
+          "description": "A circle defined by a center point and radius."
+        },
+        "rectangle": {
+          "$ref": "GoogleGeoTypeViewport",
+          "description": "A viewport defined by a northeast and a southwest corner."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1AutocompletePlacesResponse": {
+      "description": "Response proto for AutocompletePlaces.",
+      "id": "GoogleMapsPlacesV1AutocompletePlacesResponse",
+      "properties": {
+        "suggestions": {
+          "description": "Contains a list of suggestions, ordered in descending order of relevance.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestion"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestion": {
+      "description": "An Autocomplete suggestion result.",
+      "id": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestion",
+      "properties": {
+        "placePrediction": {
+          "$ref": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionPlacePrediction",
+          "description": "A prediction for a Place."
+        },
+        "queryPrediction": {
+          "$ref": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionQueryPrediction",
+          "description": "A prediction for a query."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionFormattableText": {
+      "description": "Text representing a Place or query prediction. The text may be used as is or formatted.",
+      "id": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionFormattableText",
+      "properties": {
+        "matches": {
+          "description": "A list of string ranges identifying where the input request matched in `text`. The ranges can be used to format specific parts of `text`. The substrings may not be exact matches of `input` if the matching was determined by criteria other than string matching (for example, spell corrections or transliterations). These values are Unicode character offsets of `text`. The ranges are guaranteed to be ordered in increasing offset values.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionStringRange"
+          },
+          "type": "array"
+        },
+        "text": {
+          "description": "Text that may be used as is or formatted with `matches`.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionPlacePrediction": {
+      "description": "Prediction results for a Place Autocomplete prediction.",
+      "id": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionPlacePrediction",
+      "properties": {
+        "distanceMeters": {
+          "description": "The length of the geodesic in meters from `origin` if `origin` is specified. Certain predictions such as routes may not populate this field.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "place": {
+          "description": "The resource name of the suggested Place. This name can be used in other APIs that accept Place names.",
+          "type": "string"
+        },
+        "placeId": {
+          "description": "The unique identifier of the suggested Place. This identifier can be used in other APIs that accept Place IDs.",
+          "type": "string"
+        },
+        "structuredFormat": {
+          "$ref": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionStructuredFormat",
+          "description": "A breakdown of the Place prediction into main text containing the name of the Place and secondary text containing additional disambiguating features (such as a city or region). `structured_format` is recommended for developers who wish to show two separate, but related, UI elements. Developers who wish to show a single UI element may want to use `text` instead. They are two different ways to represent a Place prediction. Users should not try to parse `structured_format` into `text` or vice versa."
+        },
+        "text": {
+          "$ref": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionFormattableText",
+          "description": "Contains the human-readable name for the returned result. For establishment results, this is usually the business name and address. `text` is recommended for developers who wish to show a single UI element. Developers who wish to show two separate, but related, UI elements may want to use `structured_format` instead. They are two different ways to represent a Place prediction. Users should not try to parse `structured_format` into `text` or vice versa. This text may be different from the `display_name` returned by GetPlace. May be in mixed languages if the request `input` and `language_code` are in different languages or if the Place does not have a translation from the local language to `language_code`."
+        },
+        "types": {
+          "description": "List of types that apply to this Place from Table A or Table B in https://developers.google.com/maps/documentation/places/web-service/place-types. A type is a categorization of a Place. Places with shared types will share similar characteristics.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionQueryPrediction": {
+      "description": "Prediction results for a Query Autocomplete prediction.",
+      "id": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionQueryPrediction",
+      "properties": {
+        "structuredFormat": {
+          "$ref": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionStructuredFormat",
+          "description": "A breakdown of the query prediction into main text containing the query and secondary text containing additional disambiguating features (such as a city or region). `structured_format` is recommended for developers who wish to show two separate, but related, UI elements. Developers who wish to show a single UI element may want to use `text` instead. They are two different ways to represent a query prediction. Users should not try to parse `structured_format` into `text` or vice versa."
+        },
+        "text": {
+          "$ref": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionFormattableText",
+          "description": "The predicted text. This text does not represent a Place, but rather a text query that could be used in a search endpoint (for example, Text Search). `text` is recommended for developers who wish to show a single UI element. Developers who wish to show two separate, but related, UI elements may want to use `structured_format` instead. They are two different ways to represent a query prediction. Users should not try to parse `structured_format` into `text` or vice versa. May be in mixed languages if the request `input` and `language_code` are in different languages or if part of the query does not have a translation from the local language to `language_code`."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionStringRange": {
+      "description": "Identifies a substring within a given text.",
+      "id": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionStringRange",
+      "properties": {
+        "endOffset": {
+          "description": "Zero-based offset of the last Unicode character (exclusive).",
+          "format": "int32",
+          "type": "integer"
+        },
+        "startOffset": {
+          "description": "Zero-based offset of the first Unicode character of the string (inclusive).",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionStructuredFormat": {
+      "description": "Contains a breakdown of a Place or query prediction into main text and secondary text. For Place predictions, the main text contains the specific name of the Place. For query predictions, the main text contains the query. The secondary text contains additional disambiguating features (such as a city or region) to further identify the Place or refine the query.",
+      "id": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionStructuredFormat",
+      "properties": {
+        "mainText": {
+          "$ref": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionFormattableText",
+          "description": "Represents the name of the Place or query."
+        },
+        "secondaryText": {
+          "$ref": "GoogleMapsPlacesV1AutocompletePlacesResponseSuggestionFormattableText",
+          "description": "Represents additional disambiguating features (such as a city or region) to further identify the Place or refine the query."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1Circle": {
+      "description": "Circle with a LatLng as center and radius.",
+      "id": "GoogleMapsPlacesV1Circle",
+      "properties": {
+        "center": {
+          "$ref": "GoogleTypeLatLng",
+          "description": "Required. Center latitude and longitude. The range of latitude must be within [-90.0, 90.0]. The range of the longitude must be within [-180.0, 180.0]."
+        },
+        "radius": {
+          "description": "Required. Radius measured in meters. The radius must be within [0.0, 50000.0].",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1ContentBlock": {
+      "description": "A block of content that can be served individually.",
+      "id": "GoogleMapsPlacesV1ContentBlock",
+      "properties": {
+        "content": {
+          "$ref": "GoogleTypeLocalizedText",
+          "description": "Content related to the topic."
+        },
+        "references": {
+          "$ref": "GoogleMapsPlacesV1References",
+          "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details. References that are related to this block of content."
+        },
+        "topic": {
+          "description": "The topic of the content, for example \"overview\" or \"restaurant\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1ContextualContent": {
+      "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details. Content that is contextual to the place query.",
+      "id": "GoogleMapsPlacesV1ContextualContent",
+      "properties": {
+        "justifications": {
+          "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details. Justifications for the place.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1ContextualContentJustification"
+          },
+          "type": "array"
+        },
+        "photos": {
+          "description": "Information (including references) about photos of this place, contexual to the place query.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1Photo"
+          },
+          "type": "array"
+        },
+        "reviews": {
+          "description": "List of reviews about this place, contexual to the place query.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1Review"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1ContextualContentJustification": {
+      "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details. Justifications for the place. Justifications answers the question of why a place could interest an end user.",
+      "id": "GoogleMapsPlacesV1ContextualContentJustification",
+      "properties": {
+        "businessAvailabilityAttributesJustification": {
+          "$ref": "GoogleMapsPlacesV1ContextualContentJustificationBusinessAvailabilityAttributesJustification",
+          "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details."
+        },
+        "reviewJustification": {
+          "$ref": "GoogleMapsPlacesV1ContextualContentJustificationReviewJustification",
+          "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1ContextualContentJustificationBusinessAvailabilityAttributesJustification": {
+      "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details. BusinessAvailabilityAttributes justifications. This shows some attributes a business has that could interest an end user.",
+      "id": "GoogleMapsPlacesV1ContextualContentJustificationBusinessAvailabilityAttributesJustification",
+      "properties": {
+        "delivery": {
+          "description": "If a place provides delivery.",
+          "type": "boolean"
+        },
+        "dineIn": {
+          "description": "If a place provides dine-in.",
+          "type": "boolean"
+        },
+        "takeout": {
+          "description": "If a place provides takeout.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1ContextualContentJustificationReviewJustification": {
+      "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details. User review justifications. This highlights a section of the user review that would interest an end user. For instance, if the search query is \"firewood pizza\", the review justification highlights the text relevant to the search query.",
+      "id": "GoogleMapsPlacesV1ContextualContentJustificationReviewJustification",
+      "properties": {
+        "highlightedText": {
+          "$ref": "GoogleMapsPlacesV1ContextualContentJustificationReviewJustificationHighlightedText"
+        },
+        "review": {
+          "$ref": "GoogleMapsPlacesV1Review",
+          "description": "The review that the highlighted text is generated from."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1ContextualContentJustificationReviewJustificationHighlightedText": {
+      "description": "The text highlighted by the justification. This is a subset of the review itself. The exact word to highlight is marked by the HighlightedTextRange. There could be several words in the text being highlighted.",
+      "id": "GoogleMapsPlacesV1ContextualContentJustificationReviewJustificationHighlightedText",
+      "properties": {
+        "highlightedTextRanges": {
+          "description": "The list of the ranges of the highlighted text.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1ContextualContentJustificationReviewJustificationHighlightedTextHighlightedTextRange"
+          },
+          "type": "array"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1ContextualContentJustificationReviewJustificationHighlightedTextHighlightedTextRange": {
+      "description": "The range of highlighted text.",
+      "id": "GoogleMapsPlacesV1ContextualContentJustificationReviewJustificationHighlightedTextHighlightedTextRange",
+      "properties": {
+        "endIndex": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "startIndex": {
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1EVChargeOptions": {
+      "description": "Information about the EV Charge Station hosted in Place. Terminology follows https://afdc.energy.gov/fuels/electricity_infrastructure.html One port could charge one car at a time. One port has one or more connectors. One station has one or more ports.",
+      "id": "GoogleMapsPlacesV1EVChargeOptions",
+      "properties": {
+        "connectorAggregation": {
+          "description": "A list of EV charging connector aggregations that contain connectors of the same type and same charge rate.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1EVChargeOptionsConnectorAggregation"
+          },
+          "type": "array"
+        },
+        "connectorCount": {
+          "description": "Number of connectors at this station. However, because some ports can have multiple connectors but only be able to charge one car at a time (e.g.) the number of connectors may be greater than the total number of cars which can charge simultaneously.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1EVChargeOptionsConnectorAggregation": {
+      "description": "EV charging information grouped by [type, max_charge_rate_kw]. Shows EV charge aggregation of connectors that have the same type and max charge rate in kw.",
+      "id": "GoogleMapsPlacesV1EVChargeOptionsConnectorAggregation",
+      "properties": {
+        "availabilityLastUpdateTime": {
+          "description": "The timestamp when the connector availability information in this aggregation was last updated.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "availableCount": {
+          "description": "Number of connectors in this aggregation that are currently available.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "count": {
+          "description": "Number of connectors in this aggregation.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "maxChargeRateKw": {
+          "description": "The static max charging rate in kw of each connector in the aggregation.",
+          "format": "double",
+          "type": "number"
+        },
+        "outOfServiceCount": {
+          "description": "Number of connectors in this aggregation that are currently out of service.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "type": {
+          "description": "The connector type of this aggregation.",
+          "enum": [
+            "EV_CONNECTOR_TYPE_UNSPECIFIED",
+            "EV_CONNECTOR_TYPE_OTHER",
+            "EV_CONNECTOR_TYPE_J1772",
+            "EV_CONNECTOR_TYPE_TYPE_2",
+            "EV_CONNECTOR_TYPE_CHADEMO",
+            "EV_CONNECTOR_TYPE_CCS_COMBO_1",
+            "EV_CONNECTOR_TYPE_CCS_COMBO_2",
+            "EV_CONNECTOR_TYPE_TESLA",
+            "EV_CONNECTOR_TYPE_UNSPECIFIED_GB_T",
+            "EV_CONNECTOR_TYPE_UNSPECIFIED_WALL_OUTLET"
+          ],
+          "enumDescriptions": [
+            "Unspecified connector.",
+            "Other connector types.",
+            "J1772 type 1 connector.",
+            "IEC 62196 type 2 connector. Often referred to as MENNEKES.",
+            "CHAdeMO type connector.",
+            "Combined Charging System (AC and DC). Based on SAE. Type-1 J-1772 connector",
+            "Combined Charging System (AC and DC). Based on Type-2 Mennekes connector",
+            "The generic TESLA connector. This is NACS in the North America but can be non-NACS in other parts of the world (e.g. CCS Combo 2 (CCS2) or GB/T). This value is less representative of an actual connector type, and more represents the ability to charge a Tesla brand vehicle at a Tesla owned charging station.",
+            "GB/T type corresponds to the GB/T standard in China. This type covers all GB_T types.",
+            "Unspecified wall outlet."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1FuelOptions": {
+      "description": "The most recent information about fuel options in a gas station. This information is updated regularly.",
+      "id": "GoogleMapsPlacesV1FuelOptions",
+      "properties": {
+        "fuelPrices": {
+          "description": "The last known fuel price for each type of fuel this station has. There is one entry per fuel type this station has. Order is not important.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1FuelOptionsFuelPrice"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1FuelOptionsFuelPrice": {
+      "description": "Fuel price information for a given type.",
+      "id": "GoogleMapsPlacesV1FuelOptionsFuelPrice",
+      "properties": {
+        "price": {
+          "$ref": "GoogleTypeMoney",
+          "description": "The price of the fuel."
+        },
+        "type": {
+          "description": "The type of fuel.",
+          "enum": [
+            "FUEL_TYPE_UNSPECIFIED",
+            "DIESEL",
+            "REGULAR_UNLEADED",
+            "MIDGRADE",
+            "PREMIUM",
+            "SP91",
+            "SP91_E10",
+            "SP92",
+            "SP95",
+            "SP95_E10",
+            "SP98",
+            "SP99",
+            "SP100",
+            "LPG",
+            "E80",
+            "E85",
+            "METHANE",
+            "BIO_DIESEL",
+            "TRUCK_DIESEL"
+          ],
+          "enumDescriptions": [
+            "Unspecified fuel type.",
+            "Diesel fuel.",
+            "Regular unleaded.",
+            "Midgrade.",
+            "Premium.",
+            "SP 91.",
+            "SP 91 E10.",
+            "SP 92.",
+            "SP 95.",
+            "SP95 E10.",
+            "SP 98.",
+            "SP 99.",
+            "SP 100.",
+            "LPG.",
+            "E 80.",
+            "E 85.",
+            "Methane.",
+            "Bio-diesel.",
+            "Truck diesel."
+          ],
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "The time the fuel price was last updated.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1Photo": {
+      "description": "Information about a photo of a place.",
+      "id": "GoogleMapsPlacesV1Photo",
+      "properties": {
+        "authorAttributions": {
+          "description": "This photo's authors.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1AuthorAttribution"
+          },
+          "type": "array"
+        },
+        "heightPx": {
+          "description": "The maximum available height, in pixels.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "name": {
+          "description": "Identifier. A reference representing this place photo which may be used to look up this place photo again (also called the API \"resource\" name: `places/{place_id}/photos/{photo}`).",
+          "type": "string"
+        },
+        "widthPx": {
+          "description": "The maximum available width, in pixels.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PhotoMedia": {
+      "description": "A photo media from Places API.",
+      "id": "GoogleMapsPlacesV1PhotoMedia",
+      "properties": {
+        "name": {
+          "description": "The resource name of a photo media in the format: `places/{place_id}/photos/{photo_reference}/media`.",
+          "type": "string"
+        },
+        "photoUri": {
+          "description": "A short-lived uri that can be used to render the photo.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1Place": {
+      "description": "All the information representing a Place.",
+      "id": "GoogleMapsPlacesV1Place",
+      "properties": {
+        "accessibilityOptions": {
+          "$ref": "GoogleMapsPlacesV1PlaceAccessibilityOptions",
+          "description": "Information about the accessibility options a place offers."
+        },
+        "addressComponents": {
+          "description": "Repeated components for each locality level. Note the following facts about the address_components[] array: - The array of address components may contain more components than the formatted_address. - The array does not necessarily include all the political entities that contain an address, apart from those included in the formatted_address. To retrieve all the political entities that contain a specific address, you should use reverse geocoding, passing the latitude/longitude of the address as a parameter to the request. - The format of the response is not guaranteed to remain the same between requests. In particular, the number of address_components varies based on the address requested and can change over time for the same address. A component can change position in the array. The type of the component can change. A particular component may be missing in a later response.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1PlaceAddressComponent"
+          },
+          "type": "array"
+        },
+        "adrFormatAddress": {
+          "description": "The place's address in adr microformat: http://microformats.org/wiki/adr.",
+          "type": "string"
+        },
+        "allowsDogs": {
+          "description": "Place allows dogs.",
+          "type": "boolean"
+        },
+        "areaSummary": {
+          "$ref": "GoogleMapsPlacesV1PlaceAreaSummary",
+          "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details. AI-generated summary of the area that the place is in."
+        },
+        "attributions": {
+          "description": "A set of data provider that must be shown with this result.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1PlaceAttribution"
+          },
+          "type": "array"
+        },
+        "businessStatus": {
+          "description": "The business status for the place.",
+          "enum": [
+            "BUSINESS_STATUS_UNSPECIFIED",
+            "OPERATIONAL",
+            "CLOSED_TEMPORARILY",
+            "CLOSED_PERMANENTLY"
+          ],
+          "enumDescriptions": [
+            "Default value. This value is unused.",
+            "The establishment is operational, not necessarily open now.",
+            "The establishment is temporarily closed.",
+            "The establishment is permanently closed."
+          ],
+          "type": "string"
+        },
+        "curbsidePickup": {
+          "description": "Specifies if the business supports curbside pickup.",
+          "type": "boolean"
+        },
+        "currentOpeningHours": {
+          "$ref": "GoogleMapsPlacesV1PlaceOpeningHours",
+          "description": "The hours of operation for the next seven days (including today). The time period starts at midnight on the date of the request and ends at 11:59 pm six days later. This field includes the special_days subfield of all hours, set for dates that have exceptional hours."
+        },
+        "currentSecondaryOpeningHours": {
+          "description": "Contains an array of entries for the next seven days including information about secondary hours of a business. Secondary hours are different from a business's main hours. For example, a restaurant can specify drive through hours or delivery hours as its secondary hours. This field populates the type subfield, which draws from a predefined list of opening hours types (such as DRIVE_THROUGH, PICKUP, or TAKEOUT) based on the types of the place. This field includes the special_days subfield of all hours, set for dates that have exceptional hours.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1PlaceOpeningHours"
+          },
+          "type": "array"
+        },
+        "delivery": {
+          "description": "Specifies if the business supports delivery.",
+          "type": "boolean"
+        },
+        "dineIn": {
+          "description": "Specifies if the business supports indoor or outdoor seating options.",
+          "type": "boolean"
+        },
+        "displayName": {
+          "$ref": "GoogleTypeLocalizedText",
+          "description": "The localized name of the place, suitable as a short human-readable description. For example, \"Google Sydney\", \"Starbucks\", \"Pyrmont\", etc."
+        },
+        "editorialSummary": {
+          "$ref": "GoogleTypeLocalizedText",
+          "description": "Contains a summary of the place. A summary is comprised of a textual overview, and also includes the language code for these if applicable. Summary text must be presented as-is and can not be modified or altered."
+        },
+        "evChargeOptions": {
+          "$ref": "GoogleMapsPlacesV1EVChargeOptions",
+          "description": "Information of ev charging options."
+        },
+        "formattedAddress": {
+          "description": "A full, human-readable address for this place.",
+          "type": "string"
+        },
+        "fuelOptions": {
+          "$ref": "GoogleMapsPlacesV1FuelOptions",
+          "description": "The most recent information about fuel options in a gas station. This information is updated regularly."
+        },
+        "generativeSummary": {
+          "$ref": "GoogleMapsPlacesV1PlaceGenerativeSummary",
+          "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details. AI-generated summary of the place."
+        },
+        "goodForChildren": {
+          "description": "Place is good for children.",
+          "type": "boolean"
+        },
+        "goodForGroups": {
+          "description": "Place accommodates groups.",
+          "type": "boolean"
+        },
+        "goodForWatchingSports": {
+          "description": "Place is suitable for watching sports.",
+          "type": "boolean"
+        },
+        "googleMapsUri": {
+          "description": "A URL providing more information about this place.",
+          "type": "string"
+        },
+        "iconBackgroundColor": {
+          "description": "Background color for icon_mask in hex format, e.g. #909CE1.",
+          "type": "string"
+        },
+        "iconMaskBaseUri": {
+          "description": "A truncated URL to an icon mask. User can access different icon type by appending type suffix to the end (eg, \".svg\" or \".png\").",
+          "type": "string"
+        },
+        "id": {
+          "description": "The unique identifier of a place.",
+          "type": "string"
+        },
+        "internationalPhoneNumber": {
+          "description": "A human-readable phone number for the place, in international format.",
+          "type": "string"
+        },
+        "liveMusic": {
+          "description": "Place provides live music.",
+          "type": "boolean"
+        },
+        "location": {
+          "$ref": "GoogleTypeLatLng",
+          "description": "The position of this place."
+        },
+        "menuForChildren": {
+          "description": "Place has a children's menu.",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "This Place's resource name, in `places/{place_id}` format. Can be used to look up the Place.",
+          "type": "string"
+        },
+        "nationalPhoneNumber": {
+          "description": "A human-readable phone number for the place, in national format.",
+          "type": "string"
+        },
+        "outdoorSeating": {
+          "description": "Place provides outdoor seating.",
+          "type": "boolean"
+        },
+        "parkingOptions": {
+          "$ref": "GoogleMapsPlacesV1PlaceParkingOptions",
+          "description": "Options of parking provided by the place."
+        },
+        "paymentOptions": {
+          "$ref": "GoogleMapsPlacesV1PlacePaymentOptions",
+          "description": "Payment options the place accepts. If a payment option data is not available, the payment option field will be unset."
+        },
+        "photos": {
+          "description": "Information (including references) about photos of this place. A maximum of 10 photos can be returned.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1Photo"
+          },
+          "type": "array"
+        },
+        "plusCode": {
+          "$ref": "GoogleMapsPlacesV1PlacePlusCode",
+          "description": "Plus code of the place location lat/long."
+        },
+        "priceLevel": {
+          "description": "Price level of the place.",
+          "enum": [
+            "PRICE_LEVEL_UNSPECIFIED",
+            "PRICE_LEVEL_FREE",
+            "PRICE_LEVEL_INEXPENSIVE",
+            "PRICE_LEVEL_MODERATE",
+            "PRICE_LEVEL_EXPENSIVE",
+            "PRICE_LEVEL_VERY_EXPENSIVE"
+          ],
+          "enumDescriptions": [
+            "Place price level is unspecified or unknown.",
+            "Place provides free services.",
+            "Place provides inexpensive services.",
+            "Place provides moderately priced services.",
+            "Place provides expensive services.",
+            "Place provides very expensive services."
+          ],
+          "type": "string"
+        },
+        "primaryType": {
+          "description": "The primary type of the given result. This type must one of the Places API supported types. For example, \"restaurant\", \"cafe\", \"airport\", etc. A place can only have a single primary type. For the complete list of possible values, see Table A and Table B at https://developers.google.com/maps/documentation/places/web-service/place-types",
+          "type": "string"
+        },
+        "primaryTypeDisplayName": {
+          "$ref": "GoogleTypeLocalizedText",
+          "description": "The display name of the primary type, localized to the request language if applicable. For the complete list of possible values, see Table A and Table B at https://developers.google.com/maps/documentation/places/web-service/place-types"
+        },
+        "rating": {
+          "description": "A rating between 1.0 and 5.0, based on user reviews of this place.",
+          "format": "double",
+          "type": "number"
+        },
+        "regularOpeningHours": {
+          "$ref": "GoogleMapsPlacesV1PlaceOpeningHours",
+          "description": "The regular hours of operation."
+        },
+        "regularSecondaryOpeningHours": {
+          "description": "Contains an array of entries for information about regular secondary hours of a business. Secondary hours are different from a business's main hours. For example, a restaurant can specify drive through hours or delivery hours as its secondary hours. This field populates the type subfield, which draws from a predefined list of opening hours types (such as DRIVE_THROUGH, PICKUP, or TAKEOUT) based on the types of the place.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1PlaceOpeningHours"
+          },
+          "type": "array"
+        },
+        "reservable": {
+          "description": "Specifies if the place supports reservations.",
+          "type": "boolean"
+        },
+        "restroom": {
+          "description": "Place has restroom.",
+          "type": "boolean"
+        },
+        "reviews": {
+          "description": "List of reviews about this place, sorted by relevance. A maximum of 5 reviews can be returned.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1Review"
+          },
+          "type": "array"
+        },
+        "servesBeer": {
+          "description": "Specifies if the place serves beer.",
+          "type": "boolean"
+        },
+        "servesBreakfast": {
+          "description": "Specifies if the place serves breakfast.",
+          "type": "boolean"
+        },
+        "servesBrunch": {
+          "description": "Specifies if the place serves brunch.",
+          "type": "boolean"
+        },
+        "servesCocktails": {
+          "description": "Place serves cocktails.",
+          "type": "boolean"
+        },
+        "servesCoffee": {
+          "description": "Place serves coffee.",
+          "type": "boolean"
+        },
+        "servesDessert": {
+          "description": "Place serves dessert.",
+          "type": "boolean"
+        },
+        "servesDinner": {
+          "description": "Specifies if the place serves dinner.",
+          "type": "boolean"
+        },
+        "servesLunch": {
+          "description": "Specifies if the place serves lunch.",
+          "type": "boolean"
+        },
+        "servesVegetarianFood": {
+          "description": "Specifies if the place serves vegetarian food.",
+          "type": "boolean"
+        },
+        "servesWine": {
+          "description": "Specifies if the place serves wine.",
+          "type": "boolean"
+        },
+        "shortFormattedAddress": {
+          "description": "A short, human-readable address for this place.",
+          "type": "string"
+        },
+        "subDestinations": {
+          "description": "A list of sub destinations related to the place.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1PlaceSubDestination"
+          },
+          "type": "array"
+        },
+        "takeout": {
+          "description": "Specifies if the business supports takeout.",
+          "type": "boolean"
+        },
+        "types": {
+          "description": "A set of type tags for this result. For example, \"political\" and \"locality\". For the complete list of possible values, see Table A and Table B at https://developers.google.com/maps/documentation/places/web-service/place-types",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "userRatingCount": {
+          "description": "The total number of reviews (with or without text) for this place.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "utcOffsetMinutes": {
+          "description": "Number of minutes this place's timezone is currently offset from UTC. This is expressed in minutes to support timezones that are offset by fractions of an hour, e.g. X hours and 15 minutes.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "viewport": {
+          "$ref": "GoogleGeoTypeViewport",
+          "description": "A viewport suitable for displaying the place on an average-sized map."
+        },
+        "websiteUri": {
+          "description": "The authoritative website for this place, e.g. a business' homepage. Note that for places that are part of a chain (e.g. an IKEA store), this will usually be the website for the individual store, not the overall chain.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlaceAccessibilityOptions": {
+      "description": "Information about the accessibility options a place offers.",
+      "id": "GoogleMapsPlacesV1PlaceAccessibilityOptions",
+      "properties": {
+        "wheelchairAccessibleEntrance": {
+          "description": "Places has wheelchair accessible entrance.",
+          "type": "boolean"
+        },
+        "wheelchairAccessibleParking": {
+          "description": "Place offers wheelchair accessible parking.",
+          "type": "boolean"
+        },
+        "wheelchairAccessibleRestroom": {
+          "description": "Place has wheelchair accessible restroom.",
+          "type": "boolean"
+        },
+        "wheelchairAccessibleSeating": {
+          "description": "Place has wheelchair accessible seating.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlaceAddressComponent": {
+      "description": "The structured components that form the formatted address, if this information is available.",
+      "id": "GoogleMapsPlacesV1PlaceAddressComponent",
+      "properties": {
+        "languageCode": {
+          "description": "The language used to format this components, in CLDR notation.",
+          "type": "string"
+        },
+        "longText": {
+          "description": "The full text description or name of the address component. For example, an address component for the country Australia may have a long_name of \"Australia\".",
+          "type": "string"
+        },
+        "shortText": {
+          "description": "An abbreviated textual name for the address component, if available. For example, an address component for the country of Australia may have a short_name of \"AU\".",
+          "type": "string"
+        },
+        "types": {
+          "description": "An array indicating the type(s) of the address component.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlaceAreaSummary": {
+      "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details. AI-generated summary of the area that the place is in.",
+      "id": "GoogleMapsPlacesV1PlaceAreaSummary",
+      "properties": {
+        "contentBlocks": {
+          "description": "Content blocks that compose the area summary. Each block has a separate topic about the area.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1ContentBlock"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlaceAttribution": {
+      "description": "Information about data providers of this place.",
+      "id": "GoogleMapsPlacesV1PlaceAttribution",
+      "properties": {
+        "provider": {
+          "description": "Name of the Place's data provider.",
+          "type": "string"
+        },
+        "providerUri": {
+          "description": "URI to the Place's data provider.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlaceGenerativeSummary": {
+      "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details. AI-generated summary of the place.",
+      "id": "GoogleMapsPlacesV1PlaceGenerativeSummary",
+      "properties": {
+        "description": {
+          "$ref": "GoogleTypeLocalizedText",
+          "description": "The detailed description of the place."
+        },
+        "overview": {
+          "$ref": "GoogleTypeLocalizedText",
+          "description": "The overview of the place."
+        },
+        "references": {
+          "$ref": "GoogleMapsPlacesV1References",
+          "description": "References that are used to generate the summary description."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlaceOpeningHours": {
+      "description": "Information about business hour of the place.",
+      "id": "GoogleMapsPlacesV1PlaceOpeningHours",
+      "properties": {
+        "openNow": {
+          "description": "Is this place open right now? Always present unless we lack time-of-day or timezone data for these opening hours.",
+          "type": "boolean"
+        },
+        "periods": {
+          "description": "The periods that this place is open during the week. The periods are in chronological order, starting with Sunday in the place-local timezone. An empty (but not absent) value indicates a place that is never open, e.g. because it is closed temporarily for renovations.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1PlaceOpeningHoursPeriod"
+          },
+          "type": "array"
+        },
+        "secondaryHoursType": {
+          "description": "A type string used to identify the type of secondary hours.",
+          "enum": [
+            "SECONDARY_HOURS_TYPE_UNSPECIFIED",
+            "DRIVE_THROUGH",
+            "HAPPY_HOUR",
+            "DELIVERY",
+            "TAKEOUT",
+            "KITCHEN",
+            "BREAKFAST",
+            "LUNCH",
+            "DINNER",
+            "BRUNCH",
+            "PICKUP",
+            "ACCESS",
+            "SENIOR_HOURS",
+            "ONLINE_SERVICE_HOURS"
+          ],
+          "enumDescriptions": [
+            "Default value when secondary hour type is not specified.",
+            "The drive-through hour for banks, restaurants, or pharmacies.",
+            "The happy hour.",
+            "The delivery hour.",
+            "The takeout hour.",
+            "The kitchen hour.",
+            "The breakfast hour.",
+            "The lunch hour.",
+            "The dinner hour.",
+            "The brunch hour.",
+            "The pickup hour.",
+            "The access hours for storage places.",
+            "The special hours for seniors.",
+            "The online service hours."
+          ],
+          "type": "string"
+        },
+        "specialDays": {
+          "description": "Structured information for special days that fall within the period that the returned opening hours cover. Special days are days that could impact the business hours of a place, e.g. Christmas day. Set for current_opening_hours and current_secondary_opening_hours if there are exceptional hours.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1PlaceOpeningHoursSpecialDay"
+          },
+          "type": "array"
+        },
+        "weekdayDescriptions": {
+          "description": "Localized strings describing the opening hours of this place, one string for each day of the week. Will be empty if the hours are unknown or could not be converted to localized text. Example: \"Sun: 18:00–06:00\"",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlaceOpeningHoursPeriod": {
+      "description": "A period the place remains in open_now status.",
+      "id": "GoogleMapsPlacesV1PlaceOpeningHoursPeriod",
+      "properties": {
+        "close": {
+          "$ref": "GoogleMapsPlacesV1PlaceOpeningHoursPeriodPoint",
+          "description": "The time that the place starts to be closed."
+        },
+        "open": {
+          "$ref": "GoogleMapsPlacesV1PlaceOpeningHoursPeriodPoint",
+          "description": "The time that the place starts to be open."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlaceOpeningHoursPeriodPoint": {
+      "description": "Status changing points.",
+      "id": "GoogleMapsPlacesV1PlaceOpeningHoursPeriodPoint",
+      "properties": {
+        "date": {
+          "$ref": "GoogleTypeDate",
+          "description": "Date in the local timezone for the place."
+        },
+        "day": {
+          "description": "A day of the week, as an integer in the range 0-6. 0 is Sunday, 1 is Monday, etc.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "hour": {
+          "description": "The hour in 2 digits. Ranges from 00 to 23.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "minute": {
+          "description": "The minute in 2 digits. Ranges from 00 to 59.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "truncated": {
+          "description": "Whether or not this endpoint was truncated. Truncation occurs when the real hours are outside the times we are willing to return hours between, so we truncate the hours back to these boundaries. This ensures that at most 24 * 7 hours from midnight of the day of the request are returned.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlaceOpeningHoursSpecialDay": {
+      "description": "Structured information for special days that fall within the period that the returned opening hours cover. Special days are days that could impact the business hours of a place, e.g. Christmas day.",
+      "id": "GoogleMapsPlacesV1PlaceOpeningHoursSpecialDay",
+      "properties": {
+        "date": {
+          "$ref": "GoogleTypeDate",
+          "description": "The date of this special day."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlaceParkingOptions": {
+      "description": "Information about parking options for the place. A parking lot could support more than one option at the same time.",
+      "id": "GoogleMapsPlacesV1PlaceParkingOptions",
+      "properties": {
+        "freeGarageParking": {
+          "description": "Place offers free garage parking.",
+          "type": "boolean"
+        },
+        "freeParkingLot": {
+          "description": "Place offers free parking lots.",
+          "type": "boolean"
+        },
+        "freeStreetParking": {
+          "description": "Place offers free street parking.",
+          "type": "boolean"
+        },
+        "paidGarageParking": {
+          "description": "Place offers paid garage parking.",
+          "type": "boolean"
+        },
+        "paidParkingLot": {
+          "description": "Place offers paid parking lots.",
+          "type": "boolean"
+        },
+        "paidStreetParking": {
+          "description": "Place offers paid street parking.",
+          "type": "boolean"
+        },
+        "valetParking": {
+          "description": "Place offers valet parking.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlacePaymentOptions": {
+      "description": "Payment options the place accepts.",
+      "id": "GoogleMapsPlacesV1PlacePaymentOptions",
+      "properties": {
+        "acceptsCashOnly": {
+          "description": "Place accepts cash only as payment. Places with this attribute may still accept other payment methods.",
+          "type": "boolean"
+        },
+        "acceptsCreditCards": {
+          "description": "Place accepts credit cards as payment.",
+          "type": "boolean"
+        },
+        "acceptsDebitCards": {
+          "description": "Place accepts debit cards as payment.",
+          "type": "boolean"
+        },
+        "acceptsNfc": {
+          "description": "Place accepts NFC payments.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlacePlusCode": {
+      "description": "Plus code (http://plus.codes) is a location reference with two formats: global code defining a 14mx14m (1/8000th of a degree) or smaller rectangle, and compound code, replacing the prefix with a reference location.",
+      "id": "GoogleMapsPlacesV1PlacePlusCode",
+      "properties": {
+        "compoundCode": {
+          "description": "Place's compound code, such as \"33GV+HQ, Ramberg, Norway\", containing the suffix of the global code and replacing the prefix with a formatted name of a reference entity.",
+          "type": "string"
+        },
+        "globalCode": {
+          "description": "Place's global (full) code, such as \"9FWM33GV+HQ\", representing an 1/8000 by 1/8000 degree area (~14 by 14 meters).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1PlaceSubDestination": {
+      "description": "Place resource name and id of sub destinations that relate to the place. For example, different terminals are different destinations of an airport.",
+      "id": "GoogleMapsPlacesV1PlaceSubDestination",
+      "properties": {
+        "id": {
+          "description": "The place id of the sub destination.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The resource name of the sub destination.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1References": {
+      "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details. Reference that the generative content is related to.",
+      "id": "GoogleMapsPlacesV1References",
+      "properties": {
+        "places": {
+          "description": "The list of resource names of the referenced places. This name can be used in other APIs that accept Place resource names.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "reviews": {
+          "description": "Reviews that serve as references.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1Review"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1Review": {
+      "description": "Information about a review of a place.",
+      "id": "GoogleMapsPlacesV1Review",
+      "properties": {
+        "authorAttribution": {
+          "$ref": "GoogleMapsPlacesV1AuthorAttribution",
+          "description": "This review's author."
+        },
+        "name": {
+          "description": "A reference representing this place review which may be used to look up this place review again (also called the API \"resource\" name: `places/{place_id}/reviews/{review}`).",
+          "type": "string"
+        },
+        "originalText": {
+          "$ref": "GoogleTypeLocalizedText",
+          "description": "The review text in its original language."
+        },
+        "publishTime": {
+          "description": "Timestamp for the review.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "rating": {
+          "description": "A number between 1.0 and 5.0, also called the number of stars.",
+          "format": "double",
+          "type": "number"
+        },
+        "relativePublishTimeDescription": {
+          "description": "A string of formatted recent time, expressing the review time relative to the current time in a form appropriate for the language and country.",
+          "type": "string"
+        },
+        "text": {
+          "$ref": "GoogleTypeLocalizedText",
+          "description": "The localized text of the review."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1SearchNearbyRequest": {
+      "description": "Request proto for Search Nearby. ",
+      "id": "GoogleMapsPlacesV1SearchNearbyRequest",
+      "properties": {
+        "excludedPrimaryTypes": {
+          "description": "Excluded primary Place type (e.g. \"restaurant\" or \"gas_station\") from https://developers.google.com/maps/documentation/places/web-service/place-types. Up to 50 types from [Table A](https://developers.google.com/maps/documentation/places/web-service/place-types#table-a) may be specified. If there are any conflicting primary types, i.e. a type appears in both included_primary_types and excluded_primary_types, an INVALID_ARGUMENT error is returned. If a Place type is specified with multiple type restrictions, only places that satisfy all of the restrictions are returned. For example, if we have {included_types = [\"restaurant\"], excluded_primary_types = [\"restaurant\"]}, the returned places provide \"restaurant\" related services but do not operate primarily as \"restaurants\".",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "excludedTypes": {
+          "description": "Excluded Place type (eg, \"restaurant\" or \"gas_station\") from https://developers.google.com/maps/documentation/places/web-service/place-types. Up to 50 types from [Table A](https://developers.google.com/maps/documentation/places/web-service/place-types#table-a) may be specified. If the client provides both included_types (e.g. restaurant) and excluded_types (e.g. cafe), then the response should include places that are restaurant but not cafe. The response includes places that match at least one of the included_types and none of the excluded_types. If there are any conflicting types, i.e. a type appears in both included_types and excluded_types, an INVALID_ARGUMENT error is returned. If a Place type is specified with multiple type restrictions, only places that satisfy all of the restrictions are returned. For example, if we have {included_types = [\"restaurant\"], excluded_primary_types = [\"restaurant\"]}, the returned places provide \"restaurant\" related services but do not operate primarily as \"restaurants\".",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "includedPrimaryTypes": {
+          "description": "Included primary Place type (e.g. \"restaurant\" or \"gas_station\") from https://developers.google.com/maps/documentation/places/web-service/place-types. A place can only have a single primary type from the supported types table associated with it. Up to 50 types from [Table A](https://developers.google.com/maps/documentation/places/web-service/place-types#table-a) may be specified. If there are any conflicting primary types, i.e. a type appears in both included_primary_types and excluded_primary_types, an INVALID_ARGUMENT error is returned. If a Place type is specified with multiple type restrictions, only places that satisfy all of the restrictions are returned. For example, if we have {included_types = [\"restaurant\"], excluded_primary_types = [\"restaurant\"]}, the returned places provide \"restaurant\" related services but do not operate primarily as \"restaurants\".",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "includedTypes": {
+          "description": "Included Place type (eg, \"restaurant\" or \"gas_station\") from https://developers.google.com/maps/documentation/places/web-service/place-types. Up to 50 types from [Table A](https://developers.google.com/maps/documentation/places/web-service/place-types#table-a) may be specified. If there are any conflicting types, i.e. a type appears in both included_types and excluded_types, an INVALID_ARGUMENT error is returned. If a Place type is specified with multiple type restrictions, only places that satisfy all of the restrictions are returned. For example, if we have {included_types = [\"restaurant\"], excluded_primary_types = [\"restaurant\"]}, the returned places provide \"restaurant\" related services but do not operate primarily as \"restaurants\".",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "languageCode": {
+          "description": "Place details will be displayed with the preferred language if available. If the language code is unspecified or unrecognized, place details of any language may be returned, with a preference for English if such details exist. Current list of supported languages: https://developers.google.com/maps/faq#languagesupport.",
+          "type": "string"
+        },
+        "locationRestriction": {
+          "$ref": "GoogleMapsPlacesV1SearchNearbyRequestLocationRestriction",
+          "description": "Required. The region to search."
+        },
+        "maxResultCount": {
+          "description": "Maximum number of results to return. It must be between 1 and 20 (default), inclusively. If the number is unset, it falls back to the upper limit. If the number is set to negative or exceeds the upper limit, an INVALID_ARGUMENT error is returned.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "rankPreference": {
+          "description": "How results will be ranked in the response.",
+          "enum": [
+            "RANK_PREFERENCE_UNSPECIFIED",
+            "DISTANCE",
+            "POPULARITY"
+          ],
+          "enumDescriptions": [
+            "RankPreference value not set. Will use rank by POPULARITY by default.",
+            "Ranks results by distance.",
+            "Ranks results by popularity."
+          ],
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "The Unicode country/region code (CLDR) of the location where the request is coming from. This parameter is used to display the place details, like region-specific place name, if available. The parameter can affect results based on applicable law. For more information, see https://www.unicode.org/cldr/charts/latest/supplemental/territory_language_information.html. Note that 3-digit region codes are not currently supported.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1SearchNearbyRequestLocationRestriction": {
+      "description": "The region to search.",
+      "id": "GoogleMapsPlacesV1SearchNearbyRequestLocationRestriction",
+      "properties": {
+        "circle": {
+          "$ref": "GoogleMapsPlacesV1Circle",
+          "description": "A circle defined by center point and radius."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1SearchNearbyResponse": {
+      "description": "Response proto for Search Nearby. ",
+      "id": "GoogleMapsPlacesV1SearchNearbyResponse",
+      "properties": {
+        "places": {
+          "description": "A list of places that meets user's requirements like places types, number of places and specific location restriction.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1Place"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1SearchTextRequest": {
+      "description": "Request proto for SearchText. ",
+      "id": "GoogleMapsPlacesV1SearchTextRequest",
+      "properties": {
+        "evOptions": {
+          "$ref": "GoogleMapsPlacesV1SearchTextRequestEVOptions",
+          "description": "Optional. Set the searchable EV options of a place search request."
+        },
+        "includedType": {
+          "description": "The requested place type. Full list of types supported: https://developers.google.com/maps/documentation/places/web-service/place-types. Only support one included type.",
+          "type": "string"
+        },
+        "languageCode": {
+          "description": "Place details will be displayed with the preferred language if available. If the language code is unspecified or unrecognized, place details of any language may be returned, with a preference for English if such details exist. Current list of supported languages: https://developers.google.com/maps/faq#languagesupport.",
+          "type": "string"
+        },
+        "locationBias": {
+          "$ref": "GoogleMapsPlacesV1SearchTextRequestLocationBias",
+          "description": "The region to search. This location serves as a bias which means results around given location might be returned. Cannot be set along with location_restriction."
+        },
+        "locationRestriction": {
+          "$ref": "GoogleMapsPlacesV1SearchTextRequestLocationRestriction",
+          "description": "The region to search. This location serves as a restriction which means results outside given location will not be returned. Cannot be set along with location_bias."
+        },
+        "maxResultCount": {
+          "deprecated": true,
+          "description": "Deprecated: Use `page_size` instead. The maximum number of results per page that can be returned. If the number of available results is larger than `max_result_count`, a `next_page_token` is returned which can be passed to `page_token` to get the next page of results in subsequent requests. If 0 or no value is provided, a default of 20 is used. The maximum value is 20; values above 20 will be coerced to 20. Negative values will return an INVALID_ARGUMENT error. If both `max_result_count` and `page_size` are specified, `max_result_count` will be ignored.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "minRating": {
+          "description": "Filter out results whose average user rating is strictly less than this limit. A valid value must be a float between 0 and 5 (inclusively) at a 0.5 cadence i.e. [0, 0.5, 1.0, ... , 5.0] inclusively. The input rating will round up to the nearest 0.5(ceiling). For instance, a rating of 0.6 will eliminate all results with a less than 1.0 rating.",
+          "format": "double",
+          "type": "number"
+        },
+        "openNow": {
+          "description": "Used to restrict the search to places that are currently open. The default is false.",
+          "type": "boolean"
+        },
+        "pageSize": {
+          "description": "Optional. The maximum number of results per page that can be returned. If the number of available results is larger than `page_size`, a `next_page_token` is returned which can be passed to `page_token` to get the next page of results in subsequent requests. If 0 or no value is provided, a default of 20 is used. The maximum value is 20; values above 20 will be set to 20. Negative values will return an INVALID_ARGUMENT error. If both `max_result_count` and `page_size` are specified, `max_result_count` will be ignored.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "pageToken": {
+          "description": "Optional. A page token, received from a previous TextSearch call. Provide this to retrieve the subsequent page. When paginating, all parameters other than `page_token`, `page_size`, and `max_result_count` provided to TextSearch must match the initial call that provided the page token. Otherwise an INVALID_ARGUMENT error is returned.",
+          "type": "string"
+        },
+        "priceLevels": {
+          "description": "Used to restrict the search to places that are marked as certain price levels. Users can choose any combinations of price levels. Default to select all price levels.",
+          "items": {
+            "enum": [
+              "PRICE_LEVEL_UNSPECIFIED",
+              "PRICE_LEVEL_FREE",
+              "PRICE_LEVEL_INEXPENSIVE",
+              "PRICE_LEVEL_MODERATE",
+              "PRICE_LEVEL_EXPENSIVE",
+              "PRICE_LEVEL_VERY_EXPENSIVE"
+            ],
+            "enumDescriptions": [
+              "Place price level is unspecified or unknown.",
+              "Place provides free services.",
+              "Place provides inexpensive services.",
+              "Place provides moderately priced services.",
+              "Place provides expensive services.",
+              "Place provides very expensive services."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "rankPreference": {
+          "description": "How results will be ranked in the response.",
+          "enum": [
+            "RANK_PREFERENCE_UNSPECIFIED",
+            "DISTANCE",
+            "RELEVANCE"
+          ],
+          "enumDescriptions": [
+            "For a categorical query such as \"Restaurants in New York City\", RELEVANCE is the default. For non-categorical queries such as \"Mountain View, CA\" we recommend that you leave rankPreference unset.",
+            "Ranks results by distance.",
+            "Ranks results by relevance. Sort order determined by normal ranking stack."
+          ],
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "The Unicode country/region code (CLDR) of the location where the request is coming from. This parameter is used to display the place details, like region-specific place name, if available. The parameter can affect results based on applicable law. For more information, see https://www.unicode.org/cldr/charts/latest/supplemental/territory_language_information.html. Note that 3-digit region codes are not currently supported.",
+          "type": "string"
+        },
+        "strictTypeFiltering": {
+          "description": "Used to set strict type filtering for included_type. If set to true, only results of the same type will be returned. Default to false.",
+          "type": "boolean"
+        },
+        "textQuery": {
+          "description": "Required. The text query for textual search.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1SearchTextRequestEVOptions": {
+      "description": "Searchable EV options of a place search request.",
+      "id": "GoogleMapsPlacesV1SearchTextRequestEVOptions",
+      "properties": {
+        "connectorTypes": {
+          "description": "Optional. The list of preferred EV connector types. A place that does not support any of the listed connector types is filtered out.",
+          "items": {
+            "enum": [
+              "EV_CONNECTOR_TYPE_UNSPECIFIED",
+              "EV_CONNECTOR_TYPE_OTHER",
+              "EV_CONNECTOR_TYPE_J1772",
+              "EV_CONNECTOR_TYPE_TYPE_2",
+              "EV_CONNECTOR_TYPE_CHADEMO",
+              "EV_CONNECTOR_TYPE_CCS_COMBO_1",
+              "EV_CONNECTOR_TYPE_CCS_COMBO_2",
+              "EV_CONNECTOR_TYPE_TESLA",
+              "EV_CONNECTOR_TYPE_UNSPECIFIED_GB_T",
+              "EV_CONNECTOR_TYPE_UNSPECIFIED_WALL_OUTLET"
+            ],
+            "enumDescriptions": [
+              "Unspecified connector.",
+              "Other connector types.",
+              "J1772 type 1 connector.",
+              "IEC 62196 type 2 connector. Often referred to as MENNEKES.",
+              "CHAdeMO type connector.",
+              "Combined Charging System (AC and DC). Based on SAE. Type-1 J-1772 connector",
+              "Combined Charging System (AC and DC). Based on Type-2 Mennekes connector",
+              "The generic TESLA connector. This is NACS in the North America but can be non-NACS in other parts of the world (e.g. CCS Combo 2 (CCS2) or GB/T). This value is less representative of an actual connector type, and more represents the ability to charge a Tesla brand vehicle at a Tesla owned charging station.",
+              "GB/T type corresponds to the GB/T standard in China. This type covers all GB_T types.",
+              "Unspecified wall outlet."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "minimumChargingRateKw": {
+          "description": "Optional. Minimum required charging rate in kilowatts. A place with a charging rate less than the specified rate is filtered out.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1SearchTextRequestLocationBias": {
+      "description": "The region to search. This location serves as a bias which means results around given location might be returned.",
+      "id": "GoogleMapsPlacesV1SearchTextRequestLocationBias",
+      "properties": {
+        "circle": {
+          "$ref": "GoogleMapsPlacesV1Circle",
+          "description": "A circle defined by center point and radius."
+        },
+        "rectangle": {
+          "$ref": "GoogleGeoTypeViewport",
+          "description": "A rectangle box defined by northeast and southwest corner. `rectangle.high()` must be the northeast point of the rectangle viewport. `rectangle.low()` must be the southwest point of the rectangle viewport. `rectangle.low().latitude()` cannot be greater than `rectangle.high().latitude()`. This will result in an empty latitude range. A rectangle viewport cannot be wider than 180 degrees."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1SearchTextRequestLocationRestriction": {
+      "description": "The region to search. This location serves as a restriction which means results outside given location will not be returned.",
+      "id": "GoogleMapsPlacesV1SearchTextRequestLocationRestriction",
+      "properties": {
+        "rectangle": {
+          "$ref": "GoogleGeoTypeViewport",
+          "description": "A rectangle box defined by northeast and southwest corner. `rectangle.high()` must be the northeast point of the rectangle viewport. `rectangle.low()` must be the southwest point of the rectangle viewport. `rectangle.low().latitude()` cannot be greater than `rectangle.high().latitude()`. This will result in an empty latitude range. A rectangle viewport cannot be wider than 180 degrees."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleMapsPlacesV1SearchTextResponse": {
+      "description": "Response proto for SearchText. ",
+      "id": "GoogleMapsPlacesV1SearchTextResponse",
+      "properties": {
+        "contextualContents": {
+          "description": "Experimental: See https://developers.google.com/maps/documentation/places/web-service/experimental/places-generative for more details. A list of contextual contents where each entry associates to the corresponding place in the same index in the places field. The contents that are relevant to the `text_query` in the request are preferred. If the contextual content is not available for one of the places, it will return non-contextual content. It will be empty only when the content is unavailable for this place. This list should have as many entries as the list of places if requested.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1ContextualContent"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token that can be sent as `page_token` to retrieve the next page. If this field is omitted or empty, there are no subsequent pages.",
+          "type": "string"
+        },
+        "places": {
+          "description": "A list of places that meet the user's text search criteria.",
+          "items": {
+            "$ref": "GoogleMapsPlacesV1Place"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleTypeDate": {
+      "description": "Represents a whole or partial calendar date, such as a birthday. The time of day and time zone are either specified elsewhere or are insignificant. The date is relative to the Gregorian Calendar. This can represent one of the following: * A full date, with non-zero year, month, and day values. * A month and day, with a zero year (for example, an anniversary). * A year on its own, with a zero month and a zero day. * A year and month, with a zero day (for example, a credit card expiration date). Related types: * google.type.TimeOfDay * google.type.DateTime * google.protobuf.Timestamp",
+      "id": "GoogleTypeDate",
+      "properties": {
+        "day": {
+          "description": "Day of a month. Must be from 1 to 31 and valid for the year and month, or 0 to specify a year by itself or a year and month where the day isn't significant.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "month": {
+          "description": "Month of a year. Must be from 1 to 12, or 0 to specify a year without a month and day.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "year": {
+          "description": "Year of the date. Must be from 1 to 9999, or 0 to specify a date without a year.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleTypeLatLng": {
+      "description": "An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard. Values must be within normalized ranges.",
+      "id": "GoogleTypeLatLng",
+      "properties": {
+        "latitude": {
+          "description": "The latitude in degrees. It must be in the range [-90.0, +90.0].",
+          "format": "double",
+          "type": "number"
+        },
+        "longitude": {
+          "description": "The longitude in degrees. It must be in the range [-180.0, +180.0].",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleTypeLocalizedText": {
+      "description": "Localized variant of a text in a particular language.",
+      "id": "GoogleTypeLocalizedText",
+      "properties": {
+        "languageCode": {
+          "description": "The text's BCP-47 language code, such as \"en-US\" or \"sr-Latn\". For more information, see http://www.unicode.org/reports/tr35/#Unicode_locale_identifier.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Localized string in the language corresponding to language_code below.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleTypeMoney": {
+      "description": "Represents an amount of money with its currency type.",
+      "id": "GoogleTypeMoney",
+      "properties": {
+        "currencyCode": {
+          "description": "The three-letter currency code defined in ISO 4217.",
+          "type": "string"
+        },
+        "nanos": {
+          "description": "Number of nano (10^-9) units of the amount. The value must be between -999,999,999 and +999,999,999 inclusive. If `units` is positive, `nanos` must be positive or zero. If `units` is zero, `nanos` can be positive, zero, or negative. If `units` is negative, `nanos` must be negative or zero. For example $-1.75 is represented as `units`=-1 and `nanos`=-750,000,000.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "units": {
+          "description": "The whole units of the amount. For example if `currencyCode` is `\"USD\"`, then 1 unit is one US dollar.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Places API (New)",
+  "version": "v1",
+  "version_module": true
+}

@@ -1,0 +1,18 @@
+syntax = "proto3";
+package loadtime.payload;
+
+option go_package = "github.com/cometbft/cometbft/test/loadtime/payload";
+
+import "google/protobuf/timestamp.proto";
+
+// Payload is the structure of the loadtime transaction. Proto has a compact
+// encoded representation, making it ideal for the loadtime usecase which aims to
+// keep the generated transactions small.
+message Payload {
+  uint64                    connections = 1;
+  uint64                    rate        = 2;
+  uint64                    size        = 3;
+  google.protobuf.Timestamp time        = 4;
+  bytes                     id          = 5;
+  bytes                     padding     = 6;
+}

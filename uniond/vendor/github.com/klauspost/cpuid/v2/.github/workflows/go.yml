@@ -1,0 +1,57 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        go-version: [1.17.x, 1.18.x, 1.19.x]
+        os: [ubuntu-latest, macos-latest, windows-latest]  
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Vet
+      run: go vet ./...
+
+    - name: Test
+      run: go test ./...
+
+    - name: Test Noasm
+      run: go test -tags=noasm ./...
+      
+  build-special:
+    env:
+      CGO_ENABLED: 0
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v2      
+      with:
+        go-version: 1.19.x
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: fmt
+      run: diff <(gofmt -d .) <(printf "")
+
+    - name: Test 386
+      run: GOOS=linux GOARCH=386 go test -short ./...
+
+    - name: goreleaser deprecation
+      run: curl -sfL https://git.io/goreleaser | VERSION=v1.9.2 sh -s -- check
+      
+    - name: goreleaser snapshot
+      run: curl -sL https://git.io/goreleaser | VERSION=v1.9.2 sh -s -- --snapshot --skip-publish --rm-dist
+       

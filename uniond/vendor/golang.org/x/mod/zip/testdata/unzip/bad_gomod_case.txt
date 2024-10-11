@@ -1,0 +1,5 @@
+path=example.com/m
+version=v1.0.0
+wantErr=go.mod files must have lowercase names
+-- example.com/m@v1.0.0/GO.MOD --
+module example.com/m

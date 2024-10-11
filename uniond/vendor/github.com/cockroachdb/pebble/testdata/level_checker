@@ -1,0 +1,358 @@
+# Format for define command:
+# Levels are ordered from higher to lower, and each new level starts with an L
+# Each level is defined using an even number of lines where every pair of lines represents
+# a file. The files within a level are ordered from smaller to larger keys.
+# Each file is defined using: the first line specifies the smallest and largest internal
+# keys and the second line the point key-value pairs in the sstable in order. The rangedel
+# key-value pairs should also be in increasing order relative to the other rangedel pairs.
+# The largest file key can take the form of <userkey>.RANGEDEL.72057594037927935, which
+# represents the range deletion sentinel.
+#
+# Many of the correct case definitions are borrowed from merging_iter since it defines
+# some tricky configurations.
+
+# The untruncated range tombstone at the higher level does not overlap with the lower level once
+# we consider the file boundaries, which is why its lower sequence number is ok.
+define
+L
+a.SET.30 e.RANGEDEL.72057594037927935
+a.SET.30:30 c.SET.27:27 a.RANGEDEL.8:f
+L
+e.SET.10 g.SET.20
+e.SET.10:10 g.SET.20:20 e.RANGEDEL.8:f
+----
+Level 1
+  file 0: [a#30,1-e#72057594037927935,15]
+Level 2
+  file 0: [e#10,1-g#20,1]
+
+check
+----
+
+# The untruncated range tombstone at the higher level does not overlap with the g point at the
+# lower level once we consider the file boundaries, which is why its lower sequence number is ok.
+define
+L
+a.SET.15 f.SET.16
+a.SET.15:15 c.SET.13:13 f.SET.16:16 a.RANGEDEL.12:h
+L
+e.SET.10 g.SET.15
+e.SET.10:10 g.SET.15:15
+----
+Level 1
+  file 0: [a#15,1-f#16,1]
+Level 2
+  file 0: [e#10,1-g#15,1]
+
+check
+----
+
+# The untruncated range tombstones in both levels do not overlap once we consider the file
+# boundaries (which are non-overlapping).
+define
+L
+c.SET.30 f.RANGEDEL.0
+c.SET.30:30 d.SET.27:27 a.RANGEDEL.8:f
+L
+a.SET.10 c.RANGEDEL.72057594037927935
+a.SET.10:10 b.SET.12:12 a.RANGEDEL.8:f
+----
+Level 1
+  file 0: [c#30,1-f#0,15]
+Level 2
+  file 0: [a#10,1-c#72057594037927935,15]
+
+check
+----
+
+# The range tombstone in the higher level does not overlap with the b point in the lower level,
+# which has a higher sequence number, when we consider the file boundaries.
+define
+L
+c.SET.15 g.SET.16
+c.SET.15:15 f.SET.13:13 g.SET.16:16 a.RANGEDEL.12:h
+L
+b.SET.14 d.SET.10
+b.SET.14:14 d.SET.10:10
+----
+Level 1
+  file 0: [c#15,1-g#16,1]
+Level 2
+  file 0: [b#14,1-d#10,1]
+
+check
+----
+
+# The two files do not overlap despite the seeming overlap of the range tombstones.
+define
+L
+a.SET.30 e.RANGEDEL.72057594037927935
+a.SET.30:30 c.SET.27:27 a.RANGEDEL.8:g
+L
+e.SET.10 g.SET.20
+e.SET.10:10 g.SET.20:20 e.RANGEDEL.8:g
+----
+Level 1
+  file 0: [a#30,1-e#72057594037927935,15]
+Level 2
+  file 0: [e#10,1-g#20,1]
+
+check
+----
+
+define
+L
+a.SET.30 e.RANGEDEL.72057594037927935
+a.SET.30:30 c.SET.27:27 a.RANGEDEL.8:g
+L
+a.SET.10 g.SET.20
+a.SET.10:10 c.SET.28:28 g.SET.20:20
+----
+Level 1
+  file 0: [a#30,1-e#72057594037927935,15]
+Level 2
+  file 0: [a#10,1-g#20,1]
+
+check
+----
+found InternalKey c#27,SET in L1: fileNum=000010 and InternalKey c#28,SET in L2: fileNum=000011
+
+# The sentinel key for the RANGEDEL should not violate g having a higher seq num at a
+# lower level.
+define
+L
+a.SET.30 g.RANGEDEL.72057594037927935
+a.SET.30:30 c.SET.27:27 a.RANGEDEL.8:g
+L
+g.SET.10 j.SET.20
+g.SET.10:10 j.SET.20:20
+----
+Level 1
+  file 0: [a#30,1-g#72057594037927935,15]
+Level 2
+  file 0: [g#10,1-j#20,1]
+
+check
+----
+
+define
+L
+a.SET.30 g.SET.8
+a.SET.30:30 c.SET.27:27 a.RANGEDEL.8:g g.SET.8:8
+L
+g.SET.10 j.SET.20
+g.SET.10:10 j.SET.20:20
+----
+Level 1
+  file 0: [a#30,1-g#8,1]
+Level 2
+  file 0: [g#10,1-j#20,1]
+
+check
+----
+found InternalKey g#8,SET in L1: fileNum=000014 and InternalKey g#10,SET in L2: fileNum=000015
+
+define
+L
+a.SET.30 g.SET.30
+a.SET.30:30 c.SET.8:8 g.SET.30:30
+L
+a.SET.10 j.SET.20
+a.SET.10:10 j.SET.20:20 b.RANGEDEL.10:g
+----
+Level 1
+  file 0: [a#30,1-g#30,1]
+Level 2
+  file 0: [a#10,1-j#20,1]
+
+check
+----
+tombstone b-g:{(#10,RANGEDEL)} in L2: fileNum=000017 deletes key c#8,SET in L1: fileNum=000016
+
+define
+L
+a.RANGEDEL.8 c.RANGEDEL.72057594037927935
+a.RANGEDEL.8:c
+L
+a.RANGEDEL.6 d.RANGEDEL.72057594037927935
+a.RANGEDEL.6:d b.RANGEDEL.10:c
+----
+Level 1
+  file 0: [a#8,15-c#72057594037927935,15]
+Level 2
+  file 0: [a#6,15-d#72057594037927935,15]
+
+check
+----
+encountered tombstone b-c:{(#8,RANGEDEL)} in L1: fileNum=000018 that has a lower seqnum than the same tombstone in L2: fileNum=000019
+
+# Check incorrect ordering of point keys in an sstable.
+define disable-key-order-checks
+L
+a.SET.3 e.SET.4
+e.SET.4:e a.SET.3:a
+L
+d.SET.1 f.SET.2
+d.SET.1:d f.SET.2:f
+----
+Level 1
+  file 0: [a#3,1-e#4,1]
+Level 2
+  file 0: [d#1,1-f#2,1]
+
+check
+----
+out of order keys e#4,SET >= a#3,SET in L1: fileNum=000020
+
+# Check successive sstables on a level are ordered.
+define disable-key-order-checks
+L
+a.SET.1 b.SET.2
+a.SET.1:a b.SET.2:b
+b.SET.3 c.SET.4
+b.SET.3:b c.SET.4:c
+----
+Level 1
+  file 0: [a#1,1-b#2,1]
+  file 1: [b#3,1-c#4,1]
+
+check
+----
+out of order keys b#2,SET >= b#3,SET in L1: fileNum=000023
+
+# Check range delete keys are fragmented and ordered in an sstable having
+# rangeDelV2 formatted range delete blocks.
+
+# Case 1: Fragmented but not ordered.
+define write-unfragmented disable-key-order-checks
+L
+a.RANGEDEL.1 g.RANGEDEL.72057594037927935
+d.RANGEDEL.2:e d.RANGEDEL.1:e f.RANGEDEL.3:g a.RANGEDEL.4:b
+----
+Level 1
+  file 0: [a#1,15-g#72057594037927935,15]
+
+check
+----
+unordered or unfragmented range delete tombstones f-g:{(#3,RANGEDEL)}, a-b:{(#4,RANGEDEL)} in L1: fileNum=000024
+
+# Case 2: Ordered but not fragmented.
+define write-unfragmented disable-key-order-checks
+L
+a.RANGEDEL.1 d.RANGEDEL.72057594037927935
+a.RANGEDEL.1:d b.RANGEDEL.2:c
+----
+Level 1
+  file 0: [a#1,15-d#72057594037927935,15]
+
+check
+----
+unordered or unfragmented range delete tombstones a-d:{(#1,RANGEDEL)}, b-c:{(#2,RANGEDEL)} in L1: fileNum=000025
+
+# Case 3: Verify check is done before truncation.
+define write-unfragmented disable-key-order-checks
+L
+a.RANGEDEL.1 b.RANGEDEL.72057594037927935
+a.RANGEDEL.1:z d.RANGEDEL.2:e
+----
+Level 1
+  file 0: [a#1,15-b#72057594037927935,15]
+
+check
+----
+unordered or unfragmented range delete tombstones a-z:{(#1,RANGEDEL)}, d-e:{(#2,RANGEDEL)} in L1: fileNum=000026
+
+# Merge record processing.
+
+# Case 1: Latest versions of a key are MERGE records and processing one of
+# them fails.
+define
+L
+a.MERGE.10 a.MERGE.9
+a.MERGE.10:10 a.MERGE.9:fail-merge
+----
+Level 1
+  file 0: [a#10,2-a#9,2]
+
+check merger=fail-merger
+----
+merge processing error on key a#9,MERGE in L1: fileNum=000027: merge failed
+
+# Case 2: Last checked key is a MERGE record.
+define
+L
+a.MERGE.10 a.MERGE.9
+a.MERGE.10:10 a.MERGE.9:fail-finish
+----
+Level 1
+  file 0: [a#10,2-a#9,2]
+
+check merger=fail-merger
+----
+merge processing error on key a#9,MERGE in L1: fileNum=000028: finish failed
+
+# Case 3: MERGE records succeeded by newer versions of a key are also
+# processed.
+define
+L
+a.MERGE.10 a.SINGLEDEL.3
+a.MERGE.10:10 a.MERGE.9:9 a.SET.8:8 a.MERGE.7:7 a.MERGE.6:6 a.DEL.5: a.MERGE.4:fail-finish a.SINGLEDEL.3:
+----
+Level 1
+  file 0: [a#10,2-a#3,7]
+
+check merger=fail-merger
+----
+merge processing error on key a#3,SINGLEDEL in L1: fileNum=000029: finish failed
+
+# Case 4: Finish processing on key change.
+define
+L
+a.MERGE.10 b.SET.11
+a.MERGE.10:10 a.MERGE.9:fail-finish b.SET.11:11
+----
+Level 1
+  file 0: [a#10,2-b#11,1]
+
+check merger=fail-merger
+----
+merge processing error on key b#11,SET in L1: fileNum=000030: finish failed
+
+# Case 5: SET finishes MERGE record processing.
+define
+L
+a.MERGE.10 a.SET.9
+a.MERGE.10:10 a.SET.9:fail-finish
+----
+Level 1
+  file 0: [a#10,2-a#9,1]
+
+check merger=fail-merger
+----
+merge processing error on key a#9,SET in L1: fileNum=000031: finish failed
+
+# Case 6: DEL finishes MERGE record processing.
+define
+L
+a.MERGE.10 a.DEL.9
+a.MERGE.10:fail-finish a.DEL.9:
+----
+Level 1
+  file 0: [a#10,2-a#9,0]
+
+check merger=fail-merger
+----
+merge processing error on key a#9,DEL in L1: fileNum=000032: finish failed
+
+# Case 7: SINGLEDEL finishes MERGE record processing.
+define
+L
+a.MERGE.10 a.SINGLEDEL.9
+a.MERGE.10:fail-finish a.SINGLEDEL.9:
+----
+Level 1
+  file 0: [a#10,2-a#9,7]
+
+check merger=fail-merger
+----
+merge processing error on key a#9,SINGLEDEL in L1: fileNum=000033: finish failed

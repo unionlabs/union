@@ -377,7 +377,7 @@ type DB struct {
 			queue []fileInfo
 			// The number of input bytes to the log. This is the raw size of the
 			// batches written to the WAL, without the overhead of the record
-			// envelopes.
+			// envelopes. Requires DB.mu to be held when read or written.
 			bytesIn uint64
 			// The LogWriter is protected by commitPipeline.mu. This allows log
 			// writes to be performed without holding DB.mu, but requires both
@@ -2471,7 +2471,7 @@ func (d *DB) makeRoomForWrite(b *Batch) error {
 		var prevLogSize uint64
 		if !d.opts.DisableWAL {
 			now := time.Now()
-			newLogNum, prevLogSize = d.recycleWAL()
+			newLogNum, prevLogSize = d.rotateWAL()
 			if b != nil {
 				b.commitStats.WALRotationDuration += time.Since(now)
 			}
@@ -2543,15 +2543,29 @@ func (d *DB) rotateMemtable(newLogNum FileNum, logSeqNum uint64, prev *memTable)
 	var entry *flushableEntry
 	d.mu.mem.mutable, entry = d.newMemTable(newLogNum, logSeqNum)
 	d.mu.mem.queue = append(d.mu.mem.queue, entry)
+	// d.logSize tracks the log size of the WAL file corresponding to the most
+	// recent flushable. The log size of the previous mutable memtable no longer
+	// applies to the current mutable memtable.
+	//
+	// It's tempting to perform this update in rotateWAL, but that would not be
+	// atomic with the enqueue of the new flushable. A call to DB.Metrics()
+	// could acquire DB.mu after the WAL has been rotated but before the new
+	// memtable has been appended; this would result in omitting the log size of
+	// the most recent flushable.
+	d.logSize.Store(0)
 	d.updateReadStateLocked(nil)
 	if prev.writerUnref() {
 		d.maybeScheduleFlush()
 	}
 }
 
+// rotateWAL creates a new write-ahead log, possibly recycling a previous WAL's
+// files. It returns the file number assigned to the new WAL, and the size of
+// the previous WAL file.
+//
 // Both DB.mu and commitPipeline.mu must be held by the caller. Note that DB.mu
 // may be released and reacquired.
-func (d *DB) recycleWAL() (newLogNum FileNum, prevLogSize uint64) {
+func (d *DB) rotateWAL() (newLogNum FileNum, prevLogSize uint64) {
 	if d.opts.DisableWAL {
 		panic("pebble: invalid function call")
 	}

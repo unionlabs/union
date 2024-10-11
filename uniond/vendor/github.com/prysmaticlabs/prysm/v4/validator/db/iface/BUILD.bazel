@@ -1,0 +1,17 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["interface.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/validator/db/iface",
+    # Other packages must use github.com/prysmaticlabs/prysm/v4/validator/db.Database alias.
+    visibility = ["//validator:__subpackages__"],
+    deps = [
+        "//config/fieldparams:go_default_library",
+        "//config/validator/service:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//monitoring/backup:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//validator/db/kv:go_default_library",
+    ],
+)

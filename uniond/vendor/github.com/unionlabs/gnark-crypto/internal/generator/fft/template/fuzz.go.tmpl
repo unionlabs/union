@@ -1,0 +1,52 @@
+import (
+	"bytes"
+    "fmt"
+    "github.com/consensys/gnark-crypto/ecc"
+    {{ template "import_fr" . }}
+)
+
+const (
+	fuzzInteresting = 1
+	fuzzNormal      = 0
+	fuzzDiscard     = -1
+)
+
+
+func Fuzz(data []byte) int {
+    r := bytes.NewReader(data)
+
+    // random polynomial
+    size := len(data) / 8
+    if size == 0 {
+        return fuzzDiscard
+    }
+    if size > (1 << 15) {
+        size = 1 << 15
+    }
+    paddedSize := ecc.NextPowerOfTwo(uint64(size))
+    p1 := make([]fr.Element, paddedSize)
+    p2 := make([]fr.Element, paddedSize)
+    for i := 0; i < len(p1); i++ {
+        p1[i].SetRawBytes(r)
+    }
+    copy(p2, p1)
+
+    // fft domain
+	domainWithPrecompute := NewDomain(paddedSize)
+	domainWOPrecompute := NewDomain(paddedSize)
+
+    // bitReverse(DIF FFT(DIT FFT (bitReverse))))==id
+  	// bitReverse(DIF FFT(DIT FFT (bitReverse))))==id
+	BitReverse(p1)
+	domainWithPrecompute.FFT(p1, DIT, true)
+	domainWOPrecompute.FFTInverse(p1, DIF, true)
+	BitReverse(p1)
+
+    for i := 0; i < len(p1); i++ {
+        if !p1[i].Equal(&p2[i]) {
+            panic(fmt.Sprintf("bitReverse(DIF FFT(DIT FFT (bitReverse)))) != id, size %d", size) )
+        }
+    }
+
+    return fuzzNormal
+}

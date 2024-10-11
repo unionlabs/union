@@ -1,0 +1,32 @@
+---
+platforms:
+  ubuntu1804:
+    build_flags:
+    - "--build_tag_filters=-nolinux"
+    build_targets:
+    - "..."
+    test_flags:
+    - "--features=race"
+    - "--test_tag_filters=-nolinux"
+    test_targets:
+    - "..."
+  ubuntu1604:
+    build_flags:
+    - "--build_tag_filters=-nolinux"
+    build_targets:
+    - "..."
+    test_flags:
+    - "--features=race"
+    - "--test_tag_filters=-nolinux"
+    test_targets:
+    - "..."
+  macos:
+    build_flags:
+    - "--build_tag_filters=-nomacos"
+    build_targets:
+    - "..."
+    test_flags:
+    - "--features=race"
+    - "--test_tag_filters=-nomacos"
+    test_targets:
+    - "..."

@@ -1,0 +1,150 @@
+syntax = "proto3";
+package cosmwasm.wasm.v1;
+
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/wasm/types";
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.equal_all) = true;
+
+// AccessType permission types
+enum AccessType {
+  option (gogoproto.goproto_enum_prefix) = false;
+  option (gogoproto.goproto_enum_stringer) = false;
+  // AccessTypeUnspecified placeholder for empty value
+  ACCESS_TYPE_UNSPECIFIED = 0
+      [ (gogoproto.enumvalue_customname) = "AccessTypeUnspecified" ];
+  // AccessTypeNobody forbidden
+  ACCESS_TYPE_NOBODY = 1
+      [ (gogoproto.enumvalue_customname) = "AccessTypeNobody" ];
+
+  reserved 2; // was AccessTypeOnlyAddress
+
+  // AccessTypeEverybody unrestricted
+  ACCESS_TYPE_EVERYBODY = 3
+      [ (gogoproto.enumvalue_customname) = "AccessTypeEverybody" ];
+  // AccessTypeAnyOfAddresses allow any of the addresses
+  ACCESS_TYPE_ANY_OF_ADDRESSES = 4
+      [ (gogoproto.enumvalue_customname) = "AccessTypeAnyOfAddresses" ];
+}
+
+// AccessTypeParam
+message AccessTypeParam {
+  option (gogoproto.goproto_stringer) = true;
+  AccessType value = 1 [ (gogoproto.moretags) = "yaml:\"value\"" ];
+}
+
+// AccessConfig access control type.
+message AccessConfig {
+  option (gogoproto.goproto_stringer) = true;
+  AccessType permission = 1 [ (gogoproto.moretags) = "yaml:\"permission\"" ];
+
+  reserved 2; // was address
+
+  repeated string addresses = 3
+      [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+}
+
+// Params defines the set of wasm parameters.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  AccessConfig code_upload_access = 1 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.moretags) = "yaml:\"code_upload_access\""
+  ];
+  AccessType instantiate_default_permission = 2
+      [ (gogoproto.moretags) = "yaml:\"instantiate_default_permission\"" ];
+}
+
+// CodeInfo is data for the uploaded contract WASM code
+message CodeInfo {
+  // CodeHash is the unique identifier created by wasmvm
+  bytes code_hash = 1;
+  // Creator address who initially stored the code
+  string creator = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // Used in v1beta1
+  reserved 3, 4;
+  // InstantiateConfig access control to apply on contract creation, optional
+  AccessConfig instantiate_config = 5
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// ContractInfo stores a WASM contract instance
+message ContractInfo {
+  option (gogoproto.equal) = true;
+
+  // CodeID is the reference to the stored Wasm code
+  uint64 code_id = 1 [ (gogoproto.customname) = "CodeID" ];
+  // Creator address who initially instantiated the contract
+  string creator = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // Admin is an optional address that can execute migrations
+  string admin = 3 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // Label is optional metadata to be stored with a contract instance.
+  string label = 4;
+  // Created Tx position when the contract was instantiated.
+  AbsoluteTxPosition created = 5;
+  string ibc_port_id = 6 [ (gogoproto.customname) = "IBCPortID" ];
+
+  // Extension is an extension point to store custom metadata within the
+  // persistence model.
+  google.protobuf.Any extension = 7
+      [ (cosmos_proto.accepts_interface) =
+            "cosmwasm.wasm.v1.ContractInfoExtension" ];
+}
+
+// ContractCodeHistoryOperationType actions that caused a code change
+enum ContractCodeHistoryOperationType {
+  option (gogoproto.goproto_enum_prefix) = false;
+  // ContractCodeHistoryOperationTypeUnspecified placeholder for empty value
+  CONTRACT_CODE_HISTORY_OPERATION_TYPE_UNSPECIFIED = 0
+      [ (gogoproto.enumvalue_customname) =
+            "ContractCodeHistoryOperationTypeUnspecified" ];
+  // ContractCodeHistoryOperationTypeInit on chain contract instantiation
+  CONTRACT_CODE_HISTORY_OPERATION_TYPE_INIT = 1
+      [ (gogoproto.enumvalue_customname) =
+            "ContractCodeHistoryOperationTypeInit" ];
+  // ContractCodeHistoryOperationTypeMigrate code migration
+  CONTRACT_CODE_HISTORY_OPERATION_TYPE_MIGRATE = 2
+      [ (gogoproto.enumvalue_customname) =
+            "ContractCodeHistoryOperationTypeMigrate" ];
+  // ContractCodeHistoryOperationTypeGenesis based on genesis data
+  CONTRACT_CODE_HISTORY_OPERATION_TYPE_GENESIS = 3
+      [ (gogoproto.enumvalue_customname) =
+            "ContractCodeHistoryOperationTypeGenesis" ];
+}
+
+// ContractCodeHistoryEntry metadata to a contract.
+message ContractCodeHistoryEntry {
+  ContractCodeHistoryOperationType operation = 1;
+  // CodeID is the reference to the stored WASM code
+  uint64 code_id = 2 [ (gogoproto.customname) = "CodeID" ];
+  // Updated Tx position when the operation was executed.
+  AbsoluteTxPosition updated = 3;
+  bytes msg = 4 [
+    (gogoproto.casttype) = "RawContractMessage",
+    (amino.encoding) = "inline_json"
+  ];
+}
+
+// AbsoluteTxPosition is a unique transaction position that allows for global
+// ordering of transactions.
+message AbsoluteTxPosition {
+  // BlockHeight is the block the contract was created at
+  uint64 block_height = 1;
+  // TxIndex is a monotonic counter within the block (actual transaction index,
+  // or gas consumed)
+  uint64 tx_index = 2;
+}
+
+// Model is a struct that holds a KV pair
+message Model {
+  // hex-encode key to read it better (this is often ascii)
+  bytes key = 1 [ (gogoproto.casttype) =
+                      "github.com/cometbft/cometbft/libs/bytes.HexBytes" ];
+  // base64-encode raw value
+  bytes value = 2;
+}

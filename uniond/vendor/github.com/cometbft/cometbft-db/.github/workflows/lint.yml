@@ -1,0 +1,33 @@
+name: Lint
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  golangci:
+    # We need to run the linter on the same image we use for building, since it
+    # needs the C libraries installed for the dependencies to typecheck.
+    runs-on: ubuntu-latest
+    container: cometbft/cometbft-db-testing
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - uses: golangci/golangci-lint-action@v6.1.0
+        with:
+          args: --timeout 10m
+          version: latest
+          github-token: ${{ secrets.github_token }}

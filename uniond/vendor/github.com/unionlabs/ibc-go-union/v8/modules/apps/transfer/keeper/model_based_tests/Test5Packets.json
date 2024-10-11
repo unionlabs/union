@@ -1,0 +1,492 @@
+[
+  {
+    "packet": {
+      "sourceChannel": "channel-0",
+      "sourcePort": "transfer",
+      "destChannel": "channel-1",
+      "destPort": "transfer",
+      "data": {
+        "sender": "a3",
+        "receiver": "a3",
+        "amount": "2",
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          "btc"
+        ]
+      }
+    },
+    "handler": "OnRecvPacket",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-1",
+          "btc"
+        ],
+        "amount": 2
+      }
+    ],
+    "error": false
+  },
+  {
+    "packet": {
+      "sourceChannel": "ethereum-hub",
+      "sourcePort": "channel-0",
+      "destChannel": "channel-1",
+      "destPort": "transfer",
+      "data": {
+        "sender": "a1",
+        "receiver": "a3",
+        "amount": "1",
+        "denom": [
+          "cosmos-hub",
+          "",
+          "",
+          "",
+          "btc"
+        ]
+      }
+    },
+    "handler": "SendTransfer",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-1",
+          "btc"
+        ],
+        "amount": 2
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-1",
+          "btc"
+        ],
+        "amount": 2
+      }
+    ],
+    "error": true
+  },
+  {
+    "packet": {
+      "sourceChannel": "channel-0",
+      "sourcePort": "transfer",
+      "destChannel": "channel-1",
+      "destPort": "transfer",
+      "data": {
+        "sender": "a2",
+        "receiver": "a2",
+        "amount": "4",
+        "denom": [
+          "",
+          "",
+          "ethereum-hub",
+          "cosmos-hub",
+          "atom"
+        ]
+      }
+    },
+    "handler": "OnRecvPacket",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-1",
+          "btc"
+        ],
+        "amount": 2
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "ethereum-hub",
+          "cosmos-hub",
+          "atom"
+        ],
+        "amount": 4
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-1",
+          "btc"
+        ],
+        "amount": 2
+      }
+    ],
+    "error": false
+  },
+  {
+    "packet": {
+      "sourceChannel": "channel-0",
+      "sourcePort": "transfer",
+      "destChannel": "channel-1",
+      "destPort": "transfer",
+      "data": {
+        "sender": "",
+        "receiver": "a2",
+        "amount": "4",
+        "denom": [
+          "",
+          "",
+          "ethereum-hub",
+          "cosmos-hub",
+          "atom"
+        ]
+      }
+    },
+    "handler": "OnRecvPacket",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "ethereum-hub",
+          "cosmos-hub",
+          "atom"
+        ],
+        "amount": 4
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-1",
+          "btc"
+        ],
+        "amount": 2
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "ethereum-hub",
+          "cosmos-hub",
+          "atom"
+        ],
+        "amount": 8
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-1",
+          "btc"
+        ],
+        "amount": 2
+      }
+    ],
+    "error": false
+  },
+  {
+    "packet": {
+      "sourceChannel": "cosmos-hub",
+      "sourcePort": "bitcoin-hub",
+      "destChannel": "channel-0",
+      "destPort": "channel-1",
+      "data": {
+        "sender": "a1",
+        "receiver": "",
+        "amount": "1",
+        "denom": [
+          "transfer",
+          "channel-0",
+          "transfer",
+          "channel-0",
+          "atom"
+        ]
+      }
+    },
+    "handler": "SendTransfer",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "ethereum-hub",
+          "cosmos-hub",
+          "atom"
+        ],
+        "amount": 8
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-1",
+          "btc"
+        ],
+        "amount": 2
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "ethereum-hub",
+          "cosmos-hub",
+          "atom"
+        ],
+        "amount": 8
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-1",
+          "btc"
+        ],
+        "amount": 2
+      }
+    ],
+    "error": true
+  }
+]

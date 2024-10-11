@@ -1,0 +1,21 @@
+// Since: x/epochs 0.1.0
+syntax = "proto3";
+
+package cosmos.epochs.v1beta1;
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/epochs/v1beta1/genesis.proto";
+
+option go_package = "cosmossdk.io/x/epochs/types";
+
+// EventEpochEnd is an event emitted when an epoch end.
+message EventEpochEnd {
+  int64 epoch_number = 1;
+}
+
+// EventEpochStart is an event emitted when an epoch start.
+message EventEpochStart {
+
+  int64 epoch_number     = 1;
+  int64 epoch_start_time = 2;
+}

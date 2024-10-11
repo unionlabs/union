@@ -1,0 +1,97 @@
+{
+  "version": "1.0",
+  "examples": {
+    "GetJourneyRuns": [
+      {
+        "input": {
+          "ApplicationId": "11111111112222222222333333333344",
+          "JourneyId": "aaaaaaaaaabbbbbbbbbbccccccccccdd"
+        },
+        "output": {
+          "JourneyRunsResponse": {
+            "Item": [
+              {
+                "RunId": "99999999998888888888777777777766",
+                "CreationTime": "2000-01-01T00:00:00.000Z",
+                "LastUpdateTime": "2000-01-01T00:00:05.000Z",
+                "Status": "COMPLETED"
+              },
+              {
+                "RunId": "ffffffffffeeeeeeeeeeddddddddddcc",
+                "CreationTime": "2000-01-01T00:00:10.000Z",
+                "LastUpdateTime": "2000-01-01T00:00:10.000Z",
+                "Status": "SCHEDULED"
+              }
+            ]
+          }
+        },
+        "comments": {
+          "input": {},
+          "output": {}
+        },
+        "description": "The following example gets the runs of a journey.",
+        "id": "to-get-the-runs-of-a-journey",
+        "title": "To get the runs of a journey"
+      }
+    ],
+    "GetJourneyRunExecutionMetrics": [
+      {
+        "input": {
+          "ApplicationId": "11111111112222222222333333333344",
+          "JourneyId": "aaaaaaaaaabbbbbbbbbbccccccccccdd",
+          "RunId": "99999999998888888888777777777766"
+        },
+        "output": {
+          "JourneyRunExecutionMetricsResponse": {
+            "ApplicationId": "11111111112222222222333333333344",
+            "JourneyId": "aaaaaaaaaabbbbbbbbbbccccccccccdd",
+            "RunId": "99999999998888888888777777777766",
+            "LastEvaluatedTime": "2000-01-01T00:00:05.000Z",
+            "Metrics": {
+              "ENDPOINT_PRODUCED": "1",
+              "ENDPOINT_ENTERED": "1",
+              "ENDPOINT_LEFT": "1"
+            }
+          }
+        },
+        "comments": {
+          "input": {},
+          "output": {}
+        },
+        "description": "The following example gets execution metrics for a single run of a journey.",
+        "id": "to-get-the-execution-metrics-for-a-journey-run",
+        "title": "To get the execution metrics for a journey run"
+      }
+    ],
+    "GetJourneyRunExecutionActivityMetrics": [
+      {
+        "input": {
+          "ApplicationId": "11111111112222222222333333333344",
+          "JourneyId": "aaaaaaaaaabbbbbbbbbbccccccccccdd",
+          "RunId": "99999999998888888888777777777766",
+          "JourneyActivityId": "AAAAAAAAAA"
+        },
+        "output": {
+          "JourneyRunExecutionActivityMetricsResponse": {
+            "ApplicationId": "11111111112222222222333333333344",
+            "JourneyId": "aaaaaaaaaabbbbbbbbbbccccccccccdd",
+            "RunId": "99999999998888888888777777777766",
+            "JourneyActivityId": "AAAAAAAAAA",
+            "ActivityType": "EMAIL",
+            "LastEvaluatedTime": "2000-01-01T00:00:05.000Z",
+            "Metrics": {
+              "SUCCESS": "1"
+            }
+          }
+        },
+        "comments": {
+          "input": {},
+          "output": {}
+        },
+        "description": "The following example gets activity execution metrics for a single run of a journey.",
+        "id": "to-get-the-activity-execution-metrics-for-a-journey-run",
+        "title": "To get the activity execution metrics for a journey run"
+      }
+    ]
+  }
+}

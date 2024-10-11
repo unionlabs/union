@@ -1,0 +1,18 @@
+db checkpoint
+----
+accepts 2 arg(s), received 0
+
+db checkpoint
+non-existent
+----
+accepts 2 arg(s), received 1
+
+db checkpoint
+../testdata/db-stage-4
+../testdata/db-checkpoint1
+----
+
+db check
+../testdata/db-checkpoint1
+----
+checked 6 points and 0 tombstone

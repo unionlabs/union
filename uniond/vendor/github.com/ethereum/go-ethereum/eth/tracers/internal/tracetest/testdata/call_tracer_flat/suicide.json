@@ -1,0 +1,92 @@
+{
+  "genesis": {
+    "number": "553153",
+    "hash": "0x88bde20840880a1f3fba92121912a3cc0d3b26d76e4d914fbd85fc2e43da3b3f",
+    "nonce": "0x7be554ffe4b82fc2",
+    "mixHash": "0xf73d2ff3c16599c3b8a24b9ebde6c09583b5ee3f747d3cd37845d564f4c8d87a",
+    "stateRoot": "0x40b5f53d610108947688a04fb68838ff9c0aa0dd6e54156b682537192171ff5c",
+    "miner": "0x774c398d763161f55b66a646f17edda4addad2ca",
+    "difficulty": "1928226",
+    "totalDifficulty": "457857582215",
+    "extraData": "0xd983010907846765746888676f312e31332e358664617277696e",
+    "gasLimit": "7999473",
+    "timestamp": "1577392669",
+    "alloc": {
+      "0x877bd459c9b7d8576b44e59e09d076c25946f443": {
+        "balance": "0x19bb4ac611ca7a1fc881",
+        "nonce": "701",
+        "code": "0x",
+        "storage": {}
+      },
+      "0x8ee79c5b3f6e1d214d2c4fcf7ea4092a32e26e91": {
+        "balance": "0x0",
+        "nonce": "1",
+        "code": "0x60606040526000357c01000000000000000000000000000000000000000000000000000000009004806341c0e1b514610044578063cfae32171461005157610042565b005b61004f6004506100ca565b005b61005c60045061015e565b60405180806020018281038252838181518152602001915080519060200190808383829060006004602084601f0104600302600f01f150905090810190601f1680156100bc5780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b600060009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff16141561015b57600060009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16ff5b5b565b60206040519081016040528060008152602001506001600050805480601f016020809104026020016040519081016040528092919081815260200182805480156101cd57820191906000526020600020905b8154815290600101906020018083116101b057829003601f168201915b505050505090506101d9565b9056",
+        "storage": {
+          "0x0000000000000000000000000000000000000000000000000000000000000000": "0x000000000000000000000000877bd459c9b7d8576b44e59e09d076c25946f443"
+        }
+      }
+    },
+    "config": {
+      "chainId": 63,
+      "daoForkSupport": true,
+      "eip150Block": 0,
+      "eip150Hash": "0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d",
+      "eip155Block": 0,
+      "eip158Block": 0,
+      "ethash": {},
+      "homesteadBlock": 0,
+      "byzantiumBlock": 0,
+      "constantinopleBlock": 301243,
+      "petersburgBlock": 999983,
+      "istanbulBlock": 999983
+    }
+  },
+  "context": {
+    "number": "553154",
+    "difficulty": "1929167",
+    "timestamp": "1577392670",
+    "gasLimit": "8000000",
+    "miner": "0x877bd459c9b7d8576b44e59e09d076c25946f443"
+  },
+  "input": "0xf86c8202bd850ee6b280008344aa20948ee79c5b3f6e1d214d2c4fcf7ea4092a32e26e91808441c0e1b581a2a03f95ca5cdf7fd727630341c4c6aa1b64ccd9949bd9ecc72cfdd7ce17a2013a69a06d34795ef7fb0108a6dbee4ae0a1bdc48dcd2a4ee53bb6a33d45515af07bb9a8",
+  "result": [
+    {
+      "action": {
+        "callType": "call",
+        "from": "0x877bd459c9b7d8576b44e59e09d076c25946f443",
+        "gas": "0x44aa20",
+        "input": "0x41c0e1b5",
+        "to": "0x8ee79c5b3f6e1d214d2c4fcf7ea4092a32e26e91",
+        "value": "0x0"
+      },
+      "blockHash": "0xf641c3b0f82b07cd3a528adb9927dd83eeb4f1682e2bd523ed36888e0d82c9a9",
+      "blockNumber": 553154,
+      "result": {
+        "gasUsed": "0x347a",
+        "output": "0x"
+      },
+      "subtraces": 1,
+      "traceAddress": [],
+      "transactionHash": "0x6af0a5c3188ffacae4d340d4a17e14fdb5a54187683a80ef241bde248189882b",
+      "transactionPosition": 15,
+      "type": "call"
+    },
+    {
+      "action": {
+        "address": "0x8ee79c5b3f6e1d214d2c4fcf7ea4092a32e26e91",
+        "balance": "0x0",
+        "refundAddress": "0x877bd459c9b7d8576b44e59e09d076c25946f443"
+      },
+      "blockHash": "0xf641c3b0f82b07cd3a528adb9927dd83eeb4f1682e2bd523ed36888e0d82c9a9",
+      "blockNumber": 553154,
+      "subtraces": 0,
+      "traceAddress": [
+        0
+      ],
+      "transactionHash": "0x6af0a5c3188ffacae4d340d4a17e14fdb5a54187683a80ef241bde248189882b",
+      "transactionPosition": 15,
+      "type": "suicide"
+    }
+  ]
+}

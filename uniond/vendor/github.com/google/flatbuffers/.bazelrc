@@ -1,0 +1,4 @@
+# We cannot use "common" here because the "version" command doesn't support
+# --deleted_packages. We need to specify it for both build and query instead.
+build --deleted_packages=tests/ts/bazel_repository_test_dir
+query --deleted_packages=tests/ts/bazel_repository_test_dir

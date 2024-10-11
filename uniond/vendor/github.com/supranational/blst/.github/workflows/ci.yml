@@ -1,0 +1,277 @@
+name: build
+
+on:
+  push:
+    branches:
+    - '**'
+  workflow_dispatch:
+    branches:
+    - '**'
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  rust-n-go:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Get date
+      id: get-date
+      run: echo "date=$(date -u +%Y-%m)" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          **/Cargo.lock
+          **/bindings/rust/target
+        key: ${{ runner.os }}-cargo-${{ steps.get-date.outputs.date }}
+
+    - name: Environment
+      shell: bash
+      run: |
+        lscpu 2>/dev/null && echo --- || true
+        sysctl hw 2>/dev/null && echo --- || true
+        env | sort
+
+    - name: Rust
+      shell: bash
+      run: |
+        rustc --version --verbose
+        export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+        cd bindings/rust
+        sed "s/^crit/#crit/" Cargo.toml > Cargo.$$.toml && \
+        mv Cargo.$$.toml Cargo.toml
+        if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
+            cargo update
+        fi
+        cargo test --release
+        echo '--- test portable'
+        echo
+        cargo test --release --features=portable
+        echo '--- test no-threads'
+        echo
+        cargo test --release --features=no-threads
+        echo '--- test serde-secret'
+        echo
+        cargo test --release --features=serde-secret
+        echo '--- test no_std'
+        echo
+        echo 'set -e'                                       > ulimit-s
+        echo 'export RUST_MIN_STACK=$(($1 * 1024)); shift'  >> ulimit-s
+        echo 'exec "$@"'                                    >> ulimit-s
+        triplet=`rustc -vV | awk '/host:/ {print $2}' | tr 'a-z-' 'A-Z_'`
+        stack_size=`[ $OSTYPE = "msys" ] && echo 65 || echo 56`
+        env BLST_TEST_NO_STD= \
+            CARGO_TARGET_${triplet}_RUNNER="bash ulimit-s $stack_size" \
+            cargo test --release
+        if [ `uname -s` = "Linux" ]; then
+            echo '--- test wasm32-wasi'
+            echo
+            rustup target add wasm32-wasi
+            curl https://wasmtime.dev/install.sh -sSf | bash
+            env CARGO_TARGET_WASM32_WASI_RUNNER=~/.wasmtime/bin/wasmtime \
+                cargo test --release --target=wasm32-wasi
+            cargo clean -p blst --release --target=wasm32-wasi
+            echo
+            echo '--- test -mlvi-hardening'
+            echo
+            env CC=clang CFLAGS="-mlvi-hardening -D__SGX_LVI_HARDENING__" \
+                cargo test --release
+            echo '--- build x86_64-fortanix-unknown-sgx'
+            echo
+            rustup target add x86_64-fortanix-unknown-sgx
+            cargo test --no-run --release --target=x86_64-fortanix-unknown-sgx
+            cargo clean -p blst --release --target=x86_64-fortanix-unknown-sgx
+            echo
+            echo '--- dry-run publish'
+            echo
+            ./publish.sh --dry-run
+        elif [ `uname -s` = "Darwin" ]; then
+            if [ $HOSTTYPE = "arm64" ]; then
+                echo '--- test x86_64-apple-darwin'
+                echo
+                rustup target add x86_64-apple-darwin
+                cargo test --release --target=x86_64-apple-darwin
+                cargo clean -p blst --release --target=x86_64-apple-darwin
+                echo
+            else
+                echo '--- build aarch64-apple-darwin'
+                echo
+                rustup target add aarch64-apple-darwin
+                cargo test --no-run --release --target=aarch64-apple-darwin
+                cargo clean -p blst --release --target=aarch64-apple-darwin
+                echo
+            fi
+        elif [ $OSTYPE = "msys" ]; then
+            if which clang-cl > /dev/null 2>&1; then
+                echo '-- test i686-pc-windows-msvc'
+                echo
+                rustup target add i686-pc-windows-msvc
+                cargo test --release --target=i686-pc-windows-msvc
+                cargo clean -p blst --release --target=i686-pc-windows-msvc
+                echo
+            fi
+            echo '-- test x86_64-pc-windows-gnu'
+            echo
+            rustup target add x86_64-pc-windows-gnu
+            cargo test --release --target=x86_64-pc-windows-gnu
+            cargo clean -p blst --release --target=x86_64-pc-windows-gnu
+            echo
+            echo '-- build aarch64-pc-windows-msvc'
+            echo
+            rustup target add aarch64-pc-windows-msvc
+            cargo test --no-run --release --target=aarch64-pc-windows-msvc
+            find target/aarch64-pc-windows-msvc -name blst-\*.exe -exec cp {} blst-arm-test.exe \; -quit
+            cargo clean -p blst --release --target=aarch64-pc-windows-msvc
+            echo
+        fi
+        echo
+        echo '--- cargo clippy'
+        echo
+        cargo clippy --release
+        cargo clean -p blst
+        cargo clean -p blst --release
+        rm -rf target/.rustc_info.json
+        rm -rf target/package
+        rm -rf target/{debug,release}/incremental
+        rm -rf target/*/{debug,release}/incremental
+        rm -rf ~/.cargo/registry/src
+        rm -rf ~/.cargo/registry/index/*/.cache
+
+    - name: Go
+      shell: bash
+      run: |
+        go version 2>/dev/null || exit 0
+        if ! (grep -q -e '^flags.*\badx\b' /proc/cpuinfo) 2>/dev/null; then
+            export CGO_CFLAGS="-O -D__BLST_PORTABLE__"
+        fi
+        cd bindings/go
+        go test -test.v
+
+    - uses: actions/upload-artifact@v4
+      if: ${{ runner.os == 'Windows' }}
+      with:
+        name: blst-arm-test.exe
+        path: bindings/rust/blst-arm-test.exe
+        if-no-files-found: ignore
+
+  cargo-test-windows-on-arm:
+    runs-on: ubuntu-latest
+    needs: rust-n-go
+
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: blst-arm-test.exe
+
+    - name: wine-arm64
+      uses: addnab/docker-run-action@v3
+      with:
+        registry: https://index.docker.io/v1/
+        image: linaro/wine-arm64
+        options: --volume ${{ github.workspace }}:/blst --network=none
+        run: wine-arm64 cmd /c "cd \ && \blst\blst-arm-test.exe"
+
+  misc-ubuntu-latest:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/cache@v4
+      with:
+        path: ~/swig
+        key: ${{ runner.os }}-swig-github
+
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 11
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+
+    - name: Environment
+      run: |
+        lscpu
+        echo ---
+        env | sort
+
+    - name: Python
+      run: if [ -x bindings/python/run.me ]; then bindings/python/run.me; fi
+
+    - name: Java
+      run: if [ -x bindings/java/run.me ]; then bindings/java/run.me; fi
+
+    - name: Node.js
+      run: |
+        node_js=bindings/node.js
+        if [ -x $node_js/run.me ]; then
+            if [ ! -x ~/swig/bin/swig ]; then
+              ( git clone --branch v4.2.1 https://github.com/swig/swig;
+                cd swig;
+                ./autogen.sh;
+                ./configure --prefix=$HOME/swig;
+                make;
+                make install;
+                (cd ~/swig/share/swig && ln -s `ls` current)
+              )
+            fi
+            env PATH=~/swig/bin:$PATH SWIG_LIB=~/swig/share/swig/current \
+                $node_js/run.me
+        fi
+    - name: node-gyp
+      run: |
+        node_js=bindings/node.js
+        if [ -f $node_js/binding.gyp -a -f $node_js/blst_wrap.cpp ]; then
+            npm install --global node-gyp || true
+            if which node-gyp > /dev/null 2>&1; then
+              ( export PATH=~/swig/bin:$PATH SWIG_LIB=~/swig/share/swig/current;
+                cd $node_js;
+                node-gyp configure;
+                node-gyp build;
+                env NODE_PATH=build/Release: node runnable.js;
+              )
+            fi
+        fi
+    - name: TypeScript
+      run: |
+        node_js=bindings/node.js
+        if [ -f $node_js/blst.hpp.ts -a -f $node_js/blst.node ]; then
+            npm install --global typescript || true
+            if which tsc > /dev/null 2>&1; then
+              ( cd $node_js;
+                npm install @types/node
+                tsc runnable.ts;
+                env NODE_PATH=.: node runnable.js;
+              )
+           fi
+        fi
+
+    - name: Emscripten
+      uses: addnab/docker-run-action@v3
+      with:
+        registry: https://index.docker.io/v1/
+        image: emscripten/emsdk
+        options: --volume ${{ github.workspace }}:/blst --network=none
+        run: git config --global safe.directory \* && git clone -q /blst /tmp/blst && /tmp/blst/bindings/emscripten/run.me -O2
+
+    - name: C#
+      run: |
+        if [ -x bindings/c#/run.me ]; then
+            bindings/c#/run.me;
+            if which dotnet > /dev/null 2>&1; then
+                cd bindings/c#
+                dotnet run -c Release
+            fi
+        fi

@@ -1,0 +1,27 @@
+// Since: cosmos-sdk 0.47
+syntax = "proto3";
+package cosmos.consensus.v1;
+
+import "google/api/annotations.proto";
+import "cometbft/types/v1/params.proto";
+
+option go_package = "cosmossdk.io/x/consensus/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Params queries the parameters of x/consensus module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/cosmos/consensus/v1/params";
+  }
+}
+
+// QueryParamsRequest defines the request type for querying x/consensus parameters.
+message QueryParamsRequest {}
+
+// QueryParamsResponse defines the response type for querying x/consensus parameters.
+message QueryParamsResponse {
+  // params are the tendermint consensus params stored in the consensus module.
+  // Please note that `params.version` is not populated in this response, it is
+  // tracked separately in the x/upgrade module.
+  cometbft.types.v1.ConsensusParams params = 1;
+}

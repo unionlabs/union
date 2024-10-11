@@ -1,0 +1,27 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = [
+        "constants.go",
+        "mock_protector.go",
+        "protection_history.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/validator/testing",
+    visibility = [
+        "//cmd:__subpackages__",
+        "//validator:__subpackages__",
+    ],
+    deps = [
+        "//config/fieldparams:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//crypto/bls:go_default_library",
+        "//crypto/rand:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//validator/db/kv:go_default_library",
+        "//validator/slashing-protection-history/format:go_default_library",
+    ],
+)

@@ -1,0 +1,65 @@
+syntax = "proto3";
+option go_package = "examplepb";
+
+package grpc.gateway.examples.internal.examplepb;
+
+import "google/api/annotations.proto";
+
+message ResponseBodyIn {
+	string data = 1;
+}
+
+message ResponseBodyOut {
+	message Response {
+		string data = 1;
+	}
+	Response response = 2;
+}
+
+message RepeatedResponseBodyOut {
+	message Response {
+		string data = 1;
+		enum ResponseType {
+			// UNKNOWN
+			UNKNOWN = 0;
+			// A is 1
+			A = 1;
+			// B is 2
+			B = 2;
+		}
+		ResponseType type = 3;
+	}
+	repeated Response response = 2;
+}
+
+message RepeatedResponseStrings {
+	repeated string values = 1;
+}
+
+service ResponseBodyService {
+	rpc GetResponseBody(ResponseBodyIn) returns (ResponseBodyOut) {
+		option (google.api.http) = {
+			get : "/responsebody/{data}"
+			response_body : "response"
+		};
+	}
+	rpc ListResponseBodies(ResponseBodyIn) returns (RepeatedResponseBodyOut) {
+		option (google.api.http) = {
+			get : "/responsebodies/{data}"
+			response_body : "response"
+		};
+	}
+	rpc ListResponseStrings(ResponseBodyIn) returns (RepeatedResponseStrings) {
+		option (google.api.http) = {
+			get : "/responsestrings/{data}"
+			response_body : "values"
+		};
+	}
+
+	rpc GetResponseBodyStream(ResponseBodyIn) returns (stream ResponseBodyOut) {
+		option (google.api.http) = {
+			get : "/responsebody/stream/{data}"
+			response_body : "response"
+		};
+	}
+}

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="css/app.css" >
+    <title>Pebble Benchmarks</title>
+  </head>
+  <body>
+    <div class="center rows">
+      <div class="section">
+        <div class="columns">
+          <div class="title">Pebble Benchmarks</div>
+          <div class="updated">Last updated</div>
+        </div>
+        <br/>
+        <div class="columns">
+          <div class="overview">
+            Benchmarks are run nightly using <a class="code"
+            href="https://github.com/cockroachdb/pebble/blob/master/cmd/pebble/ycsb.go">pebble
+            bench ycsb</a> on AWS m6id.4xlarge machines equipped with
+            local SSD storage. The AWS instances show remarkably high
+            instance to instance performance variability. In order to
+            smooth out that variability the benchmarks are run multiple
+            times each (using different instances) and outliers are
+            excluded.
+          </div>
+          <div>
+            <div class="controls">
+              <b>Detail:</b>
+              <a id="readBytes" class="toggle">Bytes Read</a> |
+              <a id="writeBytes" class="toggle">Bytes Written</a> |
+              <a id="readAmp" class="toggle">Read Amp</a> |
+              <a id="writeAmp" class="toggle">Write Amp</a>
+            </div>
+            <div class="controls">
+              <b>Options:</b>
+              <a id="localMax">Local scale</a>
+            </div>
+          </div>
+        </div>
+        <hr class="divider"/>
+        <div class="annotation" data-date="20200614">L0-sublevels and
+        flush-splits enabled</div>
+        <div class="annotation" data-date="20200604">Increased
+        LogWriter free blocks 4-&gt;16</div>
+        <div class="annotation" data-date="20200706">Began tracking
+        ycsb/E read-amp</div>
+        <div class="annotation" data-date="20201022">Level metadata
+        switched to use a B-Tree</div>
+        <div class="annotation" data-date="20201222">Enabled
+        read-triggered compactions</div>
+        <div class="annotation" data-date="20210113">Readahead
+        and preallocation bug fixed</div>
+        <div class="annotation" data-date="20210326">Removed excess
+        read samples for read-triggered compactions</div>
+        <div class="annotation" data-date="20210429">Switched to Ubuntu
+        20.04.2 LTS AMI</div>
+        <div class="annotation" data-date="20211018">Read compaction fixes</div>
+        <div class="annotation" data-date="20211109">Bumped benchmark
+          runtime to 90 minutes</div>
+        <div class="annotation" data-date="20220330">Data quality issue introduced (YCSB A only)</div>
+        <div class="annotation" data-date="20220526">Data quality issue fixed (YCSB A only)</div>
+        <div class="annotation" data-date="20220626">Began zeroing reused
+            iterator structs (#1822)</div>
+        <div class="annotation" data-date="20230215">Grandparent boundary
+            compaction splitting</div>
+        <div class="annotation" data-date="20230516">Infrastructure
+            change (#2578)</div>
+        <div class="annotation" data-date="20230607">ycsb/F sampling bug</div>
+        <div class="annotation" data-date="20230611">Switched to m6id.4xlarge
+            (from 5d.4xlarge)</div>
+      </div>
+      <div class="section rows">
+        <div>
+          <span class="subtitle">YCSB A</span>
+          <span>(50% reads, 50% updates, zipf key distribution)</span>
+        </div>
+        <div class="columns">
+          <svg class="chart ycsb" data-key="ycsb/A/values=64"></svg>
+          <svg class="chart ycsb" data-key="ycsb/A/values=1024"></svg>
+        </div>
+      </div>
+      <div class="section rows">
+        <div>
+          <span class="subtitle">YCSB B</span>
+          <span>(95 reads, 5% updates, zipf key distribution)</span>
+        </div>
+        <div class="columns">
+          <svg class="chart ycsb left" data-key="ycsb/B/values=64"></svg>
+          <svg class="chart ycsb right" data-key="ycsb/B/values=1024"></svg>
+        </div>
+      </div>
+      <div class="section rows">
+        <div>
+          <span class="subtitle">YCSB C</span>
+          <span>(100% reads, zipf key distribution)</span>
+        </div>
+        <div class="columns">
+          <svg class="chart ycsb left" data-key="ycsb/C/values=64"></svg>
+          <svg class="chart ycsb right" data-key="ycsb/C/values=1024"></svg>
+        </div>
+      </div>
+      <div class="section rows">
+        <div>
+          <span class="subtitle">YCSB D</span>
+          <span>(95% reads, 5% updates, uniform key distribution)</span>
+        </div>
+        <div class="columns">
+          <svg class="chart ycsb left" data-key="ycsb/D/values=64"></svg>
+          <svg class="chart ycsb right" data-key="ycsb/D/values=1024"></svg>
+        </div>
+      </div>
+      <div class="section rows">
+        <div>
+          <span class="subtitle">YCSB E</span>
+          <span>(95% scans, 5% updates, zipf key distribution)</span>
+        </div>
+        <div class="columns">
+          <svg class="chart ycsb left" data-key="ycsb/E/values=64"></svg>
+          <svg class="chart ycsb right" data-key="ycsb/E/values=1024"></svg>
+        </div>
+      </div>
+      <div class="section rows">
+        <div>
+          <span class="subtitle">Insert-only</span>
+          <span>(100% inserts, zipf key distribution)</span>
+        </div>
+        <div class="columns">
+          <svg class="chart ycsb left" data-key="ycsb/F/values=64"></svg>
+          <svg class="chart ycsb right" data-key="ycsb/F/values=1024"></svg>
+        </div>
+      </div>
+    </div>
+    <div class="center rows">
+      <div class="section">
+        <hr class="divider"/>
+        <div>
+          <span class="subtitle">Write throughput</span>
+          <span>(100% inserts, zipf key distribution)</span>
+        </div>
+        <br />
+        <div class="overview">
+          This benchmark attempts to find the optimal write throughput by
+          driving more and more load against the DB until a target heuristic
+          fails (currently a mixture of number of L0 sublevels, L0 files, and
+          whether the DB has experienced a write stall). These benchmarks are
+          run nightly using <a class="code"
+          href="https://github.com/cockroachdb/pebble/blob/master/cmd/pebble/write.go">pebble
+          bench write</a> on GCP n2-standard-32 machines equipped with 16 local
+          SSDs in a RAID 0 array.
+        </div>
+      </div>
+      <div class="section rows">
+        <div class="columns">
+          <svg class="chart write-throughput" data-key="write/values=1024"></svg>
+          <svg class="chart write-throughput-detail"/>
+        </div>
+      </div>
+    </div>
+    <script src="js/d3.v5.min.js"></script>
+    <script src="https://pebble-benchmarks.s3.amazonaws.com/data.js"></script>
+    <script src="js/write-throughput.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

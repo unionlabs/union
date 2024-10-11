@@ -1,0 +1,37 @@
+// Example IDL file for our monster's schema.
+
+namespace jmonster;
+
+enum JColor:byte { Red = 0, Green, Blue = 2 }
+
+union JEquipment { JWeapon } // Optionally add more tables.
+
+struct JVec3 {
+  x:float;
+  y:float;
+  z:float;
+}
+
+table JMonster {
+  pos:JVec3;
+  mana:short = 150;
+  hp:short = 100;
+  name:string;
+  friendly:bool = false (deprecated);
+  inventory:[ubyte];
+  color:JColor = Blue;
+  weapons:[JWeapon];
+  equipped:JEquipment;
+  path:[JVec3];
+}
+
+table JWeapon {
+  name:string;
+  damage:short;
+}
+
+table JAllMonsters {
+   monsters: [JMonster];
+}
+
+root_type JAllMonsters;

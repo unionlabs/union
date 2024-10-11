@@ -1,0 +1,3 @@
+path=example.com/m
+version=v1.0.0+bad
+wantErr=version "v1.0.0+bad" is not canonical (should be "v1.0.0")

@@ -1,0 +1,35 @@
+// Copyright 2021 Prysmatic Labs.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+
+package ethereum.eth.v1alpha1;
+
+import "proto/eth/ext/options.proto";
+
+option csharp_namespace = "Ethereum.Eth.V1alpha1";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1;eth";
+option java_multiple_files = true;
+option java_outer_classname = "SlasherProto";
+option java_package = "org.ethereum.eth.v1alpha1";
+option php_namespace = "Ethereum\\Eth\\v1alpha1";
+
+message HighestAttestation {
+  uint64 validator_index = 1;
+  uint64 highest_source_epoch = 2
+  [ (ethereum.eth.ext.cast_type) =
+      "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch" ];
+  uint64 highest_target_epoch = 3
+  [ (ethereum.eth.ext.cast_type) =
+      "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch" ];
+}

@@ -1,0 +1,198 @@
+version: 2.1
+
+commands:
+  configure_bazel:
+    description: Create Bazel config file (.bazelrc)
+    steps:
+      - run: |
+          cat > .bazelrc \<< EOF
+          startup --output_base /root/.cache/_grpc_gateway_bazel
+          build --test_output errors
+          build --features race
+          # Workaround https://github.com/bazelbuild/bazel/issues/3645
+          # See https://docs.bazel.build/versions/0.23.0/command-line-reference.html
+          build --local_ram_resources=4096 # Circle Docker runners have 4G of memory
+          build --local_cpu_resources=2    # Circle Docker runners have 2 vCPU
+          EOF
+  generate:
+    steps:
+      - run: make realclean
+      - run: make examples
+      - run: make testproto
+      - run: go mod tidy
+  renovate_git_amend_push:
+    description: Git amend and push changes
+    steps:
+      - run: |
+          git add .
+          if output=$(git status --porcelain) && [ ! -z "$output" ]; then
+            git config user.name "Renovate Bot"
+            git config user.email "bot@renovateapp.com"
+            git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/grpc-ecosystem/grpc-gateway.git
+            git commit --amend --no-edit
+            git push --force-with-lease origin ${CIRCLE_BRANCH}
+          fi
+
+executors:
+  build-env:
+    environment:
+    ## Split key to avoid github from revoking it
+      password0: '99544cdcb19ad4e3fd64'
+      password1: '3ec86b2e5a431be2d72c'
+      GLOG_logtostderr: '1'
+    docker:
+      - image: docker.pkg.github.com/grpc-ecosystem/grpc-gateway/build-env:1.15
+        auth:
+          username: gateway-ci-user
+          password: ${password0}${password1}
+
+jobs:
+  build:
+    executor: build-env
+    working_directory: /src/grpc-gateway
+    steps:
+      - checkout
+      - run: go build ./...
+  test:
+    executor: build-env
+    working_directory: /src/grpc-gateway
+    steps:
+      - checkout
+      - run: go test -race -coverprofile=coverage.txt ./...
+      - run: bash <(curl -s https://codecov.io/bash)
+  node_test:
+    executor: build-env
+    working_directory: /src/grpc-gateway
+    steps:
+      - checkout
+      - run: go mod vendor
+      - run: >
+          . $HOME/.nvm/nvm.sh &&
+          cd examples/internal/browser &&
+          npm install gulp-cli &&
+          npm install &&
+          ./node_modules/.bin/gulp
+  generate:
+    executor: build-env
+    working_directory: /src/grpc-gateway
+    steps:
+      - checkout
+      - generate
+      - run: git diff --exit-code
+  lint:
+    executor: build-env
+    working_directory: /src/grpc-gateway
+    steps:
+      - checkout
+      - run: go get golang.org/x/lint/golint
+      - run: make lint
+  fuzzit:
+    docker:
+      - image: fuzzitdev/fuzzit:golang1.12-stretch-llvm9
+    working_directory: /src/grpc-gateway
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: ./fuzzit.sh
+  bazel:
+    executor: build-env
+    working_directory: /src/grpc-gateway
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v2-bazel-cache-{{ checksum "repositories.bzl" }}
+            - v2-bazel-cache-
+      - configure_bazel
+      - run:
+          name: Check that Bazel BUILD files are up-to-date
+          command: 'bazel run //:gazelle -- --mode=diff ||
+            (echo "ERROR: Bazel files out-of-date, please run \`bazel run :gazelle\`" >&2; exit 1)'
+      - run:
+          name: Run tests with Bazel
+          command: bazel test //...
+      - run:
+          name: Check formatting of Bazel BUILD files
+          command: 'bazel run //:buildifier_check ||
+            (echo "ERROR: Bazel files not formatted, please run \`bazel run :buildifier\`" >&2; exit 1)'
+          when: always
+      - save_cache:
+          key: v2-bazel-cache-{{ checksum "repositories.bzl" }}
+          paths:
+            - /root/.cache/_grpc_gateway_bazel
+  gorelease:
+    executor: build-env
+    working_directory: /src/grpc-gateway
+    steps:
+      - checkout
+      - run:
+          name: Install gorelease outside local module
+          command: |
+            cd $(mktemp -d) &&
+            go mod init tmp &&
+            go get golang.org/x/exp/cmd/gorelease@latest
+      - run: gorelease -base=v1.15.2
+  release:
+    executor: build-env
+    working_directory: /src/grpc-gateway
+    steps:
+      - checkout
+      - run: go mod vendor
+      - run: curl -sL https://git.io/goreleaser | bash
+  update-repositoriesbzl:
+    executor: build-env
+    working_directory: /src/grpc-gateway
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v2-bazel-cache-{{ checksum "repositories.bzl" }}
+            - v2-bazel-cache-
+      - configure_bazel
+      - run:
+          name: Update repositories.bzl
+          command: |
+            bazel run //:gazelle -- update-repos -from_file=go.mod -to_macro=repositories.bzl%go_repositories
+      - renovate_git_amend_push
+  regenerate:
+    executor: build-env
+    working_directory: /src/grpc-gateway
+    steps:
+      - checkout
+      - generate
+      - renovate_git_amend_push
+workflows:
+  version: 2
+  all:
+    jobs:
+      - build
+      - test
+      - fuzzit
+      - node_test
+      - generate
+      - lint
+      - bazel
+      - gorelease
+      - release:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*(-.*)*/
+      - update-repositoriesbzl:
+          filters:
+            branches:
+              only: /renovate\/.+/
+            tags:
+              ignore: /.*/
+      - regenerate:
+          requires:
+            # Run after update-repositoriesbzl to avoid
+            # git conflicts
+            - update-repositoriesbzl
+          filters:
+            branches:
+              only: /renovate\/master-.+/
+            tags:
+              ignore: /.*/
+

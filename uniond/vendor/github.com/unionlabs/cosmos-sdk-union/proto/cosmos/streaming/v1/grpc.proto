@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package cosmos.streaming.v1;
+
+option go_package = "cosmossdk.io/server/v2/streaming";
+
+// ListenDeliverBlockRequest is the request type for the ListenDeliverBlock RPC method
+message ListenDeliverBlockRequest {
+  int64                 block_height = 1;
+  repeated bytes        txs          = 2;
+  repeated Event        events       = 3;
+  repeated ExecTxResult tx_results   = 4;
+}
+
+// ListenDeliverBlockResponse is the response type for the ListenDeliverBlock RPC method
+message ListenDeliverBlockResponse {}
+
+// ListenStateChangesRequest is the request type for the ListenStateChanges RPC method
+message ListenStateChangesRequest {
+  int64                block_height = 1;
+  repeated StoreKVPair change_set   = 2;
+  bytes                app_hash     = 3;
+}
+
+// ListenStateChangesResponse is the response type for the ListenStateChanges RPC method
+message ListenStateChangesResponse {}
+
+// ListenerService is the service for the Listener interface
+service ListenerService {
+  // ListenDeliverBlock is the corresponding endpoint for Listener.ListenDeliverBlock
+  rpc ListenDeliverBlock(ListenDeliverBlockRequest) returns (ListenDeliverBlockResponse);
+  // ListenStateChanges is the corresponding endpoint for Listener.ListenStateChanges
+  rpc ListenStateChanges(ListenStateChangesRequest) returns (ListenStateChangesResponse);
+}
+
+// StoreKVPair is a single key-value pair, associated with a store.
+message StoreKVPair {
+  // address defines the address of the account the state changes are coming from.
+  // In case of modules you can expect a stringified
+  bytes address = 1;
+  // key defines the key of the address that changed.
+  bytes key = 2;
+  // value defines the value that changed, empty in case of removal.
+  bytes value = 3;
+  // delete defines if the key was removed.
+  bool delete = 4; // true indicates a delete operation, false indicates a set operation
+}
+
+// Event is a single event, associated with a transaction.
+message Event {
+  string                  type       = 1;
+  repeated EventAttribute attributes = 2;
+}
+
+// EventAttribute is a single key-value pair, associated with an event.
+message EventAttribute {
+  string key   = 1;
+  string value = 2;
+}
+
+// ExecTxResult contains results of executing one individual transaction.
+message ExecTxResult {
+  uint32         code       = 1;
+  bytes          data       = 2;
+  string         log        = 3;
+  string         info       = 4;
+  int64          gas_wanted = 5;
+  int64          gas_used   = 6;
+  repeated Event events     = 7;
+  string         codespace  = 8;
+}

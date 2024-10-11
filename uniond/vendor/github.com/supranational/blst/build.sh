@@ -67,8 +67,9 @@ if [ "x$CROSS_COMPILE" = "x" ]; then
                           else     { print $1 } }'`
 fi
 
-if [ -z "${CROSS_COMPILE}${AR}" ] && \
-   (${CC} -dM -E -x c /dev/null) 2>/dev/null | grep -q clang; then
+predefs=`(${CC} ${CFLAGS} -dM -E -x c /dev/null || true) 2>/dev/null`
+
+if [ -z "${CROSS_COMPILE}${AR}" ] && echo ${predefs} | grep -q clang; then
     search_dirs=`${CC} -print-search-dirs  | awk -F= '/^programs:/{print$2}' | \
                  (sed -E -e 's/([a-z]):\\\/\/\1\//gi' -e 'y/\\\;/\/:/' 2>/dev/null || true)`
     if [ -n "$search_dirs" ] && \
@@ -79,13 +80,16 @@ if [ -z "${CROSS_COMPILE}${AR}" ] && \
 fi
 AR=${AR:-${CROSS_COMPILE}ar}
 
-if (${CC} ${CFLAGS} -dM -E -x c /dev/null) 2>/dev/null | grep -q x86_64; then
+if echo ${predefs} | grep -q x86_64; then
     if (grep -q -e '^flags.*\badx\b' /proc/cpuinfo) 2>/dev/null; then
         cflags="-D__ADX__ $cflags"
     fi
 fi
-if (${CC} ${CFLAGS} -dM -E -x c /dev/null) 2>/dev/null | grep -q __AVX__; then
+if echo ${predefs} | grep -q __AVX__; then
     cflags="$cflags -mno-avx" # avoid costly transitions
+fi
+if echo ${predefs} | grep -q 'x86_64\|aarch64'; then :; else
+    cflags="$cflags -D__BLST_NO_ASM__"
 fi
 
 CFLAGS="$CFLAGS $cflags"

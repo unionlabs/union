@@ -1,0 +1,33 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+          - "1.13"
+          - "1.14"
+          - "1.15"
+          - "1.16"
+          - "1.17"
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go (${{ matrix.go }}
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Build (${{ matrix.go }})
+      run: go build ./...
+
+    - name: Test (${{ matrix.go }})
+      run: go test ./...

@@ -1,0 +1,13 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = ["requires.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/testing/require",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//testing/assertions:go_default_library",
+        "@com_github_sirupsen_logrus//hooks/test:go_default_library",
+    ],
+)

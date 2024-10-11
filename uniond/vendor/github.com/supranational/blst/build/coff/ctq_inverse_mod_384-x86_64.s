@@ -544,7 +544,15 @@ ct_inverse_mod_383:
 	mov	8(%rsp),%rdi
 	mov	16(%rsp),%rsi
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .LSEH_end_ct_inverse_mod_383:
 .def	__smulq_767x63;	.scl 3;	.type 32;	.endef
@@ -756,7 +764,15 @@ __smulq_767x63:
 	movq	%rcx,80(%rdx)
 	movq	%rax,88(%rdx)
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .def	__smulq_383x63;	.scl 3;	.type 32;	.endef
 .p2align	5
@@ -898,7 +914,15 @@ __smulq_383x63:
 	movq	%r12,32(%rdi)
 	movq	%r13,40(%rdi)
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .def	__smulq_383_n_shift_by_62;	.scl 3;	.type 32;	.endef
 .p2align	5
@@ -1075,7 +1099,15 @@ __smulq_383_n_shift_by_62:
 	addq	%rbp,%rdx
 	addq	%rbp,%rcx
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%r8
+	lfence
+	jmpq	*%r8
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .def	__ab_approximation_62;	.scl 3;	.type 32;	.endef
 .p2align	5
@@ -1131,7 +1163,15 @@ __ab_approximation_62:
 
 	jmp	__inner_loop_62
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .def	__inner_loop_62;	.scl 3;	.type 32;	.endef
 .p2align	3
@@ -1184,7 +1224,15 @@ __inner_loop_62:
 	jnz	.Loop_62
 
 	movq	8(%rsp),%rsi
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rax
+	lfence
+	jmpq	*%rax
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .section	.pdata
 .p2align	2

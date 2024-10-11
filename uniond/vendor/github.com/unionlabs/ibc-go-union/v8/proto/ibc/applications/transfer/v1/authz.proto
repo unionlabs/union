@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package ibc.applications.transfer.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types";
+
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+// Allocation defines the spend limit for a particular port and channel
+message Allocation {
+  // the port on which the packet will be sent
+  string source_port = 1;
+  // the channel by which the packet will be sent
+  string source_channel = 2;
+  // spend limitation on the channel
+  repeated cosmos.base.v1beta1.Coin spend_limit = 3
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  // allow list of receivers, an empty allow list permits any receiver address
+  repeated string allow_list = 4;
+  // allow list of memo strings, an empty list prohibits all memo strings;
+  // a list only with "*" permits any memo string
+  repeated string allowed_packet_data = 5;
+}
+
+// TransferAuthorization allows the grantee to spend up to spend_limit coins from
+// the granter's account for ibc transfer on a specific channel
+message TransferAuthorization {
+  option (cosmos_proto.implements_interface) = "cosmos.authz.v1beta1.Authorization";
+
+  // port and channel amounts
+  repeated Allocation allocations = 1 [(gogoproto.nullable) = false];
+}

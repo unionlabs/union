@@ -1,0 +1,21 @@
+# Verify that stdout and stderr get set event when a user-builtin
+# command aborts. Note that we need to assert against stdout
+# because our meta testscript command sees only a single log.
+unquote scripts/testscript.txt
+! testscript -v scripts
+cmpenv stdout stdout.golden
+
+-- scripts/testscript.txt --
+> printargs hello world
+> echoandexit 1 'this is stdout' 'this is stderr'
+-- stdout.golden --
+** RUN testscript **
+>  printargs hello world
+[stdout]
+["printargs" "hello" "world"]
+>  echoandexit 1 'this is stdout' 'this is stderr'
+[stdout]
+this is stdout
+[stderr]
+this is stderr
+FAIL: ${$}WORK${/}scripts${/}testscript.txt:2: told to exit with code 1

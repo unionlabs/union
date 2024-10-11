@@ -1,0 +1,46 @@
+Test loopclosure at go version go1.22.
+
+The go1.19 build tag is necessary to force the file version.
+
+-- go.mod --
+module golang.org/fake/versions
+
+go 1.22
+-- pre.go --
+//go:build go1.19
+
+package versions
+
+func Bad(l []int) {
+  for i, v := range l {
+    go func() {
+      print(i) // want "loop variable i captured by func literal"
+      print(v) // want "loop variable v captured by func literal"
+    }()
+  }
+}
+-- go22.go --
+//go:build go1.22
+
+package versions
+
+func InGo22(l []int) {
+	for i, v := range l {
+		go func() {
+			print(i) // Not reported due to file's GoVersion.
+			print(v) // Not reported due to file's GoVersion.
+		}()
+	}
+}
+
+-- modver.go --
+package versions
+
+func At22FromTheModuleVersion(l []int) {
+	for i, v := range l {
+		go func() {
+			print(i) // Not reported due to module's GoVersion.
+			print(v) // Not reported due to module's GoVersion.
+		}()
+	}
+}

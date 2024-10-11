@@ -19,12 +19,13 @@ type Codec interface {
 	// in the value pointed to by v.
 	Unmarshal(bz []byte, ptr proto.Message) error
 
-	// Unmarshal parses the data encoded with UnmarshalLengthPrefixed method and stores
+	// UnmarshalLengthPrefixed parses the data encoded with UnmarshalLengthPrefixed method and stores
 	// the result in the value pointed to by v.
 	UnmarshalLengthPrefixed(bz []byte, ptr proto.Message) error
 }
 
 // ============= TestCodec =============
+
 // TestCodec defines a codec that utilizes Protobuf for both binary and JSON
 // encoding.
 type TestCodec struct{}

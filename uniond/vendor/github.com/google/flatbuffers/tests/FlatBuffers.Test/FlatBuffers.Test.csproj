@@ -1,0 +1,203 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(UnsafeByteBuffer)' == 'true'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);UNSAFE_BYTEBUFFER</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(EnableSpanT)' == 'true'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);ENABLE_SPAN_T</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\net\FlatBuffers\ByteBuffer.cs">
+      <Link>FlatBuffers\ByteBuffer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\net\FlatBuffers\ByteBufferUtil.cs">
+      <Link>FlatBuffers\ByteBufferUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\net\FlatBuffers\IFlatbufferObject.cs">
+      <Link>FlatBuffers\IFlatbufferObject.cs</Link>
+    </Compile>
+    <Compile Include="..\..\net\FlatBuffers\Offset.cs">
+      <Link>FlatBuffers\Offset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\net\FlatBuffers\FlatBufferBuilder.cs">
+      <Link>FlatBuffers\FlatBufferBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\net\FlatBuffers\FlatBufferConstants.cs">
+      <Link>FlatBuffers\FlatBufferConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\net\FlatBuffers\FlatBufferVerify.cs">
+      <Link>FlatBuffers\FlatBufferVerify.cs</Link>
+    </Compile>
+    <Compile Include="..\..\net\FlatBuffers\Struct.cs">
+      <Link>FlatBuffers\Struct.cs</Link>
+    </Compile>
+    <Compile Include="..\..\net\FlatBuffers\Table.cs">
+      <Link>FlatBuffers\Table.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example2\Monster.cs">
+      <Link>MyGame\Example2\Monster.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\Any.cs">
+      <Link>MyGame\Example\Any.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\AnyAmbiguousAliases.cs">
+      <Link>MyGame\Example\AnyAmbiguousAliases.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\AnyUniqueAliases.cs">
+      <Link>MyGame\Example\AnyUniqueAliases.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\Color.cs">
+      <Link>MyGame\Example\Color.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\Race.cs">
+      <Link>MyGame\Example\Race.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\Monster.cs">
+      <Link>MyGame\Example\Monster.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\Referrable.cs">
+      <Link>MyGame\Example\Referrable.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\Stat.cs">
+      <Link>MyGame\Example\Stat.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\Test.cs">
+      <Link>MyGame\Example\Test.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\TestSimpleTableWithEnum.cs">
+      <Link>MyGame\Example\TestSimpleTableWithEnum.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\TypeAliases.cs">
+      <Link>MyGame\Example\TypeAliases.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\Vec3.cs">
+      <Link>MyGame\Example\Vec3.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\Ability.cs">
+      <Link>MyGame\Example\Ability.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\ArrayTable.cs">
+      <Link>MyGame\Example\ArrayTable.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\ArrayStruct.cs">
+      <Link>MyGame\Example\ArrayStruct.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\NestedStruct.cs">
+      <Link>MyGame\Example\NestedStruct.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\LongEnum.cs">
+      <Link>MyGame\Example\LongEnum.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\Example\TestEnum.cs">
+      <Link>MyGame\Example\TestEnum.cs</Link>
+    </Compile>
+    <Compile Include="..\MyGame\InParentNamespace.cs">
+      <Link>MyGame\InParentNamespace.cs</Link>
+    </Compile>
+    <Compile Include="..\namespace_test\NamespaceA\NamespaceB\EnumInNestedNS.cs">
+      <Link>NamespaceA\NamespaceB\EnumInNestedNS.cs</Link>
+    </Compile>
+    <Compile Include="..\namespace_test\NamespaceA\NamespaceB\StructInNestedNS.cs">
+      <Link>NamespaceA\NamespaceB\StructInNestedNS.cs</Link>
+    </Compile>
+    <Compile Include="..\namespace_test\NamespaceA\NamespaceB\TableInNestedNS.cs">
+      <Link>NamespaceA\NamespaceB\TableInNestedNS.cs</Link>
+    </Compile>
+    <Compile Include="..\namespace_test\NamespaceA\NamespaceB\UnionInNestedNS.cs">
+      <Link>NamespaceA\NamespaceB\UnionInNestedNS.cs</Link>
+    </Compile>
+    <Compile Include="..\namespace_test\NamespaceA\TableInFirstNS.cs">
+      <Link>NamespaceA\TableInFirstNS.cs</Link>
+    </Compile>
+    <Compile Include="..\union_vector\Attacker.cs">
+      <Link>union_vector\Attacker.cs</Link>
+    </Compile>
+    <Compile Include="..\union_vector\BookReader.cs">
+      <Link>union_vector\BookReader.cs</Link>
+    </Compile>
+    <Compile Include="..\union_vector\Character.cs">
+      <Link>union_vector\Character.cs</Link>
+    </Compile>
+    <Compile Include="..\union_vector\Movie.cs">
+      <Link>union_vector\Movie.cs</Link>
+    </Compile>
+    <Compile Include="..\union_vector\Rapunzel.cs">
+      <Link>union_vector\Rapunzel.cs</Link>
+    </Compile>
+    <Compile Include="..\optional_scalars\OptionalByte.cs">
+      <Link>optional_scalars\OptionalByte.cs</Link>
+    </Compile>
+    <Compile Include="..\optional_scalars\ScalarStuff.cs">
+      <Link>optional_scalars\ScalarStuff.cs</Link>
+    </Compile>
+    <Compile Include="..\KeywordTest\ABC.cs">
+      <Link>KeywordTest\ABC.cs</Link>
+    </Compile>
+    <Compile Include="..\KeywordTest\public.cs">
+      <Link>KeywordTest\public.cs</Link>
+    </Compile>
+    <Compile Include="..\KeywordTest\KeywordsInTable.cs">
+      <Link>KeywordTest\KeywordsInTable.cs</Link>
+    </Compile>
+    <Compile Include="..\KeywordTest\KeywordsInUnion.cs">
+      <Link>KeywordTest\KeywordsInUnion.cs</Link>
+    </Compile>
+    <Compile Include="..\nested_namespace_test\nested_namespace_test1_generated.cs">
+      <Link>nested_namespace_test\nested_namespace_test1_generated.cs</Link>
+    </Compile>
+    <Compile Include="..\nested_namespace_test\nested_namespace_test2_generated.cs">
+      <Link>nested_namespace_test\nested_namespace_test2_generated.cs</Link>
+    </Compile>
+    <Compile Include="..\nested_namespace_test\nested_namespace_test3_generated.cs">
+      <Link>nested_namespace_test\nested_namespace_test3_generated.cs</Link>
+    </Compile>
+    <Compile Include="..\union_value_collsion\union_value_collision_generated.cs">
+      <Link>union_value_collsion\union_value_collision_generated.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove=".gitignore" />
+    <None Remove="clean.sh" />
+    <None Remove="NetTest.sh" />
+    <None Remove="packages.config" />
+    <None Remove="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\monsterdata_test.mon">
+      <Link>Resources\monsterdata_test.mon</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\monsterdata_test.json">
+      <Link>Resources\monsterdata_test.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,46 @@
+divvy alpha=1 portions=3
+----
+a d g j m p s v y
+b e h k n q t w z
+c f i l o r u x
+
+divvy alpha=1 portions=1
+----
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+divvy alpha=1 portions=5
+----
+a f k p u z
+b g l q v
+c h m r w
+d i n s x
+e j o t y
+
+divvy alpha=2 portions=26
+----
+a az by cx dw ev fu gt hs ir jq kp lo mn nm ol pk qj ri sh tg uf ve wd xc yb za
+aa b bz cy dx ew fv gu ht is jr kq lp mo nn om pl qk rj si th ug vf we xd yc zb
+ab ba c cz dy ex fw gv hu it js kr lq mp no on pm ql rk sj ti uh vg wf xe yd zc
+ac bb ca d dz ey fx gw hv iu jt ks lr mq np oo pn qm rl sk tj ui vh wg xf ye zd
+ad bc cb da e ez fy gx hw iv ju kt ls mr nq op po qn rm sl tk uj vi wh xg yf ze
+ae bd cc db ea f fz gy hx iw jv ku lt ms nr oq pp qo rn sm tl uk vj wi xh yg zf
+af be cd dc eb fa g gz hy ix jw kv lu mt ns or pq qp ro sn tm ul vk wj xi yh zg
+ag bf ce dd ec fb ga h hz iy jx kw lv mu nt os pr qq rp so tn um vl wk xj yi zh
+ah bg cf de ed fc gb ha i iz jy kx lw mv nu ot ps qr rq sp to un vm wl xk yj zi
+ai bh cg df ee fd gc hb ia j jz ky lx mw nv ou pt qs rr sq tp uo vn wm xl yk zj
+aj bi ch dg ef fe gd hc ib ja k kz ly mx nw ov pu qt rs sr tq up vo wn xm yl zk
+ak bj ci dh eg ff ge hd ic jb ka l lz my nx ow pv qu rt ss tr uq vp wo xn ym zl
+al bk cj di eh fg gf he id jc kb la m mz ny ox pw qv ru st ts ur vq wp xo yn zm
+am bl ck dj ei fh gg hf ie jd kc lb ma n nz oy px qw rv su tt us vr wq xp yo zn
+an bm cl dk ej fi gh hg if je kd lc mb na o oz py qx rw sv tu ut vs wr xq yp zo
+ao bn cm dl ek fj gi hh ig jf ke ld mc nb oa p pz qy rx sw tv uu vt ws xr yq zp
+ap bo cn dm el fk gj hi ih jg kf le md nc ob pa q qz ry sx tw uv vu wt xs yr zq
+aq bp co dn em fl gk hj ii jh kg lf me nd oc pb qa r rz sy tx uw vv wu xt ys zr
+ar bq cp do en fm gl hk ij ji kh lg mf ne od pc qb ra s sz ty ux vw wv xu yt zs
+as br cq dp eo fn gm hl ik jj ki lh mg nf oe pd qc rb sa t tz uy vx ww xv yu zt
+at bs cr dq ep fo gn hm il jk kj li mh ng of pe qd rc sb ta u uz vy wx xw yv zu
+au bt cs dr eq fp go hn im jl kk lj mi nh og pf qe rd sc tb ua v vz wy xx yw zv
+av bu ct ds er fq gp ho in jm kl lk mj ni oh pg qf re sd tc ub va w wz xy yx zw
+aw bv cu dt es fr gq hp io jn km ll mk nj oi ph qg rf se td uc vb wa x xz yy zx
+ax bw cv du et fs gr hq ip jo kn lm ml nk oj pi qh rg sf te ud vc wb xa y yz zy
+ay bx cw dv eu ft gs hr iq jp ko ln mm nl ok pj qi rh sg tf ue vd wc xb ya z zz

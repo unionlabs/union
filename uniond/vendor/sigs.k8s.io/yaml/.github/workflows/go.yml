@@ -1,0 +1,31 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  build:
+    strategy:
+      matrix: 
+        go-versions: [1.16.x, 1.17.x, 1.18.x, 1.19.x]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-versions }}
+    - name: Install
+      run: GO111MODULE=off go get golang.org/x/lint/golint
+    - name: Run gofmt
+      run: diff -u <(echo -n) <(gofmt -d *.go)
+    - name: Run golint
+      run: diff -u <(echo -n) <(golint $(go list -e ./... | grep -v /goyaml) | grep -v YAMLToJSON)
+    - name: Run go vet
+      run: GO111MODULE=on go vet .
+    - name: Run go test
+      run: GO111MODULE=on go test -v -race ./...
+    - name: Check diff
+      run: git diff --exit-code

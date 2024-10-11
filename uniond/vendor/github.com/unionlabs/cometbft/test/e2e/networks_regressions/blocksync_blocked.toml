@@ -1,0 +1,11 @@
+vote_extensions_enable_height = 1
+pbts_enable_height = 1
+
+[validators]
+validator01 = 67
+validator02 = 33
+
+[node.validator01]
+
+[node.validator02]
+start_at = 5

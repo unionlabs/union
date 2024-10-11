@@ -1,0 +1,26 @@
+name: codecov
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install checkout
+        uses: actions/checkout@v4
+
+      - name: Install checkout
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+
+      - name: Run coverage
+        run: go test -coverprofile=coverage.out -coverpkg=./... ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true

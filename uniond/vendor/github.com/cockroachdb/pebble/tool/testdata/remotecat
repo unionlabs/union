@@ -1,0 +1,33 @@
+remotecat dump
+----
+requires at least 1 arg(s), only received 0
+
+remotecat dump
+./testdata/REMOTE-OBJ-CATALOG
+----
+REMOTE-OBJ-CATALOG
+CreatorID: 3
+Objects:
+    000002  CreatorID: 5  CreatorFileNum: 000010  Locator: "foo" CustomObjectName: ""
+    000003  CreatorID: 0  CreatorFileNum: 000000  Locator: "bar" CustomObjectName: "external.sst"
+
+remotecat dump --verbose
+./testdata/REMOTE-OBJ-CATALOG
+----
+REMOTE-OBJ-CATALOG
+0/0
+7/1
+  CreatorID: 3
+16/2
+  NewObjects:
+    000001  CreatorID: 3  CreatorFileNum: 000001  Locator: "foo" CustomObjectName: ""
+35/3
+  NewObjects:
+    000002  CreatorID: 5  CreatorFileNum: 000010  Locator: "foo" CustomObjectName: ""
+    000003  CreatorID: 0  CreatorFileNum: 000000  Locator: "bar" CustomObjectName: "external.sst"
+  DeletedObjects:
+    000001
+CreatorID: 3
+Objects:
+    000002  CreatorID: 5  CreatorFileNum: 000010  Locator: "foo" CustomObjectName: ""
+    000003  CreatorID: 0  CreatorFileNum: 000000  Locator: "bar" CustomObjectName: "external.sst"

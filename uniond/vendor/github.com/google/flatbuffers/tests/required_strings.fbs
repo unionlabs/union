@@ -1,0 +1,12 @@
+namespace required_strings;
+
+/**
+ * Foo defines a type where both fields are mandatory.
+ * The creation of a Foo buffer must throw if either of the fields is missing.
+ *
+ * https://github.com/google/flatbuffers/issues/7739
+ */
+table Foo {
+  str_a:string (required);
+  str_b:string (required);
+}

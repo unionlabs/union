@@ -1,0 +1,305 @@
+syntax = "proto3";
+package testpb;
+
+import "google/protobuf/any.proto";
+import "cosmos/tx/v1beta1/tx.proto";
+
+message Customer1 {
+  int32  id               = 1;
+  string name             = 2;
+  float  subscription_fee = 3;
+
+  string payment = 7;
+}
+
+message Customer2 {
+  int32  id       = 1;
+  int32  industry = 2;
+  string name     = 3;
+  float  fewer    = 4;
+
+  int64 reserved = 1047;
+
+  enum City {
+    Laos       = 0;
+    LosAngeles = 1;
+    PaloAlto   = 2;
+    Moscow     = 3;
+    Nairobi    = 4;
+  }
+
+  City city = 6;
+
+  google.protobuf.Any miscellaneous = 10;
+}
+
+message Nested4A {
+  int32  id   = 1;
+  string name = 2;
+}
+
+message Nested3A {
+  int32                id    = 1;
+  string               name  = 2;
+  repeated Nested4A    a4    = 4;
+  map<int64, Nested4A> index = 5;
+}
+
+message Nested2A {
+  int32    id     = 1;
+  string   name   = 2;
+  Nested3A nested = 3;
+}
+
+message Nested1A {
+  int32    id     = 1;
+  Nested2A nested = 2;
+}
+
+message Nested4B {
+  int32  id   = 1;
+  int32  age  = 2;
+  string name = 3;
+}
+
+message Nested3B {
+  int32             id   = 1;
+  int32             age  = 2;
+  string            name = 3;
+  repeated Nested4B b4   = 4;
+}
+
+message Nested2B {
+  int32    id     = 1;
+  double   fee    = 2;
+  Nested3B nested = 3;
+  string   route  = 4;
+}
+
+message Nested1B {
+  int32    id     = 1;
+  Nested2B nested = 2;
+  int32    age    = 3;
+}
+
+message Customer3 {
+  int32  id          = 1;
+  string name        = 2;
+  float  sf          = 3;
+  float  surcharge   = 4;
+  string destination = 5;
+
+  oneof payment {
+    string credit_card_no = 7;
+    string cheque_no      = 8;
+  }
+
+  Customer1 original = 9;
+}
+
+message TestVersion1 {
+  int64                 x = 1;
+  TestVersion1          a = 2;
+  TestVersion1          b = 3; // [(gogoproto.nullable) = false] generates invalid recursive structs;
+  repeated TestVersion1 c = 4;
+  repeated TestVersion1 d = 5;
+  oneof                 sum {
+    int32        e = 6;
+    TestVersion1 f = 7;
+  }
+  google.protobuf.Any   g = 8;
+  repeated TestVersion1 h = 9; // [(gogoproto.castrepeated) = "TestVersion1"];
+  // google.protobuf.Timestamp i = 10;
+  // google.protobuf.Timestamp j = 11; // [(gogoproto.stdtime) = true];
+  Customer1 k = 12;
+}
+message TestVersion2 {
+  int64                 x = 1;
+  TestVersion2          a = 2;
+  TestVersion2          b = 3; // [(gogoproto.nullable) = false];
+  repeated TestVersion2 c = 4;
+  repeated TestVersion2 d = 5; // [(gogoproto.nullable) = false];
+  oneof                 sum {
+    int32        e = 6;
+    TestVersion2 f = 7;
+  }
+  google.protobuf.Any   g = 8;
+  repeated TestVersion1 h = 9; // [(gogoproto.castrepeated) = "TestVersion1"];
+  // google.protobuf.Timestamp i = 10;
+  // google.protobuf.Timestamp j = 11; // [(gogoproto.stdtime) = true];
+  Customer1 k         = 12;
+  uint64    new_field = 25;
+}
+message TestVersion3 {
+  int64                 x = 1;
+  TestVersion3          a = 2;
+  TestVersion3          b = 3; // [(gogoproto.nullable) = false];
+  repeated TestVersion3 c = 4;
+  repeated TestVersion3 d = 5; // [(gogoproto.nullable) = false];
+  oneof                 sum {
+    int32        e = 6;
+    TestVersion3 f = 7;
+  }
+  google.protobuf.Any   g = 8;
+  repeated TestVersion1 h = 9; //[(gogoproto.castrepeated) = "TestVersion1"];
+  // google.protobuf.Timestamp i = 10;
+  // google.protobuf.Timestamp j = 11; // [(gogoproto.stdtime) = true];
+  Customer1 k                  = 12;
+  string    non_critical_field = 1031;
+}
+
+message TestVersion3LoneOneOfValue {
+  int64                 x = 1;
+  TestVersion3          a = 2;
+  TestVersion3          b = 3; // [(gogoproto.nullable) = false];
+  repeated TestVersion3 c = 4;
+  repeated TestVersion3 d = 5; // [(gogoproto.nullable) = false];
+  oneof                 sum {
+    int32 e = 6;
+  }
+  google.protobuf.Any   g = 8;
+  repeated TestVersion1 h = 9; //[(gogoproto.castrepeated) = "TestVersion1"];
+  // google.protobuf.Timestamp i = 10;
+  // google.protobuf.Timestamp j = 11; // [(gogoproto.stdtime) = true];
+  Customer1 k                  = 12;
+  string    non_critical_field = 1031;
+}
+
+message TestVersion3LoneNesting {
+  int64                 x = 1;
+  TestVersion3          a = 2;
+  TestVersion3          b = 3; // [(gogoproto.nullable) = false];
+  repeated TestVersion3 c = 4;
+  repeated TestVersion3 d = 5; // [(gogoproto.nullable) = false];
+  oneof                 sum {
+    TestVersion3LoneNesting f = 7;
+  }
+  google.protobuf.Any   g = 8;
+  repeated TestVersion1 h = 9; //[(gogoproto.castrepeated) = "TestVersion1"];
+  // google.protobuf.Timestamp i = 10;
+  // google.protobuf.Timestamp j = 11; // [(gogoproto.stdtime) = true];
+  Customer1 k                  = 12;
+  string    non_critical_field = 1031;
+
+  message Inner1 {
+    int64   id   = 1;
+    string  name = 2;
+    message InnerInner {
+      string id   = 1;
+      string city = 2;
+    }
+    InnerInner inner = 3;
+  }
+
+  Inner1 inner1 = 14;
+
+  message Inner2 {
+    string  id      = 1;
+    string  country = 2;
+    message InnerInner {
+      string id   = 1;
+      string city = 2;
+    }
+    InnerInner inner = 3;
+  }
+
+  Inner2 inner2 = 15;
+}
+
+message TestVersion4LoneNesting {
+  int64                 x = 1;
+  TestVersion3          a = 2;
+  TestVersion3          b = 3; // [(gogoproto.nullable) = false];
+  repeated TestVersion3 c = 4;
+  repeated TestVersion3 d = 5; // [(gogoproto.nullable) = false];
+  oneof                 sum {
+    TestVersion3LoneNesting f = 7;
+  }
+  google.protobuf.Any   g = 8;
+  repeated TestVersion1 h = 9; //[(gogoproto.castrepeated) = "TestVersion1"];
+  // google.protobuf.Timestamp i = 10;
+  // google.protobuf.Timestamp j = 11; // [(gogoproto.stdtime) = true];
+  Customer1 k                  = 12;
+  string    non_critical_field = 1031;
+
+  message Inner1 {
+    int64   id   = 1;
+    string  name = 2;
+    message InnerInner {
+      int64  id   = 1;
+      string city = 2;
+    }
+    InnerInner inner = 3;
+  }
+
+  Inner1 inner1 = 14;
+
+  message Inner2 {
+    string  id      = 1;
+    string  country = 2;
+    message InnerInner {
+      string id    = 1;
+      int64  value = 2;
+    }
+    InnerInner inner = 3;
+  }
+
+  Inner2 inner2 = 15;
+}
+
+message TestVersionFD1 {
+  int64        x = 1;
+  TestVersion1 a = 2;
+  oneof        sum {
+    int32        e = 6;
+    TestVersion1 f = 7;
+  }
+  google.protobuf.Any   g = 8;
+  repeated TestVersion1 h = 9; // [(gogoproto.castrepeated) = "TestVersion1"];
+}
+
+message TestVersionFD1WithExtraAny {
+  int64        x = 1;
+  TestVersion1 a = 2;
+  oneof        sum {
+    int32        e = 6;
+    TestVersion1 f = 7;
+  }
+  AnyWithExtra          g = 8;
+  repeated TestVersion1 h = 9; // [(gogoproto.castrepeated) = "TestVersion1"];
+}
+
+message AnyWithExtra {
+  google.protobuf.Any a = 1;
+  int64               b = 3;
+  int64               c = 4;
+}
+
+message TestUpdatedTxRaw {
+  bytes          body_bytes      = 1;
+  bytes          auth_info_bytes = 2;
+  repeated bytes signatures      = 3;
+  bytes          new_field_5     = 5;
+  bytes          new_field_1024  = 1024;
+}
+
+message TestUpdatedTxBody {
+  repeated google.protobuf.Any messages                          = 1;
+  string                       memo                              = 2;
+  int64                        timeout_height                    = 3;
+  uint64                       some_new_field                    = 4;
+  string                       some_new_field_non_critical_field = 1050;
+  repeated google.protobuf.Any extension_options                 = 1023;
+  repeated google.protobuf.Any non_critical_extension_options    = 2047;
+}
+
+message TestUpdatedAuthInfo {
+  repeated cosmos.tx.v1beta1.SignerInfo signer_infos   = 1;
+  cosmos.tx.v1beta1.Fee                 fee            = 2;
+  bytes                                 new_field_3    = 3;
+  bytes                                 new_field_1024 = 1024;
+}
+
+message TestRepeatedUints {
+  repeated uint64 nums = 1;
+}

@@ -1,0 +1,148 @@
+Test of "too new" diagnostics from the stdversion analyzer.
+
+This test references go1.21 and go1.22 symbols from std.
+
+It uses a txtar file due to golang/go#37054.
+
+See also gopls/internal/test/marker/testdata/diagnostics/stdversion.txt
+which runs the same test within the gopls analysis driver, to ensure
+coverage of per-file Go version support.
+
+-- go.work --
+go 1.21
+
+use .
+use sub
+use sub20
+use old
+
+-- go.mod --
+module example.com
+
+go 1.21
+
+-- a/a.go --
+package a
+
+import "go/types"
+
+func _() {
+	// old package-level type
+	var _ types.Info // ok: defined by go1.0
+
+	// new field of older type
+	_ = new(types.Info).FileVersions // want `types.FileVersions requires go1.22 or later \(module is go1.21\)`
+
+	// new method of older type
+	new(types.Info).PkgNameOf // want `types.PkgNameOf requires go1.22 or later \(module is go1.21\)`
+
+	// new package-level type
+	var a types.Alias // want `types.Alias requires go1.22 or later \(module is go1.21\)`
+
+	// new method of new type
+	a.Underlying() // no diagnostic
+}
+
+-- sub/go.mod --
+module example.com/sub
+
+go 1.21
+
+-- sub/sub.go --
+package sub
+
+import "go/types"
+
+func _() {
+	// old package-level type
+	var _ types.Info // ok: defined by go1.0
+
+	// new field of older type
+	_ = new(types.Info).FileVersions // want `types.FileVersions requires go1.22 or later \(module is go1.21\)`
+
+	// new method of older type
+	new(types.Info).PkgNameOf // want `types.PkgNameOf requires go1.22 or later \(module is go1.21\)`
+
+	// new package-level type
+	var a types.Alias // want `types.Alias requires go1.22 or later \(module is go1.21\)`
+
+	// new method of new type
+	a.Underlying() // no diagnostic
+}
+
+invalid syntax // exercise RunDespiteErrors
+
+-- sub/tagged.go --
+//go:build go1.22
+
+package sub
+
+import "go/types"
+
+func _() {
+	// old package-level type
+	var _ types.Info
+
+	// new field of older type
+	_ = new(types.Info).FileVersions
+
+	// new method of older type
+	new(types.Info).PkgNameOf
+
+	// new package-level type
+	var a types.Alias
+
+	// new method of new type
+	a.Underlying()
+}
+
+-- old/go.mod --
+module example.com/old
+
+go 1.5
+
+-- old/old.go --
+package old
+
+import "go/types"
+
+var _ types.Alias // no diagnostic: go.mod is too old for us to care
+
+-- sub/oldtagged.go --
+// The file Go version (1.16) overrides the go.mod Go version (1.21),
+// even when this means a downgrade (#67123).
+// (stdversion is silent for go.mod versions before 1.21:
+// before the forward compatibility regime, the meaning
+// of the go.mod version was not clearly defined.)
+
+//go:build go1.16
+
+package sub
+
+import "bytes"
+import "go/types"
+
+var _ = bytes.Clone // want `bytes.Clone requires go1.20 or later \(file is go1.16\)`
+var _ = types.Alias // want `types.Alias requires go1.22 or later \(file is go1.16\)`
+
+-- sub20/go.mod --
+module example.com/sub20
+
+go 1.20
+
+-- sub20/oldtagged.go --
+// Same test again, but with a go1.20 mod,
+// before the forward compatibility regime:
+// The file's build tag effects selection, but
+// not language semantics, so stdversion is silent.
+
+//go:build go1.16
+
+package sub
+
+import "bytes"
+import "go/types"
+
+var _ = bytes.Clone
+var _ = types.Alias
+

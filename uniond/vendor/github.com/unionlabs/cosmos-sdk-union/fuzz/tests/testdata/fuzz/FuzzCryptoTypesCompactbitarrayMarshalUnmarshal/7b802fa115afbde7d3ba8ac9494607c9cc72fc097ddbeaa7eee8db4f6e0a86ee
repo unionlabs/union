@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("(4\v\x1bG\x00")

@@ -1,0 +1,41 @@
+syntax = "proto3";
+package cometbft.types.v1beta1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/types/v1beta1";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "cometbft/types/v1beta1/types.proto";
+import "cometbft/types/v1beta1/validator.proto";
+
+// Evidence is a generic type for wrapping evidence of misbehavior by a validator.
+message Evidence {
+  // The type of evidence.
+  oneof sum {
+    DuplicateVoteEvidence     duplicate_vote_evidence      = 1;
+    LightClientAttackEvidence light_client_attack_evidence = 2;
+  }
+}
+
+// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
+message DuplicateVoteEvidence {
+  cometbft.types.v1beta1.Vote vote_a             = 1;
+  cometbft.types.v1beta1.Vote vote_b             = 2;
+  int64                       total_voting_power = 3;
+  int64                       validator_power    = 4;
+  google.protobuf.Timestamp   timestamp          = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}
+
+// LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.
+message LightClientAttackEvidence {
+  cometbft.types.v1beta1.LightBlock conflicting_block            = 1;
+  int64                             common_height                = 2;
+  repeated cometbft.types.v1beta1.Validator byzantine_validators = 3;
+  int64                                     total_voting_power   = 4;
+  google.protobuf.Timestamp                 timestamp            = 5 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}
+
+// EvidenceList is a list of evidence.
+message EvidenceList {
+  repeated Evidence evidence = 1 [(gogoproto.nullable) = false];
+}

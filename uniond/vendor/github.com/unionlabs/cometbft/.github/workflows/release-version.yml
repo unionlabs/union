@@ -1,0 +1,35 @@
+# Checks that, if we're working on a release branch and are about to cut a
+# release, we have set the version correctly.
+name: Check release version
+
+on:
+  push:
+    branches:
+      - 'release/**'
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Check version
+        run: |
+          # We strip the refs/heads/release/v prefix of the branch name.
+          BRANCH_VERSION=${GITHUB_REF#refs/heads/release/v}
+          # Get the version of the code, which has no "v" prefix.
+          CODE_VERSION=`go run ./cmd/cometbft/ version`
+          if [ "$BRANCH_VERSION" != "$CODE_VERSION" ]; then
+            echo ""
+            echo "Branch version ${BRANCH_VERSION} does not match code version ${CODE_VERSION}"
+            echo ""
+            echo "Please either fix the release branch naming (which must have a 'release/v' prefix)"
+            echo "or the version of the software in version/version.go."
+            exit 1
+          fi

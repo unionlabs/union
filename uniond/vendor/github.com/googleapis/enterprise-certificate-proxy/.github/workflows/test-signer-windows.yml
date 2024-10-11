@@ -1,0 +1,42 @@
+name: Build and Test Signer Windows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20'
+
+    - name: Build
+      working-directory: ./internal/signer/windows
+      run: go build -v ./...
+
+    - name: Test
+      working-directory: ./internal/signer/windows
+      run: go test -v ./...
+      
+    - name: Lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        working-directory: ./internal/signer/windows
+        args: -E gofmt --max-same-issues 0
+
+    - name: Create Binaries
+      run: .\build\scripts\windows_amd64.ps1
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: windows_amd64
+        path: .\build\bin\windows_amd64\*

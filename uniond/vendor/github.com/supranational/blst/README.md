@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/supranational/blst.svg?branch=master)](https://travis-ci.com/github/supranational/blst) [![Actions status](https://github.com/supranational/blst/workflows/build/badge.svg)](https://github.com/supranational/blst/actions)
+[![Build Status](https://api.travis-ci.com/supranational/blst.svg?branch=master)](https://travis-ci.com/github/supranational/blst) [![Actions status](https://github.com/supranational/blst/workflows/build/badge.svg)](https://github.com/supranational/blst/actions) [![CodeQL status](https://github.com/supranational/blst/workflows/CodeQL/badge.svg)](https://github.com/supranational/blst/actions/workflows/codeql-analysis.yml)
 <div align="left">
   <img src=blst_logo_small.png>
 </div>
@@ -35,7 +35,7 @@ Formal verification of this library by Galois is on-going and can be found [here
 
 This library is compliant with the following IETF draft specifications:
 - [IETF BLS Signature V5](https://tools.ietf.org/html/draft-irtf-cfrg-bls-signature)
-- [IETF Hash-to-Curve V16](https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve)
+- [IETF RFC 9380 Hashing to Elliptic Curves](https://www.rfc-editor.org/rfc/rfc9380.html)
 
 The serialization formatting is implemented according to [the ZCash definition](#serialization-format).
 
@@ -199,6 +199,8 @@ For more details see the Rust binding [readme](bindings/rust/README.md).
     * blst_aux.h - contains experimental functions not yet committed for long-term maintenance
     * blst.hpp - provides foundational class-oriented C++ interface to blst library
     * blst.swg - provides SWIG definitions for creating blst bindings for other languages, such as Java and Python
+    * **C#** - folder containing C# bindings and an example of how to use them
+    * **Emscripten**  - folder containing an example of how to use Emscripten WebAssembly bindings from Javascript
     * **Go** - folder containing Go bindings for blst, including tests and benchmarks
     * **Java** - folder containing an example of how to use SWIG Java bindings for blst
     * **Node.js** - folder containing an example of how to use SWIG Javascript bindings for blst
@@ -209,6 +211,7 @@ For more details see the Rust binding [readme](bindings/rust/README.md).
 * **Src** - folder containing C code for lower level blst functions such as field operations, extension field operations, hash-to-field, and more
     * **Asm** - folder containing Perl scripts that are used to generate assembly code for different hardware platforms including x86 with ADX instructions, x86 without ADX instructions, and ARMv8, and [ABI](https://en.wikipedia.org/wiki/Application_binary_interface)[1]
 * **Build** - this folder containing a set of pre-generated assembly files for a variety of operating systems and maintenance scripts.
+    * **Cheri** - assembly code for use on [CHERI](https://www.cl.cam.ac.uk/research/security/ctsrd/cheri/) platforms
     * **Coff** - assembly code for use on Window systems with GNU toolchain
     * **Elf** - assembly code for use on Unix systems
     * **Mach-o** - assembly code for use on Apple operating systems

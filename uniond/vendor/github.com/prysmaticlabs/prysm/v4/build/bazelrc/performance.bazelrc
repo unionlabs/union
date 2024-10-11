@@ -1,0 +1,44 @@
+# Merkle tree calculations will be memoized to improve the remote cache hit checking speed. The
+# memory foot print of the cache is controlled by `--experimental_remote_merkle_tree_cache_size`.
+# Docs: https://bazel.build/reference/command-line-reference#flag--experimental_remote_merkle_tree_cache
+build --experimental_remote_merkle_tree_cache
+query --experimental_remote_merkle_tree_cache
+
+# The number of Merkle trees to memoize to improve the remote cache hit checking speed. Even though
+# the cache is automatically pruned according to Java's handling of soft references, out-of-memory
+# errors can occur if set too high. If set to 0 the cache size is unlimited. Optimal value varies
+# depending on project's size.
+# Docs: https://bazel.build/reference/command-line-reference#flag--experimental_remote_merkle_tree_cache_size
+build --experimental_remote_merkle_tree_cache_size=1000
+query --experimental_remote_merkle_tree_cache_size=1000
+
+# Speed up all builds by not checking if output files have been modified. Lets you make changes to
+# the output tree without triggering a build for local debugging. For example, you can modify
+# [rules_js](https://github.com/aspect-build/rules_js) 3rd party npm packages in the output tree
+# when local debugging.
+# Docs: https://github.com/bazelbuild/bazel/blob/1af61b21df99edc2fc66939cdf14449c2661f873/src/main/java/com/google/devtools/build/lib/pkgcache/PackageOptions.java#L185
+build --noexperimental_check_output_files
+fetch --noexperimental_check_output_files
+query --noexperimental_check_output_files
+
+# Don't apply `--noremote_upload_local_results` and `--noremote_accept_cached` to the disk cache.
+# If you have both `--noremote_upload_local_results` and `--disk_cache`, then this fixes a bug where
+# Bazel doesn't write to the local disk cache as it treats as a remote cache.
+# Docs: https://bazel.build/reference/command-line-reference#flag--incompatible_remote_results_ignore_disk
+build --incompatible_remote_results_ignore_disk
+
+# Directories used by sandboxed non-worker execution may be reused to avoid unnecessary setup costs.
+# Save time on Sandbox creation and deletion when many of the same kind of action run during the
+# build.
+# No longer experimental in Bazel 6: https://github.com/bazelbuild/bazel/commit/c1a95501a5611878e5cc43a3cc531f2b9e47835b
+# Docs: https://bazel.build/reference/command-line-reference#flag--reuse_sandbox_directories
+build --experimental_reuse_sandbox_directories
+
+# Some actions are always IO-intensive but require little compute. It's wasteful to put the output
+# in the remote cache, it just saturates the network and fills the cache storage causing earlier
+# evictions. It's also not worth sending them for remote execution.
+# For actions like PackageTar and GoStdLib actions it's usually faster to just re-run the work locally every time.
+# You'll have to look at an execution log to figure out what other action mnemonics you care about.
+# In some cases you may need to patch rulesets to add a mnemonic to actions that don't have one.
+# https://bazel.build/reference/command-line-reference#flag--modify_execution_info
+build --modify_execution_info='PackageTar=+no-remote,GoStdlib.*=+no-remote'

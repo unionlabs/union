@@ -1,0 +1,274 @@
+syntax = "proto3";
+package cosmos.tx.v1beta1;
+
+import "google/api/annotations.proto";
+import "cosmos/base/abci/v1beta1/abci.proto";
+import "cosmos/tx/v1beta1/tx.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cometbft/types/v1/block.proto";
+import "cometbft/types/v1/types.proto";
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/types/tx";
+
+// Service defines a gRPC service for interacting with transactions.
+service Service {
+  // Simulate simulates executing a transaction for estimating gas usage.
+  rpc Simulate(SimulateRequest) returns (SimulateResponse) {
+    option (google.api.http) = {
+      post: "/cosmos/tx/v1beta1/simulate"
+      body: "*"
+    };
+  }
+  // GetTx fetches a tx by hash.
+  rpc GetTx(GetTxRequest) returns (GetTxResponse) {
+    option (google.api.http).get = "/cosmos/tx/v1beta1/txs/{hash}";
+  }
+  // BroadcastTx broadcast transaction.
+  rpc BroadcastTx(BroadcastTxRequest) returns (BroadcastTxResponse) {
+    option (google.api.http) = {
+      post: "/cosmos/tx/v1beta1/txs"
+      body: "*"
+    };
+  }
+  // GetTxsEvent fetches txs by event.
+  rpc GetTxsEvent(GetTxsEventRequest) returns (GetTxsEventResponse) {
+    option (google.api.http).get = "/cosmos/tx/v1beta1/txs";
+  }
+  // GetBlockWithTxs fetches a block with decoded txs.
+  rpc GetBlockWithTxs(GetBlockWithTxsRequest) returns (GetBlockWithTxsResponse) {
+    option (google.api.http).get          = "/cosmos/tx/v1beta1/txs/block/{height}";
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.45.2";
+  }
+  // TxDecode decodes the transaction.
+  rpc TxDecode(TxDecodeRequest) returns (TxDecodeResponse) {
+    option (google.api.http) = {
+      post: "/cosmos/tx/v1beta1/decode"
+      body: "*"
+    };
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.47";
+  }
+  // TxEncode encodes the transaction.
+  rpc TxEncode(TxEncodeRequest) returns (TxEncodeResponse) {
+    option (google.api.http) = {
+      post: "/cosmos/tx/v1beta1/encode"
+      body: "*"
+    };
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.47";
+  }
+  // TxEncodeAmino encodes an Amino transaction from JSON to encoded bytes.
+  rpc TxEncodeAmino(TxEncodeAminoRequest) returns (TxEncodeAminoResponse) {
+    option (google.api.http) = {
+      post: "/cosmos/tx/v1beta1/encode/amino"
+      body: "*"
+    };
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.47";
+  }
+  // TxDecodeAmino decodes an Amino transaction from encoded bytes to JSON.
+  rpc TxDecodeAmino(TxDecodeAminoRequest) returns (TxDecodeAminoResponse) {
+    option (google.api.http) = {
+      post: "/cosmos/tx/v1beta1/decode/amino"
+      body: "*"
+    };
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.47";
+  }
+}
+
+// GetTxsEventRequest is the request type for the Service.TxsByEvents
+// RPC method.
+message GetTxsEventRequest {
+  // events is the list of transaction event type.
+  // Deprecated: post v0.47.x use query instead, which should contain a valid
+  // events query.
+  repeated string events = 1 [deprecated = true];
+
+  // pagination defines a pagination for the request.
+  // Deprecated: post v0.46.x use page and limit instead.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2 [deprecated = true];
+
+  OrderBy order_by = 3;
+
+  // page is the page number to query, starts at 1. If not provided, will
+  // default to first page.
+  uint64 page = 4;
+
+  // limit is the total number of results to be returned in the result page.
+  // If left empty it will default to a value to be set by each app.
+  uint64 limit = 5;
+
+  // query defines the transaction event query that is proxied to Tendermint's
+  // TxSearch RPC method. The query must be valid.
+  string query = 6 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.50"];
+}
+
+// OrderBy defines the sorting order
+enum OrderBy {
+  // ORDER_BY_UNSPECIFIED specifies an unknown sorting order. OrderBy defaults
+  // to ASC in this case.
+  ORDER_BY_UNSPECIFIED = 0;
+  // ORDER_BY_ASC defines ascending order
+  ORDER_BY_ASC = 1;
+  // ORDER_BY_DESC defines descending order
+  ORDER_BY_DESC = 2;
+}
+
+// GetTxsEventResponse is the response type for the Service.TxsByEvents
+// RPC method.
+message GetTxsEventResponse {
+  // txs is the list of queried transactions.
+  repeated cosmos.tx.v1beta1.Tx txs = 1;
+  // tx_responses is the list of queried TxResponses.
+  repeated cosmos.base.abci.v1beta1.TxResponse tx_responses = 2;
+  // pagination defines a pagination for the response.
+  // Deprecated: post v0.46.x use total instead.
+  cosmos.base.query.v1beta1.PageResponse pagination = 3 [deprecated = true];
+  // total is total number of results available
+  uint64 total = 4;
+}
+
+// BroadcastTxRequest is the request type for the Service.BroadcastTxRequest
+// RPC method.
+message BroadcastTxRequest {
+  // tx_bytes is the raw transaction.
+  bytes         tx_bytes = 1;
+  BroadcastMode mode     = 2;
+}
+
+// BroadcastMode specifies the broadcast mode for the TxService.Broadcast RPC
+// method.
+enum BroadcastMode {
+  // zero-value for mode ordering
+  BROADCAST_MODE_UNSPECIFIED = 0;
+  // Deprecated: use BROADCAST_MODE_SYNC instead,
+  // BROADCAST_MODE_BLOCK is not supported by the SDK from v0.47.x onwards.
+  BROADCAST_MODE_BLOCK = 1 [deprecated = true];
+  // BROADCAST_MODE_SYNC defines a tx broadcasting mode where the client waits
+  // for a CheckTx execution response only.
+  BROADCAST_MODE_SYNC = 2;
+  // BROADCAST_MODE_ASYNC defines a tx broadcasting mode where the client
+  // returns immediately.
+  BROADCAST_MODE_ASYNC = 3;
+}
+
+// BroadcastTxResponse is the response type for the
+// Service.BroadcastTx method.
+message BroadcastTxResponse {
+  // tx_response is the queried TxResponses.
+  cosmos.base.abci.v1beta1.TxResponse tx_response = 1;
+}
+
+// SimulateRequest is the request type for the Service.Simulate
+// RPC method.
+message SimulateRequest {
+  // tx is the transaction to simulate.
+  // Deprecated. Send raw tx bytes instead.
+  cosmos.tx.v1beta1.Tx tx = 1 [deprecated = true];
+  // tx_bytes is the raw transaction.
+  bytes tx_bytes = 2 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.43"];
+}
+
+// SimulateResponse is the response type for the
+// Service.SimulateRPC method.
+message SimulateResponse {
+  // gas_info is the information about gas used in the simulation.
+  cosmos.base.abci.v1beta1.GasInfo gas_info = 1;
+  // result is the result of the simulation.
+  cosmos.base.abci.v1beta1.Result result = 2;
+}
+
+// GetTxRequest is the request type for the Service.GetTx
+// RPC method.
+message GetTxRequest {
+  // hash is the tx hash to query, encoded as a hex string.
+  string hash = 1;
+}
+
+// GetTxResponse is the response type for the Service.GetTx method.
+message GetTxResponse {
+  // tx is the queried transaction.
+  cosmos.tx.v1beta1.Tx tx = 1;
+  // tx_response is the queried TxResponses.
+  cosmos.base.abci.v1beta1.TxResponse tx_response = 2;
+}
+
+// GetBlockWithTxsRequest is the request type for the Service.GetBlockWithTxs
+// RPC method.
+message GetBlockWithTxsRequest {
+  // height is the height of the block to query.
+  int64 height = 1;
+  // pagination defines a pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+  option (cosmos_proto.message_added_in)           = "cosmos-sdk 0.45.2";
+}
+
+// GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs
+// method.
+message GetBlockWithTxsResponse {
+  // txs are the transactions in the block.
+  repeated cosmos.tx.v1beta1.Tx txs      = 1;
+  .cometbft.types.v1.BlockID    block_id = 2;
+  .cometbft.types.v1.Block      block    = 3;
+  // pagination defines a pagination for the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 4;
+  option (cosmos_proto.message_added_in)            = "cosmos-sdk 0.45.2";
+}
+
+// TxDecodeRequest is the request type for the Service.TxDecode
+// RPC method.
+message TxDecodeRequest {
+  // tx_bytes is the raw transaction.
+  bytes tx_bytes                         = 1;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
+}
+
+// TxDecodeResponse is the response type for the
+// Service.TxDecode method.
+message TxDecodeResponse {
+  // tx is the decoded transaction.
+  cosmos.tx.v1beta1.Tx tx                = 1;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
+}
+
+// TxEncodeRequest is the request type for the Service.TxEncode
+// RPC method.
+message TxEncodeRequest {
+  // tx is the transaction to encode.
+  cosmos.tx.v1beta1.Tx tx                = 1;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
+}
+
+// TxEncodeResponse is the response type for the
+// Service.TxEncode method.
+message TxEncodeResponse {
+  // tx_bytes is the encoded transaction bytes.
+  bytes tx_bytes                         = 1;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
+}
+
+// TxEncodeAminoRequest is the request type for the Service.TxEncodeAmino
+// RPC method.
+message TxEncodeAminoRequest {
+  string amino_json                      = 1;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
+}
+
+// TxEncodeAminoResponse is the response type for the Service.TxEncodeAmino
+// RPC method.
+message TxEncodeAminoResponse {
+  bytes amino_binary                     = 1;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
+}
+
+// TxDecodeAminoRequest is the request type for the Service.TxDecodeAmino
+// RPC method.
+message TxDecodeAminoRequest {
+  bytes amino_binary                     = 1;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
+}
+
+// TxDecodeAminoResponse is the response type for the Service.TxDecodeAmino
+// RPC method.
+message TxDecodeAminoResponse {
+  string amino_json                      = 1;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
+}

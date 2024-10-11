@@ -1,0 +1,7 @@
+p, alice, /alice_data/*, GET
+p, alice, /alice_data/resource1, POST
+
+p, bob, /alice_data/resource2, GET
+p, bob, /bob_data/*, POST
+
+p, cathy, /cathy_data, (GET)|(POST)

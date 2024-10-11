@@ -1,0 +1,9 @@
+// This file is used only for unknown_type_test.go
+
+syntax = "proto3";
+package cockroach.errors.markers.internal;
+option go_package = "internal";
+
+message MyPayload {
+	int32 val = 1;
+}

@@ -1,0 +1,8 @@
+mod=example.com/patherrors
+base=none
+error=true
+-- want --
+module path "/home/gopher/go/src/mymod" must not be an absolute path.
+It must be an address where your module may be found.
+-- go.mod --
+module /home/gopher/go/src/mymod

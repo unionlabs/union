@@ -1,0 +1,26 @@
+load("@aspect_rules_js//js:defs.bzl", "js_test")
+load("//:typescript.bzl", "flatbuffer_ts_library")
+
+flatbuffer_ts_library(
+    name = "typescript_transitive_ts_fbs",
+    srcs = ["typescript_transitive_include.fbs"],
+    visibility = ["//visibility:public"],
+)
+
+flatbuffer_ts_library(
+    name = "include_ts_fbs",
+    srcs = ["typescript_include.fbs"],
+    visibility = ["//visibility:public"],
+    deps = [":typescript_transitive_ts_fbs"],
+)
+
+js_test(
+    name = "import_test",
+    chdir = package_name(),
+    data = [
+        "package.json",
+        ":include_ts_fbs",
+        "//:node_modules/flatbuffers",
+    ],
+    entry_point = "import_test.js",
+)

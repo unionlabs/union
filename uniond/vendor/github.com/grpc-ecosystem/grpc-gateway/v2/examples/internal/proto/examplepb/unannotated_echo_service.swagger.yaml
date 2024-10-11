@@ -1,0 +1,119 @@
+openapiOptions:
+  file:
+    # the file name must be the same as one passed to protoc when generating generating .swagger.json
+    - file: "examples/internal/proto/examplepb/unannotated_echo_service.proto"
+      option:
+        info:
+          title: Unannotated Echo
+          contact:
+            name: gRPC-Gateway project
+            url: https://github.com/grpc-ecosystem/grpc-gateway
+            email: none@example.com
+          license:
+            name: BSD 3-Clause License
+            url: https://github.com/grpc-ecosystem/grpc-gateway/blob/main/LICENSE.txt
+          version: "1.0"
+          extensions:
+            x-something-something: yadda
+        tags:
+          - name: Echo
+            description: Echo description
+          - name: Internal
+            description: Internal description
+            extensions:
+              x-traitTag: true
+        schemes:
+          - HTTP
+          - HTTPS
+          - WSS
+        consumes:
+          - application/json
+          - application/x-foo-mime
+        produces:
+          - application/json
+          - application/x-foo-mime
+        responses:
+          "403":
+            description: Returned when the user does not have permission to access the resource.
+          "404":
+            description: Returned when the resource does not exist.
+            schema:
+              jsonSchema:
+                type:
+                  - STRING
+        securityDefinitions:
+          security:
+            ApiKeyAuth:
+              type: TYPE_API_KEY
+              name: X-API-Key
+              in: IN_HEADER
+              extensions:
+                x-amazon-apigateway-authorizer:
+                  authorizerResultTtlInSeconds: 60
+                  type: token
+                x-amazon-apigateway-authtype: oauth2
+            BasicAuth:
+              type: TYPE_BASIC
+        security:
+          - securityRequirement:
+              ApiKeyAuth: {}
+              BasicAuth: {}
+          - securityRequirement:
+              ApiKeyAuth: {}
+              OAuth2:
+                scope:
+                  - read
+                  - write
+        externalDocs:
+          description: More about gRPC-Gateway
+          url: https://github.com/grpc-ecosystem/grpc-gateway
+        extensions:
+          x-grpc-gateway-baz-list:
+            - one
+            - true
+          x-grpc-gateway-foo: bar
+  service:
+    - service: grpc.gateway.examples.internal.proto.examplepb.UnannotatedEchoService
+      option:
+        description: "UnannotatedEchoService description -- which should not be used in place of the documentation comment!"
+        external_docs:
+          url: "https://github.com/grpc-ecosystem/grpc-gateway"
+          description: "Find out more about UnannotatedEchoService"
+  method:
+    - method: grpc.gateway.examples.internal.proto.examplepb.UnannotatedEchoService.Echo
+      option:
+        description: "Description Echo"
+        summary: "Summary: Echo rpc"
+        external_docs:
+          url: "https://github.com/grpc-ecosystem/grpc-gateway"
+          description: "Find out more Echo"
+        responses:
+          "200":
+            examples:
+              "application/json": '{"value": "the input value"}'
+          "503":
+            description: Returned when the resource is temporarily unavailable.
+            extensions:
+              x-number: 100
+          "404":
+            description: Returned when the resource does not exist.
+            schema:
+              jsonSchema:
+                type: [INTEGER]
+  message:
+    - message: grpc.gateway.examples.internal.proto.examplepb.UnannotatedSimpleMessage
+      option:
+        json_schema:
+          title: "A bit of everything"
+          description: "A simple message with many types"
+          required: ["id"]
+        external_docs:
+          url: "https://github.com/grpc-ecosystem/grpc-gateway"
+          description: "Find out more about UnannotatedSimpleMessage"
+        example: '{"id": "myid"}'
+  field:
+    - field: grpc.gateway.examples.internal.proto.examplepb.UnannotatedSimpleMessage.num
+      option:
+        description: "Int value field"
+        default: "42"
+        required: ["num"]

@@ -1,0 +1,24 @@
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  status:
+    project:
+      default:
+        threshold: 20%
+    patch: off
+    changes: off
+
+github_checks:
+  annotations: false
+
+comment: false
+
+ignore:
+  - "docs"
+  - "DOCKER"
+  - "scripts"
+  - "**/*.pb.go"
+  - "*.md"
+  - "*.rst"
+  - "*.yml"

@@ -1,0 +1,9 @@
+libdir=@CMAKE_INSTALL_FULL_LIBDIR@
+includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
+
+Name: FlatBuffers
+Description: Memory Efficient Serialization Library
+Version: @VERSION_MAJOR@.@VERSION_MINOR@.@VERSION_PATCH@
+
+Libs: -L${libdir} -lflatbuffers
+Cflags: -I${includedir}

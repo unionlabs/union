@@ -66,10 +66,7 @@ func (pdb *PrefixDB) Set(key []byte, value []byte) error {
 	defer pdb.mtx.Unlock()
 
 	pkey := pdb.prefixed(key)
-	if err := pdb.db.Set(pkey, value); err != nil {
-		return err
-	}
-	return nil
+	return pdb.db.Set(pkey, value)
 }
 
 // SetSync implements DB.
@@ -201,4 +198,8 @@ func (pdb *PrefixDB) Stats() map[string]string {
 
 func (pdb *PrefixDB) prefixed(key []byte) []byte {
 	return append(cp(pdb.prefix), key...)
+}
+
+func (pdb *PrefixDB) Compact(start, end []byte) error {
+	return pdb.db.Compact(start, end)
 }

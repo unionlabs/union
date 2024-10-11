@@ -1,0 +1,110 @@
+name: CI
+on:
+  - push
+  - pull_request
+
+env:
+  GO_VERSION: "oldstable"
+  GOTESTSUM_VERSION: "latest"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: windows-2019
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.52
+          args: >-
+            --verbose
+            --timeout=5m
+            --config=.golangci.yml
+            --max-issues-per-linter=0
+            --max-same-issues=0
+            --modules-download-mode=readonly
+
+  go-generate:
+    name: Go Generate
+    runs-on: windows-2019
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run go generate
+        shell: pwsh
+        run: |
+          Write-Output "::group::go generate"
+          go generate -x ./...
+          Write-Output "::endgroup::"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Output "::error title=Go Generate::Error running go generate."
+            exit $LASTEXITCODE
+          }
+
+      - name: Diff
+        shell: pwsh
+        run: |
+          git add -N .
+          Write-Output "::group::git diff"
+          git diff --stat --exit-code
+          Write-Output "::endgroup::"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Output "::error ::Generated files are not up to date. Please run ``go generate ./...``."
+            exit $LASTEXITCODE
+          }
+
+  test:
+    name: Run Tests
+    needs:
+      - go-generate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019, windows-2022, ubuntu-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@${{ env.GOTESTSUM_VERSION }}
+
+      - name: Test repo
+        run: gotestsum --format standard-verbose --debug -- -gcflags=all=-d=checkptr -v ./...
+
+  build:
+    name: Build Repo
+    needs:
+      - test
+    runs-on: "windows-2019"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - run: go build ./pkg/etw/sample/
+      - run: go build ./tools/etw-provider-gen/
+      - run: go build ./tools/mkwinsyscall/
+      - run: go build ./wim/validate/

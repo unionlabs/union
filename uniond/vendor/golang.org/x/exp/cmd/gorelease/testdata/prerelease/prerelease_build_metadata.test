@@ -1,0 +1,11 @@
+mod=example.com/prerelease
+release=v1.0.0-alpha+001
+error=true
+-- want --
+usage: gorelease [-base=version] [-version=version]
+release version "v1.0.0-alpha+001" is not a canonical semantic version: build metadata is not supported
+For more information, run go doc golang.org/x/exp/cmd/gorelease
+-- go.mod --
+module example.com/prerelease
+
+go 1.12

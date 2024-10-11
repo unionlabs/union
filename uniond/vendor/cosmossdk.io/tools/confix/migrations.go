@@ -19,20 +19,28 @@ const (
 // MigrationMap defines a mapping from a version to a transformation plan.
 type MigrationMap map[string]func(from *tomledit.Document, to string) transform.Plan
 
+// loadDestConfigFile is the function signature to load the destination version
+// configuration toml file.
+type loadDestConfigFile func(to string) (*tomledit.Document, error)
+
 var Migrations = MigrationMap{
 	"v0.45": NoPlan, // Confix supports only the current supported SDK version. So we do not support v0.44 -> v0.45.
-	"v0.46": PlanBuilder,
-	"v0.47": PlanBuilder,
-	"v0.50": PlanBuilder,
+	"v0.46": defaultPlanBuilder,
+	"v0.47": defaultPlanBuilder,
+	"v0.50": defaultPlanBuilder,
 	// "v0.xx.x": PlanBuilder, // add specific migration in case of configuration changes in minor versions
 }
 
+func defaultPlanBuilder(from *tomledit.Document, to string) transform.Plan {
+	return PlanBuilder(from, to, LoadLocalConfig)
+}
+
 // PlanBuilder is a function that returns a transformation plan for a given diff between two files.
-func PlanBuilder(from *tomledit.Document, to string) transform.Plan {
+func PlanBuilder(from *tomledit.Document, to string, loadFn loadDestConfigFile) transform.Plan {
 	plan := transform.Plan{}
 	deletedSections := map[string]bool{}
 
-	target, err := LoadLocalConfig(to)
+	target, err := loadFn(to)
 	if err != nil {
 		panic(fmt.Errorf("failed to parse file: %w. This file should have been valid", err))
 	}

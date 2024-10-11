@@ -1,0 +1,24 @@
+---
+name: Robustness Nightly
+permissions: read-all
+on:
+  schedule:
+    - cron: '25 9 * * *' # runs every day at 09:25 UTC
+  # workflow_dispatch enables manual testing of this job by maintainers
+  workflow_dispatch:
+
+jobs:
+  amd64:
+    # GHA has a maximum amount of 6h execution time, we try to get done within 3h
+    uses: ./.github/workflows/robustness_template.yaml
+    with:
+      count: 100
+      testTimeout: 200m
+      runs-on: "['ubuntu-latest-8-cores']"
+  arm64:
+    # GHA has a maximum amount of 6h execution time, we try to get done within 3h
+    uses: ./.github/workflows/robustness_template.yaml
+    with:
+      count: 100
+      testTimeout: 200m
+      runs-on: "['actuated-arm64-4cpu-8gb']"

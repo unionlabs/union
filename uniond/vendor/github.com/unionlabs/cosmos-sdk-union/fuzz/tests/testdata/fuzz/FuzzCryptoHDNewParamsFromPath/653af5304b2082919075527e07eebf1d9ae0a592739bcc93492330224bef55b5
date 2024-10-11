@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("\u2029\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t3/")

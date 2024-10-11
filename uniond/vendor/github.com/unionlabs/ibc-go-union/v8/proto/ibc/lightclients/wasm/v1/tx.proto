@@ -1,0 +1,66 @@
+syntax = "proto3";
+package ibc.lightclients.wasm.v1;
+
+option go_package = "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types";
+
+import "cosmos/msg/v1/msg.proto";
+
+// Msg defines the ibc/08-wasm Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // StoreCode defines a rpc handler method for MsgStoreCode.
+  rpc StoreCode(MsgStoreCode) returns (MsgStoreCodeResponse);
+
+  // RemoveChecksum defines a rpc handler method for MsgRemoveChecksum.
+  rpc RemoveChecksum(MsgRemoveChecksum) returns (MsgRemoveChecksumResponse);
+
+  // MigrateContract defines a rpc handler method for MsgMigrateContract.
+  rpc MigrateContract(MsgMigrateContract) returns (MsgMigrateContractResponse);
+}
+
+// MsgStoreCode defines the request type for the StoreCode rpc.
+message MsgStoreCode {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // signer address
+  string signer = 1;
+  // wasm byte code of light client contract. It can be raw or gzip compressed
+  bytes wasm_byte_code = 2;
+}
+
+// MsgStoreCodeResponse defines the response type for the StoreCode rpc
+message MsgStoreCodeResponse {
+  // checksum is the sha256 hash of the stored code
+  bytes checksum = 1;
+}
+
+// MsgRemoveChecksum defines the request type for the MsgRemoveChecksum rpc.
+message MsgRemoveChecksum {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // signer address
+  string signer = 1;
+  // checksum is the sha256 hash to be removed from the store
+  bytes checksum = 2;
+}
+
+// MsgStoreChecksumResponse defines the response type for the StoreCode rpc
+message MsgRemoveChecksumResponse {}
+
+// MsgMigrateContract defines the request type for the MigrateContract rpc.
+message MsgMigrateContract {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  // signer address
+  string signer = 1;
+  // the client id of the contract
+  string client_id = 2;
+  // checksum is the sha256 hash of the new wasm byte code for the contract
+  bytes checksum = 3;
+  // the json encoded message to be passed to the contract on migration
+  bytes msg = 4;
+}
+
+// MsgMigrateContractResponse defines the response type for the MigrateContract rpc
+message MsgMigrateContractResponse {}

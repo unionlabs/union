@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+package ibc.core.connection.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types";
+
+import "gogoproto/gogo.proto";
+import "ibc/core/commitment/v1/commitment.proto";
+
+// ICS03 - Connection Data Structures as defined in
+// https://github.com/cosmos/ibc/blob/master/spec/core/ics-003-connection-semantics#data-structures
+
+// ConnectionEnd defines a stateful object on a chain connected to another
+// separate one.
+// NOTE: there must only be 2 defined ConnectionEnds to establish
+// a connection between two chains.
+message ConnectionEnd {
+  option (gogoproto.goproto_getters) = false;
+  // client associated with this connection.
+  string client_id = 1;
+  // IBC version which can be utilised to determine encodings or protocols for
+  // channels or packets utilising this connection.
+  repeated Version versions = 2;
+  // current state of the connection end.
+  State state = 3;
+  // counterparty chain associated with this connection.
+  Counterparty counterparty = 4 [(gogoproto.nullable) = false];
+  // delay period that must pass before a consensus state can be used for
+  // packet-verification NOTE: delay period logic is only implemented by some
+  // clients.
+  uint64 delay_period = 5;
+}
+
+// IdentifiedConnection defines a connection with additional connection
+// identifier field.
+message IdentifiedConnection {
+  option (gogoproto.goproto_getters) = false;
+  // connection identifier.
+  string id = 1;
+  // client associated with this connection.
+  string client_id = 2;
+  // IBC version which can be utilised to determine encodings or protocols for
+  // channels or packets utilising this connection
+  repeated Version versions = 3;
+  // current state of the connection end.
+  State state = 4;
+  // counterparty chain associated with this connection.
+  Counterparty counterparty = 5 [(gogoproto.nullable) = false];
+  // delay period associated with this connection.
+  uint64 delay_period = 6;
+}
+
+// State defines if a connection is in one of the following states:
+// INIT, TRYOPEN, OPEN or UNINITIALIZED.
+enum State {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // Default State
+  STATE_UNINITIALIZED_UNSPECIFIED = 0 [(gogoproto.enumvalue_customname) = "UNINITIALIZED"];
+  // A connection end has just started the opening handshake.
+  STATE_INIT = 1 [(gogoproto.enumvalue_customname) = "INIT"];
+  // A connection end has acknowledged the handshake step on the counterparty
+  // chain.
+  STATE_TRYOPEN = 2 [(gogoproto.enumvalue_customname) = "TRYOPEN"];
+  // A connection end has completed the handshake.
+  STATE_OPEN = 3 [(gogoproto.enumvalue_customname) = "OPEN"];
+}
+
+// Counterparty defines the counterparty chain associated with a connection end.
+message Counterparty {
+  option (gogoproto.goproto_getters) = false;
+
+  // identifies the client on the counterparty chain associated with a given
+  // connection.
+  string client_id = 1;
+  // identifies the connection end on the counterparty chain associated with a
+  // given connection.
+  string connection_id = 2;
+  // commitment merkle prefix of the counterparty chain.
+  ibc.core.commitment.v1.MerklePrefix prefix = 3 [(gogoproto.nullable) = false];
+}
+
+// ClientPaths define all the connection paths for a client state.
+message ClientPaths {
+  // list of connection paths
+  repeated string paths = 1;
+}
+
+// ConnectionPaths define all the connection paths for a given client state.
+message ConnectionPaths {
+  // client state unique identifier
+  string client_id = 1;
+  // list of connection paths
+  repeated string paths = 2;
+}
+
+// Version defines the versioning scheme used to negotiate the IBC verison in
+// the connection handshake.
+message Version {
+  option (gogoproto.goproto_getters) = false;
+
+  // unique version identifier
+  string identifier = 1;
+  // list of features compatible with the specified identifier
+  repeated string features = 2;
+}
+
+// Params defines the set of Connection parameters.
+message Params {
+  // maximum expected time per block (in nanoseconds), used to enforce block delay. This parameter should reflect the
+  // largest amount of time that the chain might reasonably take to produce the next block under normal operating
+  // conditions. A safe choice is 3-5x the expected time per block.
+  uint64 max_expected_time_per_block = 1;
+}

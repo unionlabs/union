@@ -1,0 +1,221 @@
+reset
+----
+
+read
+2048, 16
+----
+readahead:  0
+numReads:   1
+size:       65536
+prevSize:   0
+limit:      0
+
+read
+2096, 16
+----
+readahead:  0
+numReads:   2
+size:       65536
+prevSize:   0
+limit:      0
+
+read
+2112, 16
+----
+readahead:  65536
+numReads:   3
+size:       131072
+prevSize:   65536
+limit:      67648
+
+read
+8000, 16
+----
+readahead:  0
+numReads:   4
+size:       131072
+prevSize:   65536
+limit:      67648
+
+read
+8016, 16
+----
+readahead:  0
+numReads:   5
+size:       131072
+prevSize:   65536
+limit:      67648
+
+# The new limit is 2112 + 65536 = 67648.
+# Since the next read will end at 67646 + 1 = 67647,
+# it doesn't yet trigger a readahead.
+
+read
+67646, 1
+----
+readahead:  0
+numReads:   6
+size:       131072
+prevSize:   65536
+limit:      67648
+
+read
+67646, 2
+----
+readahead:  131072
+numReads:   7
+size:       262144
+prevSize:   131072
+limit:      198718
+
+read
+16192, 16
+----
+readahead:  0
+numReads:   1
+size:       65536
+prevSize:   0
+limit:      16208
+
+read
+16193, 16
+----
+readahead:  0
+numReads:   2
+size:       65536
+prevSize:   0
+limit:      16208
+
+# The next read is too far ahead to benefit from readahead
+# (i.e. 540497 > 16208 (limit) + (512 << 10) (maxReadaheadSize))
+# numReads should get reset to 1.
+
+read
+540497, 16
+----
+readahead:  0
+numReads:   1
+size:       65536
+prevSize:   0
+limit:      540513
+
+read
+7980, 16
+----
+readahead:  0
+numReads:   1
+size:       65536
+prevSize:   0
+limit:      7996
+
+read
+0, 16
+----
+readahead:  0
+numReads:   1
+size:       65536
+prevSize:   0
+limit:      16
+
+# Sizes should start from initial (64kb) again.
+
+read
+7780, 16
+----
+readahead:  0
+numReads:   2
+size:       65536
+prevSize:   0
+limit:      16
+
+read
+7680, 16
+----
+readahead:  65536
+numReads:   3
+size:       131072
+prevSize:   65536
+limit:      73216
+
+read
+7780, 16
+---
+readahead:  0
+numReads:   4
+size:       131072
+prevSize:   65536
+limit:      73216
+
+read
+7880, 16
+----
+expected 2 args: offset, size
+
+read
+7980, 16
+----
+readahead:  0
+numReads:   4
+size:       131072
+prevSize:   65536
+limit:      73216
+
+read
+73416, 16
+----
+readahead:  131072
+numReads:   5
+size:       262144
+prevSize:   131072
+limit:      204488
+
+read
+204488, 16
+----
+readahead:  262144
+numReads:   6
+size:       262144
+prevSize:   262144
+limit:      466632
+
+# The readahead size should not increase beyond the max (256kb)
+
+read
+466632, 16
+----
+readahead:  262144
+numReads:   7
+size:       262144
+prevSize:   262144
+limit:      728776
+
+# A cache read pushes the limit further ahead without issuing a readahead.
+
+cache-read
+728770, 16
+----
+readahead:  0
+numReads:   7
+size:       262144
+prevSize:   262144
+limit:      728786
+
+read
+728780, 16
+----
+readahead:  262144
+numReads:   8
+size:       262144
+prevSize:   262144
+limit:      990924
+
+# An out-of-order cache read still resets readahead state.
+
+cache-read
+1200, 16
+----
+readahead:  0
+numReads:   1
+size:       65536
+prevSize:   0
+limit:      1216

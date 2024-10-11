@@ -1,0 +1,24 @@
+---
+name: owlbot_validation
+on:
+  pull_request:
+    paths:
+      - 'internal/postprocessor/config.yaml'
+      - '.github/.OwlBot.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+    - uses: actions/setup-go@v5
+      with:
+        go-version: 1.22.x
+    - run: |
+        git clone -b master --single-branch --depth=1 https://github.com/googleapis/googleapis.git 
+        go run ./internal/postprocessor validate -googleapis-dir=./googleapis

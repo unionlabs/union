@@ -1655,11 +1655,20 @@ blst_sha256_block_data_order:
 	mov	16(%r11),%rsi
 
 	leaq	(%r11),%rsp
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .LSEH_end_blst_sha256_block_data_order:
 
 #ifndef __BLST_PORTABLE__
+.section	.rdata
 .p2align	6
 
 K256:
@@ -1708,7 +1717,15 @@ blst_sha256_emit:
 	shrq	$32,%r11
 	movl	%r10d,16(%rcx)
 	movl	%r11d,24(%rcx)
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 
 .globl	blst_sha256_bcopy
@@ -1725,7 +1742,15 @@ blst_sha256_bcopy:
 	movb	%al,-1(%rcx,%rdx,1)
 	decq	%r8
 	jnz	.Loop_bcopy
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 
 .globl	blst_sha256_hcopy
@@ -1743,7 +1768,15 @@ blst_sha256_hcopy:
 	movq	%r9,8(%rcx)
 	movq	%r10,16(%rcx)
 	movq	%r11,24(%rcx)
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 #endif
 .section	.pdata

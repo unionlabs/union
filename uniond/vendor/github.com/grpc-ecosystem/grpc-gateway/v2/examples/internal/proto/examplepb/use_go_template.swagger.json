@@ -1,0 +1,175 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "examples/internal/proto/examplepb/use_go_template.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "LoginService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/example/login": {
+      "post": {
+        "summary": "Login",
+        "description": "Login is a call with the method(s) POST within the \"LoginService\" service.\nIt takes in \"LoginRequest\" and returns a \"LoginReply\".\n\n## LoginRequest\n| Field ID    | Name      | Type                                                       | Description                  |\n| ----------- | --------- | ---------------------------------------------------------  | ---------------------------- | \n| 1 | username | TYPE_STRING | The entered username | \n| 2 | password | TYPE_STRING | The entered password | \n\n## LoginReply\n| Field ID    | Name      | Type                                                       | Description                  |\n| ----------- | --------- | ---------------------------------------------------------- | ---------------------------- | \n| 1 | message | TYPE_STRING |  | \n| 2 | access | TYPE_BOOL | Whether you have access or not |",
+        "operationId": "LoginService_Login",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbLoginReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbLoginRequest"
+            }
+          }
+        ],
+        "tags": [
+          "LoginService"
+        ]
+      }
+    },
+    "/v1/example/logout": {
+      "post": {
+        "summary": "Logout",
+        "description": "Logout is a call with the method(s) POST within the \"LoginService\" service.\nIt takes in \"LogoutRequest\" and returns a \"LogoutReply\".\n\n## LogoutRequest\n| Field ID    | Name      | Type                                                       | Description                  |\n| ----------- | --------- | ---------------------------------------------------------  | ---------------------------- | \n| 1 | timeoflogout | TYPE_STRING | The time the logout was registered | \n| 2 | test | TYPE_INT32 | This is the title\u003cbr\u003e\u003cbr\u003eThis is the \"Description\" of field test\u003cbr\u003eyou can use as many newlines as you want\u003cbr\u003e\u003cbr\u003e\u003cbr\u003eit will still format the same in the table | \n| 3 | stringarray | []TYPE_STRING | This is an array\u003cbr\u003e\u003cbr\u003eIt displays that using [] infront of the type | \n\n## LogoutReply\n| Field ID    | Name      | Type                                                       | Description                  |\n| ----------- | --------- | ---------------------------------------------------------- | ---------------------------- | \n| 1 | message | TYPE_STRING | Message that tells you whether your\u003cbr\u003elogout was succesful or not |",
+        "operationId": "LoginService_Logout",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/examplepbLogoutReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/examplepbLogoutRequest"
+            }
+          }
+        ],
+        "tags": [
+          "LoginService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "examplepbLoginReply": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "access": {
+          "type": "boolean",
+          "title": "Whether you have access or not"
+        }
+      }
+    },
+    "examplepbLoginRequest": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "title": "The entered username"
+        },
+        "password": {
+          "type": "string",
+          "title": "The entered password"
+        }
+      }
+    },
+    "examplepbLogoutReply": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "title": "Message that tells you whether your\nlogout was succesful or not"
+        }
+      }
+    },
+    "examplepbLogoutRequest": {
+      "type": "object",
+      "properties": {
+        "timeoflogout": {
+          "type": "string",
+          "title": "The time the logout was registered"
+        },
+        "test": {
+          "type": "integer",
+          "format": "int32",
+          "description": "This is the \"Description\" of field test\nyou can use as many newlines as you want\n\n\nit will still format the same in the table",
+          "title": "This is the title"
+        },
+        "stringarray": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "It displays that using [] infront of the type",
+          "title": "This is an array"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

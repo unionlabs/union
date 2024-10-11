@@ -1,0 +1,23 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = ["mock.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/builder/testing",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//api/client/builder:go_default_library",
+        "//beacon-chain/cache:go_default_library",
+        "//beacon-chain/db:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/blocks:go_default_library",
+        "//consensus-types/interfaces:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//proto/engine/v1:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//runtime/version:go_default_library",
+        "//time/slots:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)

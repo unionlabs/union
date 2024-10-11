@@ -1,0 +1,26 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+syntax = "proto3";
+package proto;
+option go_package = "./proto";
+
+message GetRequest {
+    string key = 1;
+}
+
+message GetResponse {
+    bytes value = 1;
+}
+
+message PutRequest {
+    string key = 1;
+    bytes value = 2;
+}
+
+message Empty {}
+
+service KV {
+    rpc Get(GetRequest) returns (GetResponse);
+    rpc Put(PutRequest) returns (Empty);
+}

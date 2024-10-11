@@ -1,0 +1,6 @@
+# check that the Setup function saw the unarchived files,
+# including the temp directory that's always created.
+setup-filenames .tmp a b
+
+-- a --
+-- b/c --

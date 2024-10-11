@@ -1,0 +1,16 @@
+mod=example.com/basic
+version=v1.1.0
+base=v1.0.1
+release=v1.1.0
+proxyVersions=example.com/basic@v1.0.1
+-- want --
+# example.com/basic/a
+## compatible changes
+A2: added
+
+# example.com/basic/b
+## compatible changes
+package added
+
+# summary
+v1.1.0 is a valid semantic version for this release.

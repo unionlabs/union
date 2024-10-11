@@ -213,11 +213,11 @@ func genPackageKnownComment(f *fileInfo) protogen.Comments {
  The standard Go "encoding/json" package has functionality to serialize
  arbitrary types to a large degree. The Value.AsInterface, Struct.AsMap, and
  ListValue.AsSlice methods can convert the protobuf message representation into
- a form represented by interface{}, map[string]interface{}, and []interface{}.
+ a form represented by any, map[string]any, and []any.
  This form can be used with other packages that operate on such data structures
  and also directly with the standard json package.
 
- In order to convert the interface{}, map[string]interface{}, and []interface{}
+ In order to convert the any, map[string]any, and []any
  forms back as Value, Struct, and ListValue messages, use the NewStruct,
  NewList, and NewValue constructor functions.
 
@@ -252,28 +252,28 @@ func genPackageKnownComment(f *fileInfo) protogen.Comments {
 
  To construct a Value message representing the above JSON object:
 
-	m, err := structpb.NewValue(map[string]interface{}{
+	m, err := structpb.NewValue(map[string]any{
 		"firstName": "John",
 		"lastName":  "Smith",
 		"isAlive":   true,
 		"age":       27,
-		"address": map[string]interface{}{
+		"address": map[string]any{
 			"streetAddress": "21 2nd Street",
 			"city":          "New York",
 			"state":         "NY",
 			"postalCode":    "10021-3100",
 		},
-		"phoneNumbers": []interface{}{
-			map[string]interface{}{
+		"phoneNumbers": []any{
+			map[string]any{
 				"type":   "home",
 				"number": "212 555-1234",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"type":   "office",
 				"number": "646 555-4567",
 			},
 		},
-		"children": []interface{}{},
+		"children": []any{},
 		"spouse":   nil,
 	})
 	if err != nil {
@@ -634,7 +634,7 @@ func genMessageKnownFunctions(g *protogen.GeneratedFile, f *fileInfo, m *message
 		g.P("// NewStruct constructs a Struct from a general-purpose Go map.")
 		g.P("// The map keys must be valid UTF-8.")
 		g.P("// The map values are converted using NewValue.")
-		g.P("func NewStruct(v map[string]interface{}) (*Struct, error) {")
+		g.P("func NewStruct(v map[string]any) (*Struct, error) {")
 		g.P("	x := &Struct{Fields: make(map[string]*Value, len(v))}")
 		g.P("	for k, v := range v {")
 		g.P("		if !", utf8Package.Ident("ValidString"), "(k) {")
@@ -652,9 +652,9 @@ func genMessageKnownFunctions(g *protogen.GeneratedFile, f *fileInfo, m *message
 
 		g.P("// AsMap converts x to a general-purpose Go map.")
 		g.P("// The map values are converted by calling Value.AsInterface.")
-		g.P("func (x *Struct) AsMap() map[string]interface{} {")
+		g.P("func (x *Struct) AsMap() map[string]any {")
 		g.P("	f := x.GetFields()")
-		g.P("	vs := make(map[string]interface{}, len(f))")
+		g.P("	vs := make(map[string]any, len(f))")
 		g.P("	for k, v := range f {")
 		g.P("		vs[k] = v.AsInterface()")
 		g.P("	}")
@@ -675,7 +675,7 @@ func genMessageKnownFunctions(g *protogen.GeneratedFile, f *fileInfo, m *message
 	case genid.ListValue_message_fullname:
 		g.P("// NewList constructs a ListValue from a general-purpose Go slice.")
 		g.P("// The slice elements are converted using NewValue.")
-		g.P("func NewList(v []interface{}) (*ListValue, error) {")
+		g.P("func NewList(v []any) (*ListValue, error) {")
 		g.P("	x := &ListValue{Values: make([]*Value, len(v))}")
 		g.P("	for i, v := range v {")
 		g.P("		var err error")
@@ -690,9 +690,9 @@ func genMessageKnownFunctions(g *protogen.GeneratedFile, f *fileInfo, m *message
 
 		g.P("// AsSlice converts x to a general-purpose Go slice.")
 		g.P("// The slice elements are converted by calling Value.AsInterface.")
-		g.P("func (x *ListValue) AsSlice() []interface{} {")
+		g.P("func (x *ListValue) AsSlice() []any {")
 		g.P("	vals := x.GetValues()")
-		g.P("	vs := make([]interface{}, len(vals))")
+		g.P("	vs := make([]any, len(vals))")
 		g.P("	for i, v := range vals {")
 		g.P("		vs[i] = v.AsInterface()")
 		g.P("	}")
@@ -723,13 +723,13 @@ func genMessageKnownFunctions(g *protogen.GeneratedFile, f *fileInfo, m *message
 		g.P("//	║ float32, float64       │ stored as NumberValue                      ║")
 		g.P("//	║ string                 │ stored as StringValue; must be valid UTF-8 ║")
 		g.P("//	║ []byte                 │ stored as StringValue; base64-encoded      ║")
-		g.P("//	║ map[string]interface{} │ stored as StructValue                      ║")
-		g.P("//	║ []interface{}          │ stored as ListValue                        ║")
+		g.P("//	║ map[string]any         │ stored as StructValue                      ║")
+		g.P("//	║ []any                  │ stored as ListValue                        ║")
 		g.P("//	╚════════════════════════╧════════════════════════════════════════════╝")
 		g.P("//")
 		g.P("// When converting an int64 or uint64 to a NumberValue, numeric precision loss")
 		g.P("// is possible since they are stored as a float64.")
-		g.P("func NewValue(v interface{}) (*Value, error) {")
+		g.P("func NewValue(v any) (*Value, error) {")
 		g.P("	switch v := v.(type) {")
 		g.P("	case nil:")
 		g.P("		return NewNullValue(), nil")
@@ -759,13 +759,13 @@ func genMessageKnownFunctions(g *protogen.GeneratedFile, f *fileInfo, m *message
 		g.P("	case []byte:")
 		g.P("		s := ", base64Package.Ident("StdEncoding"), ".EncodeToString(v)")
 		g.P("		return NewStringValue(s), nil")
-		g.P("	case map[string]interface{}:")
+		g.P("	case map[string]any:")
 		g.P("		v2, err := NewStruct(v)")
 		g.P("		if err != nil {")
 		g.P("			return nil, err")
 		g.P("		}")
 		g.P("		return NewStructValue(v2), nil")
-		g.P("	case []interface{}:")
+		g.P("	case []any:")
 		g.P("		v2, err := NewList(v)")
 		g.P("		if err != nil {")
 		g.P("			return nil, err")
@@ -820,7 +820,7 @@ func genMessageKnownFunctions(g *protogen.GeneratedFile, f *fileInfo, m *message
 		g.P("//")
 		g.P("// Floating-point values (i.e., \"NaN\", \"Infinity\", and \"-Infinity\") are")
 		g.P("// converted as strings to remain compatible with MarshalJSON.")
-		g.P("func (x *Value) AsInterface() interface{} {")
+		g.P("func (x *Value) AsInterface() any {")
 		g.P("	switch v := x.GetKind().(type) {")
 		g.P("	case *Value_NumberValue:")
 		g.P("		if v != nil {")

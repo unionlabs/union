@@ -1,0 +1,8 @@
+http_headers:
+  one:
+    values: [value1a, value1b, value1c]
+  two:
+    values: [value2a]
+    secrets: [value2b, value2c]
+  three:
+    files: [testdata/headers-file-a, testdata/headers-file-b, testdata/headers-file-c]

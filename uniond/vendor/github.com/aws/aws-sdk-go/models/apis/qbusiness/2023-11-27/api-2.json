@@ -1,0 +1,6880 @@
+{
+  "metadata": {
+    "apiVersion": "2023-11-27",
+    "endpointPrefix": "qbusiness",
+    "protocol": "rest-json",
+    "protocolSettings": {
+      "h2": "eventstream"
+    },
+    "protocols": [
+      "rest-json"
+    ],
+    "serviceFullName": "QBusiness",
+    "serviceId": "QBusiness",
+    "signatureVersion": "v4",
+    "signingName": "qbusiness",
+    "uid": "qbusiness-2023-11-27"
+  },
+  "operations": {
+    "BatchDeleteDocument": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/documents/delete",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "BatchDeleteDocumentRequest"
+      },
+      "name": "BatchDeleteDocument",
+      "output": {
+        "shape": "BatchDeleteDocumentResponse"
+      }
+    },
+    "BatchPutDocument": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/documents",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "BatchPutDocumentRequest"
+      },
+      "name": "BatchPutDocument",
+      "output": {
+        "shape": "BatchPutDocumentResponse"
+      }
+    },
+    "Chat": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "LicenseNotFoundException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications/{applicationId}/conversations",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ChatInput"
+      },
+      "name": "Chat",
+      "output": {
+        "shape": "ChatOutput"
+      }
+    },
+    "ChatSync": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "LicenseNotFoundException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications/{applicationId}/conversations?sync",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ChatSyncInput"
+      },
+      "name": "ChatSync",
+      "output": {
+        "shape": "ChatSyncOutput"
+      }
+    },
+    "CreateApplication": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "CreateApplicationRequest"
+      },
+      "name": "CreateApplication",
+      "output": {
+        "shape": "CreateApplicationResponse"
+      }
+    },
+    "CreateIndex": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications/{applicationId}/indices",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "CreateIndexRequest"
+      },
+      "name": "CreateIndex",
+      "output": {
+        "shape": "CreateIndexResponse"
+      }
+    },
+    "CreatePlugin": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications/{applicationId}/plugins",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "CreatePluginRequest"
+      },
+      "name": "CreatePlugin",
+      "output": {
+        "shape": "CreatePluginResponse"
+      }
+    },
+    "CreateRetriever": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications/{applicationId}/retrievers",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "CreateRetrieverRequest"
+      },
+      "name": "CreateRetriever",
+      "output": {
+        "shape": "CreateRetrieverResponse"
+      }
+    },
+    "CreateUser": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications/{applicationId}/users",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "CreateUserRequest"
+      },
+      "name": "CreateUser",
+      "output": {
+        "shape": "CreateUserResponse"
+      }
+    },
+    "CreateWebExperience": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications/{applicationId}/experiences",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "CreateWebExperienceRequest"
+      },
+      "name": "CreateWebExperience",
+      "output": {
+        "shape": "CreateWebExperienceResponse"
+      }
+    },
+    "DeleteApplication": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/applications/{applicationId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "DeleteApplicationRequest"
+      },
+      "name": "DeleteApplication",
+      "output": {
+        "shape": "DeleteApplicationResponse"
+      }
+    },
+    "DeleteChatControlsConfiguration": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/applications/{applicationId}/chatcontrols",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "DeleteChatControlsConfigurationRequest"
+      },
+      "name": "DeleteChatControlsConfiguration",
+      "output": {
+        "shape": "DeleteChatControlsConfigurationResponse"
+      }
+    },
+    "DeleteConversation": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "LicenseNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/applications/{applicationId}/conversations/{conversationId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "DeleteConversationRequest"
+      },
+      "name": "DeleteConversation",
+      "output": {
+        "shape": "DeleteConversationResponse"
+      }
+    },
+    "DeleteDataSource": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/datasources/{dataSourceId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "DeleteDataSourceRequest"
+      },
+      "name": "DeleteDataSource",
+      "output": {
+        "shape": "DeleteDataSourceResponse"
+      }
+    },
+    "DeleteGroup": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/groups/{groupName}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "DeleteGroupRequest"
+      },
+      "name": "DeleteGroup",
+      "output": {
+        "shape": "DeleteGroupResponse"
+      }
+    },
+    "DeleteIndex": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "DeleteIndexRequest"
+      },
+      "name": "DeleteIndex",
+      "output": {
+        "shape": "DeleteIndexResponse"
+      }
+    },
+    "DeletePlugin": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/applications/{applicationId}/plugins/{pluginId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "DeletePluginRequest"
+      },
+      "name": "DeletePlugin",
+      "output": {
+        "shape": "DeletePluginResponse"
+      }
+    },
+    "DeleteRetriever": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/applications/{applicationId}/retrievers/{retrieverId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "DeleteRetrieverRequest"
+      },
+      "name": "DeleteRetriever",
+      "output": {
+        "shape": "DeleteRetrieverResponse"
+      }
+    },
+    "DeleteUser": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/applications/{applicationId}/users/{userId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "DeleteUserRequest"
+      },
+      "name": "DeleteUser",
+      "output": {
+        "shape": "DeleteUserResponse"
+      }
+    },
+    "DeleteWebExperience": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/applications/{applicationId}/experiences/{webExperienceId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "DeleteWebExperienceRequest"
+      },
+      "name": "DeleteWebExperience",
+      "output": {
+        "shape": "DeleteWebExperienceResponse"
+      }
+    },
+    "GetApplication": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetApplicationRequest"
+      },
+      "name": "GetApplication",
+      "output": {
+        "shape": "GetApplicationResponse"
+      }
+    },
+    "GetChatControlsConfiguration": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/chatcontrols",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetChatControlsConfigurationRequest"
+      },
+      "name": "GetChatControlsConfiguration",
+      "output": {
+        "shape": "GetChatControlsConfigurationResponse"
+      }
+    },
+    "GetDataSource": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/datasources/{dataSourceId}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetDataSourceRequest"
+      },
+      "name": "GetDataSource",
+      "output": {
+        "shape": "GetDataSourceResponse"
+      }
+    },
+    "GetGroup": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/groups/{groupName}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetGroupRequest"
+      },
+      "name": "GetGroup",
+      "output": {
+        "shape": "GetGroupResponse"
+      }
+    },
+    "GetIndex": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetIndexRequest"
+      },
+      "name": "GetIndex",
+      "output": {
+        "shape": "GetIndexResponse"
+      }
+    },
+    "GetPlugin": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/plugins/{pluginId}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetPluginRequest"
+      },
+      "name": "GetPlugin",
+      "output": {
+        "shape": "GetPluginResponse"
+      }
+    },
+    "GetRetriever": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/retrievers/{retrieverId}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetRetrieverRequest"
+      },
+      "name": "GetRetriever",
+      "output": {
+        "shape": "GetRetrieverResponse"
+      }
+    },
+    "GetUser": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/users/{userId}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetUserRequest"
+      },
+      "name": "GetUser",
+      "output": {
+        "shape": "GetUserResponse"
+      }
+    },
+    "GetWebExperience": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/experiences/{webExperienceId}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "GetWebExperienceRequest"
+      },
+      "name": "GetWebExperience",
+      "output": {
+        "shape": "GetWebExperienceResponse"
+      }
+    },
+    "ListApplications": {
+      "errors": [
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListApplicationsRequest"
+      },
+      "name": "ListApplications",
+      "output": {
+        "shape": "ListApplicationsResponse"
+      }
+    },
+    "ListConversations": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "LicenseNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/conversations",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListConversationsRequest"
+      },
+      "name": "ListConversations",
+      "output": {
+        "shape": "ListConversationsResponse"
+      }
+    },
+    "ListDataSourceSyncJobs": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/datasources/{dataSourceId}/syncjobs",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListDataSourceSyncJobsRequest"
+      },
+      "name": "ListDataSourceSyncJobs",
+      "output": {
+        "shape": "ListDataSourceSyncJobsResponse"
+      }
+    },
+    "ListDataSources": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/datasources",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListDataSourcesRequest"
+      },
+      "name": "ListDataSources",
+      "output": {
+        "shape": "ListDataSourcesResponse"
+      }
+    },
+    "ListDocuments": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/index/{indexId}/documents",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListDocumentsRequest"
+      },
+      "name": "ListDocuments",
+      "output": {
+        "shape": "ListDocumentsResponse"
+      }
+    },
+    "ListGroups": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/groups",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListGroupsRequest"
+      },
+      "name": "ListGroups",
+      "output": {
+        "shape": "ListGroupsResponse"
+      }
+    },
+    "ListIndices": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/indices",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListIndicesRequest"
+      },
+      "name": "ListIndices",
+      "output": {
+        "shape": "ListIndicesResponse"
+      }
+    },
+    "ListMessages": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "LicenseNotFoundException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/conversations/{conversationId}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListMessagesRequest"
+      },
+      "name": "ListMessages",
+      "output": {
+        "shape": "ListMessagesResponse"
+      }
+    },
+    "ListPlugins": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/plugins",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListPluginsRequest"
+      },
+      "name": "ListPlugins",
+      "output": {
+        "shape": "ListPluginsResponse"
+      }
+    },
+    "ListRetrievers": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/retrievers",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListRetrieversRequest"
+      },
+      "name": "ListRetrievers",
+      "output": {
+        "shape": "ListRetrieversResponse"
+      }
+    },
+    "ListTagsForResource": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/v1/tags/{resourceARN}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListTagsForResourceRequest"
+      },
+      "name": "ListTagsForResource",
+      "output": {
+        "shape": "ListTagsForResourceResponse"
+      }
+    },
+    "ListWebExperiences": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "GET",
+        "requestUri": "/applications/{applicationId}/experiences",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListWebExperiencesRequest"
+      },
+      "name": "ListWebExperiences",
+      "output": {
+        "shape": "ListWebExperiencesResponse"
+      }
+    },
+    "PutFeedback": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications/{applicationId}/conversations/{conversationId}/messages/{messageId}/feedback",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "PutFeedbackRequest"
+      },
+      "name": "PutFeedback"
+    },
+    "PutGroup": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "PUT",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/groups",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "PutGroupRequest"
+      },
+      "name": "PutGroup",
+      "output": {
+        "shape": "PutGroupResponse"
+      }
+    },
+    "StartDataSourceSyncJob": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/datasources/{dataSourceId}/startsync",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "StartDataSourceSyncJobRequest"
+      },
+      "name": "StartDataSourceSyncJob",
+      "output": {
+        "shape": "StartDataSourceSyncJobResponse"
+      }
+    },
+    "StopDataSourceSyncJob": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/datasources/{dataSourceId}/stopsync",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "StopDataSourceSyncJobRequest"
+      },
+      "name": "StopDataSourceSyncJob",
+      "output": {
+        "shape": "StopDataSourceSyncJobResponse"
+      }
+    },
+    "TagResource": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "POST",
+        "requestUri": "/v1/tags/{resourceARN}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "TagResourceRequest"
+      },
+      "name": "TagResource",
+      "output": {
+        "shape": "TagResourceResponse"
+      }
+    },
+    "UntagResource": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "DELETE",
+        "requestUri": "/v1/tags/{resourceARN}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "UntagResourceRequest"
+      },
+      "name": "UntagResource",
+      "output": {
+        "shape": "UntagResourceResponse"
+      }
+    },
+    "UpdateApplication": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "PUT",
+        "requestUri": "/applications/{applicationId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "UpdateApplicationRequest"
+      },
+      "name": "UpdateApplication",
+      "output": {
+        "shape": "UpdateApplicationResponse"
+      }
+    },
+    "UpdateChatControlsConfiguration": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "PATCH",
+        "requestUri": "/applications/{applicationId}/chatcontrols",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "UpdateChatControlsConfigurationRequest"
+      },
+      "name": "UpdateChatControlsConfiguration",
+      "output": {
+        "shape": "UpdateChatControlsConfigurationResponse"
+      }
+    },
+    "UpdateDataSource": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "PUT",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}/datasources/{dataSourceId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "UpdateDataSourceRequest"
+      },
+      "name": "UpdateDataSource",
+      "output": {
+        "shape": "UpdateDataSourceResponse"
+      }
+    },
+    "UpdateIndex": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "PUT",
+        "requestUri": "/applications/{applicationId}/indices/{indexId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "UpdateIndexRequest"
+      },
+      "name": "UpdateIndex",
+      "output": {
+        "shape": "UpdateIndexResponse"
+      }
+    },
+    "UpdatePlugin": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "PUT",
+        "requestUri": "/applications/{applicationId}/plugins/{pluginId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "UpdatePluginRequest"
+      },
+      "name": "UpdatePlugin",
+      "output": {
+        "shape": "UpdatePluginResponse"
+      }
+    },
+    "UpdateRetriever": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "PUT",
+        "requestUri": "/applications/{applicationId}/retrievers/{retrieverId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "UpdateRetrieverRequest"
+      },
+      "name": "UpdateRetriever",
+      "output": {
+        "shape": "UpdateRetrieverResponse"
+      }
+    },
+    "UpdateUser": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        },
+        {
+          "shape": "ServiceQuotaExceededException"
+        }
+      ],
+      "http": {
+        "method": "PUT",
+        "requestUri": "/applications/{applicationId}/users/{userId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "UpdateUserRequest"
+      },
+      "name": "UpdateUser",
+      "output": {
+        "shape": "UpdateUserResponse"
+      }
+    },
+    "UpdateWebExperience": {
+      "errors": [
+        {
+          "shape": "ResourceNotFoundException"
+        },
+        {
+          "shape": "InternalServerException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ThrottlingException"
+        },
+        {
+          "shape": "ValidationException"
+        },
+        {
+          "shape": "AccessDeniedException"
+        }
+      ],
+      "http": {
+        "method": "PUT",
+        "requestUri": "/applications/{applicationId}/experiences/{webExperienceId}",
+        "responseCode": 200
+      },
+      "idempotent": true,
+      "input": {
+        "shape": "UpdateWebExperienceRequest"
+      },
+      "name": "UpdateWebExperience",
+      "output": {
+        "shape": "UpdateWebExperienceResponse"
+      }
+    }
+  },
+  "shapes": {
+    "APISchema": {
+      "members": {
+        "payload": {
+          "shape": "Payload"
+        },
+        "s3": {
+          "shape": "S3"
+        }
+      },
+      "type": "structure",
+      "union": true
+    },
+    "APISchemaType": {
+      "enum": [
+        "OPEN_API_V3"
+      ],
+      "type": "string"
+    },
+    "AccessConfiguration": {
+      "members": {
+        "accessControls": {
+          "shape": "AccessControls"
+        },
+        "memberRelation": {
+          "shape": "MemberRelation"
+        }
+      },
+      "required": [
+        "accessControls"
+      ],
+      "type": "structure"
+    },
+    "AccessControl": {
+      "members": {
+        "memberRelation": {
+          "shape": "MemberRelation"
+        },
+        "principals": {
+          "shape": "Principals"
+        }
+      },
+      "required": [
+        "principals"
+      ],
+      "type": "structure"
+    },
+    "AccessControls": {
+      "member": {
+        "shape": "AccessControl"
+      },
+      "type": "list"
+    },
+    "AccessDeniedException": {
+      "error": {
+        "httpStatusCode": 403,
+        "senderFault": true
+      },
+      "exception": true,
+      "members": {
+        "message": {
+          "shape": "ErrorMessage"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "type": "structure"
+    },
+    "ActionPayloadFieldKey": {
+      "min": 1,
+      "type": "string"
+    },
+    "ActionPayloadFieldNameSeparator": {
+      "max": 1,
+      "min": 1,
+      "type": "string"
+    },
+    "ActionPayloadFieldType": {
+      "enum": [
+        "STRING",
+        "NUMBER",
+        "ARRAY",
+        "BOOLEAN"
+      ],
+      "type": "string"
+    },
+    "ActionReview": {
+      "members": {
+        "payload": {
+          "shape": "ActionReviewPayload"
+        },
+        "payloadFieldNameSeparator": {
+          "shape": "ActionPayloadFieldNameSeparator"
+        },
+        "pluginId": {
+          "shape": "PluginId"
+        },
+        "pluginType": {
+          "shape": "PluginType"
+        }
+      },
+      "type": "structure"
+    },
+    "ActionReviewEvent": {
+      "event": true,
+      "members": {
+        "conversationId": {
+          "shape": "ConversationId"
+        },
+        "payload": {
+          "shape": "ActionReviewPayload"
+        },
+        "payloadFieldNameSeparator": {
+          "shape": "ActionPayloadFieldNameSeparator"
+        },
+        "pluginId": {
+          "shape": "PluginId"
+        },
+        "pluginType": {
+          "shape": "PluginType"
+        },
+        "systemMessageId": {
+          "shape": "MessageId"
+        },
+        "userMessageId": {
+          "shape": "MessageId"
+        }
+      },
+      "type": "structure"
+    },
+    "ActionReviewPayload": {
+      "key": {
+        "shape": "ActionPayloadFieldKey"
+      },
+      "type": "map",
+      "value": {
+        "shape": "ActionReviewPayloadField"
+      }
+    },
+    "ActionReviewPayloadField": {
+      "members": {
+        "allowedFormat": {
+          "shape": "String"
+        },
+        "allowedValues": {
+          "shape": "ActionReviewPayloadFieldAllowedValues"
+        },
+        "displayDescription": {
+          "shape": "String"
+        },
+        "displayName": {
+          "shape": "String"
+        },
+        "displayOrder": {
+          "shape": "Integer"
+        },
+        "required": {
+          "shape": "Boolean"
+        },
+        "type": {
+          "shape": "ActionPayloadFieldType"
+        }
+      },
+      "type": "structure"
+    },
+    "ActionReviewPayloadFieldAllowedValue": {
+      "members": {},
+      "type": "structure"
+    },
+    "ActionReviewPayloadFieldAllowedValues": {
+      "member": {
+        "shape": "ActionReviewPayloadFieldAllowedValue"
+      },
+      "type": "list"
+    },
+    "AmazonResourceName": {
+      "max": 1011,
+      "min": 1,
+      "type": "string"
+    },
+    "Application": {
+      "members": {
+        "applicationId": {
+          "shape": "ApplicationId"
+        },
+        "createdAt": {
+          "shape": "Timestamp"
+        },
+        "displayName": {
+          "shape": "ApplicationName"
+        },
+        "status": {
+          "shape": "ApplicationStatus"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        }
+      },
+      "type": "structure"
+    },
+    "ApplicationArn": {
+      "max": 1284,
+      "min": 0,
+      "pattern": "arn:[a-z0-9-\\.]{1,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[^/].{0,1023}",
+      "type": "string"
+    },
+    "ApplicationId": {
+      "max": 36,
+      "min": 36,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9-]{35}",
+      "type": "string"
+    },
+    "ApplicationName": {
+      "max": 1000,
+      "min": 1,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9_-]*",
+      "type": "string"
+    },
+    "ApplicationStatus": {
+      "enum": [
+        "CREATING",
+        "ACTIVE",
+        "DELETING",
+        "FAILED",
+        "UPDATING"
+      ],
+      "type": "string"
+    },
+    "Applications": {
+      "member": {
+        "shape": "Application"
+      },
+      "type": "list"
+    },
+    "AppliedAttachmentsConfiguration": {
+      "members": {
+        "attachmentsControlMode": {
+          "shape": "AttachmentsControlMode"
+        }
+      },
+      "type": "structure"
+    },
+    "AppliedCreatorModeConfiguration": {
+      "members": {
+        "creatorModeControl": {
+          "shape": "CreatorModeControl"
+        }
+      },
+      "required": [
+        "creatorModeControl"
+      ],
+      "type": "structure"
+    },
+    "AttachmentInput": {
+      "members": {
+        "data": {
+          "shape": "Blob"
+        },
+        "name": {
+          "shape": "AttachmentName"
+        }
+      },
+      "required": [
+        "name",
+        "data"
+      ],
+      "type": "structure"
+    },
+    "AttachmentInputEvent": {
+      "event": true,
+      "members": {
+        "attachment": {
+          "shape": "AttachmentInput"
+        }
+      },
+      "type": "structure"
+    },
+    "AttachmentName": {
+      "max": 1000,
+      "min": 1,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "AttachmentOutput": {
+      "members": {
+        "error": {
+          "shape": "ErrorDetail"
+        },
+        "name": {
+          "shape": "AttachmentName"
+        },
+        "status": {
+          "shape": "AttachmentStatus"
+        }
+      },
+      "type": "structure"
+    },
+    "AttachmentStatus": {
+      "enum": [
+        "FAILED",
+        "SUCCEEDED"
+      ],
+      "type": "string"
+    },
+    "AttachmentsConfiguration": {
+      "members": {
+        "attachmentsControlMode": {
+          "shape": "AttachmentsControlMode"
+        }
+      },
+      "required": [
+        "attachmentsControlMode"
+      ],
+      "type": "structure"
+    },
+    "AttachmentsControlMode": {
+      "enum": [
+        "ENABLED",
+        "DISABLED"
+      ],
+      "type": "string"
+    },
+    "AttachmentsInput": {
+      "member": {
+        "shape": "AttachmentInput"
+      },
+      "min": 1,
+      "type": "list"
+    },
+    "AttachmentsOutput": {
+      "member": {
+        "shape": "AttachmentOutput"
+      },
+      "type": "list"
+    },
+    "AttributeFilter": {
+      "members": {
+        "andAllFilters": {
+          "shape": "AttributeFilters"
+        },
+        "containsAll": {
+          "shape": "DocumentAttribute"
+        },
+        "containsAny": {
+          "shape": "DocumentAttribute"
+        },
+        "equalsTo": {
+          "shape": "DocumentAttribute"
+        },
+        "greaterThan": {
+          "shape": "DocumentAttribute"
+        },
+        "greaterThanOrEquals": {
+          "shape": "DocumentAttribute"
+        },
+        "lessThan": {
+          "shape": "DocumentAttribute"
+        },
+        "lessThanOrEquals": {
+          "shape": "DocumentAttribute"
+        },
+        "notFilter": {
+          "shape": "AttributeFilter"
+        },
+        "orAllFilters": {
+          "shape": "AttributeFilters"
+        }
+      },
+      "type": "structure"
+    },
+    "AttributeFilters": {
+      "member": {
+        "shape": "AttributeFilter"
+      },
+      "type": "list"
+    },
+    "AttributeType": {
+      "enum": [
+        "STRING",
+        "STRING_LIST",
+        "NUMBER",
+        "DATE"
+      ],
+      "type": "string"
+    },
+    "AttributeValueOperator": {
+      "enum": [
+        "DELETE"
+      ],
+      "type": "string"
+    },
+    "AuthChallengeRequest": {
+      "members": {
+        "authorizationUrl": {
+          "shape": "Url"
+        }
+      },
+      "required": [
+        "authorizationUrl"
+      ],
+      "type": "structure"
+    },
+    "AuthChallengeRequestEvent": {
+      "event": true,
+      "members": {
+        "authorizationUrl": {
+          "shape": "Url"
+        }
+      },
+      "required": [
+        "authorizationUrl"
+      ],
+      "type": "structure"
+    },
+    "AuthChallengeResponse": {
+      "members": {
+        "responseMap": {
+          "shape": "AuthorizationResponseMap"
+        }
+      },
+      "required": [
+        "responseMap"
+      ],
+      "type": "structure"
+    },
+    "AuthChallengeResponseEvent": {
+      "event": true,
+      "members": {
+        "responseMap": {
+          "shape": "AuthorizationResponseMap"
+        }
+      },
+      "required": [
+        "responseMap"
+      ],
+      "type": "structure"
+    },
+    "AuthResponseKey": {
+      "max": 100,
+      "min": 1,
+      "type": "string"
+    },
+    "AuthResponseValue": {
+      "max": 2048,
+      "min": 1,
+      "type": "string"
+    },
+    "AuthorizationResponseMap": {
+      "key": {
+        "shape": "AuthResponseKey"
+      },
+      "type": "map",
+      "value": {
+        "shape": "AuthResponseValue"
+      }
+    },
+    "BasicAuthConfiguration": {
+      "members": {
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "secretArn": {
+          "shape": "SecretArn"
+        }
+      },
+      "required": [
+        "secretArn",
+        "roleArn"
+      ],
+      "type": "structure"
+    },
+    "BatchDeleteDocumentRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceSyncId": {
+          "shape": "ExecutionId"
+        },
+        "documents": {
+          "shape": "DeleteDocuments"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId",
+        "documents"
+      ],
+      "type": "structure"
+    },
+    "BatchDeleteDocumentResponse": {
+      "members": {
+        "failedDocuments": {
+          "shape": "FailedDocuments"
+        }
+      },
+      "type": "structure"
+    },
+    "BatchPutDocumentRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceSyncId": {
+          "shape": "ExecutionId"
+        },
+        "documents": {
+          "shape": "Documents"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId",
+        "documents"
+      ],
+      "type": "structure"
+    },
+    "BatchPutDocumentResponse": {
+      "members": {
+        "failedDocuments": {
+          "shape": "FailedDocuments"
+        }
+      },
+      "type": "structure"
+    },
+    "Blob": {
+      "type": "blob"
+    },
+    "BlockedPhrase": {
+      "max": 36,
+      "min": 0,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "BlockedPhrases": {
+      "max": 5,
+      "member": {
+        "shape": "BlockedPhrase"
+      },
+      "min": 0,
+      "type": "list"
+    },
+    "BlockedPhrasesConfiguration": {
+      "members": {
+        "blockedPhrases": {
+          "shape": "BlockedPhrases"
+        },
+        "systemMessageOverride": {
+          "shape": "SystemMessageOverride"
+        }
+      },
+      "type": "structure"
+    },
+    "BlockedPhrasesConfigurationUpdate": {
+      "members": {
+        "blockedPhrasesToCreateOrUpdate": {
+          "shape": "BlockedPhrases"
+        },
+        "blockedPhrasesToDelete": {
+          "shape": "BlockedPhrases"
+        },
+        "systemMessageOverride": {
+          "shape": "SystemMessageOverride"
+        }
+      },
+      "type": "structure"
+    },
+    "Boolean": {
+      "box": true,
+      "type": "boolean"
+    },
+    "BoostingDurationInSeconds": {
+      "box": true,
+      "max": 999999999,
+      "min": 0,
+      "type": "long"
+    },
+    "ChatInput": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "clientToken": {
+          "idempotencyToken": true,
+          "location": "querystring",
+          "locationName": "clientToken",
+          "shape": "ClientToken"
+        },
+        "conversationId": {
+          "location": "querystring",
+          "locationName": "conversationId",
+          "shape": "ConversationId"
+        },
+        "inputStream": {
+          "shape": "ChatInputStream"
+        },
+        "parentMessageId": {
+          "location": "querystring",
+          "locationName": "parentMessageId",
+          "shape": "MessageId"
+        },
+        "userGroups": {
+          "location": "querystring",
+          "locationName": "userGroups",
+          "shape": "UserGroups"
+        },
+        "userId": {
+          "location": "querystring",
+          "locationName": "userId",
+          "shape": "UserId"
+        }
+      },
+      "payload": "inputStream",
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "ChatInputStream": {
+      "eventstream": true,
+      "members": {
+        "attachmentEvent": {
+          "shape": "AttachmentInputEvent"
+        },
+        "authChallengeResponseEvent": {
+          "shape": "AuthChallengeResponseEvent"
+        },
+        "configurationEvent": {
+          "shape": "ConfigurationEvent"
+        },
+        "endOfInputEvent": {
+          "shape": "EndOfInputEvent"
+        },
+        "textEvent": {
+          "shape": "TextInputEvent"
+        }
+      },
+      "type": "structure"
+    },
+    "ChatMode": {
+      "enum": [
+        "RETRIEVAL_MODE",
+        "CREATOR_MODE",
+        "PLUGIN_MODE"
+      ],
+      "type": "string"
+    },
+    "ChatModeConfiguration": {
+      "members": {
+        "pluginConfiguration": {
+          "shape": "PluginConfiguration"
+        }
+      },
+      "type": "structure",
+      "union": true
+    },
+    "ChatOutput": {
+      "members": {
+        "outputStream": {
+          "shape": "ChatOutputStream"
+        }
+      },
+      "payload": "outputStream",
+      "type": "structure"
+    },
+    "ChatOutputStream": {
+      "eventstream": true,
+      "members": {
+        "actionReviewEvent": {
+          "shape": "ActionReviewEvent"
+        },
+        "authChallengeRequestEvent": {
+          "shape": "AuthChallengeRequestEvent"
+        },
+        "failedAttachmentEvent": {
+          "shape": "FailedAttachmentEvent"
+        },
+        "metadataEvent": {
+          "shape": "MetadataEvent"
+        },
+        "textEvent": {
+          "shape": "TextOutputEvent"
+        }
+      },
+      "type": "structure"
+    },
+    "ChatSyncInput": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "attachments": {
+          "shape": "AttachmentsInput"
+        },
+        "attributeFilter": {
+          "shape": "AttributeFilter"
+        },
+        "authChallengeResponse": {
+          "shape": "AuthChallengeResponse"
+        },
+        "chatMode": {
+          "shape": "ChatMode"
+        },
+        "chatModeConfiguration": {
+          "shape": "ChatModeConfiguration"
+        },
+        "clientToken": {
+          "idempotencyToken": true,
+          "shape": "ClientToken"
+        },
+        "conversationId": {
+          "shape": "ConversationId"
+        },
+        "parentMessageId": {
+          "shape": "MessageId"
+        },
+        "userGroups": {
+          "location": "querystring",
+          "locationName": "userGroups",
+          "shape": "UserGroups"
+        },
+        "userId": {
+          "location": "querystring",
+          "locationName": "userId",
+          "shape": "UserId"
+        },
+        "userMessage": {
+          "shape": "UserMessage"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "ChatSyncOutput": {
+      "members": {
+        "actionReview": {
+          "shape": "ActionReview"
+        },
+        "authChallengeRequest": {
+          "shape": "AuthChallengeRequest"
+        },
+        "conversationId": {
+          "shape": "ConversationId"
+        },
+        "failedAttachments": {
+          "shape": "AttachmentsOutput"
+        },
+        "sourceAttributions": {
+          "shape": "SourceAttributions"
+        },
+        "systemMessage": {
+          "shape": "String"
+        },
+        "systemMessageId": {
+          "shape": "MessageId"
+        },
+        "userMessageId": {
+          "shape": "MessageId"
+        }
+      },
+      "type": "structure"
+    },
+    "ClientToken": {
+      "max": 100,
+      "min": 1,
+      "type": "string"
+    },
+    "ConfigurationEvent": {
+      "event": true,
+      "members": {
+        "attributeFilter": {
+          "shape": "AttributeFilter"
+        },
+        "chatMode": {
+          "shape": "ChatMode"
+        },
+        "chatModeConfiguration": {
+          "shape": "ChatModeConfiguration"
+        }
+      },
+      "type": "structure"
+    },
+    "ConflictException": {
+      "error": {
+        "httpStatusCode": 409,
+        "senderFault": true
+      },
+      "exception": true,
+      "members": {
+        "message": {
+          "shape": "ErrorMessage"
+        },
+        "resourceId": {
+          "shape": "String"
+        },
+        "resourceType": {
+          "shape": "String"
+        }
+      },
+      "required": [
+        "message",
+        "resourceId",
+        "resourceType"
+      ],
+      "type": "structure"
+    },
+    "ContentBlockerRule": {
+      "members": {
+        "systemMessageOverride": {
+          "shape": "SystemMessageOverride"
+        }
+      },
+      "type": "structure"
+    },
+    "ContentRetrievalRule": {
+      "members": {
+        "eligibleDataSources": {
+          "shape": "EligibleDataSources"
+        }
+      },
+      "type": "structure"
+    },
+    "ContentType": {
+      "enum": [
+        "PDF",
+        "HTML",
+        "MS_WORD",
+        "PLAIN_TEXT",
+        "PPT",
+        "RTF",
+        "XML",
+        "XSLT",
+        "MS_EXCEL",
+        "CSV",
+        "JSON",
+        "MD"
+      ],
+      "type": "string"
+    },
+    "Conversation": {
+      "members": {
+        "conversationId": {
+          "shape": "ConversationId"
+        },
+        "startTime": {
+          "shape": "Timestamp"
+        },
+        "title": {
+          "shape": "ConversationTitle"
+        }
+      },
+      "type": "structure"
+    },
+    "ConversationId": {
+      "max": 36,
+      "min": 36,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9-]{35}",
+      "type": "string"
+    },
+    "ConversationTitle": {
+      "type": "string"
+    },
+    "Conversations": {
+      "member": {
+        "shape": "Conversation"
+      },
+      "type": "list"
+    },
+    "CreateApplicationRequest": {
+      "members": {
+        "attachmentsConfiguration": {
+          "shape": "AttachmentsConfiguration"
+        },
+        "clientToken": {
+          "idempotencyToken": true,
+          "shape": "ClientToken"
+        },
+        "description": {
+          "shape": "Description"
+        },
+        "displayName": {
+          "shape": "ApplicationName"
+        },
+        "encryptionConfiguration": {
+          "shape": "EncryptionConfiguration"
+        },
+        "identityCenterInstanceArn": {
+          "shape": "InstanceArn"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "tags": {
+          "shape": "Tags"
+        }
+      },
+      "required": [
+        "displayName"
+      ],
+      "type": "structure"
+    },
+    "CreateApplicationResponse": {
+      "members": {
+        "applicationArn": {
+          "shape": "ApplicationArn"
+        },
+        "applicationId": {
+          "shape": "ApplicationId"
+        }
+      },
+      "type": "structure"
+    },
+    "CreateDataSourceResponse": {
+      "members": {
+        "dataSourceArn": {
+          "shape": "DataSourceArn"
+        },
+        "dataSourceId": {
+          "shape": "DataSourceId"
+        }
+      },
+      "type": "structure"
+    },
+    "CreateIndexRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "capacityConfiguration": {
+          "shape": "IndexCapacityConfiguration"
+        },
+        "clientToken": {
+          "idempotencyToken": true,
+          "shape": "ClientToken"
+        },
+        "description": {
+          "shape": "Description"
+        },
+        "displayName": {
+          "shape": "IndexName"
+        },
+        "tags": {
+          "shape": "Tags"
+        },
+        "type": {
+          "shape": "IndexType"
+        }
+      },
+      "required": [
+        "applicationId",
+        "displayName"
+      ],
+      "type": "structure"
+    },
+    "CreateIndexResponse": {
+      "members": {
+        "indexArn": {
+          "shape": "IndexArn"
+        },
+        "indexId": {
+          "shape": "IndexId"
+        }
+      },
+      "type": "structure"
+    },
+    "CreatePluginRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "authConfiguration": {
+          "shape": "PluginAuthConfiguration"
+        },
+        "clientToken": {
+          "idempotencyToken": true,
+          "shape": "ClientToken"
+        },
+        "customPluginConfiguration": {
+          "shape": "CustomPluginConfiguration"
+        },
+        "displayName": {
+          "shape": "PluginName"
+        },
+        "serverUrl": {
+          "shape": "Url"
+        },
+        "tags": {
+          "shape": "Tags"
+        },
+        "type": {
+          "shape": "PluginType"
+        }
+      },
+      "required": [
+        "applicationId",
+        "displayName",
+        "type",
+        "authConfiguration"
+      ],
+      "type": "structure"
+    },
+    "CreatePluginResponse": {
+      "members": {
+        "buildStatus": {
+          "shape": "PluginBuildStatus"
+        },
+        "pluginArn": {
+          "shape": "PluginArn"
+        },
+        "pluginId": {
+          "shape": "PluginId"
+        }
+      },
+      "type": "structure"
+    },
+    "CreateRetrieverRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "clientToken": {
+          "idempotencyToken": true,
+          "shape": "ClientToken"
+        },
+        "configuration": {
+          "shape": "RetrieverConfiguration"
+        },
+        "displayName": {
+          "shape": "RetrieverName"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "tags": {
+          "shape": "Tags"
+        },
+        "type": {
+          "shape": "RetrieverType"
+        }
+      },
+      "required": [
+        "applicationId",
+        "type",
+        "displayName",
+        "configuration"
+      ],
+      "type": "structure"
+    },
+    "CreateRetrieverResponse": {
+      "members": {
+        "retrieverArn": {
+          "shape": "RetrieverArn"
+        },
+        "retrieverId": {
+          "shape": "RetrieverId"
+        }
+      },
+      "type": "structure"
+    },
+    "CreateUserRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "clientToken": {
+          "idempotencyToken": true,
+          "shape": "ClientToken"
+        },
+        "userAliases": {
+          "shape": "CreateUserRequestUserAliasesList"
+        },
+        "userId": {
+          "shape": "String"
+        }
+      },
+      "required": [
+        "applicationId",
+        "userId"
+      ],
+      "type": "structure"
+    },
+    "CreateUserRequestUserAliasesList": {
+      "max": 100,
+      "member": {
+        "shape": "UserAlias"
+      },
+      "min": 0,
+      "type": "list"
+    },
+    "CreateUserResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "CreateWebExperienceRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "clientToken": {
+          "idempotencyToken": true,
+          "shape": "ClientToken"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "samplePromptsControlMode": {
+          "shape": "WebExperienceSamplePromptsControlMode"
+        },
+        "subtitle": {
+          "shape": "WebExperienceSubtitle"
+        },
+        "tags": {
+          "shape": "Tags"
+        },
+        "title": {
+          "shape": "WebExperienceTitle"
+        },
+        "welcomeMessage": {
+          "shape": "WebExperienceWelcomeMessage"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "CreateWebExperienceResponse": {
+      "members": {
+        "webExperienceArn": {
+          "shape": "WebExperienceArn"
+        },
+        "webExperienceId": {
+          "shape": "WebExperienceId"
+        }
+      },
+      "type": "structure"
+    },
+    "CreatorModeConfiguration": {
+      "members": {
+        "creatorModeControl": {
+          "shape": "CreatorModeControl"
+        }
+      },
+      "required": [
+        "creatorModeControl"
+      ],
+      "type": "structure"
+    },
+    "CreatorModeControl": {
+      "enum": [
+        "ENABLED",
+        "DISABLED"
+      ],
+      "type": "string"
+    },
+    "CustomPluginConfiguration": {
+      "members": {
+        "apiSchema": {
+          "shape": "APISchema"
+        },
+        "apiSchemaType": {
+          "shape": "APISchemaType"
+        },
+        "description": {
+          "shape": "PluginDescription"
+        }
+      },
+      "required": [
+        "description",
+        "apiSchemaType",
+        "apiSchema"
+      ],
+      "type": "structure"
+    },
+    "DataSource": {
+      "members": {
+        "createdAt": {
+          "shape": "Timestamp"
+        },
+        "dataSourceId": {
+          "shape": "DataSourceId"
+        },
+        "displayName": {
+          "shape": "DataSourceName"
+        },
+        "status": {
+          "shape": "DataSourceStatus"
+        },
+        "type": {
+          "shape": "String"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        }
+      },
+      "type": "structure"
+    },
+    "DataSourceArn": {
+      "max": 1284,
+      "min": 0,
+      "pattern": "arn:[a-z0-9-\\.]{1,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[^/].{0,1023}",
+      "type": "string"
+    },
+    "DataSourceId": {
+      "max": 36,
+      "min": 36,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9-]{35}",
+      "type": "string"
+    },
+    "DataSourceIds": {
+      "max": 1,
+      "member": {
+        "shape": "DataSourceId"
+      },
+      "min": 1,
+      "type": "list"
+    },
+    "DataSourceName": {
+      "max": 1000,
+      "min": 1,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9_-]*",
+      "type": "string"
+    },
+    "DataSourceStatus": {
+      "enum": [
+        "PENDING_CREATION",
+        "CREATING",
+        "ACTIVE",
+        "DELETING",
+        "FAILED",
+        "UPDATING"
+      ],
+      "type": "string"
+    },
+    "DataSourceSyncJob": {
+      "members": {
+        "dataSourceErrorCode": {
+          "shape": "String"
+        },
+        "endTime": {
+          "shape": "Timestamp"
+        },
+        "error": {
+          "shape": "ErrorDetail"
+        },
+        "executionId": {
+          "shape": "ExecutionId"
+        },
+        "metrics": {
+          "shape": "DataSourceSyncJobMetrics"
+        },
+        "startTime": {
+          "shape": "Timestamp"
+        },
+        "status": {
+          "shape": "DataSourceSyncJobStatus"
+        }
+      },
+      "type": "structure"
+    },
+    "DataSourceSyncJobMetrics": {
+      "members": {
+        "documentsAdded": {
+          "shape": "MetricValue"
+        },
+        "documentsDeleted": {
+          "shape": "MetricValue"
+        },
+        "documentsFailed": {
+          "shape": "MetricValue"
+        },
+        "documentsModified": {
+          "shape": "MetricValue"
+        },
+        "documentsScanned": {
+          "shape": "MetricValue"
+        }
+      },
+      "type": "structure"
+    },
+    "DataSourceSyncJobStatus": {
+      "enum": [
+        "FAILED",
+        "SUCCEEDED",
+        "SYNCING",
+        "INCOMPLETE",
+        "STOPPING",
+        "ABORTED",
+        "SYNCING_INDEXING"
+      ],
+      "type": "string"
+    },
+    "DataSourceSyncJobs": {
+      "member": {
+        "shape": "DataSourceSyncJob"
+      },
+      "type": "list"
+    },
+    "DataSourceUserId": {
+      "max": 1024,
+      "min": 1,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "DataSourceVpcConfiguration": {
+      "members": {
+        "securityGroupIds": {
+          "shape": "SecurityGroupIds"
+        },
+        "subnetIds": {
+          "shape": "SubnetIds"
+        }
+      },
+      "required": [
+        "subnetIds",
+        "securityGroupIds"
+      ],
+      "type": "structure"
+    },
+    "DataSources": {
+      "member": {
+        "shape": "DataSource"
+      },
+      "type": "list"
+    },
+    "DateAttributeBoostingConfiguration": {
+      "members": {
+        "boostingDurationInSeconds": {
+          "shape": "BoostingDurationInSeconds"
+        },
+        "boostingLevel": {
+          "shape": "DocumentAttributeBoostingLevel"
+        }
+      },
+      "required": [
+        "boostingLevel"
+      ],
+      "type": "structure"
+    },
+    "DeleteApplicationRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "DeleteApplicationResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "DeleteChatControlsConfigurationRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "DeleteChatControlsConfigurationResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "DeleteConversationRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "conversationId": {
+          "location": "uri",
+          "locationName": "conversationId",
+          "shape": "ConversationId"
+        },
+        "userId": {
+          "location": "querystring",
+          "locationName": "userId",
+          "shape": "UserId"
+        }
+      },
+      "required": [
+        "conversationId",
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "DeleteConversationResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "DeleteDataSourceRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceId": {
+          "location": "uri",
+          "locationName": "dataSourceId",
+          "shape": "DataSourceId"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId",
+        "dataSourceId"
+      ],
+      "type": "structure"
+    },
+    "DeleteDataSourceResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "DeleteDocument": {
+      "members": {
+        "documentId": {
+          "shape": "DocumentId"
+        }
+      },
+      "required": [
+        "documentId"
+      ],
+      "type": "structure"
+    },
+    "DeleteDocuments": {
+      "member": {
+        "shape": "DeleteDocument"
+      },
+      "type": "list"
+    },
+    "DeleteGroupRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceId": {
+          "location": "querystring",
+          "locationName": "dataSourceId",
+          "shape": "DataSourceId"
+        },
+        "groupName": {
+          "location": "uri",
+          "locationName": "groupName",
+          "shape": "GroupName"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId",
+        "groupName"
+      ],
+      "type": "structure"
+    },
+    "DeleteGroupResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "DeleteIndexRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId"
+      ],
+      "type": "structure"
+    },
+    "DeleteIndexResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "DeletePluginRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "pluginId": {
+          "location": "uri",
+          "locationName": "pluginId",
+          "shape": "PluginId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "pluginId"
+      ],
+      "type": "structure"
+    },
+    "DeletePluginResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "DeleteRetrieverRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "retrieverId": {
+          "location": "uri",
+          "locationName": "retrieverId",
+          "shape": "RetrieverId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "retrieverId"
+      ],
+      "type": "structure"
+    },
+    "DeleteRetrieverResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "DeleteUserRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "userId": {
+          "location": "uri",
+          "locationName": "userId",
+          "shape": "String"
+        }
+      },
+      "required": [
+        "applicationId",
+        "userId"
+      ],
+      "type": "structure"
+    },
+    "DeleteUserResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "DeleteWebExperienceRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "webExperienceId": {
+          "location": "uri",
+          "locationName": "webExperienceId",
+          "shape": "WebExperienceId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "webExperienceId"
+      ],
+      "type": "structure"
+    },
+    "DeleteWebExperienceResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "Description": {
+      "max": 1000,
+      "min": 0,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "Document": {
+      "members": {
+        "accessConfiguration": {
+          "shape": "AccessConfiguration"
+        },
+        "attributes": {
+          "shape": "DocumentAttributes"
+        },
+        "content": {
+          "shape": "DocumentContent"
+        },
+        "contentType": {
+          "shape": "ContentType"
+        },
+        "documentEnrichmentConfiguration": {
+          "shape": "DocumentEnrichmentConfiguration"
+        },
+        "id": {
+          "shape": "DocumentId"
+        },
+        "title": {
+          "shape": "Title"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "structure"
+    },
+    "DocumentAttribute": {
+      "members": {
+        "name": {
+          "shape": "DocumentAttributeKey"
+        },
+        "value": {
+          "shape": "DocumentAttributeValue"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "type": "structure"
+    },
+    "DocumentAttributeBoostingConfiguration": {
+      "members": {
+        "dateConfiguration": {
+          "shape": "DateAttributeBoostingConfiguration"
+        },
+        "numberConfiguration": {
+          "shape": "NumberAttributeBoostingConfiguration"
+        },
+        "stringConfiguration": {
+          "shape": "StringAttributeBoostingConfiguration"
+        },
+        "stringListConfiguration": {
+          "shape": "StringListAttributeBoostingConfiguration"
+        }
+      },
+      "type": "structure",
+      "union": true
+    },
+    "DocumentAttributeBoostingLevel": {
+      "enum": [
+        "NONE",
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "VERY_HIGH"
+      ],
+      "type": "string"
+    },
+    "DocumentAttributeBoostingOverrideMap": {
+      "key": {
+        "shape": "DocumentAttributeKey"
+      },
+      "min": 1,
+      "type": "map",
+      "value": {
+        "shape": "DocumentAttributeBoostingConfiguration"
+      }
+    },
+    "DocumentAttributeCondition": {
+      "members": {
+        "key": {
+          "shape": "DocumentAttributeKey"
+        },
+        "operator": {
+          "shape": "DocumentEnrichmentConditionOperator"
+        },
+        "value": {
+          "shape": "DocumentAttributeValue"
+        }
+      },
+      "required": [
+        "key",
+        "operator"
+      ],
+      "type": "structure"
+    },
+    "DocumentAttributeConfiguration": {
+      "members": {
+        "name": {
+          "shape": "DocumentMetadataConfigurationName"
+        },
+        "search": {
+          "shape": "Status"
+        },
+        "type": {
+          "shape": "AttributeType"
+        }
+      },
+      "type": "structure"
+    },
+    "DocumentAttributeConfigurations": {
+      "max": 500,
+      "member": {
+        "shape": "DocumentAttributeConfiguration"
+      },
+      "min": 1,
+      "type": "list"
+    },
+    "DocumentAttributeKey": {
+      "max": 200,
+      "min": 1,
+      "pattern": "[a-zA-Z0-9_][a-zA-Z0-9_-]*",
+      "type": "string"
+    },
+    "DocumentAttributeStringListValue": {
+      "member": {
+        "shape": "String"
+      },
+      "type": "list"
+    },
+    "DocumentAttributeTarget": {
+      "members": {
+        "attributeValueOperator": {
+          "shape": "AttributeValueOperator"
+        },
+        "key": {
+          "shape": "DocumentAttributeKey"
+        },
+        "value": {
+          "shape": "DocumentAttributeValue"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "type": "structure"
+    },
+    "DocumentAttributeValue": {
+      "members": {
+        "dateValue": {
+          "shape": "Timestamp"
+        },
+        "longValue": {
+          "shape": "Long"
+        },
+        "stringListValue": {
+          "shape": "DocumentAttributeStringListValue"
+        },
+        "stringValue": {
+          "shape": "DocumentAttributeValueStringValueString"
+        }
+      },
+      "type": "structure",
+      "union": true
+    },
+    "DocumentAttributeValueStringValueString": {
+      "max": 2048,
+      "min": 0,
+      "type": "string"
+    },
+    "DocumentAttributes": {
+      "max": 500,
+      "member": {
+        "shape": "DocumentAttribute"
+      },
+      "min": 1,
+      "type": "list"
+    },
+    "DocumentContent": {
+      "members": {
+        "blob": {
+          "shape": "Blob"
+        },
+        "s3": {
+          "shape": "S3"
+        }
+      },
+      "type": "structure",
+      "union": true
+    },
+    "DocumentContentOperator": {
+      "enum": [
+        "DELETE"
+      ],
+      "type": "string"
+    },
+    "DocumentDetailList": {
+      "member": {
+        "shape": "DocumentDetails"
+      },
+      "type": "list"
+    },
+    "DocumentDetails": {
+      "members": {
+        "createdAt": {
+          "shape": "Timestamp"
+        },
+        "documentId": {
+          "shape": "DocumentId"
+        },
+        "error": {
+          "shape": "ErrorDetail"
+        },
+        "status": {
+          "shape": "DocumentStatus"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        }
+      },
+      "type": "structure"
+    },
+    "DocumentEnrichmentConditionOperator": {
+      "enum": [
+        "GREATER_THAN",
+        "GREATER_THAN_OR_EQUALS",
+        "LESS_THAN",
+        "LESS_THAN_OR_EQUALS",
+        "EQUALS",
+        "NOT_EQUALS",
+        "CONTAINS",
+        "NOT_CONTAINS",
+        "EXISTS",
+        "NOT_EXISTS",
+        "BEGINS_WITH"
+      ],
+      "type": "string"
+    },
+    "DocumentEnrichmentConfiguration": {
+      "members": {
+        "inlineConfigurations": {
+          "shape": "InlineDocumentEnrichmentConfigurations"
+        },
+        "postExtractionHookConfiguration": {
+          "shape": "HookConfiguration"
+        },
+        "preExtractionHookConfiguration": {
+          "shape": "HookConfiguration"
+        }
+      },
+      "type": "structure"
+    },
+    "DocumentId": {
+      "max": 1825,
+      "min": 1,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "DocumentMetadataConfigurationName": {
+      "max": 30,
+      "min": 1,
+      "pattern": "[a-zA-Z0-9_][a-zA-Z0-9_-]*",
+      "type": "string"
+    },
+    "DocumentStatus": {
+      "enum": [
+        "RECEIVED",
+        "PROCESSING",
+        "INDEXED",
+        "UPDATED",
+        "FAILED",
+        "DELETING",
+        "DELETED",
+        "DOCUMENT_FAILED_TO_INDEX"
+      ],
+      "type": "string"
+    },
+    "Documents": {
+      "max": 10,
+      "member": {
+        "shape": "Document"
+      },
+      "min": 1,
+      "type": "list"
+    },
+    "EligibleDataSource": {
+      "members": {
+        "dataSourceId": {
+          "shape": "DataSourceId"
+        },
+        "indexId": {
+          "shape": "IndexId"
+        }
+      },
+      "type": "structure"
+    },
+    "EligibleDataSources": {
+      "max": 5,
+      "member": {
+        "shape": "EligibleDataSource"
+      },
+      "min": 0,
+      "type": "list"
+    },
+    "EncryptionConfiguration": {
+      "members": {
+        "kmsKeyId": {
+          "shape": "KmsKeyId"
+        }
+      },
+      "type": "structure"
+    },
+    "EndOfInputEvent": {
+      "event": true,
+      "members": {},
+      "type": "structure"
+    },
+    "ErrorCode": {
+      "enum": [
+        "InternalError",
+        "InvalidRequest",
+        "ResourceInactive",
+        "ResourceNotFound"
+      ],
+      "type": "string"
+    },
+    "ErrorDetail": {
+      "members": {
+        "errorCode": {
+          "shape": "ErrorCode"
+        },
+        "errorMessage": {
+          "shape": "ErrorMessage"
+        }
+      },
+      "type": "structure"
+    },
+    "ErrorMessage": {
+      "max": 2048,
+      "min": 1,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "ExampleChatMessage": {
+      "max": 350,
+      "min": 0,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "ExampleChatMessages": {
+      "max": 5,
+      "member": {
+        "shape": "ExampleChatMessage"
+      },
+      "min": 0,
+      "type": "list"
+    },
+    "ExecutionId": {
+      "max": 36,
+      "min": 36,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9-]{35}",
+      "type": "string"
+    },
+    "FailedAttachmentEvent": {
+      "event": true,
+      "members": {
+        "attachment": {
+          "shape": "AttachmentOutput"
+        },
+        "conversationId": {
+          "shape": "ConversationId"
+        },
+        "systemMessageId": {
+          "shape": "MessageId"
+        },
+        "userMessageId": {
+          "shape": "MessageId"
+        }
+      },
+      "type": "structure"
+    },
+    "FailedDocument": {
+      "members": {
+        "dataSourceId": {
+          "shape": "DataSourceId"
+        },
+        "error": {
+          "shape": "ErrorDetail"
+        },
+        "id": {
+          "shape": "DocumentId"
+        }
+      },
+      "type": "structure"
+    },
+    "FailedDocuments": {
+      "member": {
+        "shape": "FailedDocument"
+      },
+      "type": "list"
+    },
+    "GetApplicationRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "GetApplicationResponse": {
+      "members": {
+        "applicationArn": {
+          "shape": "ApplicationArn"
+        },
+        "applicationId": {
+          "shape": "ApplicationId"
+        },
+        "attachmentsConfiguration": {
+          "shape": "AppliedAttachmentsConfiguration"
+        },
+        "createdAt": {
+          "shape": "Timestamp"
+        },
+        "description": {
+          "shape": "Description"
+        },
+        "displayName": {
+          "shape": "ApplicationName"
+        },
+        "encryptionConfiguration": {
+          "shape": "EncryptionConfiguration"
+        },
+        "error": {
+          "shape": "ErrorDetail"
+        },
+        "identityCenterApplicationArn": {
+          "shape": "IdcApplicationArn"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "status": {
+          "shape": "ApplicationStatus"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        }
+      },
+      "type": "structure"
+    },
+    "GetChatControlsConfigurationRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "maxResults": {
+          "location": "querystring",
+          "locationName": "maxResults",
+          "shape": "MaxResultsIntegerForGetTopicConfigurations"
+        },
+        "nextToken": {
+          "location": "querystring",
+          "locationName": "nextToken",
+          "shape": "NextToken"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "GetChatControlsConfigurationResponse": {
+      "members": {
+        "blockedPhrases": {
+          "shape": "BlockedPhrasesConfiguration"
+        },
+        "creatorModeConfiguration": {
+          "shape": "AppliedCreatorModeConfiguration"
+        },
+        "nextToken": {
+          "shape": "NextToken"
+        },
+        "responseScope": {
+          "shape": "ResponseScope"
+        },
+        "topicConfigurations": {
+          "shape": "TopicConfigurations"
+        }
+      },
+      "type": "structure"
+    },
+    "GetDataSourceRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceId": {
+          "location": "uri",
+          "locationName": "dataSourceId",
+          "shape": "DataSourceId"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId",
+        "dataSourceId"
+      ],
+      "type": "structure"
+    },
+    "GetDataSourceResponse": {
+      "members": {
+        "applicationId": {
+          "shape": "ApplicationId"
+        },
+        "createdAt": {
+          "shape": "Timestamp"
+        },
+        "dataSourceArn": {
+          "shape": "DataSourceArn"
+        },
+        "dataSourceId": {
+          "shape": "DataSourceId"
+        },
+        "description": {
+          "shape": "Description"
+        },
+        "displayName": {
+          "shape": "DataSourceName"
+        },
+        "documentEnrichmentConfiguration": {
+          "shape": "DocumentEnrichmentConfiguration"
+        },
+        "error": {
+          "shape": "ErrorDetail"
+        },
+        "indexId": {
+          "shape": "IndexId"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "status": {
+          "shape": "DataSourceStatus"
+        },
+        "syncSchedule": {
+          "shape": "SyncSchedule"
+        },
+        "type": {
+          "shape": "String"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        },
+        "vpcConfiguration": {
+          "shape": "DataSourceVpcConfiguration"
+        }
+      },
+      "type": "structure"
+    },
+    "GetGroupRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceId": {
+          "location": "querystring",
+          "locationName": "dataSourceId",
+          "shape": "DataSourceId"
+        },
+        "groupName": {
+          "location": "uri",
+          "locationName": "groupName",
+          "shape": "GroupName"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId",
+        "groupName"
+      ],
+      "type": "structure"
+    },
+    "GetGroupResponse": {
+      "members": {
+        "status": {
+          "shape": "GroupStatusDetail"
+        },
+        "statusHistory": {
+          "shape": "GroupStatusDetails"
+        }
+      },
+      "type": "structure"
+    },
+    "GetIndexRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId"
+      ],
+      "type": "structure"
+    },
+    "GetIndexResponse": {
+      "members": {
+        "applicationId": {
+          "shape": "ApplicationId"
+        },
+        "capacityConfiguration": {
+          "shape": "IndexCapacityConfiguration"
+        },
+        "createdAt": {
+          "shape": "Timestamp"
+        },
+        "description": {
+          "shape": "Description"
+        },
+        "displayName": {
+          "shape": "IndexName"
+        },
+        "documentAttributeConfigurations": {
+          "shape": "DocumentAttributeConfigurations"
+        },
+        "error": {
+          "shape": "ErrorDetail"
+        },
+        "indexArn": {
+          "shape": "IndexArn"
+        },
+        "indexId": {
+          "shape": "IndexId"
+        },
+        "indexStatistics": {
+          "shape": "IndexStatistics"
+        },
+        "status": {
+          "shape": "IndexStatus"
+        },
+        "type": {
+          "shape": "IndexType"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        }
+      },
+      "type": "structure"
+    },
+    "GetPluginRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "pluginId": {
+          "location": "uri",
+          "locationName": "pluginId",
+          "shape": "PluginId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "pluginId"
+      ],
+      "type": "structure"
+    },
+    "GetPluginResponse": {
+      "members": {
+        "applicationId": {
+          "shape": "ApplicationId"
+        },
+        "authConfiguration": {
+          "shape": "PluginAuthConfiguration"
+        },
+        "buildStatus": {
+          "shape": "PluginBuildStatus"
+        },
+        "createdAt": {
+          "shape": "Timestamp"
+        },
+        "customPluginConfiguration": {
+          "shape": "CustomPluginConfiguration"
+        },
+        "displayName": {
+          "shape": "PluginName"
+        },
+        "pluginArn": {
+          "shape": "PluginArn"
+        },
+        "pluginId": {
+          "shape": "PluginId"
+        },
+        "serverUrl": {
+          "shape": "Url"
+        },
+        "state": {
+          "shape": "PluginState"
+        },
+        "type": {
+          "shape": "PluginType"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        }
+      },
+      "type": "structure"
+    },
+    "GetRetrieverRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "retrieverId": {
+          "location": "uri",
+          "locationName": "retrieverId",
+          "shape": "RetrieverId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "retrieverId"
+      ],
+      "type": "structure"
+    },
+    "GetRetrieverResponse": {
+      "members": {
+        "applicationId": {
+          "shape": "ApplicationId"
+        },
+        "configuration": {
+          "shape": "RetrieverConfiguration"
+        },
+        "createdAt": {
+          "shape": "Timestamp"
+        },
+        "displayName": {
+          "shape": "RetrieverName"
+        },
+        "retrieverArn": {
+          "shape": "RetrieverArn"
+        },
+        "retrieverId": {
+          "shape": "RetrieverId"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "status": {
+          "shape": "RetrieverStatus"
+        },
+        "type": {
+          "shape": "RetrieverType"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        }
+      },
+      "type": "structure"
+    },
+    "GetUserRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "userId": {
+          "location": "uri",
+          "locationName": "userId",
+          "shape": "String"
+        }
+      },
+      "required": [
+        "applicationId",
+        "userId"
+      ],
+      "type": "structure"
+    },
+    "GetUserResponse": {
+      "members": {
+        "userAliases": {
+          "shape": "UserAliases"
+        }
+      },
+      "type": "structure"
+    },
+    "GetWebExperienceRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "webExperienceId": {
+          "location": "uri",
+          "locationName": "webExperienceId",
+          "shape": "WebExperienceId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "webExperienceId"
+      ],
+      "type": "structure"
+    },
+    "GetWebExperienceResponse": {
+      "members": {
+        "applicationId": {
+          "shape": "ApplicationId"
+        },
+        "authenticationConfiguration": {
+          "deprecated": true,
+          "deprecatedMessage": "Property associated with legacy SAML IdP flow. Deprecated in favor of using AWS IAM Identity Center for user management.",
+          "shape": "WebExperienceAuthConfiguration"
+        },
+        "createdAt": {
+          "shape": "Timestamp"
+        },
+        "defaultEndpoint": {
+          "shape": "Url"
+        },
+        "error": {
+          "shape": "ErrorDetail"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "samplePromptsControlMode": {
+          "shape": "WebExperienceSamplePromptsControlMode"
+        },
+        "status": {
+          "shape": "WebExperienceStatus"
+        },
+        "subtitle": {
+          "shape": "WebExperienceSubtitle"
+        },
+        "title": {
+          "shape": "WebExperienceTitle"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        },
+        "webExperienceArn": {
+          "shape": "WebExperienceArn"
+        },
+        "webExperienceId": {
+          "shape": "WebExperienceId"
+        },
+        "welcomeMessage": {
+          "shape": "WebExperienceWelcomeMessage"
+        }
+      },
+      "type": "structure"
+    },
+    "GroupMembers": {
+      "members": {
+        "memberGroups": {
+          "shape": "MemberGroups"
+        },
+        "memberUsers": {
+          "shape": "MemberUsers"
+        }
+      },
+      "type": "structure"
+    },
+    "GroupName": {
+      "max": 1024,
+      "min": 1,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "GroupStatus": {
+      "enum": [
+        "FAILED",
+        "SUCCEEDED",
+        "PROCESSING",
+        "DELETING",
+        "DELETED"
+      ],
+      "type": "string"
+    },
+    "GroupStatusDetail": {
+      "members": {
+        "errorDetail": {
+          "shape": "ErrorDetail"
+        },
+        "lastUpdatedAt": {
+          "shape": "Timestamp"
+        },
+        "status": {
+          "shape": "GroupStatus"
+        }
+      },
+      "type": "structure"
+    },
+    "GroupStatusDetails": {
+      "member": {
+        "shape": "GroupStatusDetail"
+      },
+      "type": "list"
+    },
+    "GroupSummary": {
+      "members": {
+        "groupName": {
+          "shape": "GroupName"
+        }
+      },
+      "type": "structure"
+    },
+    "GroupSummaryList": {
+      "member": {
+        "shape": "GroupSummary"
+      },
+      "type": "list"
+    },
+    "HookConfiguration": {
+      "members": {
+        "invocationCondition": {
+          "shape": "DocumentAttributeCondition"
+        },
+        "lambdaArn": {
+          "shape": "LambdaArn"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "s3BucketName": {
+          "shape": "S3BucketName"
+        }
+      },
+      "type": "structure"
+    },
+    "IdcApplicationArn": {
+      "max": 1224,
+      "min": 10,
+      "pattern": "arn:(aws|aws-us-gov|aws-cn|aws-iso|aws-iso-b):sso::\\d{12}:application/(sso)?ins-[a-zA-Z0-9-.]{16}/apl-[a-zA-Z0-9]{16}",
+      "type": "string"
+    },
+    "Index": {
+      "members": {
+        "createdAt": {
+          "shape": "Timestamp"
+        },
+        "displayName": {
+          "shape": "IndexName"
+        },
+        "indexId": {
+          "shape": "IndexId"
+        },
+        "status": {
+          "shape": "IndexStatus"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        }
+      },
+      "type": "structure"
+    },
+    "IndexArn": {
+      "max": 1284,
+      "min": 0,
+      "pattern": "arn:[a-z0-9-\\.]{1,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[^/].{0,1023}",
+      "type": "string"
+    },
+    "IndexCapacityConfiguration": {
+      "members": {
+        "units": {
+          "shape": "IndexCapacityInteger"
+        }
+      },
+      "type": "structure"
+    },
+    "IndexCapacityInteger": {
+      "box": true,
+      "min": 1,
+      "type": "integer"
+    },
+    "IndexId": {
+      "max": 36,
+      "min": 36,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9-]{35}",
+      "type": "string"
+    },
+    "IndexName": {
+      "max": 1000,
+      "min": 1,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9_-]*",
+      "type": "string"
+    },
+    "IndexStatistics": {
+      "members": {
+        "textDocumentStatistics": {
+          "shape": "TextDocumentStatistics"
+        }
+      },
+      "type": "structure"
+    },
+    "IndexStatus": {
+      "enum": [
+        "CREATING",
+        "ACTIVE",
+        "DELETING",
+        "FAILED",
+        "UPDATING"
+      ],
+      "type": "string"
+    },
+    "IndexType": {
+      "enum": [
+        "ENTERPRISE",
+        "STARTER"
+      ],
+      "type": "string"
+    },
+    "IndexedTextBytes": {
+      "box": true,
+      "min": 0,
+      "type": "long"
+    },
+    "IndexedTextDocument": {
+      "box": true,
+      "min": 0,
+      "type": "integer"
+    },
+    "Indices": {
+      "member": {
+        "shape": "Index"
+      },
+      "type": "list"
+    },
+    "InlineDocumentEnrichmentConfiguration": {
+      "members": {
+        "condition": {
+          "shape": "DocumentAttributeCondition"
+        },
+        "documentContentOperator": {
+          "shape": "DocumentContentOperator"
+        },
+        "target": {
+          "shape": "DocumentAttributeTarget"
+        }
+      },
+      "type": "structure"
+    },
+    "InlineDocumentEnrichmentConfigurations": {
+      "max": 100,
+      "member": {
+        "shape": "InlineDocumentEnrichmentConfiguration"
+      },
+      "min": 1,
+      "type": "list"
+    },
+    "InstanceArn": {
+      "max": 1224,
+      "min": 10,
+      "pattern": "arn:(aws|aws-us-gov|aws-cn|aws-iso|aws-iso-b):sso:::instance/(sso)?ins-[a-zA-Z0-9-.]{16}",
+      "type": "string"
+    },
+    "Integer": {
+      "box": true,
+      "type": "integer"
+    },
+    "InternalServerException": {
+      "error": {
+        "httpStatusCode": 500
+      },
+      "exception": true,
+      "fault": true,
+      "members": {
+        "message": {
+          "shape": "ErrorMessage"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "type": "structure"
+    },
+    "KendraIndexConfiguration": {
+      "members": {
+        "indexId": {
+          "shape": "KendraIndexId"
+        }
+      },
+      "required": [
+        "indexId"
+      ],
+      "type": "structure"
+    },
+    "KendraIndexId": {
+      "max": 36,
+      "min": 36,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9-]{35}",
+      "type": "string"
+    },
+    "KmsKeyId": {
+      "max": 2048,
+      "min": 1,
+      "sensitive": true,
+      "type": "string"
+    },
+    "LambdaArn": {
+      "max": 2048,
+      "min": 1,
+      "pattern": "arn:aws[a-zA-Z-]*:lambda:[a-z-]*-[0-9]:[0-9]{12}:function:[a-zA-Z0-9-_]+(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?(:[a-zA-Z0-9-_]+)?",
+      "type": "string"
+    },
+    "LicenseNotFoundException": {
+      "error": {
+        "httpStatusCode": 400,
+        "senderFault": true
+      },
+      "exception": true,
+      "members": {
+        "message": {
+          "shape": "ErrorMessage"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "type": "structure"
+    },
+    "ListApplicationsRequest": {
+      "members": {
+        "maxResults": {
+          "location": "querystring",
+          "locationName": "maxResults",
+          "shape": "MaxResultsIntegerForListApplications"
+        },
+        "nextToken": {
+          "location": "querystring",
+          "locationName": "nextToken",
+          "shape": "NextToken"
+        }
+      },
+      "type": "structure"
+    },
+    "ListApplicationsResponse": {
+      "members": {
+        "applications": {
+          "shape": "Applications"
+        },
+        "nextToken": {
+          "shape": "NextToken"
+        }
+      },
+      "type": "structure"
+    },
+    "ListConversationsRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "maxResults": {
+          "location": "querystring",
+          "locationName": "maxResults",
+          "shape": "MaxResultsIntegerForListConversations"
+        },
+        "nextToken": {
+          "location": "querystring",
+          "locationName": "nextToken",
+          "shape": "NextToken"
+        },
+        "userId": {
+          "location": "querystring",
+          "locationName": "userId",
+          "shape": "UserId"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "ListConversationsResponse": {
+      "members": {
+        "conversations": {
+          "shape": "Conversations"
+        },
+        "nextToken": {
+          "shape": "NextToken"
+        }
+      },
+      "type": "structure"
+    },
+    "ListDataSourceSyncJobsRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceId": {
+          "location": "uri",
+          "locationName": "dataSourceId",
+          "shape": "DataSourceId"
+        },
+        "endTime": {
+          "location": "querystring",
+          "locationName": "endTime",
+          "shape": "Timestamp"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        },
+        "maxResults": {
+          "location": "querystring",
+          "locationName": "maxResults",
+          "shape": "MaxResultsIntegerForListDataSourcesSyncJobs"
+        },
+        "nextToken": {
+          "location": "querystring",
+          "locationName": "nextToken",
+          "shape": "NextToken"
+        },
+        "startTime": {
+          "location": "querystring",
+          "locationName": "startTime",
+          "shape": "Timestamp"
+        },
+        "statusFilter": {
+          "location": "querystring",
+          "locationName": "syncStatus",
+          "shape": "DataSourceSyncJobStatus"
+        }
+      },
+      "required": [
+        "dataSourceId",
+        "applicationId",
+        "indexId"
+      ],
+      "type": "structure"
+    },
+    "ListDataSourceSyncJobsResponse": {
+      "members": {
+        "history": {
+          "shape": "DataSourceSyncJobs"
+        },
+        "nextToken": {
+          "shape": "NextToken"
+        }
+      },
+      "type": "structure"
+    },
+    "ListDataSourcesRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        },
+        "maxResults": {
+          "location": "querystring",
+          "locationName": "maxResults",
+          "shape": "MaxResultsIntegerForListDataSources"
+        },
+        "nextToken": {
+          "location": "querystring",
+          "locationName": "nextToken",
+          "shape": "NextToken"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId"
+      ],
+      "type": "structure"
+    },
+    "ListDataSourcesResponse": {
+      "members": {
+        "dataSources": {
+          "shape": "DataSources"
+        },
+        "nextToken": {
+          "shape": "NextToken"
+        }
+      },
+      "type": "structure"
+    },
+    "ListDocumentsRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceIds": {
+          "location": "querystring",
+          "locationName": "dataSourceIds",
+          "shape": "DataSourceIds"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        },
+        "maxResults": {
+          "location": "querystring",
+          "locationName": "maxResults",
+          "shape": "MaxResultsIntegerForListDocuments"
+        },
+        "nextToken": {
+          "location": "querystring",
+          "locationName": "nextToken",
+          "shape": "NextToken"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId"
+      ],
+      "type": "structure"
+    },
+    "ListDocumentsResponse": {
+      "members": {
+        "documentDetailList": {
+          "shape": "DocumentDetailList"
+        },
+        "nextToken": {
+          "shape": "NextToken"
+        }
+      },
+      "type": "structure"
+    },
+    "ListGroupsRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceId": {
+          "location": "querystring",
+          "locationName": "dataSourceId",
+          "shape": "DataSourceId"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        },
+        "maxResults": {
+          "location": "querystring",
+          "locationName": "maxResults",
+          "shape": "MaxResultsIntegerForListGroupsRequest"
+        },
+        "nextToken": {
+          "location": "querystring",
+          "locationName": "nextToken",
+          "shape": "NextToken"
+        },
+        "updatedEarlierThan": {
+          "location": "querystring",
+          "locationName": "updatedEarlierThan",
+          "shape": "Timestamp"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId",
+        "updatedEarlierThan"
+      ],
+      "type": "structure"
+    },
+    "ListGroupsResponse": {
+      "members": {
+        "items": {
+          "shape": "GroupSummaryList"
+        },
+        "nextToken": {
+          "shape": "NextToken"
+        }
+      },
+      "type": "structure"
+    },
+    "ListIndicesRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "maxResults": {
+          "location": "querystring",
+          "locationName": "maxResults",
+          "shape": "MaxResultsIntegerForListIndices"
+        },
+        "nextToken": {
+          "location": "querystring",
+          "locationName": "nextToken",
+          "shape": "NextToken"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "ListIndicesResponse": {
+      "members": {
+        "indices": {
+          "shape": "Indices"
+        },
+        "nextToken": {
+          "shape": "NextToken"
+        }
+      },
+      "type": "structure"
+    },
+    "ListMessagesRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "conversationId": {
+          "location": "uri",
+          "locationName": "conversationId",
+          "shape": "ConversationId"
+        },
+        "maxResults": {
+          "location": "querystring",
+          "locationName": "maxResults",
+          "shape": "MaxResultsIntegerForListMessages"
+        },
+        "nextToken": {
+          "location": "querystring",
+          "locationName": "nextToken",
+          "shape": "NextToken"
+        },
+        "userId": {
+          "location": "querystring",
+          "locationName": "userId",
+          "shape": "UserId"
+        }
+      },
+      "required": [
+        "conversationId",
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "ListMessagesResponse": {
+      "members": {
+        "messages": {
+          "shape": "Messages"
+        },
+        "nextToken": {
+          "shape": "NextToken"
+        }
+      },
+      "type": "structure"
+    },
+    "ListPluginsRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "maxResults": {
+          "location": "querystring",
+          "locationName": "maxResults",
+          "shape": "MaxResultsIntegerForListPlugins"
+        },
+        "nextToken": {
+          "location": "querystring",
+          "locationName": "nextToken",
+          "shape": "NextToken"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "ListPluginsResponse": {
+      "members": {
+        "nextToken": {
+          "shape": "NextToken"
+        },
+        "plugins": {
+          "shape": "Plugins"
+        }
+      },
+      "type": "structure"
+    },
+    "ListRetrieversRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "maxResults": {
+          "location": "querystring",
+          "locationName": "maxResults",
+          "shape": "MaxResultsIntegerForListRetrieversRequest"
+        },
+        "nextToken": {
+          "location": "querystring",
+          "locationName": "nextToken",
+          "shape": "NextToken"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "ListRetrieversResponse": {
+      "members": {
+        "nextToken": {
+          "shape": "NextToken"
+        },
+        "retrievers": {
+          "shape": "Retrievers"
+        }
+      },
+      "type": "structure"
+    },
+    "ListTagsForResourceRequest": {
+      "members": {
+        "resourceARN": {
+          "location": "uri",
+          "locationName": "resourceARN",
+          "shape": "AmazonResourceName"
+        }
+      },
+      "required": [
+        "resourceARN"
+      ],
+      "type": "structure"
+    },
+    "ListTagsForResourceResponse": {
+      "members": {
+        "tags": {
+          "shape": "Tags"
+        }
+      },
+      "type": "structure"
+    },
+    "ListWebExperiencesRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "maxResults": {
+          "location": "querystring",
+          "locationName": "maxResults",
+          "shape": "MaxResultsIntegerForListWebExperiencesRequest"
+        },
+        "nextToken": {
+          "location": "querystring",
+          "locationName": "nextToken",
+          "shape": "NextToken"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "ListWebExperiencesResponse": {
+      "members": {
+        "nextToken": {
+          "shape": "NextToken"
+        },
+        "webExperiences": {
+          "shape": "WebExperiences"
+        }
+      },
+      "type": "structure"
+    },
+    "Long": {
+      "box": true,
+      "type": "long"
+    },
+    "MaxResultsIntegerForGetTopicConfigurations": {
+      "box": true,
+      "max": 50,
+      "min": 1,
+      "type": "integer"
+    },
+    "MaxResultsIntegerForListApplications": {
+      "box": true,
+      "max": 100,
+      "min": 1,
+      "type": "integer"
+    },
+    "MaxResultsIntegerForListConversations": {
+      "box": true,
+      "max": 100,
+      "min": 1,
+      "type": "integer"
+    },
+    "MaxResultsIntegerForListDataSources": {
+      "box": true,
+      "max": 10,
+      "min": 1,
+      "type": "integer"
+    },
+    "MaxResultsIntegerForListDataSourcesSyncJobs": {
+      "box": true,
+      "max": 10,
+      "min": 1,
+      "type": "integer"
+    },
+    "MaxResultsIntegerForListDocuments": {
+      "box": true,
+      "max": 100,
+      "min": 1,
+      "type": "integer"
+    },
+    "MaxResultsIntegerForListGroupsRequest": {
+      "box": true,
+      "max": 10,
+      "min": 1,
+      "type": "integer"
+    },
+    "MaxResultsIntegerForListIndices": {
+      "box": true,
+      "max": 100,
+      "min": 1,
+      "type": "integer"
+    },
+    "MaxResultsIntegerForListMessages": {
+      "box": true,
+      "max": 100,
+      "min": 1,
+      "type": "integer"
+    },
+    "MaxResultsIntegerForListPlugins": {
+      "box": true,
+      "max": 50,
+      "min": 1,
+      "type": "integer"
+    },
+    "MaxResultsIntegerForListRetrieversRequest": {
+      "box": true,
+      "max": 50,
+      "min": 1,
+      "type": "integer"
+    },
+    "MaxResultsIntegerForListWebExperiencesRequest": {
+      "box": true,
+      "max": 100,
+      "min": 1,
+      "type": "integer"
+    },
+    "MemberGroup": {
+      "members": {
+        "groupName": {
+          "shape": "GroupName"
+        },
+        "type": {
+          "shape": "MembershipType"
+        }
+      },
+      "required": [
+        "groupName"
+      ],
+      "type": "structure"
+    },
+    "MemberGroups": {
+      "max": 1000,
+      "member": {
+        "shape": "MemberGroup"
+      },
+      "min": 1,
+      "type": "list"
+    },
+    "MemberRelation": {
+      "enum": [
+        "AND",
+        "OR"
+      ],
+      "type": "string"
+    },
+    "MemberUser": {
+      "members": {
+        "type": {
+          "shape": "MembershipType"
+        },
+        "userId": {
+          "shape": "DataSourceUserId"
+        }
+      },
+      "required": [
+        "userId"
+      ],
+      "type": "structure"
+    },
+    "MemberUsers": {
+      "max": 1000,
+      "member": {
+        "shape": "MemberUser"
+      },
+      "min": 1,
+      "type": "list"
+    },
+    "MembershipType": {
+      "enum": [
+        "INDEX",
+        "DATASOURCE"
+      ],
+      "type": "string"
+    },
+    "Message": {
+      "members": {
+        "actionReview": {
+          "shape": "ActionReview"
+        },
+        "attachments": {
+          "shape": "AttachmentsOutput"
+        },
+        "body": {
+          "shape": "MessageBody"
+        },
+        "messageId": {
+          "shape": "String"
+        },
+        "sourceAttribution": {
+          "shape": "SourceAttributions"
+        },
+        "time": {
+          "shape": "Timestamp"
+        },
+        "type": {
+          "shape": "MessageType"
+        }
+      },
+      "type": "structure"
+    },
+    "MessageBody": {
+      "max": 1000,
+      "min": 0,
+      "pattern": "\\P{C}*$}",
+      "type": "string"
+    },
+    "MessageId": {
+      "max": 36,
+      "min": 36,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9-]{35}",
+      "type": "string"
+    },
+    "MessageType": {
+      "enum": [
+        "USER",
+        "SYSTEM"
+      ],
+      "type": "string"
+    },
+    "MessageUsefulness": {
+      "enum": [
+        "USEFUL",
+        "NOT_USEFUL"
+      ],
+      "type": "string"
+    },
+    "MessageUsefulnessComment": {
+      "max": 1000,
+      "min": 0,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "MessageUsefulnessFeedback": {
+      "members": {
+        "comment": {
+          "shape": "MessageUsefulnessComment"
+        },
+        "reason": {
+          "shape": "MessageUsefulnessReason"
+        },
+        "submittedAt": {
+          "shape": "Timestamp"
+        },
+        "usefulness": {
+          "shape": "MessageUsefulness"
+        }
+      },
+      "required": [
+        "usefulness",
+        "submittedAt"
+      ],
+      "type": "structure"
+    },
+    "MessageUsefulnessReason": {
+      "enum": [
+        "NOT_FACTUALLY_CORRECT",
+        "HARMFUL_OR_UNSAFE",
+        "INCORRECT_OR_MISSING_SOURCES",
+        "NOT_HELPFUL",
+        "FACTUALLY_CORRECT",
+        "COMPLETE",
+        "RELEVANT_SOURCES",
+        "HELPFUL",
+        "NOT_BASED_ON_DOCUMENTS",
+        "NOT_COMPLETE",
+        "NOT_CONCISE",
+        "OTHER"
+      ],
+      "type": "string"
+    },
+    "Messages": {
+      "member": {
+        "shape": "Message"
+      },
+      "type": "list"
+    },
+    "MetadataEvent": {
+      "event": true,
+      "members": {
+        "conversationId": {
+          "shape": "ConversationId"
+        },
+        "finalTextMessage": {
+          "shape": "String"
+        },
+        "sourceAttributions": {
+          "shape": "SourceAttributions"
+        },
+        "systemMessageId": {
+          "shape": "MessageId"
+        },
+        "userMessageId": {
+          "shape": "MessageId"
+        }
+      },
+      "type": "structure"
+    },
+    "MetricValue": {
+      "pattern": "(([1-9][0-9]*)|0)",
+      "type": "string"
+    },
+    "NativeIndexConfiguration": {
+      "members": {
+        "boostingOverride": {
+          "shape": "DocumentAttributeBoostingOverrideMap"
+        },
+        "indexId": {
+          "shape": "IndexId"
+        }
+      },
+      "required": [
+        "indexId"
+      ],
+      "type": "structure"
+    },
+    "NextToken": {
+      "max": 800,
+      "min": 1,
+      "type": "string"
+    },
+    "NoAuthConfiguration": {
+      "members": {},
+      "type": "structure"
+    },
+    "NumberAttributeBoostingConfiguration": {
+      "members": {
+        "boostingLevel": {
+          "shape": "DocumentAttributeBoostingLevel"
+        },
+        "boostingType": {
+          "shape": "NumberAttributeBoostingType"
+        }
+      },
+      "required": [
+        "boostingLevel"
+      ],
+      "type": "structure"
+    },
+    "NumberAttributeBoostingType": {
+      "enum": [
+        "PRIORITIZE_LARGER_VALUES",
+        "PRIORITIZE_SMALLER_VALUES"
+      ],
+      "type": "string"
+    },
+    "OAuth2ClientCredentialConfiguration": {
+      "members": {
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "secretArn": {
+          "shape": "SecretArn"
+        }
+      },
+      "required": [
+        "secretArn",
+        "roleArn"
+      ],
+      "type": "structure"
+    },
+    "Payload": {
+      "sensitive": true,
+      "type": "string"
+    },
+    "Plugin": {
+      "members": {
+        "buildStatus": {
+          "shape": "PluginBuildStatus"
+        },
+        "createdAt": {
+          "shape": "Timestamp"
+        },
+        "displayName": {
+          "shape": "PluginName"
+        },
+        "pluginId": {
+          "shape": "PluginId"
+        },
+        "serverUrl": {
+          "shape": "Url"
+        },
+        "state": {
+          "shape": "PluginState"
+        },
+        "type": {
+          "shape": "PluginType"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        }
+      },
+      "type": "structure"
+    },
+    "PluginArn": {
+      "max": 1284,
+      "min": 0,
+      "pattern": "arn:[a-z0-9-\\.]{1,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[^/].{0,1023}",
+      "type": "string"
+    },
+    "PluginAuthConfiguration": {
+      "members": {
+        "basicAuthConfiguration": {
+          "shape": "BasicAuthConfiguration"
+        },
+        "noAuthConfiguration": {
+          "shape": "NoAuthConfiguration"
+        },
+        "oAuth2ClientCredentialConfiguration": {
+          "shape": "OAuth2ClientCredentialConfiguration"
+        }
+      },
+      "type": "structure",
+      "union": true
+    },
+    "PluginBuildStatus": {
+      "enum": [
+        "READY",
+        "CREATE_IN_PROGRESS",
+        "CREATE_FAILED",
+        "UPDATE_IN_PROGRESS",
+        "UPDATE_FAILED",
+        "DELETE_IN_PROGRESS",
+        "DELETE_FAILED"
+      ],
+      "type": "string"
+    },
+    "PluginConfiguration": {
+      "members": {
+        "pluginId": {
+          "shape": "PluginId"
+        }
+      },
+      "required": [
+        "pluginId"
+      ],
+      "type": "structure"
+    },
+    "PluginDescription": {
+      "max": 200,
+      "min": 1,
+      "type": "string"
+    },
+    "PluginId": {
+      "max": 36,
+      "min": 36,
+      "pattern": "[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}",
+      "type": "string"
+    },
+    "PluginName": {
+      "max": 100,
+      "min": 1,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9_-]*",
+      "type": "string"
+    },
+    "PluginState": {
+      "enum": [
+        "ENABLED",
+        "DISABLED"
+      ],
+      "type": "string"
+    },
+    "PluginType": {
+      "enum": [
+        "SERVICE_NOW",
+        "SALESFORCE",
+        "JIRA",
+        "ZENDESK",
+        "CUSTOM"
+      ],
+      "type": "string"
+    },
+    "Plugins": {
+      "member": {
+        "shape": "Plugin"
+      },
+      "type": "list"
+    },
+    "Principal": {
+      "members": {
+        "group": {
+          "shape": "PrincipalGroup"
+        },
+        "user": {
+          "shape": "PrincipalUser"
+        }
+      },
+      "type": "structure",
+      "union": true
+    },
+    "PrincipalGroup": {
+      "members": {
+        "access": {
+          "shape": "ReadAccessType"
+        },
+        "membershipType": {
+          "shape": "MembershipType"
+        },
+        "name": {
+          "shape": "GroupName"
+        }
+      },
+      "required": [
+        "access"
+      ],
+      "type": "structure"
+    },
+    "PrincipalUser": {
+      "members": {
+        "access": {
+          "shape": "ReadAccessType"
+        },
+        "id": {
+          "shape": "UserId"
+        },
+        "membershipType": {
+          "shape": "MembershipType"
+        }
+      },
+      "required": [
+        "access"
+      ],
+      "type": "structure"
+    },
+    "Principals": {
+      "member": {
+        "shape": "Principal"
+      },
+      "type": "list"
+    },
+    "PutFeedbackRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "conversationId": {
+          "location": "uri",
+          "locationName": "conversationId",
+          "shape": "ConversationId"
+        },
+        "messageCopiedAt": {
+          "shape": "Timestamp"
+        },
+        "messageId": {
+          "location": "uri",
+          "locationName": "messageId",
+          "shape": "SystemMessageId"
+        },
+        "messageUsefulness": {
+          "shape": "MessageUsefulnessFeedback"
+        },
+        "userId": {
+          "location": "querystring",
+          "locationName": "userId",
+          "shape": "UserId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "conversationId",
+        "messageId"
+      ],
+      "type": "structure"
+    },
+    "PutGroupRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceId": {
+          "shape": "DataSourceId"
+        },
+        "groupMembers": {
+          "shape": "GroupMembers"
+        },
+        "groupName": {
+          "shape": "GroupName"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        },
+        "type": {
+          "shape": "MembershipType"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId",
+        "groupName",
+        "type",
+        "groupMembers"
+      ],
+      "type": "structure"
+    },
+    "PutGroupResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "ReadAccessType": {
+      "enum": [
+        "ALLOW",
+        "DENY"
+      ],
+      "type": "string"
+    },
+    "ResourceNotFoundException": {
+      "error": {
+        "httpStatusCode": 404,
+        "senderFault": true
+      },
+      "exception": true,
+      "members": {
+        "message": {
+          "shape": "ErrorMessage"
+        },
+        "resourceId": {
+          "shape": "String"
+        },
+        "resourceType": {
+          "shape": "String"
+        }
+      },
+      "required": [
+        "message",
+        "resourceId",
+        "resourceType"
+      ],
+      "type": "structure"
+    },
+    "ResponseScope": {
+      "enum": [
+        "ENTERPRISE_CONTENT_ONLY",
+        "EXTENDED_KNOWLEDGE_ENABLED"
+      ],
+      "type": "string"
+    },
+    "Retriever": {
+      "members": {
+        "applicationId": {
+          "shape": "ApplicationId"
+        },
+        "displayName": {
+          "shape": "RetrieverName"
+        },
+        "retrieverId": {
+          "shape": "RetrieverId"
+        },
+        "status": {
+          "shape": "RetrieverStatus"
+        },
+        "type": {
+          "shape": "RetrieverType"
+        }
+      },
+      "type": "structure"
+    },
+    "RetrieverArn": {
+      "max": 1284,
+      "min": 0,
+      "pattern": "arn:[a-z0-9-\\.]{1,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[^/].{0,1023}",
+      "type": "string"
+    },
+    "RetrieverConfiguration": {
+      "members": {
+        "kendraIndexConfiguration": {
+          "shape": "KendraIndexConfiguration"
+        },
+        "nativeIndexConfiguration": {
+          "shape": "NativeIndexConfiguration"
+        }
+      },
+      "type": "structure",
+      "union": true
+    },
+    "RetrieverId": {
+      "max": 36,
+      "min": 36,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9-]{35}",
+      "type": "string"
+    },
+    "RetrieverName": {
+      "max": 1000,
+      "min": 1,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9_-]*",
+      "type": "string"
+    },
+    "RetrieverStatus": {
+      "enum": [
+        "CREATING",
+        "ACTIVE",
+        "FAILED"
+      ],
+      "type": "string"
+    },
+    "RetrieverType": {
+      "enum": [
+        "NATIVE_INDEX",
+        "KENDRA_INDEX"
+      ],
+      "type": "string"
+    },
+    "Retrievers": {
+      "member": {
+        "shape": "Retriever"
+      },
+      "type": "list"
+    },
+    "RoleArn": {
+      "max": 1284,
+      "min": 0,
+      "pattern": "arn:[a-z0-9-\\.]{1,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[^/].{0,1023}",
+      "type": "string"
+    },
+    "Rule": {
+      "members": {
+        "excludedUsersAndGroups": {
+          "shape": "UsersAndGroups"
+        },
+        "includedUsersAndGroups": {
+          "shape": "UsersAndGroups"
+        },
+        "ruleConfiguration": {
+          "shape": "RuleConfiguration"
+        },
+        "ruleType": {
+          "shape": "RuleType"
+        }
+      },
+      "required": [
+        "ruleType"
+      ],
+      "type": "structure"
+    },
+    "RuleConfiguration": {
+      "members": {
+        "contentBlockerRule": {
+          "shape": "ContentBlockerRule"
+        },
+        "contentRetrievalRule": {
+          "shape": "ContentRetrievalRule"
+        }
+      },
+      "type": "structure",
+      "union": true
+    },
+    "RuleType": {
+      "enum": [
+        "CONTENT_BLOCKER_RULE",
+        "CONTENT_RETRIEVAL_RULE"
+      ],
+      "type": "string"
+    },
+    "Rules": {
+      "max": 10,
+      "member": {
+        "shape": "Rule"
+      },
+      "min": 0,
+      "type": "list"
+    },
+    "S3": {
+      "members": {
+        "bucket": {
+          "shape": "S3BucketName"
+        },
+        "key": {
+          "shape": "S3ObjectKey"
+        }
+      },
+      "required": [
+        "bucket",
+        "key"
+      ],
+      "type": "structure"
+    },
+    "S3BucketName": {
+      "max": 63,
+      "min": 1,
+      "pattern": "[a-z0-9][\\.\\-a-z0-9]{1,61}[a-z0-9]",
+      "type": "string"
+    },
+    "S3ObjectKey": {
+      "max": 1024,
+      "min": 1,
+      "type": "string"
+    },
+    "SamlAttribute": {
+      "max": 256,
+      "min": 1,
+      "type": "string"
+    },
+    "SamlConfiguration": {
+      "members": {
+        "metadataXML": {
+          "shape": "SamlMetadataXML"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "userGroupAttribute": {
+          "shape": "SamlAttribute"
+        },
+        "userIdAttribute": {
+          "shape": "SamlAttribute"
+        }
+      },
+      "required": [
+        "metadataXML",
+        "roleArn",
+        "userIdAttribute"
+      ],
+      "type": "structure"
+    },
+    "SamlMetadataXML": {
+      "max": 10000000,
+      "min": 1000,
+      "pattern": ".*",
+      "type": "string"
+    },
+    "SecretArn": {
+      "max": 1284,
+      "min": 0,
+      "pattern": "arn:[a-z0-9-\\.]{1,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[^/].{0,1023}",
+      "type": "string"
+    },
+    "SecurityGroupId": {
+      "max": 200,
+      "min": 1,
+      "pattern": "[-0-9a-zA-Z]+",
+      "type": "string"
+    },
+    "SecurityGroupIds": {
+      "max": 10,
+      "member": {
+        "shape": "SecurityGroupId"
+      },
+      "min": 1,
+      "type": "list"
+    },
+    "ServiceQuotaExceededException": {
+      "error": {
+        "httpStatusCode": 402,
+        "senderFault": true
+      },
+      "exception": true,
+      "members": {
+        "message": {
+          "shape": "ErrorMessage"
+        },
+        "resourceId": {
+          "shape": "String"
+        },
+        "resourceType": {
+          "shape": "String"
+        }
+      },
+      "required": [
+        "message",
+        "resourceId",
+        "resourceType"
+      ],
+      "type": "structure"
+    },
+    "SnippetExcerpt": {
+      "members": {
+        "text": {
+          "shape": "SnippetExcerptText"
+        }
+      },
+      "type": "structure"
+    },
+    "SnippetExcerptText": {
+      "type": "string"
+    },
+    "SourceAttribution": {
+      "members": {
+        "citationNumber": {
+          "shape": "Integer"
+        },
+        "snippet": {
+          "shape": "String"
+        },
+        "textMessageSegments": {
+          "shape": "TextSegmentList"
+        },
+        "title": {
+          "shape": "String"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        },
+        "url": {
+          "shape": "String"
+        }
+      },
+      "type": "structure"
+    },
+    "SourceAttributions": {
+      "member": {
+        "shape": "SourceAttribution"
+      },
+      "type": "list"
+    },
+    "StartDataSourceSyncJobRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceId": {
+          "location": "uri",
+          "locationName": "dataSourceId",
+          "shape": "DataSourceId"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        }
+      },
+      "required": [
+        "dataSourceId",
+        "applicationId",
+        "indexId"
+      ],
+      "type": "structure"
+    },
+    "StartDataSourceSyncJobResponse": {
+      "members": {
+        "executionId": {
+          "shape": "ExecutionId"
+        }
+      },
+      "type": "structure"
+    },
+    "Status": {
+      "enum": [
+        "ENABLED",
+        "DISABLED"
+      ],
+      "type": "string"
+    },
+    "StopDataSourceSyncJobRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceId": {
+          "location": "uri",
+          "locationName": "dataSourceId",
+          "shape": "DataSourceId"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        }
+      },
+      "required": [
+        "dataSourceId",
+        "applicationId",
+        "indexId"
+      ],
+      "type": "structure"
+    },
+    "StopDataSourceSyncJobResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "String": {
+      "max": 2048,
+      "min": 1,
+      "type": "string"
+    },
+    "StringAttributeBoostingConfiguration": {
+      "members": {
+        "attributeValueBoosting": {
+          "shape": "StringAttributeValueBoosting"
+        },
+        "boostingLevel": {
+          "shape": "DocumentAttributeBoostingLevel"
+        }
+      },
+      "required": [
+        "boostingLevel"
+      ],
+      "type": "structure"
+    },
+    "StringAttributeValueBoosting": {
+      "key": {
+        "shape": "String"
+      },
+      "max": 10,
+      "min": 1,
+      "type": "map",
+      "value": {
+        "shape": "StringAttributeValueBoostingLevel"
+      }
+    },
+    "StringAttributeValueBoostingLevel": {
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "VERY_HIGH"
+      ],
+      "type": "string"
+    },
+    "StringListAttributeBoostingConfiguration": {
+      "members": {
+        "boostingLevel": {
+          "shape": "DocumentAttributeBoostingLevel"
+        }
+      },
+      "required": [
+        "boostingLevel"
+      ],
+      "type": "structure"
+    },
+    "SubnetId": {
+      "max": 200,
+      "min": 1,
+      "pattern": "[-0-9a-zA-Z]+",
+      "type": "string"
+    },
+    "SubnetIds": {
+      "member": {
+        "shape": "SubnetId"
+      },
+      "type": "list"
+    },
+    "SyncSchedule": {
+      "max": 998,
+      "min": 0,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "SystemMessageId": {
+      "max": 36,
+      "min": 36,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9-]{35}",
+      "type": "string"
+    },
+    "SystemMessageOverride": {
+      "max": 350,
+      "min": 0,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "Tag": {
+      "members": {
+        "key": {
+          "shape": "TagKey"
+        },
+        "value": {
+          "shape": "TagValue"
+        }
+      },
+      "required": [
+        "key",
+        "value"
+      ],
+      "type": "structure"
+    },
+    "TagKey": {
+      "max": 128,
+      "min": 1,
+      "type": "string"
+    },
+    "TagKeys": {
+      "max": 200,
+      "member": {
+        "shape": "TagKey"
+      },
+      "min": 0,
+      "type": "list"
+    },
+    "TagResourceRequest": {
+      "members": {
+        "resourceARN": {
+          "location": "uri",
+          "locationName": "resourceARN",
+          "shape": "AmazonResourceName"
+        },
+        "tags": {
+          "shape": "Tags"
+        }
+      },
+      "required": [
+        "resourceARN",
+        "tags"
+      ],
+      "type": "structure"
+    },
+    "TagResourceResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "TagValue": {
+      "max": 256,
+      "min": 0,
+      "type": "string"
+    },
+    "Tags": {
+      "max": 200,
+      "member": {
+        "shape": "Tag"
+      },
+      "min": 0,
+      "type": "list"
+    },
+    "TextDocumentStatistics": {
+      "members": {
+        "indexedTextBytes": {
+          "shape": "IndexedTextBytes"
+        },
+        "indexedTextDocumentCount": {
+          "shape": "IndexedTextDocument"
+        }
+      },
+      "type": "structure"
+    },
+    "TextInputEvent": {
+      "event": true,
+      "members": {
+        "userMessage": {
+          "shape": "UserMessage"
+        }
+      },
+      "required": [
+        "userMessage"
+      ],
+      "type": "structure"
+    },
+    "TextOutputEvent": {
+      "event": true,
+      "members": {
+        "conversationId": {
+          "shape": "ConversationId"
+        },
+        "systemMessage": {
+          "shape": "String"
+        },
+        "systemMessageId": {
+          "shape": "MessageId"
+        },
+        "userMessageId": {
+          "shape": "MessageId"
+        }
+      },
+      "type": "structure"
+    },
+    "TextSegment": {
+      "members": {
+        "beginOffset": {
+          "shape": "Integer"
+        },
+        "endOffset": {
+          "shape": "Integer"
+        },
+        "snippetExcerpt": {
+          "shape": "SnippetExcerpt"
+        }
+      },
+      "type": "structure"
+    },
+    "TextSegmentList": {
+      "member": {
+        "shape": "TextSegment"
+      },
+      "type": "list"
+    },
+    "ThrottlingException": {
+      "error": {
+        "httpStatusCode": 429,
+        "senderFault": true
+      },
+      "exception": true,
+      "members": {
+        "message": {
+          "shape": "ErrorMessage"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "type": "structure"
+    },
+    "Timestamp": {
+      "type": "timestamp"
+    },
+    "Title": {
+      "max": 1024,
+      "min": 1,
+      "type": "string"
+    },
+    "TopicConfiguration": {
+      "members": {
+        "description": {
+          "shape": "TopicDescription"
+        },
+        "exampleChatMessages": {
+          "shape": "ExampleChatMessages"
+        },
+        "name": {
+          "shape": "TopicConfigurationName"
+        },
+        "rules": {
+          "shape": "Rules"
+        }
+      },
+      "required": [
+        "name",
+        "rules"
+      ],
+      "type": "structure"
+    },
+    "TopicConfigurationName": {
+      "max": 36,
+      "min": 1,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9-]{0,35}",
+      "type": "string"
+    },
+    "TopicConfigurations": {
+      "max": 10,
+      "member": {
+        "shape": "TopicConfiguration"
+      },
+      "min": 0,
+      "type": "list"
+    },
+    "TopicDescription": {
+      "max": 350,
+      "min": 0,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "UntagResourceRequest": {
+      "members": {
+        "resourceARN": {
+          "location": "uri",
+          "locationName": "resourceARN",
+          "shape": "AmazonResourceName"
+        },
+        "tagKeys": {
+          "location": "querystring",
+          "locationName": "tagKeys",
+          "shape": "TagKeys"
+        }
+      },
+      "required": [
+        "resourceARN",
+        "tagKeys"
+      ],
+      "type": "structure"
+    },
+    "UntagResourceResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "UpdateApplicationRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "attachmentsConfiguration": {
+          "shape": "AttachmentsConfiguration"
+        },
+        "description": {
+          "shape": "Description"
+        },
+        "displayName": {
+          "shape": "ApplicationName"
+        },
+        "identityCenterInstanceArn": {
+          "shape": "InstanceArn"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "UpdateApplicationResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "UpdateChatControlsConfigurationRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "blockedPhrasesConfigurationUpdate": {
+          "shape": "BlockedPhrasesConfigurationUpdate"
+        },
+        "clientToken": {
+          "idempotencyToken": true,
+          "shape": "ClientToken"
+        },
+        "creatorModeConfiguration": {
+          "shape": "CreatorModeConfiguration"
+        },
+        "responseScope": {
+          "shape": "ResponseScope"
+        },
+        "topicConfigurationsToCreateOrUpdate": {
+          "shape": "TopicConfigurations"
+        },
+        "topicConfigurationsToDelete": {
+          "shape": "TopicConfigurations"
+        }
+      },
+      "required": [
+        "applicationId"
+      ],
+      "type": "structure"
+    },
+    "UpdateChatControlsConfigurationResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "UpdateDataSourceRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "dataSourceId": {
+          "location": "uri",
+          "locationName": "dataSourceId",
+          "shape": "DataSourceId"
+        },
+        "description": {
+          "shape": "Description"
+        },
+        "displayName": {
+          "shape": "DataSourceName"
+        },
+        "documentEnrichmentConfiguration": {
+          "shape": "DocumentEnrichmentConfiguration"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "syncSchedule": {
+          "shape": "SyncSchedule"
+        },
+        "vpcConfiguration": {
+          "shape": "DataSourceVpcConfiguration"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId",
+        "dataSourceId"
+      ],
+      "type": "structure"
+    },
+    "UpdateDataSourceResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "UpdateIndexRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "capacityConfiguration": {
+          "shape": "IndexCapacityConfiguration"
+        },
+        "description": {
+          "shape": "Description"
+        },
+        "displayName": {
+          "shape": "ApplicationName"
+        },
+        "documentAttributeConfigurations": {
+          "shape": "DocumentAttributeConfigurations"
+        },
+        "indexId": {
+          "location": "uri",
+          "locationName": "indexId",
+          "shape": "IndexId"
+        }
+      },
+      "required": [
+        "applicationId",
+        "indexId"
+      ],
+      "type": "structure"
+    },
+    "UpdateIndexResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "UpdatePluginRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "authConfiguration": {
+          "shape": "PluginAuthConfiguration"
+        },
+        "customPluginConfiguration": {
+          "shape": "CustomPluginConfiguration"
+        },
+        "displayName": {
+          "shape": "PluginName"
+        },
+        "pluginId": {
+          "location": "uri",
+          "locationName": "pluginId",
+          "shape": "PluginId"
+        },
+        "serverUrl": {
+          "shape": "Url"
+        },
+        "state": {
+          "shape": "PluginState"
+        }
+      },
+      "required": [
+        "applicationId",
+        "pluginId"
+      ],
+      "type": "structure"
+    },
+    "UpdatePluginResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "UpdateRetrieverRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "configuration": {
+          "shape": "RetrieverConfiguration"
+        },
+        "displayName": {
+          "shape": "RetrieverName"
+        },
+        "retrieverId": {
+          "location": "uri",
+          "locationName": "retrieverId",
+          "shape": "RetrieverId"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        }
+      },
+      "required": [
+        "applicationId",
+        "retrieverId"
+      ],
+      "type": "structure"
+    },
+    "UpdateRetrieverResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "UpdateUserRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "userAliasesToDelete": {
+          "shape": "UserAliases"
+        },
+        "userAliasesToUpdate": {
+          "shape": "UserAliases"
+        },
+        "userId": {
+          "location": "uri",
+          "locationName": "userId",
+          "shape": "String"
+        }
+      },
+      "required": [
+        "applicationId",
+        "userId"
+      ],
+      "type": "structure"
+    },
+    "UpdateUserResponse": {
+      "members": {
+        "userAliasesAdded": {
+          "shape": "UserAliases"
+        },
+        "userAliasesDeleted": {
+          "shape": "UserAliases"
+        },
+        "userAliasesUpdated": {
+          "shape": "UserAliases"
+        }
+      },
+      "type": "structure"
+    },
+    "UpdateWebExperienceRequest": {
+      "members": {
+        "applicationId": {
+          "location": "uri",
+          "locationName": "applicationId",
+          "shape": "ApplicationId"
+        },
+        "authenticationConfiguration": {
+          "deprecated": true,
+          "deprecatedMessage": "Property associated with legacy SAML IdP flow. Deprecated in favor of using AWS IAM Identity Center for user management.",
+          "shape": "WebExperienceAuthConfiguration"
+        },
+        "roleArn": {
+          "shape": "RoleArn"
+        },
+        "samplePromptsControlMode": {
+          "shape": "WebExperienceSamplePromptsControlMode"
+        },
+        "subtitle": {
+          "shape": "WebExperienceSubtitle"
+        },
+        "title": {
+          "shape": "WebExperienceTitle"
+        },
+        "webExperienceId": {
+          "location": "uri",
+          "locationName": "webExperienceId",
+          "shape": "WebExperienceId"
+        },
+        "welcomeMessage": {
+          "shape": "WebExperienceWelcomeMessage"
+        }
+      },
+      "required": [
+        "applicationId",
+        "webExperienceId"
+      ],
+      "type": "structure"
+    },
+    "UpdateWebExperienceResponse": {
+      "members": {},
+      "type": "structure"
+    },
+    "Url": {
+      "max": 2048,
+      "min": 1,
+      "pattern": "(https?|ftp|file)://([^\\s]*)",
+      "type": "string"
+    },
+    "UserAlias": {
+      "members": {
+        "dataSourceId": {
+          "shape": "DataSourceId"
+        },
+        "indexId": {
+          "shape": "IndexId"
+        },
+        "userId": {
+          "shape": "String"
+        }
+      },
+      "required": [
+        "userId"
+      ],
+      "type": "structure"
+    },
+    "UserAliases": {
+      "member": {
+        "shape": "UserAlias"
+      },
+      "type": "list"
+    },
+    "UserGroups": {
+      "member": {
+        "shape": "String"
+      },
+      "type": "list"
+    },
+    "UserId": {
+      "max": 1024,
+      "min": 1,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "UserIds": {
+      "member": {
+        "shape": "String"
+      },
+      "type": "list"
+    },
+    "UserMessage": {
+      "max": 7000,
+      "min": 1,
+      "type": "string"
+    },
+    "UsersAndGroups": {
+      "members": {
+        "userGroups": {
+          "shape": "UserGroups"
+        },
+        "userIds": {
+          "shape": "UserIds"
+        }
+      },
+      "type": "structure"
+    },
+    "ValidationException": {
+      "error": {
+        "httpStatusCode": 400,
+        "senderFault": true
+      },
+      "exception": true,
+      "members": {
+        "fields": {
+          "shape": "ValidationExceptionFields"
+        },
+        "message": {
+          "shape": "ErrorMessage"
+        },
+        "reason": {
+          "shape": "ValidationExceptionReason"
+        }
+      },
+      "required": [
+        "message",
+        "reason"
+      ],
+      "type": "structure"
+    },
+    "ValidationExceptionField": {
+      "members": {
+        "message": {
+          "shape": "String"
+        },
+        "name": {
+          "shape": "String"
+        }
+      },
+      "required": [
+        "name",
+        "message"
+      ],
+      "type": "structure"
+    },
+    "ValidationExceptionFields": {
+      "member": {
+        "shape": "ValidationExceptionField"
+      },
+      "type": "list"
+    },
+    "ValidationExceptionReason": {
+      "enum": [
+        "CANNOT_PARSE",
+        "FIELD_VALIDATION_FAILED",
+        "UNKNOWN_OPERATION"
+      ],
+      "type": "string"
+    },
+    "WebExperience": {
+      "members": {
+        "createdAt": {
+          "shape": "Timestamp"
+        },
+        "defaultEndpoint": {
+          "shape": "Url"
+        },
+        "status": {
+          "shape": "WebExperienceStatus"
+        },
+        "updatedAt": {
+          "shape": "Timestamp"
+        },
+        "webExperienceId": {
+          "shape": "WebExperienceId"
+        }
+      },
+      "type": "structure"
+    },
+    "WebExperienceArn": {
+      "max": 1284,
+      "min": 0,
+      "pattern": "arn:[a-z0-9-\\.]{1,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[^/].{0,1023}",
+      "type": "string"
+    },
+    "WebExperienceAuthConfiguration": {
+      "members": {
+        "samlConfiguration": {
+          "shape": "SamlConfiguration"
+        }
+      },
+      "type": "structure",
+      "union": true
+    },
+    "WebExperienceId": {
+      "max": 36,
+      "min": 36,
+      "pattern": "[a-zA-Z0-9][a-zA-Z0-9-]*",
+      "type": "string"
+    },
+    "WebExperienceSamplePromptsControlMode": {
+      "enum": [
+        "ENABLED",
+        "DISABLED"
+      ],
+      "type": "string"
+    },
+    "WebExperienceStatus": {
+      "enum": [
+        "CREATING",
+        "ACTIVE",
+        "DELETING",
+        "FAILED",
+        "PENDING_AUTH_CONFIG"
+      ],
+      "type": "string"
+    },
+    "WebExperienceSubtitle": {
+      "max": 500,
+      "min": 0,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "WebExperienceTitle": {
+      "max": 500,
+      "min": 0,
+      "pattern": "\\P{C}*",
+      "type": "string"
+    },
+    "WebExperienceWelcomeMessage": {
+      "max": 300,
+      "min": 0,
+      "type": "string"
+    },
+    "WebExperiences": {
+      "member": {
+        "shape": "WebExperience"
+      },
+      "type": "list"
+    }
+  },
+  "version": "2.0"
+}

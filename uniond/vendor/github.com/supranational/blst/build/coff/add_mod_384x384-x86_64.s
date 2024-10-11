@@ -1,10 +1,41 @@
 .text	
 
-.def	__add_mod_384x384;	.scl 3;	.type 32;	.endef
-.p2align	5
-__add_mod_384x384:
-	.byte	0xf3,0x0f,0x1e,0xfa
+.globl	add_mod_384x384
 
+.def	add_mod_384x384;	.scl 2;	.type 32;	.endef
+.p2align	5
+add_mod_384x384:
+	.byte	0xf3,0x0f,0x1e,0xfa
+	movq	%rdi,8(%rsp)
+	movq	%rsi,16(%rsp)
+	movq	%rsp,%r11
+.LSEH_begin_add_mod_384x384:
+
+
+	pushq	%rbp
+
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
+	movq	%r9,%rcx
+	pushq	%rbx
+
+	pushq	%r12
+
+	pushq	%r13
+
+	pushq	%r14
+
+	pushq	%r15
+
+	subq	$8,%rsp
+
+.LSEH_body_add_mod_384x384:
+
+
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -65,14 +96,72 @@ __add_mod_384x384:
 	movq	%rbp,80(%rdi)
 	movq	%rsi,88(%rdi)
 
+	movq	8(%rsp),%r15
+
+	movq	16(%rsp),%r14
+
+	movq	24(%rsp),%r13
+
+	movq	32(%rsp),%r12
+
+	movq	40(%rsp),%rbx
+
+	movq	48(%rsp),%rbp
+
+	leaq	56(%rsp),%rsp
+
+.LSEH_epilogue_add_mod_384x384:
+	mov	8(%rsp),%rdi
+	mov	16(%rsp),%rsi
+
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
+.LSEH_end_add_mod_384x384:
 
-.def	__sub_mod_384x384;	.scl 3;	.type 32;	.endef
+.globl	sub_mod_384x384
+
+.def	sub_mod_384x384;	.scl 2;	.type 32;	.endef
 .p2align	5
-__sub_mod_384x384:
+sub_mod_384x384:
 	.byte	0xf3,0x0f,0x1e,0xfa
+	movq	%rdi,8(%rsp)
+	movq	%rsi,16(%rsp)
+	movq	%rsp,%r11
+.LSEH_begin_sub_mod_384x384:
 
+
+	pushq	%rbp
+
+	movq	%rcx,%rdi
+	movq	%rdx,%rsi
+	movq	%r8,%rdx
+	movq	%r9,%rcx
+	pushq	%rbx
+
+	pushq	%r12
+
+	pushq	%r13
+
+	pushq	%r14
+
+	pushq	%r15
+
+	subq	$8,%rsp
+
+.LSEH_body_sub_mod_384x384:
+
+
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -132,101 +221,6 @@ __sub_mod_384x384:
 	movq	%rbp,80(%rdi)
 	movq	%rsi,88(%rdi)
 
-	.byte	0xf3,0xc3
-
-
-.globl	add_mod_384x384
-
-.def	add_mod_384x384;	.scl 2;	.type 32;	.endef
-.p2align	5
-add_mod_384x384:
-	.byte	0xf3,0x0f,0x1e,0xfa
-	movq	%rdi,8(%rsp)
-	movq	%rsi,16(%rsp)
-	movq	%rsp,%r11
-.LSEH_begin_add_mod_384x384:
-
-
-	pushq	%rbp
-
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
-	movq	%r9,%rcx
-	pushq	%rbx
-
-	pushq	%r12
-
-	pushq	%r13
-
-	pushq	%r14
-
-	pushq	%r15
-
-	subq	$8,%rsp
-
-.LSEH_body_add_mod_384x384:
-
-
-	call	__add_mod_384x384
-
-	movq	8(%rsp),%r15
-
-	movq	16(%rsp),%r14
-
-	movq	24(%rsp),%r13
-
-	movq	32(%rsp),%r12
-
-	movq	40(%rsp),%rbx
-
-	movq	48(%rsp),%rbp
-
-	leaq	56(%rsp),%rsp
-
-.LSEH_epilogue_add_mod_384x384:
-	mov	8(%rsp),%rdi
-	mov	16(%rsp),%rsi
-
-	.byte	0xf3,0xc3
-
-.LSEH_end_add_mod_384x384:
-
-.globl	sub_mod_384x384
-
-.def	sub_mod_384x384;	.scl 2;	.type 32;	.endef
-.p2align	5
-sub_mod_384x384:
-	.byte	0xf3,0x0f,0x1e,0xfa
-	movq	%rdi,8(%rsp)
-	movq	%rsi,16(%rsp)
-	movq	%rsp,%r11
-.LSEH_begin_sub_mod_384x384:
-
-
-	pushq	%rbp
-
-	movq	%rcx,%rdi
-	movq	%rdx,%rsi
-	movq	%r8,%rdx
-	movq	%r9,%rcx
-	pushq	%rbx
-
-	pushq	%r12
-
-	pushq	%r13
-
-	pushq	%r14
-
-	pushq	%r15
-
-	subq	$8,%rsp
-
-.LSEH_body_sub_mod_384x384:
-
-
-	call	__sub_mod_384x384
-
 	movq	8(%rsp),%r15
 
 	movq	16(%rsp),%r14
@@ -245,7 +239,15 @@ sub_mod_384x384:
 	mov	8(%rsp),%rdi
 	mov	16(%rsp),%rsi
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
+#endif
 
 .LSEH_end_sub_mod_384x384:
 .section	.pdata

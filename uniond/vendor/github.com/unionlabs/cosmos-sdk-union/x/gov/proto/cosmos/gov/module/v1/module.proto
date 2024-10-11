@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package cosmos.gov.module.v1;
+
+import "cosmos/app/v1alpha1/module.proto";
+
+// Module is the config object of the gov module.
+message Module {
+  option (cosmos.app.v1alpha1.module) = {
+    go_import: "cosmossdk.io/x/gov"
+  };
+
+  // max_metadata_len defines the maximum proposal metadata length.
+  // Defaults to 255 if not explicitly set.
+  uint64 max_metadata_len = 1;
+
+  // authority defines the custom module authority. If not set, defaults to the governance module.
+  string authority = 2;
+
+  // max_title_len defines the maximum proposal title length.
+  // Defaults to 255 if not explicitly set.
+  uint64 max_title_len = 3;
+
+  // max_summary_len defines the maximum proposal summary length.
+  // Defaults to 10200 if not explicitly set.
+  uint64 max_summary_len = 4;
+
+  // max_vote_options_len defines the maximum number of vote options a proposal can have.
+  // Defaults to 0 if not explicitly set.
+  uint64 max_vote_options_len = 5;
+}

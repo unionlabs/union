@@ -1,0 +1,61 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "cmd.go",
+        "error.go",
+        "proposer_settings.go",
+        "withdraw.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/cmd/prysmctl/validator",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//api/client:go_default_library",
+        "//api/client/beacon:go_default_library",
+        "//api/client/validator:go_default_library",
+        "//beacon-chain/rpc/eth/shared:go_default_library",
+        "//cmd:go_default_library",
+        "//cmd/validator/accounts:go_default_library",
+        "//cmd/validator/flags:go_default_library",
+        "//config/features:go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//consensus-types/validator:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//io/file:go_default_library",
+        "//io/prompt:go_default_library",
+        "//proto/prysm/v1alpha1/validator-client:go_default_library",
+        "//runtime/tos:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+        "@com_github_logrusorgru_aurora//:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+        "@com_github_urfave_cli_v2//:go_default_library",
+        "@io_opencensus_go//trace:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "proposer_settings_test.go",
+        "withdraw_test.go",
+    ],
+    data = glob(["testdata/**"]),
+    embed = [":go_default_library"],
+    deps = [
+        "//api/server:go_default_library",
+        "//beacon-chain/rpc/eth/beacon:go_default_library",
+        "//beacon-chain/rpc/eth/config:go_default_library",
+        "//beacon-chain/rpc/eth/shared:go_default_library",
+        "//config/params:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "//validator/rpc:go_default_library",
+        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
+        "@com_github_sirupsen_logrus//hooks/test:go_default_library",
+        "@com_github_urfave_cli_v2//:go_default_library",
+    ],
+)

@@ -1,0 +1,11 @@
+{
+    "proxy_connect_header": {
+	"single": [
+	    "value_0"
+	],
+	"multi": [
+	    "value_1",
+	    "value_2"
+	]
+    }
+}

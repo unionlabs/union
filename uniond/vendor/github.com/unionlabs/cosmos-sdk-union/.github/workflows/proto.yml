@@ -1,0 +1,31 @@
+name: Protobuf
+# Protobuf runs buf (https://buf.build/) lint and check-breakage
+# This workflow is only run when a .proto file has been changed
+on:
+  pull_request:
+    paths:
+      - "proto/**"
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1.35.0
+      - uses: bufbuild/buf-lint-action@v1
+        with:
+          input: "proto"
+
+  break-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1.35.0
+      - uses: bufbuild/buf-breaking-action@v1
+        with:
+          input: "proto"
+          against: "https://github.com/${{ github.repository }}.git#branch=${{ github.event.pull_request.base.ref }},ref=HEAD~1,subdir=proto"

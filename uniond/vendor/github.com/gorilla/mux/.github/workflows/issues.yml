@@ -1,0 +1,21 @@
+# Add all the issues created to the project.
+name: Add issue or pull request to Project
+
+on:
+  issues:
+    types:
+      - opened
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add issue to project
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/orgs/gorilla/projects/4
+          github-token: ${{ secrets.ADD_TO_PROJECT_TOKEN }}

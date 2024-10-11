@@ -1,0 +1,21 @@
+codecov:
+  require_ci_to_pass: yes
+
+ignore:
+  - "exporters/jaeger/internal/gen-go/**/*"
+  - "exporters/jaeger/internal/third_party/**/*"
+
+coverage:
+  precision: 1
+  round: down
+  range: "70...100"
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 0.5%
+
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: yes

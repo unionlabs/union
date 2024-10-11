@@ -1,0 +1,18 @@
+-- go.mod --
+module example.com/issue37756
+
+go 1.14
+-- a/a.go --
+package a
+
+import _ "example.com/issue37756/b"
+
+func A1() {}
+-- b/b.go --
+package b
+
+func B1() {}
+-- c/c.go --
+package c
+
+func C1() {}

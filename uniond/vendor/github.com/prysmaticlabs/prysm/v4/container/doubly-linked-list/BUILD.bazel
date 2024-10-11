@@ -1,0 +1,19 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["list.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/container/doubly-linked-list",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_pkg_errors//:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["list_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+    ],
+)

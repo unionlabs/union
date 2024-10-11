@@ -1,0 +1,11 @@
+# Number of days of inactivity before an Issue is closed for lack of response
+daysUntilClose: 30
+# Label requiring a response
+responseRequiredLabel: "need:more-information"
+# Comment to post when closing an Issue for lack of response. Set to `false` to disable
+closeComment: >
+  This issue has been automatically closed because there has been no response
+  to our request for more information from the original author. With only the
+  information that is currently in the issue, we don't have enough information
+  to take action. Please reach out if you have more relevant information or
+  answers to our questions so that we can investigate further.

@@ -1,0 +1,54 @@
+import (
+	"fmt"
+	"math/big"
+	"math/bits"
+
+	"github.com/consensys/gnark-crypto/ecc"
+)
+
+// Generator returns a generator for Z/2^(log(m))Z
+// or an error if m is too big (required root of unity doesn't exist)
+func Generator(m uint64) (Element, error) {
+	x := ecc.NextPowerOfTwo(m)
+
+	var rootOfUnity Element
+	{{if eq .Name "bls12-378"}}
+		rootOfUnity.SetString("4045585818372166415418670827807793147093034396422209590578257013290761627990")
+		const maxOrderRoot uint64 = 42
+	{{else if eq .Name "bls12-377"}}
+		rootOfUnity.SetString("8065159656716812877374967518403273466521432693661810619979959746626482506078")
+		const maxOrderRoot uint64 = 47
+	{{else if eq .Name "bls12-381"}}
+		rootOfUnity.SetString("10238227357739495823651030575849232062558860180284477541189508159991286009131")
+		const maxOrderRoot uint64 = 32
+	{{else if eq .Name "bn254"}}
+		rootOfUnity.SetString("19103219067921713944291392827692070036145651957329286315305642004821462161904")
+		const maxOrderRoot uint64 = 28
+	{{else if eq .Name "bw6-761"}}
+		rootOfUnity.SetString("32863578547254505029601261939868325669770508939375122462904745766352256812585773382134936404344547323199885654433")
+		const maxOrderRoot uint64 = 46
+	{{else if eq .Name "bw6-756"}}
+        rootOfUnity.SetString("199251335866470442271346949249090720992237796757894062992204115206570647302191425225605716521843542790404563904580")
+        const maxOrderRoot uint64 = 41
+    {{else if eq .Name "bw6-633"}}
+		rootOfUnity.SetString("4991787701895089137426454739366935169846548798279261157172811661565882460884369603588700158257")
+		const maxOrderRoot uint64 = 20
+	{{else if eq .Name "bls24-315"}}
+		rootOfUnity.SetString("1792993287828780812362846131493071959406149719416102105453370749552622525216")
+       const maxOrderRoot uint64 = 22
+	{{else if eq .Name "bls24-317"}}
+		rootOfUnity.SetString("16532287748948254263922689505213135976137839535221842169193829039521719560631")
+       const maxOrderRoot uint64 = 60
+	{{end}}
+
+	// find generator for Z/2^(log(m))Z
+	logx := uint64(bits.TrailingZeros64(x))
+	if logx > maxOrderRoot {
+		return Element{}, fmt.Errorf("m (%d) is too big: the required root of unity does not exist", m)
+	}
+
+	expo := uint64(1 << (maxOrderRoot - logx))
+	var generator Element
+	generator.Exp(rootOfUnity, big.NewInt(int64(expo))) // order x
+	return generator, nil
+}

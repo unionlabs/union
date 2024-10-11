@@ -6,22 +6,21 @@ import (
 	"sort"
 	"sync"
 
-	dbm "github.com/cosmos/cosmos-db"
-
-	"cosmossdk.io/log"
+	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/store/pruning/types"
+	storetypes "cosmossdk.io/store/types"
 )
 
 // Manager is an abstraction to handle the logic needed for
 // determining when to prune old heights of the store
 // based on the strategy described by the pruning options.
 type Manager struct {
-	db               dbm.DB
-	logger           log.Logger
+	db               corestore.KVStoreWithBatch
+	logger           storetypes.Logger
 	opts             types.PruningOptions
 	snapshotInterval uint64
 	// Snapshots are taken in a separate goroutine from the regular execution
-	// and can be delivered asynchrounously via HandleSnapshotHeight.
+	// and can be delivered asynchronously via HandleSnapshotHeight.
 	// Therefore, we sync access to pruneSnapshotHeights with this mutex.
 	pruneSnapshotHeightsMx sync.RWMutex
 	// These are the heights that are multiples of snapshotInterval and kept for state sync snapshots.
@@ -43,10 +42,10 @@ func (e *NegativeHeightsError) Error() string {
 var pruneSnapshotHeightsKey = []byte("s/prunesnapshotheights")
 
 // NewManager returns a new Manager with the given db and logger.
-// The retuned manager uses a pruning strategy of "nothing" which
+// The returned manager uses a pruning strategy of "nothing" which
 // keeps all heights. Users of the Manager may change the strategy
 // by calling SetOptions.
-func NewManager(db dbm.DB, logger log.Logger) *Manager {
+func NewManager(db corestore.KVStoreWithBatch, logger storetypes.Logger) *Manager {
 	return &Manager{
 		db:                   db,
 		logger:               logger,
@@ -89,7 +88,7 @@ func (m *Manager) HandleSnapshotHeight(height int64) {
 	m.pruneSnapshotHeights = m.pruneSnapshotHeights[k-1:]
 
 	// flush the updates to disk so that they are not lost if crash happens.
-	if err := m.db.SetSync(pruneSnapshotHeightsKey, int64SliceToBytes(m.pruneSnapshotHeights)); err != nil {
+	if err := m.db.Set(pruneSnapshotHeightsKey, int64SliceToBytes(m.pruneSnapshotHeights)); err != nil {
 		panic(err)
 	}
 }
@@ -99,7 +98,7 @@ func (m *Manager) SetSnapshotInterval(snapshotInterval uint64) {
 	m.snapshotInterval = snapshotInterval
 }
 
-// GetPruningHeight returns the height which can prune upto if it is able to prune at the given height.
+// GetPruningHeight returns the height which can prune up to if it is able to prune at the given height.
 func (m *Manager) GetPruningHeight(height int64) int64 {
 	if m.opts.GetPruningStrategy() == types.PruningNothing {
 		return 0
@@ -128,7 +127,7 @@ func (m *Manager) GetPruningHeight(height int64) int64 {
 	}
 
 	// the snapshot `m.pruneSnapshotHeights[0]` is already operated,
-	// so we can prune upto `m.pruneSnapshotHeights[0] + int64(m.snapshotInterval) - 1`
+	// so we can prune up to `m.pruneSnapshotHeights[0] + int64(m.snapshotInterval) - 1`
 	snHeight := m.pruneSnapshotHeights[0] + int64(m.snapshotInterval) - 1
 	if snHeight < pruneHeight {
 		return snHeight
@@ -137,7 +136,7 @@ func (m *Manager) GetPruningHeight(height int64) int64 {
 }
 
 // LoadSnapshotHeights loads the snapshot heights from the database as a crash recovery.
-func (m *Manager) LoadSnapshotHeights(db dbm.DB) error {
+func (m *Manager) LoadSnapshotHeights(db corestore.KVStoreWithBatch) error {
 	if m.opts.GetPruningStrategy() == types.PruningNothing {
 		return nil
 	}
@@ -156,7 +155,7 @@ func (m *Manager) LoadSnapshotHeights(db dbm.DB) error {
 	return nil
 }
 
-func loadPruningSnapshotHeights(db dbm.DB) ([]int64, error) {
+func loadPruningSnapshotHeights(db corestore.KVStoreWithBatch) ([]int64, error) {
 	bz, err := db.Get(pruneSnapshotHeightsKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get post-snapshot pruned heights: %w", err)

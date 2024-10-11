@@ -1,0 +1,87 @@
+version: 2
+
+jobs:
+  "golang-1.19":
+    docker:
+      - image: cimg/go:1.19
+    steps:
+      - checkout
+      - run: 'wget https://github.com/DataDog/zstd/files/2246767/mr.zip'
+      - run: 'unzip mr.zip'
+      - run: 'go build'
+      - run: 'PAYLOAD=`pwd`/mr go test -v'
+      - run: 'PAYLOAD=`pwd`/mr go test -bench .'
+  "golang-1.19-external-libzstd":
+    docker:
+      - image: cimg/go:1.19
+    steps:
+      - checkout
+      - run: 'sudo apt update'
+      - run: 'sudo apt install libzstd-dev'
+      - run: 'wget https://github.com/DataDog/zstd/files/2246767/mr.zip'
+      - run: 'unzip mr.zip'
+      - run: 'go build'
+      - run: 'PAYLOAD=`pwd`/mr go test -v'
+      - run: 'PAYLOAD=`pwd`/mr go test -bench .'
+  "golang-1.20":
+    docker:
+      - image: cimg/go:1.20
+    steps:
+      - checkout
+      - run: 'wget https://github.com/DataDog/zstd/files/2246767/mr.zip'
+      - run: 'unzip mr.zip'
+      - run: 'go build'
+      - run: 'PAYLOAD=`pwd`/mr go test -v'
+      - run: 'PAYLOAD=`pwd`/mr go test -bench .'
+  "golang-1.20-external-libzstd":
+    docker:
+      - image: cimg/go:1.20
+    steps:
+      - checkout
+      - run: 'sudo apt update'
+      - run: 'sudo apt install libzstd-dev'
+      - run: 'wget https://github.com/DataDog/zstd/files/2246767/mr.zip'
+      - run: 'unzip mr.zip'
+      - run: 'go build'
+      - run: 'PAYLOAD=`pwd`/mr go test -v'
+      - run: 'PAYLOAD=`pwd`/mr go test -bench .'
+  "golang-efence":
+    resource_class: xlarge
+    docker:
+      - image: cimg/go:1.20
+    steps:
+      - checkout
+      - run: 'wget https://github.com/DataDog/zstd/files/2246767/mr.zip'
+      - run: 'unzip mr.zip'
+      - run: 'go build'
+      - run: 'PAYLOAD=`pwd`/mr GODEBUG=efence=1 go test -v'
+  "golang-efence-external-libzstd":
+    resource_class: xlarge
+    docker:
+      - image: cimg/go:1.20
+    steps:
+      - checkout
+      - run: 'sudo apt update'
+      - run: 'sudo apt install libzstd-dev'
+      - run: 'wget https://github.com/DataDog/zstd/files/2246767/mr.zip'
+      - run: 'unzip mr.zip'
+      - run: 'go build -tags external_libzstd'
+      - run: 'PAYLOAD=`pwd`/mr GODEBUG=efence=1 go test -tags external_libzstd -v'
+  "golang-i386":
+    docker:
+      - image: 32bit/ubuntu:16.04
+    steps:
+      - checkout
+      - run: 'linux32 --32bit i386 ./travis_test_32.sh'
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - "golang-1.19"
+      - "golang-1.19-external-libzstd"
+      - "golang-1.20"
+      - "golang-1.20-external-libzstd"
+      - "golang-efence"
+      - "golang-efence-external-libzstd"
+      - "golang-i386"

@@ -1,0 +1,80 @@
+load("@aspect_rules_js//npm:defs.bzl", "npm_package")
+load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
+
+filegroup(
+    name = "distribution",
+    srcs = [
+        "BUILD.bazel",
+        "compile_flat_file.sh",
+    ] + glob([
+        "*.ts",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+# Add an index to emulate the top-level package.json's "main" entry.
+genrule(
+    name = "generate_index.ts",
+    outs = ["index.ts"],
+    cmd = """echo "export * from './flatbuffers.js'" > $(OUTS)""",
+)
+
+ts_project(
+    name = "flatbuffers_ts",
+    srcs = [
+        "builder.ts",
+        "byte-buffer.ts",
+        "constants.ts",
+        "encoding.ts",
+        "flatbuffers.ts",
+        "types.ts",
+        "utils.ts",
+        ":index.ts",
+    ],
+    declaration = True,
+    tsconfig = {
+        "compilerOptions": {
+            "module": "commonjs",
+            "declaration": True,
+            "moduleResolution": "node",
+            "lib": [
+                "ES2015",
+                "ES2020.BigInt",
+                "DOM",
+            ],
+            "types": ["node"],
+            "strict": True,
+        },
+    },
+    visibility = ["//visibility:public"],
+    deps = [
+        # Because the main repository instantiates the @npm repository, we need
+        # to depend on the main repository's node import.
+        "@//:node_modules/@types/node",
+    ],
+)
+
+npm_package(
+    name = "flatbuffers",
+    srcs = [":flatbuffers_ts"],
+    include_external_repositories = ["*"],
+    package = "flatbuffers",
+    visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "compile_flat_file",
+    srcs = ["compile_flat_file.sh"],
+    data = [
+        "@com_github_google_flatbuffers//:flatc",
+        "@nodejs_linux_amd64//:node_bin",
+    ],
+    # We just depend directly on the linux amd64 nodejs binary, so only support
+    # running this script on amd64 for now.
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+    visibility = ["//visibility:public"],
+    deps = ["@bazel_tools//tools/bash/runfiles"],
+)

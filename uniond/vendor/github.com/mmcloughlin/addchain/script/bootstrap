@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -exuo pipefail
+
+# Install golangci-lint
+curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b "${GOPATH}/bin" v1.38.0
+
+# Install goreleaser.
+go install github.com/goreleaser/goreleaser@v0.177.0
+
+# Install godownloader.
+#
+# This doesn't have an install script like the others and can't be installed
+# with `go install` like below because the go.mod has a replace directive. So
+# we install it the old-fashioned way by cloning and installing from the
+# repository.
+workdir="$(mktemp -d)"
+projectdir="${workdir}/godownloader"
+git clone --depth 1 --branch v0.1.0 https://github.com/goreleaser/godownloader.git "${projectdir}"
+(cd "${projectdir}" && go install .)
+
+# gofumports for stricter formatting.
+go install mvdan.cc/gofumpt/gofumports@v0.0.0-20200412215918-a91da47f375c
+
+# pigeon for PEG parser generation.
+go install github.com/mna/pigeon@v1.0.1-0.20200224192238-18953b277063
+
+# mathfmt for unicode math formatting.
+go install github.com/mmcloughlin/mathfmt@v0.0.0-20200207041814-4064651798f4
+
+# bib for bibliography references.
+go install github.com/mmcloughlin/bib@v0.4.0
+
+# covertool for merging coverage reports.
+go install github.com/dlespiau/covertool@v0.0.0-20180314162135-b0c4c6d0583a

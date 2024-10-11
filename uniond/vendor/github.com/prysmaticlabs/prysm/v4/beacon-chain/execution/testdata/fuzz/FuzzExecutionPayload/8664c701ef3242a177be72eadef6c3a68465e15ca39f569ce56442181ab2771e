@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"pArentHAsh\":\"\",\"feeReCipient\":\"\",\"stAteRoot\":\"\",\"reCeiptsRoot\":\"\",\"logsBloom\":\"\",\"prevRAndAo\":\"\",\"eXtrADAtA\":\"\",\"BAseFeePerGAs\":\"0X0\",\"BloCkHAsh\":\"\",\"trAnsACtions\":[]}")

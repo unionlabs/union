@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package ethereum.eth.v1alpha1;
+
+import "google/protobuf/descriptor.proto";
+import "proto/eth/ext/options.proto";
+
+option csharp_namespace = "Ethereum.Eth.V1alpha1";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1;eth";
+option java_multiple_files = true;
+option java_outer_classname = "P2PMessagesProto";
+option java_package = "org.ethereum.eth.v1alpha1";
+option php_namespace = "Ethereum\\Eth\\v1alpha1";
+
+message Status {
+  bytes fork_digest = 1 [(ethereum.eth.ext.ssz_size) = "4"];
+  bytes finalized_root = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+  uint64 finalized_epoch = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+  bytes head_root = 4 [(ethereum.eth.ext.ssz_size) = "32"];
+  uint64 head_slot = 5 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+}
+
+message BeaconBlocksByRangeRequest {
+  uint64 start_slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+  uint64 count = 2;
+  uint64 step = 3;
+}
+
+message ENRForkID {
+  bytes current_fork_digest = 1 [(ethereum.eth.ext.ssz_size) = "4"];
+  bytes next_fork_version = 2 [(ethereum.eth.ext.ssz_size) = "4"];
+  uint64 next_fork_epoch = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+}
+
+/*
+ Spec Definition:
+ MetaData
+ (
+  seq_number: uint64
+  attnets: Bitvector[ATTESTATION_SUBNET_COUNT]
+ )
+*/
+message MetaDataV0 {
+  uint64 seq_number = 1;
+  bytes attnets = 2 [(ethereum.eth.ext.ssz_size) = "8", (ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector64"];
+}
+
+/*
+ Spec Definition:
+ MetaData
+ (
+ seq_number: uint64
+ attnets: Bitvector[ATTESTATION_SUBNET_COUNT]
+ )
+*/
+message MetaDataV1 {
+  uint64 seq_number = 1;
+  bytes attnets = 2 [(ethereum.eth.ext.ssz_size) = "8", (ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector64"];
+  bytes syncnets = 3 [(ethereum.eth.ext.ssz_size) = "1", (ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector4"];
+}
+
+/*
+ Spec Definition:
+ (
+  start_slot: Slot
+  count: uint64
+ )
+*/
+message BlobSidecarsByRangeRequest {
+  uint64 start_slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+  uint64 count = 2;
+}

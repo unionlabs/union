@@ -1,0 +1,16 @@
+base=none
+release=v1.0.0
+-- go.mod --
+module example.com/cgo
+
+go 1.13
+-- c.go --
+package cgo
+
+// const int x = 12;
+import "C"
+
+func X() int { return int(C.x) }
+-- want --
+# summary
+v1.0.0 is a valid semantic version for this release.

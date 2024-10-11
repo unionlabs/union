@@ -1,0 +1,30 @@
+syntax = "proto3";
+package cosmos.crypto.multisig;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/crypto/keys/multisig";
+
+// LegacyAminoPubKey specifies a public key type
+// which nests multiple public keys and a threshold,
+// it uses legacy amino address rules.
+message LegacyAminoPubKey {
+  option (amino.name) = "tendermint/PubKeyMultisigThreshold";
+  // The Amino encoding of a LegacyAminoPubkey is the legacy amino
+  // encoding of the `PubKeyMultisigThreshold` struct defined below:
+  // https://github.com/tendermint/tendermint/blob/v0.33.9/crypto/multisig/threshold_pubkey.go
+  //
+  // There are 2 differences with what a "normal" Amino encoding
+  // would output:
+  // 1. The `threshold` field is always a string (whereas Amino would
+  // by default marshal uint32 as a number).
+  // 2. The `public_keys` field is renamed to `pubkeys`, which is also
+  // reflected in the `amino.field_name` annotation.
+  option (amino.message_encoding)    = "threshold_string";
+  option (gogoproto.goproto_getters) = false;
+
+  uint32   threshold                       = 1;
+  repeated google.protobuf.Any public_keys = 2 [(gogoproto.customname) = "PubKeys", (amino.field_name) = "pubkeys"];
+}

@@ -1,0 +1,72 @@
+@Tutorial(time: 5) {
+  @Intro(title: "After having our code generated") {
+    After generating the code from the previous section, we will know start creating our monster object.
+    We will create a monster object called orc.
+    }
+    
+    @Section(title: "Building your first buffer") {
+      @ContentAndMedia {}
+      @Steps {
+        @Step {
+          Starting with a new file, we will create our very first Flatbuffer.
+          @Code(name: "ViewController.swift", file: "swift_code_1.swift")
+        }
+        @Step {
+          First, we need to import ``FlatBuffers``
+          @Code(name: "ViewController.swift", file: "swift_code_2.swift")
+        }
+        @Step {
+          We need to create an instance of the `FlatBufferBuilder`, which will contain the buffer as it grows. 
+          You can pass an initial size of the buffer (here 1024 bytes), which will grow automatically if needed.
+          @Code(name: "ViewController.swift", file: "swift_code_3.swift")
+        }
+        @Step {
+          After creating the builder, we can start serializing our data. Before we make our orc Monster, 
+          let's create some Weapons: a Sword and an Axe. However we will start by naming our weapons as `Sword` and `Axe`
+          @Code(name: "ViewController.swift", file: "swift_code_4.swift")
+        }
+        @Step {
+          After naming the weapons, we will create two weapon objects with the damage that the weapon is going to deal. 
+          That's done by calling the `start` Method on each table you will be creating, in this case its called `startWeapon` 
+          and finished by calling `end`.
+          @Code(name: "ViewController.swift", file: "swift_code_5.swift")
+        }
+        @Step {
+          We will take our (Sword and Axe) serialized data and serialize their offsets as a vector of tables into our `ByteBuffer`. 
+          So we can reference them later on from our Monster Object
+          @Code(name: "ViewController.swift", file: "swift_code_6.swift")
+        }
+        @Step {
+          We will add our Monster name as a string value just like we did with the weapons.
+          @Code(name: "ViewController.swift", file: "swift_code_7.swift")
+        }
+        
+        @Step {
+          We will create a path that our monster should be using while roaming in its den. To create a vector of paths we would us
+          `createVector(ofStructs: [])` which will take a Native `Swift` struct that has been padded to fit the `FlatBuffers` standards.
+          
+          There are usually two ways of creating vectors in `FlatBuffers` which you can see in commented out code. 
+          And thus there are multiple convenience methods that will cover all the bases 
+          when trying to create a vector so that you dont have to create it with `start` and `end`
+          @Code(name: "ViewController.swift", file: "swift_code_8.swift")
+        }
+        
+        @Step {
+          Now to serialize our data into our `Monster` object. Which again there are two ways of doing, by calling the `create` method or
+          by serializing the objects yourself. What we added to our Monster were the `Equipped Type` and the `Equipped` union itself, which
+          allows the Monster to have the `Axe` as his equipped weapon.
+          
+          Important: Unlike structs, you should not nest tables or other objects, 
+          which is why we created all the `strings/vectors/tables` that this monster refers to before start.
+          If you try to create any of them between start and end, you will get an `assert`.
+          @Code(name: "ViewController.swift", file: "swift_code_9.swift")
+        }
+        
+        @Step {
+          Finally you can just finalize the buffer by calling `builder.finish` and get the Byte array from the buffer.
+          @Code(name: "ViewController.swift", file: "swift_code_10.swift")
+        }
+
+      }
+    }
+  }

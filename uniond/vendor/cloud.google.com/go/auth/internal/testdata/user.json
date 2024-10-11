@@ -1,0 +1,7 @@
+{
+    "client_id": "abc123.apps.googleusercontent.com",
+    "client_secret": "shh",
+    "refresh_token": "refreshing",
+    "type": "authorized_user",
+    "quota_project_id": "fake_project2"
+}

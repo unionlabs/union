@@ -27,4 +27,6 @@
 #ifdef BLST_FR_PENTAROOT
 # include "pentaroot.c"
 #endif
-#include "cpuid.c"
+#ifndef __BLST_NO_CPUID__
+# include "cpuid.c"
+#endif

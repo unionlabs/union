@@ -9,10 +9,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v4"
 )
 
-func init() { registerDBCreator(BadgerDBBackend, badgerDBCreator, true) }
+func init() { registerDBCreator(BadgerDBBackend, badgerDBCreator) }
 
 func badgerDBCreator(dbName, dir string) (DB, error) {
 	return NewBadgerDB(dbName, dir)
@@ -25,7 +25,7 @@ func NewBadgerDB(dbName, dir string) (*BadgerDB, error) {
 	// the final directory to use for the database.
 	path := filepath.Join(dir, dbName)
 
-	if err := os.MkdirAll(path, 0755); err != nil {
+	if err := os.MkdirAll(path, 0o755); err != nil {
 		return nil, err
 	}
 	opts := badger.DefaultOptions(path)
@@ -170,6 +170,11 @@ func (b *BadgerDB) Stats() map[string]string {
 	return nil
 }
 
+func (b *BadgerDB) Compact(start, end []byte) error {
+	// Explicit compaction is not currently supported in badger
+	return nil
+}
+
 func (b *BadgerDB) NewBatch() Batch {
 	wb := &badgerDBBatch{
 		db:         b.db,
@@ -274,19 +279,23 @@ func (i *badgerDBIterator) Valid() bool {
 	return true
 }
 
+// Key implements Iterator.
+// The caller should not modify the contents of the returned slice.
+// Instead, the caller should make a copy and work on the copy.
 func (i *badgerDBIterator) Key() []byte {
 	if !i.Valid() {
 		panic("iterator is invalid")
 	}
-	// Note that we don't use KeyCopy, so this is only valid until the next
-	// call to Next.
-	return i.iter.Item().KeyCopy(nil)
+	return i.iter.Item().Key()
 }
 
+// Value implements Iterator.
+// The returned slice is a copy of the original data, therefore it is safe to modify.
 func (i *badgerDBIterator) Value() []byte {
 	if !i.Valid() {
 		panic("iterator is invalid")
 	}
+
 	val, err := i.iter.Item().ValueCopy(nil)
 	if err != nil {
 		i.lastErr = err

@@ -1,0 +1,39 @@
+# Verify that when we don't update stdout when we don't attempt to write via Stdout()
+fprintargs stdout hello stdout from fprintargs
+stdout 'hello stdout from fprintargs'
+echoandexit 0
+stdout 'hello stdout from fprintargs'
+
+# Verify that when we don't update stderr when we don't attempt to write via Stderr()
+fprintargs stderr hello stderr from fprintargs
+stderr 'hello stderr from fprintargs'
+echoandexit 0
+stderr 'hello stderr from fprintargs'
+
+# Verify that we do update stdout when we attempt to write via Stdout() or Stderr()
+fprintargs stdout hello stdout from fprintargs
+stdout 'hello stdout from fprintargs'
+! stderr .+
+echoandexit 0 'hello stdout from echoandexit'
+stdout 'hello stdout from echoandexit'
+! stderr .+
+fprintargs stdout hello stdout from fprintargs
+stdout 'hello stdout from fprintargs'
+! stderr .+
+echoandexit 0 '' 'hello stderr from echoandexit'
+! stdout .+
+stderr 'hello stderr from echoandexit'
+
+# Verify that we do update stderr when we attempt to write via Stdout() or Stderr()
+fprintargs stderr hello stderr from fprintargs
+! stdout .+
+stderr 'hello stderr from fprintargs'
+echoandexit 0 'hello stdout from echoandexit'
+stdout 'hello stdout from echoandexit'
+! stderr .+
+fprintargs stdout hello stdout from fprintargs
+stdout 'hello stdout from fprintargs'
+! stderr .+
+echoandexit 0 '' 'hello stderr from echoandexit'
+! stdout .+
+stderr 'hello stderr from echoandexit'

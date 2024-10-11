@@ -1,0 +1,48 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+package(default_visibility = ["//visibility:public"])
+
+go_library(
+    name = "server",
+    srcs = [
+        "a_bit_of_everything.go",
+        "echo.go",
+        "fieldmask_helper.go",
+        "flow_combination.go",
+        "main.go",
+        "non_standard_names.go",
+        "responsebody.go",
+        "unannotatedecho.go",
+    ],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/v2/examples/internal/server",
+    deps = [
+        "//examples/internal/proto/examplepb",
+        "//examples/internal/proto/oneofenum",
+        "//examples/internal/proto/pathenum",
+        "//examples/internal/proto/standalone",
+        "//examples/internal/proto/sub",
+        "//examples/internal/proto/sub2",
+        "//runtime",
+        "@com_github_golang_glog//:glog",
+        "@com_github_rogpeppe_fastuuid//:fastuuid",
+        "@go_googleapis//google/api:httpbody_go_proto",
+        "@go_googleapis//google/rpc:errdetails_go_proto",
+        "@go_googleapis//google/rpc:status_go_proto",
+        "@io_bazel_rules_go//proto/wkt:field_mask_go_proto",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//metadata",
+        "@org_golang_google_grpc//status",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//reflect/protoreflect",
+        "@org_golang_google_protobuf//types/known/durationpb",
+        "@org_golang_google_protobuf//types/known/emptypb",
+        "@org_golang_google_protobuf//types/known/wrapperspb",
+    ],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":server",
+    visibility = ["//examples:__subpackages__"],
+)

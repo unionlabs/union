@@ -1,0 +1,112 @@
+build ext1
+set c c
+set e e
+----
+
+flushable ext1
+----
+
+iter
+----
+c#0,1
+e#0,1
+
+rangekeyIter
+----
+
+rangedelIter
+----
+
+containsRangeKey
+----
+false
+
+readyForFlush
+----
+true
+
+reset
+----
+
+build ext2
+range-key-set d g 1 val1
+----
+
+flushable ext2
+----
+
+iter
+----
+
+rangekeyIter
+----
+d-g:{(#0,RANGEKEYSET,1,val1)}
+
+containsRangeKey
+----
+true
+
+rangedelIter
+----
+
+reset
+----
+
+build ext3
+del-range a j
+del-range o z
+----
+
+flushable ext3
+----
+
+iter
+----
+
+rangedelIter
+----
+a-j:{(#0,RANGEDEL)}
+o-z:{(#0,RANGEDEL)}
+
+rangekeyIter
+----
+
+readyForFlush
+----
+true
+
+containsRangeKey
+----
+false
+
+reset
+----
+
+build ext4
+del-range a j
+set k kk
+range-key-set y z 1 val1
+----
+
+flushable ext4
+----
+
+iter
+----
+k#0,1
+
+rangekeyIter
+----
+y-z:{(#0,RANGEKEYSET,1,val1)}
+
+rangedelIter
+----
+a-j:{(#0,RANGEDEL)}
+
+readyForFlush
+----
+true
+
+containsRangeKey
+----
+true

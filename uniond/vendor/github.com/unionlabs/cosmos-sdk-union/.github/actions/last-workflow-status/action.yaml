@@ -1,0 +1,36 @@
+# from https://github.com/MercymeIlya/last-workflow-status with fixes
+name: "Get status of last workflow"
+description: "Get conclusion of last workflow run on current branch."
+branding:
+  icon: "arrow-left"
+  color: "yellow"
+inputs:
+  github_token:
+    description: Secret GitHub API token to use for making API requests.
+    default: ${{ github.token }}
+    required: true
+outputs:
+  last_status:
+    description: "Conclusion of last workflow run on current branch"
+    value: ${{ steps.last_status.outputs.last_status }}
+runs:
+  using: "composite"
+  steps:
+    - name: Get workflow id
+      shell: bash
+      run: |
+        WORKFLOW_ID=$(curl --header 'authorization: Bearer ${{ inputs.github_token }}' \
+                           --header 'content-type: application/json' \
+        https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }} | jq -r .workflow_id)
+        echo "WORKFLOW_ID=$WORKFLOW_ID" >> $GITHUB_ENV
+        echo "Workflow id: ${WORKFLOW_ID}"
+    - name: Get previous build status
+      shell: bash
+      id: last_status
+      run: |
+        last_status=$(curl --silent --header 'authorization: Bearer ${{ inputs.github_token }}' \
+                                    --header 'content-type: application/json' \
+        "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${{ env.WORKFLOW_ID }}/runs?per_page=1&status=completed&branch=${{ env.GITHUB_HEAD_REF }}" \
+        | jq -r .workflow_runs[0].conclusion)
+        echo "Status of the previous build: $last_status"
+        echo "::set-output name=last_status::${last_status}"

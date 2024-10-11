@@ -98,6 +98,7 @@ func Binary(keys []uint64, key uint64) int16 {
 	}))
 }
 
+//nolint:unused
 func cmp2_native(twos, pk [2]uint64) int16 {
 	if twos[0] == pk[0] {
 		return 0
@@ -108,6 +109,7 @@ func cmp2_native(twos, pk [2]uint64) int16 {
 	return 2
 }
 
+//nolint:unused
 func cmp4_native(fours, pk [4]uint64) int16 {
 	for i := range fours {
 		if fours[i] >= pk[i] {
@@ -117,6 +119,7 @@ func cmp4_native(fours, pk [4]uint64) int16 {
 	return 4
 }
 
+//nolint:unused
 func cmp8_native(a [8]uint64, pk [4]uint64) int16 {
 	for i := range a {
 		if a[i] >= pk[0] {

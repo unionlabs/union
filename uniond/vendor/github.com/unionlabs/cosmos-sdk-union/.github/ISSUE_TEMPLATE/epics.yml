@@ -1,0 +1,43 @@
+
+name: Epic
+description: Create an epic/user
+title: "[Epic]: "
+labels: ["T:Epic"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for opening this issue, this template is meant for long lived work scopes, if this is what you're looking for please continue
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: |
+        What are the user needs?
+        How could this solution fix the user facing problem? 
+      placeholder: Short, concise description of the proposed feature/changes to the repository
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Definition
+      description: |
+        Why do we need this feature? 
+        What problems may be addressed by introducing this feature?
+        What benefits does the SDK stand to gain by including this feature?
+        Are there any disadvantages of including this feature?
+      placeholder: Description of the issue being faced
+    validations:
+      required: true
+  - type: textarea
+    id: work
+    attributes:
+      label: Work Breakdown
+      description: |
+        Break the work into many bullet points that will later be turned into issues that can be assigned to developers to work on 
+        This work may been to be broken up into phases of work in order to better organize when and how things get done.
+      placeholder: Description of the steps needed to deliver this feature
+    validations:
+      required: true

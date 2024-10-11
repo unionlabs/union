@@ -1,0 +1,692 @@
+# Test 1: Start with a simple sanity checking test which uses singleLevel
+# iterators as the backing iterator for the sstable. This will also test the
+# compaction iterator since it's the simplest.
+build
+a.SET.1:a
+b.SET.1:b
+c.SET.1:c
+d.SET.1:d
+----
+point:    [a#1,1-d#1,1]
+seqnums:  [1-1]
+
+# Note that the RawKeySize,RawValueSize aren't accurate here because we use
+# Reader.EstimateDiskUsage with virtual sstables bounds to determine virtual
+# sstable size which is then used to extrapolate virtual sstable properties,
+# and for tiny sstables, virtual sstable sizes aren't accurate. In this
+# testcase, the virtual sstable size is 50, whereas the backing sstable size is
+# 850.
+virtualize b.SET.1-c.SET.1
+----
+bounds:  [b#1,1-c#1,1]
+filenum: 000002
+props: NumEntries: 1, RawKeySize: 3, RawValueSize: 1, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 0, NumRangeDeletions: 0, NumRangeKeyDels: 0, NumRangeKeySets: 0, ValueBlocksSize: 0
+
+citer
+----
+b#1,1:b
+c#1,1:c
+
+# Test 2: Similar to test 1 but force two level iterators.
+build twoLevel
+a.SET.1:a
+b.SET.1:b
+c.SET.1:c
+d.SET.1:d
+----
+point:    [a#1,1-d#1,1]
+seqnums:  [1-1]
+
+virtualize b.SET.1-c.SET.1
+----
+bounds:  [b#1,1-c#1,1]
+filenum: 000004
+props: NumEntries: 1, RawKeySize: 2, RawValueSize: 1, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 0, NumRangeDeletions: 0, NumRangeKeyDels: 0, NumRangeKeySets: 0, ValueBlocksSize: 0
+
+citer
+----
+b#1,1:b
+c#1,1:c
+
+# Test the constrain bounds function. It performs some subtle shrinking and
+# expanding of bounds. The current virtual sstable bounds are [b,c].
+# 1. start key < virtual sstable start key, end key is exclusive.
+constrain a,bb,false
+----
+b,bb,false
+
+# 2. start key < virtual sstable start key, end key is inclusive.
+constrain a,bb,true
+----
+b,bb,true
+
+# 3. start key is within virtual sstable bounds, end key is at virtual sstable
+# end bound, but is exclusive.
+constrain bb,c,false
+----
+bb,c,false
+
+# 3. start key is within virtual sstable bounds, end key is at virtual sstable
+# end bound, but is inclusive.
+constrain bb,c,true
+----
+bb,c,true
+
+# 4. start key is within virtual sstable bounds, end key is above virtual
+# sstable end bound and is exclusive.
+constrain bb,e,false
+----
+bb,c,true
+
+# 5. start key is within virtual sstable bounds, end key is above virtual
+# sstable end bound and is inclusive.
+constrain bb,e,true
+----
+bb,c,true
+
+# 6. Both start, end keys fit within virtual sstable bounds.
+constrain bb,bbb,false
+----
+bb,bbb,false
+
+# 6. Both start, end keys are out of bounds, but overlap.
+constrain a,d,false
+----
+b,c,true
+
+# 7. start, end keys have no overlap with virtual sstable bounds. Note that
+# lower becomes greater than upper here. We support this in the iterators
+# and don't return any keys for this case.
+constrain a,aa,false
+----
+b,aa,false
+
+scan-range-del
+----
+
+scan-range-key
+----
+
+# Test 3: Tests raw range key/range del iterators, and makes sure that they
+# respect virtual bounds.
+build twoLevel
+a.SET.1:a
+d.SET.2:d
+f.SET.3:f
+d.RANGEDEL.4:e
+rangekey: a-d:{(#11,RANGEKEYSET,@t10,foo)}
+g.RANGEDEL.5:l
+rangekey: y-z:{(#12,RANGEKEYSET,@t11,foo)}
+----
+point:    [a#1,1-f#3,1]
+rangedel: [d#4,15-l#72057594037927935,15]
+rangekey: [a#11,21-z#72057594037927935,21]
+seqnums:  [1-12]
+
+# Note that we shouldn't have range del spans which cross virtual sstable
+# boundaries. NumRangeKeySets must be > 1.
+virtualize a.SET.1-f.SET.1
+----
+bounds:  [a#1,1-f#1,1]
+filenum: 000006
+props: NumEntries: 1, RawKeySize: 4, RawValueSize: 1, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 1, NumRangeDeletions: 1, NumRangeKeyDels: 0, NumRangeKeySets: 1, ValueBlocksSize: 0
+
+scan-range-del
+----
+d-e:{(#4,RANGEDEL)}
+
+scan-range-key
+----
+a-d:{(#11,RANGEKEYSET,@t10,foo)}
+
+# Test 4: Test iterators with various bounds, and various operations. This calls
+# VirtualReader.NewIterWithBlockPropertyFilters and performs various operations
+# on those.
+build
+a.SET.1:a
+b.SET.2:b
+c.SET.3:c
+d.SET.4:d
+dd.SET.5:dd
+ddd.SET.6:ddd
+g.SET.8:g
+h.SET.9:h
+----
+point:    [a#1,1-h#9,1]
+seqnums:  [1-9]
+
+virtualize dd.SET.5-ddd.SET.6
+----
+bounds:  [dd#5,1-ddd#6,1]
+filenum: 000008
+props: NumEntries: 1, RawKeySize: 10, RawValueSize: 2, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 0, NumRangeDeletions: 0, NumRangeKeyDels: 0, NumRangeKeySets: 0, ValueBlocksSize: 0
+
+# Check lower bound enforcement during SeekPrefixGE.
+iter
+seek-prefix-ge d
+next
+next
+----
+<dd:5>:dd
+<ddd:6>:ddd
+.
+
+# Build a simpler sstable for the rest of the tests.
+build
+a.SET.1:a
+b.SET.2:b
+c.SET.3:c
+d.SET.4:d
+e.SET.5:e
+f.SET.6:f
+g.SET.8:g
+h.SET.9:h
+----
+point:    [a#1,1-h#9,1]
+seqnums:  [1-9]
+
+# Set bounds c-f for the virtual sstable.
+virtualize c.SET.3-f.SET.6
+----
+bounds:  [c#3,1-f#6,1]
+filenum: 000010
+props: NumEntries: 1, RawKeySize: 9, RawValueSize: 1, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 0, NumRangeDeletions: 0, NumRangeKeyDels: 0, NumRangeKeySets: 0, ValueBlocksSize: 0
+
+# Just test a basic iterator once virtual sstable bounds have been set.
+iter
+first
+next
+next
+next
+next
+----
+<c:3>:c
+<d:4>:d
+<e:5>:e
+<f:6>:f
+.
+
+# Create an iterator with bounds. External bounds should still be restricted
+# along with virtual sstable bounds.
+iter a-d
+first
+next
+----
+<c:3>:c
+.
+
+iter d-g
+first
+next
+next
+next
+----
+<d:4>:d
+<e:5>:e
+<f:6>:f
+.
+
+# e is turned into an exclusive bounds, and thus it is hidden.
+iter
+set-bounds lower=d upper=e
+first
+next
+----
+.
+<d:4>:d
+.
+
+# Virtual sstable lower bound must be enforced internally from within the
+# iterator.
+iter
+seek-ge b
+next
+next
+next
+next
+----
+<c:3>:c
+<d:4>:d
+<e:5>:e
+<f:6>:f
+.
+
+# Upper bound enforcement by SeekGE.
+iter
+seek-ge g
+----
+.
+
+# Test prev.
+iter
+seek-ge d
+prev
+next
+prev
+prev
+----
+<d:4>:d
+<c:3>:c
+<d:4>:d
+<c:3>:c
+.
+
+# Test SeekLT
+build
+a.SET.1:a
+b.SET.2:b
+c.SET.3:c
+d.SET.4:d
+e.SET.5:e
+f.SET.6:f
+f.SET.1:ff
+g.SET.8:g
+h.SET.9:h
+----
+point:    [a#1,1-h#9,1]
+seqnums:  [1-9]
+
+virtualize c.SET.3-f.SET.1:ff
+----
+bounds:  [c#3,1-f#0,1]
+filenum: 000012
+props: NumEntries: 2, RawKeySize: 11, RawValueSize: 2, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 0, NumRangeDeletions: 0, NumRangeKeyDels: 0, NumRangeKeySets: 0, ValueBlocksSize: 3
+
+iter
+set-bounds lower=d upper=e
+seek-lt e
+----
+.
+<d:4>:d
+
+iter
+seek-ge f
+next
+next
+----
+<f:6>:f
+<f:1>:ff
+.
+
+iter
+seek-lt f
+next
+next
+prev
+prev
+prev
+prev
+prev
+----
+<e:5>:e
+<f:6>:f
+<f:1>:ff
+<f:6>:f
+<e:5>:e
+<d:4>:d
+<c:3>:c
+.
+
+# We should get f here, not g as SeekLT will apply the virtual sstable end
+# bound.
+iter
+seek-lt h
+----
+<f:1>:ff
+
+iter
+last
+----
+<f:1>:ff
+
+virtualize f.SET.6-h.SET.9
+----
+bounds:  [f#6,1-h#9,1]
+filenum: 000013
+props: NumEntries: 2, RawKeySize: 11, RawValueSize: 2, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 0, NumRangeDeletions: 0, NumRangeKeyDels: 0, NumRangeKeySets: 0, ValueBlocksSize: 3
+
+iter
+seek-lt z
+----
+<h:9>:h
+
+iter
+last
+----
+<h:9>:h
+
+iter
+set-bounds lower=c upper=g
+first
+last
+----
+.
+<f:6>:f
+<f:1>:ff
+
+# Test 5: Same as test 4, but force two level iterators.
+build twoLevel
+a.SET.1:a
+b.SET.2:b
+c.SET.3:c
+d.SET.4:d
+dd.SET.5:dd
+ddd.SET.6:ddd
+g.SET.8:g
+h.SET.9:h
+----
+point:    [a#1,1-h#9,1]
+seqnums:  [1-9]
+
+virtualize dd.SET.5-ddd.SET.6
+----
+bounds:  [dd#5,1-ddd#6,1]
+filenum: 000015
+props: NumEntries: 1, RawKeySize: 4, RawValueSize: 1, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 0, NumRangeDeletions: 0, NumRangeKeyDels: 0, NumRangeKeySets: 0, ValueBlocksSize: 0
+
+# Check lower bound enforcement during SeekPrefixGE.
+iter
+seek-prefix-ge d
+next
+next
+----
+<dd:5>:dd
+<ddd:6>:ddd
+.
+
+# Build a simpler sstable for the rest of the tests.
+build twoLevel
+a.SET.1:a
+b.SET.2:b
+c.SET.3:c
+d.SET.4:d
+e.SET.5:e
+f.SET.6:f
+g.SET.8:g
+h.SET.9:h
+----
+point:    [a#1,1-h#9,1]
+seqnums:  [1-9]
+
+# Set bounds c-f for the virtual sstable.
+virtualize c.SET.3-f.SET.6
+----
+bounds:  [c#3,1-f#6,1]
+filenum: 000017
+props: NumEntries: 1, RawKeySize: 7, RawValueSize: 1, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 0, NumRangeDeletions: 0, NumRangeKeyDels: 0, NumRangeKeySets: 0, ValueBlocksSize: 0
+
+# Just test a basic iterator once virtual sstable bounds have been set.
+iter
+first
+next
+next
+next
+next
+----
+<c:3>:c
+<d:4>:d
+<e:5>:e
+<f:6>:f
+.
+
+# Create an iterator with bounds. External bounds should still be restricted
+# along with virtual sstable bounds.
+iter a-d
+first
+next
+----
+<c:3>:c
+.
+
+iter d-g
+first
+next
+next
+next
+----
+<d:4>:d
+<e:5>:e
+<f:6>:f
+.
+
+# e is turned into an exclusive bounds, and thus it is hidden.
+iter
+set-bounds lower=d upper=e
+first
+next
+----
+.
+<d:4>:d
+.
+
+# Virtual sstable lower bound must be enforced internally from within the
+# iterator.
+iter
+seek-ge b
+next
+next
+next
+next
+----
+<c:3>:c
+<d:4>:d
+<e:5>:e
+<f:6>:f
+.
+
+# Upper bound enforcement by SeekGE.
+iter
+seek-ge g
+----
+.
+
+# Test prev.
+iter
+seek-ge d
+prev
+next
+prev
+prev
+----
+<d:4>:d
+<c:3>:c
+<d:4>:d
+<c:3>:c
+.
+
+# Test SeekLT
+build twoLevel
+a.SET.1:a
+b.SET.2:b
+c.SET.3:c
+d.SET.4:d
+e.SET.5:e
+f.SET.6:f
+f.SET.1:ff
+g.SET.8:g
+h.SET.9:h
+----
+point:    [a#1,1-h#9,1]
+seqnums:  [1-9]
+
+virtualize c.SET.3-f.SET.1:ff
+----
+bounds:  [c#3,1-f#0,1]
+filenum: 000019
+props: NumEntries: 1, RawKeySize: 7, RawValueSize: 1, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 0, NumRangeDeletions: 0, NumRangeKeyDels: 0, NumRangeKeySets: 0, ValueBlocksSize: 2
+
+iter
+set-bounds lower=d upper=e
+seek-lt e
+----
+.
+<d:4>:d
+
+iter
+seek-ge f
+next
+next
+----
+<f:6>:f
+<f:1>:ff
+.
+
+iter
+seek-lt f
+next
+next
+prev
+prev
+prev
+prev
+prev
+----
+<e:5>:e
+<f:6>:f
+<f:1>:ff
+<f:6>:f
+<e:5>:e
+<d:4>:d
+<c:3>:c
+.
+
+# We should get f here, not g as SeekLT will apply the virtual sstable end
+# bound.
+iter
+seek-lt h
+----
+<f:1>:ff
+
+iter
+last
+----
+<f:1>:ff
+
+virtualize f.SET.6-h.SET.9
+----
+bounds:  [f#6,1-h#9,1]
+filenum: 000020
+props: NumEntries: 1, RawKeySize: 7, RawValueSize: 1, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 0, NumRangeDeletions: 0, NumRangeKeyDels: 0, NumRangeKeySets: 0, ValueBlocksSize: 2
+
+iter
+seek-lt z
+----
+<h:9>:h
+
+iter
+last
+----
+<h:9>:h
+
+iter
+set-bounds lower=c upper=g
+first
+last
+----
+.
+<f:6>:f
+<f:1>:ff
+
+# Test 6: Exclusive sentinel handling. Note that this test only ensures that
+# exclusive sentinel handling is correct for some code path, but not all of
+# them, in the iterators. Consider a randomized test.
+build
+a.SET.1:a
+d.SET.2:d
+e.SET.3:e
+d.RANGEDEL.4:e
+f.SET.5:f
+----
+point:    [a#1,1-f#5,1]
+rangedel: [d#4,15-e#72057594037927935,15]
+seqnums:  [1-5]
+
+virtualize a.SET.1-e.RANGEDEL.72057594037927935
+----
+bounds:  [a#1,1-e#72057594037927935,15]
+filenum: 000022
+props: NumEntries: 1, RawKeySize: 4, RawValueSize: 1, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 1, NumRangeDeletions: 1, NumRangeKeyDels: 0, NumRangeKeySets: 0, ValueBlocksSize: 0
+
+iter
+first
+next
+next
+seek-lt f
+----
+<a:1>:a
+<d:2>:d
+.
+<d:2>:d
+
+# Don't expose e from the compaction iter.
+citer
+----
+a#1,1:a
+d#2,1:d
+
+scan-range-del
+----
+d-e:{(#4,RANGEDEL)}
+
+
+build twoLevel
+a.SET.1:a
+d.SET.2:d
+e.SET.3:e
+d.RANGEDEL.4:e
+f.SET.5:f
+----
+point:    [a#1,1-f#5,1]
+rangedel: [d#4,15-e#72057594037927935,15]
+seqnums:  [1-5]
+
+virtualize a.SET.1-e.RANGEDEL.72057594037927935
+----
+bounds:  [a#1,1-e#72057594037927935,15]
+filenum: 000024
+props: NumEntries: 1, RawKeySize: 4, RawValueSize: 1, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 1, NumRangeDeletions: 1, NumRangeKeyDels: 0, NumRangeKeySets: 0, ValueBlocksSize: 0
+
+iter
+first
+next
+next
+seek-lt f
+----
+<a:1>:a
+<d:2>:d
+.
+<d:2>:d
+
+# Don't expose e from the compaction iter.
+citer
+----
+a#1,1:a
+d#2,1:d
+
+scan-range-del
+----
+d-e:{(#4,RANGEDEL)}
+
+# Test NumRangeKeySets.
+build twoLevel
+a.SET.1:a
+b.SET.5:b
+d.SET.2:d
+f.SET.3:f
+d.RANGEDEL.4:e
+rangekey: a-d:{(#11,RANGEKEYSET,@t10,foo)}
+g.RANGEDEL.5:l
+rangekey: y-z:{(#12,RANGEKEYSET,@t11,foo)}
+----
+point:    [a#1,1-f#3,1]
+rangedel: [d#4,15-l#72057594037927935,15]
+rangekey: [a#11,21-z#72057594037927935,21]
+seqnums:  [1-12]
+
+# Virtual sstable doesn't contain range key set, but NumRangeKeySets in the
+# properties must be > 0.
+virtualize a.SET.1-b.SET.5
+----
+bounds:  [a#1,1-b#5,1]
+filenum: 000026
+props: NumEntries: 1, RawKeySize: 3, RawValueSize: 1, RawPointTombstoneKeySize: 0, RawPointTombstoneValueSize: 0, NumSizedDeletions: 0, NumDeletions: 1, NumRangeDeletions: 1, NumRangeKeyDels: 0, NumRangeKeySets: 1, ValueBlocksSize: 0

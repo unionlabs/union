@@ -1,0 +1,29 @@
+name: build
+on: [push, pull_request]
+jobs:
+  build:
+    strategy:
+      matrix:
+        go-version: [~1.17, ^1]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      GO111MODULE: "on"
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test ./...
+        if: matrix.platform != 'windows-latest'

@@ -1,0 +1,36 @@
+name: Markdown Linter
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**.md"
+      - "**.yml"
+      - "**.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "**.md"
+      - "**.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  build:
+    name: Super linter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Lint Code Base
+        uses: docker://github/super-linter:v4
+        env:
+          VALIDATE_ALL_CODEBASE: true
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_MD: true
+          VALIDATE_OPENAPI: true
+          VALIDATE_YAML: true
+          YAML_CONFIG_FILE: yaml-lint.yml

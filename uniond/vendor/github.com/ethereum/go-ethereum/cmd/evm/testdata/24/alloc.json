@@ -1,0 +1,14 @@
+{
+  "a94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+    "balance": "0x5ffd4878be161d74",
+    "code": "0x",
+    "nonce": "0xac",
+    "storage": {}
+  },
+  "0x8a8eafb1cf62bfbeb1741769dae1a9dd47996192":{
+    "balance": "0xfeedbead",
+    "nonce" : "0x00",
+    "code" : "0x44600055",
+    "_comment": "The code is 'sstore(0, random)'"
+  }
+}

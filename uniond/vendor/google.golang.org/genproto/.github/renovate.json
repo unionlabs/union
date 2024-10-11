@@ -1,0 +1,20 @@
+{
+    "extends": [
+        "config:base",
+        "schedule:weekly",
+        ":disableDependencyDashboard"
+    ],
+    "semanticCommits": false,
+    "postUpdateOptions": [
+        "gomodTidy"
+    ],
+    "commitMessagePrefix": "chore(all): ",
+    "commitMessageAction": "update",
+    "groupName": "all",
+    "ignoreDeps": [],
+    "force": {
+        "constraints": {
+            "go": "1.20"
+        }
+    }
+}

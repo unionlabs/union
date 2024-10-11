@@ -20,7 +20,7 @@ type jsonMessageFlagType struct {
 	messageDesc protoreflect.MessageDescriptor
 }
 
-func (j jsonMessageFlagType) NewValue(_ context.Context, builder *Builder) Value {
+func (j jsonMessageFlagType) NewValue(_ *context.Context, builder *Builder) Value {
 	return &jsonMessageFlagValue{
 		messageType:          util.ResolveMessageType(builder.TypeResolver, j.messageDesc),
 		jsonMarshalOptions:   protojson.MarshalOptions{Resolver: builder.TypeResolver},
@@ -67,6 +67,11 @@ func (j *jsonMessageFlagValue) Set(s string) error {
 			return err
 		}
 		messageBytes, err = io.ReadAll(jsonFile)
+		if err != nil {
+			_ = jsonFile.Close()
+			return err
+		}
+		err = jsonFile.Close()
 		if err != nil {
 			return err
 		}

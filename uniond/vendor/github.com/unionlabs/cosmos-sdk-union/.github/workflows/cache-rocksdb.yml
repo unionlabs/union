@@ -1,0 +1,62 @@
+name: Cache rocksdb libraries
+on:
+  push:
+    paths:
+      - build.mk
+  schedule:
+    - cron: "*/15 * * * *" # Every 15 minutes
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  check-cache-rocksdb:
+    name: Check existing cache
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.cache-rocksdb.outputs.cache-hit }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get rocksdb version
+        run: ./.github/scripts/get-rocksdb-version.sh
+
+      - name: Fix permissions for cache
+        run: sudo chown $(whoami) /usr/local/lib /usr/local/include
+
+      - name: Restore rocksdb libraries cache
+        id: cache-rocksdb
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /usr/local/lib/librocksdb.*
+            /usr/local/include/rocksdb
+          key: ${{ runner.os }}-rocksdb-${{ env.ROCKSDB_VERSION }}-amd64
+
+
+  save-cache-rocksdb:
+    name: Build rocksdb libraries and save cache
+    runs-on: ubuntu-latest
+    needs: check-cache-rocksdb
+    if: needs.check-cache-rocksdb.outputs.cache-hit != 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get rocksdb version
+        run: ./.github/scripts/get-rocksdb-version.sh
+
+      - name: Install rocksdb deps
+        run: ./.github/scripts/install-rocksdb-deps.sh
+      - name: Install rocksdb
+        run: ./.github/scripts/install-rocksdb.sh
+
+      - name: Saves rocksdb libraries cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /usr/local/lib/librocksdb.*
+            /usr/local/include/rocksdb
+          key: ${{ runner.os }}-rocksdb-${{ env.ROCKSDB_VERSION }}-amd64

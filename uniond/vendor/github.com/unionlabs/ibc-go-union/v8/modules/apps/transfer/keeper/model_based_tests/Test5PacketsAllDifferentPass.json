@@ -1,0 +1,612 @@
+[
+  {
+    "packet": {
+      "sourceChannel": "channel-0",
+      "sourcePort": "transfer",
+      "destChannel": "channel-0",
+      "destPort": "transfer",
+      "data": {
+        "sender": "a3",
+        "receiver": "a2",
+        "amount": "3",
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "eth"
+        ]
+      }
+    },
+    "handler": "OnTimeoutPacket",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "eth"
+        ],
+        "amount": 3
+      }
+    ],
+    "error": false
+  },
+  {
+    "packet": {
+      "sourceChannel": "channel-1",
+      "sourcePort": "transfer",
+      "destChannel": "channel-0",
+      "destPort": "transfer",
+      "data": {
+        "sender": "a2",
+        "receiver": "a1",
+        "amount": "3",
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "btc"
+        ]
+      }
+    },
+    "handler": "OnRecvAcknowledgementError",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "eth"
+        ],
+        "amount": 3
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "btc"
+        ],
+        "amount": 3
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "eth"
+        ],
+        "amount": 3
+      }
+    ],
+    "error": false
+  },
+  {
+    "packet": {
+      "sourceChannel": "channel-0",
+      "sourcePort": "transfer",
+      "destChannel": "channel-1",
+      "destPort": "transfer",
+      "data": {
+        "sender": "a1",
+        "receiver": "a2",
+        "amount": "3",
+        "denom": [
+          "",
+          "",
+          "cosmos-hub",
+          "cosmos-hub",
+          "atom"
+        ]
+      }
+    },
+    "handler": "OnRecvPacket",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "btc"
+        ],
+        "amount": 3
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "eth"
+        ],
+        "amount": 3
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "atom"
+        ],
+        "amount": 3
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "btc"
+        ],
+        "amount": 3
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "eth"
+        ],
+        "amount": 3
+      }
+    ],
+    "error": false
+  },
+  {
+    "packet": {
+      "sourceChannel": "cosmos-hub",
+      "sourcePort": "bitcoin-hub",
+      "destChannel": "transfer",
+      "destPort": "cosmos-hub",
+      "data": {
+        "sender": "a1",
+        "receiver": "",
+        "amount": "2",
+        "denom": [
+          "",
+          "channel-0",
+          "channel-1",
+          "channel-1",
+          ""
+        ]
+      }
+    },
+    "handler": "OnRecvAcknowledgementResult",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "atom"
+        ],
+        "amount": 3
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "btc"
+        ],
+        "amount": 3
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "eth"
+        ],
+        "amount": 3
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "atom"
+        ],
+        "amount": 3
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "btc"
+        ],
+        "amount": 3
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "eth"
+        ],
+        "amount": 3
+      }
+    ],
+    "error": false
+  },
+  {
+    "packet": {
+      "sourceChannel": "channel-1",
+      "sourcePort": "transfer",
+      "destChannel": "channel-0",
+      "destPort": "transfer",
+      "data": {
+        "sender": "a3",
+        "receiver": "a3",
+        "amount": "1",
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "eth"
+        ]
+      }
+    },
+    "handler": "SendTransfer",
+    "bankBefore": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "atom"
+        ],
+        "amount": 3
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "btc"
+        ],
+        "amount": 3
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "eth"
+        ],
+        "amount": 3
+      }
+    ],
+    "bankAfter": [
+      {
+        "address": [
+          "",
+          "",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "amount": 0
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "atom"
+        ],
+        "amount": 3
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a2"
+        ],
+        "denom": [
+          "transfer",
+          "channel-1",
+          "cosmos-hub",
+          "cosmos-hub",
+          "btc"
+        ],
+        "amount": 3
+      },
+      {
+        "address": [
+          "",
+          "",
+          "a3"
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "eth"
+        ],
+        "amount": 2
+      },
+      {
+        "address": [
+          "transfer",
+          "channel-1",
+          ""
+        ],
+        "denom": [
+          "",
+          "",
+          "transfer",
+          "channel-0",
+          "eth"
+        ],
+        "amount": 1
+      }
+    ],
+    "error": false
+  }
+]

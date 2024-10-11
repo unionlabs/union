@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "target": "es5",
+      "module": "commonjs",
+      "outDir": "./dist",
+      "allowJs": true,
+      "sourceMap": true,
+      "strict": true,
+      "noImplicitAny": false,
+      "strictNullChecks": false,
+      "esModuleInterop": true,
+      "baseUrl": "./",
+      "typeRoots": ["node_modules/@types"],
+      "skipLibCheck": true, 
+      "forceConsistentCasingInFileNames": true
+    }
+  }

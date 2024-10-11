@@ -1,0 +1,191 @@
+apply
+ L0
+  1:[a#1,SET-b#2,SET]
+  2:[c#3,SET-d#4,SET]
+edit
+ delete
+  L0
+   1
+ add
+  L2
+  1:[a#1,SET-b#2,SET]
+  4:[c#3,SET-d#4,SET]
+----
+0.0:
+  000002:[c#3,SET-d#4,SET]
+2:
+  000001:[a#1,SET-b#2,SET]
+  000004:[c#3,SET-d#4,SET]
+zombies []
+
+apply
+ L0
+  1:[a#1,SET-b#2,SET]
+  2:[c#3,SET-d#4,SET]
+edit
+ delete
+  L1
+   1
+----
+pebble: internal error: No current or added files but have deleted files: 1
+
+apply
+ L0
+  1:[a#1,SET-c#2,SET]
+  2:[c#3,SET-d#4,SET]
+edit
+ delete
+  L0
+   1
+ add
+  L2
+   1:[a#1,SET-c#2,SET]
+   4:[b#3,SET-d#4,SET]
+----
+pebble: internal error: L2 files 000001 and 000004 have overlapping ranges: [a#1,SET-c#2,SET] vs [b#3,SET-d#4,SET]
+
+apply
+ L0
+  1:[a#1,SET-c#2,SET]
+  2:[c#3,SET-d#4,SET]
+edit
+ add
+  L0
+   4:[b#3,SET-d#5,SET]
+----
+0.2:
+  000004:[b#3,SET-d#5,SET]
+0.1:
+  000002:[c#3,SET-d#4,SET]
+0.0:
+  000001:[a#1,SET-c#2,SET]
+zombies []
+
+apply
+ L0
+   1:[a#1,SET-c#2,SET]
+   2:[c#3,SET-d#4,SET]
+edit
+ add
+  L0
+   4:[b#0,SET-d#0,SET]
+----
+0.2:
+  000002:[c#3,SET-d#4,SET]
+0.1:
+  000001:[a#1,SET-c#2,SET]
+0.0:
+  000004:[b#0,SET-d#0,SET]
+zombies []
+
+
+apply
+edit
+ add
+  L0
+   1:[a#1,SET-c#2,SET]
+   4:[b#3,SET-d#5,SET]
+----
+0.1:
+  000004:[b#3,SET-d#5,SET]
+0.0:
+  000001:[a#1,SET-c#2,SET]
+zombies []
+
+apply
+ L0
+  1:[a#1,SET-c#2,SET]
+----
+0.0:
+  000001:[a#1,SET-c#2,SET]
+zombies []
+
+apply
+ L2
+  3:[b#1,SET-c#2,SET]
+  4:[d#3,SET-f#4,SET]
+  5:[h#3,SET-h#2,SET]
+  2:[n#5,SET-q#3,SET]
+  1:[r#2,SET-t#1,SET]
+edit
+ delete
+  L2
+   4
+   1
+ add
+  L2
+   6:[a#10,SET-a#7,SET]
+   7:[e#1,SET-g#2,SET]
+   10:[j#3,SET-m#2,SET]
+----
+2:
+  000006:[a#10,SET-a#7,SET]
+  000003:[b#1,SET-c#2,SET]
+  000007:[e#1,SET-g#2,SET]
+  000005:[h#3,SET-h#2,SET]
+  000010:[j#3,SET-m#2,SET]
+  000002:[n#5,SET-q#3,SET]
+zombies [{1} {4}]
+
+apply
+edit
+ add
+  L2
+   10:[j#3,SET-m#2,SET]
+   6:[a#10,SET-a#7,SET]
+----
+2:
+  000006:[a#10,SET-a#7,SET]
+  000010:[j#3,SET-m#2,SET]
+zombies []
+
+# Verify that the zombies map is populated correctly.
+
+apply
+ L0
+  1:[a#1,SET-b#2,SET]
+ L1
+  2:[c#3,SET-d#2,SET]
+edit
+ delete
+  L0
+   1
+  L1
+   2
+----
+zombies [{1} {2}]
+
+# Deletion of a non-existent table results in an error.
+
+apply
+ L0
+  1:[a#1,SET-b#2,SET]
+edit
+ delete
+  L0
+   2
+----
+pebble: file deleted L0.000002 before it was inserted
+
+apply
+ L0
+  1:[a#1,SET-b#2,SET]
+edit
+ delete
+  L0
+   1
+ add
+  L2
+  1:[a#1,SET-b#2,SET]
+  4:[c#3,SET-d#4,SET]
+  5:[s#3,SET-z#4,SET]
+edit
+  delete
+    L2
+     1
+    L2
+     4
+----
+2:
+  000005:[s#3,SET-z#4,SET]
+zombies []

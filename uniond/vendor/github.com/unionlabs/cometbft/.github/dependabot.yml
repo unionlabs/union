@@ -1,0 +1,91 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: "main"
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - automerge
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: "v0.38.x"
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - automerge
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: "v0.37.x"
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - automerge
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: "v0.34.x"
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - automerge
+
+  ###################################
+  ##
+  ## Update All Go Dependencies
+
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: weekly
+    target-branch: "main"
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - automerge
+
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: daily
+    target-branch: "v0.38.x"
+    # Only allow automated security-related dependency updates on release
+    # branches.
+    open-pull-requests-limit: 0
+    labels:
+      - dependencies
+      - automerge
+
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: daily
+    target-branch: "v0.37.x"
+    # Only allow automated security-related dependency updates on release
+    # branches.
+    open-pull-requests-limit: 0
+    labels:
+      - dependencies
+      - automerge
+
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: daily
+    target-branch: "v0.34.x"
+    # Only allow automated security-related dependency updates on release
+    # branches.
+    open-pull-requests-limit: 0
+    labels:
+      - dependencies
+      - automerge

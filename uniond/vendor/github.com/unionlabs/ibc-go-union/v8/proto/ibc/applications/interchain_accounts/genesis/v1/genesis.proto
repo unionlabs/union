@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package ibc.applications.interchain_accounts.genesis.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/genesis/types";
+
+import "gogoproto/gogo.proto";
+import "ibc/applications/interchain_accounts/controller/v1/controller.proto";
+import "ibc/applications/interchain_accounts/host/v1/host.proto";
+
+// GenesisState defines the interchain accounts genesis state
+message GenesisState {
+  ControllerGenesisState controller_genesis_state = 1 [(gogoproto.nullable) = false];
+  HostGenesisState       host_genesis_state       = 2 [(gogoproto.nullable) = false];
+}
+
+// ControllerGenesisState defines the interchain accounts controller genesis state
+message ControllerGenesisState {
+  repeated ActiveChannel                                    active_channels     = 1 [(gogoproto.nullable) = false];
+  repeated RegisteredInterchainAccount                      interchain_accounts = 2 [(gogoproto.nullable) = false];
+  repeated string                                           ports               = 3;
+  ibc.applications.interchain_accounts.controller.v1.Params params              = 4 [(gogoproto.nullable) = false];
+}
+
+// HostGenesisState defines the interchain accounts host genesis state
+message HostGenesisState {
+  repeated ActiveChannel                              active_channels     = 1 [(gogoproto.nullable) = false];
+  repeated RegisteredInterchainAccount                interchain_accounts = 2 [(gogoproto.nullable) = false];
+  string                                              port                = 3;
+  ibc.applications.interchain_accounts.host.v1.Params params              = 4 [(gogoproto.nullable) = false];
+}
+
+// ActiveChannel contains a connection ID, port ID and associated active channel ID, as well as a boolean flag to
+// indicate if the channel is middleware enabled
+message ActiveChannel {
+  string connection_id         = 1;
+  string port_id               = 2;
+  string channel_id            = 3;
+  bool   is_middleware_enabled = 4;
+}
+
+// RegisteredInterchainAccount contains a connection ID, port ID and associated interchain account address
+message RegisteredInterchainAccount {
+  string connection_id   = 1;
+  string port_id         = 2;
+  string account_address = 3;
+}

@@ -21,6 +21,3 @@ comment:
   layout: "reach, diff, files, tree"
   behavior: default # update if exists else create new
   require_changes: true
-
-ignore:
-  - "remotedb/proto"

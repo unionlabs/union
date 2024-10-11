@@ -1,0 +1,42 @@
+name: Run lint
+
+on: [ push, pull_request ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          # version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
+          version: latest
+
+          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          # only-new-issues: true
+
+          # golangci-lint command line arguments.
+          args:
+                -v
+                --max-same-issues 10
+                --disable-all
+                --exclude-use-default=false
+                -E asciicheck
+                -E deadcode
+                -E errcheck
+                -E forcetypeassert
+                -E gocritic
+                -E gofmt
+                -E goimports
+                -E gosimple
+                -E govet
+                -E ineffassign
+                -E misspell
+                -E revive
+                -E staticcheck
+                -E structcheck
+                -E typecheck
+                -E unused
+                -E varcheck

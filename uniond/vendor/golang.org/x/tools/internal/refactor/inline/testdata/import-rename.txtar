@@ -1,0 +1,40 @@
+Regtest for https://github.com/golang/go/issues/67281
+
+-- go.mod --
+module example.com
+go 1.19
+
+-- main/main.go --
+package main
+
+import "example.com/a"
+
+func main() {
+	a.A() //@ inline(re"A", result)
+}
+
+-- a/a.go --
+package a
+
+import "example.com/other/a"
+
+func A() {
+	a.A()
+}
+
+-- other/a/a.go --
+package a
+
+func A() {
+}
+
+-- result --
+package main
+
+import (
+	"example.com/other/a"
+)
+
+func main() {
+	a.A() //@ inline(re"A", result)
+}

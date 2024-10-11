@@ -1,0 +1,29 @@
+[ req ]
+default_bits        = 2048
+distinguished_name  = subject
+req_extensions      = req_ext
+x509_extensions     = x509_ext
+string_mask         = utf8only
+prompt              = no
+
+[ subject ]
+C     = US
+ST    = Nevada
+L     = Las Vegas
+O     = github.com/lib/pq
+
+[ x509_ext ]
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid,issuer
+
+basicConstraints      = CA:FALSE
+keyUsage              = digitalSignature, keyEncipherment
+subjectAltName        = DNS:postgres
+nsComment             = "OpenSSL Generated Certificate"
+
+[ req_ext ]
+subjectKeyIdentifier   = hash
+basicConstraints      = CA:FALSE
+keyUsage              = digitalSignature, keyEncipherment
+subjectAltName        = DNS:postgres
+nsComment             = "OpenSSL Generated Certificate"

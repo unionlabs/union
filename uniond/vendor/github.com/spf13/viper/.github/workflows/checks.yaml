@@ -1,0 +1,30 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+
+jobs:
+  release-label:
+    name: Release note label
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check minimum labels
+        uses: mheap/github-action-required-labels@5847eef68201219cf0a4643ea7be61e77837bbce # v5.4.1
+        with:
+          mode: minimum
+          count: 1
+          labels: |
+            release-note/ignore
+            kind/feature
+            release-note/new-feature
+            kind/enhancement
+            release-note/enhancement
+            kind/bug
+            release-note/bug-fix
+            release-note/breaking-change
+            release-note/deprecation
+            area/dependencies
+            release-note/dependency-update
+            release-note/misc

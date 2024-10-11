@@ -1,0 +1,9 @@
+path=example.com/m
+version=v1.0.0
+hash=h1:xctQQey8/y7IcBjFZDP/onWLSXhlqcsC3i1fgSdpMHk=
+-- a.go --
+package a
+-- b/GO.MOD --
+MODULE EXAMPLE.COM/M/B
+-- b/b.go --
+package b

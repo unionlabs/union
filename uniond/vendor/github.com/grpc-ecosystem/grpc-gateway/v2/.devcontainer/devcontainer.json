@@ -1,0 +1,25 @@
+// For format details, see https://aka.ms/devcontainer.json.
+{
+	"name": "Go",
+	"build": {
+		"dockerfile": "../.github/Dockerfile",
+		"args": {
+			"NODE_VERSION": "10"
+		}
+	},
+	"settings": {
+		"editor.formatOnSave": true,
+		"go.toolsManagement.checkForUpdates": "local",
+		"go.useLanguageServer": true,
+		"go.gopath": "/go",
+		"go.goroot": "/usr/local/go",
+		"bazel.buildifierExecutable": "/go/bin/buildifier",
+		"bazel.buildifierFixOnFormat": true,
+		"bazel.enableCodeLens": true,
+	},
+	"extensions": [
+		"golang.Go",
+		"bazelbuild.vscode-bazel",
+	],
+	"remoteUser": "vscode"
+}

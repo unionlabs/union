@@ -1,0 +1,119 @@
+{
+    "testCases": [
+        {
+            "documentation": "For region us-east-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://datazone-fips.us-east-1.api.aws"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "For region us-east-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://datazone.us-east-1.api.aws"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "For region cn-north-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://datazone-fips.cn-north-1.api.amazonwebservices.com.cn"
+                }
+            },
+            "params": {
+                "Region": "cn-north-1",
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "For region cn-north-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://datazone.cn-north-1.api.amazonwebservices.com.cn"
+                }
+            },
+            "params": {
+                "Region": "cn-north-1",
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "For region us-gov-east-1 with FIPS enabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://datazone-fips.us-gov-east-1.api.aws"
+                }
+            },
+            "params": {
+                "Region": "us-gov-east-1",
+                "UseFIPS": true
+            }
+        },
+        {
+            "documentation": "For region us-gov-east-1 with FIPS disabled and DualStack enabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://datazone.us-gov-east-1.api.aws"
+                }
+            },
+            "params": {
+                "Region": "us-gov-east-1",
+                "UseFIPS": false
+            }
+        },
+        {
+            "documentation": "For custom endpoint with region set and fips disabled and dualstack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://example.com"
+                }
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": false,
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "For custom endpoint with region not set and fips disabled and dualstack disabled",
+            "expect": {
+                "endpoint": {
+                    "url": "https://example.com"
+                }
+            },
+            "params": {
+                "UseFIPS": false,
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "For custom endpoint with fips enabled and dualstack disabled",
+            "expect": {
+                "error": "Invalid Configuration: FIPS and custom endpoint are not supported"
+            },
+            "params": {
+                "Region": "us-east-1",
+                "UseFIPS": true,
+                "Endpoint": "https://example.com"
+            }
+        },
+        {
+            "documentation": "Missing region",
+            "expect": {
+                "error": "Invalid Configuration: Missing Region"
+            }
+        }
+    ],
+    "version": "1.0"
+}

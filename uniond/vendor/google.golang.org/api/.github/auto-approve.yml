@@ -1,0 +1,2 @@
+processes:
+  - "GoApiaryCodegen"

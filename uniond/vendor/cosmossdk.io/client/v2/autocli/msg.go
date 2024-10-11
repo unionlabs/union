@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cockroachdb/errors"
+	gogoproto "github.com/cosmos/gogoproto/proto"
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -12,21 +12,26 @@ import (
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	"cosmossdk.io/client/v2/autocli/flag"
+	"cosmossdk.io/client/v2/internal/flags"
 	"cosmossdk.io/client/v2/internal/util"
+	addresscodec "cosmossdk.io/core/address"
+
+	// the following will be extracted to a separate module
+	// https://github.com/cosmos/cosmos-sdk/issues/14403
+	govcli "cosmossdk.io/x/gov/client/cli"
+	govtypes "cosmossdk.io/x/gov/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	authtxconfig "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 )
 
 // BuildMsgCommand builds the msg commands for all the provided modules. If a custom command is provided for a
 // module, this is used instead of any automatically generated CLI commands. This allows apps to a fully dynamic client
 // with a more customized experience if a binary with custom commands is downloaded.
-func (b *Builder) BuildMsgCommand(appOptions AppOptions, customCmds map[string]*cobra.Command) (*cobra.Command, error) {
-	msgCmd := topLevelCmd("tx", "Transaction subcommands")
+func (b *Builder) BuildMsgCommand(ctx context.Context, appOptions AppOptions, customCmds map[string]*cobra.Command) (*cobra.Command, error) {
+	msgCmd := topLevelCmd(ctx, "tx", "Transaction subcommands")
+
 	if err := b.enhanceCommandCommon(msgCmd, msgCmdType, appOptions, customCmds); err != nil {
 		return nil, err
 	}
@@ -41,7 +46,11 @@ func (b *Builder) AddMsgServiceCommands(cmd *cobra.Command, cmdDescriptor *autoc
 	for cmdName, subCmdDescriptor := range cmdDescriptor.SubCommands {
 		subCmd := findSubCommand(cmd, cmdName)
 		if subCmd == nil {
-			subCmd = topLevelCmd(cmdName, fmt.Sprintf("Tx commands for the %s service", subCmdDescriptor.Service))
+			short := subCmdDescriptor.Short
+			if short == "" {
+				short = fmt.Sprintf("Tx commands for the %s service", subCmdDescriptor.Service)
+			}
+			subCmd = topLevelCmd(cmd.Context(), cmdName, short)
 		}
 
 		// Add recursive sub-commands if there are any. This is used for nested services.
@@ -49,7 +58,9 @@ func (b *Builder) AddMsgServiceCommands(cmd *cobra.Command, cmdDescriptor *autoc
 			return err
 		}
 
-		cmd.AddCommand(subCmd)
+		if !subCmdDescriptor.EnhanceCustomCommand {
+			cmd.AddCommand(subCmd)
+		}
 	}
 
 	if cmdDescriptor.Service == "" {
@@ -59,7 +70,7 @@ func (b *Builder) AddMsgServiceCommands(cmd *cobra.Command, cmdDescriptor *autoc
 
 	descriptor, err := b.FileResolver.FindDescriptorByName(protoreflect.FullName(cmdDescriptor.Service))
 	if err != nil {
-		return errors.Errorf("can't find service %s: %v", cmdDescriptor.Service, err)
+		return fmt.Errorf("can't find service %s: %w", cmdDescriptor.Service, err)
 	}
 	service := descriptor.(protoreflect.ServiceDescriptor)
 	methods := service.Methods()
@@ -86,7 +97,7 @@ func (b *Builder) AddMsgServiceCommands(cmd *cobra.Command, cmdDescriptor *autoc
 			continue
 		}
 
-		if !util.IsSupportedVersion(util.DescriptorDocs(methodDescriptor)) {
+		if !util.IsSupportedVersion(methodDescriptor) {
 			continue
 		}
 
@@ -101,9 +112,7 @@ func (b *Builder) AddMsgServiceCommands(cmd *cobra.Command, cmdDescriptor *autoc
 			continue
 		}
 
-		if methodCmd != nil {
-			cmd.AddCommand(methodCmd)
-		}
+		cmd.AddCommand(methodCmd)
 	}
 
 	return nil
@@ -111,9 +120,7 @@ func (b *Builder) AddMsgServiceCommands(cmd *cobra.Command, cmdDescriptor *autoc
 
 // BuildMsgMethodCommand returns a command that outputs the JSON representation of the message.
 func (b *Builder) BuildMsgMethodCommand(descriptor protoreflect.MethodDescriptor, options *autocliv1.RpcCommandOptions) (*cobra.Command, error) {
-	cmd, err := b.buildMethodCommandCommon(descriptor, options, func(cmd *cobra.Command, input protoreflect.Message) error {
-		cmd.SetContext(context.WithValue(context.Background(), client.ClientContextKey, &b.ClientCtx))
-
+	execFunc := func(cmd *cobra.Command, input protoreflect.Message) error {
 		clientCtx, err := client.GetClientTxContext(cmd)
 		if err != nil {
 			return err
@@ -122,29 +129,17 @@ func (b *Builder) BuildMsgMethodCommand(descriptor protoreflect.MethodDescriptor
 		clientCtx = clientCtx.WithCmdContext(cmd.Context())
 		clientCtx = clientCtx.WithOutput(cmd.OutOrStdout())
 
-		// enable sign mode textual
-		// the config is always overwritten as we need to have set the flags to the client context
-		// this ensures that the context has the correct client.
-		if !clientCtx.Offline {
-			b.TxConfigOpts.EnabledSignModes = append(b.TxConfigOpts.EnabledSignModes, signing.SignMode_SIGN_MODE_TEXTUAL)
-			b.TxConfigOpts.TextualCoinMetadataQueryFn = authtxconfig.NewGRPCCoinMetadataQueryFn(clientCtx)
+		fd := input.Descriptor().Fields().ByName(protoreflect.Name(flag.GetSignerFieldName(input.Descriptor())))
+		addressCodec := b.Builder.AddressCodec
 
-			txConfig, err := authtx.NewTxConfigWithOptions(
-				codec.NewProtoCodec(clientCtx.InterfaceRegistry),
-				b.TxConfigOpts,
-			)
-			if err != nil {
-				return err
-			}
-
-			clientCtx = clientCtx.WithTxConfig(txConfig)
+		// handle gov proposals commands
+		skipProposal, _ := cmd.Flags().GetBool(flags.FlagNoProposal)
+		if options.GovProposal && !skipProposal {
+			return b.handleGovProposal(cmd, input, clientCtx, addressCodec, fd)
 		}
 
 		// set signer to signer field if empty
-		fd := input.Descriptor().Fields().ByName(protoreflect.Name(flag.GetSignerFieldName(input.Descriptor())))
 		if addr := input.Get(fd).String(); addr == "" {
-			addressCodec := b.Builder.AddressCodec
-
 			scalarType, ok := flag.GetScalarType(fd)
 			if ok {
 				// override address codec if validator or consensus address
@@ -172,16 +167,64 @@ func (b *Builder) BuildMsgMethodCommand(descriptor protoreflect.MethodDescriptor
 		proto.Merge(msg, input.Interface())
 
 		return clienttx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
-	})
+	}
+
+	cmd, err := b.buildMethodCommandCommon(descriptor, options, execFunc)
+	if err != nil {
+		return nil, err
+	}
 
 	if b.AddTxConnFlags != nil {
 		b.AddTxConnFlags(cmd)
 	}
 
 	// silence usage only for inner txs & queries commands
-	if cmd != nil {
-		cmd.SilenceUsage = true
+	cmd.SilenceUsage = true
+
+	// set gov proposal flags if command is a gov proposal
+	if options.GovProposal {
+		govcli.AddGovPropFlagsToCmd(cmd)
+		cmd.Flags().Bool(flags.FlagNoProposal, false, "Skip gov proposal and submit a normal transaction")
 	}
 
-	return cmd, err
+	return cmd, nil
+}
+
+// handleGovProposal sets the authority field of the message to the gov module address and creates a gov proposal.
+func (b *Builder) handleGovProposal(
+	cmd *cobra.Command,
+	input protoreflect.Message,
+	clientCtx client.Context,
+	addressCodec addresscodec.Codec,
+	fd protoreflect.FieldDescriptor,
+) error {
+	govAuthority := authtypes.NewModuleAddress(govtypes.ModuleName)
+	authority, err := addressCodec.BytesToString(govAuthority.Bytes())
+	if err != nil {
+		return fmt.Errorf("failed to convert gov authority: %w", err)
+	}
+	input.Set(fd, protoreflect.ValueOfString(authority))
+
+	signerFromFlag := clientCtx.GetFromAddress()
+	signer, err := addressCodec.BytesToString(signerFromFlag.Bytes())
+	if err != nil {
+		return fmt.Errorf("failed to set signer on message, got %q: %w", signerFromFlag, err)
+	}
+
+	proposal, err := govcli.ReadGovPropCmdFlags(signer, cmd.Flags())
+	if err != nil {
+		return err
+	}
+
+	// AutoCLI uses protov2 messages, while the SDK only supports proto v1 messages.
+	// Here we use dynamicpb, to create a proto v1 compatible message.
+	// The SDK codec will handle protov2 -> protov1 (marshal)
+	msg := dynamicpb.NewMessage(input.Descriptor())
+	proto.Merge(msg, input.Interface())
+
+	if err := proposal.SetMsgs([]gogoproto.Message{msg}); err != nil {
+		return fmt.Errorf("failed to set msg in proposal %w", err)
+	}
+
+	return clienttx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), proposal)
 }

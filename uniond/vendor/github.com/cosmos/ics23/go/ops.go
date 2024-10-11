@@ -12,7 +12,10 @@ import (
 	_ "crypto/sha256"
 	// adds sha512 capability to crypto.SHA512
 	_ "crypto/sha512"
-
+	// adds blake2b capability to crypto.BLAKE2b_512
+	_ "golang.org/x/crypto/blake2b"
+	// adds blake2s capability to crypto.BLAKE2s_256
+	_ "golang.org/x/crypto/blake2s"
 	// adds ripemd160 capability to crypto.RIPEMD160
 	_ "golang.org/x/crypto/ripemd160" //nolint:staticcheck
 )
@@ -91,7 +94,13 @@ func (op *InnerOp) Apply(child []byte) ([]byte, error) {
 
 // CheckAgainstSpec will verify the LeafOp is in the format defined in spec
 func (op *LeafOp) CheckAgainstSpec(spec *ProofSpec) error {
+	if spec == nil {
+		return errors.New("op and spec must be non-nil")
+	}
 	lspec := spec.LeafSpec
+	if lspec == nil {
+		return errors.New("spec.LeafSpec must be non-nil")
+	}
 
 	if validateSpec(spec) {
 		err := validateIavlOps(op, 0)
@@ -120,6 +129,16 @@ func (op *LeafOp) CheckAgainstSpec(spec *ProofSpec) error {
 
 // CheckAgainstSpec will verify the InnerOp is in the format defined in spec
 func (op *InnerOp) CheckAgainstSpec(spec *ProofSpec, b int) error {
+	if spec == nil {
+		return errors.New("op and spec must be both non-nil")
+	}
+	if spec.InnerSpec == nil {
+		return errors.New("spec.InnerSpec must be non-nil")
+	}
+	if spec.LeafSpec == nil {
+		return errors.New("spec.LeafSpec must be non-nil")
+	}
+
 	if op.Hash != spec.InnerSpec.Hash {
 		return fmt.Errorf("unexpected HashOp: %d", op.Hash)
 	}
@@ -143,6 +162,10 @@ func (op *InnerOp) CheckAgainstSpec(spec *ProofSpec, b int) error {
 		return fmt.Errorf("innerOp prefix too long (%d)", len(op.Prefix))
 	}
 
+	if spec.InnerSpec.ChildSize <= 0 {
+		return errors.New("spec.InnerSpec.ChildSize must be >= 1")
+	}
+
 	// ensures soundness, with suffix having to be of correct length
 	if len(op.Suffix)%int(spec.InnerSpec.ChildSize) != 0 {
 		return fmt.Errorf("InnerOp suffix malformed")
@@ -164,15 +187,40 @@ func doHash(hashOp HashOp, preimage []byte) ([]byte, error) {
 	case HashOp_BITCOIN:
 		// ripemd160(sha256(x))
 		sha := crypto.SHA256.New()
-		sha.Write(preimage)
+		_, err := sha.Write(preimage)
+		if err != nil {
+			return nil, err
+		}
 		tmp := sha.Sum(nil)
-		hash := crypto.RIPEMD160.New()
-		hash.Write(tmp)
-		return hash.Sum(nil), nil
+		bitcoinHash := crypto.RIPEMD160.New()
+		_, err = bitcoinHash.Write(tmp)
+		if err != nil {
+			return nil, err
+		}
+		return bitcoinHash.Sum(nil), nil
 	case HashOp_SHA512_256:
-		hash := crypto.SHA512_256.New()
-		hash.Write(preimage)
-		return hash.Sum(nil), nil
+		shaHash := crypto.SHA512_256.New()
+		_, err := shaHash.Write(preimage)
+		if err != nil {
+			return nil, err
+		}
+		return shaHash.Sum(nil), nil
+	case HashOp_BLAKE2B_512:
+		blakeHash := crypto.BLAKE2b_512.New()
+		_, err := blakeHash.Write(preimage)
+		if err != nil {
+			return nil, err
+		}
+		return blakeHash.Sum(nil), nil
+	case HashOp_BLAKE2S_256:
+		blakeHash := crypto.BLAKE2s_256.New()
+		_, err := blakeHash.Write(preimage)
+		if err != nil {
+			return nil, err
+		}
+		return blakeHash.Sum(nil), nil
+		// TODO: there doesn't seem to be an "official" implementation of BLAKE3 in Go,
+		// so we are unable to support it for now
 	}
 	return nil, fmt.Errorf("unsupported hashop: %d", hashOp)
 }
@@ -183,7 +231,10 @@ type hasher interface {
 
 func hashBz(h hasher, preimage []byte) ([]byte, error) {
 	hh := h.New()
-	hh.Write(preimage)
+	_, err := hh.Write(preimage)
+	if err != nil {
+		return nil, err
+	}
 	return hh.Sum(nil), nil
 }
 
@@ -193,8 +244,8 @@ func prepareLeafData(hashOp HashOp, lengthOp LengthOp, data []byte) ([]byte, err
 	if err != nil {
 		return nil, err
 	}
-	ldata, err := doLengthOp(lengthOp, hdata)
-	return ldata, err
+
+	return doLengthOp(lengthOp, hdata)
 }
 
 func validateSpec(spec *ProofSpec) bool {
@@ -228,16 +279,28 @@ func doLengthOp(lengthOp LengthOp, data []byte) ([]byte, error) {
 			return nil, fmt.Errorf("data was %d bytes, not 64", len(data))
 		}
 		return data, nil
+	case LengthOp_FIXED32_BIG:
+		res := make([]byte, 4, 4+len(data))
+		binary.BigEndian.PutUint32(res[:4], uint32(len(data)))
+		res = append(res, data...)
+		return res, nil
 	case LengthOp_FIXED32_LITTLE:
 		res := make([]byte, 4, 4+len(data))
 		binary.LittleEndian.PutUint32(res[:4], uint32(len(data)))
 		res = append(res, data...)
 		return res, nil
+	case LengthOp_FIXED64_BIG:
+		res := make([]byte, 8, 8+len(data))
+		binary.BigEndian.PutUint64(res[:8], uint64(len(data)))
+		res = append(res, data...)
+		return res, nil
+	case LengthOp_FIXED64_LITTLE:
+		res := make([]byte, 8, 8+len(data))
+		binary.LittleEndian.PutUint64(res[:8], uint64(len(data)))
+		res = append(res, data...)
+		return res, nil
 		// TODO
 		// case LengthOp_VAR_RLP:
-		// case LengthOp_FIXED32_BIG:
-		// case LengthOp_FIXED64_BIG:
-		// case LengthOp_FIXED64_LITTLE:
 	}
 	return nil, fmt.Errorf("unsupported lengthop: %d", lengthOp)
 }

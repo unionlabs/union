@@ -1,0 +1,148 @@
+run:
+  tests: true
+  timeout: 15m
+  sort-results: true
+  allow-parallel-runners: true
+  exclude-dir: testutil/testdata
+  skip-files:
+    - server/grpc/gogoreflection/fix_registration.go
+    - ".*\\.pb\\.go$"
+    - ".*\\.pb\\.gw\\.\\.go$"
+    - ".*\\.pulsar\\.go$"
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - dogsled
+    - exportloopref
+    - goconst
+    - gocritic
+    - gci
+    - gofumpt
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - nolintlint
+    - staticcheck
+    - revive
+    - stylecheck
+    - typecheck
+#    - thelper # too many positives with table tests that have custom setup(*testing.T)
+    - unconvert
+    - unused
+
+issues:
+  exclude-rules:
+    - text: 'Use of weak random number generator'
+      linters:
+        - gosec
+    - text: 'ST1003:'
+      linters:
+        - stylecheck
+    # FIXME: Disabled until golangci-lint updates stylecheck with this fix:
+    # https://github.com/dominikh/go-tools/issues/389
+    - text: 'ST1016:'
+      linters:
+        - stylecheck
+    - path: 'migrations'
+      text: 'SA1019:'
+      linters:
+        - staticcheck
+    - text: 'SA1019: codec.NewAminoCodec is deprecated' # TODO remove once migration path is set out
+      linters:
+        - staticcheck
+    - text: 'SA1019: legacybech32.MustMarshalPubKey' # TODO remove once ready to remove from the sdk
+      linters:
+        - staticcheck
+    - text: 'SA1019: legacybech32.MarshalPubKey' # TODO remove once ready to remove from the sdk
+      linters:
+        - staticcheck
+    - text: 'SA1019: legacybech32.UnmarshalPubKey' # TODO remove once ready to remove from the sdk
+      linters:
+        - staticcheck
+    - text: 'SA1019: params.SendEnabled is deprecated' # TODO remove once ready to remove from the sdk
+      linters:
+        - staticcheck
+    - text: 'leading space'
+      linters:
+        - nolintlint
+  max-issues-per-linter: 10000
+  max-same-issues: 10000
+
+linters-settings:
+  gci:
+    custom-order: true
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - prefix(cosmossdk.io)
+      - prefix(github.com/cosmos/cosmos-sdk)
+      - prefix(github.com/CosmWasm/wasmd)
+  revive:
+    rules:
+      - name: redefines-builtin-id
+        disabled: true
+
+  gosec:
+    # To select a subset of rules to run.
+    # Available rules: https://github.com/securego/gosec#available-rules
+    # Default: [] - means include all rules
+    includes:
+      #  - G101 # Look for hard coded credentials
+      - G102 # Bind to all interfaces
+      - G103 # Audit the use of unsafe block
+      - G104 # Audit errors not checked
+      - G106 # Audit the use of ssh.InsecureIgnoreHostKey
+      - G107 # Url provided to HTTP request as taint input
+      - G108 # Profiling endpoint automatically exposed on /debug/pprof
+      - G109 # Potential Integer overflow made by strconv.Atoi result conversion to int16/32
+      - G110 # Potential DoS vulnerability via decompression bomb
+      - G111 # Potential directory traversal
+      - G112 # Potential slowloris attack
+      - G113 # Usage of Rat.SetString in math/big with an overflow (CVE-2022-23772)
+      - G114 # Use of net/http serve function that has no support for setting timeouts
+      - G201 # SQL query construction using format string
+      - G202 # SQL query construction using string concatenation
+      - G203 # Use of unescaped data in HTML templates
+      - G204 # Audit use of command execution
+      - G301 # Poor file permissions used when creating a directory
+      - G302 # Poor file permissions used with chmod
+      - G303 # Creating tempfile using a predictable path
+      - G304 # File path provided as taint input
+      - G305 # File traversal when extracting zip/tar archive
+      - G306 # Poor file permissions used when writing to a new file
+      - G307 # Deferring a method which returns an error
+      - G401 # Detect the usage of DES, RC4, MD5 or SHA1
+      - G402 # Look for bad TLS connection settings
+      - G403 # Ensure minimum RSA key length of 2048 bits
+      - G404 # Insecure random number source (rand)
+      - G501 # Import blocklist: crypto/md5
+      - G502 # Import blocklist: crypto/des
+      - G503 # Import blocklist: crypto/rc4
+      - G504 # Import blocklist: net/http/cgi
+      - G505 # Import blocklist: crypto/sha1
+      - G601 # Implicit memory aliasing of items from a range statement
+  misspell:
+    locale: US
+  gofumpt:
+    extra-rules: true
+  dogsled:
+    max-blank-identifiers: 6
+  maligned:
+    suggest-new: true
+  nolintlint:
+    allow-unused: false
+    allow-leading-space: true
+    require-explanation: false
+    require-specific: false
+  gosimple:
+    checks: ['all']
+  gocritic:
+    disabled-checks:
+      - regexpMust
+      - appendAssign
+      - ifElseChain

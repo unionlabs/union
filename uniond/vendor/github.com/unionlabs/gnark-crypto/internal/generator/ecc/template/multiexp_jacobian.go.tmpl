@@ -1,0 +1,88 @@
+{{ $G1TAffine := print (toUpper .G1.PointName) "Affine" }}
+{{ $G1TJacobian := print (toUpper .G1.PointName) "Jac" }}
+{{ $G1TJacobianExtended := print (toLower .G1.PointName) "JacExtended" }}
+
+{{ $G2TAffine := print (toUpper .G2.PointName) "Affine" }}
+{{ $G2TJacobian := print (toUpper .G2.PointName) "Jac" }}
+{{ $G2TJacobianExtended := print (toLower .G2.PointName) "JacExtended" }}
+
+
+
+{{ template "multiexp" dict "PointName" .G1.PointName "UPointName" (toUpper .G1.PointName) "TAffine" $G1TAffine "TJacobian" $G1TJacobian "TJacobianExtended" $G1TJacobianExtended "FrNbWords" .Fr.NbWords "CRange" .G1.CRange }}
+{{- if ne .Name "secp256k1"}}
+{{ template "multiexp" dict "PointName" .G2.PointName "UPointName" (toUpper .G2.PointName) "TAffine" $G2TAffine "TJacobian" $G2TJacobian "TJacobianExtended" $G2TJacobianExtended "FrNbWords" .Fr.NbWords "CRange" .G2.CRange }}
+{{- end}}
+
+
+
+{{define "multiexp" }}
+
+func processChunk{{ $.UPointName }}Jacobian[B ib{{ $.TJacobianExtended }}](chunk uint64,
+	chRes chan<- {{ $.TJacobianExtended }},
+	c uint64,
+	points []{{ $.TAffine }},
+	digits []uint16,
+	sem chan struct{}) {
+
+	if sem != nil {
+		// if we are limited, wait for a token in the semaphore
+		<-sem
+	}
+
+   var buckets B
+   for i := 0 ; i < len(buckets); i++ {
+	   buckets[i].setInfinity()
+   }
+
+   // for each scalars, get the digit corresponding to the chunk we're processing.
+   for i, digit := range digits {
+	   if digit == 0 {
+		   continue
+	   }
+
+	   // if msbWindow bit is set, we need to subtract
+	   if digit & 1 == 0 {
+		   // add
+		   buckets[(digit>>1)-1].addMixed(&points[i])
+	   } else {
+		   // sub
+		   buckets[(digit>>1)].subMixed(&points[i])
+	   }
+   }
+
+
+   // reduce buckets into total
+   // total =  bucket[0] + 2*bucket[1] + 3*bucket[2] ... + n*bucket[n-1]
+
+   var runningSum, total {{ $.TJacobianExtended }}
+   runningSum.setInfinity()
+   total.setInfinity()
+   for k := len(buckets) - 1; k >= 0; k-- {
+	   if !buckets[k].IsZero() {
+		   runningSum.add(&buckets[k])
+	   }
+	   total.add(&runningSum)
+   }
+
+   if sem != nil {
+	// release a token to the semaphore
+	// before sending to chRes
+	sem <- struct{}{}
+}
+
+   chRes <- total
+}
+
+// we declare the buckets as fixed-size array types
+// this allow us to allocate the buckets on the stack
+{{- range $c :=  $.CRange}}
+type bucket{{ $.TJacobianExtended }}C{{$c}} [{{nbBuckets $c}}]{{ $.TJacobianExtended }}
+{{- end}}
+
+type ib{{ $.TJacobianExtended }} interface {
+	{{- range $i, $c :=  $.CRange}}
+	bucket{{ $.TJacobianExtended }}C{{$c}} {{- if not (last $i $.CRange)}} | {{- end}}
+	{{- end}}
+}
+
+{{end }}

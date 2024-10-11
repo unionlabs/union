@@ -32,7 +32,7 @@ func (s Sequence) Peek(ctx context.Context) (uint64, error) {
 	}
 }
 
-// Next returns the next sequence number, and sets the next expected sequence.
+// Next returns the current sequence number, and sets the next expected sequence.
 // Errors on encoding issues.
 func (s Sequence) Next(ctx context.Context) (uint64, error) {
 	seq, err := s.Peek(ctx)

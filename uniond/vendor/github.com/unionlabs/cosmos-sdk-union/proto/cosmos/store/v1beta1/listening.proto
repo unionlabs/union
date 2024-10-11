@@ -1,0 +1,30 @@
+syntax = "proto3";
+package cosmos.store.v1beta1;
+
+import "cometbft/abci/v1/types.proto";
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "cosmossdk.io/store/types";
+
+// StoreKVPair is a KVStore KVPair used for listening to state changes (Sets and
+// Deletes) It optionally includes the StoreKey for the originating KVStore and
+// a Boolean flag to distinguish between Sets and Deletes
+message StoreKVPair {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.43";
+
+  string store_key = 1; // the store key for the KVStore this pair originates from
+  bool delete      = 2; // true indicates a delete operation, false indicates a set operation
+  bytes key        = 3;
+  bytes value      = 4;
+}
+
+// BlockMetadata contains all the abci event data of a block
+// the file streamer dump them into files together with the state changes.
+message BlockMetadata {
+
+  cometbft.abci.v1.CommitResponse        response_commit         = 6;
+  cometbft.abci.v1.FinalizeBlockRequest  request_finalize_block  = 7;
+  cometbft.abci.v1.FinalizeBlockResponse response_finalize_block = 8;
+
+  reserved 1, 2, 3, 4, 5; // reserved for from previous use in comet <= 0.37
+}

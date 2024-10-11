@@ -1,0 +1,1 @@
+- `[state]` Save the state using a single DB batch ([\#1735](https://github.com/cometbft/cometbft/pull/1735))

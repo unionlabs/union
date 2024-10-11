@@ -1,0 +1,13 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["metadata_interfaces.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/metadata",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_prysmaticlabs_fastssz//:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+    ],
+)

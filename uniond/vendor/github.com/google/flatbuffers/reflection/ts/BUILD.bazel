@@ -1,0 +1,15 @@
+load("//:typescript.bzl", "flatbuffer_ts_library")
+
+genrule(
+    name = "copy_schema_to_folder",
+    srcs = ["//reflection:reflection_fbs_schema"],
+    outs = ["reflection.fbs"],
+    cmd = "cp $< $@",
+)
+
+flatbuffer_ts_library(
+    name = "reflection_ts_fbs",
+    srcs = [":reflection.fbs"],
+    gen_reflections = True,
+    visibility = ["//visibility:public"],
+)

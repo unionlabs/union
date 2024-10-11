@@ -1,0 +1,524 @@
+{
+  "version": "1.0",
+  "examples": {
+    "CreateGeneratedTemplate": [
+      {
+        "input": {
+          "GeneratedTemplateName": "JazzyTemplate",
+          "Resources": [
+            {
+              "ResourceIdentifier": {
+                "BucketName": "jazz-bucket"
+              },
+              "ResourceType": "AWS::S3::Bucket"
+            },
+            {
+              "ResourceIdentifier": {
+                "DhcpOptionsId": "random-id123"
+              },
+              "ResourceType": "AWS::EC2::DHCPOptions"
+            }
+          ]
+        },
+        "output": {
+          "GeneratedTemplateId": "arn:aws:cloudformation:us-east-1:123456789012:generatedtemplate/88f09db1-d211-4cb7-964b-434e2b8469ca"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example creates a generated template with a resources file.",
+        "id": "to-create-a-generated-template",
+        "title": "To create a generated template"
+      }
+    ],
+    "DeleteGeneratedTemplate": [
+      {
+        "input": {
+          "GeneratedTemplateName": "JazzyTemplate"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example deletes a generated template",
+        "id": "to-delete-a-generated-template",
+        "title": "To delete a generated template"
+      }
+    ],
+    "DescribeGeneratedTemplate": [
+      {
+        "input": {
+          "GeneratedTemplateName": "JazzyTemplate"
+        },
+        "output": {
+          "CreationTime": "2023-12-28T17:55:20.086000+00:00",
+          "GeneratedTemplateId": "arn:aws:cloudformation:us-east-1:*:generatedtemplate/*",
+          "GeneratedTemplateName": "DeletedResourceTest",
+          "LastUpdatedTime": "2023-12-28T17:57:16.610000+00:00",
+          "Progress": {
+            "ResourcesFailed": 0,
+            "ResourcesPending": 0,
+            "ResourcesProcessing": 0,
+            "ResourcesSucceeded": 0
+          },
+          "Status": "COMPLETE",
+          "StatusReason": "All resources complete",
+          "TemplateConfiguration": {
+            "DeletionPolicy": "RETAIN",
+            "UpdateReplacePolicy": "RETAIN"
+          },
+          "TotalWarnings": 0
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example describes a generated template",
+        "id": "to-describe-a-generated-template",
+        "title": "To describe a generated template"
+      }
+    ],
+    "DescribeResourceScan": [
+      {
+        "input": {
+          "ResourceScanId": "arn:aws:cloudformation:us-east-1:123456789012:resourceScan/c19304f6-c4f1-4ff8-8e1f-35162e41d7e1"
+        },
+        "output": {
+          "EndTime": "2024-01-02T23:25:48.075000+00:00",
+          "PercentageCompleted": 100.0,
+          "ResourceScanId": "arn:aws:cloudformation:us-east-1:123456789012:resourceScan/c19304f6-c4f1-4ff8-8e1f-35162e41d7e1",
+          "ResourceTypes": [
+            "AWS::Amplify::App",
+            "AWS::ApiGateway::Deployment",
+            "AWS::ApiGateway::DocumentationPart",
+            "AWS::ApiGateway::Model",
+            "AWS::ApiGateway::Resource",
+            "AWS::ApiGateway::RestApi",
+            "AWS::ApiGateway::Stage",
+            "AWS::AppConfig::Extension",
+            "AWS::ApplicationAutoScaling::ScalableTarget",
+            "AWS::Athena::WorkGroup",
+            "AWS::Cassandra::Keyspace",
+            "AWS::CloudFront::CachePolicy",
+            "AWS::CloudFront::Function",
+            "AWS::CloudFront::OriginRequestPolicy",
+            "AWS::CloudTrail::Trail",
+            "AWS::CloudWatch::Alarm",
+            "AWS::CodeDeploy::Application",
+            "AWS::CodeDeploy::DeploymentConfig",
+            "AWS::Cognito::UserPool",
+            "AWS::Cognito::UserPoolGroup",
+            "AWS::Cognito::UserPoolUser",
+            "AWS::DynamoDB::Table",
+            "AWS::EC2::DHCPOptions",
+            "AWS::EC2::EIP",
+            "AWS::EC2::InternetGateway",
+            "AWS::EC2::LaunchTemplate",
+            "AWS::EC2::NetworkAcl",
+            "AWS::EC2::Route",
+            "AWS::EC2::RouteTable",
+            "AWS::EC2::SubnetNetworkAclAssociation",
+            "AWS::EC2::SubnetRouteTableAssociation",
+            "AWS::EC2::VPC",
+            "AWS::EC2::VPCDHCPOptionsAssociation",
+            "AWS::EC2::VPCGatewayAttachment",
+            "AWS::ECR::Repository",
+            "AWS::ECS::Cluster",
+            "AWS::ECS::ClusterCapacityProviderAssociations",
+            "AWS::ECS::Service",
+            "AWS::ECS::TaskDefinition",
+            "AWS::ElastiCache::SubnetGroup",
+            "AWS::ElastiCache::User",
+            "AWS::Events::EventBus",
+            "AWS::Events::Rule",
+            "AWS::GameLift::Location",
+            "AWS::GuardDuty::Detector",
+            "AWS::IAM::InstanceProfile",
+            "AWS::IAM::ManagedPolicy",
+            "AWS::IAM::Role",
+            "AWS::IAM::User",
+            "AWS::IoT::DomainConfiguration",
+            "AWS::KMS::Alias",
+            "AWS::KMS::Key",
+            "AWS::Lambda::EventSourceMapping",
+            "AWS::Lambda::Function",
+            "AWS::Lambda::Permission",
+            "AWS::Lambda::Version",
+            "AWS::Logs::LogGroup",
+            "AWS::Logs::LogStream",
+            "AWS::MemoryDB::ACL",
+            "AWS::MemoryDB::ParameterGroup",
+            "AWS::MemoryDB::User",
+            "AWS::RAM::Permission",
+            "AWS::RDS::CustomDBEngineVersion",
+            "AWS::Route53Resolver::ResolverRuleAssociation",
+            "AWS::S3::AccessPoint",
+            "AWS::S3::BucketPolicy",
+            "AWS::S3::StorageLens",
+            "AWS::SNS::Topic",
+            "AWS::SQS::Queue",
+            "AWS::SSM::Association",
+            "AWS::SSM::Document",
+            "AWS::StepFunctions::StateMachine",
+            "AWS::XRay::Group",
+            "AWS::XRay::SamplingRule"
+          ],
+          "ResourcesRead": 25107,
+          "StartTime": "2024-01-02T22:15:18.382000+00:00",
+          "Status": "COMPLETE"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example describes a selected resource scan",
+        "id": "to-describe-a-generated-template",
+        "title": "To describe a selected resource scan"
+      }
+    ],
+    "GetGeneratedTemplate": [
+      {
+        "input": {
+          "GeneratedTemplateName": "JazzyTemplate"
+        },
+        "output": {
+          "Status": "COMPLETE",
+          "TemplateBody": "{\"Metadata\":{\"TemplateId\":\"arn:aws:cloudformation:us-east-1:123456789012:generatedtemplate/*\"},\"Parameters\":{\"Stage\":{\"Default\":\"beta\",\"Type\":\"String\"}},\"Resources\":{\"TestRole\":{\"Properties\":{\"AssumeRolePolicyDocument\":{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":{\"Fn::Sub\":[\"arn:${AWS::Partition}:iam::${AccountId}:root\",{\"AccountId\":{\"Fn::AccountIdFromAlias\":\"test-account-alias\"}}]}},\"Action\":\"sts:AssumeRole\"}]}},\"Type\":\"AWS::IAM::Role\",\"DeletionPolicy\":\"Delete\"},\"DocumentationPartl7ob4vsd76vs\":{\"UpdateReplacePolicy\":\"Retain\",\"Type\":\"AWS::ApiGateway::DocumentationPart\",\"DeletionPolicy\":\"Retain\",\"Properties\":{\"RestApiId\":\"l7ob4vsd76\",\"Properties\":\"{\\n  \\\"description\\\" : \\\"ListGeneratedTemplates 200 response\\\"\\n}\",\"Location\":{\"Path\":\"/ListGeneratedTemplates\",\"Type\":\"RESPONSE\",\"Method\":\"POST\",\"StatusCode\":\"200\"}}}}}"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example gets a generated template ins JSON format.",
+        "id": "to-get-a-generated-template-json",
+        "title": "To get a generated template in JSON format"
+      },
+      {
+        "input": {
+          "Format": "YAML",
+          "GeneratedTemplateName": "JazzyTemplate"
+        },
+        "output": {
+          "Status": "COMPLETE",
+          "TemplateBody": "---\nMetadata:\n  TemplateId: \"arn:aws:cloudformation:us-east-1:123456789012:generatedtemplate/*\"\nParameters:\n  Stage:\n    Default: \"beta\"\n    Type: \"String\"\nResources:\n  TestRole:\n    Properties:\n      AssumeRolePolicyDocument:\n        Version: \"2012-10-17\"\n        Statement:\n        - Effect: \"Allow\"\n          Principal:\n            AWS:\n              Fn::Sub:\n              - \"arn:${AWS::Partition}:iam::${AccountId}:root\"\n              - AccountId:\n                  Fn::AccountIdFromAlias: \"test-account-alias\"\n          Action: \"sts:AssumeRole\"\n    Type: \"AWS::IAM::Role\"\n    DeletionPolicy: \"Delete\"\n  DocumentationPartl7ob4vsd76vsnAlFMLXKVm:\n    UpdateReplacePolicy: \"Retain\"\n    Type: \"AWS::ApiGateway::DocumentationPart\"\n    DeletionPolicy: \"Retain\"\n    Properties:\n      RestApiId: \"l7ob4vsd76\"\n      Properties: \"{\\n  \\\"description\\\" : \\\"ListGeneratedTemplates 200 response\\\"\\n\\\n        }\"\n      Location:\n        Path: \"/ListGeneratedTemplates\"\n        Type: \"RESPONSE\"\n        Method: \"POST\"\n        StatusCode: \"200\"\n"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example gets a generated template in YAML format.",
+        "id": "to-get-a-generated-template-yaml",
+        "title": "To get a generated template in YAML format"
+      }
+    ],
+    "ListGeneratedTemplates": [
+      {
+        "input": {
+        },
+        "output": {
+          "Summaries": [
+            {
+              "CreationTime": "2023-12-28T17:55:20.086000+00:00",
+              "GeneratedTemplateId": "arn:aws:cloudformation:us-east-1:123456789012:generatedtemplate/abcdefghi-1234-abcd-abcd-abcdefgh1234567",
+              "GeneratedTemplateName": "Template3",
+              "LastUpdatedTime": "2023-12-28T17:57:16.610000+00:00",
+              "NumberOfResources": 85,
+              "Status": "COMPLETE",
+              "StatusReason": "All resources complete"
+            },
+            {
+              "CreationTime": "2023-12-21T01:51:07.764000+00:00",
+              "GeneratedTemplateId": "arn:aws:cloudformation:us-east-1:123456789012:generatedtemplate/bbcdefghi-1234-abcd-abcd-abcdefgh1234567",
+              "GeneratedTemplateName": "Template2",
+              "LastUpdatedTime": "2023-12-21T01:51:22.664000+00:00",
+              "NumberOfResources": 12,
+              "Status": "COMPLETE",
+              "StatusReason": "All resources complete"
+            },
+            {
+              "CreationTime": "2023-11-20T23:53:28.722000+00:00",
+              "GeneratedTemplateId": "arn:aws:cloudformation:us-east-1:123456789012:generatedtemplate/cbcdefghi-1234-abcd-abcd-abcdefgh1234567",
+              "GeneratedTemplateName": "Template1",
+              "LastUpdatedTime": "2023-11-21T04:25:30.527000+00:00",
+              "NumberOfResources": 19,
+              "Status": "COMPLETE",
+              "StatusReason": "All resources complete"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example lists the generated templates.",
+        "id": "to-list-generated-templates",
+        "title": "To list generated templates"
+      }
+    ],
+    "ListResourceScanRelatedResources": [
+      {
+        "input": {
+          "ResourceScanId": "arn:aws:cloudformation:us-east-1:123456789012:resourceScan/c19304f6-c4f1-4ff8-8e1f-35162e41d7e1",
+          "Resources": [
+            {
+              "ResourceIdentifier": {
+                "BucketName": "jazz-bucket"
+              },
+              "ResourceType": "AWS::S3::Bucket"
+            },
+            {
+              "ResourceIdentifier": {
+                "DhcpOptionsId": "random-id123"
+              },
+              "ResourceType": "AWS::EC2::DHCPOptions"
+            }
+          ]
+        },
+        "output": {
+          "RelatedResources": [
+            {
+              "ManagedByStack": false,
+              "ResourceIdentifier": {
+                "DhcpOptionsId": "dopt-98765edcba",
+                "VpcId": "vpc-0123456abcdefg"
+              },
+              "ResourceType": "AWS::EC2::VPCDHCPOptionsAssociation"
+            },
+            {
+              "ManagedByStack": false,
+              "ResourceIdentifier": {
+                "VpcId": "vpc-0123456abcdefgabc"
+              },
+              "ResourceType": "AWS::EC2::VPC"
+            },
+            {
+              "ManagedByStack": false,
+              "ResourceIdentifier": {
+                "DhcpOptionsId": "dopt-98765edcba",
+                "VpcId": "vpc-123456abcdef"
+              },
+              "ResourceType": "AWS::EC2::VPCDHCPOptionsAssociation"
+            },
+            {
+              "ManagedByStack": false,
+              "ResourceIdentifier": {
+                "VpcId": "vpc-12345678abcd"
+              },
+              "ResourceType": "AWS::EC2::VPC"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example lists the resources related to the passed in resources",
+        "id": "to-list-resource-scan-related-resources",
+        "title": "To list resource scan related resources"
+      }
+    ],
+    "ListResourceScanResources": [
+      {
+        "input": {
+          "ResourceScanId": "arn:aws:cloudformation:us-east-1:123456789012:resourceScan/c19304f6-c4f1-4ff8-8e1f-35162e41d7e1"
+        },
+        "output": {
+          "NextToken": "AQICAHjOiFofVZCZ0aEN1VnF1m9jq/xxpTY7MyPexz72BHuAkgETVS8c+PVCFpE6uGVJDxCFAAACbjCCAmoGCSqGSIb3DQEHBqCCAlswggJXAgEAMIICUAYJKoZIhvcNAQcBMB4GCWCGSAFlAwQBLjARBAwJ9QJAYeDzUoBeimECARCAggIh8brcL6H6uMvcZafRTB79hUkdJlOoFavrhYA2U7qdlPUwyvaVqN2DvFMxsl2XC1SaWmr5esMKxg1fLjbOEF32lVQn0Jp8QuoFUvREnqEsR32ZQmiI/Oc9HmwIr/BS3rzljki2Kr8Y0nriS7aFDLUCYsdsRdQ9iL5/iCc6oW7IisCzq1VKcHijlXvuiEipZAinsxEbmYBjmWgT7UYZdrrb6Hq3COEgPzS490ucndtwPjyvuCIMiAfTLMuBgjkzEfp4U97aLwPWaiKw94dMXj/3K67uuH9BjWZO+j6d3nnyZ14FOgI7SQvvVBnxARbTmINttHWjXPrIuE9YuuSWgn6GmuzEEDqkuglOS/OeTHYSPvLPRrFieUiawblljLVoVY9/HDjL/EErSTWiCnytGXIRoMI9Ozp2Yjfm3MBwSDXvMIrscw6QAa3bUA6uJSV2skCBnDoqV8EXd8umh788OgEtDxQ7d/NlUYEhN6AJ0K9TVz/2rZgOlzLCmtvmbIy7loAZCmf/uPNkyu6WuoLWTzQz78SnA8jWPKnxrzhNyPuaIgUH23U3mExhfMRDczitpOo5JM81oHVPECslGoqktLhP55BQqMbJy4w16SZJfr993TXhF5jOZenRN1zDsK3J5cLdJgPK1Ds1Z9DnRKMfXOqoAyme2l94/h0kLIxgAtxOeJFP/g/9hUtt1qGkZeV3Xqw1nkFQnafGIg4fJoWg74Sr7yo=",
+          "Resources": [
+            {
+              "ManagedByStack": false,
+              "ResourceIdentifier": {
+                "Arn": "arn:aws:amplify:us-east-1:123456789012:apps/12345678"
+              },
+              "ResourceType": "AWS::Amplify::App"
+            },
+            {
+              "ManagedByStack": true,
+              "ResourceIdentifier": {
+                "DeploymentId": "1234567",
+                "RestApiId": "abcdefgh"
+              },
+              "ResourceType": "AWS::ApiGateway::Deployment"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example lists the resources in your resource scan",
+        "id": "to-list-resource-scan-resources",
+        "title": "To list the resources in your resource scan"
+      },
+      {
+        "input": {
+          "ResourceScanId": "arn:aws:cloudformation:us-east-1:123456789012:resourceScan/c19304f6-c4f1-4ff8-8e1f-35162e41d7e1",
+          "ResourceTypePrefix": "AWS::S3"
+        },
+        "output": {
+          "NextToken": "AQICAHjOiFofVZCZ0aEN1VnF1m9jq/xxpTY7MyPexz72BHuAkgETVS8c+PVCFpE6uGVJDxCFAAACbjCCAmoGCSqGSIb3DQEHBqCCAlswggJXAgEAMIICUAYJKoZIhvcNAQcBMB4GCWCGSAFlAwQBLjARBAwJ9QJAYeDzUoBeimECARCAggIh8brcL6H6uMvcZafRTB79hUkdJlOoFavrhYA2U7qdlPUwyvaVqN2DvFMxsl2XC1SaWmr5esMKxg1fLjbOEF32lVQn0Jp8QuoFUvREnqEsR32ZQmiI/Oc9HmwIr/BS3rzljki2Kr8Y0nriS7aFDLUCYsdsRdQ9iL5/iCc6oW7IisCzq1VKcHijlXvuiEipZAinsxEbmYBjmWgT7UYZdrrb6Hq3COEgPzS490ucndtwPjyvuCIMiAfTLMuBgjkzEfp4U97aLwPWaiKw94dMXj/3K67uuH9BjWZO+j6d3nnyZ14FOgI7SQvvVBnxARbTmINttHWjXPrIuE9YuuSWgn6GmuzEEDqkuglOS/OeTHYSPvLPRrFieUiawblljLVoVY9/HDjL/EErSTWiCnytGXIRoMI9Ozp2Yjfm3MBwSDXvMIrscw6QAa3bUA6uJSV2skCBnDoqV8EXd8umh788OgEtDxQ7d/NlUYEhN6AJ0K9TVz/2rZgOlzLCmtvmbIy7loAZCmf/uPNkyu6WuoLWTzQz78SnA8jWPKnxrzhNyPuaIgUH23U3mExhfMRDczitpOo5JM81oHVPECslGoqktLhP55BQqMbJy4w16SZJfr993TXhF5jOZenRN1zDsK3J5cLdJgPK1Ds1Z9DnRKMfXOqoAyme2l94/h0kLIxgAtxOeJFP/g/9hUtt1qGkZeV3Xqw1nkFQnafGIg4fJoWg74Sr7yo=",
+          "Resources": [
+            {
+              "ManagedByStack": true,
+              "ResourceIdentifier": {
+                "Name": "test-access-point"
+              },
+              "ResourceType": "AWS::S3::AccessPoint"
+            },
+            {
+              "ManagedByStack": false,
+              "ResourceIdentifier": {
+                "Bucket": "a-random-bucket"
+              },
+              "ResourceType": "AWS::S3::BucketPolicy"
+            }
+          ]
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example lists the resources in your resource scan filtering only the resources that start with the passed in prefix",
+        "id": "to-list-resource-scan-resources-with-resource-type-prefix",
+        "title": "To list the resources in your resource scan for specific resource type"
+      }
+    ],
+    "ListResourceScans": [
+      {
+        "input": {
+        },
+        "output": {
+          "ResourceScanSummaries": [
+            {
+              "PercentageCompleted": 37.4,
+              "ResourceScanId": "arn:aws:cloudformation:us-east-1:123456789012:resourceScan/51448627-817f-40f0-b37c-f6e0f974340c",
+              "StartTime": "2024-01-24T00:33:29.673000+00:00",
+              "Status": "IN_PROGRESS"
+            },
+            {
+              "EndTime": "2024-01-02T23:25:48.075000+00:00",
+              "PercentageCompleted": 100.0,
+              "ResourceScanId": "arn:aws:cloudformation:us-east-1:123456789012:resourceScan/c19304f6-c4f1-4ff8-8e1f-35162e41d7e1",
+              "StartTime": "2024-01-02T22:15:18.382000+00:00",
+              "Status": "COMPLETE"
+            }
+          ]
+        },
+        "description": "This example shows how to list resource scans",
+        "id": "to-list-resource-scans",
+        "title": "Listing Resource Scans"
+      }
+    ],
+    "StartResourceScan": [
+      {
+        "input": {
+        },
+        "output": {
+          "ResourceScanId": "arn:aws:cloudformation:us-east-1:123456789012:resourceScan/88f09db1-d211-4cb7-964b-434e2b8469ca"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example shows how to start a new resource scan",
+        "id": "to-start-a-generated-template",
+        "title": "To start a resource scan"
+      }
+    ],
+    "UpdateGeneratedTemplate": [
+      {
+        "input": {
+          "GeneratedTemplateName": "JazzyTemplate",
+          "NewGeneratedTemplateName": "JazzierTemplate"
+        },
+        "output": {
+          "GeneratedTemplateId": "arn:aws:cloudformation:us-east-1:123456789012:generatedtemplate/88f09db1-d211-4cb7-964b-434e2b8469ca"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example updates a generated template with a new name.",
+        "id": "to-update-a-generated-template-new-name",
+        "title": "To update a generated template's name"
+      },
+      {
+        "input": {
+          "GeneratedTemplateName": "JazzyTemplate",
+          "RemoveResources": [
+            "LogicalResourceId1",
+            "LogicalResourceId2"
+          ]
+        },
+        "output": {
+          "GeneratedTemplateId": "arn:aws:cloudformation:us-east-1:123456789012:generatedtemplate/88f09db1-d211-4cb7-964b-434e2b8469ca"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example removes resources from a generated template",
+        "id": "to-update-a-generated-template-remove-resources",
+        "title": "To remove resources from a generated template"
+      },
+      {
+        "input": {
+          "AddResources": [
+            {
+              "ResourceIdentifier": {
+                "BucketName": "jazz-bucket"
+              },
+              "ResourceType": "AWS::S3::Bucket"
+            },
+            {
+              "ResourceIdentifier": {
+                "DhcpOptionsId": "random-id123"
+              },
+              "ResourceType": "AWS::EC2::DHCPOptions"
+            }
+          ],
+          "GeneratedTemplateName": "JazzyTemplate"
+        },
+        "output": {
+          "GeneratedTemplateId": "arn:aws:cloudformation:us-east-1:123456789012:generatedtemplate/88f09db1-d211-4cb7-964b-434e2b8469ca"
+        },
+        "comments": {
+          "input": {
+          },
+          "output": {
+          }
+        },
+        "description": "This example adds resources to a generated template",
+        "id": "to-update-a-generated-template-add-resources",
+        "title": "To add resources to a generated template"
+      }
+    ]
+  }
+}

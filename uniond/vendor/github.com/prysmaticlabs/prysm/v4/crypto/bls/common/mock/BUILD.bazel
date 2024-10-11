@@ -1,0 +1,12 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["interface_mock.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/crypto/bls/common/mock",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//crypto/bls/common:go_default_library",
+        "@com_github_golang_mock//gomock:go_default_library",
+    ],
+)

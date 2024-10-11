@@ -1,0 +1,18 @@
+mod=example.com/basic
+base=v0.0.1
+release=v0.1.0
+success=false
+# The contents below are a copy of the v0.0.1 contents - nothing has changed.
+# But v0.1.0 already exists, so it should present a diagnostic.
+-- want --
+# summary
+v0.1.0 is not a valid semantic version for this release.
+version v0.1.0 already exists
+-- go.mod --
+module example.com/basic
+
+go 1.12
+-- a/a.go --
+package a
+
+func A() int { return 0 }

@@ -1,0 +1,13 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ❓ Ask a question
+    url: https://github.com/spf13/viper/discussions/new?category=q-a
+    about:  Ask and discuss questions with other Viper community members
+
+  - name: 📓 Reference
+    url: https://pkg.go.dev/mod/github.com/spf13/viper
+    about: Check the Go code reference
+
+  - name: 💬 Slack channel
+    url: https://gophers.slack.com/messages/viper
+    about: Please ask and answer questions here

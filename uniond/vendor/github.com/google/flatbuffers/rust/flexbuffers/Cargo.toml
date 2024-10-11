@@ -1,0 +1,28 @@
+[package]
+name = "flexbuffers"
+version = "2.0.0"
+authors = ["Casper Neo <cneo@google.com>", "FlatBuffers Maintainers"]
+edition = "2018"
+license = "Apache-2.0"
+description = "Official FlexBuffers Rust runtime library."
+homepage = "https://google.github.io/flatbuffers/flexbuffers"
+repository = "https://github.com/google/flatbuffers"
+keywords = ["flatbuffers", "flexbuffers", "serialization", "zero-copy"]
+categories = ["encoding", "data-structures", "memory-management"]
+
+[features]
+# Sets serde::Serializer::is_human_readable() to true.
+# The default was changed from true to false in version "0.2.1".
+# You basically never need this to be true unless writing data for old binaries.
+serialize_human_readable = []
+# Sets serde::Deserializer::is_human_readable() to true.
+# The default was changed from true to false in version "0.2.1".
+# You basically never need this to be true unless reading data from old binaries.
+deserialize_human_readable = []
+
+[dependencies]
+serde = "1.0.119"
+serde_derive = "1.0.119"
+byteorder = "1.4.2"
+num_enum = "0.5.1"
+bitflags = "1.2.1"

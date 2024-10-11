@@ -1,0 +1,46 @@
+namespace MyGame.Example;
+
+enum TestEnum : byte { A, B, C }
+
+struct InnerStruct {
+  a:float64;
+  b:[ubyte:13];
+  c:int8;
+  d_underscore:int64;
+}
+
+struct OuterStruct {
+  a:bool;
+  b:double;
+  c_underscore:InnerStruct;
+  d:[InnerStruct:3];
+  e:InnerStruct;
+  f:[float64:4];
+}
+
+struct NestedStruct{
+  a:[int:2];
+  b:TestEnum;
+  c_underscore:[TestEnum:2];
+  d_outer:[OuterStruct:5];
+  e:[int64:2];
+}
+
+struct ArrayStruct{
+  a_underscore:float;
+  b_underscore:[int:0xF];
+  c:byte;
+  d:[NestedStruct:2];
+  e:int32;
+  f:[OuterStruct:2];
+  g:[int64:2];
+}
+
+table ArrayTable{
+  a:string;
+  c_underscore:ArrayStruct;
+}
+
+root_type ArrayTable;
+file_identifier "RHUB";
+file_extension "mon";

@@ -1,0 +1,37 @@
+[Unit]
+Description=Prysm Ethereum Beacon Chain
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=prysm-beacon
+Group=prysm-beacon
+Type=simple
+ExecStart=/usr/bin/beacon-chain --config-file /etc/prysm/beacon-chain.yaml --accept-terms-of-use
+
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+
+PrivateDevices=yes
+PrivateUsers=yes
+PrivateTmp=yes
+
+ProtectSystem=strict
+ReadWritePaths=/var/lib/prysm/beacon-chain
+ProtectClock=yes
+ProtectHome=true
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectHostname=yes
+ProtectControlGroups=yes
+
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,26 @@
+# This module represents buf.build/cosmos/gogo-proto
+version: v1
+name: buf.build/cosmos/gogo-proto
+breaking:
+  use:
+    - FILE
+build:
+  excludes:
+    - test
+    - jsonpb
+    - protobuf
+    - conformance
+    - proto
+    - protoc-gen-gogo
+    - vanity
+lint:
+  use:
+    - DEFAULT
+    - COMMENTS
+    - FILE_LOWER_SNAKE_CASE
+  except:
+    - UNARY_RPC
+    - COMMENT_FIELD
+    - SERVICE_SUFFIX
+    - PACKAGE_VERSION_SUFFIX
+    - RPC_REQUEST_STANDARD_NAME

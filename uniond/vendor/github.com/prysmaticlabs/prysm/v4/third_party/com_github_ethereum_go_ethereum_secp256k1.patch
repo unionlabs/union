@@ -1,0 +1,58 @@
+diff --color -ruN a/crypto/secp256k1/BUILD.bazel b/crypto/secp256k1/BUILD.bazel
+--- a/crypto/secp256k1/BUILD.bazel	2021-10-14 20:32:30.202922024 -0500
++++ b/crypto/secp256k1/BUILD.bazel	2021-10-14 20:30:17.921027939 -0500
+@@ -11,10 +11,11 @@
+         "scalar_mult_nocgo.go",
+         "secp256.go",
+     ],
++    cdeps = ["//crypto/secp256k1/libsecp256k1:hdrs"],
+     cgo = True,
+     copts = [
+-        "-Icrypto/secp256k1/libsecp256k1",
+-        "-Icrypto/secp256k1/libsecp256k1/src",
++        "-Iexternal/com_github_ethereum_go_ethereum/crypto/secp256k1/libsecp256k1",
++        "-Iexternal/com_github_ethereum_go_ethereum/crypto/secp256k1/libsecp256k1/src",
+     ],
+     importpath = "github.com/ethereum/go-ethereum/crypto/secp256k1",
+     visibility = ["//visibility:public"],
+diff --color -ruN a/crypto/secp256k1/libsecp256k1/BUILD.bazel b/crypto/secp256k1/libsecp256k1/BUILD.bazel
+--- a/crypto/secp256k1/libsecp256k1/BUILD.bazel	1969-12-31 18:00:00.000000000 -0600
++++ b/crypto/secp256k1/libsecp256k1/BUILD.bazel	2021-10-14 12:54:27.704265206 -0500
+@@ -0,0 +1,37 @@
++cc_library(
++    name = "hdrs",
++    hdrs = [
++        "include/secp256k1.h",
++        "include/secp256k1_recovery.h",
++        "src/ecdsa.h",
++        "src/ecdsa_impl.h",
++        "src/eckey.h",
++        "src/eckey_impl.h",
++        "src/ecmult.h",
++        "src/ecmult_const.h",
++        "src/ecmult_const_impl.h",
++        "src/ecmult_gen.h",
++        "src/ecmult_gen_impl.h",
++        "src/ecmult_impl.h",
++        "src/field.h",
++        "src/field_5x52.h",
++        "src/field_5x52_impl.h",
++        "src/field_5x52_int128_impl.h",
++        "src/field_impl.h",
++        "src/group.h",
++        "src/group_impl.h",
++        "src/hash.h",
++        "src/hash_impl.h",
++        "src/modules/recovery/main_impl.h",
++        "src/num.h",
++        "src/num_impl.h",
++        "src/scalar.h",
++        "src/scalar_4x64.h",
++        "src/scalar_4x64_impl.h",
++        "src/scalar_impl.h",
++        "src/secp256k1.c",
++        "src/util.h",
++    ],
++    visibility = ["//visibility:public"],
++)
++

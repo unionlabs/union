@@ -1,0 +1,12 @@
+
+enum ABC: int { A, B, C }
+
+
+table MoreDefaults {
+  ints: [int] = [];
+  floats: [float] = [     ];
+  empty_string: string = "";
+  some_string: string = "some";
+  abcs: [ABC] = [];
+  bools: [bool] = [];
+}

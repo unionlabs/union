@@ -1,0 +1,2 @@
+# Folders we don't want to copy to Docker daemon in `docker build . -t cosmwasm/wasmd:latest`
+build/

@@ -1,0 +1,53 @@
+package test
+
+import "github.com/ethereum/go-ethereum/rlp"
+import "io"
+
+func (obj *Test) EncodeRLP(_w io.Writer) error {
+	w := rlp.NewEncoderBuffer(_w)
+	_tmp0 := w.List()
+	w.WriteUint64(uint64(obj.A))
+	w.WriteUint64(uint64(obj.B))
+	w.WriteUint64(uint64(obj.C))
+	w.WriteUint64(obj.D)
+	w.ListEnd(_tmp0)
+	return w.Flush()
+}
+
+func (obj *Test) DecodeRLP(dec *rlp.Stream) error {
+	var _tmp0 Test
+	{
+		if _, err := dec.List(); err != nil {
+			return err
+		}
+		// A:
+		_tmp1, err := dec.Uint8()
+		if err != nil {
+			return err
+		}
+		_tmp0.A = _tmp1
+		// B:
+		_tmp2, err := dec.Uint16()
+		if err != nil {
+			return err
+		}
+		_tmp0.B = _tmp2
+		// C:
+		_tmp3, err := dec.Uint32()
+		if err != nil {
+			return err
+		}
+		_tmp0.C = _tmp3
+		// D:
+		_tmp4, err := dec.Uint64()
+		if err != nil {
+			return err
+		}
+		_tmp0.D = _tmp4
+		if err := dec.ListEnd(); err != nil {
+			return err
+		}
+	}
+	*obj = _tmp0
+	return nil
+}

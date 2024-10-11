@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+package ibc.core.connection.v1;
+
+option go_package = "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos/msg/v1/msg.proto";
+import "google/protobuf/any.proto";
+import "ibc/core/client/v1/client.proto";
+import "ibc/core/connection/v1/connection.proto";
+
+// Msg defines the ibc/connection Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // ConnectionOpenInit defines a rpc handler method for MsgConnectionOpenInit.
+  rpc ConnectionOpenInit(MsgConnectionOpenInit) returns (MsgConnectionOpenInitResponse);
+
+  // ConnectionOpenTry defines a rpc handler method for MsgConnectionOpenTry.
+  rpc ConnectionOpenTry(MsgConnectionOpenTry) returns (MsgConnectionOpenTryResponse);
+
+  // ConnectionOpenAck defines a rpc handler method for MsgConnectionOpenAck.
+  rpc ConnectionOpenAck(MsgConnectionOpenAck) returns (MsgConnectionOpenAckResponse);
+
+  // ConnectionOpenConfirm defines a rpc handler method for
+  // MsgConnectionOpenConfirm.
+  rpc ConnectionOpenConfirm(MsgConnectionOpenConfirm) returns (MsgConnectionOpenConfirmResponse);
+
+  // UpdateConnectionParams defines a rpc handler method for
+  // MsgUpdateParams.
+  rpc UpdateConnectionParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+// MsgConnectionOpenInit defines the msg sent by an account on Chain A to
+// initialize a connection with Chain B.
+message MsgConnectionOpenInit {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string       client_id    = 1;
+  Counterparty counterparty = 2 [(gogoproto.nullable) = false];
+  Version      version      = 3;
+  uint64       delay_period = 4;
+  string       signer       = 5;
+}
+
+// MsgConnectionOpenInitResponse defines the Msg/ConnectionOpenInit response
+// type.
+message MsgConnectionOpenInitResponse {}
+
+// MsgConnectionOpenTry defines a msg sent by a Relayer to try to open a
+// connection on Chain B.
+message MsgConnectionOpenTry {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string client_id = 1;
+  // Deprecated: this field is unused. Crossing hellos are no longer supported in core IBC.
+  string                    previous_connection_id = 2 [deprecated = true];
+  google.protobuf.Any       client_state           = 3 [deprecated = true];
+  Counterparty              counterparty           = 4 [(gogoproto.nullable) = false];
+  uint64                    delay_period           = 5;
+  repeated Version          counterparty_versions  = 6;
+  ibc.core.client.v1.Height proof_height           = 7 [(gogoproto.nullable) = false];
+  // proof of the initialization the connection on Chain A: `UNITIALIZED ->
+  // INIT`
+  bytes proof_init = 8;
+  // proof of client state included in message
+  bytes proof_client = 9 [deprecated = true];
+  // proof of client consensus state
+  bytes                     proof_consensus  = 10 [deprecated = true];
+  ibc.core.client.v1.Height consensus_height = 11 [deprecated = true, (gogoproto.nullable) = false];
+  string                    signer           = 12;
+  // optional proof data for host state machines that are unable to introspect their own consensus state
+  bytes host_consensus_state_proof = 13 [deprecated = true];
+}
+
+// MsgConnectionOpenTryResponse defines the Msg/ConnectionOpenTry response type.
+message MsgConnectionOpenTryResponse {}
+
+// MsgConnectionOpenAck defines a msg sent by a Relayer to Chain A to
+// acknowledge the change of connection state to TRYOPEN on Chain B.
+message MsgConnectionOpenAck {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string                    connection_id              = 1;
+  string                    counterparty_connection_id = 2;
+  Version                   version                    = 3;
+  google.protobuf.Any       client_state               = 4 [deprecated = true];
+  ibc.core.client.v1.Height proof_height               = 5 [(gogoproto.nullable) = false];
+  // proof of the initialization the connection on Chain B: `UNITIALIZED ->
+  // TRYOPEN`
+  bytes proof_try = 6;
+  // proof of client state included in message
+  bytes proof_client = 7 [deprecated = true];
+  // proof of client consensus state
+  bytes                     proof_consensus  = 8 [deprecated = true];
+  ibc.core.client.v1.Height consensus_height = 9 [deprecated = true, (gogoproto.nullable) = false];
+  string                    signer           = 10;
+  // optional proof data for host state machines that are unable to introspect their own consensus state
+  bytes host_consensus_state_proof = 11 [deprecated = true];
+}
+
+// MsgConnectionOpenAckResponse defines the Msg/ConnectionOpenAck response type.
+message MsgConnectionOpenAckResponse {}
+
+// MsgConnectionOpenConfirm defines a msg sent by a Relayer to Chain B to
+// acknowledge the change of connection state to OPEN on Chain A.
+message MsgConnectionOpenConfirm {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  string connection_id = 1;
+  // proof for the change of the connection state on Chain A: `INIT -> OPEN`
+  bytes                     proof_ack    = 2;
+  ibc.core.client.v1.Height proof_height = 3 [(gogoproto.nullable) = false];
+  string                    signer       = 4;
+}
+
+// MsgConnectionOpenConfirmResponse defines the Msg/ConnectionOpenConfirm
+// response type.
+message MsgConnectionOpenConfirmResponse {}
+
+// MsgUpdateParams defines the sdk.Msg type to update the connection parameters.
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "signer";
+
+  option (gogoproto.goproto_getters) = false;
+
+  // signer address
+  string signer = 1;
+
+  // params defines the connection parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false];
+}
+
+// MsgUpdateParamsResponse defines the MsgUpdateParams response type.
+message MsgUpdateParamsResponse {}

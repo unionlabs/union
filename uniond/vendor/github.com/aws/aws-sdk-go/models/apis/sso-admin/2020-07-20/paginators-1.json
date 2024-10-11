@@ -1,0 +1,121 @@
+{
+  "pagination": {
+    "ListAccountAssignmentCreationStatus": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "AccountAssignmentsCreationStatus"
+    },
+    "ListAccountAssignmentDeletionStatus": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "AccountAssignmentsDeletionStatus"
+    },
+    "ListAccountAssignments": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "AccountAssignments"
+    },
+    "ListAccountAssignmentsForPrincipal": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "AccountAssignments"
+    },
+    "ListAccountsForProvisionedPermissionSet": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "AccountIds"
+    },
+    "ListApplicationAccessScopes": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Scopes"
+    },
+    "ListApplicationAssignments": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ApplicationAssignments"
+    },
+    "ListApplicationAssignmentsForPrincipal": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ApplicationAssignments"
+    },
+    "ListApplicationAuthenticationMethods": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "AuthenticationMethods"
+    },
+    "ListApplicationGrants": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Grants"
+    },
+    "ListApplicationProviders": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ApplicationProviders"
+    },
+    "ListApplications": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Applications"
+    },
+    "ListCustomerManagedPolicyReferencesInPermissionSet": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "CustomerManagedPolicyReferences"
+    },
+    "ListInstances": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Instances"
+    },
+    "ListManagedPoliciesInPermissionSet": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "AttachedManagedPolicies"
+    },
+    "ListPermissionSetProvisioningStatus": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "PermissionSetsProvisioningStatus"
+    },
+    "ListPermissionSets": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "PermissionSets"
+    },
+    "ListPermissionSetsProvisionedToAccount": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "PermissionSets"
+    },
+    "ListTagsForResource": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "result_key": "Tags"
+    },
+    "ListTrustedTokenIssuers": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "TrustedTokenIssuers"
+    }
+  }
+}

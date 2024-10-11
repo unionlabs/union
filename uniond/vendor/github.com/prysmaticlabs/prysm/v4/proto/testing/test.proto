@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package testing;
+
+import "google/protobuf/descriptor.proto";
+import "google/protobuf/timestamp.proto";
+
+extend google.protobuf.FieldOptions {
+  string ssz_size = 60001;
+  string spec_name = 60003;
+}
+
+message TestMessage {
+  string foo = 1;
+  string bar = 2 [(ssz_size) = "32", (spec_name) = "foo"];
+}
+
+message TestNestedMessage {
+  string fuzz = 1;
+  TestMessage msg = 2;
+}
+
+// Used in shared/p2p/feed_example_test.go
+message Puzzle {
+  string challenge = 1;
+  string answer = 2;
+}
+
+// Person and address book example from
+// https://github.com/protocolbuffers/protobuf/blob/master/examples/addressbook.proto
+message Person {
+  string name = 1;
+  int32 id = 2;
+  string email = 3;
+  enum PhoneType {
+    MOBILE = 0;
+    HOME = 1;
+    WORK = 2;
+  }
+  message PhoneNumber {
+    string number = 1;
+    PhoneType type = 2;
+  }
+  repeated PhoneNumber phones = 4;
+  google.protobuf.Timestamp last_updated = 5;
+}
+
+// Our address book file is just one of these.
+message AddressBook {
+  repeated Person people = 1;
+}
+
+message TestSimpleMessage {
+  bytes foo = 1;
+  uint64 bar = 2;
+}

@@ -1,0 +1,55 @@
+// Copyright 2022 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package s2a.proto.v2;
+
+option go_package = "github.com/google/s2a/internal/proto/v2/common_go_proto";
+
+// The TLS 1.0-1.2 ciphersuites that the application can negotiate when using
+// S2A.
+enum Ciphersuite {
+  CIPHERSUITE_UNSPECIFIED = 0;
+  CIPHERSUITE_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 = 1;
+  CIPHERSUITE_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 = 2;
+  CIPHERSUITE_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 = 3;
+  CIPHERSUITE_ECDHE_RSA_WITH_AES_128_GCM_SHA256 = 4;
+  CIPHERSUITE_ECDHE_RSA_WITH_AES_256_GCM_SHA384 = 5;
+  CIPHERSUITE_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = 6;
+}
+
+// The TLS versions supported by S2A's handshaker module.
+enum TLSVersion {
+  TLS_VERSION_UNSPECIFIED = 0;
+  TLS_VERSION_1_0 = 1;
+  TLS_VERSION_1_1 = 2;
+  TLS_VERSION_1_2 = 3;
+  TLS_VERSION_1_3 = 4;
+}
+
+// The side in the TLS connection.
+enum ConnectionSide {
+  CONNECTION_SIDE_UNSPECIFIED = 0;
+  CONNECTION_SIDE_CLIENT = 1;
+  CONNECTION_SIDE_SERVER = 2;
+}
+
+// The ALPN protocols that the application can negotiate during a TLS handshake.
+enum AlpnProtocol {
+  ALPN_PROTOCOL_UNSPECIFIED = 0;
+  ALPN_PROTOCOL_GRPC = 1;
+  ALPN_PROTOCOL_HTTP2 = 2;
+  ALPN_PROTOCOL_HTTP1_1 = 3;
+}

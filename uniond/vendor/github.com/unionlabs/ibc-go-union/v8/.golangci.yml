@@ -1,0 +1,116 @@
+run:
+  tests: true
+  timeout: 10m
+
+linters:
+  disable-all: true
+  enable:
+    - exportloopref
+    - errcheck
+    - gci
+    - goconst
+    - gocritic
+    - gofumpt
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - staticcheck
+    - thelper
+    - typecheck
+    - stylecheck
+    - revive
+    - typecheck
+    - tenv
+    - unconvert
+    # Prefer unparam over revive's unused param. It is more thorough in its checking.
+    - unparam
+    - unused
+    - misspell
+
+issues:
+  exclude-rules:
+    - text: 'differs only by capitalization to method'
+      linters:
+        - revive
+    - text: 'Use of weak random number generator'
+      linters:
+        - gosec
+    - linters:
+        - staticcheck
+      text: "SA1019:" # silence errors on usage of deprecated funcs
+
+  max-issues-per-linter: 10000
+  max-same-issues: 10000
+
+linters-settings:
+  gci:
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - blank # blank imports
+      - dot # dot imports
+      - prefix(cosmossdk.io)
+      - prefix(github.com/cosmos/cosmos-sdk)
+      - prefix(github.com/cometbft/cometbft)
+      - prefix(github.com/cosmos/ibc-go)
+    custom-order: true
+  revive:
+    enable-all-rules: true
+    # Do NOT whine about the following, full explanation found in:
+    # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#description-of-available-rules
+    rules:
+      - name: use-any
+        disabled: true
+      - name: if-return
+        disabled: true
+      - name: max-public-structs
+        disabled: true
+      - name: cognitive-complexity
+        disabled: true
+      - name: argument-limit
+        disabled: true
+      - name: cyclomatic
+        disabled: true
+      - name: file-header
+        disabled: true
+      - name: function-length
+        disabled: true
+      - name: function-result-limit
+        disabled: true
+      - name: line-length-limit
+        disabled: true
+      - name: flag-parameter
+        disabled: true
+      - name: add-constant
+        disabled: true
+      - name: empty-lines
+        disabled: true
+      - name: banned-characters
+        disabled: true
+      - name: deep-exit
+        disabled: true
+      - name: confusing-results
+        disabled: true
+      - name: unused-parameter
+        disabled: true
+      - name: modifies-value-receiver
+        disabled: true
+      - name: early-return
+        disabled: true
+      - name: confusing-naming
+        disabled: true
+      - name: defer
+        disabled: true
+      # Disabled in favour of unparam.
+      - name: unused-parameter
+        disabled: true
+      - name: unhandled-error
+        disabled: false
+        arguments:
+          - 'fmt.Printf'
+          - 'fmt.Print'
+          - 'fmt.Println'
+          - 'myFunction'

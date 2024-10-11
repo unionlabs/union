@@ -1,0 +1,35 @@
+# Enabled rules
+[rule.blank-imports]
+[rule.context-as-argument]
+[rule.context-keys-type]
+[rule.dot-imports]
+[rule.errorf]
+[rule.error-return]
+[rule.error-strings]
+[rule.error-naming]
+[rule.increment-decrement]
+[rule.range]
+[rule.receiver-naming]
+[rule.superfluous-else]
+[rule.time-naming]
+[rule.var-naming]
+[rule.unexported-return]
+[rule.unused-parameter]
+[rule.unreachable-code]
+[rule.var-declaration]
+[rule.use-any]
+
+# Disabled rules
+# https://github.com/grpc/grpc-go/issues/7444 to track TODO(s)
+[rule.empty-block]
+    Disabled = true
+[rule.import-shadowing]
+    Disabled = true
+[rule.exported]
+    Disabled = true # TODO: Enable after existing issues are fixed
+[rule.redefines-builtin-id]
+    Disabled = true # TODO: Enable after existing issues are fixed
+[rule.package-comments]
+    Disabled = true # TODO: Enable after existing issues are fixed
+[rule.indent-error-flow]
+    Disabled = true # TODO: Enable after existing issues are fixed

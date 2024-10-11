@@ -1,0 +1,92 @@
+db scan
+----
+accepts 1 arg(s), received 0
+
+db scan
+non-existent
+----
+error opening database at "non-existent": pebble: database "non-existent" does not exist
+
+db scan
+./testdata/corrupt-options-db
+----
+error loading options: invalid key=value syntax: "blargle"
+Custom message in case of corruption error.
+
+db scan
+../testdata/db-stage-4
+----
+foo [66697665]
+quux [736978]
+scanned 2 records in 1.0s
+
+db scan
+../testdata/db-stage-4
+--comparer=foo
+----
+unknown comparer "foo"
+
+db scan
+../testdata/db-stage-4
+--comparer=test-comparer
+----
+pebble: manifest file "MANIFEST-000005" for DB "db-stage-4": comparer name from file "leveldb.BytewiseComparator" != comparer name from Options "test-comparer"
+
+db scan
+../testdata/db-stage-4
+--merger=foo
+----
+unknown merger "foo"
+
+# TODO(peter): this DB does not have any merge records and the merge
+# operator in the OPTIONS file is "nullptr".
+db scan
+../testdata/db-stage-4
+--merger=test-merger
+----
+foo [66697665]
+quux [736978]
+scanned 2 records in 1.0s
+
+db scan
+../testdata/db-stage-4
+--key=%x
+--value=size
+----
+666f6f <4>
+71757578 <3>
+scanned 2 records in 1.0s
+
+db scan
+../testdata/db-stage-4
+--key=%x
+--value=null
+--start=quux
+----
+71757578
+scanned 1 record in 1.0s
+
+db scan
+../testdata/db-stage-4
+--key=null
+--value=size
+--end=quux
+----
+<4>
+scanned 1 record in 1.0s
+
+db scan
+../testdata/db-stage-4
+--key=null
+--value=null
+----
+scanned 2 records in 1.0s
+
+
+db scan
+../testdata/db-stage-4
+--key=null
+--value=null
+--count=1
+----
+scanned 1 record in 1.0s

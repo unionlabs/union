@@ -219,7 +219,7 @@ type lbBalancer struct {
 	// All backends addresses, with metadata set to nil. This list contains all
 	// backend addresses in the same order and with the same duplicates as in
 	// serverlist. When generating picker, a SubConn slice with the same order
-	// but with only READY SCs will be gerenated.
+	// but with only READY SCs will be generated.
 	backendAddrsWithoutMetadata []resolver.Address
 	// Roundrobin functionalities.
 	state    connectivity.State

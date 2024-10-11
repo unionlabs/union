@@ -1,0 +1,26 @@
+# Check that we can pass an explicit set of files to be tested.
+! testscript -files foo.txtar x/bar.txtar y/bar.txtar 'y/bar#1.txtar'
+cmpenv stdout expect-stdout
+-- expect-stdout --
+** RUN foo **
+PASS
+** RUN bar **
+PASS
+** RUN bar#1 **
+> echoandexit 1 '' 'bar#1 failure'
+[stderr]
+bar#1 failure
+FAIL: $$WORK${/}y${/}bar.txtar:1: told to exit with code 1
+** RUN bar#1#1 **
+> echoandexit 1 '' 'bar#1#1 failure'
+[stderr]
+bar#1#1 failure
+FAIL: $$WORK${/}y${/}bar#1.txtar:1: told to exit with code 1
+-- foo.txtar --
+echoandexit 0 '' 'foo failure'
+-- x/bar.txtar --
+echoandexit 0 '' 'bar failure'
+-- y/bar.txtar --
+echoandexit 1 '' 'bar#1 failure'
+-- y/bar#1.txtar --
+echoandexit 1 '' 'bar#1#1 failure'

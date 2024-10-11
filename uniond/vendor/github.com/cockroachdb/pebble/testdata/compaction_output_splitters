@@ -1,0 +1,112 @@
+
+# arraySplitter tests
+
+reset
+----
+ok
+
+init child0 mock
+----
+ok
+
+init child1 mock
+----
+ok
+
+init main array
+----
+ok
+
+set-should-split child0 no-split
+----
+ok
+
+set-should-split child1 no-split
+----
+ok
+
+should-split-before foo.SET.2
+----
+no-split
+
+set-should-split child1 split-now
+----
+ok
+
+should-split-before foo.SET.2
+----
+split-now
+
+set-should-split child1 no-split
+----
+ok
+
+should-split-before foo.SET.2
+----
+no-split
+
+set-should-split child0 split-now
+----
+ok
+
+should-split-before foo.SET.2
+----
+split-now
+
+# userKeyChangeSplitter tests
+
+reset
+----
+ok
+
+init child0 mock
+----
+ok
+
+init main userkey
+----
+ok
+
+should-split-before foo.SET.6
+----
+no-split
+
+should-split-before foo.SET.5
+----
+no-split
+
+set-should-split child0 split-now
+----
+ok
+
+should-split-before foo.SET.4
+----
+no-split
+
+should-split-before foo.SET.3
+----
+no-split
+
+should-split-before food.SET.6
+----
+split-now
+
+set-should-split child0 no-split
+----
+ok
+
+should-split-before food.SET.5
+----
+no-split
+
+set-should-split child0 split-now
+----
+ok
+
+should-split-before food.SET.4
+----
+no-split
+
+should-split-before food2.SET.4
+----
+split-now

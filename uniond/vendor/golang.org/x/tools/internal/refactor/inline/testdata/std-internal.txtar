@@ -1,0 +1,15 @@
+
+std packages are a special case of the internal package check.
+
+This test assumes that syscall.ByteSliceFromString refers to internal/bytealg.
+
+-- go.mod --
+module testdata
+go 1.12
+
+-- a/a.go --
+package a
+
+import "syscall"
+
+var _, _ = syscall.ByteSliceFromString("") //@ inline(re"ByteSliceFromString", re`inaccessible package "internal/bytealg"`)

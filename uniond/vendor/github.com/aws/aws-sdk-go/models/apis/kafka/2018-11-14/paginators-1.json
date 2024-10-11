@@ -1,0 +1,76 @@
+{
+  "pagination": {
+    "ListClusters": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ClusterInfoList"
+    },
+    "ListClustersV2": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ClusterInfoList"
+    },
+    "ListConfigurations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Configurations"
+    },
+    "ListKafkaVersions": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "KafkaVersions"
+    },
+    "ListNodes": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "NodeInfoList"
+    },
+    "ListClusterOperations": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ClusterOperationInfoList"
+    },
+    "ListClusterOperationsV2": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ClusterOperationInfoList"
+    },
+    "ListConfigurationRevisions": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Revisions"
+    },
+    "ListReplicators": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "Replicators"
+    },
+    "ListScramSecrets": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "SecretArnList"
+    },
+    "ListVpcConnections": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "VpcConnections"
+    },
+    "ListClientVpcConnections": {
+      "input_token": "NextToken",
+      "output_token": "NextToken",
+      "limit_key": "MaxResults",
+      "result_key": "ClientVpcConnections"
+    }
+  }
+}

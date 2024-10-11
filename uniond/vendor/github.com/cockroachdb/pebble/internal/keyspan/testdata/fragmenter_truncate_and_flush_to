@@ -1,0 +1,113 @@
+build
+2: a--c
+1:  b--d
+truncate-and-flush-to c
+----
+2: ab
+2:  bc
+1:  bc
+1:   cd
+
+build
+truncate-and-flush-to c
+1:  b--d
+----
+pebble: start key (b) < flushed key (c)
+
+build
+truncate-and-flush-to c
+truncate-and-flush-to b
+----
+pebble: start key (b) < flushed key (c)
+
+# Call out of order
+
+build
+3: a--d
+2:    d--g
+truncate-and-flush-to c
+----
+pebble: start key (c) < flushed key (d)
+
+build
+3: a--d
+truncate-and-flush-to a
+----
+3: a--d
+
+build
+3: a--d
+2:    d--g
+truncate-and-flush-to d
+----
+3: a--d
+2:    d--g
+
+build
+2: a----f
+truncate-and-flush-to c
+----
+2: a-c
+2:   c--f
+
+build
+2: a----f
+truncate-and-flush-to f
+----
+2: a----f
+
+build
+2: a----f
+truncate-and-flush-to g
+----
+2: a----f
+
+build
+3: a-c
+1: a-----g
+truncate-and-flush-to d
+----
+3: a-c
+1: a-c
+1:   cd
+1:    d--g
+
+build
+2: a---e
+1: a------h
+truncate-and-flush-to c
+----
+2: a-c
+1: a-c
+2:   c-e
+1:   c-e
+1:     e--h
+
+build
+3: a-c
+2: a---e
+1: a-----g
+truncate-and-flush-to d
+3:    d----i
+----
+3: a-c
+2: a-c
+1: a-c
+2:   cd
+1:   cd
+3:    de
+2:    de
+1:    de
+3:     e-g
+1:     e-g
+3:       g-i
+
+build
+3: a-c
+2: a-----g
+truncate-and-flush-to e
+----
+3: a-c
+2: a-c
+2:   c-e
+2:     e-g

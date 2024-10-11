@@ -1,0 +1,50 @@
+# Import bazelrc presets
+import %workspace%/build/bazelrc/convenience.bazelrc
+import %workspace%/build/bazelrc/correctness.bazelrc
+import %workspace%/build/bazelrc/cross.bazelrc
+import %workspace%/build/bazelrc/debug.bazelrc
+import %workspace%/build/bazelrc/hermetic-cc.bazelrc
+import %workspace%/build/bazelrc/performance.bazelrc
+
+# E2E run with debug gotag
+test:e2e --define gotags=debug
+
+# Clearly indicate that coverage is enabled to disable certain nogo checks.
+coverage --define=coverage_enabled=1
+
+# Stamp binaries with git information
+build --workspace_status_command=./hack/workspace_status.sh
+
+build --define blst_disabled=false
+run --define blst_disabled=false
+
+build:blst_disabled --define blst_disabled=true
+build:blst_disabled --define gotags=blst_disabled
+
+build:minimal --//proto:network=minimal
+build:minimal --@io_bazel_rules_go//go/config:tags=minimal
+
+# Release flags
+build:release --compilation_mode=opt
+build:release --stamp
+build:release --define pgo_enabled=1
+
+# Build binary with cgo symbolizer for debugging / profiling.
+build:cgo_symbolizer --copt=-g
+build:cgo_symbolizer --define=USE_CGO_SYMBOLIZER=true
+build:cgo_symbolizer -c dbg
+build:cgo_symbolizer --define=gotags=cgosymbolizer_enabled
+
+# toolchain build debug configs
+#------------------------------
+build:debug --sandbox_debug
+build:debug --toolchain_resolution_debug=".*"
+build:debug --verbose_failures
+build:debug -s
+
+# Set bazel gotag
+build --define gotags=bazel
+
+# Abseil requires c++14 or greater.
+build --cxxopt=-std=c++20
+build --host_cxxopt=-std=c++20

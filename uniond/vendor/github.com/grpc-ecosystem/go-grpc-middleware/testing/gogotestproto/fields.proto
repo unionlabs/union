@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+//  This file is used for testing discovery of log fields from requests using reflection and gogo proto more tags.
+package mwitkow.testproto;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option (gogoproto.gogoproto_import) = false;
+
+message Metadata {
+    repeated string tags = 1 [(gogoproto.moretags) = "log_field:\"meta_tags\""];
+}
+
+message PingId {
+    int32 id = 1 [(gogoproto.moretags) = "log_field:\"ping_id\""];
+}
+
+message Ping {
+    PingId id = 1;
+    string value = 2;
+}
+
+message PingRequest {
+    Ping ping = 1;
+    Metadata meta = 2;
+}
+
+message Pong {
+    string id = 1 [(gogoproto.moretags) = "log_field:\"pong_id\""];
+}
+
+message OneOfLogField {
+    oneof identifier {
+        string bar_id = 1 [(gogoproto.moretags) = "log_field:\"bar_id\""];
+        string baz_id = 2 [(gogoproto.moretags) = "log_field:\"baz_id\""];
+    }
+}
+
+message PongRequest {
+    Pong pong = 1;
+    Metadata meta = 2;
+}
+
+message GoGoProtoStdTime {
+    google.protobuf.Timestamp timestamp = 1 [(gogoproto.stdtime) = true];
+}

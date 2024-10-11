@@ -16,6 +16,9 @@ const (
 	// This error constant can be used to check if the given function parameters were invalid.
 	// For example when trying to create a new generic credential with an empty target name.
 	ErrInvalidParameter = sysERROR_INVALID_PARAMETER
+
+	// ErrBadUsername is returned when the credential's username is invalid.
+	ErrBadUsername = sysERROR_BAD_USERNAME
 )
 
 // GetGenericCredential fetches the generic credential with the given name from Windows credential manager.

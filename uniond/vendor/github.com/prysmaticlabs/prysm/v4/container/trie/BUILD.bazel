@@ -1,0 +1,40 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "sparse_merkle.go",
+        "zerohashes.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/container/trie",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//crypto/hash:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = [
+        "sparse_merkle_test.go",
+        "sparse_merkle_trie_fuzz_test.go",
+    ],
+    data = glob(["testdata/**"]),
+    deps = [
+        ":go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//config/params:go_default_library",
+        "//contracts/deposit/mock:go_default_library",
+        "//crypto/hash:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_ethereum_go_ethereum//accounts/abi/bind:go_default_library",
+        "@com_github_golang_protobuf//proto:go_default_library",
+    ],
+)

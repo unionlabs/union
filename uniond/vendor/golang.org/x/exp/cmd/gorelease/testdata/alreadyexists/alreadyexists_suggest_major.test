@@ -1,0 +1,24 @@
+mod=example.com/basic
+base=v1.0.1
+success=false
+# A() was removed, which is a breaking change: it shouldn't try to suggest a
+# higher version.
+-- want --
+# example.com/basic/a
+## incompatible changes
+A: removed
+## compatible changes
+B: added
+
+# summary
+Cannot suggest a release version.
+Incompatible changes were detected.
+-- go.mod --
+module example.com/basic
+
+go 1.12
+-- a/a.go --
+package a
+
+func B() int { return 0 }
+

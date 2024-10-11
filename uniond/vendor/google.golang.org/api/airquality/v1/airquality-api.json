@@ -1,0 +1,875 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/cloud-platform": {
+          "description": "See, edit, configure, and delete your Google Cloud data and see the email address for your Google Account."
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://airquality.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "Air Quality",
+  "description": "The Air Quality API.",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://developers.google.com/maps/documentation/air-quality",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "airquality:v1",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://airquality.mtls.googleapis.com/",
+  "name": "airquality",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "currentConditions": {
+      "methods": {
+        "lookup": {
+          "description": "The Current Conditions endpoint provides hourly air quality information in more than 100 countries, up to a 500 x 500 meters resolution. Includes over 70 local indexes and global air quality index and categories.",
+          "flatPath": "v1/currentConditions:lookup",
+          "httpMethod": "POST",
+          "id": "airquality.currentConditions.lookup",
+          "parameterOrder": [],
+          "parameters": {},
+          "path": "v1/currentConditions:lookup",
+          "request": {
+            "$ref": "LookupCurrentConditionsRequest"
+          },
+          "response": {
+            "$ref": "LookupCurrentConditionsResponse"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform"
+          ]
+        }
+      }
+    },
+    "forecast": {
+      "methods": {
+        "lookup": {
+          "description": "Returns air quality forecast for a specific location for a given time range.",
+          "flatPath": "v1/forecast:lookup",
+          "httpMethod": "POST",
+          "id": "airquality.forecast.lookup",
+          "parameterOrder": [],
+          "parameters": {},
+          "path": "v1/forecast:lookup",
+          "request": {
+            "$ref": "LookupForecastRequest"
+          },
+          "response": {
+            "$ref": "LookupForecastResponse"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform"
+          ]
+        }
+      }
+    },
+    "history": {
+      "methods": {
+        "lookup": {
+          "description": "Returns air quality history for a specific location for a given time range.",
+          "flatPath": "v1/history:lookup",
+          "httpMethod": "POST",
+          "id": "airquality.history.lookup",
+          "parameterOrder": [],
+          "parameters": {},
+          "path": "v1/history:lookup",
+          "request": {
+            "$ref": "LookupHistoryRequest"
+          },
+          "response": {
+            "$ref": "LookupHistoryResponse"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform"
+          ]
+        }
+      }
+    },
+    "mapTypes": {
+      "resources": {
+        "heatmapTiles": {
+          "methods": {
+            "lookupHeatmapTile": {
+              "description": "Returns a bytes array containing the data of the tile PNG image.",
+              "flatPath": "v1/mapTypes/{mapType}/heatmapTiles/{zoom}/{x}/{y}",
+              "httpMethod": "GET",
+              "id": "airquality.mapTypes.heatmapTiles.lookupHeatmapTile",
+              "parameterOrder": [
+                "mapType",
+                "zoom",
+                "x",
+                "y"
+              ],
+              "parameters": {
+                "mapType": {
+                  "description": "Required. The type of the air quality heatmap. Defines the pollutant that the map will graphically represent. Allowed values: - UAQI_RED_GREEN (UAQI, red-green palette) - UAQI_INDIGO_PERSIAN (UAQI, indigo-persian palette) - PM25_INDIGO_PERSIAN - GBR_DEFRA - DEU_UBA - CAN_EC - FRA_ATMO - US_AQI",
+                  "enum": [
+                    "MAP_TYPE_UNSPECIFIED",
+                    "UAQI_RED_GREEN",
+                    "UAQI_INDIGO_PERSIAN",
+                    "PM25_INDIGO_PERSIAN",
+                    "GBR_DEFRA",
+                    "DEU_UBA",
+                    "CAN_EC",
+                    "FRA_ATMO",
+                    "US_AQI"
+                  ],
+                  "enumDescriptions": [
+                    "The default value. The server ignores it if it is passed as a parameter.",
+                    "Universal Air Quality Index red-green palette.",
+                    "Universal Air Quality Index indigo-persian palette.",
+                    "PM2.5 index indigo-persian palette.",
+                    "Daily Air Quality Index (UK) color palette.",
+                    "German Local Air Quality Index color palette.",
+                    "Canadian Air Quality Health Index color palette.",
+                    "France Air Quality Index color palette.",
+                    "US Air Quality Index color palette."
+                  ],
+                  "location": "path",
+                  "required": true,
+                  "type": "string"
+                },
+                "x": {
+                  "description": "Required. Defines the east-west point in the requested tile.",
+                  "format": "int32",
+                  "location": "path",
+                  "required": true,
+                  "type": "integer"
+                },
+                "y": {
+                  "description": "Required. Defines the north-south point in the requested tile.",
+                  "format": "int32",
+                  "location": "path",
+                  "required": true,
+                  "type": "integer"
+                },
+                "zoom": {
+                  "description": "Required. The map's zoom level. Defines how large or small the contents of a map appear in a map view. Zoom level 0 is the entire world in a single tile. Zoom level 1 is the entire world in 4 tiles. Zoom level 2 is the entire world in 16 tiles. Zoom level 16 is the entire world in 65,536 tiles. Allowed values: 0-16",
+                  "format": "int32",
+                  "location": "path",
+                  "required": true,
+                  "type": "integer"
+                }
+              },
+              "path": "v1/mapTypes/{mapType}/heatmapTiles/{zoom}/{x}/{y}",
+              "response": {
+                "$ref": "HttpBody"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20240611",
+  "rootUrl": "https://airquality.googleapis.com/",
+  "schemas": {
+    "AdditionalInfo": {
+      "description": "The emission sources and health effects of a given pollutant.",
+      "id": "AdditionalInfo",
+      "properties": {
+        "effects": {
+          "description": "Text representing the pollutant's main health effects.",
+          "type": "string"
+        },
+        "sources": {
+          "description": "Text representing the pollutant's main emission sources.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AirQualityIndex": {
+      "description": "The basic object for representing different air quality metrics. When brought together, these metrics provide a snapshot about the current air quality conditions. There are multiple indexes in the world serving different purposes and groups interested in measuring different aspects of air quality.",
+      "id": "AirQualityIndex",
+      "properties": {
+        "aqi": {
+          "description": " The index's numeric score. Examples: 10, 100. The value is not normalized and should only be interpreted in the context of its related air-quality index. For non-numeric indexes, this field will not be returned. Note: This field should be used for calculations, graph display, etc. For displaying the index score, you should use the AQI display field.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "aqiDisplay": {
+          "description": "Textual representation of the index numeric score, that may include prefix or suffix symbols, which usually represents the worst index score. Example: \u003e100 or 10+. Note: This field should be used when you want to display the index score. For non-numeric indexes, this field is empty.",
+          "type": "string"
+        },
+        "category": {
+          "description": "Textual classification of the index numeric score interpretation. For example: \"Excellent air quality\".",
+          "type": "string"
+        },
+        "code": {
+          "description": "The index's code. This field represents the index for programming purposes by using snake case instead of spaces. Examples: \"uaqi\", \"fra_atmo\".",
+          "type": "string"
+        },
+        "color": {
+          "$ref": "Color",
+          "description": "The color used to represent the AQI numeric score."
+        },
+        "displayName": {
+          "description": "A human readable representation of the index name. Example: \"AQI (US)\"",
+          "type": "string"
+        },
+        "dominantPollutant": {
+          "description": "The chemical symbol of the dominant pollutant. For example: \"CO\".",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Color": {
+      "description": "Represents a color in the RGBA color space. This representation is designed for simplicity of conversion to and from color representations in various languages over compactness. For example, the fields of this representation can be trivially provided to the constructor of `java.awt.Color` in Java; it can also be trivially provided to UIColor's `+colorWithRed:green:blue:alpha` method in iOS; and, with just a little work, it can be easily formatted into a CSS `rgba()` string in JavaScript. This reference page doesn't have information about the absolute color space that should be used to interpret the RGB value—for example, sRGB, Adobe RGB, DCI-P3, and BT.2020. By default, applications should assume the sRGB color space. When color equality needs to be decided, implementations, unless documented otherwise, treat two colors as equal if all their red, green, blue, and alpha values each differ by at most `1e-5`. Example (Java): import com.google.type.Color; // ... public static java.awt.Color fromProto(Color protocolor) { float alpha = protocolor.hasAlpha() ? protocolor.getAlpha().getValue() : 1.0; return new java.awt.Color( protocolor.getRed(), protocolor.getGreen(), protocolor.getBlue(), alpha); } public static Color toProto(java.awt.Color color) { float red = (float) color.getRed(); float green = (float) color.getGreen(); float blue = (float) color.getBlue(); float denominator = 255.0; Color.Builder resultBuilder = Color .newBuilder() .setRed(red / denominator) .setGreen(green / denominator) .setBlue(blue / denominator); int alpha = color.getAlpha(); if (alpha != 255) { result.setAlpha( FloatValue .newBuilder() .setValue(((float) alpha) / denominator) .build()); } return resultBuilder.build(); } // ... Example (iOS / Obj-C): // ... static UIColor* fromProto(Color* protocolor) { float red = [protocolor red]; float green = [protocolor green]; float blue = [protocolor blue]; FloatValue* alpha_wrapper = [protocolor alpha]; float alpha = 1.0; if (alpha_wrapper != nil) { alpha = [alpha_wrapper value]; } return [UIColor colorWithRed:red green:green blue:blue alpha:alpha]; } static Color* toProto(UIColor* color) { CGFloat red, green, blue, alpha; if (![color getRed:\u0026red green:\u0026green blue:\u0026blue alpha:\u0026alpha]) { return nil; } Color* result = [[Color alloc] init]; [result setRed:red]; [result setGreen:green]; [result setBlue:blue]; if (alpha \u003c= 0.9999) { [result setAlpha:floatWrapperWithValue(alpha)]; } [result autorelease]; return result; } // ... Example (JavaScript): // ... var protoToCssColor = function(rgb_color) { var redFrac = rgb_color.red || 0.0; var greenFrac = rgb_color.green || 0.0; var blueFrac = rgb_color.blue || 0.0; var red = Math.floor(redFrac * 255); var green = Math.floor(greenFrac * 255); var blue = Math.floor(blueFrac * 255); if (!('alpha' in rgb_color)) { return rgbToCssColor(red, green, blue); } var alphaFrac = rgb_color.alpha.value || 0.0; var rgbParams = [red, green, blue].join(','); return ['rgba(', rgbParams, ',', alphaFrac, ')'].join(''); }; var rgbToCssColor = function(red, green, blue) { var rgbNumber = new Number((red \u003c\u003c 16) | (green \u003c\u003c 8) | blue); var hexString = rgbNumber.toString(16); var missingZeros = 6 - hexString.length; var resultBuilder = ['#']; for (var i = 0; i \u003c missingZeros; i++) { resultBuilder.push('0'); } resultBuilder.push(hexString); return resultBuilder.join(''); }; // ...",
+      "id": "Color",
+      "properties": {
+        "alpha": {
+          "description": "The fraction of this color that should be applied to the pixel. That is, the final pixel color is defined by the equation: `pixel color = alpha * (this color) + (1.0 - alpha) * (background color)` This means that a value of 1.0 corresponds to a solid color, whereas a value of 0.0 corresponds to a completely transparent color. This uses a wrapper message rather than a simple float scalar so that it is possible to distinguish between a default value and the value being unset. If omitted, this color object is rendered as a solid color (as if the alpha value had been explicitly given a value of 1.0).",
+          "format": "float",
+          "type": "number"
+        },
+        "blue": {
+          "description": "The amount of blue in the color as a value in the interval [0, 1].",
+          "format": "float",
+          "type": "number"
+        },
+        "green": {
+          "description": "The amount of green in the color as a value in the interval [0, 1].",
+          "format": "float",
+          "type": "number"
+        },
+        "red": {
+          "description": "The amount of red in the color as a value in the interval [0, 1].",
+          "format": "float",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "Concentration": {
+      "description": "The concentration of a given pollutant in the air.",
+      "id": "Concentration",
+      "properties": {
+        "units": {
+          "description": "Units for measuring this pollutant concentration.",
+          "enum": [
+            "UNIT_UNSPECIFIED",
+            "PARTS_PER_BILLION",
+            "MICROGRAMS_PER_CUBIC_METER"
+          ],
+          "enumDescriptions": [
+            "Unspecified concentration unit.",
+            "The ppb (parts per billion) concentration unit.",
+            "The \"µg/m^3\" (micrograms per cubic meter) concentration unit."
+          ],
+          "type": "string"
+        },
+        "value": {
+          "description": "Value of pollutant concentration.",
+          "format": "float",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "CustomLocalAqi": {
+      "description": "Expresses a 'country/region to AQI' relationship. Pairs a country/region with a desired AQI so that air quality data that is required for that country/region will be displayed according to the chosen AQI.",
+      "id": "CustomLocalAqi",
+      "properties": {
+        "aqi": {
+          "description": "The AQI to associate the country/region with. Value should be a [valid index](/maps/documentation/air-quality/laqis) code.",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "The country/region requiring the custom AQI. Value should be provided using [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) code.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "HealthRecommendations": {
+      "description": "Health recommendations for different population groups in a free text format. The recommendations are derived from their associated air quality conditions.",
+      "id": "HealthRecommendations",
+      "properties": {
+        "athletes": {
+          "description": "Sports and other strenuous outdoor activities.",
+          "type": "string"
+        },
+        "children": {
+          "description": "Younger populations including children, toddlers, and babies.",
+          "type": "string"
+        },
+        "elderly": {
+          "description": "Retirees and people older than the general population.",
+          "type": "string"
+        },
+        "generalPopulation": {
+          "description": "No specific sensitivities.",
+          "type": "string"
+        },
+        "heartDiseasePopulation": {
+          "description": "Heart and circulatory system diseases.",
+          "type": "string"
+        },
+        "lungDiseasePopulation": {
+          "description": "Respiratory related problems and asthma suffers.",
+          "type": "string"
+        },
+        "pregnantWomen": {
+          "description": "Women at all stages of pregnancy.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "HourInfo": {
+      "description": "Contains the air quality information for each hour in the requested range. For example, if the request is for 48 hours of history there will be 48 elements of hourly info.",
+      "id": "HourInfo",
+      "properties": {
+        "dateTime": {
+          "description": "A rounded down timestamp indicating the time the data refers to in RFC3339 UTC \"Zulu\" format, with nanosecond resolution and up to nine fractional digits. For example: \"2014-10-02T15:00:00Z\".",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "healthRecommendations": {
+          "$ref": "HealthRecommendations",
+          "description": "Health advice and recommended actions related to the reported air quality conditions. Recommendations are tailored differently for populations at risk, groups with greater sensitivities to pollutants, and the general population."
+        },
+        "indexes": {
+          "description": "Based on the request parameters, this list will include (up to) two air quality indexes: - Universal AQI. Will be returned if the universalAqi boolean is set to true. - Local AQI. Will be returned if the LOCAL_AQI extra computation is specified.",
+          "items": {
+            "$ref": "AirQualityIndex"
+          },
+          "type": "array"
+        },
+        "pollutants": {
+          "description": "A list of pollutants affecting the location specified in the request. Note: This field will be returned only for requests that specified one or more of the following extra computations: POLLUTANT_ADDITIONAL_INFO, DOMINANT_POLLUTANT_CONCENTRATION, POLLUTANT_CONCENTRATION.",
+          "items": {
+            "$ref": "Pollutant"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "HourlyForecast": {
+      "description": "Contains the air quality information for each hour in the requested range. For example, if the request is for 48 hours of forecast there will be 48 elements of hourly forecasts.",
+      "id": "HourlyForecast",
+      "properties": {
+        "dateTime": {
+          "description": "A rounded down timestamp indicating the time (hour) the data refers to in RFC3339 UTC \"Zulu\" format. For example: \"2014-10-02T15:00:00Z\".",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "healthRecommendations": {
+          "$ref": "HealthRecommendations",
+          "description": "Health advice and recommended actions related to the reported air quality conditions. Recommendations are tailored differently for populations at risk, groups with greater sensitivities to pollutants, and the general population."
+        },
+        "indexes": {
+          "description": "Based on the request parameters, this list will include (up to) two air quality indexes: - Universal AQI. Will be returned if the `universal_aqi` boolean is set to true. - Local AQI. Will be returned if the LOCAL_AQI extra computation is specified.",
+          "items": {
+            "$ref": "AirQualityIndex"
+          },
+          "type": "array"
+        },
+        "pollutants": {
+          "description": "A list of pollutants affecting the location specified in the request. Note: This field will be returned only for requests that specified one or more of the following extra computations: POLLUTANT_ADDITIONAL_INFO, DOMINANT_POLLUTANT_CONCENTRATION, POLLUTANT_CONCENTRATION.",
+          "items": {
+            "$ref": "Pollutant"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "HttpBody": {
+      "description": "Message that represents an arbitrary HTTP body. It should only be used for payload formats that can't be represented as JSON, such as raw binary or an HTML page. This message can be used both in streaming and non-streaming API methods in the request as well as the response. It can be used as a top-level request field, which is convenient if one wants to extract parameters from either the URL or HTTP template into the request fields and also want access to the raw HTTP body. Example: message GetResourceRequest { // A unique request id. string request_id = 1; // The raw HTTP body is bound to this field. google.api.HttpBody http_body = 2; } service ResourceService { rpc GetResource(GetResourceRequest) returns (google.api.HttpBody); rpc UpdateResource(google.api.HttpBody) returns (google.protobuf.Empty); } Example with streaming methods: service CaldavService { rpc GetCalendar(stream google.api.HttpBody) returns (stream google.api.HttpBody); rpc UpdateCalendar(stream google.api.HttpBody) returns (stream google.api.HttpBody); } Use of this type only changes how the request and response bodies are handled, all other features will continue to work unchanged.",
+      "id": "HttpBody",
+      "properties": {
+        "contentType": {
+          "description": "The HTTP Content-Type header value specifying the content type of the body.",
+          "type": "string"
+        },
+        "data": {
+          "description": "The HTTP request/response body as raw binary.",
+          "format": "byte",
+          "type": "string"
+        },
+        "extensions": {
+          "description": "Application specific response metadata. Must be set in the first response for streaming APIs.",
+          "items": {
+            "additionalProperties": {
+              "description": "Properties of the object. Contains field @type with type URL.",
+              "type": "any"
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Interval": {
+      "description": "Represents a time interval, encoded as a Timestamp start (inclusive) and a Timestamp end (exclusive). The start must be less than or equal to the end. When the start equals the end, the interval is empty (matches no time). When both start and end are unspecified, the interval matches any time.",
+      "id": "Interval",
+      "properties": {
+        "endTime": {
+          "description": "Optional. Exclusive end of the interval. If specified, a Timestamp matching this interval will have to be before the end.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "startTime": {
+          "description": "Optional. Inclusive start of the interval. If specified, a Timestamp matching this interval will have to be the same or after the start.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "LatLng": {
+      "description": "An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard. Values must be within normalized ranges.",
+      "id": "LatLng",
+      "properties": {
+        "latitude": {
+          "description": "The latitude in degrees. It must be in the range [-90.0, +90.0].",
+          "format": "double",
+          "type": "number"
+        },
+        "longitude": {
+          "description": "The longitude in degrees. It must be in the range [-180.0, +180.0].",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "LookupCurrentConditionsRequest": {
+      "description": "The request definition of the air quality current conditions.",
+      "id": "LookupCurrentConditionsRequest",
+      "properties": {
+        "customLocalAqis": {
+          "description": "Optional. Expresses a 'country/region to AQI' relationship. Pairs a country/region with a desired AQI so that air quality data that is required for that country/region will be displayed according to the chosen AQI. This parameter can be used to specify a non-default AQI for a given country, for example, to get the US EPA index for Canada rather than the default index for Canada.",
+          "items": {
+            "$ref": "CustomLocalAqi"
+          },
+          "type": "array"
+        },
+        "extraComputations": {
+          "description": "Optional. Additional features that can be optionally enabled. Specifying extra computations will result in the relevant elements and fields to be returned in the response.",
+          "items": {
+            "enum": [
+              "EXTRA_COMPUTATION_UNSPECIFIED",
+              "LOCAL_AQI",
+              "HEALTH_RECOMMENDATIONS",
+              "POLLUTANT_ADDITIONAL_INFO",
+              "DOMINANT_POLLUTANT_CONCENTRATION",
+              "POLLUTANT_CONCENTRATION"
+            ],
+            "enumDescriptions": [
+              "The default value. The server ignores it if it is passed as a parameter.",
+              "Determines whether to include the local (national) AQI of the requested location (country) in the response. If specified, the response will contain an 'air_quality_index' data structure with all the relevant data on the location's local AQI.",
+              "Determines whether the response will include the health advice and recommended actions for the current AQI conditions. The recommendations are tailored for the general population and six populations at risk groups with greater sensitivities to pollutants than the general population. If specified, the `health_recommendations` field will be populated in the response when the relevant data is available.",
+              "Determines whether to include in the response the additional information of each pollutant. If specified, each air quality index object contained in the 'indexes' field response will include an `additional_info` field when the data is available.",
+              "Determines whether the response would include the concentrations of the dominant pollutants measured according to global and/or local indexes. If the request specified both the global AQI and the local AQI, there may be up to two pollutant codes returned. If specified, the dominant pollutant object contained in the 'pollutants' list will include a `concentration` field when the data is available.",
+              "Determines whether the response would include the concentrations of all pollutants with available measurements according to global and/or local indexes. If specified, each pollutant object contained in the 'pollutants' field in the response will include a `concentration` field when the data is available."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "languageCode": {
+          "description": "Optional. Allows the client to choose the language for the response. If data cannot be provided for that language the API uses the closest match. Allowed values rely on the IETF standard. Default value is en.",
+          "type": "string"
+        },
+        "location": {
+          "$ref": "LatLng",
+          "description": "Required. The longitude and latitude from which the API looks for air quality current conditions data."
+        },
+        "uaqiColorPalette": {
+          "description": "Optional. Determines the color palette used for data provided by the 'Universal Air Quality Index' (UAQI). This color palette is relevant just for UAQI, other AQIs have a predetermined color palette that can't be controlled.",
+          "enum": [
+            "COLOR_PALETTE_UNSPECIFIED",
+            "RED_GREEN",
+            "INDIGO_PERSIAN_DARK",
+            "INDIGO_PERSIAN_LIGHT"
+          ],
+          "enumDescriptions": [
+            "The default value. Ignored if passed as a parameter.",
+            "Determines whether to use a red/green palette.",
+            "Determines whether to use a indigo/persian palette (dark theme).",
+            "Determines whether to use a indigo/persian palette (light theme)."
+          ],
+          "type": "string"
+        },
+        "universalAqi": {
+          "description": "Optional. If set to true, the Universal AQI will be included in the 'indexes' field of the response. Default value is true.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "LookupCurrentConditionsResponse": {
+      "id": "LookupCurrentConditionsResponse",
+      "properties": {
+        "dateTime": {
+          "description": "A rounded down timestamp in RFC3339 UTC \"Zulu\" format, with nanosecond resolution and up to nine fractional digits. For example: \"2014-10-02T15:00:00Z\".",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "healthRecommendations": {
+          "$ref": "HealthRecommendations",
+          "description": "Health advice and recommended actions related to the reported air quality conditions. Recommendations are tailored differently for populations at risk, groups with greater sensitivities to pollutants, and the general population."
+        },
+        "indexes": {
+          "description": "Based on the request parameters, this list will include (up to) two air quality indexes: - Universal AQI. Will be returned if the universalAqi boolean is set to true. - Local AQI. Will be returned if the LOCAL_AQI extra computation is specified.",
+          "items": {
+            "$ref": "AirQualityIndex"
+          },
+          "type": "array"
+        },
+        "pollutants": {
+          "description": "A list of pollutants affecting the location specified in the request. Note: This field will be returned only for requests that specified one or more of the following extra computations: POLLUTANT_ADDITIONAL_INFO, DOMINANT_POLLUTANT_CONCENTRATION, POLLUTANT_CONCENTRATION.",
+          "items": {
+            "$ref": "Pollutant"
+          },
+          "type": "array"
+        },
+        "regionCode": {
+          "description": "The ISO_3166-1 alpha-2 code of the country/region corresponding to the location provided in the request. This field might be omitted from the response if the location provided in the request resides in a disputed territory.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "LookupForecastRequest": {
+      "description": "The request object of the air quality forecast API.",
+      "id": "LookupForecastRequest",
+      "properties": {
+        "customLocalAqis": {
+          "description": "Optional. Expresses a 'country/region to AQI' relationship. Pairs a country/region with a desired AQI so that air quality data that is required for that country/region will be displayed according to the chosen AQI. This parameter can be used to specify a non-default AQI for a given country, for example, to get the US EPA index for Canada rather than the default index for Canada.",
+          "items": {
+            "$ref": "CustomLocalAqi"
+          },
+          "type": "array"
+        },
+        "dateTime": {
+          "description": "A timestamp for which to return the data for a specific point in time. The timestamp is rounded to the previous exact hour. Note: this will return hourly data for the requested timestamp only (i.e. a single hourly info element). For example, a request sent where the date_time parameter is set to 2023-01-03T11:05:49Z will be rounded down to 2023-01-03T11:00:00Z.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "extraComputations": {
+          "description": "Optional. Additional features that can be optionally enabled. Specifying extra computations will result in the relevant elements and fields to be returned in the response.",
+          "items": {
+            "enum": [
+              "EXTRA_COMPUTATION_UNSPECIFIED",
+              "LOCAL_AQI",
+              "HEALTH_RECOMMENDATIONS",
+              "POLLUTANT_ADDITIONAL_INFO",
+              "DOMINANT_POLLUTANT_CONCENTRATION",
+              "POLLUTANT_CONCENTRATION"
+            ],
+            "enumDescriptions": [
+              "The default value. The server ignores it if it is passed as a parameter.",
+              "Determines whether to include the local (national) AQI of the requested location (country) in the response. If specified, the response will contain an 'air_quality_index' data structure with all the relevant data on the location's local AQI.",
+              "Determines whether the response will include the health advice and recommended actions for the current AQI conditions. The recommendations are tailored for the general population and six populations at risk groups with greater sensitivities to pollutants than the general population. If specified, the `health_recommendations` field will be populated in the response when the relevant data is available.",
+              "Determines whether to include in the response the additional information of each pollutant. If specified, each air quality index object contained in the 'indexes' field response will include an `additional_info` field when the data is available.",
+              "Determines whether the response would include the concentrations of the dominant pollutants measured according to global and/or local indexes. If the request specified both the global AQI and the local AQI, there may be up to two pollutant codes returned. If specified, the dominant pollutant object contained in the 'pollutants' list will include a `concentration` field when the data is available.",
+              "Determines whether the response would include the concentrations of all pollutants with available measurements according to global and/or local indexes. If specified, each pollutant object contained in the 'pollutants' field in the response will include a `concentration` field when the data is available."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "languageCode": {
+          "description": "Optional. Allows the client to choose the language for the response. If data cannot be provided for that language the API uses the closest match. Allowed values rely on the IETF standard (default = 'en').",
+          "type": "string"
+        },
+        "location": {
+          "$ref": "LatLng",
+          "description": "Required. The latitude and longitude for which the API looks for air quality data."
+        },
+        "pageSize": {
+          "description": "Optional. The maximum number of hourly info records to return per page (default = 24).",
+          "format": "int32",
+          "type": "integer"
+        },
+        "pageToken": {
+          "description": "Optional. A page token received from a previous forecast call. It is used to retrieve the subsequent page.",
+          "type": "string"
+        },
+        "period": {
+          "$ref": "Interval",
+          "description": "Indicates the start and end period for which to get the forecast data. The timestamp is rounded to the previous exact hour."
+        },
+        "uaqiColorPalette": {
+          "description": "Optional. Determines the color palette used for data provided by the 'Universal Air Quality Index' (UAQI). This color palette is relevant just for UAQI, other AQIs have a predetermined color palette that can't be controlled.",
+          "enum": [
+            "COLOR_PALETTE_UNSPECIFIED",
+            "RED_GREEN",
+            "INDIGO_PERSIAN_DARK",
+            "INDIGO_PERSIAN_LIGHT"
+          ],
+          "enumDescriptions": [
+            "The default value. Ignored if passed as a parameter.",
+            "Determines whether to use a red/green palette.",
+            "Determines whether to use a indigo/persian palette (dark theme).",
+            "Determines whether to use a indigo/persian palette (light theme)."
+          ],
+          "type": "string"
+        },
+        "universalAqi": {
+          "description": "Optional. If set to true, the Universal AQI will be included in the 'indexes' field of the response (default = true).",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "LookupForecastResponse": {
+      "description": "The response object of the air quality forecast API.",
+      "id": "LookupForecastResponse",
+      "properties": {
+        "hourlyForecasts": {
+          "description": "Optional. Contains the air quality information for each hour in the requested range. For example, if the request is for 48 hours of forecast there will be 48 elements of hourly forecasts.",
+          "items": {
+            "$ref": "HourlyForecast"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "Optional. The token to retrieve the next page.",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "Optional. The ISO_3166-1 alpha-2 code of the country/region corresponding to the location provided in the request. This field might be omitted from the response if the location provided in the request resides in a disputed territory.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "LookupHistoryRequest": {
+      "description": "The request object of the air quality history API.",
+      "id": "LookupHistoryRequest",
+      "properties": {
+        "customLocalAqis": {
+          "description": "Optional. Expresses a 'country/region to AQI' relationship. Pairs a country/region with a desired AQI so that air quality data that is required for that country/region will be displayed according to the chosen AQI. This parameter can be used to specify a non-default AQI for a given country, for example, to get the US EPA index for Canada rather than the default index for Canada.",
+          "items": {
+            "$ref": "CustomLocalAqi"
+          },
+          "type": "array"
+        },
+        "dateTime": {
+          "description": "A timestamp for which to return historical data. The timestamp is rounded to the previous exact hour. Note: this will return hourly data for the requested timestamp only (i.e. a single hourly info element). For example, a request sent where the dateTime parameter is set to 2023-01-03T11:05:49Z will be rounded down to 2023-01-03T11:00:00Z. A timestamp in RFC3339 UTC \"Zulu\" format, with nanosecond resolution and up to nine fractional digits. Examples: \"2014-10-02T15:01:23Z\" and \"2014-10-02T15:01:23.045123456Z\".",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "extraComputations": {
+          "description": "Optional. Additional features that can be optionally enabled. Specifying extra computations will result in the relevant elements and fields to be returned in the response.",
+          "items": {
+            "enum": [
+              "EXTRA_COMPUTATION_UNSPECIFIED",
+              "LOCAL_AQI",
+              "HEALTH_RECOMMENDATIONS",
+              "POLLUTANT_ADDITIONAL_INFO",
+              "DOMINANT_POLLUTANT_CONCENTRATION",
+              "POLLUTANT_CONCENTRATION"
+            ],
+            "enumDescriptions": [
+              "The default value. The server ignores it if it is passed as a parameter.",
+              "Determines whether to include the local (national) AQI of the requested location (country) in the response. If specified, the response will contain an 'air_quality_index' data structure with all the relevant data on the location's local AQI.",
+              "Determines whether the response will include the health advice and recommended actions for the current AQI conditions. The recommendations are tailored for the general population and six populations at risk groups with greater sensitivities to pollutants than the general population. If specified, the `health_recommendations` field will be populated in the response when the relevant data is available.",
+              "Determines whether to include in the response the additional information of each pollutant. If specified, each air quality index object contained in the 'indexes' field response will include an `additional_info` field when the data is available.",
+              "Determines whether the response would include the concentrations of the dominant pollutants measured according to global and/or local indexes. If the request specified both the global AQI and the local AQI, there may be up to two pollutant codes returned. If specified, the dominant pollutant object contained in the 'pollutants' list will include a `concentration` field when the data is available.",
+              "Determines whether the response would include the concentrations of all pollutants with available measurements according to global and/or local indexes. If specified, each pollutant object contained in the 'pollutants' field in the response will include a `concentration` field when the data is available."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "hours": {
+          "description": "Number from 1 to 720 that indicates the hours range for the request. For example: A value of 48 will yield data from the last 48 hours.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "languageCode": {
+          "description": "Optional. Allows the client to choose the language for the response. If data cannot be provided for that language the API uses the closest match. Allowed values rely on the IETF standard. Default value is en.",
+          "type": "string"
+        },
+        "location": {
+          "$ref": "LatLng",
+          "description": "Required. The latitude and longitude for which the API looks for air quality history data."
+        },
+        "pageSize": {
+          "description": "Optional. The maximum number of hourly info records to return per page. The default is 72 and the max value is 168 (7 days of data).",
+          "format": "int32",
+          "type": "integer"
+        },
+        "pageToken": {
+          "description": "Optional. A page token received from a previous history call. It is used to retrieve the subsequent page. Note that when providing a value for this parameter all other parameters provided must match the call that provided the page token (the previous call).",
+          "type": "string"
+        },
+        "period": {
+          "$ref": "Interval",
+          "description": "Indicates the start and end period for which to get the historical data. The timestamp is rounded to the previous exact hour."
+        },
+        "uaqiColorPalette": {
+          "description": "Optional. Determines the color palette used for data provided by the 'Universal Air Quality Index' (UAQI). This color palette is relevant just for UAQI, other AQIs have a predetermined color palette that can't be controlled.",
+          "enum": [
+            "COLOR_PALETTE_UNSPECIFIED",
+            "RED_GREEN",
+            "INDIGO_PERSIAN_DARK",
+            "INDIGO_PERSIAN_LIGHT"
+          ],
+          "enumDescriptions": [
+            "The default value. Ignored if passed as a parameter.",
+            "Determines whether to use a red/green palette.",
+            "Determines whether to use a indigo/persian palette (dark theme).",
+            "Determines whether to use a indigo/persian palette (light theme)."
+          ],
+          "type": "string"
+        },
+        "universalAqi": {
+          "description": "Optional. If set to true, the Universal AQI will be included in the 'indexes' field of the response. Default value is true.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "LookupHistoryResponse": {
+      "id": "LookupHistoryResponse",
+      "properties": {
+        "hoursInfo": {
+          "description": "Optional. Contains the air quality information for each hour in the requested range. For example, if the request is for 48 hours of history there will be 48 elements of hourly info.",
+          "items": {
+            "$ref": "HourInfo"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "Optional. The token to retrieve the next page.",
+          "type": "string"
+        },
+        "regionCode": {
+          "description": "Optional. The ISO_3166-1 alpha-2 code of the country/region corresponding to the location provided in the request. This field might be omitted from the response if the location provided in the request resides in a disputed territory.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Pollutant": {
+      "description": "Data regarding an air quality pollutant.",
+      "id": "Pollutant",
+      "properties": {
+        "additionalInfo": {
+          "$ref": "AdditionalInfo",
+          "description": "Additional information about the pollutant."
+        },
+        "code": {
+          "description": "The pollutant's code name. For example: \"so2\". A list of all available codes could be found [here](/maps/documentation/air-quality/pollutants#reported_pollutants).",
+          "type": "string"
+        },
+        "concentration": {
+          "$ref": "Concentration",
+          "description": "The pollutant's concentration level measured by one of the standard air pollutation measure units."
+        },
+        "displayName": {
+          "description": "The pollutant's display name. For example: \"NOx\".",
+          "type": "string"
+        },
+        "fullName": {
+          "description": "The pollutant's full name. For chemical compounds, this is the IUPAC name. Example: \"Sulfur Dioxide\". For more information about the IUPAC names table, see https://iupac.org/what-we-do/periodic-table-of-elements/",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "Air Quality API",
+  "version": "v1",
+  "version_module": true
+}

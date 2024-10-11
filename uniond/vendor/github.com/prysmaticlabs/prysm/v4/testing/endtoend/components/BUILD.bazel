@@ -1,0 +1,67 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = [
+        "beacon_node.go",
+        "boot_node.go",
+        "builder.go",
+        "lighthouse_beacon.go",
+        "lighthouse_validator.go",
+        "log.go",
+        "tracing_sink.go",
+        "validator.go",
+        "web3remotesigner.go",
+    ],
+    data = [
+        "//testing/endtoend/static-files/eth1:eth1data",
+        "@lighthouse//:lighthouse_bin",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/testing/endtoend/components",
+    visibility = ["//testing/endtoend:__subpackages__"],
+    deps = [
+        "//beacon-chain/state:go_default_library",
+        "//cmd:go_default_library",
+        "//cmd/beacon-chain/flags:go_default_library",
+        "//cmd/beacon-chain/sync/genesis:go_default_library",
+        "//cmd/validator/flags:go_default_library",
+        "//config/features:go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//config/params:go_default_library",
+        "//crypto/bls:go_default_library",
+        "//io/file:go_default_library",
+        "//proto/prysm/v1alpha1/validator-client:go_default_library",
+        "//runtime/interop:go_default_library",
+        "//testing/endtoend/helpers:go_default_library",
+        "//testing/endtoend/params:go_default_library",
+        "//testing/endtoend/types:go_default_library",
+        "//testing/middleware/builder:go_default_library",
+        "//validator/keymanager:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
+        "@com_github_google_uuid//:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+        "@com_github_wealdtech_go_eth2_wallet_encryptor_keystorev4//:go_default_library",
+        "@in_gopkg_yaml_v2//:go_default_library",
+        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
+        "@org_golang_x_sync//errgroup:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = ["web3remotesigner_test.go"],
+    data = [
+        "//config/params:custom_configs",
+        "@web3signer",
+    ],
+    deps = [
+        ":go_default_library",
+        "//config/params:go_default_library",
+        "//testing/endtoend/params:go_default_library",
+        "//testing/require:go_default_library",
+    ],
+)

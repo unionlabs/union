@@ -1,0 +1,81 @@
+{
+  "genesis": {
+    "difficulty": "3244991",
+    "extraData": "0x",
+    "gasLimit": "7968787",
+    "hash": "0x62bbf18c203068a8793af8d8360d054f95a63bc62b87ade550861ed490af3f15",
+    "miner": "0x9f2659ffe7b3b467e46dcec3623392cf51635079",
+    "mixHash": "0xc8dec711fd1e03972b6a279a09dc0cd29c5171b60f42c4ce37c7c51ff445f776",
+    "nonce": "0x40b1bbcc25ddb804",
+    "number": "839246",
+    "stateRoot": "0x4bb3b02ec70b837651233957fb61a6ea3fc6a4244c1f55df7a713c154829ec0a",
+    "timestamp": "1581179375",
+    "totalDifficulty": "1023985623933",
+    "alloc": {
+      "0x76554b33410b6d90b7dc889bfed0451ad195f27e": {
+        "balance": "0x0",
+        "nonce": "1",
+        "code": "0x6080604052348015600f57600080fd5b506004361060505760003560e01c8063391521f414605557806355313dea14605d5780636d3d14161460655780638da5cb5b14606d578063b9d1e5aa1460b5575b600080fd5b605b60bd565b005b606360c8565b005b606b60ca565b005b607360cf565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b60bb60f4565b005b6020610123600af050565b005b600080fd5b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565bfefea165627a7a723058202094d5aa5dbbd493e9a2c64c50b62eba4b109b2a12d2bb73a5d0d54982651fc80029",
+        "storage": {}
+      },
+      "0xed69ab7145a9bae7152406d062c077c6ecc6ae18": {
+        "balance": "0x0",
+        "nonce": "0",
+        "code": "0x",
+        "storage": {}
+      },
+      "0xa3b31cbd5168d3c99756660d4b7625d679e12573": {
+        "balance": "0x569bc6535d3083fce",
+        "nonce": "26",
+        "code": "0x",
+        "storage": {}
+      }
+    },
+    "config": {
+      "chainId": 63,
+      "daoForkSupport": true,
+      "eip150Block": 0,
+      "eip150Hash": "0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d",
+      "eip155Block": 0,
+      "eip158Block": 0,
+      "ethash": {},
+      "homesteadBlock": 0,
+      "byzantiumBlock": 0,
+      "constantinopleBlock": 301243,
+      "petersburgBlock": 999983,
+      "istanbulBlock": 999983
+    }
+  },
+  "context": {
+    "number": "839247",
+    "difficulty": "3213311",
+    "timestamp": "1581179571",
+    "gasLimit": "7961006",
+    "miner": "0x9f2659ffe7b3b467e46dcec3623392cf51635079"
+  },
+  "input": "0xf86a1a8509502f9000830334509476554b33410b6d90b7dc889bfed0451ad195f27e8084391521f481a2a02e4ff0d171a860c8c7de2283978e2f225f9ba3ed4dec446b773c6b2d73ef22dea02a6a517528b491cb71b204f534db11a1c8059035f54d5bae347d1cab536bde2c",
+  "result": [
+    {
+      "type": "call",
+      "action": {
+        "from": "0xa3b31cbd5168d3c99756660d4b7625d679e12573",
+        "to": "0x76554b33410b6d90b7dc889bfed0451ad195f27e",
+        "value": "0x0",
+        "gas": "0x33450",
+        "input": "0x391521f4",
+        "callType": "call"
+      },
+      "result": {
+        "gasUsed": "0xd0b5",
+        "output": "0x"
+      },
+      "traceAddress": [],
+      "subtraces": 0,
+      "transactionPosition": 26,
+      "transactionHash": "0xcb1090fa85d2a3da8326b75333e92b3dca89963c895d9c981bfdaa64643135e4",
+      "blockNumber": 839247,
+      "blockHash": "0xce7ff7d84ca97f0f89d6065e2c12409a795c9f607cdb14aef0713cad5d7e311c",
+      "time": "182.267µs"
+    }
+  ]
+}

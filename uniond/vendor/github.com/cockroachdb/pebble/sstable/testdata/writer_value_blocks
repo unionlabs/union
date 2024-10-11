@@ -1,0 +1,330 @@
+# Size of value index is 3 bytes plus 5 + 5 = 10 bytes of trailer of the value
+# block and value index block. So size 18 - 13 = 5 size of the value in the
+# value block.
+build
+a@2.SET.1:a2
+b@5.SET.7:b5
+b@4.DEL.3:
+b@3.SET.2:bat3
+b@2.SET.1:vbat2
+----
+value-blocks: num-values 1, num-blocks: 1, size: 18
+
+scan-raw
+----
+a@2#1,1:in-place a2, same-pre false
+b@5#7,1:in-place b5, same-pre false
+b@4#3,0:
+b@3#2,1:in-place bat3, same-pre false
+b@2#1,1:value-handle len 5 block 0 offset 0, att 5, same-pre true
+
+scan
+----
+a@2#1,1:a2
+b@5#7,1:b5
+b@4#3,0:
+b@3#2,1:bat3
+b@2#1,1:vbat2
+
+scan-cloned-lazy-values
+----
+0(in-place: len 2): a2
+1(in-place: len 2): b5
+2(in-place: len 0): 
+3(in-place: len 4): bat3
+4(lazy: len 5, attr: 5): vbat2
+
+# Size of value index is 3 bytes plus 5 + 5 = 10 bytes of trailer of the value
+# block and value index block. So size 33 - 13 = 20 is the total size of the
+# values in the value block.
+build
+blue@10.SET.20:blue10
+blue@8.SET.18:blue8
+blue@8.SET.16:blue8s
+blue@6.DEL.14:
+blue@4.SET.12:blue4
+blue@3.SET.10:blue3
+red@9.SET.18:red9
+red@7.SET.8:red7
+----
+value-blocks: num-values 4, num-blocks: 1, size: 33
+
+scan-raw
+----
+blue@10#20,1:in-place blue10, same-pre false
+blue@8#18,1:value-handle len 5 block 0 offset 0, att 5, same-pre true
+blue@8#16,1:value-handle len 6 block 0 offset 5, att 6, same-pre true
+blue@6#14,0:
+blue@4#12,1:in-place blue4, same-pre false
+blue@3#10,1:value-handle len 5 block 0 offset 11, att 5, same-pre true
+red@9#18,1:in-place red9, same-pre false
+red@7#8,1:value-handle len 4 block 0 offset 16, att 4, same-pre true
+
+scan
+----
+blue@10#20,1:blue10
+blue@8#18,1:blue8
+blue@8#16,1:blue8s
+blue@6#14,0:
+blue@4#12,1:blue4
+blue@3#10,1:blue3
+red@9#18,1:red9
+red@7#8,1:red7
+
+scan-cloned-lazy-values
+----
+0(in-place: len 6): blue10
+1(lazy: len 5, attr: 5): blue8
+2(lazy: len 6, attr: 6): blue8s
+3(in-place: len 0): 
+4(in-place: len 5): blue4
+5(lazy: len 5, attr: 5): blue3
+6(in-place: len 4): red9
+7(lazy: len 4, attr: 4): red7
+
+# Multiple value blocks. Trailers of 5+5+5 for the two value blocks and the
+# value index block, totals to 15. The values are 5+6+15=26. The value index
+# block has to encode two tuples, each of 4 bytes (blockNumByteLength=1,
+# blockOffsetByteLength=2, blockLengthByteLength=1), so 2*4=8. The total is
+# 15+26+8=49 bytes, which corresponds to "size: 49" below.
+build block-size=8
+blue@10.SET.20:blue10
+blue@8.SET.18:blue8
+blue@8.SET.16:blue8s
+blue@6.SET.16:blue6isverylong
+----
+value-blocks: num-values 3, num-blocks: 2, size: 49
+
+scan-raw
+----
+blue@10#20,1:in-place blue10, same-pre false
+blue@8#18,1:value-handle len 5 block 0 offset 0, att 5, same-pre true
+blue@8#16,1:value-handle len 6 block 0 offset 5, att 6, same-pre true
+blue@6#16,1:value-handle len 15 block 1 offset 0, att 7, same-pre true
+
+scan
+----
+blue@10#20,1:blue10
+blue@8#18,1:blue8
+blue@8#16,1:blue8s
+blue@6#16,1:blue6isverylong
+
+scan-cloned-lazy-values
+----
+0(in-place: len 6): blue10
+1(lazy: len 5, attr: 5): blue8
+2(lazy: len 6, attr: 6): blue8s
+3(lazy: len 15, attr: 7): blue6isverylong
+
+layout
+----
+         0  data (33)
+         0    record (25 = 3 [0] + 15 + 7) [restart]
+                blue@10#20,1:blue10
+        25    [restart 0]
+        33    [trailer compression=none checksum=0x5fb0d551]
+        38  data (29)
+        38    record (21 = 3 [0] + 14 + 4) [restart]
+                blue@8#18,1:value handle {valueLen:5 blockNum:0 offsetInBlock:0}
+        59    [restart 38]
+        67    [trailer compression=none checksum=0x628e4a10]
+        72  data (29)
+        72    record (21 = 3 [0] + 14 + 4) [restart]
+                blue@8#16,1:value handle {valueLen:6 blockNum:0 offsetInBlock:5}
+        93    [restart 72]
+       101    [trailer compression=none checksum=0x4e65b9b6]
+       106  data (29)
+       106    record (21 = 3 [0] + 14 + 4) [restart]
+                blue@6#16,1:value handle {valueLen:15 blockNum:1 offsetInBlock:0}
+       127    [restart 106]
+       135    [trailer compression=none checksum=0x9f60e629]
+       140  index (28)
+       140    block:0/33 [restart]
+       160    [restart 140]
+       168    [trailer compression=none checksum=0x32b37f08]
+       173  index (27)
+       173    block:38/29 [restart]
+       192    [restart 173]
+       200    [trailer compression=none checksum=0x21d27815]
+       205  index (30)
+       205    block:72/29 [restart]
+       227    [restart 205]
+       235    [trailer compression=none checksum=0xba0b26fe]
+       240  index (22)
+       240    block:106/29 [restart]
+       254    [restart 240]
+       262    [trailer compression=none checksum=0x802be702]
+       267  top-index (85)
+       267    block:140/28 [restart]
+       288    block:173/27 [restart]
+       308    block:205/30 [restart]
+       331    block:240/22 [restart]
+       346    [restart 267]
+       350    [restart 288]
+       354    [restart 308]
+       358    [restart 331]
+       352    [trailer compression=snappy checksum=0x8bd0d63a]
+       357  value-block (11)
+       373  value-block (15)
+       393  value-index (8)
+       406  properties (676)
+       406    obsolete-key (16) [restart]
+       422    pebble.num.value-blocks (27)
+       449    pebble.num.values.in.value-blocks (21)
+       470    pebble.value-blocks.size (21)
+       491    rocksdb.block.based.table.index.type (43)
+       534    rocksdb.block.based.table.prefix.filtering (20)
+       554    rocksdb.block.based.table.whole.key.filtering (23)
+       577    rocksdb.comparator (37)
+       614    rocksdb.compression (16)
+       630    rocksdb.compression_options (106)
+       736    rocksdb.data.size (14)
+       750    rocksdb.deleted.keys (15)
+       765    rocksdb.external_sst_file.global_seqno (41)
+       806    rocksdb.external_sst_file.version (14)
+       820    rocksdb.filter.size (15)
+       835    rocksdb.index.partitions (20)
+       855    rocksdb.index.size (9)
+       864    rocksdb.merge.operands (18)
+       882    rocksdb.merge.operator (24)
+       906    rocksdb.num.data.blocks (19)
+       925    rocksdb.num.entries (11)
+       936    rocksdb.num.range-deletions (19)
+       955    rocksdb.prefix.extractor.name (31)
+       986    rocksdb.property.collectors (34)
+      1020    rocksdb.raw.key.size (16)
+      1036    rocksdb.raw.value.size (14)
+      1050    rocksdb.top-level.index.size (24)
+      1074    [restart 406]
+      1082    [trailer compression=none checksum=0xbf6fe705]
+      1087  meta-index (64)
+      1087    pebble.value_index block:393/8 value-blocks-index-lengths: 1(num), 2(offset), 1(length) [restart]
+      1114    rocksdb.properties block:406/676 [restart]
+      1139    [restart 1087]
+      1143    [restart 1114]
+      1151    [trailer compression=none checksum=0x5a8a2a98]
+      1156  footer (53)
+      1156    checksum type: crc32c
+      1157    meta: offset=1087, length=64
+      1160    index: offset=267, length=85
+      1163    [padding]
+      1197    version: 4
+      1201    magic number: 0xf09faab3f09faab3
+      1209  EOF
+
+# Require that [c,e) must be in-place.
+build in-place-bound=(c,e)
+blue@10.SET.20:blue10
+blue@8.SET.18:blue8
+c@10.SET.16:c10
+c@8.SET.14:c8
+e@20.SET.25:eat20
+e@18.SET.23:eat18
+----
+value-blocks: num-values 2, num-blocks: 1, size: 23
+
+scan-raw
+----
+blue@10#20,1:in-place blue10, same-pre false
+blue@8#18,1:value-handle len 5 block 0 offset 0, att 5, same-pre true
+c@10#16,1:in-place c10, same-pre false
+c@8#14,1:in-place c8, same-pre false
+e@20#25,1:in-place eat20, same-pre false
+e@18#23,1:value-handle len 5 block 0 offset 5, att 5, same-pre true
+
+scan
+----
+blue@10#20,1:blue10
+blue@8#18,1:blue8
+c@10#16,1:c10
+c@8#14,1:c8
+e@20#25,1:eat20
+e@18#23,1:eat18
+
+scan-cloned-lazy-values
+----
+0(in-place: len 6): blue10
+1(lazy: len 5, attr: 5): blue8
+2(in-place: len 3): c10
+3(in-place: len 2): c8
+4(in-place: len 5): eat20
+5(lazy: len 5, attr: 5): eat18
+
+# Try write empty values to value blocks.
+build
+b@5.SET.7:b5
+b@3.SET.2:
+c@6.DEL.7:
+c@5.DEL.6:
+----
+value-blocks: num-values 0, num-blocks: 0, size: 0
+
+scan-raw
+----
+b@5#7,1:in-place b5, same-pre false
+b@3#2,1:in-place , same-pre true
+c@6#7,0:
+c@5#6,0:
+
+scan
+----
+b@5#7,1:b5
+b@3#2,1:
+c@6#7,0:
+c@5#6,0:
+
+layout
+----
+         0  data (66)
+         0    record (17 = 3 [0] + 11 + 3) [restart]
+                b@5#7,1:b5
+        17    record (14 = 3 [1] + 10 + 1)
+                b@3#2,1:
+        31    record (14 = 3 [0] + 11 + 0)
+                c@6#7,0:
+        45    record (13 = 3 [1] + 10 + 0)
+                c@5#6,0:
+        58    [restart 0]
+        66    [trailer compression=none checksum=0x4e91250f]
+        71  index (22)
+        71    block:0/66 [restart]
+        85    [restart 71]
+        93    [trailer compression=none checksum=0xf80f5bcf]
+        98  properties (606)
+        98    obsolete-key (16) [restart]
+       114    pebble.raw.point-tombstone.key.size (39)
+       153    rocksdb.block.based.table.index.type (43)
+       196    rocksdb.block.based.table.prefix.filtering (20)
+       216    rocksdb.block.based.table.whole.key.filtering (23)
+       239    rocksdb.comparator (37)
+       276    rocksdb.compression (16)
+       292    rocksdb.compression_options (106)
+       398    rocksdb.data.size (13)
+       411    rocksdb.deleted.keys (15)
+       426    rocksdb.external_sst_file.global_seqno (41)
+       467    rocksdb.external_sst_file.version (14)
+       481    rocksdb.filter.size (15)
+       496    rocksdb.index.size (14)
+       510    rocksdb.merge.operands (18)
+       528    rocksdb.merge.operator (24)
+       552    rocksdb.num.data.blocks (19)
+       571    rocksdb.num.entries (11)
+       582    rocksdb.num.range-deletions (19)
+       601    rocksdb.prefix.extractor.name (31)
+       632    rocksdb.property.collectors (34)
+       666    rocksdb.raw.key.size (16)
+       682    rocksdb.raw.value.size (14)
+       696    [restart 98]
+       704    [trailer compression=none checksum=0xb3084f65]
+       709  meta-index (32)
+       709    rocksdb.properties block:98/606 [restart]
+       733    [restart 709]
+       741    [trailer compression=none checksum=0x907a9f2c]
+       746  footer (53)
+       746    checksum type: crc32c
+       747    meta: offset=709, length=32
+       750    index: offset=71, length=22
+       752    [padding]
+       787    version: 4
+       791    magic number: 0xf09faab3f09faab3
+       799  EOF

@@ -1,0 +1,44 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+package(default_visibility = ["//protoc-gen-grpc-gateway:__subpackages__"])
+
+go_library(
+    name = "gengateway",
+    srcs = [
+        "doc.go",
+        "generator.go",
+        "template.go",
+    ],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway/internal/gengateway",
+    deps = [
+        "//internal/casing",
+        "//internal/descriptor",
+        "//internal/generator",
+        "//utilities",
+        "@com_github_golang_glog//:glog",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//types/pluginpb",
+    ],
+)
+
+go_test(
+    name = "gengateway_test",
+    size = "small",
+    srcs = [
+        "generator_test.go",
+        "template_test.go",
+    ],
+    embed = [":gengateway"],
+    deps = [
+        "//internal/descriptor",
+        "//internal/httprule",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//types/descriptorpb",
+    ],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":gengateway",
+    visibility = ["//protoc-gen-grpc-gateway:__subpackages__"],
+)

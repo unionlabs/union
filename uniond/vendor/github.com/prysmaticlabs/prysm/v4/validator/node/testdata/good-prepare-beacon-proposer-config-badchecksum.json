@@ -1,0 +1,10 @@
+{
+  "proposer_config": {
+    "0xa057816155ad77931185101128655c0191bd0214c201ca48ed887f6c4c6adf334070efcd75140eada5ac83a92506dd7a": {
+      "fee_recipient": "0xae967917c465db8578ca9024c205720b1a3651A9"
+    }
+  },
+  "default_config": {
+    "fee_recipient": "0xae967917c465db8578ca9024c205720b1a3651A9"
+  }
+}

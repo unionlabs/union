@@ -1,0 +1,14 @@
+syntax = "proto3";
+package cometbft.services.block_results.v1;
+
+import "cometbft/services/block_results/v1/block_results.proto";
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1";
+
+/*
+   BlockResultService provides the block results of a given or latestheight.
+*/
+service BlockResultsService {
+  // GetBlockResults returns the BlockResults of the requested height.
+  rpc GetBlockResults(GetBlockResultsRequest) returns (GetBlockResultsResponse);
+}

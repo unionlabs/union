@@ -1,0 +1,27 @@
+---
+project_name: cosmos-sdk
+
+release:
+  github:
+    owner: cosmos
+    name: cosmos-sdk
+
+builds:
+  - skip: true
+
+archives:
+  - format: tar.gz
+    wrap_in_directory: true
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: "{{ .Binary }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    files:
+      - LICENSE
+      - README.md
+
+snapshot:
+  name_template: SNAPSHOT-{{ .Commit }}
+
+changelog:
+  disable: false

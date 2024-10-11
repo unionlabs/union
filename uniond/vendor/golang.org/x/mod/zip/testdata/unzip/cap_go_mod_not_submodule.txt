@@ -1,0 +1,9 @@
+path=example.com/m
+version=v1.0.0
+wantErr=go.mod file not in module root directory
+-- example.com/m@v1.0.0/a.go --
+package a
+-- example.com/m@v1.0.0/b/GO.MOD --
+MODULE EXAMPLE.COM/M/B
+-- example.com/m@v1.0.0/b/b.go --
+package b

@@ -1,0 +1,813 @@
+// Copyright 2020 Prysmatic Labs.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+
+package ethereum.eth.v1alpha1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+
+import "proto/eth/ext/options.proto";
+
+import "proto/prysm/v1alpha1/beacon_block.proto";
+import "proto/prysm/v1alpha1/sync_committee.proto";
+import "proto/prysm/v1alpha1/attestation.proto";
+
+option csharp_namespace = "Ethereum.Eth.V1";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1;eth";
+option java_multiple_files = true;
+option java_outer_classname = "ValidatorProto";
+option java_package = "org.ethereum.eth.v1alpha1";
+option php_namespace = "Ethereum\\Eth\\v1alpha1";
+
+// Beacon node validator API
+//
+// The beacon node validator API enables a validator to connect
+// and perform its obligations on the Ethereum Beacon Chain.
+service BeaconNodeValidator {
+    // Retrieves validator duties for the requested validators.
+    //
+    // The duties consist of:
+    //   Proposer - the validator that creates a beacon chain block.
+    //   Attester — a validator that is part of a committee that needs to sign off on a beacon chain
+    //    block while simultaneously creating a cross link to a recent shard block on a particular shard chain.
+    // The server returns a list of duties which are the actions should be performed by validators for a given epoch.
+    // Validator duties should be polled every epoch, but due to chain reorg of >MIN_SEED_LOOKAHEAD could occur,
+    // the validator duties could chain. For complete safety, it is recommended to poll at every slot to ensure
+    // validator is fully aware of any sudden chain reorg.
+    rpc GetDuties(DutiesRequest) returns (DutiesResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/duties"
+        };
+    }
+
+    // Stream validator duties for the requested validators.
+    //
+    // The duties consist of:
+    //   Proposer - the validator that creates a beacon chain block.
+    //   Attester — a validator that is part of a committee that needs to sign off on a beacon chain
+    // DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
+    rpc StreamDuties(DutiesRequest) returns (stream DutiesResponse) {
+        option deprecated = true;
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/duties/stream"
+        };
+    }
+
+    // DomainData fetches the current BLS signature domain version information from the
+    // running beacon node's state. This information is used when validators sign
+    // blocks and attestations appropriately based on their duty.
+    rpc DomainData(DomainRequest) returns (DomainResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/domain"
+        };
+    }
+
+    // WaitForChainStart queries the logs of the Validator Deposit Contract on the Ethereum
+    // proof-of-work chain to verify the beacon chain has started its runtime and
+    // validators are ready to begin their responsibilities.
+    //
+    // If the chain has not yet started, this endpoint starts a server-side stream which updates
+    // the client when the beacon chain is ready.
+    rpc WaitForChainStart(google.protobuf.Empty) returns (stream ChainStartResponse) {
+        option deprecated = true;
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/chainstart/stream"
+        };
+    }
+
+    // WaitForActivation checks if a validator public key exists in the active validator
+    // registry of the current beacon state. If the validator is NOT yet active, it starts a
+    // server-side stream which updates the client whenever the validator becomes active in
+    // the beacon node's state.
+    //
+    // The input to this endpoint is a list of validator public keys, and the corresponding
+    // stream will respond until at least a single corresponding validator to those
+    // keys is activated.
+    rpc WaitForActivation(ValidatorActivationRequest) returns (stream ValidatorActivationResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/activation/stream"
+        };
+    }
+
+    // ValidatorIndex retrieves a validator's index location in the beacon state's
+    // validator registry looking up whether the validator exists based on its
+    // public key. This method returns NOT_FOUND if no index is found for the public key
+    // specified in the request.
+    rpc ValidatorIndex(ValidatorIndexRequest) returns (ValidatorIndexResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/index"
+        };
+    }
+
+    // ValidatorStatus returns a validator's status based on the current epoch.
+    // The request can specify either a validator's public key or validator index.
+    //
+    // The status response can be one of the following:
+    //	DEPOSITED - validator's deposit has been recognized by Ethereum 1, not yet recognized by Ethereum.
+    //	PENDING - validator is in Ethereum's activation queue.
+    //	ACTIVE - validator is active.
+    //	EXITING - validator has initiated an an exit request, or has dropped below the ejection balance and is being kicked out.
+    //	EXITED - validator is no longer validating.
+    //	SLASHING - validator has been kicked out due to meeting a slashing condition.
+    //	UNKNOWN_STATUS - validator does not have a known status in the network.
+    rpc ValidatorStatus(ValidatorStatusRequest) returns (ValidatorStatusResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/status"
+        };
+    }
+
+    // MultipleValidatorStatus returns a list of validator statuses on the current epoch.
+    // The request can specify a list of validator public keys.
+    //
+    // Returns a list of ValidatorStatusResponses.
+    rpc MultipleValidatorStatus(MultipleValidatorStatusRequest) returns (MultipleValidatorStatusResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/statuses"
+        };
+    }
+
+    // Retrieves the latest valid beacon block to be proposed on the beacon chain.
+    //
+    // The server returns a new beacon block, without proposer signature, that can be
+    // proposed on the beacon chain. The block should be filled with all the necessary
+    // data for proposer to sign.
+    rpc GetBeaconBlock(BlockRequest) returns (GenericBeaconBlock) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha2/validator/block"
+        };
+    }
+
+    // Sends the newly signed beacon block to beacon node.
+    //
+    // The validator sends the newly signed beacon block to the beacon node so the beacon block can
+    // be included in the beacon chain. The beacon node is expected to validate and process the
+    // beacon block into its state.
+    rpc ProposeBeaconBlock(GenericSignedBeaconBlock) returns (ProposeResponse) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha2/validator/block"
+            body: "*"
+        };
+    }
+
+    // PrepareBeaconProposer submits fee recipient information to be used when preparing block
+    // proposal execution payloads.
+    rpc PrepareBeaconProposer(PrepareBeaconProposerRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/validator/prepare_beacon_proposer"
+            body: "*"
+        };
+    }
+
+    // GetFeeRecipientByPubKey returns a fee recipient from the beacon node's settings or db based on a given public key
+    rpc GetFeeRecipientByPubKey(FeeRecipientByPubKeyRequest) returns (FeeRecipientByPubKeyResponse){
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/validator/fee_recipient_by_pub_key"
+            body: "*"
+        };
+    }
+
+    // Retrieves the latest valid attestation data to be attested on the beacon chain.
+    //
+    // The server returns the latest valid data which represents the correct vote
+    // for the head of the beacon chain.
+    rpc GetAttestationData(AttestationDataRequest) returns (AttestationData) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/attestation"
+        };
+    }
+
+    // Sends the newly signed attestation to beacon node.
+    //
+    // The validator sends the newly signed attestation to the beacon node for the attestation to
+    // be included in the beacon chain. The beacon node is expected to validate and publish attestation on
+    // appropriate committee subnet.
+    rpc ProposeAttestation(Attestation) returns (AttestResponse) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/validator/attestation"
+            body: "*"
+        };
+    }
+
+
+    // Submit selection proof to the beacon node to aggregate all matching wire attestations with the same data root.
+    // the beacon node responses with an aggregate and proof object back to validator to sign over.
+    rpc SubmitAggregateSelectionProof(AggregateSelectionRequest) returns (AggregateSelectionResponse) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/validator/aggregate"
+            body: "*"
+        };
+    }
+
+    // Submit a signed aggregate and proof object, the beacon node will broadcast the
+    // signed aggregated attestation and proof object.
+    rpc SubmitSignedAggregateSelectionProof(SignedAggregateSubmitRequest) returns (SignedAggregateSubmitResponse) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/validator/aggregate"
+            body: "*"
+        };
+    }
+
+    // Propose to leave the list of active validators.
+    //
+    // The beacon node is expected to validate the request and make it available for inclusion in
+    // the next proposed block.
+    rpc ProposeExit(SignedVoluntaryExit) returns (ProposeExitResponse) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/validator/exit"
+            body: "*"
+        };
+    }
+
+    // Subscribe to particular committee ID subnets given validator's duty.
+    //
+    // The beacon node is expected to subscribe to the committee ID subnet given by the request. With this,
+    // beacon node serving attesters can find persistent peers on the subnet to publish attestation,
+    // and beacon node serving aggregator can join the subnet.
+    rpc SubscribeCommitteeSubnets(CommitteeSubnetsSubscribeRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/validator/subnet/subscribe"
+            body: "*"
+        };
+    }
+
+    // Checks the beacon node if another instance of the provided validator keys have been
+    // attesting/proposing for you.
+    rpc CheckDoppelGanger(DoppelGangerRequest) returns (DoppelGangerResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/doppelganger"
+        };
+    }
+
+    // Retrieves a sync committee message block root to be signed over as part of sync committee duty.
+    rpc GetSyncMessageBlockRoot(google.protobuf.Empty) returns (SyncMessageBlockRootResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/sync_message_block_root"
+        };
+    }
+
+    // Submits a sync committee message to be broadcasted over network. This is part of sync committee duty.
+    rpc SubmitSyncMessage(SyncCommitteeMessage) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/validator/sync_message"
+            body: "*"
+        };
+    }
+
+    // Retrieves the sync subcommittee index of a given validator.
+    //
+    // The server returns the sync subcommittee index given the validator public key,
+    // if the validator does not exist in the sync committee then an error would be returned.
+    // The subcommittee index is used for the aggregation of sync committee message.
+    rpc GetSyncSubcommitteeIndex(SyncSubcommitteeIndexRequest) returns (SyncSubcommitteeIndexResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/sync_subcommittee_index"
+        };
+    }
+
+    // Retrieve sync committee contribution to the beacon node to aggregate all matching sync committee messages with the same slot and root.
+    // the beacon node responses with a sync committee contribution object for the validator to sign over.
+    rpc GetSyncCommitteeContribution(SyncCommitteeContributionRequest) returns (SyncCommitteeContribution) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/validator/contribution_and_proof"
+            body: "*"
+        };
+    }
+
+    // Submit a signed sync committee contribution and proof object, the beacon node will broadcast the
+    // signed contribution and proof object.
+    rpc SubmitSignedContributionAndProof(SignedContributionAndProof) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/validator/signed_contribution_and_proof"
+            body: "*"
+        };
+    }
+
+    // Server-side stream of all slots of valid blocks as they are received by
+    // the beacon chain node.
+    // DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
+    rpc StreamSlots(StreamSlotsRequest) returns (stream StreamSlotsResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/blocks/stream_slots"
+        };
+        option deprecated = true;
+    }
+
+    // Server-side stream of all signed blocks as they are received by
+    // the beacon chain node.
+    // DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
+    rpc StreamBlocksAltair(StreamBlocksRequest) returns (stream StreamBlocksResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/blocks/stream"
+        };
+        option deprecated = true;
+    }
+
+    rpc SubmitValidatorRegistrations(SignedValidatorRegistrationsV1) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/validator/registration"
+            body: "*"
+        };
+    }
+
+    rpc AssignValidatorToSubnet(AssignValidatorToSubnetRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/eth/v1alpha1/validator/blocks/assign_validator_to_subnet"
+            body: "*"
+        };
+    }
+
+    rpc AggregatedSigAndAggregationBits(AggregatedSigAndAggregationBitsRequest) returns (AggregatedSigAndAggregationBitsResponse) {
+        option (google.api.http) = {
+            get: "/eth/v1alpha1/validator/blocks/aggregated_sig_and_aggregation_bits"
+        };
+    }
+}
+
+// SyncMessageBlockRootResponse for beacon chain validator to retrieve and
+// to sign over the block root as part of sync committee duty to facilitate light client.
+message SyncMessageBlockRootResponse {
+    // The block root of the head block.
+    bytes root = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+// SyncSubcommitteeIndexRequest requests sync subcommittee index given the validator public key.
+message SyncSubcommitteeIndexRequest {
+    // The validator's public key.
+    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48"];
+    // The slot of validator's assignment.
+    uint64 slot = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+}
+
+message SyncCommitteeContributionRequest {
+    // Slot for which the aggregation request applies.
+    uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+    // 48 byte public key of the validator.
+    bytes public_key = 2 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+    // Subnet ID of where this contribution and proof should be broadcast to.
+    uint64 subnet_id = 3;
+}
+
+// SyncSubcommitteeIndexResponse responds index of the sync subcommittee of a given validator.
+message SyncSubcommitteeIndexResponse {
+    // The subcommittee index itself.
+    // If the total validator count is not sufficient, there could be more than one index.
+    repeated uint64 indices = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.CommitteeIndex"];
+}
+
+// DEPRECATED: This endpoint StreamSlots is superseded by the /eth/v1/events Beacon API endpoint
+message StreamSlotsResponse {
+    option deprecated = true;
+    uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+}
+
+
+// DEPRECATED: This endpoint StreamBlocks is superseded by the /eth/v1/events Beacon API endpoint
+message StreamBlocksResponse {
+    option deprecated = true;
+    oneof block {
+        // Representing a phase 0 block.
+        SignedBeaconBlock phase0_block = 1 ;
+
+        // Representing an altair block.
+        SignedBeaconBlockAltair altair_block = 2;
+
+        // Representing a bellatrix block.
+        SignedBeaconBlockBellatrix bellatrix_block = 3;
+
+        // Representing a capella block.
+        SignedBeaconBlockCapella capella_block = 4;
+
+        // Representing a deneb block.
+        SignedBeaconBlockDeneb deneb_block = 5;
+    }
+}
+
+
+message DomainRequest {
+    // The epoch for which the domain is being requested.
+    uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // The bytes domain specified by the validator.
+    bytes domain = 2;
+}
+
+message DomainResponse {
+    // The signature domain is a byte array used by validators when
+    // signing data related to block proposals and attestations.
+    bytes signature_domain = 1;
+}
+
+message ValidatorActivationRequest {
+    // A list of 48 byte validator public keys.
+    repeated bytes public_keys = 1 [(ethereum.eth.ext.ssz_size) = "?,48"];
+}
+
+message ValidatorActivationResponse {
+    message Status {
+        // A 48 byte validator public key.
+        bytes public_key = 1;
+
+        // A wrapper representing a validator's status object.
+        ValidatorStatusResponse status = 2;
+
+        // The validators index in the beacon state.
+        uint64 index = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+    }
+    // A list of validator statuses mapped 1-to-1 with the public keys
+    // in the request.
+    repeated Status statuses = 1;
+}
+
+message ChainStartResponse {
+    // A boolean specifying whether or not the chain has started.
+    bool started = 1;
+
+    // The genesis time of the beacon chain.
+    uint64 genesis_time = 2;
+
+    // 32 byte hash tree root of the genesis validator set.
+    bytes genesis_validators_root = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+message SyncedResponse {
+    // A boolean specifying whether or not the beacon node is synced and ready for the validator.
+    bool synced = 1;
+
+    // The genesis time of the beacon chain.
+    uint64 genesis_time = 2;
+}
+
+message ValidatorIndexRequest {
+    // A 48 byte validator public key.
+    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48"];
+}
+
+message ValidatorIndexResponse {
+    // The validator's index in the beacon chain state's validator registry.
+    uint64 index = 1  [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+}
+
+message ValidatorStatusRequest {
+    // A 48 byte validator public key.
+    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48"];
+}
+
+enum ValidatorStatus {
+    UNKNOWN_STATUS = 0;
+    DEPOSITED = 1;
+    PENDING = 2;
+    ACTIVE = 3;
+    EXITING = 4;
+    SLASHING = 5;
+    EXITED = 6;
+    INVALID = 7;
+    PARTIALLY_DEPOSITED = 8;
+}
+
+message ValidatorStatusResponse {
+    // The corresponding validator status.
+    ValidatorStatus status = 1;
+
+    // The block number of the Ethereum proof-of-work chain
+    // where the deposit for the validator was included.
+    uint64 eth1_deposit_block_number = 2;
+
+    // The slot in the beacon chain in which the validator's
+    // deposit was included in a block.
+    uint64 deposit_inclusion_slot = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+    // The epoch in the beacon chain in which the validator
+    // is determined as active.
+    uint64 activation_epoch = 4 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // The position in the activation queue of pending validators.
+    uint64 position_in_activation_queue = 5;
+}
+
+message MultipleValidatorStatusRequest {
+    // A list of 48 byte validator public keys.
+    repeated bytes public_keys = 1 [(ethereum.eth.ext.ssz_size) = "?,48"];
+    // A list of validator indices.
+    repeated int64 indices = 2;
+}
+
+message MultipleValidatorStatusResponse {
+    // A list of 48 byte validator public keys.
+    repeated bytes public_keys = 1 [(ethereum.eth.ext.ssz_size) = "?,48"];
+    // A list of ValidatorStatusResponses mapped 1-to-1 with the public keys.
+    repeated ValidatorStatusResponse statuses = 2;
+    // A list of validator indices.
+    repeated uint64 indices = 3  [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+}
+
+message DutiesRequest {
+    // Epoch at which validators should perform their duties.
+    uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // Array of byte encoded BLS public keys.
+    repeated bytes public_keys = 2 [(ethereum.eth.ext.ssz_size) = "?,48"];
+}
+
+message DutiesResponse {
+    repeated Duty duties = 1 [deprecated = true];
+
+    repeated Duty current_epoch_duties = 2;
+
+    repeated Duty next_epoch_duties = 3;
+
+    message Duty {
+        // The committee a validator is assigned to.
+        repeated uint64 committee = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+        // The index into the committee where the validator belongs in.
+        uint64 committee_index = 2  [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.CommitteeIndex"];
+
+        // Slot at which a validator must attest.
+        uint64 attester_slot = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+        // Slots at which a validator must propose a beacon chain block.
+        repeated uint64 proposer_slots = 4 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+        // 48 byte BLS public key for the validator who's assigned to perform a duty.
+        bytes public_key = 5 [(ethereum.eth.ext.ssz_size) = "48"];
+
+        // The current status of the validator assigned to perform the duty.
+        ValidatorStatus status = 6;
+
+        // The index of the validator in the beacon state.
+        uint64 validator_index = 7  [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+        // Whether the validator belongs in the sync committee and has to perform sync committee duty.
+        bool is_sync_committee = 8;
+    }
+}
+
+message BlockRequest {
+    // Slot for which the block should be proposed.
+    uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+    // Validator's 32 byte randao reveal secret of the current epoch.
+    bytes randao_reveal = 2 [(ethereum.eth.ext.ssz_size) = "48"];
+
+    // Validator's 32 byte graffiti message for the new block.
+    bytes graffiti = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+
+    // Signal server to skip outsourcing block request from mev-boost/relayer so that returned block will always be a local block.
+    bool skip_mev_boost = 4;
+
+    // Percentage multiplier to apply to the builder's payload value when choosing between a builder payload header and payload from the paired execution node
+    google.protobuf.UInt64Value builder_boost_factor = 5;
+}
+
+message ProposeResponse {
+    // The block root of the successfully proposed beacon block.
+    bytes block_root = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+message ProposeExitResponse {
+    // The root of the successfully proposed voluntary exit.
+    bytes exit_root = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+message AttestationDataRequest {
+    // Slot for which the attestation should be created.
+    uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+    // Committee index the attestation should be created for.
+    uint64 committee_index = 2  [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.CommitteeIndex"];
+}
+
+message AttestResponse {
+    // The root of the attestation data successfully submitted to the beacon node.
+    bytes attestation_data_root = 1 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+message AggregateSelectionRequest {
+    // Slot for which the aggregation request applies.
+    uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+    // Committee index of the validator at the given slot.
+    uint64 committee_index = 2  [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.CommitteeIndex"];
+    // 48 byte public key of the validator.
+    bytes public_key = 3 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+    // 96 byte signature of the validator on the slot. This is used as proof that the validator is
+    // an aggregator for the given slot.
+    bytes slot_signature = 4 [(ethereum.eth.ext.ssz_size) = "96"];
+}
+
+message AggregateSelectionResponse {
+    // The aggregate and proof message without the signature.
+    AggregateAttestationAndProof aggregate_and_proof = 1;
+}
+
+message SignedAggregateSubmitRequest {
+    // The signed aggregate and proof message with the signature.
+    SignedAggregateAttestationAndProof signed_aggregate_and_proof = 1;
+}
+
+message SignedAggregateSubmitResponse {
+    // The 32 byte hash tree root of the aggregated attestation data.
+    bytes attestation_data_root = 1  [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+message CommitteeSubnetsSubscribeRequest {
+    // A list of intended slots to subscribe.
+    repeated uint64 slots = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+    // A list of intended committee ids to subscribe. It is mapped 1-to-1 with the slots
+    repeated uint64 committee_ids = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.CommitteeIndex"];
+    // Whether to subscribe as an aggregator or by default attester.
+    // It is mapped 1-to-1 with the slots and committee ids.
+    // Subscribe as an aggregator means to join the subnet.
+    // Subscribe as an attester means finding persistent peers on the subnet to be able to publish attestations.
+    repeated bool is_aggregator = 3;
+}
+
+// An Ethereum validator.
+message Validator {
+    // 48 byte BLS public key used for the validator's activities.
+    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+
+    // 32 byte hash of the withdrawal destination public key.
+    bytes withdrawal_credentials = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+
+    // The validators current effective balance in gwei.
+    uint64 effective_balance = 3;
+
+    // Whether or not the validator has been slashed.
+    bool slashed = 4;
+
+    // Epoch when the validator became eligible for activation. This field may
+    // be zero if the validator was present in the Ethereum proof of stake genesis. This
+    // field is FAR_FUTURE_EPOCH if the validator has not been activated.
+    uint64 activation_eligibility_epoch = 5 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // Epoch when the validator was activated. This field may be zero if the
+    // validator was present in the Ethereum proof of stake genesis. This field is
+    // FAR_FUTURE_EPOCH if the validator has not been activated.
+    uint64 activation_epoch = 6 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // Epoch when the validator was exited. This field is FAR_FUTURE_EPOCH if
+    // the validator has not exited.
+    // FAR_FUTURE_EPOCH is a constant defined by the official Ethereum Beacon Chain specification:
+    // https://github.com/ethereum/consensus-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#constants
+    uint64 exit_epoch = 7 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // Epoch when the validator is eligible to withdraw their funds. This field
+    // is FAR_FUTURE_EPOCH if the validator has not exited.
+    // FAR_FUTURE_EPOCH is a constant defined by the official Ethereum Beacon Chain specification:
+    // https://github.com/ethereum/consensus-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#constants
+    uint64 withdrawable_epoch = 8 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+}
+
+// ValidatorParticipation stores participation metrics during a given epoch.
+message ValidatorParticipation {
+    // Percentage of validator participation in the given epoch. This field
+    // contains a value between 0 and 1.
+    float global_participation_rate = 1  [deprecated = true];
+
+    // The total amount of ether, in gwei, that has been used in voting.
+    uint64 voted_ether = 2 [deprecated = true];
+
+    // The total amount of ether, in gwei, that is eligible for voting.
+    uint64 eligible_ether = 3 [deprecated = true];
+
+    // Total staked gwei that was active (i.e. eligible to vote) during the current epoch.
+    uint64 current_epoch_active_gwei = 4;
+    // Total staked gwei that had attestations included in a block during the current epoch,
+    // attestations by the same validator do not increase this figure.
+    uint64 current_epoch_attesting_gwei = 5;
+    // Total staked gwei that attested to the majority-elected Casper FFG target epoch during the current epoch.
+    uint64 current_epoch_target_attesting_gwei = 6;
+    // Same as current_epoch_active_gwei but for previous epoch.
+    uint64 previous_epoch_active_gwei = 7;
+    // Same as current_epoch_attesting_gwei but for previous epoch.
+    uint64 previous_epoch_attesting_gwei = 8;
+    // Same as current_epoch_target_attesting_gwei but for previous epoch.
+    uint64 previous_epoch_target_attesting_gwei = 9;
+    // Total staked gwei that attested to a head beacon block that is in the canonical chain.
+    uint64 previous_epoch_head_attesting_gwei = 10;
+}
+
+// ValidatorInfo gives information about the state of a validator at a certain epoch.
+message ValidatorInfo {
+    // The validator's 48 byte BLS public key.
+    bytes public_key = 1;
+
+    // The validator's index in the beacon state.
+    uint64 index = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+    // The epoch for which the information pertains.
+    uint64 epoch = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+
+    // The validator's current status.
+    ValidatorStatus status = 4;
+
+    // The unix timestamp when the validator enters the next state.
+    // This could be in the past.  Some values depend on chain operation and so will vary from epoch to epoch.
+    // Specific times for each state are as follows:
+    // - state == DEPOSITED: time at which Ethereum 1 deposit will be stored on-chain by Ethereum (variable, can be 0).
+    // - state == PENDING: time at which validator will be activated (variable).
+    // - state == ACTIVE: no value (next transition depends on user and network actions).
+    // - state == EXITING: time at which validator will exit.
+    // - state == SLASHING: time at which validator will exit.
+    // - state == EXITED: time at which validator funds will be withdrawable.
+    uint64 transition_timestamp = 5;
+
+    // The validator's current balance in GWei.
+    uint64 balance = 6;
+
+    // The validator's current effective balance in GWei.
+    // Only valid for states ACTIVE, EXITING, SLASHING.
+    uint64 effective_balance = 7;
+}
+
+// DoppelGangerRequest represents the request sent by the validator in order to determine
+// if there is any duplicate instance of it running in the network.
+message DoppelGangerRequest {
+    repeated ValidatorRequest validator_requests = 1;
+
+    // ValidatorRequest data type which represents a request for each validator.
+    message ValidatorRequest {
+        // The validator's 48 byte BLS public key.
+        bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+        // The validator's last recorded epoch to attest.
+        uint64 epoch = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
+        // The validator's last recorded signed root.
+        bytes signed_root = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+    }
+}
+
+// DoppelGangerResponse is the response payload sent by the beacon node
+// after it has checked for all duplicate keys in the network.
+message DoppelGangerResponse {
+    message ValidatorResponse {
+        // The validator's 48 byte BLS public key.
+        bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+        // Whether a duplicate of the validator exists.
+        bool duplicate_exists = 2;
+    }
+    repeated ValidatorResponse responses = 1;
+}
+
+// Request to only return slots with blocks that where verified by the beacon node.
+// DEPRECATED: This endpoint StreamSlots is superseded by the /eth/v1/events Beacon API endpoint.
+message StreamSlotsRequest {
+    option deprecated = true;
+    bool verified_only = 1;
+}
+
+
+// Request to only return blocks that is verified by the beacon node.
+// DEPRECATED: This endpoint StreamBlocks is superseded by the /eth/v1/events Beacon API endpoint
+message StreamBlocksRequest {
+    option deprecated = true;
+    bool verified_only = 1;
+}
+
+message PrepareBeaconProposerRequest {
+    message FeeRecipientContainer {
+        // The address of the fee recipient.
+        bytes fee_recipient = 1 [(ethereum.eth.ext.ssz_size) = "20"];
+
+        // The proposer validator index.
+        uint64 validator_index = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+    }
+    repeated FeeRecipientContainer recipients = 1;
+}
+
+message FeeRecipientByPubKeyRequest {
+    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+}
+
+message FeeRecipientByPubKeyResponse {
+    bytes fee_recipient = 1 [(ethereum.eth.ext.ssz_size) = "20"];
+}
+
+message AssignValidatorToSubnetRequest {
+    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+    ValidatorStatus status = 2;
+}
+
+message AggregatedSigAndAggregationBitsRequest {
+    repeated SyncCommitteeMessage msgs = 1;
+    uint64 slot = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+    uint64 subnet_id = 3;
+    bytes block_root = 4 [(ethereum.eth.ext.ssz_size) = "32"];
+}
+
+message AggregatedSigAndAggregationBitsResponse {
+    bytes aggregated_sig = 1;
+    bytes bits = 2;
+}

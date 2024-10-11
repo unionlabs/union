@@ -1,0 +1,16 @@
+unquote file.txtar
+txtar-x -C x/y file.txtar
+cmp x/y/foo expect/foo
+cmp x/y/a/b/bar expect/a/b/bar
+
+-- file.txtar --
+>some comment
+>
+>-- foo --
+>foo
+>-- a/b/bar --
+>bar
+-- expect/foo --
+foo
+-- expect/a/b/bar --
+bar

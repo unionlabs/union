@@ -1,0 +1,58 @@
+# This datadriven test uses a single command 'build' that illustrates a sequence
+# of calls to a fragmenter.
+#
+# 'add' lines add a new span with the provided sequence number and the provided
+# bounds. 'add' outputs nothing.
+#
+# 'deleted' lines test whether the provided key is deleted by a RANGEDEL in the
+# fragmenter when read at the trailing snapshot sequence number.
+
+build
+deleted a.SET.0     5
+add 3: a-----------m
+deleted a.SET.0     5
+deleted a.SET.1     5
+deleted a.SET.1     2
+deleted a.SET.2     5
+deleted a.SET.3     5
+deleted l.SET.3     5
+add 2:      f------------s
+deleted e.SET.3     5
+deleted f.SET.2     5
+deleted l.SET.2     5
+deleted m.SET.2     5
+add 1:          j---------------z
+deleted j.SET.1     5
+deleted j.SET.1     1
+deleted j.SET.2     5
+deleted j.SET.3     5
+deleted l.SET.2     5
+deleted m.SET.2     5
+deleted r.SET.1     5
+deleted r.SET.1     1
+deleted s.SET.1     5
+deleted y.SET.0     5
+deleted z.SET.0     5
+----
+a#0,1: none
+a#0,1: visibly
+a#1,1: visibly
+a#1,1: invisibly
+a#2,1: visibly
+a#3,1: none
+l#3,1: none
+e#3,1: pebble: keys must be in order: f > e#3,SET
+f#2,1: visibly
+l#2,1: visibly
+m#2,1: none
+j#1,1: visibly
+j#1,1: invisibly
+j#2,1: visibly
+j#3,1: none
+l#2,1: visibly
+m#2,1: none
+r#1,1: visibly
+r#1,1: invisibly
+s#1,1: none
+y#0,1: visibly
+z#0,1: none

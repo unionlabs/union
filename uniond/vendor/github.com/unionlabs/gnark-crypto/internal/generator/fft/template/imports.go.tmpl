@@ -1,0 +1,51 @@
+{{ define "import_fr" }}
+
+{{ if eq .Name "bls12-378"}}
+	"github.com/consensys/gnark-crypto/ecc/bls12-378/fr"
+{{ else if eq .Name "bls12-377"}}
+	"github.com/consensys/gnark-crypto/ecc/bls12-377/fr"
+{{ else if eq .Name "bls12-381"}}
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+{{ else if eq .Name "bn254"}}
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+{{ else if eq .Name "bw6-761"}}
+	"github.com/consensys/gnark-crypto/ecc/bw6-761/fr"
+{{ else if eq .Name "bw6-756"}}
+	"github.com/consensys/gnark-crypto/ecc/bw6-756/fr"
+{{ else if eq .Name "bw6-633"}}
+	"github.com/consensys/gnark-crypto/ecc/bw6-633/fr"
+{{ else if eq .Name "bls24-315"}}
+	"github.com/consensys/gnark-crypto/ecc/bls24-315/fr"
+{{ else if eq .Name "bls24-317"}}
+	"github.com/consensys/gnark-crypto/ecc/bls24-317/fr"
+{{ else if eq .Name "secp256k1"}}
+	"github.com/consensys/gnark-crypto/ecc/secp256k1/fr"
+{{end}}
+
+{{end}}
+
+{{ define "import_curve" }}
+{{if eq .Name "bls12-378"}}
+	curve "github.com/consensys/gnark-crypto/ecc/bls12-378"
+{{else if eq .Name "bls12-377"}}
+	curve "github.com/consensys/gnark-crypto/ecc/bls12-377"
+{{else if eq .Name "bls12-381"}}
+	curve "github.com/consensys/gnark-crypto/ecc/bls12-381"
+{{else if eq .Name "bn254"}}
+	curve "github.com/consensys/gnark-crypto/ecc/bn254"
+{{else if eq .Name "bw6-761"}}
+	curve "github.com/consensys/gnark-crypto/ecc/bw6-761"
+{{else if eq .Name "bw6-756"}}
+	curve "github.com/consensys/gnark-crypto/ecc/bw6-756"
+{{else if eq .Name "bw6-633"}}
+	curve "github.com/consensys/gnark-crypto/ecc/bw6-633"
+{{ else if eq .Name "bls24-315"}}
+	curve "github.com/consensys/gnark-crypto/ecc/bls24-315"
+{{ else if eq .Name "bls24-317"}}
+	curve "github.com/consensys/gnark-crypto/ecc/bls24-317"
+{{ else if eq .Name "secp256k1"}}
+	curve "github.com/consensys/gnark-crypto/ecc/secp256k1"
+{{end}}
+
+
+{{end}}

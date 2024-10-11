@@ -1,0 +1,29 @@
+name: Run apidiff
+
+on: [ pull_request ]
+
+jobs:
+  apidiff:
+    runs-on: ubuntu-latest
+    if: github.base_ref
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.x
+      - name: Add GOBIN to PATH
+        run: echo "PATH=$(go env GOPATH)/bin:$PATH" >>$GITHUB_ENV
+      - name: Install dependencies
+        run: GO111MODULE=off go get golang.org/x/exp/cmd/apidiff
+      - name: Checkout old code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.base_ref }}
+          path: "old"
+      - name: Checkout new code
+        uses: actions/checkout@v2
+        with:
+          path: "new"
+      - name: APIDiff
+        run: ./_tools/apidiff.sh -d ../old
+        working-directory: "new"

@@ -1,0 +1,88 @@
+define flush_split_bytes=4
+L0
+   a.SET.1-k.SET.10 size=2
+   l.SET.11-o.SET.13 size=2
+   p.SET.14-s.SET.16 size=2
+   t.SET.17-w.SET.19 size=2
+----
+0.0:
+  000001:[a#1,SET-k#10,SET]
+  000002:[l#11,SET-o#13,SET]
+  000003:[p#14,SET-s#16,SET]
+  000004:[t#17,SET-w#19,SET]
+flush split keys:
+	s
+
+flush
+a c f l o s u x
+----
+a-s
+u-x
+
+define flush_split_bytes=2
+L0
+   a.SET.1-k.SET.10 size=2
+   l.SET.11-o.SET.13 size=2
+   p.SET.14-s.SET.16 size=2
+   t.SET.17-w.SET.19 size=2
+----
+0.0:
+  000005:[a#1,SET-k#10,SET]
+  000006:[l#11,SET-o#13,SET]
+  000007:[p#14,SET-s#16,SET]
+  000008:[t#17,SET-w#19,SET]
+flush split keys:
+	o
+	w
+
+flush
+a c f l o s u x
+----
+a-o
+s-u
+x-x
+
+define flush_split_bytes=1
+L0
+   a.SET.1-k.SET.10 size=2
+   l.SET.11-o.SET.13 size=2
+   p.SET.14-s.SET.16 size=2
+   t.SET.17-w.SET.19 size=2
+----
+0.0:
+  000009:[a#1,SET-k#10,SET]
+  000010:[l#11,SET-o#13,SET]
+  000011:[p#14,SET-s#16,SET]
+  000012:[t#17,SET-w#19,SET]
+flush split keys:
+	k
+	o
+	s
+	w
+
+flush
+a c f l o s u x
+----
+a-f
+l-o
+s-u
+x-x
+
+define flush_split_bytes=0
+L0
+   a.SET.1-k.SET.10 size=2
+   l.SET.11-o.SET.13 size=2
+   p.SET.14-s.SET.16 size=2
+   t.SET.17-w.SET.19 size=2
+----
+0.0:
+  000013:[a#1,SET-k#10,SET]
+  000014:[l#11,SET-o#13,SET]
+  000015:[p#14,SET-s#16,SET]
+  000016:[t#17,SET-w#19,SET]
+flush split keys:
+
+flush
+a c f l o s u x
+----
+a-x

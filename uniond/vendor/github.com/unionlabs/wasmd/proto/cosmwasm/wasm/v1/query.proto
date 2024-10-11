@@ -1,0 +1,339 @@
+syntax = "proto3";
+package cosmwasm.wasm.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmwasm/wasm/v1/types.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/query/v1/query.proto";
+import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/wasm/types";
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.equal_all) = false;
+
+// Query provides defines the gRPC querier service
+service Query {
+  // ContractInfo gets the contract meta data
+  rpc ContractInfo(QueryContractInfoRequest)
+      returns (QueryContractInfoResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/cosmwasm/wasm/v1/contract/{address}";
+  }
+  // ContractHistory gets the contract code history
+  rpc ContractHistory(QueryContractHistoryRequest)
+      returns (QueryContractHistoryResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get =
+        "/cosmwasm/wasm/v1/contract/{address}/history";
+  }
+  // ContractsByCode lists all smart contracts for a code id
+  rpc ContractsByCode(QueryContractsByCodeRequest)
+      returns (QueryContractsByCodeResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/cosmwasm/wasm/v1/code/{code_id}/contracts";
+  }
+  // AllContractState gets all raw store data for a single contract
+  rpc AllContractState(QueryAllContractStateRequest)
+      returns (QueryAllContractStateResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/cosmwasm/wasm/v1/contract/{address}/state";
+  }
+  // RawContractState gets single key from the raw store data of a contract
+  rpc RawContractState(QueryRawContractStateRequest)
+      returns (QueryRawContractStateResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get =
+        "/cosmwasm/wasm/v1/contract/{address}/raw/{query_data}";
+  }
+  // SmartContractState get smart query result from the contract
+  rpc SmartContractState(QuerySmartContractStateRequest)
+      returns (QuerySmartContractStateResponse) {
+    option (google.api.http).get =
+        "/cosmwasm/wasm/v1/contract/{address}/smart/{query_data}";
+  }
+  // Code gets the binary code and metadata for a single wasm code
+  rpc Code(QueryCodeRequest) returns (QueryCodeResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/cosmwasm/wasm/v1/code/{code_id}";
+  }
+  // Codes gets the metadata for all stored wasm codes
+  rpc Codes(QueryCodesRequest) returns (QueryCodesResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/cosmwasm/wasm/v1/code";
+  }
+
+  // CodeInfo gets the metadata for a single wasm code
+  rpc CodeInfo(QueryCodeInfoRequest) returns (QueryCodeInfoResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/cosmwasm/wasm/v1/code-info/{code_id}";
+  }
+
+  // PinnedCodes gets the pinned code ids
+  rpc PinnedCodes(QueryPinnedCodesRequest) returns (QueryPinnedCodesResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/cosmwasm/wasm/v1/codes/pinned";
+  }
+
+  // Params gets the module params
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/cosmwasm/wasm/v1/codes/params";
+  }
+
+  // ContractsByCreator gets the contracts by creator
+  rpc ContractsByCreator(QueryContractsByCreatorRequest)
+      returns (QueryContractsByCreatorResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get =
+        "/cosmwasm/wasm/v1/contracts/creator/{creator_address}";
+  }
+
+  // BuildAddress builds a contract address
+  rpc BuildAddress(QueryBuildAddressRequest)
+      returns (QueryBuildAddressResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/cosmwasm/wasm/v1/contract/build_address";
+  }
+}
+
+// QueryContractInfoRequest is the request type for the Query/ContractInfo RPC
+// method
+message QueryContractInfoRequest {
+  // address is the address of the contract to query
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+}
+// QueryContractInfoResponse is the response type for the Query/ContractInfo RPC
+// method
+message QueryContractInfoResponse {
+  option (gogoproto.equal) = true;
+
+  // address is the address of the contract
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  ContractInfo contract_info = 2 [
+    (gogoproto.embed) = true,
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.jsontag) = ""
+  ];
+}
+
+// QueryContractHistoryRequest is the request type for the Query/ContractHistory
+// RPC method
+message QueryContractHistoryRequest {
+  // address is the address of the contract to query
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryContractHistoryResponse is the response type for the
+// Query/ContractHistory RPC method
+message QueryContractHistoryResponse {
+  repeated ContractCodeHistoryEntry entries = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryContractsByCodeRequest is the request type for the Query/ContractsByCode
+// RPC method
+message QueryContractsByCodeRequest {
+  uint64 code_id = 1; // grpc-gateway_out does not support Go style CodeID
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryContractsByCodeResponse is the response type for the
+// Query/ContractsByCode RPC method
+message QueryContractsByCodeResponse {
+  // contracts are a set of contract addresses
+  repeated string contracts = 1
+      [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryAllContractStateRequest is the request type for the
+// Query/AllContractState RPC method
+message QueryAllContractStateRequest {
+  // address is the address of the contract
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryAllContractStateResponse is the response type for the
+// Query/AllContractState RPC method
+message QueryAllContractStateResponse {
+  repeated Model models = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryRawContractStateRequest is the request type for the
+// Query/RawContractState RPC method
+message QueryRawContractStateRequest {
+  // address is the address of the contract
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  bytes query_data = 2;
+}
+
+// QueryRawContractStateResponse is the response type for the
+// Query/RawContractState RPC method
+message QueryRawContractStateResponse {
+  // Data contains the raw store data
+  bytes data = 1;
+}
+
+// QuerySmartContractStateRequest is the request type for the
+// Query/SmartContractState RPC method
+message QuerySmartContractStateRequest {
+  // address is the address of the contract
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // QueryData contains the query data passed to the contract
+  bytes query_data = 2 [
+    (gogoproto.casttype) = "RawContractMessage",
+    (amino.encoding) = "inline_json"
+  ];
+}
+
+// QuerySmartContractStateResponse is the response type for the
+// Query/SmartContractState RPC method
+message QuerySmartContractStateResponse {
+  // Data contains the json data returned from the smart contract
+  bytes data = 1 [
+    (gogoproto.casttype) = "RawContractMessage",
+    (amino.encoding) = "inline_json"
+  ];
+}
+
+// QueryCodeRequest is the request type for the Query/Code RPC method
+message QueryCodeRequest {
+  uint64 code_id = 1; // grpc-gateway_out does not support Go style CodeID
+}
+
+// QueryCodeInfoRequest is the request type for the Query/CodeInfo RPC method
+message QueryCodeInfoRequest {
+  uint64 code_id = 1; // grpc-gateway_out does not support Go style CodeID
+}
+
+// QueryCodeInfoResponse is the response type for the Query/CodeInfo RPC method
+message QueryCodeInfoResponse {
+  option (gogoproto.equal) = true;
+
+  uint64 code_id = 1 [ (gogoproto.customname) = "CodeID" ];
+  string creator = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  bytes checksum = 3 [ (gogoproto.casttype) =
+                           "github.com/cometbft/cometbft/libs/bytes.HexBytes" ];
+  AccessConfig instantiate_permission = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// CodeInfoResponse contains code meta data from CodeInfo
+message CodeInfoResponse {
+  option (gogoproto.equal) = true;
+
+  uint64 code_id = 1 [
+    (gogoproto.customname) = "CodeID",
+    (gogoproto.jsontag) = "id"
+  ]; // id for legacy support
+  string creator = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  bytes data_hash = 3
+      [ (gogoproto.casttype) =
+            "github.com/cometbft/cometbft/libs/bytes.HexBytes" ];
+  // Used in v1beta1
+  reserved 4, 5;
+  AccessConfig instantiate_permission = 6
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// QueryCodeResponse is the response type for the Query/Code RPC method
+message QueryCodeResponse {
+  option (gogoproto.equal) = true;
+  CodeInfoResponse code_info = 1
+      [ (gogoproto.embed) = true, (gogoproto.jsontag) = "" ];
+  bytes data = 2 [ (gogoproto.jsontag) = "data" ];
+}
+
+// QueryCodesRequest is the request type for the Query/Codes RPC method
+message QueryCodesRequest {
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryCodesResponse is the response type for the Query/Codes RPC method
+message QueryCodesResponse {
+  repeated CodeInfoResponse code_infos = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryPinnedCodesRequest is the request type for the Query/PinnedCodes
+// RPC method
+message QueryPinnedCodesRequest {
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryPinnedCodesResponse is the response type for the
+// Query/PinnedCodes RPC method
+message QueryPinnedCodesResponse {
+  repeated uint64 code_ids = 1 [ (gogoproto.customname) = "CodeIDs" ];
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// QueryContractsByCreatorRequest is the request type for the
+// Query/ContractsByCreator RPC method.
+message QueryContractsByCreatorRequest {
+  // CreatorAddress is the address of contract creator
+  string creator_address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // Pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryContractsByCreatorResponse is the response type for the
+// Query/ContractsByCreator RPC method.
+message QueryContractsByCreatorResponse {
+  // ContractAddresses result set
+  repeated string contract_addresses = 1
+      [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // Pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryBuildAddressRequest is the request type for the Query/BuildAddress RPC
+// method.
+message QueryBuildAddressRequest {
+  // CodeHash is the hash of the code
+  string code_hash = 1;
+  // CreatorAddress is the address of the contract instantiator
+  string creator_address = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // Salt is a hex encoded salt
+  string salt = 3;
+  // InitArgs are optional json encoded init args to be used in contract address
+  // building if provided
+  bytes init_args = 4;
+}
+
+// QueryBuildAddressResponse is the response type for the Query/BuildAddress RPC
+// method.
+message QueryBuildAddressResponse {
+  // Address is the contract address
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+}

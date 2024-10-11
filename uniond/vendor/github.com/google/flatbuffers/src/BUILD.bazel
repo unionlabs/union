@@ -1,0 +1,159 @@
+# @unused
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+
+package(
+    default_visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "distribution",
+    srcs = [
+        "BUILD.bazel",
+    ] + glob([
+        "*.cpp",
+        "*.h",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "code_generators",
+    srcs = ["code_generators.cpp"],
+    hdrs = [
+        "//:public_headers",
+    ],
+    strip_include_prefix = "/include",
+    visibility = ["//:__subpackages__"],
+)
+
+cc_library(
+    name = "generate_fbs",
+    srcs = ["idl_gen_fbs.cpp"],
+    hdrs = ["idl_gen_fbs.h"],
+    strip_include_prefix = "/src",
+    visibility = ["//:__subpackages__"],
+    deps = [":code_generators"],
+)
+
+# Public flatc library to compile flatbuffer files at runtime.
+cc_library(
+    name = "flatbuffers",
+    srcs = [
+        "idl_gen_text.cpp",
+        "idl_gen_text.h",
+        "idl_parser.cpp",
+        "reflection.cpp",
+        "util.cpp",
+    ],
+    hdrs = [
+        "//:public_headers",
+    ],
+    linkopts = select({
+        # TODO: Bazel uses `clang` instead of `clang++` to link
+        # C++ code on BSD. Temporarily adding these linker flags while
+        # we wait for Bazel to resolve
+        # https://github.com/bazelbuild/bazel/issues/12023.
+        "//:platform_freebsd": ["-lm"],
+        "//:platform_openbsd": ["-lm"],
+        "//conditions:default": [],
+    }),
+    strip_include_prefix = "/include",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":code_generators",
+        ":generate_fbs",
+    ],
+)
+
+# Public flatc compiler library.
+cc_library(
+    name = "flatc_library",
+    srcs = [
+        "annotated_binary_text_gen.cpp",
+        "annotated_binary_text_gen.h",
+        "bfbs_gen.h",
+        "bfbs_gen_lua.cpp",
+        "bfbs_gen_lua.h",
+        "bfbs_gen_nim.cpp",
+        "bfbs_gen_nim.h",
+        "bfbs_namer.h",
+        "binary_annotator.cpp",
+        "binary_annotator.h",
+        "flatc.cpp",
+        "namer.h",
+    ],
+    hdrs = [
+        "//:flatc_headers",
+    ],
+    strip_include_prefix = "/include",
+    visibility = ["//:__pkg__"],
+    deps = [
+        ":flatbuffers",
+    ],
+)
+
+# Public flatc compiler.
+cc_library(
+    name = "flatc",
+    srcs = [
+        "bfbs_gen.h",
+        "bfbs_gen_lua.cpp",
+        "bfbs_gen_lua.h",
+        "bfbs_gen_nim.cpp",
+        "bfbs_gen_nim.h",
+        "bfbs_namer.h",
+        "file_binary_writer.cpp",
+        "file_name_saving_file_manager.cpp",
+        "file_writer.cpp",
+        "flatc_main.cpp",
+        "idl_gen_binary.cpp",
+        "idl_gen_binary.h",
+        "idl_gen_cpp.cpp",
+        "idl_gen_cpp.h",
+        "idl_gen_csharp.cpp",
+        "idl_gen_csharp.h",
+        "idl_gen_dart.cpp",
+        "idl_gen_dart.h",
+        "idl_gen_go.cpp",
+        "idl_gen_go.h",
+        "idl_gen_grpc.cpp",
+        "idl_gen_java.cpp",
+        "idl_gen_java.h",
+        "idl_gen_json_schema.cpp",
+        "idl_gen_json_schema.h",
+        "idl_gen_kotlin.cpp",
+        "idl_gen_kotlin.h",
+        "idl_gen_kotlin_kmp.cpp",
+        "idl_gen_lobster.cpp",
+        "idl_gen_lobster.h",
+        "idl_gen_php.cpp",
+        "idl_gen_php.h",
+        "idl_gen_python.cpp",
+        "idl_gen_python.h",
+        "idl_gen_rust.cpp",
+        "idl_gen_rust.h",
+        "idl_gen_swift.cpp",
+        "idl_gen_swift.h",
+        "idl_gen_text.cpp",
+        "idl_gen_text.h",
+        "idl_gen_ts.cpp",
+        "idl_gen_ts.h",
+        "idl_namer.h",
+        "namer.h",
+        "util.cpp",
+    ],
+    hdrs = [
+        "//:flatc_headers",
+    ],
+    strip_include_prefix = "/include",
+    visibility = ["//:__pkg__"],
+    deps = [
+        ":flatc_library",
+        "//grpc/src/compiler:cpp_generator",
+        "//grpc/src/compiler:go_generator",
+        "//grpc/src/compiler:java_generator",
+        "//grpc/src/compiler:python_generator",
+        "//grpc/src/compiler:swift_generator",
+        "//grpc/src/compiler:ts_generator",
+    ],
+)

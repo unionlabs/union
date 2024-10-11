@@ -1,0 +1,14 @@
+[!exec:sleep] skip
+
+# This test depends on sleep exiting with a non-success status when being
+# terminated by an interrupt (kill on Windows) signal.
+
+! exec sleep 10 &
+! exec sleep 10 &
+
+# Set a timeout. If the kill below fails, this sleep will have terminated
+# before the test exits and so the test will fail when it completes.
+! exec sleep 5 &
+
+kill -KILL
+wait

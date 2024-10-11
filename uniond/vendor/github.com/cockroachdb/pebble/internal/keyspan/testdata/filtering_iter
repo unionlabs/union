@@ -1,0 +1,84 @@
+# The following filters are available:
+# - no-op: passes through all spans.
+# - key-kind-{set,unset,del}: filters keys in spans with the given key kind.
+
+define
+a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+c-d:{(#4,RANGEKEYSET,@3,bananas) (#3,RANGEKEYDEL)}
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+----
+
+iter filter=no-op
+first
+next
+next
+next
+----
+a-c:{(#3,RANGEKEYUNSET,@5) (#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+c-d:{(#4,RANGEKEYSET,@3,bananas) (#3,RANGEKEYDEL)}
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+.
+
+iter filter=key-kind-set
+first
+next
+next
+next
+----
+a-c:{(#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+c-d:{(#4,RANGEKEYSET,@3,bananas)}
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+.
+
+iter filter=key-kind-set
+last
+prev
+prev
+prev
+----
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+c-d:{(#4,RANGEKEYSET,@3,bananas)}
+a-c:{(#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+.
+
+iter filter=key-kind-set
+seek-ge a
+seek-ge c
+next
+seek-lt b
+prev
+next
+seek-lt z
+next
+----
+a-c:{(#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+c-d:{(#4,RANGEKEYSET,@3,bananas)}
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+a-c:{(#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+.
+a-c:{(#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+.
+
+iter filter=key-kind-set
+first
+next
+next
+----
+a-c:{(#2,RANGEKEYSET,@5,apples) (#1,RANGEKEYSET,@3,bananas)}
+c-d:{(#4,RANGEKEYSET,@3,bananas)}
+d-e:{(#4,RANGEKEYSET,@3,bananas) (#4,RANGEKEYSET,@1,pineapple)}
+
+iter filter=key-kind-unset
+first
+next
+----
+a-c:{(#3,RANGEKEYUNSET,@5)}
+.
+
+iter filter=key-kind-del
+first
+next
+----
+c-d:{(#3,RANGEKEYDEL)}
+.

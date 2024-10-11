@@ -1,0 +1,71 @@
+name: ci
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  schedule:
+    - cron: "33 11 * * 6"
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.16.x, 1.17.x]
+        platform: [ubuntu-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@37335c7bb261b353407cff977110895fa0b4f7d8 # v2.1.3
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2.3.4
+        with:
+          persist-credentials: false
+      - name: Build
+        run: go build ./...
+      - name: Test
+        run: go test -coverprofile=coverage.out -covermode=count ./...
+      - name: Upload Coverage
+        uses: codecov/codecov-action@51d810878be5422784e86451c0e7c14e5860ec47 # v2.0.2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.out
+          flags: unittests
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@37335c7bb261b353407cff977110895fa0b4f7d8 # v2.1.3
+        with:
+          go-version: 1.17.x
+      - name: Configure Go Environment
+        run: |
+          echo GOPATH=${{ runner.workspace }} >> $GITHUB_ENV
+          echo ${{ runner.workspace }}/bin >> $GITHUB_PATH
+      - name: Checkout code
+        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2.3.4
+        with:
+          persist-credentials: false
+      - name: Bootstrap
+        run: ./script/bootstrap
+      - name: Lint
+        run: ./script/lint
+      - name: Generate
+        run: ./script/generate -a
+      - name: Git Status
+        run: |
+          git diff
+          test -z "$(git status --porcelain)"
+      - name: Format
+        run: ./script/fmt
+      - name: Git Status
+        run: |
+          git diff
+          test -z "$(git status --porcelain)"

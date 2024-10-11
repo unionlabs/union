@@ -1,0 +1,86 @@
+syntax = "proto3";
+package cometbft.privval.v1;
+
+import "cometbft/types/v1/types.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/privval/v1";
+
+// remotesignererror is returned when the remote signer fails.
+message RemoteSignerError {
+  int32  code        = 1;
+  string description = 2;
+}
+
+// PubKeyRequest requests the consensus public key from the remote signer.
+message PubKeyRequest {
+  string chain_id = 1;
+}
+
+// PubKeyResponse is a response message containing the public key.
+message PubKeyResponse {
+  RemoteSignerError error         = 2;
+  bytes             pub_key_bytes = 3;
+  string            pub_key_type  = 4;
+
+  reserved 1;  // pub_key
+}
+
+// SignVoteRequest is a request to sign a vote
+message SignVoteRequest {
+  cometbft.types.v1.Vote vote                   = 1;
+  string                 chain_id               = 2;
+  bool                   skip_extension_signing = 3;  // if true, the signer may skip signing the extension bytes.
+}
+
+// SignedVoteResponse is a response containing a signed vote or an error
+message SignedVoteResponse {
+  cometbft.types.v1.Vote vote  = 1 [(gogoproto.nullable) = false];
+  RemoteSignerError      error = 2;
+}
+
+// SignProposalRequest is a request to sign a proposal
+message SignProposalRequest {
+  cometbft.types.v1.Proposal proposal = 1;
+  string                     chain_id = 2;
+}
+
+// SignedProposalResponse is response containing a signed proposal or an error
+message SignedProposalResponse {
+  cometbft.types.v1.Proposal proposal = 1 [(gogoproto.nullable) = false];
+  RemoteSignerError          error    = 2;
+}
+
+// SignBytesRequest is a request to sign arbitrary bytes
+message SignBytesRequest {
+  bytes  value = 1;
+}
+
+// SignBytesResponse is a response containing a signature or an error
+message SignBytesResponse {
+  bytes             signature = 1;
+  RemoteSignerError error     = 2;
+}
+
+// PingRequest is a request to confirm that the connection is alive.
+message PingRequest {}
+
+// PingResponse is a response to confirm that the connection is alive.
+message PingResponse {}
+
+// Message is an abstract message to/from the remote signer.
+message Message {
+  // Sum of all possible messages.
+  oneof sum {
+    PubKeyRequest          pub_key_request          = 1;
+    PubKeyResponse         pub_key_response         = 2;
+    SignVoteRequest        sign_vote_request        = 3;
+    SignedVoteResponse     signed_vote_response     = 4;
+    SignProposalRequest    sign_proposal_request    = 5;
+    SignedProposalResponse signed_proposal_response = 6;
+    PingRequest            ping_request             = 7;
+    PingResponse           ping_response            = 8;
+    SignBytesRequest       sign_bytes_request       = 9;
+    SignBytesResponse      sign_bytes_response      = 10;
+  }
+}

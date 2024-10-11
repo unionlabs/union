@@ -1,0 +1,46 @@
+diff --git a/bindings/go/BUILD.bazel b/bindings/go/BUILD.bazel
+index 7e49df7..1d476f7 100644
+--- a/bindings/go/BUILD.bazel
++++ b/bindings/go/BUILD.bazel
+@@ -4,10 +4,14 @@ load("@prysm//tools/go:def.bzl", "go_library")
+ go_library(
+     name = "go",
+     srcs = ["main.go"],
++    cdeps = [
++        "//bindings/go/blst_headers:hdrs",
++        "//src:kzg",
++    ],
+     cgo = True,
+     copts = [
+-        "-Ibindings/go/src",
+-        "-Ibindings/go/bindings/go/blst_headers",
++        "-Iexternal/com_github_ethereum_c_kzg_4844/src",
++        "-Iexternal/com_github_ethereum_c_kzg_4844/bindings/go/blst_headers",
+     ],
+     importpath = "github.com/ethereum/c-kzg-4844/bindings/go",
+     visibility = ["//visibility:public"],
+diff --git a/bindings/go/blst_headers/BUILD.bazel b/bindings/go/blst_headers/BUILD.bazel
+new file mode 100644
+index 0000000..82cad2c
+--- /dev/null
++++ b/bindings/go/blst_headers/BUILD.bazel
+@@ -0,0 +1,5 @@
++cc_library(
++    name = "hdrs",
++    hdrs = glob(["*.h"]),
++    visibility = ["//visibility:public"],
++)
+diff --git a/src/BUILD.bazel b/src/BUILD.bazel
+new file mode 100644
+index 0000000..b3f845d
+--- /dev/null
++++ b/src/BUILD.bazel
+@@ -0,0 +1,8 @@
++cc_library(
++    name = "kzg",
++    hdrs = [
++        "c_kzg_4844.c",
++        "c_kzg_4844.h",
++    ],
++    visibility = ["//visibility:public"],
++)

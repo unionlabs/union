@@ -1,0 +1,13 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = ["merkle_proof.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/testing/spectest/shared/deneb/merkle_proof",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//testing/spectest/shared/common/merkle_proof:go_default_library",
+        "//testing/spectest/shared/deneb/ssz_static:go_default_library",
+    ],
+)

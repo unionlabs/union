@@ -768,7 +768,7 @@ $code.=<<___;
 	add	$fx, %rdx
 	add	$fx, $g0
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=@acc[0]
 .size	__smulq_383_n_shift_by_62,.-__smulq_383_n_shift_by_62
 ___
 } }
@@ -887,7 +887,7 @@ __inner_loop_62:
 	jnz	.Loop_62
 
 	mov	8(%rsp), $in_ptr
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=$t0
 .size	__inner_loop_62,.-__inner_loop_62
 ___
 }

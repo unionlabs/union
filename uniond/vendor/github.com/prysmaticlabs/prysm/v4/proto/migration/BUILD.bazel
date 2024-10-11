@@ -1,0 +1,51 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "enums.go",
+        "v1alpha1_to_v1.go",
+        "v1alpha1_to_v2.go",
+        "v2_to_v1alpha1.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/proto/migration",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/state:go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//consensus-types/interfaces:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//encoding/ssz:go_default_library",
+        "//proto/engine/v1:go_default_library",
+        "//proto/eth/v1:go_default_library",
+        "//proto/eth/v2:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@org_golang_google_protobuf//proto:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "enums_test.go",
+        "v1alpha1_to_v1_test.go",
+        "v1alpha1_to_v2_test.go",
+        "v2_to_v1alpha1_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//config/fieldparams:go_default_library",
+        "//consensus-types/blocks:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//proto/engine/v1:go_default_library",
+        "//proto/eth/v1:go_default_library",
+        "//proto/eth/v2:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "//testing/util:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+    ],
+)

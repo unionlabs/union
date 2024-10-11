@@ -8,7 +8,9 @@ package blst
 
 // #cgo CFLAGS: -I${SRCDIR}/.. -I${SRCDIR}/../../build -I${SRCDIR}/../../src -D__BLST_CGO__ -fno-builtin-memcpy -fno-builtin-memset
 // #cgo amd64 CFLAGS: -D__ADX__ -mno-avx
-// #cgo mips64 mips64le ppc64 ppc64le riscv64 s390x CFLAGS: -D__BLST_NO_ASM__
+// // no-asm 64-bit platforms from https://go.dev/doc/install/source
+// #cgo loong64 mips64 mips64le ppc64 ppc64le riscv64 s390x CFLAGS: -D__BLST_NO_ASM__
+//
 // #include "blst.h"
 //
 // #if defined(__x86_64__) && (defined(__unix__) || defined(__APPLE__))
@@ -29,10 +31,6 @@ package blst
 // }
 // #endif
 //
-// static size_t go_pairing_sizeof(size_t DST_len)
-// {   return (blst_pairing_sizeof() + DST_len + sizeof(blst_pairing) - 1) /
-//            sizeof(blst_pairing);
-// }
 // static void go_pairing_init(blst_pairing *new_ctx, bool hash_or_encode,
 //                             const byte *DST, size_t DST_len)
 // {   if (DST != NULL) {
@@ -139,7 +137,18 @@ package blst
 //     for (i = 2; i < n; i++)
 //         blst_fp12_mul(dst, dst, &in[i]);
 // }
+// static bool go_p1_affine_validate(const blst_p1_affine *p, bool infcheck)
+// {   if (infcheck && blst_p1_affine_is_inf(p))
+//         return 0;
+//     return blst_p1_affine_in_g1(p);
+// }
+// static bool go_p2_affine_validate(const blst_p2_affine *p, bool infcheck)
+// {   if (infcheck && blst_p2_affine_is_inf(p))
+//         return 0;
+//     return blst_p2_affine_in_g2(p);
+// }
 import "C"
+
 import "runtime"
 
 const BLST_SCALAR_BYTES = 256 / 8
@@ -193,6 +202,27 @@ func SetMaxProcs(max int) {
     maxProcs = max
 }
 
+func numThreads(maxThreads int) int {
+    numThreads := maxProcs
+
+    // take into consideration the possility that application reduced
+    // GOMAXPROCS after |maxProcs| was initialized
+    numProcs := runtime.GOMAXPROCS(0)
+    if maxProcs > numProcs {
+        numThreads = numProcs
+    }
+
+    if maxThreads > 0 && numThreads > maxThreads {
+        return maxThreads
+    }
+    return numThreads
+}
+
+var cgo_pairingSizeOf = C.blst_pairing_sizeof()
+var cgo_p1Generator = *C.blst_p1_generator()
+var cgo_p2Generator = *C.blst_p2_generator()
+var cgo_fp12One = *C.blst_fp12_one()
+
 //
 // Secret key
 //
@@ -204,18 +234,14 @@ func (sk *SecretKey) Zeroize() {
 func KeyGen(ikm []byte, optional ...[]byte) *SecretKey {
     var sk SecretKey
     var info []byte
-    var infoP *C.byte
     if len(optional) > 0 {
         info = optional[0]
-        if len(info) > 0 {
-            infoP = (*C.byte)(&info[0])
-        }
     }
     if len(ikm) < 32 {
         return nil
     }
     C.blst_keygen(&sk, (*C.byte)(&ikm[0]), C.size_t(len(ikm)),
-                       infoP, C.size_t(len(info)))
+                       ptrOrNil(info), C.size_t(len(info)))
     // Postponing secret key zeroing till garbage collection can be too
     // late to be effective, but every little bit helps...
     runtime.SetFinalizer(&sk, func(sk *SecretKey) { sk.Zeroize() })
@@ -228,15 +254,11 @@ func KeyGenV3(ikm []byte, optional ...[]byte) *SecretKey {
     }
     var sk SecretKey
     var info []byte
-    var infoP *C.byte
     if len(optional) > 0 {
         info = optional[0]
-        if len(info) > 0 {
-            infoP = (*C.byte)(&info[0])
-        }
     }
     C.blst_keygen_v3(&sk, (*C.byte)(&ikm[0]), C.size_t(len(ikm)),
-                          infoP, C.size_t(len(info)))
+                          ptrOrNil(info), C.size_t(len(info)))
     // Postponing secret key zeroing till garbage collection can be too
     // late to be effective, but every little bit helps...
     runtime.SetFinalizer(&sk, func(sk *SecretKey) { sk.Zeroize() })
@@ -249,16 +271,12 @@ func KeyGenV45(ikm []byte, salt []byte, optional ...[]byte) *SecretKey {
     }
     var sk SecretKey
     var info []byte
-    var infoP *C.byte
     if len(optional) > 0 {
         info = optional[0]
-        if len(info) > 0 {
-            infoP = (*C.byte)(&info[0])
-        }
     }
     C.blst_keygen_v4_5(&sk, (*C.byte)(&ikm[0]), C.size_t(len(ikm)),
                             (*C.byte)(&salt[0]), C.size_t(len(salt)),
-                            infoP, C.size_t(len(info)))
+                            ptrOrNil(info), C.size_t(len(info)))
     // Postponing secret key zeroing till garbage collection can be too
     // late to be effective, but every little bit helps...
     runtime.SetFinalizer(&sk, func(sk *SecretKey) { sk.Zeroize() })
@@ -271,16 +289,12 @@ func KeyGenV5(ikm []byte, salt []byte, optional ...[]byte) *SecretKey {
     }
     var sk SecretKey
     var info []byte
-    var infoP *C.byte
     if len(optional) > 0 {
         info = optional[0]
-        if len(info) > 0 {
-            infoP = (*C.byte)(&info[0])
-        }
     }
     C.blst_keygen_v5(&sk, (*C.byte)(&ikm[0]), C.size_t(len(ikm)),
                           (*C.byte)(&salt[0]), C.size_t(len(salt)),
-                          infoP, C.size_t(len(info)))
+                          ptrOrNil(info), C.size_t(len(info)))
     // Postponing secret key zeroing till garbage collection can be too
     // late to be effective, but every little bit helps...
     runtime.SetFinalizer(&sk, func(sk *SecretKey) { sk.Zeroize() })
@@ -311,14 +325,14 @@ func (master *SecretKey) DeriveChildEip2333(child_index uint32) *SecretKey {
 //
 // Pairing
 //
+func pairingSizeOf(DST_len C.size_t) int {
+    return int((cgo_pairingSizeOf + DST_len + 7) / 8)
+}
+
 func PairingCtx(hash_or_encode bool, DST []byte) Pairing {
     DST_len := C.size_t(len(DST))
-    ctx := make([]C.blst_pairing, int(C.go_pairing_sizeof(DST_len)))
-    var uDST *C.byte
-    if DST_len > 0 {
-        uDST = (*C.byte)(&DST[0])
-    }
-    C.go_pairing_init(&ctx[0], C.bool(hash_or_encode), uDST, DST_len)
+    ctx := make([]C.blst_pairing, pairingSizeOf(DST_len))
+    C.go_pairing_init(&ctx[0], C.bool(hash_or_encode), ptrOrNil(DST), DST_len)
     return ctx
 }
 
@@ -332,7 +346,7 @@ func PairingMerge(ctx Pairing, ctx1 Pairing) int {
 }
 
 func PairingFinalVerify(ctx Pairing, optional ...*Fp12) bool {
-    var gtsig *Fp12 = nil
+    var gtsig *Fp12
     if len(optional) > 0 {
         gtsig = optional[0]
     }
@@ -350,7 +364,7 @@ func PairingAsFp12(ctx Pairing) *Fp12 {
 }
 
 func Fp12One() Fp12 {
-    return *C.blst_fp12_one()
+    return cgo_fp12One
 }
 
 func Fp12FinalVerify(pt1 *Fp12, pt2 *Fp12) bool {
@@ -441,4 +455,12 @@ func (pt *Fp12) ToBendian() []byte {
 
 func (pt1 *Fp12) Equals(pt2 *Fp12) bool {
     return *pt1 == *pt2
+}
+
+func ptrOrNil(bytes []byte) *C.byte {
+    var ptr *C.byte
+    if len(bytes) > 0 {
+        ptr = (*C.byte)(&bytes[0])
+    }
+    return ptr
 }

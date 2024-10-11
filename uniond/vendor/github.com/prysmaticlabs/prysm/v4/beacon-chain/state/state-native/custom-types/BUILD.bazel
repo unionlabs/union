@@ -1,0 +1,32 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "block_roots.go",
+        "historical_roots.go",
+        "randao_mixes.go",
+        "state_roots.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native/custom-types",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//config/fieldparams:go_default_library",
+        "@com_github_prysmaticlabs_fastssz//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "block_roots_test.go",
+        "historical_roots_test.go",
+        "randao_mixes_test.go",
+        "state_roots_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//config/fieldparams:go_default_library",
+        "//testing/assert:go_default_library",
+    ],
+)

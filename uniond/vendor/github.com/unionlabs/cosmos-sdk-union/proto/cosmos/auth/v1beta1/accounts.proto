@@ -1,0 +1,27 @@
+syntax = "proto3";
+package cosmos.auth.v1beta1;
+
+import "google/protobuf/any.proto";
+
+import "cosmos/auth/v1beta1/auth.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/auth/types";
+
+// QueryLegacyAccount defines a query that can be implemented by an x/account
+// to return an auth understandable representation of an account.
+// This query is only used for accounts retro-compatibility at gRPC
+// level, the state machine must not make any assumptions around this.
+message QueryLegacyAccount {}
+
+// QueryLegacyAccountResponse defines the response type of the
+// `QueryLegacyAccount` query.
+message QueryLegacyAccountResponse {
+  // account represents the google.Protobuf.Any wrapped account
+  // the type wrapped by the any does not need to comply with the
+  // sdk.AccountI interface.
+  google.protobuf.Any account = 1;
+  // base represents the account as a BaseAccount, this can return
+  // nil if the account cannot be represented as a BaseAccount.
+  // This is used in the gRPC QueryAccountInfo method.
+  BaseAccount base = 2;
+}

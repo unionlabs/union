@@ -1,0 +1,40 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "attestations.go",
+        "maxcover.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/attestation/aggregation/attestations",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//crypto/bls:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/prysm/v1alpha1/attestation/aggregation:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "attestations_test.go",
+        "maxcover_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//config/params:go_default_library",
+        "//crypto/bls:go_default_library",
+        "//encoding/ssz/equality:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/prysm/v1alpha1/attestation/aggregation:go_default_library",
+        "//proto/prysm/v1alpha1/attestation/aggregation/testing:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+    ],
+)

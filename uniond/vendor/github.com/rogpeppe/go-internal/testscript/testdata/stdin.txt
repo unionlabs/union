@@ -1,0 +1,20 @@
+[!exec:cat] skip
+
+stdin hello.txt
+exec cat
+stdout hello
+exec cat
+! stdout hello
+
+
+[!exec:cat] stop
+
+# Check that 'stdin stdout' works.
+exec cat hello.txt
+stdin stdout
+exec cat
+stdout hello
+
+-- hello.txt --
+hello
+

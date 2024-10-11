@@ -1,0 +1,17 @@
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = req_ext
+
+[req_distinguished_name]
+countryName                     = Country Name (2 letter code)
+stateOrProvinceName             = State or Province Name (full name)
+localityName                    = Locality Name (eg, city)
+organizationalUnitName          = Organizational Unit Name (eg, section)
+commonName                      = Common Name (eg, your name or your server\'s hostname)
+emailAddress                    = Email Address
+
+[req_ext]
+subjectAltName = @alt_names
+
+[alt_names]
+IP.1 = ::

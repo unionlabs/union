@@ -1,0 +1,6 @@
+-- .info --
+{"Version":"v3.0.0-ignore"}
+-- go.mod --
+module example.com/basic/v3
+
+go 1.13

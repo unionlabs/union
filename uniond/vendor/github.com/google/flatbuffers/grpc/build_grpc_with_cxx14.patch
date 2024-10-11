@@ -1,0 +1,10 @@
+diff --git a/bazel/copts.bzl b/bazel/copts.bzl
+index 10be944f25..879518b92f 100644
+--- a/bazel/copts.bzl
++++ b/bazel/copts.bzl
+@@ -59,4 +59,4 @@ GRPC_LLVM_WARNING_FLAGS = [
+ GRPC_DEFAULT_COPTS = select({
+     "//:use_strict_warning": GRPC_LLVM_WARNING_FLAGS + ["-DUSE_STRICT_WARNING=1"],
+     "//conditions:default": [],
+-})
++}) + ["-std=c++14"]

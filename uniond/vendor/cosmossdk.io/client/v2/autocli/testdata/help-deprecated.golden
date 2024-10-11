@@ -1,0 +1,50 @@
+Command "echo" is deprecated, don't use this
+Execute the Echo RPC method
+
+Usage:
+  test deprecatedecho echo [flags]
+
+Flags:
+      --a-bool                                                               
+      --a-coin cosmos.base.v1beta1.Coin                                      
+      --a-consensus-address account address or key name                      
+      --a-message testpb.AMessage (json)                                     
+      --a-validator-address account address or key name                      
+      --an-address account address or key name                               
+      --an-enum Enum (unspecified | one | two | five | neg-three)             (default unspecified)
+      --bools bools                                                           (default [])
+      --bz binary                                                            
+      --coins cosmos.base.v1beta1.Coin (repeated)                            
+      --deprecated-field string                                              
+      --duration duration                                                    
+      --durations duration (repeated)                                        
+      --enums Enum (unspecified | one | two | five | neg-three) (repeated)   
+      --grpc-addr string                                                     the gRPC endpoint to use for this chain
+      --grpc-insecure                                                        allow gRPC over insecure channels, if not the server must use TLS
+      --height int                                                           Use a specific height to query state at (this can error if the node is pruning state)
+  -h, --help                                                                 help for echo
+      --hidden-bool                                                          
+      --i32 int32                                                            
+      --i64 int                                                              
+      --map-string-coin map[string]cosmos.base.v1beta1.Coin                  
+      --map-string-string stringToString                                      (default [])
+      --map-string-uint32 stringToUint32                                     
+      --no-indent                                                            Do not indent JSON output
+      --node string                                                          <host>:<port> to CometBFT RPC interface for this chain (default "tcp://localhost:26657")
+  -o, --output string                                                        Output format (text|json) (default "text")
+      --page-count-total                                                     
+      --page-key binary                                                      
+      --page-limit uint                                                      
+      --page-offset uint                                                     
+      --page-reverse                                                         
+      --positional1 int32                                                    
+      --positional2 string                                                   
+      --positional3-varargs cosmos.base.v1beta1.Coin (repeated)              
+      --shorthand-deprecated-field string                                    
+      --some-messages testpb.AMessage (json) (repeated)                      
+      --str string                                                           
+      --strings strings                                                      
+      --timestamp timestamp (RFC 3339)                                       
+      --u32 uint32                                                           
+      --u64 uint                                                             
+      --uints uints                                                           (default [])

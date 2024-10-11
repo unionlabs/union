@@ -1,0 +1,22 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+
+package(default_visibility = ["//visibility:public"])
+
+proto_library(
+    name = "sub_proto",
+    srcs = ["message.proto"],
+)
+
+go_proto_library(
+    name = "sub_go_proto",
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/examples/internal/proto/sub",
+    proto = ":sub_proto",
+)
+
+go_library(
+    name = "go_default_library",
+    embed = [":sub_go_proto"],
+    importpath = "github.com/grpc-ecosystem/grpc-gateway/examples/internal/proto/sub",
+)

@@ -1,0 +1,2 @@
+rpc error: code = InvalidArgument desc = br
+error details: name = Help desc = Foo url = Bar

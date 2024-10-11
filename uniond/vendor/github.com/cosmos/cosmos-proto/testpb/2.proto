@@ -1,0 +1,7 @@
+syntax="proto3";
+
+option go_package = "github.com/cosmos/cosmos-proto/testpb";
+
+message ImportedMessage {
+
+}

@@ -22,10 +22,12 @@ func Sort[S ~[]E, E constraints.Ordered](x S) {
 // SortFunc sorts the slice x in ascending order as determined by the cmp
 // function. This sort is not guaranteed to be stable.
 // cmp(a, b) should return a negative number when a < b, a positive number when
-// a > b and zero when a == b.
+// a > b and zero when a == b or when a is not comparable to b in the sense
+// of the formal definition of Strict Weak Ordering.
 //
 // SortFunc requires that cmp is a strict weak ordering.
 // See https://en.wikipedia.org/wiki/Weak_ordering#Strict_weak_orderings.
+// To indicate 'uncomparable', return 0 from the function.
 func SortFunc[S ~[]E, E any](x S, cmp func(a, b E) int) {
 	n := len(x)
 	pdqsortCmpFunc(x, 0, n, bits.Len(uint(n)), cmp)

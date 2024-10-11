@@ -1,0 +1,19 @@
+name: 'Close stale issues and PRs'
+on:
+  schedule:
+    - cron: '0 0 * * *'  # every day at 00:00 UTC
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          days-before-stale: 90
+          days-before-close: 21
+          stale-issue-label: stale
+          stale-pr-label: stale

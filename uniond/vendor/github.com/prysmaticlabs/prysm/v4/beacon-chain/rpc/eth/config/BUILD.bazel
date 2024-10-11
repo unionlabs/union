@@ -1,0 +1,35 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "handlers.go",
+        "structs.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/eth/config",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/rpc/eth/shared:go_default_library",
+        "//config/params:go_default_library",
+        "//network/forks:go_default_library",
+        "//network/httputil:go_default_library",
+        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
+        "@io_opencensus_go//trace:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["handlers_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//config/params:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//network/forks:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
+    ],
+)

@@ -1,0 +1,14 @@
+filegroup(
+    name = "distribution",
+    srcs = [
+        "BUILD.bazel",
+        "reflection.fbs",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "reflection_fbs_schema",
+    srcs = ["reflection.fbs"],
+    visibility = ["//visibility:public"],
+)

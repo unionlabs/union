@@ -1,0 +1,20 @@
+syntax = "proto3";
+package cometbft.crypto.v1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/crypto/v1";
+
+import "gogoproto/gogo.proto";
+
+// PublicKey is a ED25519 or a secp256k1 public key.
+message PublicKey {
+  option (gogoproto.compare) = true;
+  option (gogoproto.equal)   = true;
+
+  // The type of key.
+  oneof sum {
+    bytes ed25519   = 1;
+    bytes secp256k1 = 2;
+    bytes bls12381  = 3;
+    bytes bn254 = 99;
+  }
+}

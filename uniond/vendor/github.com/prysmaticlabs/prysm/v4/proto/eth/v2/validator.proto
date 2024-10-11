@@ -1,0 +1,75 @@
+// Copyright 2021 Prysmatic Labs.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+
+package ethereum.eth.v2;
+
+import "proto/eth/ext/options.proto";
+import "proto/eth/v2/beacon_block.proto";
+import "proto/eth/v2/version.proto";
+
+option csharp_namespace = "Ethereum.Eth.V2";
+option go_package = "github.com/prysmaticlabs/prysm/v4/proto/eth/v2;eth";
+option java_multiple_files = true;
+option java_outer_classname = "ValidatorProto";
+option java_package = "org.ethereum.eth.v2";
+option php_namespace = "Ethereum\\Eth\\v2";
+
+message ProduceBlockResponseV2 {
+  Version version = 1;
+  BeaconBlockContainerV2 data = 2;
+}
+
+message ProduceBlindedBlockResponse {
+  Version version = 1;
+  BlindedBeaconBlockContainer data = 2;
+}
+
+// Aggregated sync committee object to support light client.
+message SyncCommitteeContribution {
+  // Slot to which this contribution pertains.
+  uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+
+  // 32 byte block root for this signature.
+  bytes beacon_block_root = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+
+  // The subcommittee this contribution pertains to out of the broader sync committee.
+  uint64 subcommittee_index = 3;
+
+  // A bit is set if a signature from the validator at the corresponding
+  // index in the subcommittee is present in the aggregate `signature`.
+  bytes aggregation_bits = 4 [(ethereum.eth.ext.ssz_size) = "sync_committee_aggregate_bytes.size", (ethereum.eth.ext.cast_type) = "sync_committee_aggregate_bits.type"];
+
+  // Signature by the validator(s) over the block root of `slot`.
+  bytes signature = 5 [(ethereum.eth.ext.ssz_size) = "96"];
+}
+
+// Aggregated sync committee signature object with selection proof to support light client.
+message ContributionAndProof {
+  // Index of the aggregator that produced this proof.
+  uint64 aggregator_index = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
+
+  SyncCommitteeContribution contribution = 2;
+
+  // The selection proof itself.
+  bytes selection_proof = 3 [(ethereum.eth.ext.ssz_size) = "96"];
+}
+
+// Signed aggregated sync committee signature object with selection proof to support light client.
+message SignedContributionAndProof {
+  ContributionAndProof message = 1;
+
+  // Signature of the aggregator that produced `message`.
+  bytes signature = 4 [(ethereum.eth.ext.ssz_size) = "96"];
+}

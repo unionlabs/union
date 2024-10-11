@@ -1,0 +1,68 @@
+// Copyright 2018 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+syntax = "proto3";
+
+package goproto.proto.test3;
+
+import "google/protobuf/descriptor.proto";
+import "internal/testprotos/test3/test.proto";
+
+option go_package = "google.golang.org/protobuf/internal/testprotos/test3";
+
+extend google.protobuf.MessageOptions {
+  int32 optional_int32_ext = 1001;
+  int64 optional_int64_ext = 1002;
+  uint32 optional_uint32_ext = 1003;
+  uint64 optional_uint64_ext = 1004;
+  sint32 optional_sint32_ext = 1005;
+  sint64 optional_sint64_ext = 1006;
+  fixed32 optional_fixed32_ext = 1007;
+  fixed64 optional_fixed64_ext = 1008;
+  sfixed32 optional_sfixed32_ext = 1009;
+  sfixed64 optional_sfixed64_ext = 1010;
+  float optional_float_ext = 1011;
+  double optional_double_ext = 1012;
+  bool optional_bool_ext = 1013;
+  string optional_string_ext = 1014;
+  bytes optional_bytes_ext = 1015;
+  ForeignMessage optional_foreign_message_ext = 1016;
+  ForeignEnum optional_foreign_enum_ext = 1017;
+
+  optional int32 optional_optional_int32_ext = 2001;
+  optional int64 optional_optional_int64_ext = 2002;
+  optional uint32 optional_optional_uint32_ext = 2003;
+  optional uint64 optional_optional_uint64_ext = 2004;
+  optional sint32 optional_optional_sint32_ext = 2005;
+  optional sint64 optional_optional_sint64_ext = 2006;
+  optional fixed32 optional_optional_fixed32_ext = 2007;
+  optional fixed64 optional_optional_fixed64_ext = 2008;
+  optional sfixed32 optional_optional_sfixed32_ext = 2009;
+  optional sfixed64 optional_optional_sfixed64_ext = 2010;
+  optional float optional_optional_float_ext = 2011;
+  optional double optional_optional_double_ext = 2012;
+  optional bool optional_optional_bool_ext = 2013;
+  optional string optional_optional_string_ext = 2014;
+  optional bytes optional_optional_bytes_ext = 2015;
+  optional ForeignMessage optional_optional_foreign_message_ext = 2016;
+  optional ForeignEnum optional_optional_foreign_enum_ext = 2017;
+
+  repeated int32 repeated_int32_ext = 3001;
+  repeated int64 repeated_int64_ext = 3002;
+  repeated uint32 repeated_uint32_ext = 3003;
+  repeated uint64 repeated_uint64_ext = 3004;
+  repeated sint32 repeated_sint32_ext = 3005;
+  repeated sint64 repeated_sint64_ext = 3006;
+  repeated fixed32 repeated_fixed32_ext = 3007;
+  repeated fixed64 repeated_fixed64_ext = 3008;
+  repeated sfixed32 repeated_sfixed32_ext = 3009;
+  repeated sfixed64 repeated_sfixed64_ext = 3010;
+  repeated float repeated_float_ext = 3011;
+  repeated double repeated_double_ext = 3012;
+  repeated bool repeated_bool_ext = 3013;
+  repeated string repeated_string_ext = 3014;
+  repeated bytes repeated_bytes_ext = 3015;
+  repeated ForeignMessage repeated_foreign_message_ext = 3016;
+  repeated ForeignEnum repeated_foreign_enum_ext = 3017;
+}

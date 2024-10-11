@@ -14,11 +14,13 @@ import (
 	"time"
 
 	"github.com/cockroachdb/errors"
+	"github.com/cockroachdb/fifo"
 	"github.com/cockroachdb/pebble/internal/base"
 	"github.com/cockroachdb/pebble/internal/cache"
 	"github.com/cockroachdb/pebble/internal/humanize"
 	"github.com/cockroachdb/pebble/internal/keyspan"
 	"github.com/cockroachdb/pebble/internal/manifest"
+	"github.com/cockroachdb/pebble/objstorage/objstorageprovider"
 	"github.com/cockroachdb/pebble/objstorage/remote"
 	"github.com/cockroachdb/pebble/rangekey"
 	"github.com/cockroachdb/pebble/sstable"
@@ -481,10 +483,24 @@ type Options struct {
 	// The default cache size is 8 MB.
 	Cache *cache.Cache
 
+	// LoadBlockSema, if set, is used to limit the number of blocks that can be
+	// loaded (i.e. read from the filesystem) in parallel. Each load acquires one
+	// unit from the semaphore for the duration of the read.
+	LoadBlockSema *fifo.Semaphore
+
 	// Cleaner cleans obsolete files.
 	//
 	// The default cleaner uses the DeleteCleaner.
 	Cleaner Cleaner
+
+	// Local contains option that pertain to files stored on the local filesystem.
+	Local struct {
+		// ReadaheadConfigFn is a function used to retrieve the current readahead
+		// mode. This function is consulted when a table enters the table cache.
+		ReadaheadConfigFn func() ReadaheadConfig
+
+		// TODO(radu): move BytesPerSync, LoadBlockSema, Cleaner here.
+	}
 
 	// Comparer defines a total ordering over the space of []byte keys: a 'less
 	// than' relationship. The same comparison algorithm must be used for reads
@@ -995,6 +1011,9 @@ type Options struct {
 		fsCloser io.Closer
 	}
 }
+
+// ReadaheadConfig controls the use of read-ahead.
+type ReadaheadConfig = objstorageprovider.ReadaheadConfig
 
 // DebugCheckLevels calls CheckLevels on the provided database.
 // It may be set in the DebugCheck field of Options to check
@@ -1713,6 +1732,7 @@ func (o *Options) MakeReaderOptions() sstable.ReaderOptions {
 	var readerOpts sstable.ReaderOptions
 	if o != nil {
 		readerOpts.Cache = o.Cache
+		readerOpts.LoadBlockSema = o.LoadBlockSema
 		readerOpts.Comparer = o.Comparer
 		readerOpts.Filters = o.Filters
 		if o.Merger != nil {

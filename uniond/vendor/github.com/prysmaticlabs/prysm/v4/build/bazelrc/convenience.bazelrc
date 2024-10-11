@@ -1,0 +1,33 @@
+# Attempt to build & test every target whose prerequisites were successfully built.
+# Docs: https://bazel.build/docs/user-manual#keep-going
+build --keep_going
+test  --keep_going
+
+# Output test errors to stderr so users don't have to `cat` or open test failure log files when test
+# fail. This makes the log noiser in exchange for reducing the time-to-feedback on test failures for
+# users.
+# Docs: https://bazel.build/docs/user-manual#test-output
+test --test_output=errors
+
+# Show the output files created by builds that requested more than one target. This helps users
+# locate the build outputs in more cases
+# Docs: https://bazel.build/docs/user-manual#show-result
+build --show_result=20
+
+# Bazel picks up host-OS-specific config lines from bazelrc files. For example, if the host OS is
+# Linux and you run bazel build, Bazel picks up lines starting with build:linux. Supported OS
+# identifiers are `linux`, `macos`, `windows`, `freebsd`, and `openbsd`. Enabling this flag is
+# equivalent to using `--config=linux` on Linux, `--config=windows` on Windows, etc.
+# Docs: https://bazel.build/reference/command-line-reference#flag--enable_platform_specific_config
+common --enable_platform_specific_config
+
+# Output a heap dump if an OOM is thrown during a Bazel invocation
+# (including OOMs due to `--experimental_oom_more_eagerly_threshold`).
+# The dump will be written to `<output_base>/<invocation_id>.heapdump.hprof`.
+# You may need to configure CI to capture this artifact and upload for later use.
+# Docs: https://bazel.build/reference/command-line-reference#flag--heap_dump_on_oom
+build --heap_dump_on_oom
+
+# Change the behavior of bazel test to not bother building targets which aren't dependencies of the
+# tests. Matches some developer expectations.
+test --build_tests_only

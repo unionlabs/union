@@ -1,0 +1,17 @@
+name: Go tests
+on: [push, pull_request]
+jobs:
+  test:
+    name: Go ${{ matrix.go }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ '1.20', '1.x' ]
+    steps:
+      - uses: actions/setup-go@v2
+        with: { go-version: "${{ matrix.go }}" }
+      - uses: actions/checkout@v2
+      - run: go test -short ./...
+      - run: go test -short -tags purego ./...
+      - run: GOARCH=arm64 go test -c
+      - run: GOARCH=arm go test -c

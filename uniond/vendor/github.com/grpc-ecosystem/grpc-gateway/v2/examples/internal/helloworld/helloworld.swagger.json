@@ -1,0 +1,968 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "examples/internal/helloworld/helloworld.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Greeter"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/say/boolval/{boolVal}": {
+      "get": {
+        "operationId": "Greeter_SayHello5",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/helloworldHelloReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "boolVal",
+            "in": "path",
+            "required": true,
+            "type": "boolean"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "strVal",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "floatVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "float"
+          },
+          {
+            "name": "doubleVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "bytesVal",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "int32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "uint32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "int64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "uint64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Greeter"
+        ]
+      }
+    },
+    "/say/bytesval/{bytesVal}": {
+      "get": {
+        "operationId": "Greeter_SayHello6",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/helloworldHelloReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bytesVal",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "strVal",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "floatVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "float"
+          },
+          {
+            "name": "doubleVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "boolVal",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "int32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "uint32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "int64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "uint64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Greeter"
+        ]
+      }
+    },
+    "/say/doubleval/{doubleVal}": {
+      "get": {
+        "operationId": "Greeter_SayHello4",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/helloworldHelloReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "doubleVal",
+            "in": "path",
+            "required": true,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "strVal",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "floatVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "float"
+          },
+          {
+            "name": "boolVal",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "bytesVal",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "int32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "uint32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "int64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "uint64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Greeter"
+        ]
+      }
+    },
+    "/say/floatval/{floatVal}": {
+      "get": {
+        "operationId": "Greeter_SayHello3",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/helloworldHelloReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "floatVal",
+            "in": "path",
+            "required": true,
+            "type": "number",
+            "format": "float"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "strVal",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "doubleVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "boolVal",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "bytesVal",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "int32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "uint32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "int64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "uint64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Greeter"
+        ]
+      }
+    },
+    "/say/int32val/{int32Val}": {
+      "get": {
+        "operationId": "Greeter_SayHello7",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/helloworldHelloReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "int32Val",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "strVal",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "floatVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "float"
+          },
+          {
+            "name": "doubleVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "boolVal",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "bytesVal",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "uint32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "int64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "uint64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Greeter"
+        ]
+      }
+    },
+    "/say/int64val/{int64Val}": {
+      "get": {
+        "operationId": "Greeter_SayHello9",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/helloworldHelloReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "int64Val",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "strVal",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "floatVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "float"
+          },
+          {
+            "name": "doubleVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "boolVal",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "bytesVal",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "int32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "uint32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "uint64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Greeter"
+        ]
+      }
+    },
+    "/say/strval/{strVal}": {
+      "get": {
+        "operationId": "Greeter_SayHello2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/helloworldHelloReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "strVal",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "floatVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "float"
+          },
+          {
+            "name": "doubleVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "boolVal",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "bytesVal",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "int32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "uint32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "int64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "uint64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Greeter"
+        ]
+      }
+    },
+    "/say/uint32val/{uint32Val}": {
+      "get": {
+        "operationId": "Greeter_SayHello8",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/helloworldHelloReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "uint32Val",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "strVal",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "floatVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "float"
+          },
+          {
+            "name": "doubleVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "boolVal",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "bytesVal",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "int32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "int64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "uint64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Greeter"
+        ]
+      }
+    },
+    "/say/uint64val/{uint64Val}": {
+      "get": {
+        "operationId": "Greeter_SayHello10",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/helloworldHelloReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "uint64Val",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "strVal",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "floatVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "float"
+          },
+          {
+            "name": "doubleVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "boolVal",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "bytesVal",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "int32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "uint32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "int64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Greeter"
+        ]
+      }
+    },
+    "/say/{name}": {
+      "get": {
+        "operationId": "Greeter_SayHello",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/helloworldHelloReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "strVal",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "floatVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "float"
+          },
+          {
+            "name": "doubleVal",
+            "in": "query",
+            "required": false,
+            "type": "number",
+            "format": "double"
+          },
+          {
+            "name": "boolVal",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "bytesVal",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "int32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "uint32Val",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "int64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "uint64Val",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Greeter"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "helloworldHelloReply": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

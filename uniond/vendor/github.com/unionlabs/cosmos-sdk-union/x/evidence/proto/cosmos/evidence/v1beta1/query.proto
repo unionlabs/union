@@ -1,0 +1,55 @@
+syntax = "proto3";
+package cosmos.evidence.v1beta1;
+import "cosmos_proto/cosmos.proto";
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "google/protobuf/any.proto";
+import "google/api/annotations.proto";
+
+option go_package = "cosmossdk.io/x/evidence/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Evidence queries evidence based on evidence hash.
+  rpc Evidence(QueryEvidenceRequest) returns (QueryEvidenceResponse) {
+    option (google.api.http).get = "/cosmos/evidence/v1beta1/evidence/{hash}";
+  }
+
+  // AllEvidence queries all evidence.
+  rpc AllEvidence(QueryAllEvidenceRequest) returns (QueryAllEvidenceResponse) {
+    option (google.api.http).get = "/cosmos/evidence/v1beta1/evidence";
+  }
+}
+
+// QueryEvidenceRequest is the request type for the Query/Evidence RPC method.
+message QueryEvidenceRequest {
+  // evidence_hash defines the hash of the requested evidence.
+  // Deprecated: Use hash, a HEX encoded string, instead.
+  bytes evidence_hash = 1 [deprecated = true];
+
+  // hash defines the evidence hash of the requested evidence.
+  string hash = 2 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+}
+
+// QueryEvidenceResponse is the response type for the Query/Evidence RPC method.
+message QueryEvidenceResponse {
+  // evidence returns the requested evidence.
+  google.protobuf.Any evidence = 1;
+}
+
+// QueryEvidenceRequest is the request type for the Query/AllEvidence RPC
+// method.
+message QueryAllEvidenceRequest {
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryAllEvidenceResponse is the response type for the Query/AllEvidence RPC
+// method.
+message QueryAllEvidenceResponse {
+  // evidence returns all evidences.
+  repeated google.protobuf.Any evidence = 1;
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}

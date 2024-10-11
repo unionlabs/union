@@ -3,19 +3,18 @@ package dbadapter
 import (
 	"io"
 
-	dbm "github.com/cosmos/cosmos-db"
-
+	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/store/cachekv"
 	"cosmossdk.io/store/tracekv"
 	"cosmossdk.io/store/types"
 )
 
-// Wrapper type for dbm.Db with implementation of KVStore
+// Store is wrapper type for corestore.KVStoreWithBatch with implementation of KVStore
 type Store struct {
-	dbm.DB
+	DB corestore.KVStoreWithBatch
 }
 
-// Get wraps the underlying DB's Get method panicing on error.
+// Get wraps the underlying DB's Get method panicking on error.
 func (dsa Store) Get(key []byte) []byte {
 	v, err := dsa.DB.Get(key)
 	if err != nil {
@@ -25,7 +24,7 @@ func (dsa Store) Get(key []byte) []byte {
 	return v
 }
 
-// Has wraps the underlying DB's Has method panicing on error.
+// Has wraps the underlying DB's Has method panicking on error.
 func (dsa Store) Has(key []byte) bool {
 	ok, err := dsa.DB.Has(key)
 	if err != nil {
@@ -35,7 +34,7 @@ func (dsa Store) Has(key []byte) bool {
 	return ok
 }
 
-// Set wraps the underlying DB's Set method panicing on error.
+// Set wraps the underlying DB's Set method panicking on error.
 func (dsa Store) Set(key, value []byte) {
 	types.AssertValidKey(key)
 	types.AssertValidValue(value)
@@ -44,14 +43,14 @@ func (dsa Store) Set(key, value []byte) {
 	}
 }
 
-// Delete wraps the underlying DB's Delete method panicing on error.
+// Delete wraps the underlying DB's Delete method panicking on error.
 func (dsa Store) Delete(key []byte) {
 	if err := dsa.DB.Delete(key); err != nil {
 		panic(err)
 	}
 }
 
-// Iterator wraps the underlying DB's Iterator method panicing on error.
+// Iterator wraps the underlying DB's Iterator method panicking on error.
 func (dsa Store) Iterator(start, end []byte) types.Iterator {
 	iter, err := dsa.DB.Iterator(start, end)
 	if err != nil {
@@ -61,7 +60,7 @@ func (dsa Store) Iterator(start, end []byte) types.Iterator {
 	return iter
 }
 
-// ReverseIterator wraps the underlying DB's ReverseIterator method panicing on error.
+// ReverseIterator wraps the underlying DB's ReverseIterator method panicking on error.
 func (dsa Store) ReverseIterator(start, end []byte) types.Iterator {
 	iter, err := dsa.DB.ReverseIterator(start, end)
 	if err != nil {
@@ -86,5 +85,5 @@ func (dsa Store) CacheWrapWithTrace(w io.Writer, tc types.TraceContext) types.Ca
 	return cachekv.NewStore(tracekv.NewStore(dsa, w, tc))
 }
 
-// dbm.DB implements KVStore so we can CacheKVStore it.
+// corestore.KVStoreWithBatch implements KVStore so we can CacheKVStore it.
 var _ types.KVStore = Store{}

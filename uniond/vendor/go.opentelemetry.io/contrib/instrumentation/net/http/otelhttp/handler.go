@@ -1,32 +1,19 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package otelhttp // import "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 import (
-	"io"
 	"net/http"
 	"time"
 
 	"github.com/felixge/httpsnoop"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp/internal/semconv"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp/internal/semconvutil"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
-	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -46,6 +33,7 @@ type middleware struct {
 	publicEndpoint    bool
 	publicEndpointFn  func(*http.Request) bool
 
+	traceSemconv         semconv.HTTPServer
 	requestBytesCounter  metric.Int64Counter
 	responseBytesCounter metric.Int64Counter
 	serverLatencyMeasure metric.Float64Histogram
@@ -67,6 +55,8 @@ func NewHandler(handler http.Handler, operation string, opts ...Option) http.Han
 func NewMiddleware(operation string, opts ...Option) func(http.Handler) http.Handler {
 	h := middleware{
 		operation: operation,
+
+		traceSemconv: semconv.NewHTTPServer(),
 	}
 
 	defaultOpts := []Option{
@@ -108,23 +98,23 @@ func handleErr(err error) {
 func (h *middleware) createMeasures() {
 	var err error
 	h.requestBytesCounter, err = h.meter.Int64Counter(
-		RequestContentLength,
+		serverRequestSize,
 		metric.WithUnit("By"),
-		metric.WithDescription("Measures the size of HTTP request content length (uncompressed)"),
+		metric.WithDescription("Measures the size of HTTP request messages."),
 	)
 	handleErr(err)
 
 	h.responseBytesCounter, err = h.meter.Int64Counter(
-		ResponseContentLength,
+		serverResponseSize,
 		metric.WithUnit("By"),
-		metric.WithDescription("Measures the size of HTTP response content length (uncompressed)"),
+		metric.WithDescription("Measures the size of HTTP response messages."),
 	)
 	handleErr(err)
 
 	h.serverLatencyMeasure, err = h.meter.Float64Histogram(
-		ServerLatency,
+		serverDuration,
 		metric.WithUnit("ms"),
-		metric.WithDescription("Measures the duration of HTTP request handling"),
+		metric.WithDescription("Measures the duration of inbound HTTP requests."),
 	)
 	handleErr(err)
 }
@@ -143,12 +133,9 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 
 	ctx := h.propagators.Extract(r.Context(), propagation.HeaderCarrier(r.Header))
 	opts := []trace.SpanStartOption{
-		trace.WithAttributes(semconvutil.HTTPServerRequest(h.server, r)...),
+		trace.WithAttributes(h.traceSemconv.RequestTraceAttrs(h.server, r)...),
 	}
-	if h.server != "" {
-		hostAttr := semconv.NetHostName(h.server)
-		opts = append(opts, trace.WithAttributes(hostAttr))
-	}
+
 	opts = append(opts, h.spanStartOptions...)
 	if h.publicEndpoint || (h.publicEndpointFn != nil && h.publicEndpointFn(r.WithContext(ctx))) {
 		opts = append(opts, trace.WithNewRoot())
@@ -224,7 +211,14 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 
 	next.ServeHTTP(w, r.WithContext(ctx))
 
-	setAfterServeAttributes(span, bw.read, rww.written, rww.statusCode, bw.err, rww.err)
+	span.SetStatus(semconv.ServerStatus(rww.statusCode))
+	span.SetAttributes(h.traceSemconv.ResponseTraceAttrs(semconv.ResponseTelemetry{
+		StatusCode: rww.statusCode,
+		ReadBytes:  bw.read.Load(),
+		ReadError:  bw.err,
+		WriteBytes: rww.written,
+		WriteError: rww.err,
+	})...)
 
 	// Add metrics
 	attributes := append(labeler.Get(), semconvutil.HTTPServerRequestMetrics(h.server, r)...)
@@ -232,7 +226,7 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 		attributes = append(attributes, semconv.HTTPStatusCode(rww.statusCode))
 	}
 	o := metric.WithAttributes(attributes...)
-	h.requestBytesCounter.Add(ctx, bw.read, o)
+	h.requestBytesCounter.Add(ctx, bw.read.Load(), o)
 	h.responseBytesCounter.Add(ctx, rww.written, o)
 
 	// Use floating point division here for higher precision (instead of Millisecond method).
@@ -241,37 +235,11 @@ func (h *middleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http
 	h.serverLatencyMeasure.Record(ctx, elapsedTime, o)
 }
 
-func setAfterServeAttributes(span trace.Span, read, wrote int64, statusCode int, rerr, werr error) {
-	attributes := []attribute.KeyValue{}
-
-	// TODO: Consider adding an event after each read and write, possibly as an
-	// option (defaulting to off), so as to not create needlessly verbose spans.
-	if read > 0 {
-		attributes = append(attributes, ReadBytesKey.Int64(read))
-	}
-	if rerr != nil && rerr != io.EOF {
-		attributes = append(attributes, ReadErrorKey.String(rerr.Error()))
-	}
-	if wrote > 0 {
-		attributes = append(attributes, WroteBytesKey.Int64(wrote))
-	}
-	if statusCode > 0 {
-		attributes = append(attributes, semconv.HTTPStatusCode(statusCode))
-	}
-	span.SetStatus(semconvutil.HTTPServerStatus(statusCode))
-
-	if werr != nil && werr != io.EOF {
-		attributes = append(attributes, WriteErrorKey.String(werr.Error()))
-	}
-	span.SetAttributes(attributes...)
-}
-
 // WithRouteTag annotates spans and metrics with the provided route name
 // with HTTP route attribute.
 func WithRouteTag(route string, h http.Handler) http.Handler {
+	attr := semconv.NewHTTPServer().Route(route)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		attr := semconv.HTTPRouteKey.String(route)
-
 		span := trace.SpanFromContext(r.Context())
 		span.SetAttributes(attr)
 

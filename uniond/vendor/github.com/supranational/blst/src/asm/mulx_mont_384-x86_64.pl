@@ -123,6 +123,9 @@ __subx_mod_384x384:
 .type	__addx_mod_384,\@abi-omnipotent
 .align	32
 __addx_mod_384:
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -171,6 +174,9 @@ __addx_mod_384:
 .type	__subx_mod_384,\@abi-omnipotent
 .align	32
 __subx_mod_384:
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -262,6 +268,9 @@ mul_mont_384x\$1:
 	#lea	0($b_btr), $b_ptr	# b->re
 	#lea	0($a_ptr), $a_ptr	# a->re
 	lea	40(%rsp), $r_ptr	# t0
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__mulx_384
 
 	################################# mul_384(t1, a->im, b->im);
@@ -275,11 +284,17 @@ mul_mont_384x\$1:
 	lea	($b_ptr), $a_ptr	# b->re
 	lea	-48($b_ptr), $b_org	# b->im
 	lea	40+192+48(%rsp), $r_ptr
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__addx_mod_384
 
 	mov	8*3(%rsp), $a_ptr	# a->re
 	lea	48($a_ptr), $b_org	# a->im
 	lea	-48($r_ptr), $r_ptr
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__addx_mod_384
 
 	lea	($r_ptr),$b_ptr
@@ -290,6 +305,9 @@ mul_mont_384x\$1:
 	lea	($r_ptr), $a_ptr	# t2
 	lea	40(%rsp), $b_org	# t0
 	mov	8*1(%rsp), $n_ptr
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__subx_mod_384x384	# t2-t0
 
 	lea	($r_ptr), $a_ptr	# t2
@@ -387,6 +405,9 @@ sqr_mont_384x\$1:
 	mov	8*3(%rsp), $a_ptr	# a->re
 	lea	48($a_ptr), $b_ptr	# a->im
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	48($a_ptr), %rdx
 	mov	8*0($a_ptr), %r14	# @acc[6]
 	mov	8*1($a_ptr), %r15	# @acc[7]
@@ -508,6 +529,9 @@ mul_382x\$1:
 	mov	$n_ptr, 8*3(%rsp)
 
 	################################# t0 = a->re + a->im
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -560,6 +584,9 @@ mul_382x\$1:
 	mov	8*0(%rsp), $a_ptr
 	mov	8*1(%rsp), $b_ptr
 	lea	-96($r_ptr), $r_ptr	# ret->re
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__mulx_384
 
 	################################# mul_384(tx, a->im, b->im);
@@ -573,6 +600,9 @@ mul_382x\$1:
 	lea	32(%rsp), $b_org
 	mov	8*3(%rsp), $n_ptr
 	mov	$a_ptr, $r_ptr
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__subx_mod_384x384
 
 	################################# ret->im -= ret->re
@@ -636,6 +666,9 @@ sqr_382x\$1:
 	mov	$b_org, $n_ptr
 
 	################################# t0 = a->re + a->im
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[6]
 	mov	8*1($a_ptr), @acc[7]
 	mov	8*2($a_ptr), @acc[8]
@@ -678,6 +711,9 @@ sqr_382x\$1:
 	mov	(%rsp), $a_ptr
 	lea	48($a_ptr), $b_ptr
 	lea	96($r_ptr), $r_ptr
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__mulx_384
 
 	mov	8*0($r_ptr), @acc[0]	# double ret->im
@@ -765,6 +801,9 @@ mul_384\$1:
 .cfi_end_prologue
 
 	mov	$b_org, $b_ptr		# evacuate from %rdx
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__mulx_384
 
 	mov	0(%rsp),%r15
@@ -887,6 +926,9 @@ sqr_384\$1:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__sqrx_384
 
 	mov	8(%rsp),%r15
@@ -1244,6 +1286,9 @@ redc_mont_384\$1:
 .cfi_end_prologue
 
 	mov	$b_org, $n_ptr
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__mulx_by_1_mont_384
 	call	__redx_tail_mont_384
 
@@ -1293,6 +1338,9 @@ from_mont_384\$1:
 .cfi_end_prologue
 
 	mov	$b_org, $n_ptr
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__mulx_by_1_mont_384
 
 	#################################
@@ -1467,6 +1515,9 @@ sgn0_pty_mont_384\$1:
 	mov	$a_ptr, $n_ptr
 	lea	0($r_ptr), $a_ptr
 	mov	$b_org, $n0
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__mulx_by_1_mont_384
 
 	xor	%rax, %rax
@@ -1537,6 +1588,9 @@ sgn0_pty_mont_384x\$1:
 	mov	$a_ptr, $n_ptr
 	lea	48($r_ptr), $a_ptr	# sgn0(a->im)
 	mov	$b_org, $n0
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__mulx_by_1_mont_384
 
 	mov	@acc[0], @acc[6]
@@ -1662,6 +1716,9 @@ mul_mont_384\$1:
 .cfi_end_prologue
 
 	mov	$b_org, $b_ptr		# evacuate from %rdx
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($b_org), %rdx
 	mov	8*0($a_ptr), @acc[6]
 	mov	8*1($a_ptr), @acc[7]
@@ -1852,7 +1909,7 @@ $code.=<<___;
 	mov	$lo, 8*4($b_ptr)
 	mov	$hi, 8*5($b_ptr)
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=%rsi
 .cfi_endproc
 .size	__mulx_mont_384,.-__mulx_mont_384
 ___
@@ -1883,6 +1940,9 @@ sqr_mont_384\$1:
 
 	mov	$n_ptr, $n0		# n0
 	lea	-128($b_org), $n_ptr	# control u-op density
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), %rdx
 	mov	8*1($a_ptr), @acc[7]
 	mov	8*2($a_ptr), @acc[8]
@@ -1941,6 +2001,9 @@ sqr_n_mul_mont_384\$1:
 .cfi_end_prologue
 
 	mov	$b_org, @acc[2]		# loop counter
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), %rdx
 	mov	8*1($a_ptr), @acc[7]
 	mov	8*2($a_ptr), @acc[8]
@@ -2018,6 +2081,9 @@ sqr_n_mul_mont_383\$1:
 .cfi_end_prologue
 
 	mov	$b_org, @acc[2]		# loop counter
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), %rdx
 	mov	8*1($a_ptr), @acc[7]
 	mov	8*2($a_ptr), @acc[8]
@@ -2199,7 +2265,7 @@ $code.=<<___;
 	mov	@acc[6], 8*5($b_ptr)
 	 mov	@acc[6], $hi
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=%rsi
 .cfi_endproc
 .size	__mulx_mont_383_nonred,.-__mulx_mont_383_nonred
 ___
@@ -2240,6 +2306,9 @@ sqr_mont_382x\$1:
 	mov	$a_ptr, 8*3(%rsp)
 
 	#################################
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]	# a->re
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]

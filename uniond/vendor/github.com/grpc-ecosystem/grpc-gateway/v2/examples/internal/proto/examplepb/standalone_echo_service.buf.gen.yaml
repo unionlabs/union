@@ -1,0 +1,8 @@
+version: v1
+plugins:
+  - plugin: grpc-gateway
+    out: .
+    opt:
+      - paths=source_relative
+      - standalone=true
+      - grpc_api_configuration=examples/internal/proto/examplepb/standalone_echo_service.yaml

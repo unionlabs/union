@@ -1,0 +1,37 @@
+project_name: cometbft
+
+env:
+  # Require use of Go modules.
+  - GO111MODULE=on
+
+builds:
+  - id: "cometbft"
+    main: ./cmd/cometbft/main.go
+    ldflags:
+      - -s -w -X github.com/cometbft/cometbft/version.CMTSemVer={{ .Version }}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm
+      - arm64
+
+checksum:
+  name_template: SHA256SUMS-{{.Version}}.txt
+  algorithm: sha256
+
+release:
+  prerelease: auto
+  name_template: "v{{.Version}}"
+
+archives:
+  - files:
+      - LICENSE
+      - README.md
+      - UPGRADING.md
+      - SECURITY.md
+      - CHANGELOG.md

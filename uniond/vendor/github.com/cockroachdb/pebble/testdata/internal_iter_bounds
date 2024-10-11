@@ -1,0 +1,36 @@
+define
+a.SET.1:1
+a.SET.2:2
+b.SET.1:1
+b.SET.2:2
+c.SET.1:1
+c.SET.2:2
+d.SET.2:2
+----
+
+iter lower=b upper=c
+seek-ge d
+seek-prefix-ge d
+seek-lt c
+seek-lt b
+next
+prev
+next
+next
+next
+next
+next
+prev
+----
+.
+.
+b:1
+.
+a:2
+.
+a:2
+a:1
+b:2
+b:1
+.
+d:2

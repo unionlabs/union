@@ -534,12 +534,12 @@ func (node *Node) writeHashBytes(w io.Writer, version int64) error {
 		if node.leftNode == nil || node.rightNode == nil {
 			return ErrEmptyChild
 		}
-
-		if err := encoding.Encode32BytesHash(w, node.leftNode.hash); err != nil {
+		err = encoding.Encode32BytesHash(w, node.leftNode.hash)
+		if err != nil {
 			return fmt.Errorf("writing left hash, %w", err)
 		}
-
-		if err := encoding.Encode32BytesHash(w, node.rightNode.hash); err != nil {
+		err = encoding.Encode32BytesHash(w, node.rightNode.hash)
+		if err != nil {
 			return fmt.Errorf("writing right hash, %w", err)
 		}
 	}
@@ -604,7 +604,7 @@ func (node *Node) writeBytes(w io.Writer) error {
 			return fmt.Errorf("writing value, %w", err)
 		}
 	} else {
-		err = encoding.EncodeBytes(w, node.hash)
+		err = encoding.Encode32BytesHash(w, node.hash)
 		if err != nil {
 			return fmt.Errorf("writing hash, %w", err)
 		}
@@ -624,7 +624,7 @@ func (node *Node) writeBytes(w io.Writer) error {
 			return fmt.Errorf("writing mode, %w", err)
 		}
 		if mode&ModeLegacyLeftNode != 0 { // legacy leftNodeKey
-			err = encoding.EncodeBytes(w, node.leftNodeKey)
+			err = encoding.Encode32BytesHash(w, node.leftNodeKey)
 			if err != nil {
 				return fmt.Errorf("writing the legacy left node key, %w", err)
 			}
@@ -643,7 +643,7 @@ func (node *Node) writeBytes(w io.Writer) error {
 			return ErrRightNodeKeyEmpty
 		}
 		if mode&ModeLegacyRightNode != 0 { // legacy rightNodeKey
-			err = encoding.EncodeBytes(w, node.rightNodeKey)
+			err = encoding.Encode32BytesHash(w, node.rightNodeKey)
 			if err != nil {
 				return fmt.Errorf("writing the legacy right node key, %w", err)
 			}

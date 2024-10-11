@@ -202,7 +202,7 @@ func (e *Encoder) nextBlock(final bool) error {
 			return nil
 		}
 		if final && len(s.filling) > 0 {
-			s.current = e.EncodeAll(s.filling, s.current[:0])
+			s.current = e.encodeAll(s.encoder, s.filling, s.current[:0])
 			var n2 int
 			n2, s.err = s.w.Write(s.current)
 			if s.err != nil {
@@ -469,6 +469,15 @@ func (e *Encoder) Close() error {
 // Data compressed with EncodeAll can be decoded with the Decoder,
 // using either a stream or DecodeAll.
 func (e *Encoder) EncodeAll(src, dst []byte) []byte {
+	e.init.Do(e.initialize)
+	enc := <-e.encoders
+	defer func() {
+		e.encoders <- enc
+	}()
+	return e.encodeAll(enc, src, dst)
+}
+
+func (e *Encoder) encodeAll(enc encoder, src, dst []byte) []byte {
 	if len(src) == 0 {
 		if e.o.fullZero {
 			// Add frame header.
@@ -491,13 +500,7 @@ func (e *Encoder) EncodeAll(src, dst []byte) []byte {
 		}
 		return dst
 	}
-	e.init.Do(e.initialize)
-	enc := <-e.encoders
-	defer func() {
-		// Release encoder reference to last block.
-		// If a non-single block is needed the encoder will reset again.
-		e.encoders <- enc
-	}()
+
 	// Use single segments when above minimum window and below window size.
 	single := len(src) <= e.o.windowSize && len(src) > MinWindowSize
 	if e.o.single != nil {

@@ -1,0 +1,499 @@
+# Single compaction and flush pair for a single node / store combination.
+#
+# Use a combination of [n1,pebble,s1] and [n1,s1,pebble] to mimic the two
+# formats we see in production.
+
+
+log
+I211215 00:00:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n1,pebble,s1] 1216510  [JOB 1] compacting(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=0.99;  OverlappingRatio: Single 8.03, Multi 25.05
+I211215 00:00:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n1,s1,pebble] 1216554  [JOB 1] [JOB 1] compacted(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=1.01 -> L3 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+
+I211215 00:01:10.000000 21136 3@vendor/github.com/cockroachdb/pebble/event.go:599 ⋮ [n1,s1,pebble] 24 [JOB 2] flushing 2 memtables (1.5MB) to L0
+I211215 00:01:20.000000 21136 3@vendor/github.com/cockroachdb/pebble/event.go:603 ⋮ [n1,pebble,s1] 26 [JOB 2] flushed 2 memtables (1.5MB) to L0 [1535806] (1.3MB), in 0.2s, output rate 5.8MB/s
+----
+0.log
+
+summarize
+----
+node: 1, store: 1
+   from: 211215 00:00
+     to: 211215 00:01
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L2      L3         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+node: 1, store: 1
+   from: 211215 00:01
+     to: 211215 00:02
+  r-amp: NaN
+_kind______from______to_____________________________________count___bytes______time
+flush                L0                                         1   1.3MB       10s
+total                                                           1   1.3MB       10s
+
+# Same as the previous case, except that the start and end events are are split
+# across multiple files (one log line per file).
+
+reset
+----
+
+log
+I211215 00:00:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n1,bars,s1,foos] 1216510  [JOB 1] compacting(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=0.99;  OverlappingRatio: Single 8.03, Multi 25.05
+----
+0.log
+
+log
+I211215 00:00:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n1,s1,foos] 1216554  [JOB 1] [JOB 1] compacted(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=1.01 -> L3 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+----
+1.log
+
+log
+I211215 00:01:10.000000 21136 3@vendor/github.com/cockroachdb/pebble/event.go:599 ⋮ [n1,s1] 24 [JOB 2] flushing 2 memtables (1.5MB) to L0
+----
+2.log
+
+log
+I211215 00:01:20.000000 21136 3@vendor/github.com/cockroachdb/pebble/event.go:603 ⋮ [n1,pebble,s1] 26 [JOB 2] flushed 2 memtables (1.5MB) to L0 [1535806] (1.3MB), in 0.2s, output rate 5.8MB/s
+----
+3.log
+
+summarize
+----
+node: 1, store: 1
+   from: 211215 00:00
+     to: 211215 00:01
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L2      L3         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+node: 1, store: 1
+   from: 211215 00:01
+     to: 211215 00:02
+  r-amp: NaN
+_kind______from______to_____________________________________count___bytes______time
+flush                L0                                         1   1.3MB       10s
+total                                                           1   1.3MB       10s
+
+# Read amplification from the Cockroach log, one within an existing window,
+# another outside of the existing window. The latter is not included.
+
+reset
+----
+
+log
+I211215 00:00:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n1,pebble,s1] 1216510  [JOB 1] compacting(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=0.99;  OverlappingRatio: Single 8.03, Multi 25.05
+I211215 00:00:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n1,pebble,s1] 1216554  [JOB 1] [JOB 1] compacted(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=1.01 -> L3 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+----
+0.log
+
+log
+I211215 00:00:15.000000 434 kv/kvserver/store.go:3251 ⋮ [n1,s1] 31356
+      |                             |       |       |   ingested   |     moved    |    written   |       |    amp
+level | tables  size val-bl vtables | score |   in  | tables  size | tables  size | tables  size |  read |   r   w
+------+-----------------------------+-------+-------+--------------+--------------+--------------+-------+---------
+    0 |     0     0B     0B       0 |  0.00 |  70GB |   133   77MB |     0     0B |   19K   24GB |  4.2GB |  0  0.3
+    1 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |     0B |  0  0.0
+    2 |    14   34MB     0B       0 |  0.96 |  18GB |     0     0B |    10   17MB |   14K   49GB |   55GB |  1  2.7
+    3 |    42  207MB     0B       0 |  0.96 |  12GB |     0     0B |   280  939MB |  7.3K   43GB |   46GB |  1  3.4
+    4 |   264  1.5GB     0B       0 |  0.99 | 9.1GB |     6   18MB |   152  824MB |  4.5K   31GB |   35GB |  1  3.4
+    5 |  7.5K   23GB     0B       0 |  1.00 | 2.8GB |   26K  116GB |   301  1.8GB |   604  3.2GB |  3.2GB |  1  1.2
+    6 |   24K  164GB     0B       0 |     - |  98GB |   22K   70GB |     1  1.6KB |  3.8K  128GB |  135GB |  1  1.3
+total |   32K  188GB     0B       0 |     - | 257GB |   48K  187GB |   744  3.6GB |   49K  536GB |  278GB |  5  2.1
+-------------------------------------------------------------------------------------------------------------------
+WAL: 1 files (54MB)  in: 65GB  written: 70B (8% overhead)
+----
+1.log
+
+summarize
+----
+node: 1, store: 1
+   from: 211215 00:00
+     to: 211215 00:01
+  r-amp: 5.0
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L2      L3         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+
+# Long running compaction.
+
+reset
+----
+
+log
+I211215 00:01:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n1,s1,pebble] 1216510  [JOB 1] compacting(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=0.99;  OverlappingRatio: Single 8.03, Multi 25.05
+I211215 00:03:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n1,pebble,s1] 1216554  [JOB 1] [JOB 1] compacted(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=1.01 -> L3 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+----
+0.log
+
+summarize long-running=1m
+----
+node: 1, store: 1
+   from: 211215 00:01
+     to: 211215 00:02
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L2      L3         1       0       0       0       1    13MB    13MB      0B      0B     2m10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B     2m10s
+long-running events (descending runtime):
+_kind________from________to_______job______type_____start_______end____dur(s)_____bytes:
+compact        L2        L3         1   default  00:01:10  00:03:20       130      13MB
+
+# Single node, multiple stores.
+
+reset
+----
+
+log
+I211215 00:01:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n1,pebble,s1] 1216510  [JOB 1] compacting(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=0.99;  OverlappingRatio: Single 8.03, Multi 25.05
+I211215 00:01:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n1,pebble,s1] 1216554  [JOB 1] [JOB 1] compacted(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=1.01 -> L3 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+
+I211215 00:01:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n1,pebble,s2] 1216510  [JOB 2] compacting(default) L3 [442555] (4.2MB) + L4 [445853] (8.4MB)
+I211215 00:01:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n1,pebble,s2] 1216554  [JOB 2] compacted(default) L3 [442555] (4.2MB) + L4 [445853] (8.4MB) -> L4 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+----
+0.log
+
+summarize
+----
+node: 1, store: 1
+   from: 211215 00:01
+     to: 211215 00:02
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L2      L3         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+node: 1, store: 2
+   from: 211215 00:01
+     to: 211215 00:02
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L3      L4         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+
+# Multiple nodes, single stores. Two separate pebble logs.
+
+reset
+----
+
+log
+I211215 00:01:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n1,pebble,s1] 1216510  [JOB 1] compacting(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=0.99;  OverlappingRatio: Single 8.03, Multi 25.05
+I211215 00:01:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n1,pebble,s1] 1216554  [JOB 1] [JOB 1] compacted(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=1.01 -> L3 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+----
+0.log
+
+log
+I211215 00:01:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n2,pebble,s1] 1216510  [JOB 1] compacting(default) L3 [442555] (4.2MB) + L4 [445853] (8.4MB)
+I211215 00:01:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n2,pebble,s1] 1216554  [JOB 1] compacted(default) L3 [442555] (4.2MB) + L4 [445853] (8.4MB) -> L4 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+----
+1.log
+
+summarize
+----
+node: 1, store: 1
+   from: 211215 00:01
+     to: 211215 00:02
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L2      L3         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+node: 2, store: 1
+   from: 211215 00:01
+     to: 211215 00:02
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L3      L4         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+
+# Multiple nodes, multiple stores. Two separate pebble logs. Output is sorted by
+# (time, node, store).
+
+reset
+----
+
+log
+I211215 00:01:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n1,pebble,s1] 1216510  [JOB 1] compacting(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=0.99;  OverlappingRatio: Single 8.03, Multi 25.05
+I211215 00:01:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n1,pebble,s1] 1216554  [JOB 1] [JOB 1] compacted(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=1.01 -> L3 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+
+I211215 00:02:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n1,pebble,s2] 1216510  [JOB 2] compacting(default) L1 [442555] (4.2MB) + L2 [445853] (8.4MB)
+I211215 00:02:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n1,pebble,s2] 1216554  [JOB 2] compacted(default) L1 [442555] (4.2MB) + L2 [445853] (8.4MB) -> L2 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+----
+0.log
+
+log
+I211215 00:00:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n2,pebble,s1] 1216510  [JOB 1] compacting(default) L3 [442555] (4.2MB) + L4 [445853] (8.4MB)
+I211215 00:00:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n2,pebble,s1] 1216554  [JOB 1] compacted(default) L3 [442555] (4.2MB) + L4 [445853] (8.4MB) -> L4 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+
+I211215 00:02:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n2,pebble,s2] 1216510  [JOB 2] compacting(default) L4 [442555] (4.2MB) + L5 [445853] (8.4MB)
+I211215 00:02:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n2,pebble,s2] 1216554  [JOB 2] compacted(default) L4 [442555] (4.2MB) + L5 [445853] (8.4MB) -> L5 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+----
+1.log
+
+summarize
+----
+node: 2, store: 1
+   from: 211215 00:00
+     to: 211215 00:01
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L3      L4         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+node: 1, store: 1
+   from: 211215 00:01
+     to: 211215 00:02
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L2      L3         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+node: 1, store: 2
+   from: 211215 00:02
+     to: 211215 00:03
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L1      L2         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+node: 2, store: 2
+   from: 211215 00:02
+     to: 211215 00:03
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L4      L5         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+
+# Log lines with an absent node / store are aggregated.
+
+reset
+----
+
+log
+I211215 00:01:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n?,pebble,s?] 1216510  [JOB 1] compacting(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=0.99;  OverlappingRatio: Single 8.03, Multi 25.05
+I211215 00:01:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n?,pebble,s?] 1216554  [JOB 1] [JOB 1] compacted(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=1.01 -> L3 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+----
+0.log
+
+log
+I211215 00:01:15.000000 434 kv/kvserver/store.go:3251 ⋮ [n?,s?] 31356
+      |                             |       |       |   ingested   |     moved    |    written   |       |    amp
+level | tables  size val-bl vtables | score |   in  | tables  size | tables  size | tables  size |  read |   r   w
+------+-----------------------------+-------+-------+--------------+--------------+--------------+-------+---------
+    0 |     0     0B     0B       0 |  0.00 |  70GB |   133   77MB |     0     0B |   19K   24GB |  4.2GB |  0  0.3
+    1 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |     0B |  0  0.0
+    2 |    14   34MB     0B       0 |  0.96 |  18GB |     0     0B |    10   17MB |   14K   49GB |   55GB |  1  2.7
+    3 |    42  207MB     0B       0 |  0.96 |  12GB |     0     0B |   280  939MB |  7.3K   43GB |   46GB |  1  3.4
+    4 |   264  1.5GB     0B       0 |  0.99 | 9.1GB |     6   18MB |   152  824MB |  4.5K   31GB |   35GB |  1  3.4
+    5 |  7.5K   23GB     0B       0 |  1.00 | 2.8GB |   26K  116GB |   301  1.8GB |   604  3.2GB |  3.2GB |  1  1.2
+    6 |   24K  164GB     0B       0 |     - |  98GB |   22K   70GB |     1  1.6KB |  3.8K  128GB |  135GB |  1  1.3
+total |   32K  188GB     0B       0 |     - | 257GB |   48K  187GB |   744  3.6GB |   49K  536GB |  278GB |  5  2.1
+-------------------------------------------------------------------------------------------------------------------
+WAL: 1 files (54MB)  in: 65GB  written: 70B (8% overhead)
+----
+1.log
+
+summarize
+----
+node: ?, store: ?
+   from: 211215 00:01
+     to: 211215 00:02
+  r-amp: 5.0
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L2      L3         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+
+# The same Job ID interleaved for multiple nodes / stores.
+
+reset
+----
+
+log
+I211215 00:01:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n1,pebble,s1] 1216510  [JOB 1] compacting(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=0.99;  OverlappingRatio: Single 8.03, Multi 25.05
+I211215 00:02:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n2,pebble,s2] 1216510  [JOB 1] compacting(default) L4 [442555] (4.2MB) Score=1.01 + L5 [445853] (8.4MB) Score=0.99;  OverlappingRatio: Single 8.03, Multi 25.05
+I211215 00:01:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n1,pebble,s1] 1216554  [JOB 1] [JOB 1] compacted(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=1.01 -> L3 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+I211215 00:02:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n2,pebble,s2] 1216554  [JOB 1] compacted(default) L4 [442555] (4.2MB) + L5 [445853] (8.4MB) -> L5 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+----
+0.log
+
+summarize
+----
+node: 1, store: 1
+   from: 211215 00:01
+     to: 211215 00:02
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L2      L3         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+node: 2, store: 2
+   from: 211215 00:02
+     to: 211215 00:03
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L4      L5         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+
+# Read amp matching should remain backwards compatible.
+
+reset
+----
+
+log
+I220301 00:00:10.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1845 ⋮ [n1,pebble,s1] 1216510  [JOB 1] compacting(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=0.99;  OverlappingRatio: Single 8.03, Multi 25.05
+I220301 00:00:20.000000 51831533 3@vendor/github.com/cockroachdb/pebble/compaction.go:1886 ⋮ [n1,pebble,s1] 1216554  [JOB 1] [JOB 1] compacted(default) L2 [442555] (4.2MB) Score=1.01 + L3 [445853] (8.4MB) Score=1.01 -> L3 [445883 445887] (13MB), in 0.3s, output rate 42MB/s
+----
+0.log
+
+log
+I220301 00:00:30.000000 200 1@gossip/gossip.go:1500 ⋮ [n1] 74  node has connected to cluster via gossip
+I220301 00:00:30.000000 200 kv/kvserver/stores.go:269 ⋮ [n1] 75  wrote 0 node addresses to persistent storage
+I220301 00:00:30.000000 319 2@server/status/runtime.go:569 ⋮ [n1] 76  runtime stats: 154 MiB RSS, 273 goroutines (stacks: 2.5 MiB), 42 MiB/71 MiB Go alloc/total (heap fragmentation: 11 MiB, heap reserved: 3.9 MiB, heap released: 4.2 MiB), 3.2 MiB/5.6 MiB CGO alloc/total (0.0 CGO/sec), 0.0/0.0 %(u/s)time, 0.0 %gc (0x), 425 KiB/500 KiB (r/w)net
+I220301 00:00:30.000000 319 2@server/status/runtime.go:569 ⋮ [n1] 77  runtime stats: 159 MiB RSS, 266 goroutines (stacks: 3.3 MiB), 42 MiB/78 MiB Go alloc/total (heap fragmentation: 12 MiB, heap reserved: 6.7 MiB, heap released: 64 MiB), 4.4 MiB/6.8 MiB CGO alloc/total (0.4 CGO/sec), 2.9/2.1 %(u/s)time, 0.0 %gc (0x), 335 KiB/323 KiB (r/w)net
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +      |                             |       |       |   ingested   |     moved    |    written   |       |    amp
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +level | tables  size val-bl vtables | score |   in  | tables  size | tables  size | tables  size |  read |   r   w
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +------+-----------------------------+-------+-------+--------------+--------------+--------------+-------+---------
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +    0 |     0     0B     0B       0 |  0.00 |   56B |     0     0B |     0     0B |     2  1.2KB |    0B |   0 22.6
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +    1 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +    2 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +    3 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +    4 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +    5 |     0     0B     0B       0 |  0.00 |    0B |     0     0B |     0     0B |     0     0B |    0B |   0  0.0
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +    6 |     1   639B     0B       0 |     - | 1.2KB |     0     0B |     0     0B |     1   639B | 1.2KB |   1  0.5
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +total |     1   639B     0B       0 |     - |   84B |     0     0B |     0     0B |     3  1.9KB | 1.2KB |   1 23.7
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +-------------------------------------------------------------------------------------------------------------------
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +WAL: 1 files (28B)  in: 34B  written: 84B (147% overhead)
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +Flushes: 2
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +Compactions: 1  estimated debt: 0B  in progress: 0 (0B)
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +             default: 1  delete: 0  elision: 0  move: 0  read: 0  rewrite: 0  multi-level: 0
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +MemTables: 1 (256KB)  zombie: 2 (512KB)
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +Zombie tables: 2 (1.2KB)
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +Block cache: 5 entries (1.0KB)  hit rate: 42.9%
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +Table cache: 2 entries (1.6KB)  hit rate: 66.7%
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +Snapshots: 0  earliest seq num: 0
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +Table iters: 2
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +Filter utility: 0.0%
+I220301 00:00:30.000000 315 kv/kvserver/store.go:2713 ⋮ [n1,s1] 78 +Ingestions: 0  as flushable: 0 (0B in 0 tables)
+----
+1.log
+
+summarize
+----
+node: 1, store: 1
+   from: 220301 00:00
+     to: 220301 00:01
+  r-amp: 1.0
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L2      L3         1       0       0       0       1    13MB    13MB      0B      0B       10s
+total                           1       0       0       0       1    13MB    13MB      0B      0B       10s
+
+reset
+----
+
+log
+I220228 14:44:31.497272 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1366 ⋮ [n24,pebble,s24] 33267888  [JOB 10197855] flushing 1 memtable (64MB) to L0
+I220228 14:44:31.497485 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267889  [JOB 10197855] flushing: sstable created 21731018
+I220228 14:44:31.527038 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267892  [JOB 10197855] flushing: sstable created 21731020
+I220228 14:44:31.542944 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267894  [JOB 10197855] flushing: sstable created 21731021
+I220228 14:44:31.553581 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267895  [JOB 10197855] flushing: sstable created 21731022
+I220228 14:44:31.554585 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267896  [JOB 10197855] flushing: sstable created 21731023
+I220228 14:44:31.569928 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267897  [JOB 10197855] flushing: sstable created 21731024
+I220228 14:44:31.624309 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267899  [JOB 10197855] flushing: sstable created 21731025
+I220228 14:44:31.685531 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267901  [JOB 10197855] flushing: sstable created 21731026
+I220228 14:44:31.686009 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267902  [JOB 10197855] flushing: sstable created 21731027
+I220228 14:44:31.686415 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267903  [JOB 10197855] flushing: sstable created 21731028
+I220228 14:44:31.780892 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267906  [JOB 10197855] flushing: sstable created 21731030
+I220228 14:44:31.790911 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267907  [JOB 10197855] flushing: sstable created 21731031
+I220228 14:44:31.904614 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267911  [JOB 10197855] flushing: sstable created 21731033
+I220228 14:44:31.905835 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267912  [JOB 10197855] flushing: sstable created 21731034
+I220228 14:44:31.906860 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267913  [JOB 10197855] flushing: sstable created 21731035
+I220228 14:44:31.907602 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267914  [JOB 10197855] flushing: sstable created 21731036
+I220228 14:44:32.019173 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267920  [JOB 10197855] flushing: sstable created 21731037
+I220228 14:44:32.019714 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267921  [JOB 10197855] flushing: sstable created 21731038
+I220228 14:44:32.020161 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267922  [JOB 10197855] flushing: sstable created 21731039
+I220228 14:44:32.100117 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267925  [JOB 10197855] flushing: sstable created 21731040
+I220228 14:44:32.100609 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267926  [JOB 10197855] flushing: sstable created 21731041
+I220228 14:44:32.101065 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267927  [JOB 10197855] flushing: sstable created 21731042
+I220228 14:44:32.101494 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267928  [JOB 10197855] flushing: sstable created 21731043
+I220228 14:44:32.102569 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267929  [JOB 10197855] flushing: sstable created 21731044
+I220228 14:44:32.106284 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1985 ⋮ [n24,pebble,s24] 33267930  [JOB 10197855] flushing: sstable created 21731045
+I220228 14:44:32.138686 18460916022 3@vendor/github.com/cockroachdb/pebble/compaction.go:1423 ⋮ [n24,pebble,s24] 33267931  [JOB 10197855] flushed 1 memtable to L0 [21731018 21731020 21731021 21731022 21731023 21731024 21731025 21731026 21731027 21731028 21731030 21731031 21731033 21731034 21731035 21731036 21731037 21731038 21731039 21731040 21731041 21731042 21731043 21731044 21731045] (19MB), in 0.6s, output rate 31MB/s
+----
+0.log
+
+summarize
+----
+node: 24, store: 24
+   from: 220228 14:44
+     to: 220228 14:45
+  r-amp: NaN
+_kind______from______to_____________________________________count___bytes______time
+flush                L0                                         1    19MB        0s
+total                                                           1    19MB        0s
+
+reset
+----
+
+log
+I220228 16:01:22.487906 18476248525 3@vendor/github.com/cockroachdb/pebble/ingest.go:637 ⋮ [n24,pebble,s24] 33430782  [JOB 10211226] ingested L0:21818678 (1.8KB), L0:21818683 (1.2KB), L0:21818679 (1.6KB), L0:21818680 (1.1KB), L0:21818681 (1.1KB), L0:21818682 (160MB)
+45127:I220228 15:58:45.538681 18475981755 3@vendor/github.com/cockroachdb/pebble/ingest.go:637 ⋮ [n24,pebble,s24] 33424719  [JOB 10210743] ingested L0:21814543 (1.4KB), L0:21814548 (1.2KB), L5:21814544 (1.4KB), L5:21814545 (1.1KB), L5:21814546 (1.1KB), L0:21814547 (140MB)
+----
+0.log
+
+summarize
+----
+node: 24, store: 24
+   from: 220228 15:58
+     to: 220228 15:59
+  r-amp: NaN
+_kind______from______to_____________________________________count___bytes______time
+ingest               L0                                         3   140MB
+ingest               L5                                         3   3.6KB
+total                                                           6   140MB        0s
+node: 24, store: 24
+   from: 220228 16:01
+     to: 220228 16:02
+  r-amp: NaN
+_kind______from______to_____________________________________count___bytes______time
+ingest               L0                                         6   160MB
+total                                                           6   160MB        0s
+
+reset
+----
+
+log
+I220907 00:27:21.579807 15082709999 3@vendor/github.com/cockroachdb/pebble/event.go:587 ⋮ [n15,pebble,s15] 2736197  [JOB 743692] compacting(delete-only) L6 [18323385] (11MB)
+I220907 00:27:21.580169 15082709999 3@vendor/github.com/cockroachdb/pebble/event.go:591 ⋮ [n15,pebble,s15] 2736198  [JOB 743692] compacted(delete-only) L6 [18323385] (11MB) -> L6 [] (0B), in 0.0s, output rate 0 B/s
+
+I220907 00:27:21.631145 15082710355 3@vendor/github.com/cockroachdb/pebble/event.go:587 ⋮ [n15,pebble,s15] 2736201  [JOB 743694] compacting(default) L5 [18323582] (1.8KB) + L6 [17770912] (128MB)
+I220907 00:27:22.729839 15082710355 3@vendor/github.com/cockroachdb/pebble/event.go:591 ⋮ [n15,pebble,s15] 2736208  [JOB 743694] compacted(default) L5 [18323582] (1.8KB) + L6 [17770912] (128MB) -> L6 [18323586] (3.6MB), in 1.1s, output rate 3.3MB/s
+
+I220907 00:27:21.630546 15082710354 3@vendor/github.com/cockroachdb/pebble/event.go:587 ⋮ [n15,pebble,s15] 2736199  [JOB 743693] compacting(move) L5 [18323585] (4.0MB) + L6 [] (0B)
+I220907 00:27:21.631002 15082710354 3@vendor/github.com/cockroachdb/pebble/event.go:591 ⋮ [n15,pebble,s15] 2736200  [JOB 743693] compacted(move) L5 [18323585] (4.0MB) + L6 [] (0B) -> L6 [18323585] (4.0MB), in 0.0s, output rate 50GB/s
+----
+0.log
+
+summarize
+----
+node: 15, store: 15
+   from: 220907 00:27
+     to: 220907 00:28
+  r-amp: NaN
+_kind______from______to___default____move___elide__delete___count___in(B)__out(B)__mov(B)__del(B)______time
+compact      L5      L6         1       1       0       0       2   128MB   3.6MB   4.0MB      0B        1s
+compact      L6      L6         0       0       0       1       1      0B      0B      0B    11MB        0s
+total                           1       1       0       1       3   128MB   3.6MB   4.0MB    11MB        1s
+
+reset
+----
+
+log
+I230831 04:13:28.824280 3780 3@pebble/event.go:685 ⋮ [n10,s10,pebble] 365  [JOB 226] flushed 6 ingested flushables L0:024334 (1.5KB) + L0:024339 (1.0KB) + L0:024335 (1.9KB) + L0:024336 (1.1KB) + L0:024337 (1.1KB) + L0:024338 (12KB) in 0.0s (0.0s total), output rate 67MB/s
+
+I230831 04:13:28.689575 3717 3@pebble/event.go:685 ⋮ [n10,s10,pebble] 345  [JOB 219] flushed 6 ingested flushables L0:024323 (1.5KB) + L0:024328 (1.0KB) + L0:024324 (2.0KB) + L2:024325 (1.1KB) + L2:024326 (1.1KB) + L0:024327 (54KB) in 0.0s (0.0s total), output rate 152MB/s
+----
+0.log
+
+summarize
+----
+node: 10, store: 10
+   from: 230831 04:13
+     to: 230831 04:14
+  r-amp: NaN
+_kind______from______to_____________________________________count___bytes______time
+ingest               L0                                        10    77KB
+ingest               L2                                         2   2.2KB
+total                                                          12    79KB        0s

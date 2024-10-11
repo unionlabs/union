@@ -1,0 +1,24 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    testonly = True,
+    srcs = [
+        "getters.go",
+        "getters_block.go",
+        "getters_checkpoint.go",
+        "getters_validator.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/testing",
+    visibility = ["//beacon-chain/state:__subpackages__"],
+    deps = [
+        "//beacon-chain/state:go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//encoding/bytesutil:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+    ],
+)

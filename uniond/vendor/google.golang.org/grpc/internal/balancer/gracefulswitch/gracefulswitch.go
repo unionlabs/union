@@ -169,7 +169,6 @@ func (gsb *Balancer) latestBalancer() *balancerWrapper {
 func (gsb *Balancer) UpdateClientConnState(state balancer.ClientConnState) error {
 	// The resolver data is only relevant to the most recent LB Policy.
 	balToUpdate := gsb.latestBalancer()
-
 	gsbCfg, ok := state.BalancerConfig.(*lbConfig)
 	if ok {
 		// Switch to the child in the config unless it is already active.

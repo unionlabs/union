@@ -106,6 +106,7 @@ $dwarf=0 if($win64);
 my $current_segment;
 my $current_function;
 my %globals;
+my $ret_clobber;
 
 { package opcode;	# pick up opcodes
     sub re {
@@ -154,12 +155,21 @@ my %globals;
 		"$self->{op}";
 	    } elsif ($self->{op} eq "ret") {
 		my $epilogue = "";
+		my $reg = $ret_clobber || "rdx";
+		$ret_clobber = undef;
 		if ($win64 && $current_function->{abi} eq "svr4"
 			   && !$current_function->{unwind}) {
 		    $epilogue = "movq	8(%rsp),%rdi\n\t" .
 				"movq	16(%rsp),%rsi\n\t";
 		}
-		$epilogue . ".byte	0xf3,0xc3";
+		$epilogue . "\n#ifdef	__SGX_LVI_HARDENING__\n".
+				"	popq	%$reg\n"		.
+				"	lfence\n"		.
+				"	jmpq	*%$reg\n"	.
+				"	ud2\n"			.
+				"#else\n"			.
+				"	.byte	0xf3,0xc3\n"	.
+				"#endif";
 	    } elsif ($self->{op} eq "call" && !$elf && $current_segment eq ".init") {
 		".p2align\t3\n\t.quad";
 	    } else {
@@ -169,12 +179,21 @@ my %globals;
 	    $self->{op} =~ s/^movz/movzx/;
 	    if ($self->{op} eq "ret") {
 		$self->{op} = "";
+		my $reg = $ret_clobber || "rdx";
+		$ret_clobber = undef;
 		if ($win64 && $current_function->{abi} eq "svr4"
 			   && !$current_function->{unwind}) {
 		    $self->{op} = "mov	rdi,QWORD$PTR\[8+rsp\]\t;WIN64 epilogue\n\t".
 				  "mov	rsi,QWORD$PTR\[16+rsp\]\n\t";
 		}
-		$self->{op} .= "DB\t0F3h,0C3h\t\t;repret";
+		$self->{op} .= "\nifdef	__SGX_LVI_HARDENING__\n".
+				"	pop	$reg\n"		.
+				"	lfence\n"		.
+				"	jmp	$reg\n"		.
+				"	ud2\n"			.
+				"else\n"			.
+				"	DB\t0F3h,0C3h\n"	.
+				"endif";
 	    } elsif ($self->{op} =~ /^(pop|push)f/) {
 		$self->{op} .= $self->{sz};
 	    } elsif ($self->{op} eq "call" && $current_segment eq ".CRT\$XCU") {
@@ -393,6 +412,7 @@ my %globals;
 	    $ret = $self;
 	    $$line = substr($$line,@+[0]); $$line =~ s/^\s+//;
 
+	    $self->{value} =~ s/^(\w+\$\w*)/$decor\1/ if ($flavour eq "macosx");
 	    $self->{value} =~ s/^\.L/$decor/;
 	}
 	$ret;
@@ -489,6 +509,9 @@ my %globals;
 
 	    $self->{value} =~ s/\@PLT// if (!$elf);
 	    $self->{value} =~ s/([_a-z][_a-z0-9\$]*)/$globals{$1} or $1/gei;
+	    if ($flavour eq "macosx" and $self->{value} !~ /\.L/) {
+		$self->{value} =~ s/(\w+\$\w*)/$decor\1/g;
+	    }
 	    $self->{value} =~ s/\.L/$decor/g;
 	    $self->{opcode} = $opcode;
 	}
@@ -1116,6 +1139,10 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 			if	($flavour eq "macosx")	{ $self->{value} = ".mod_init_func"; }
 			elsif	($flavour eq "mingw64")	{ $self->{value} = ".section\t.ctors"; }
 		    }
+		    if (!$elf && $current_segment eq ".rodata") {
+			if	($flavour eq "macosx")	{ $self->{value} = ".section\t__TEXT,__const"; }
+			elsif	($flavour eq "mingw64")	{ $self->{value} = ".section\t.rdata"; }
+		    }
 		} elsif ($dir =~ /\.(text|data)/) {
 		    $current_segment=".$1";
 		} elsif ($dir =~ /\.hidden/) {
@@ -1158,20 +1185,21 @@ my @pdata_seg = (".section	.pdata", ".align	4");
 		/\.section/ && do { my $v=undef;
 				    $$line =~ s/([^,]*).*/$1/;
 				    $$line = ".CRT\$XCU" if ($$line eq ".init");
+				    $$line = ".rdata" if ($$line eq ".rodata");
+				    my %align = ( p=>4, x=>8, r=>256);
 				    if ($nasm) {
 					$v="section	$$line";
-					if ($$line=~/\.([px])data/) {
-					    $v.=" rdata align=";
-					    $v.=$1 eq "p"? 4 : 8;
+					if ($$line=~/\.([pxr])data/) {
+					    $v.=" rdata align=$align{$1}";
 					} elsif ($$line=~/\.CRT\$/i) {
 					    $v.=" rdata align=8";
 					}
 				    } else {
 					$v="$current_segment\tENDS\n" if ($current_segment);
 					$v.="$$line\tSEGMENT";
-					if ($$line=~/\.([px])data/) {
+					if ($$line=~/\.([pxr])data/) {
 					    $v.=" READONLY";
-					    $v.=" ALIGN(".($1 eq "p" ? 4 : 8).")" if ($masm>=$masmref);
+					    $v.=" ALIGN($align{$1})" if ($masm>=$masmref);
 					} elsif ($$line=~/\.CRT\$/i) {
 					    $v.=" READONLY ";
 					    $v.=$masm>=$masmref ? "ALIGN(8)" : "DWORD";
@@ -1488,6 +1516,10 @@ sub process {
 	next;
     }
 
+    if ($line =~ m|#\s*__SGX_LVI_HARDENING_CLOBBER__=(?:%?(r\w+))|) {
+	$ret_clobber = $1;
+    }
+
     $line =~ s|[#!].*$||;	# get rid of asm-style comments...
     $line =~ s|/\*.*\*/||;	# ... and C-style comments...
     $line =~ s|^\s+||;		# ... and skip white spaces in beginning
@@ -1584,12 +1616,14 @@ if ($masm) {
     print <<___;
 
 .section	.note.GNU-stack,"",\@progbits
+#ifndef	__SGX_LVI_HARDENING__
 .section	.note.gnu.property,"a",\@note
 	.long	4,2f-1f,5
 	.byte	0x47,0x4E,0x55,0
 1:	.long	0xc0000002,4,3
 .align	$align
 2:
+#endif
 ___
 }
 

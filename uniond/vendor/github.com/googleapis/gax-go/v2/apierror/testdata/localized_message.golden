@@ -1,0 +1,2 @@
+rpc error: code = InvalidArgument desc = br
+error details: name = LocalizedMessage locale = Foo msg = Bar

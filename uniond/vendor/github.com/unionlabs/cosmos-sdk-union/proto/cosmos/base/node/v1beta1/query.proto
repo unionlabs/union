@@ -1,0 +1,43 @@
+syntax = "proto3";
+package cosmos.base.node.v1beta1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/client/grpc/node";
+
+// Service defines the gRPC querier service for node related queries.
+service Service {
+  // Config queries for the operator configuration.
+  rpc Config(ConfigRequest) returns (ConfigResponse) {
+    option (google.api.http).get = "/cosmos/base/node/v1beta1/config";
+  }
+  // Status queries for the node status.
+  rpc Status(StatusRequest) returns (StatusResponse) {
+    option (google.api.http).get = "/cosmos/base/node/v1beta1/status";
+  }
+}
+
+// ConfigRequest defines the request structure for the Config gRPC query.
+message ConfigRequest {}
+
+// ConfigResponse defines the response structure for the Config gRPC query.
+message ConfigResponse {
+  string minimum_gas_price   = 1;
+  string pruning_keep_recent = 2;
+  string pruning_interval    = 3;
+  uint64 halt_height         = 4;
+}
+
+// StatusRequest defines the request structure for the status of a node.
+message StatusRequest {}
+
+// StatusResponse defines the response structure for the status of a node.
+message StatusResponse {
+  uint64                    earliest_store_height = 1; // earliest block height available in the store
+  uint64                    height                = 2; // current block height
+  google.protobuf.Timestamp timestamp             = 3 [(gogoproto.stdtime) = true]; // block height timestamp
+  bytes                     app_hash              = 4;                              // app hash of the current block
+  bytes                     validator_hash        = 5; // validator hash provided by the consensus header
+}

@@ -1,0 +1,32 @@
+run:
+  skip-dirs:
+  skip-files:
+
+linters-settings:
+  lll:
+    line-length: 120
+  staticcheck:
+    checks:
+      - all
+      - '-SA1019' # it is okay to use math/rand at times.
+  gosec:
+    excludes: # these are not relevant for us right now
+      - G114
+      - G204
+      - G306
+      - G404
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gofmt
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - staticcheck
+    - unconvert
+    - unused

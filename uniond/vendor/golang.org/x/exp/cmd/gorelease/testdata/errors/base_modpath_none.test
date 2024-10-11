@@ -1,0 +1,7 @@
+mod=example.com/basic/v2
+base=example.com/basic@none
+error=true
+-- want --
+usage: gorelease [-base=version] [-version=version]
+base version ("example.com/basic@none") cannot have version "none" with explicit module path
+For more information, run go doc golang.org/x/exp/cmd/gorelease

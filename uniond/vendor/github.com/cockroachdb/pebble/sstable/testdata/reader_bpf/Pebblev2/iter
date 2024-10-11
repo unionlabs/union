@@ -1,0 +1,56 @@
+# Test case for bug https://github.com/cockroachdb/pebble/issues/2036 Build
+# sstable with two-level index, with two data blocks in each lower-level index
+# block.
+build block-size=1 index-block-size=40 print-layout=true
+c@10.SET.10:cAT10
+d@7.SET.9:dAT7
+e@15.SET.8:eAT15
+f@7.SET.5:fAT7
+----
+index entries:
+ d@7: size 53
+   c@10: size 28
+   d@7: size 26
+ g: size 51
+   e@15: size 28
+   g: size 26
+
+iter
+first
+next
+next
+next
+----
+<c@10:10>
+<d@7:9>
+<e@15:8>
+<f@7:5>
+
+
+# The block property filter matches data block 2 and 4.
+iter block-property-filter=(7,8)
+first
+next
+----
+<d@7:9>
+<f@7:5>
+
+# Use the same block property filter, but use seeks to find these entries.
+# With the bug the second seek-ge below would step to the second lower-level
+# index block and only see the entry in the data block 4.
+iter block-property-filter=(7,8)
+set-bounds lower=a upper=c
+seek-ge a
+seek-ge b true
+set-bounds lower=c upper=g
+seek-ge c
+next
+next
+----
+.
+.
+.
+.
+<d@7:9>
+<f@7:5>
+.

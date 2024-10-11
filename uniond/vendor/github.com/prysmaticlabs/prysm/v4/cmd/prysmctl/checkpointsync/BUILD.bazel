@@ -1,0 +1,17 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "cmd.go",
+        "download.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/cmd/prysmctl/checkpointsync",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//api/client:go_default_library",
+        "//api/client/beacon:go_default_library",
+        "@com_github_sirupsen_logrus//:go_default_library",
+        "@com_github_urfave_cli_v2//:go_default_library",
+    ],
+)

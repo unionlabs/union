@@ -1,0 +1,7 @@
+FROM rust:1.51.0-slim as base
+WORKDIR /code
+ADD . .
+RUN cp flatc_debian_stretch flatc
+WORKDIR /code/tests
+RUN rustc --version
+RUN ./RustTest.sh

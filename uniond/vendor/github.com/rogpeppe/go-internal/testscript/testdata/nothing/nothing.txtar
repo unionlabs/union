@@ -1,0 +1,5 @@
+# Intentionally empty test script; used to test Params.WorkdirRoot
+
+-- README.md --
+This file exists so that a test for Params.WorkdirRoot can verify the existence of a file
+within WorkdirRoot/script-nothing once scripts have finished.

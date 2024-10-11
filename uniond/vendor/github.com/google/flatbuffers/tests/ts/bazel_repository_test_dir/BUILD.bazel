@@ -1,0 +1,32 @@
+load("@aspect_rules_js//js:defs.bzl", "js_test")
+load("@aspect_rules_js//npm:defs.bzl", "npm_link_package")
+load("@com_github_google_flatbuffers//:typescript.bzl", "flatbuffer_ts_library")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+
+npm_link_all_packages(name = "node_modules")
+
+npm_link_package(
+    name = "node_modules/flatbuffers",
+    src = "@com_github_google_flatbuffers//ts:flatbuffers",
+)
+
+flatbuffer_ts_library(
+    name = "one_fbs",
+    srcs = ["one.fbs"],
+)
+
+flatbuffer_ts_library(
+    name = "two_fbs",
+    srcs = ["two.fbs"],
+    deps = [":one_fbs"],
+)
+
+js_test(
+    name = "import_test",
+    data = [
+        "package.json",
+        ":node_modules/flatbuffers",
+        ":two_fbs",
+    ],
+    entry_point = "import_test.js",
+)

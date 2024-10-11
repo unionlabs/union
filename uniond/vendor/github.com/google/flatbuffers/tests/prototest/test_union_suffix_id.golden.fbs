@@ -1,0 +1,89 @@
+// Generated from test.proto
+
+namespace proto.test.test_namespace_suffix;
+
+/// Enum doc comment.
+enum ProtoEnum : int {
+  NUL = 0,
+  FOO = 1,
+  /// Enum 2nd value doc comment misaligned.
+  BAR = 5,
+}
+
+namespace proto.test.test_namespace_suffix.ProtoMessage_.OtherMessage_;
+
+enum ProtoEnum : int {
+  NUL = 0,
+  FOO = 1,
+  BAR = 2,
+  BAZ = 3,
+}
+
+namespace proto.test.test_namespace_suffix.ProtoMessage_;
+
+union RUnion {
+  /// doc comment for s.
+  proto.test.test_namespace_suffix.ImportedMessage,
+  /// doc comment for t on 2
+  /// lines.
+  proto.test.test_namespace_suffix.ProtoMessage_.OtherMessage,
+}
+
+namespace proto.test.test_namespace_suffix;
+
+table ImportedMessage {
+  a:int (id: 0);
+}
+
+/// 2nd table doc comment with
+/// many lines.
+table ProtoMessage {
+  c:int = 16 (id: 13);
+  d:long (id: 2);
+  p:uint (id: 22);
+  e:ulong (id: 3);
+  /// doc comment for f.
+  f:int = -1 (id: 4);
+  g:long (id: 5);
+  h:uint (id: 6);
+  q:ulong (id: 7);
+  i:int (id: 8);
+  j:long (id: 9);
+  /// doc comment for k.
+  k:bool (id: 10);
+  /// doc comment for l on 2
+  /// lines
+  l:string (required,id: 11);
+  m:[ubyte] (id: 12);
+  n:proto.test.test_namespace_suffix.ProtoMessage_.OtherMessage (id: 23);
+  o:[string] (id: 14);
+  z:proto.test.test_namespace_suffix.ImportedMessage (id: 15);
+  /// doc comment for r.
+  r:proto.test.test_namespace_suffix.ProtoMessage_.RUnion (id: 1);
+  outer_enum:proto.test.test_namespace_suffix.ProtoEnum (id: 16);
+  u:float = +inf (id: 17);
+  v:float = +inf (id: 18);
+  w:float = -inf (id: 19);
+  grades:[proto.test.test_namespace_suffix.ProtoMessage_.GradesEntry] (id: 20);
+  other_message_map:[proto.test.test_namespace_suffix.ProtoMessage_.OtherMessageMapEntry] (id: 21);
+}
+
+namespace proto.test.test_namespace_suffix.ProtoMessage_;
+
+table OtherMessage {
+  a:double (id: 0);
+  /// doc comment for b.
+  b:float = 3.14149 (id: 1);
+  foo_bar_baz:proto.test.test_namespace_suffix.ProtoMessage_.OtherMessage_.ProtoEnum (id: 2);
+}
+
+table GradesEntry {
+  key:string (key);
+  value:float;
+}
+
+table OtherMessageMapEntry {
+  key:string (key);
+  value:proto.test.test_namespace_suffix.ProtoMessage_.OtherMessage;
+}
+

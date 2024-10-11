@@ -1,0 +1,27 @@
+namespace RustNamerTest;
+
+table FieldTable {}
+
+union FieldUnion {
+  f :FieldTable (id: 0),
+}
+
+table RootTable {
+  field42 :FieldUnion (id: 1);
+}
+
+table PlayerStatEvent {}
+table PlayerSpectate {}
+table PlayerInputChange {}
+
+union GameMessage
+{
+    PlayerStatEvent,
+    PlayerSpectate,
+	PlayerInputChange
+}
+
+table GameMessageWrapper
+{
+	Message:GameMessage;
+}

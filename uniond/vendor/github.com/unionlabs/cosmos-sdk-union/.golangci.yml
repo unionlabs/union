@@ -1,0 +1,121 @@
+run:
+  tests: true
+  timeout: 15m
+  allow-parallel-runners: true
+  build-tags:
+    - e2e
+    - ledger
+    - test_ledger_mock
+
+linters:
+  disable-all: true
+  enable:
+    - dogsled
+    - errcheck
+    - errorlint
+    - copyloopvar
+    - gci
+    - goconst
+    - gocritic
+    - gofumpt
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - nolintlint
+    - revive
+    - staticcheck
+    - stylecheck
+    - thelper
+    - typecheck
+    - unconvert
+    - unused
+
+issues:
+  exclude-dirs:
+    - testutil/testdata
+  exclude-files:
+    - server/grpc/gogoreflection/fix_registration.go
+    - "fix_registration.go"
+    - ".*\\.pb\\.go$"
+    - ".*\\.pb\\.gw\\.go$"
+    - ".*\\.pulsar\\.go$"
+    - crypto/keys/secp256k1/internal/*
+    - types/coin_regex.go
+  exclude-rules:
+    - text: "ST1003:" # We are fine with our current naming
+      linters:
+        - stylecheck
+    # FIXME: Disabled until golangci-lint updates stylecheck with this fix:
+    # https://github.com/dominikh/go-tools/issues/389
+    - text: "ST1016:" # Ok with inconsistent receiver names
+      linters:
+        - stylecheck
+    - path: "migrations" # migraitions always use deprecated code
+      text: "SA1019:"
+      linters:
+        - staticcheck
+    - text: "SA1019: codec.NewAminoCodec is deprecated" # TODO remove once migration path is set out
+      linters:
+        - staticcheck
+    - text: "SA1019: legacybech32.MustMarshalPubKey" # TODO remove once ready to remove from the sdk
+      linters:
+        - staticcheck
+    - text: "SA1019: legacybech32.MarshalPubKey" # TODO remove once ready to remove from the sdk
+      linters:
+        - staticcheck
+    - text: "SA1019: legacybech32.UnmarshalPubKey" # TODO remove once ready to remove from the sdk
+      linters:
+        - staticcheck
+    - text: "SA1019: params.SendEnabled is deprecated" # TODO remove once ready to remove from the sdk
+      linters:
+        - staticcheck
+    - text: "G115: integer overflow conversion" # We are doing this everywhere.
+      linters:
+        - gosec
+    - text: "leading space"
+      linters:
+        - nolintlint
+  max-issues-per-linter: 10000
+  max-same-issues: 10000
+
+linters-settings:
+  gci:
+    custom-order: true
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - prefix(cosmossdk.io)
+      - prefix(github.com/cosmos/cosmos-sdk)
+  revive:
+    rules:
+      - name: redefines-builtin-id
+        disabled: true
+
+  gosec:
+    # Available rules: https://github.com/securego/gosec#available-rules
+    excludes:
+      - G101 # Potential hardcoded credentials
+      - G107 # Potential HTTP request made with variable url
+      - G404 # Use of weak random number generator (math/rand instead of crypto/rand)
+    exclude-generated: true
+    confidence: medium
+  misspell:
+    locale: US
+  gofumpt:
+    extra-rules: true
+  dogsled:
+    max-blank-identifiers: 6
+  nolintlint:
+    allow-unused: false
+    require-explanation: true
+    require-specific: false
+  gosimple:
+    checks: ["all"]
+  gocritic:
+    disabled-checks:
+      - regexpMust
+      - appendAssign
+      - ifElseChain

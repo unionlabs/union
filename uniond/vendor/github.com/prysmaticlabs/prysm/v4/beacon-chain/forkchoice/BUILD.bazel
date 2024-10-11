@@ -1,0 +1,37 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "doc.go",
+        "error.go",
+        "interfaces.go",
+        "ro.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/forkchoice",
+    visibility = [
+        "//beacon-chain:__subpackages__",
+        "//cmd:__subpackages__",
+        "//testing/spectest:__subpackages__",
+    ],
+    deps = [
+        "//beacon-chain/forkchoice/types:go_default_library",
+        "//beacon-chain/state:go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//consensus-types/forkchoice:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["ro_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//beacon-chain/forkchoice/types:go_default_library",
+        "//config/fieldparams:go_default_library",
+        "//consensus-types/primitives:go_default_library",
+        "//testing/require:go_default_library",
+    ],
+)

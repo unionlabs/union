@@ -1,0 +1,84 @@
+
+import (
+	"math/big"
+	"sync"
+
+	"github.com/consensys/gnark-crypto/ecc/{{.Name}}/fr"
+
+	{{- if .HasEndomorphism}}
+		"github.com/consensys/gnark-crypto/ecc"
+	{{- end}}
+)
+
+// CurveParams curve parameters: ax^2 + y^2 = 1 + d*x^2*y^2
+type CurveParams struct {
+	A, D     fr.Element
+	Cofactor fr.Element
+	Order    big.Int
+	Base     PointAffine
+
+	{{- if .HasEndomorphism}}
+	// endomorphism
+	endo     [2]fr.Element
+	lambda   big.Int
+	glvBasis ecc.Lattice
+	{{- end}}
+}
+
+// GetEdwardsCurve returns the twisted Edwards curve on {{.Name}}/Fr
+func GetEdwardsCurve() CurveParams {
+	initOnce.Do(initCurveParams)
+	// copy to keep Order private
+	var res CurveParams
+
+	res.A.Set(&curveParams.A)
+	res.D.Set(&curveParams.D)
+	res.Cofactor.Set(&curveParams.Cofactor)
+	res.Order.Set(&curveParams.Order)
+	res.Base.Set(&curveParams.Base)
+
+	{{- if .HasEndomorphism}}
+	res.endo[0].Set(&curveParams.endo[0])
+	res.endo[1].Set(&curveParams.endo[1])
+	res.lambda.Set(&curveParams.lambda)
+	res.glvBasis = curveParams.glvBasis // TODO @gbotrel do proper copy of that
+	{{- end}}
+
+	return res
+}
+
+
+var (
+	initOnce sync.Once
+	curveParams CurveParams
+)
+
+
+func initCurveParams() {
+	curveParams.A.SetString("{{.A}}")
+	curveParams.D.SetString("{{.D}}")
+	curveParams.Cofactor.SetString("{{.Cofactor}}")
+	curveParams.Order.SetString("{{.Order}}", 10)
+
+	curveParams.Base.X.SetString("{{.BaseX}}")
+	curveParams.Base.Y.SetString("{{.BaseY}}")
+
+	{{- if .HasEndomorphism}}
+	curveParams.endo[0].SetString("{{.Endo0}}")
+	curveParams.endo[1].SetString("{{.Endo1}}")
+	curveParams.lambda.SetString("{{.Lambda}}", 10)
+	ecc.PrecomputeLattice(&curveParams.Order, &curveParams.lambda, &curveParams.glvBasis)
+	{{- end}}
+}
+
+// mulByA multiplies fr.Element by curveParams.A
+func mulByA(x *fr.Element) {
+	{{- if eq .A "-1"}}
+		x.Neg(x)
+	{{- else if eq .A "-5"}}
+		x.Neg(x)
+		fr.MulBy5(x)
+	{{- else }}
+        x.Mul(x, &curveParams.A)
+	{{- end}}
+}

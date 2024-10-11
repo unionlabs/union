@@ -1,0 +1,7 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+*.sol linguist-language=Solidity
+
+# Ignore diff on generated code
+*.pb.go linguist-generated=true
+*_mock.go linguist-generated=true

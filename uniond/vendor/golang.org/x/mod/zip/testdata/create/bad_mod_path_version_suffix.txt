@@ -1,0 +1,3 @@
+path=example.com/m
+version=v2.0.0
+wantErr=invalid version: should be v0 or v1, not v2

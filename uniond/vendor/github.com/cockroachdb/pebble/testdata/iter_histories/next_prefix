@@ -1,0 +1,292 @@
+reset
+----
+
+# For all prefixes a-z, write 3 keys at timestamps @1, @10, @100.
+# This populates a total of 26 * 3 = 78 keys.
+
+populate keylen=1 timestamps=(1, 10, 100)
+----
+wrote 78 keys
+
+combined-iter
+first
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+----
+a@100: (a@100, .)
+b@100: (b@100, .)
+c@100: (c@100, .)
+d@100: (d@100, .)
+e@100: (e@100, .)
+f@100: (f@100, .)
+g@100: (g@100, .)
+h@100: (h@100, .)
+i@100: (i@100, .)
+j@100: (j@100, .)
+k@100: (k@100, .)
+l@100: (l@100, .)
+m@100: (m@100, .)
+n@100: (n@100, .)
+o@100: (o@100, .)
+p@100: (p@100, .)
+
+combined-iter
+seek-ge n@30
+next-prefix
+next
+next
+next-prefix
+----
+n@10: (n@10, .)
+o@100: (o@100, .)
+o@10: (o@10, .)
+o@1: (o@1, .)
+p@100: (p@100, .)
+
+combined-iter
+seek-prefix-ge p@210
+next-prefix
+----
+p@100: (p@100, .)
+.
+
+combined-iter
+seek-ge p@210
+next-prefix
+seek-ge p@210
+next
+next-prefix
+seek-ge p@210
+next
+next
+next-prefix
+----
+p@100: (p@100, .)
+q@100: (q@100, .)
+p@100: (p@100, .)
+p@10: (p@10, .)
+q@100: (q@100, .)
+p@100: (p@100, .)
+p@10: (p@10, .)
+p@1: (p@1, .)
+q@100: (q@100, .)
+
+reset target-file-size=1
+----
+
+populate keylen=1 timestamps=(1, 10, 100)
+----
+wrote 78 keys
+
+flush
+----
+
+combined-iter
+first
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+next-prefix
+----
+a@100: (a@100, .)
+b@100: (b@100, .)
+c@100: (c@100, .)
+d@100: (d@100, .)
+e@100: (e@100, .)
+f@100: (f@100, .)
+g@100: (g@100, .)
+h@100: (h@100, .)
+i@100: (i@100, .)
+j@100: (j@100, .)
+k@100: (k@100, .)
+l@100: (l@100, .)
+m@100: (m@100, .)
+n@100: (n@100, .)
+o@100: (o@100, .)
+p@100: (p@100, .)
+
+combined-iter
+seek-ge n@30
+next-prefix
+next
+next
+next-prefix
+----
+n@10: (n@10, .)
+o@100: (o@100, .)
+o@10: (o@10, .)
+o@1: (o@1, .)
+p@100: (p@100, .)
+
+combined-iter
+seek-prefix-ge p@210
+next-prefix
+----
+p@100: (p@100, .)
+.
+
+combined-iter
+seek-ge p@210
+next-prefix
+seek-ge p@210
+next
+next-prefix
+seek-ge p@210
+next
+next
+next-prefix
+----
+p@100: (p@100, .)
+q@100: (q@100, .)
+p@100: (p@100, .)
+p@10: (p@10, .)
+q@100: (q@100, .)
+p@100: (p@100, .)
+p@10: (p@10, .)
+p@1: (p@1, .)
+q@100: (q@100, .)
+
+batch commit
+range-key-set p r @1 foo
+----
+committed 1 keys
+
+combined-iter
+seek-ge p@210
+next-prefix
+----
+p@210: (., [p-r) @1=foo UPDATED)
+q@100: (q@100, [p-r) @1=foo)
+
+combined-iter
+seek-ge p@210
+next-prefix
+seek-ge p@210
+next
+next-prefix
+seek-ge p@210
+next
+next
+next-prefix
+----
+p@210: (., [p-r) @1=foo UPDATED)
+q@100: (q@100, [p-r) @1=foo)
+p@210: (., [p-r) @1=foo)
+p@100: (p@100, [p-r) @1=foo)
+q@100: (q@100, [p-r) @1=foo)
+p@210: (., [p-r) @1=foo)
+p@100: (p@100, [p-r) @1=foo)
+p@10: (p@10, [p-r) @1=foo)
+q@100: (q@100, [p-r) @1=foo)
+
+# Test an iterator that is positioned on a range key start of a prefix, and the
+# next key is a point key with that same prefix. The interleaving iterator must
+# correctly handle this case and advance the point key iterator.
+combined-iter
+seek-ge p
+next-prefix
+----
+p: (., [p-r) @1=foo UPDATED)
+q@100: (q@100, [p-r) @1=foo)
+
+# Test switching directions via NextPrefix.
+combined-iter
+seek-ge p@100
+prev
+next-prefix
+----
+p@100: (p@100, [p-r) @1=foo UPDATED)
+p: (., [p-r) @1=foo)
+q@100: (q@100, [p-r) @1=foo)
+
+# Test switching directions via NextPrefix when the internal iterator is
+# exhausted (in the reverse direction), but the Iterator is not.
+#  eg, i.pos = iterPosPrev and i.iterKey == nil.
+combined-iter
+seek-ge a@10
+prev
+next-prefix
+----
+a@10: (a@10, .)
+a@100: (a@100, .)
+b@100: (b@100, .)
+
+reset
+----
+
+populate keylen=1 timestamps=(1, 10, 100)
+----
+wrote 78 keys
+
+flush
+----
+
+lsm
+----
+0.0:
+  000005:[a@100#12,SET-z@1#85,SET]
+
+# Test for https://github.com/cockroachdb/pebble/issues/2260. Triggered the
+# bug. The second call to first would return c@100 instead of the correct key,
+# b@1.
+combined-iter upper=b@1
+first
+next-prefix
+next-prefix
+set-bounds lower=b@1 upper=d
+first
+next
+first
+----
+a@100: (a@100, .)
+err=NextPrefix not permitted with upper bound b@1
+err=NextPrefix not permitted with upper bound b@1
+.
+b@1: (b@1, .)
+c@100: (c@100, .)
+b@1: (b@1, .)
+
+# Did not trigger https://github.com/cockroachdb/pebble/issues/2260 since
+# Iterator.NextPrefix first does a Next. So the second call to NextPrefix
+# returned after the Next, since the upper bound was reached, which left the
+# Iterator positioned at b@1.
+combined-iter upper=b@10
+first
+next-prefix
+next-prefix
+set-bounds lower=b@1 upper=d
+first
+next
+first
+----
+a@100: (a@100, .)
+err=NextPrefix not permitted with upper bound b@10
+err=NextPrefix not permitted with upper bound b@10
+.
+b@1: (b@1, .)
+c@100: (c@100, .)
+b@1: (b@1, .)

@@ -1,0 +1,18 @@
+{
+	"write/values=1024": [
+		{
+			"name": "write/values=1024",
+			"date": "20211027",
+			"opsSec": 58825,
+			"writeAmp": 1.17,
+			"summaryPath": "20211027-pebble-write-size=1024-run_1-summary.json"
+		},
+		{
+			"name": "write/values=1024",
+			"date": "20211028",
+			"opsSec": 65525,
+			"writeAmp": 1.39,
+			"summaryPath": "20211028-pebble-write-size=1024-run_1-summary.json"
+		}
+	]
+}

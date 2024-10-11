@@ -1,0 +1,268 @@
+name: Go
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: 00 4 * * *
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Cross-compilation became possible in go1.5 with the removal of C
+          # code from the compiler. See https://go.dev/doc/go1.5#c.
+          #
+          # Cross-compilation isn't supported in gccgo.
+          - arch: x64
+            go: '1.3'
+          - arch: x64
+            go: '1.4'
+          - arch: x64
+            go: gccgo-9
+          - arch: x64
+            go: gccgo-10
+          - arch: x64
+            go: gccgo-11
+          - arch: x64
+            go: gccgo-12
+          # NB: gccgo-13 and gccgo-14 are not available in the Ubuntu 22.04.
+          #
+          # TODO(https://github.com/actions/runner-images/issues/9848): Add gccgo-13 and gccgo-14
+          # when Ubuntu 24.04 is GA on GitHub Actions.
+        arch:
+          - armv6
+          - armv7
+          - aarch64
+          - s390x
+          - 386
+          - x64
+        go:
+          - '1.5'
+          - '1.6'
+          - '1.7'
+          - '1.8'
+          - '1.9'
+          - '1.10'
+          - '1.11'
+          - '1.12'
+          - '1.13'
+          - '1.14'
+          - '1.15'
+          - '1.16'
+          - '1.17'
+          - '1.18'
+          - '1.19'
+          - '1.20'
+          - '1.21'
+          - '1.22'
+          - '1.23'
+        exclude:
+          # Support for s390x was added in Go1.7. See https://go.dev/doc/go1.7#ports.
+          - arch: s390x
+            go: '1.5'
+          - arch: s390x
+            go: '1.6'
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        if: ${{ !startsWith(matrix.go, 'gccgo-') }}
+        uses: actions/setup-go@v5.0.2
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Set up gccgo
+        if: ${{ startsWith(matrix.go, 'gccgo-') }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          sudo apt update
+          sudo apt install -y ${{ matrix.go }}
+          echo ${{ matrix.go }} | sed 's/^gcc//' | xargs -I % ln -s /usr/bin/% /usr/local/bin/go
+
+          go version
+      - name: Configure environment
+        id: configure_environment
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          case ${{ matrix.arch }} in
+            armv6)
+              echo GOARCH=arm >> "$GITHUB_ENV"
+              echo GOARM=6 >> "$GITHUB_ENV"
+              ;;
+            armv7)
+              echo GOARCH=arm >> "$GITHUB_ENV"
+              echo GOARM=7 >> "$GITHUB_ENV"
+              ;;
+            aarch64)
+              echo GOARCH=arm64 >> "$GITHUB_ENV"
+              ;;
+            s390x)
+              echo GOARCH=s390x >> "$GITHUB_ENV"
+              ;;
+            386)
+              echo GOARCH=386 >> "$GITHUB_ENV"
+              ;;
+            x64)
+              echo GOARCH=amd64 >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "Unknown architecture: ${{ matrix.arch }}"
+              exit 1
+              ;;
+          esac
+
+          version_ge() {
+            version=$1
+
+            printf "$version\n%s\n" ${{ matrix.go }} | sort -V | head -n1 | xargs test "$version" =
+          }
+
+          # Race builds are pretty much busted on Go 1.4 and below on systems with newer C
+          # compilers. A number of fixes were backported to go1.4-bootstrap but not any released
+          # version. See https://github.com/golang/go/compare/go1.4.3...release-branch.go1.4.
+          if ! version_ge 1.5; then
+            echo "RACE_BUILDS_BROKEN=1" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Go binaries built with Go 1.8 and below are incompatible with QEMU user-level emulation.
+          # See https://github.com/golang/go/commit/2673f9e.
+          if version_ge 1.9; then
+            echo "QEMU_EMULATION_WORKS=1" >> "$GITHUB_OUTPUT"
+          fi
+
+          if version_ge 1.12; then
+            # Better inlining in Go 1.12. See https://go.dev/doc/go1.12#compiler.
+            echo "BETTER_INLINING_AVAILABLE=1" >> "$GITHUB_OUTPUT"
+
+            # Race detector support on linux/arm64 was added in go1.12. See
+            # https://go.dev/doc/go1.12.
+            echo "ARM64_RACE_SUPPORTED=1" >> "$GITHUB_OUTPUT"
+          fi
+
+          if version_ge 1.19; then
+            # Race detector support on linux/s390x was added in go1.19. See
+            # https://go.dev/doc/go1.19.
+            echo "S390X_RACE_SUPPORTED=1" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Race detector binaries crash with:
+          #
+          # FATAL: ThreadSanitizer: unsupported VMA range
+          #
+          # See https://github.com/golang/go/issues/29948.
+          echo "ARM64_UNSUPPORTED_VMA_RANGE=1" >> "$GITHUB_OUTPUT"
+
+          # Race detector binaries crash with:
+          #
+          # ==17==ERROR: ThreadSanitizer failed to allocate 0x7f0000 (8323072) bytes at address 9000001a0000 (errno: 12)
+          #
+          # See https://github.com/golang/go/issues/67881.
+          echo "S390X_THREAD_SANITIZER_FAILED_TO_ALLOCATE=1" >> "$GITHUB_OUTPUT"
+      - name: Check that Get is inlined
+        if: |
+          !startsWith(matrix.go, 'gccgo-') &&
+          steps.configure_environment.outputs.BETTER_INLINING_AVAILABLE
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          go build -gcflags='-m' 2>&1 | grep 'can inline Get$' > /dev/null
+      - name: go build & go test -c
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          go build -v ./...
+          go test -c -o goid.test ./...
+      - name: go build & go test -c (race)
+        # Race builds aren't supported on linux/386.
+        #
+        # Race builds aren't supported in gccgo.
+        id: build_goid_race_test
+        if: |
+          !cancelled() &&
+          matrix.arch == 'x64' &&
+          !startsWith(matrix.go, 'gccgo-') &&
+          !steps.configure_environment.outputs.RACE_BUILDS_BROKEN
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          go build -v -race ./...
+          go test -c -race -o goid.race.test ./...
+      - name: go build & go test -c (race)
+        id: build_goid_race_test_cross
+        if: |
+          !cancelled() &&
+          matrix.arch == 'aarch64' &&
+          steps.configure_environment.outputs.ARM64_RACE_SUPPORTED ||
+          matrix.arch == 's390x' &&
+          steps.configure_environment.outputs.S390X_RACE_SUPPORTED
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          # Non-host *.syso files are missing from the Go toolchains provided
+          # by setup-go. See https://github.com/actions/setup-go/issues/181.
+          curl --location --output "$(go env GOROOT)"/src/runtime/race/race_linux_"$GOARCH".syso \
+            https://github.com/golang/go/raw/release-branch.go${{ matrix.go }}/src/runtime/race/race_linux_"$GOARCH".syso
+
+          sudo apt update
+          sudo apt install -y gcc-${{ matrix.arch }}-linux-gnu
+
+          export CGO_ENABLED=1
+          export CC=${{ matrix.arch }}-linux-gnu-gcc
+          export CC_FOR_TARGET=gcc-${{ matrix.arch }}-linux-gnu
+
+          go build -v -race ./...
+          go test -c -race -o goid.race.test ./...
+      - run: rm goid.race.test
+        if: |
+          !cancelled() &&
+          (steps.build_goid_race_test.outcome == 'success' || steps.build_goid_race_test_cross.outcome == 'success') &&
+          (
+            matrix.arch == 'aarch64' &&
+            steps.configure_environment.outputs.ARM64_RACE_SUPPORTED &&
+            steps.configure_environment.outputs.ARM64_UNSUPPORTED_VMA_RANGE
+          ) || (
+            matrix.arch == 's390x' &&
+            steps.configure_environment.outputs.S390X_RACE_SUPPORTED &&
+            steps.configure_environment.outputs.S390X_THREAD_SANITIZER_FAILED_TO_ALLOCATE
+          )
+      - name: Run tests
+        if: |
+          !cancelled() &&
+          (matrix.arch == '386' || matrix.arch == 'x64')
+        shell: bash
+        run: |
+          set -euxo pipefail
+            find . -name '*.test' -type f -executable -print0 | \
+              xargs -t -0 -I '{}' sh -c '{} -test.v && {} -test.bench=. -test.benchmem -test.v'
+      - name: Run tests
+        if: |
+          !cancelled() &&
+          matrix.arch != '386' &&
+          matrix.arch != 'x64' &&
+          steps.configure_environment.outputs.QEMU_EMULATION_WORKS
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: ${{ matrix.arch }}
+          distro: bookworm
+          dockerRunArgs: --mount type=bind,source="$(pwd)",target=/checkout,readonly
+          shell: /bin/bash
+          run: |
+            set -euxo pipefail
+
+            find /checkout -name '*.test' -type f -executable -print0 | \
+              xargs -t -0 -I '{}' sh -c '{} -test.v && {} -test.bench=. -test.benchmem -test.v'

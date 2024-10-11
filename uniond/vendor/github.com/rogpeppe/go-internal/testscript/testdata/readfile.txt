@@ -1,0 +1,10 @@
+fprintargs stdout stdout
+testreadfile stdout
+
+fprintargs stderr stderr
+testreadfile stderr
+
+testreadfile x/somefile
+
+-- x/somefile --
+x/somefile

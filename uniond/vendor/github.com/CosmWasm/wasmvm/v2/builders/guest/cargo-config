@@ -1,0 +1,15 @@
+[target.x86_64-apple-darwin]
+linker = "x86_64-apple-darwin20.4-clang"
+ar = "x86_64-apple-darwin20.4-ar"
+
+[target.aarch64-apple-darwin]
+linker = "aarch64-apple-darwin20.4-clang"
+ar = "aarch64-apple-darwin20.4-ar"
+
+[target.aarch64-unknown-linux-gnu]
+linker = "/usr/aarch64-linux-gnu/bin/ld"
+ar = "/usr/aarch64-linux-gnu/bin/ar"
+
+[target.x86_64-pc-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
+ar = "x86_64-w64-mingw32-gcc-ar"

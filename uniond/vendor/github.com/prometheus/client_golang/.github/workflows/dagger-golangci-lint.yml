@@ -1,0 +1,32 @@
+---
+name: dagger-golangci-lint
+on:
+  push:
+    paths:
+      - "go.sum"
+      - "go.mod"
+      - "**.go"
+      - "scripts/errcheck_excludes.txt"
+      - ".github/workflows/golangci-lint.yml"
+      - ".golangci.yml"
+  pull_request:
+
+permissions:  # added using https://github.com/step-security/secure-repo
+  contents: read
+
+jobs:
+  golangci:
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for golangci/golangci-lint-action to fetch pull requests
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - name: Lint
+        uses: dagger/dagger-for-github@v5
+        with:
+          version: "latest"
+          verb: call
+          args: -vvv --src . make --args lint

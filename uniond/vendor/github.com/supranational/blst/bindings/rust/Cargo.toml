@@ -1,6 +1,6 @@
 [package]
 name = "blst"
-version = "0.3.11"
+version = "0.3.13"
 authors = ["sean-sn <sean@supranational.net>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -52,9 +52,17 @@ serde = { version = "1.0.152", optional = true }
 threadpool = "^1.8.1"
 
 [dev-dependencies]
-rand = "0.7"
-rand_chacha = "0.2"
+rand = "0.8"
+rand_chacha = "0.3"
 rmp-serde = "1.1.1"
+# Uncomment if you want to execute the test suite with Rust 1.56 through 1.64.
+#csv = "=1.1.6"
+#byteorder = "=1.4.3"
+#regex = "=1.7.3"
+#rayon = "=1.6.1"
+#rayon-core = "=1.10.1"
+
+[target.'cfg(any(unix, windows))'.dev-dependencies]
 criterion = "0.3"
 
 [[bench]]

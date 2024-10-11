@@ -1,0 +1,9 @@
+
+<article id="{{ .Slug }}">
+  {{ partial "request-edit.html" . }}
+  {{ partial "suggest-edit.html" . }}
+
+  <h1 class="post-title">{{ .Title }}</h1>
+
+  <div>{{ .Content }}</div>
+</article>

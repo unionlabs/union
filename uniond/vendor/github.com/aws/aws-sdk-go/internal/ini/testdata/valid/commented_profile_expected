@@ -1,0 +1,7 @@
+{
+	"default": {
+		"region": "foo-region",
+		"output": "json",
+		"bar": "123"
+	}
+}

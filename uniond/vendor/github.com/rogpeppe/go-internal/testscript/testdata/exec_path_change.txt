@@ -1,0 +1,28 @@
+# If the PATH environment variable is set in the testscript.Params.Setup phase
+# or set directly within a script, exec should honour that PATH
+
+[!exec:go] skip
+
+env HOME=$WORK${/}home
+[windows] env USERPROFILE=$WORK\home
+[windows] env LOCALAPPDATA=$WORK\appdata
+
+cd go
+exec go$exe version
+stdout 'go version'
+exec go$exe build
+env PATH=$WORK${/}go${:}$PATH
+exec go$exe version
+stdout 'This is not go'
+
+-- go/go.mod --
+module example.com/go
+
+-- go/main.go --
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("This is not go")
+}

@@ -1,6 +1,7 @@
 .text
 
 .globl	_div_3_limbs
+.private_extern	_div_3_limbs
 
 .align	5
 _div_3_limbs:
@@ -34,6 +35,7 @@ Loop:
 	ret
 
 .globl	_quot_rem_128
+.private_extern	_quot_rem_128
 
 .align	5
 _quot_rem_128:
@@ -70,6 +72,7 @@ _quot_rem_128:
 
 
 .globl	_quot_rem_64
+.private_extern	_quot_rem_64
 
 .align	5
 _quot_rem_64:

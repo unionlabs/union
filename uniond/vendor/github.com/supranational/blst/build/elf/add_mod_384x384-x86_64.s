@@ -1,11 +1,39 @@
 .text	
 
-.type	__add_mod_384x384,@function
+.globl	add_mod_384x384
+.hidden	add_mod_384x384
+.type	add_mod_384x384,@function
 .align	32
-__add_mod_384x384:
+add_mod_384x384:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
+
+	pushq	%rbp
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-16
+	pushq	%rbx
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-24
+	pushq	%r12
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
+	pushq	%r13
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
+	pushq	%r14
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
+	pushq	%r15
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
+	subq	$8,%rsp
+.cfi_adjust_cfa_offset	8
+
+
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -66,16 +94,67 @@ __add_mod_384x384:
 	movq	%rbp,80(%rdi)
 	movq	%rsi,88(%rdi)
 
-	.byte	0xf3,0xc3
-.cfi_endproc
-.size	__add_mod_384x384,.-__add_mod_384x384
+	movq	8(%rsp),%r15
+.cfi_restore	%r15
+	movq	16(%rsp),%r14
+.cfi_restore	%r14
+	movq	24(%rsp),%r13
+.cfi_restore	%r13
+	movq	32(%rsp),%r12
+.cfi_restore	%r12
+	movq	40(%rsp),%rbx
+.cfi_restore	%rbx
+	movq	48(%rsp),%rbp
+.cfi_restore	%rbp
+	leaq	56(%rsp),%rsp
+.cfi_adjust_cfa_offset	-56
 
-.type	__sub_mod_384x384,@function
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
+	.byte	0xf3,0xc3
+#endif
+.cfi_endproc	
+.size	add_mod_384x384,.-add_mod_384x384
+
+.globl	sub_mod_384x384
+.hidden	sub_mod_384x384
+.type	sub_mod_384x384,@function
 .align	32
-__sub_mod_384x384:
+sub_mod_384x384:
 .cfi_startproc
 	.byte	0xf3,0x0f,0x1e,0xfa
 
+
+	pushq	%rbp
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbp,-16
+	pushq	%rbx
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%rbx,-24
+	pushq	%r12
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r12,-32
+	pushq	%r13
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r13,-40
+	pushq	%r14
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r14,-48
+	pushq	%r15
+.cfi_adjust_cfa_offset	8
+.cfi_offset	%r15,-56
+	subq	$8,%rsp
+.cfi_adjust_cfa_offset	8
+
+
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movq	0(%rsi),%r8
 	movq	8(%rsi),%r9
 	movq	16(%rsi),%r10
@@ -135,43 +214,6 @@ __sub_mod_384x384:
 	movq	%rbp,80(%rdi)
 	movq	%rsi,88(%rdi)
 
-	.byte	0xf3,0xc3
-.cfi_endproc
-.size	__sub_mod_384x384,.-__sub_mod_384x384
-
-.globl	add_mod_384x384
-.hidden	add_mod_384x384
-.type	add_mod_384x384,@function
-.align	32
-add_mod_384x384:
-.cfi_startproc
-	.byte	0xf3,0x0f,0x1e,0xfa
-
-
-	pushq	%rbp
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbp,-16
-	pushq	%rbx
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbx,-24
-	pushq	%r12
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r12,-32
-	pushq	%r13
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r13,-40
-	pushq	%r14
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r14,-48
-	pushq	%r15
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r15,-56
-	subq	$8,%rsp
-.cfi_adjust_cfa_offset	8
-
-
-	call	__add_mod_384x384
-
 	movq	8(%rsp),%r15
 .cfi_restore	%r15
 	movq	16(%rsp),%r14
@@ -187,66 +229,24 @@ add_mod_384x384:
 	leaq	56(%rsp),%rsp
 .cfi_adjust_cfa_offset	-56
 
+	
+#ifdef	__SGX_LVI_HARDENING__
+	popq	%rdx
+	lfence
+	jmpq	*%rdx
+	ud2
+#else
 	.byte	0xf3,0xc3
-.cfi_endproc	
-.size	add_mod_384x384,.-add_mod_384x384
-
-.globl	sub_mod_384x384
-.hidden	sub_mod_384x384
-.type	sub_mod_384x384,@function
-.align	32
-sub_mod_384x384:
-.cfi_startproc
-	.byte	0xf3,0x0f,0x1e,0xfa
-
-
-	pushq	%rbp
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbp,-16
-	pushq	%rbx
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbx,-24
-	pushq	%r12
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r12,-32
-	pushq	%r13
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r13,-40
-	pushq	%r14
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r14,-48
-	pushq	%r15
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r15,-56
-	subq	$8,%rsp
-.cfi_adjust_cfa_offset	8
-
-
-	call	__sub_mod_384x384
-
-	movq	8(%rsp),%r15
-.cfi_restore	%r15
-	movq	16(%rsp),%r14
-.cfi_restore	%r14
-	movq	24(%rsp),%r13
-.cfi_restore	%r13
-	movq	32(%rsp),%r12
-.cfi_restore	%r12
-	movq	40(%rsp),%rbx
-.cfi_restore	%rbx
-	movq	48(%rsp),%rbp
-.cfi_restore	%rbp
-	leaq	56(%rsp),%rsp
-.cfi_adjust_cfa_offset	-56
-
-	.byte	0xf3,0xc3
+#endif
 .cfi_endproc	
 .size	sub_mod_384x384,.-sub_mod_384x384
 
 .section	.note.GNU-stack,"",@progbits
+#ifndef	__SGX_LVI_HARDENING__
 .section	.note.gnu.property,"a",@note
 	.long	4,2f-1f,5
 	.byte	0x47,0x4E,0x55,0
 1:	.long	0xc0000002,4,3
 .align	8
 2:
+#endif

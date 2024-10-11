@@ -1,0 +1,27 @@
+<!-- HTML for static distribution bundle build -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>CometBFT RPC</title>
+    <link rel="stylesheet" type="text/css" href="//unpkg.com/swagger-ui-dist@3.25.0/swagger-ui.css">
+    <link rel="icon" type="image/png" href="//unpkg.com/swagger-ui-dist@3.25.0/favicon-16x16.png" />
+    <script src="//unpkg.com/swagger-ui-dist@3.25.0/swagger-ui-bundle.js"></script>
+</head>
+
+<body>
+    <div id="swagger-ui"></div>
+    <script>
+        window.onload = function () {
+            window.ui = SwaggerUIBundle({
+                url: "./openapi.yaml",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                layout: "BaseLayout"
+            });
+        }
+    </script>
+</body>
+
+</html>

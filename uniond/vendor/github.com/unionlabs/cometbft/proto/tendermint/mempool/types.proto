@@ -1,0 +1,12 @@
+syntax = "proto3";
+package tendermint.mempool;
+
+message Txs {
+  repeated bytes txs = 1;
+}
+
+message Message {
+  oneof sum {
+    Txs txs = 1;
+  }
+}

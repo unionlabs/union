@@ -1,0 +1,15 @@
+{
+    "type": "external_account",
+    "audience": "//iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL_ID/providers/$PROVIDER_ID",
+    "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+    "service_account_impersonation_url": "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/$EMAIL:generateAccessToken",
+    "token_url": "https://sts.googleapis.com/v1/token",
+    "credential_source": {
+        "url": "http://localhost:5000/token",
+        "format": {
+            "type": "json",
+            "subject_token_field_name": "id_token"
+        }
+    },
+    "universe_domain": "example.com"
+}

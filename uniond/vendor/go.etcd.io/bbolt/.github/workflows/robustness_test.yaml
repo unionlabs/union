@@ -1,0 +1,16 @@
+name: Robustness Test
+on: [push, pull_request]
+permissions: read-all
+jobs:
+  amd64:
+    uses: ./.github/workflows/robustness_template.yaml
+    with:
+      count: 10
+      testTimeout: 30m
+      runs-on: "['ubuntu-latest-8-cores']"
+  arm64:
+    uses: ./.github/workflows/robustness_template.yaml
+    with:
+      count: 10
+      testTimeout: 30m
+      runs-on: "['actuated-arm64-4cpu-8gb']"

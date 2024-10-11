@@ -1,0 +1,55 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'src/*'
+      - 'bindings/c#/*'
+      - '.github/workflows/codeql-analysis.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'src/*'
+      - 'bindings/c#/*'
+  #schedule:
+  #  - cron: '0 23+ * * 4'
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'cpp', 'csharp' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        # We must fetch at least the immediate parents so that if this is
+        # a pull request then we can checkout the head.
+        fetch-depth: 2
+
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        queries: security-extended
+
+    - if: matrix.language == 'cpp'
+      name: Custom build
+      run: ./build.sh -m32 -ffreestanding
+
+    - if: matrix.language != 'cpp'
+      name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+

@@ -1,0 +1,29 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "journald.go",
+        "journald_linux.go",
+        "journalhook_linux.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/monitoring/journald",
+    visibility = ["//visibility:public"],
+    deps = select({
+        "@io_bazel_rules_go//go/platform:android": [
+            "@com_github_coreos_go_systemd//journal:go_default_library",
+            "@com_github_sirupsen_logrus//:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:linux": [
+            "@com_github_coreos_go_systemd//journal:go_default_library",
+            "@com_github_sirupsen_logrus//:go_default_library",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["journalhook_linux_test.go"],
+    embed = [":go_default_library"],
+)

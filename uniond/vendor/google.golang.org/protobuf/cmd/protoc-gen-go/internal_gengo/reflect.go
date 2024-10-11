@@ -132,7 +132,7 @@ func genReflectFileDescriptor(gen *protogen.Plugin, g *protogen.GeneratedFile, f
 		panic("too many dependencies") // sanity check
 	}
 
-	g.P("var ", goTypesVarName(f), " = []interface{}{")
+	g.P("var ", goTypesVarName(f), " = []any{")
 	for _, s := range goTypes {
 		g.P(s)
 	}
@@ -170,7 +170,7 @@ func genReflectFileDescriptor(gen *protogen.Plugin, g *protogen.GeneratedFile, f
 				idx := f.allMessagesByPtr[message]
 				typesVar := messageTypesVarName(f)
 
-				g.P(typesVar, "[", idx, "].Exporter = func(v interface{}, i int) interface{} {")
+				g.P(typesVar, "[", idx, "].Exporter = func(v any, i int) any {")
 				g.P("switch v := v.(*", message.GoIdent, "); i {")
 				for i := 0; i < sf.count; i++ {
 					if name := sf.unexported[i]; name != "" {
@@ -191,7 +191,7 @@ func genReflectFileDescriptor(gen *protogen.Plugin, g *protogen.GeneratedFile, f
 				typesVar := messageTypesVarName(f)
 
 				// Associate the wrapper types by directly passing them to the MessageInfo.
-				g.P(typesVar, "[", idx, "].OneofWrappers = []interface{} {")
+				g.P(typesVar, "[", idx, "].OneofWrappers = []any {")
 				for _, oneof := range message.Oneofs {
 					if !oneof.Desc.IsSynthetic() {
 						for _, field := range oneof.Fields {

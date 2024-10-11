@@ -1,0 +1,112 @@
+syntax = "proto3";
+package cosmos.tx.signing.v1beta1;
+
+import "cosmos/crypto/multisig/v1beta1/multisig.proto";
+import "google/protobuf/any.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/types/tx/signing";
+
+// SignMode represents a signing mode with its own security guarantees.
+//
+// This enum should be considered a registry of all known sign modes
+// in the Cosmos ecosystem. Apps are not expected to support all known
+// sign modes. Apps that would like to support custom  sign modes are
+// encouraged to open a small PR against this file to add a new case
+// to this SignMode enum describing their sign mode so that different
+// apps have a consistent version of this enum.
+enum SignMode {
+  // SIGN_MODE_UNSPECIFIED specifies an unknown signing mode and will be
+  // rejected.
+  SIGN_MODE_UNSPECIFIED = 0;
+
+  // SIGN_MODE_DIRECT specifies a signing mode which uses SignDoc and is
+  // verified with raw bytes from Tx.
+  SIGN_MODE_DIRECT = 1;
+
+  // SIGN_MODE_TEXTUAL is a future signing mode that will verify some
+  // human-readable textual representation on top of the binary representation
+  // from SIGN_MODE_DIRECT.
+  //
+  // Since: cosmos-sdk 0.50
+  SIGN_MODE_TEXTUAL = 2;
+
+  // SIGN_MODE_DIRECT_AUX specifies a signing mode which uses
+  // SignDocDirectAux. As opposed to SIGN_MODE_DIRECT, this sign mode does not
+  // require signers signing over other signers' `signer_info`.
+  //
+  // Since: cosmos-sdk 0.46
+  SIGN_MODE_DIRECT_AUX = 3;
+
+  // SIGN_MODE_LEGACY_AMINO_JSON is a backwards compatibility mode which uses
+  // Amino JSON and will be removed in the future.
+  SIGN_MODE_LEGACY_AMINO_JSON = 127;
+
+  // SIGN_MODE_EIP_191 specifies the sign mode for EIP 191 signing on the Cosmos
+  // SDK. Ref: https://eips.ethereum.org/EIPS/eip-191
+  //
+  // Currently, SIGN_MODE_EIP_191 is registered as a SignMode enum variant,
+  // but is not implemented on the SDK by default. To enable EIP-191, you need
+  // to pass a custom `TxConfig` that has an implementation of
+  // `SignModeHandler` for EIP-191. The SDK may decide to fully support
+  // EIP-191 in the future.
+  //
+  // Since: cosmos-sdk 0.45.2
+  // Deprecated: post 0.47.x Sign mode refers to a method of encoding string data for
+  // signing, but in the SDK, it also refers to how to encode a transaction into a string.
+  // This opens the possibility for additional EIP191 sign modes, like SIGN_MODE_EIP_191_TEXTUAL,
+  // SIGN_MODE_EIP_191_LEGACY_JSON, and more.
+  // Each new EIP191 sign mode should be accompanied by an associated ADR.
+  SIGN_MODE_EIP_191 = 191 [deprecated = true];
+}
+
+// SignatureDescriptors wraps multiple SignatureDescriptor's.
+message SignatureDescriptors {
+  // signatures are the signature descriptors
+  repeated SignatureDescriptor signatures = 1;
+}
+
+// SignatureDescriptor is a convenience type which represents the full data for
+// a signature including the public key of the signer, signing modes and the
+// signature itself. It is primarily used for coordinating signatures between
+// clients.
+message SignatureDescriptor {
+  // public_key is the public key of the signer
+  google.protobuf.Any public_key = 1;
+
+  Data data = 2;
+
+  // sequence is the sequence of the account, which describes the
+  // number of committed transactions signed by a given address. It is used to prevent
+  // replay attacks.
+  uint64 sequence = 3;
+
+  // Data represents signature data
+  message Data {
+    // sum is the oneof that specifies whether this represents single or multi-signature data
+    oneof sum {
+      // single represents a single signer
+      Single single = 1;
+
+      // multi represents a multisig signer
+      Multi multi = 2;
+    }
+
+    // Single is the signature data for a single signer
+    message Single {
+      // mode is the signing mode of the single signer
+      SignMode mode = 1;
+
+      // signature is the raw signature bytes
+      bytes signature = 2;
+    }
+
+    // Multi is the signature data for a multisig public key
+    message Multi {
+      // bitarray specifies which keys within the multisig are signing
+      cosmos.crypto.multisig.v1beta1.CompactBitArray bitarray = 1;
+
+      // signatures is the signatures of the multi-signature
+      repeated Data signatures = 2;
+    }
+  }
+}

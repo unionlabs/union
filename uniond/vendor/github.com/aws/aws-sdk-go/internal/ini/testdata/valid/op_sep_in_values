@@ -1,0 +1,30 @@
+[case1]
+sepInValue = =:[foo]]bar[
+key:= value1
+
+[case2]
+sepInValue==:[foo]]bar[
+key = value2
+
+[case3]
+sepInValue = []
+key== value3
+
+[case4]
+sepInValue = [value] x=a
+key:=value4
+
+[case5]
+key : value5
+
+[case6]
+s3 =
+    [nested6]
+    key = valuen6
+key :=value6
+
+[case7]
+s3 =
+key :value7
+[sub7]
+key ==values7

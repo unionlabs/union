@@ -75,6 +75,9 @@ add_mod_384:
 .type	__add_mod_384,\@abi-omnipotent
 .align	32
 __add_mod_384:
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -197,6 +200,9 @@ rshift_mod_384:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -285,7 +291,7 @@ __rshift_mod_384:
 	or	@acc[10], @acc[4]
 	or	@acc[11], @acc[5]
 
-	ret
+	ret	# __SGX_LVI_HARDENING_CLOBBER__=@acc[6]
 .size	__rshift_mod_384,.-__rshift_mod_384
 
 .globl	div_by_2_mod_384
@@ -310,6 +316,9 @@ div_by_2_mod_384:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	$b_org, $n_ptr
 	mov	8*1($a_ptr), @acc[1]
@@ -369,6 +378,9 @@ lshift_mod_384:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -494,6 +506,9 @@ mul_by_3_mod_384:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -505,6 +520,9 @@ mul_by_3_mod_384:
 	call	__lshift_mod_384
 
 	mov	(%rsp), $b_org
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__add_mod_384_a_is_loaded
 
 	mov	8(%rsp),%r15
@@ -548,6 +566,9 @@ mul_by_8_mod_384:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -609,6 +630,9 @@ mul_by_3_mod_384x:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -620,11 +644,17 @@ mul_by_3_mod_384x:
 	call	__lshift_mod_384
 
 	mov	(%rsp), $b_org
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__add_mod_384_a_is_loaded
 
 	mov	(%rsp), $a_ptr
 	lea	8*6($r_ptr), $r_ptr
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*6($a_ptr), @acc[0]
 	mov	8*7($a_ptr), @acc[1]
 	mov	8*8($a_ptr), @acc[2]
@@ -636,6 +666,9 @@ mul_by_3_mod_384x:
 
 	mov	\$8*6, $b_org
 	add	(%rsp), $b_org
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	call	__add_mod_384_a_is_loaded
 
 	mov	8(%rsp),%r15
@@ -679,6 +712,9 @@ mul_by_8_mod_384x:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -699,6 +735,9 @@ mul_by_8_mod_384x:
 	mov	@acc[4], 8*4($r_ptr)
 	mov	@acc[5], 8*5($r_ptr)
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	48+8*0($a_ptr), @acc[0]
 	mov	48+8*1($a_ptr), @acc[1]
 	mov	48+8*2($a_ptr), @acc[2]
@@ -759,6 +798,9 @@ cneg_mod_384:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), $b_org	# load a[0:5]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -876,6 +918,9 @@ sub_mod_384:
 .type	__sub_mod_384,\@abi-omnipotent
 .align	32
 __sub_mod_384:
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -1001,6 +1046,9 @@ mul_by_1_plus_i_mod_384x:
 .cfi_adjust_cfa_offset	56
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($a_ptr), @acc[0]
 	mov	8*1($a_ptr), @acc[1]
 	mov	8*2($a_ptr), @acc[2]
@@ -1130,6 +1178,9 @@ $code.=<<___;
 sgn0_pty_mod_384:
 .cfi_startproc
 .cfi_end_prologue
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*0($r_ptr), @acc[0]
 	mov	8*1($r_ptr), @acc[1]
 	mov	8*2($r_ptr), @acc[2]
@@ -1179,6 +1230,9 @@ sgn0_pty_mod_384x:
 .cfi_adjust_cfa_offset	8
 .cfi_end_prologue
 
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	mov	8*6($r_ptr), @acc[0]	# sgn0(a->im)
 	mov	8*7($r_ptr), @acc[1]
 	mov	8*8($r_ptr), @acc[2]
@@ -1345,6 +1399,9 @@ vec_select_$sz:
 	movd	$select, %xmm5
 	pxor	%xmm4,%xmm4
 	pshufd	\$0,%xmm5,%xmm5		# broadcast
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movdqu	($inp1),$xmm0
 	lea	$half($inp1),$inp1
 	pcmpeqd	%xmm4,%xmm5
@@ -1393,6 +1450,9 @@ vec_prefetch:
 	leaq		-1($inp,$end), $end
 	mov		\$64, %rax
 	xor		%r8, %r8
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	prefetchnta	($inp)
 	lea		($inp,%rax), $inp
 	cmp		$end, $inp
@@ -1435,6 +1495,9 @@ $code.=<<___;
 .align	32
 vec_is_zero_16x:
 	shr		\$4, $len
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movdqu		($inp), %xmm0
 	lea		16($inp), $inp
 
@@ -1468,6 +1531,9 @@ $code.=<<___;
 .align	32
 vec_is_equal_16x:
 	shr		\$4, $len
+#ifdef	__SGX_LVI_HARDENING__
+	lfence
+#endif
 	movdqu		($inp1), %xmm0
 	movdqu		($inp2), %xmm1
 	sub		$inp1, $inp2

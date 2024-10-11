@@ -1,0 +1,23 @@
+# test that exactly one of gc and gccgo is set
+[gc] mkdir gc_true
+[gccgo] mkdir gccgo_true
+
+[gc] ! exists gccgo_true
+[!gc] exists gccgo_true
+[gccgo] ! exists gc_true
+[!gccgo] exists gc_true
+
+# test that go version build tags are set
+[go1.1] mkdir go1.x
+[go2.1] mkdir go2.x
+
+exists go1.x
+! exists go2.x
+
+# unix should be true on Linux and MacOS, but not on Windows.
+# Both platforms are tested on CI.
+[unix] mkdir unix_true
+
+[linux] exists unix_true
+[darwin] exists unix_true
+[windows] ! exists unix_true

@@ -1,0 +1,910 @@
+{
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/bigquery": {
+          "description": "View and manage your data in Google BigQuery and see the email address for your Google Account"
+        },
+        "https://www.googleapis.com/auth/cloud-platform": {
+          "description": "See, edit, configure, and delete your Google Cloud data and see the email address for your Google Account."
+        }
+      }
+    }
+  },
+  "basePath": "",
+  "baseUrl": "https://biglake.googleapis.com/",
+  "batchPath": "batch",
+  "canonicalName": "BigLake Service",
+  "description": "The BigLake API provides access to BigLake Metastore, a serverless, fully managed, and highly available metastore for open-source data that can be used for querying Apache Iceberg tables in BigQuery.",
+  "discoveryVersion": "v1",
+  "documentationLink": "https://cloud.google.com/bigquery/",
+  "fullyEncodeReservedExpansion": true,
+  "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+  },
+  "id": "biglake:v1",
+  "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://biglake.mtls.googleapis.com/",
+  "name": "biglake",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {
+    "$.xgafv": {
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "default": "json",
+      "description": "Data format for response.",
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "type": "string"
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "description": "OAuth 2.0 token for the current user.",
+      "location": "query",
+      "type": "string"
+    },
+    "prettyPrint": {
+      "default": "true",
+      "description": "Returns response with indentations and line breaks.",
+      "location": "query",
+      "type": "boolean"
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "location": "query",
+      "type": "string"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "location": "query",
+      "type": "string"
+    }
+  },
+  "protocol": "rest",
+  "resources": {
+    "projects": {
+      "resources": {
+        "locations": {
+          "resources": {
+            "catalogs": {
+              "methods": {
+                "create": {
+                  "description": "Creates a new catalog.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs",
+                  "httpMethod": "POST",
+                  "id": "biglake.projects.locations.catalogs.create",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "catalogId": {
+                      "description": "Required. The ID to use for the catalog, which will become the final component of the catalog's resource name.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. The parent resource where this catalog will be created. Format: projects/{project_id_or_number}/locations/{location_id}",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+parent}/catalogs",
+                  "request": {
+                    "$ref": "Catalog"
+                  },
+                  "response": {
+                    "$ref": "Catalog"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/bigquery",
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "delete": {
+                  "description": "Deletes an existing catalog specified by the catalog ID.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}",
+                  "httpMethod": "DELETE",
+                  "id": "biglake.projects.locations.catalogs.delete",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. The name of the catalog to delete. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+name}",
+                  "response": {
+                    "$ref": "Catalog"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/bigquery",
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "get": {
+                  "description": "Gets the catalog specified by the resource name.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}",
+                  "httpMethod": "GET",
+                  "id": "biglake.projects.locations.catalogs.get",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. The name of the catalog to retrieve. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+name}",
+                  "response": {
+                    "$ref": "Catalog"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/bigquery",
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "list": {
+                  "description": "List all catalogs in a specified project.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs",
+                  "httpMethod": "GET",
+                  "id": "biglake.projects.locations.catalogs.list",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "parameters": {
+                    "pageSize": {
+                      "description": "The maximum number of catalogs to return. The service may return fewer than this value. If unspecified, at most 50 catalogs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000.",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "A page token, received from a previous `ListCatalogs` call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to `ListCatalogs` must match the call that provided the page token.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "parent": {
+                      "description": "Required. The parent, which owns this collection of catalogs. Format: projects/{project_id_or_number}/locations/{location_id}",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+parent}/catalogs",
+                  "response": {
+                    "$ref": "ListCatalogsResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/bigquery",
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                }
+              },
+              "resources": {
+                "databases": {
+                  "methods": {
+                    "create": {
+                      "description": "Creates a new database.",
+                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}/databases",
+                      "httpMethod": "POST",
+                      "id": "biglake.projects.locations.catalogs.databases.create",
+                      "parameterOrder": [
+                        "parent"
+                      ],
+                      "parameters": {
+                        "databaseId": {
+                          "description": "Required. The ID to use for the database, which will become the final component of the database's resource name.",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "parent": {
+                          "description": "Required. The parent resource where this database will be created. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v1/{+parent}/databases",
+                      "request": {
+                        "$ref": "Database"
+                      },
+                      "response": {
+                        "$ref": "Database"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/bigquery",
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "delete": {
+                      "description": "Deletes an existing database specified by the database ID.",
+                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}/databases/{databasesId}",
+                      "httpMethod": "DELETE",
+                      "id": "biglake.projects.locations.catalogs.databases.delete",
+                      "parameterOrder": [
+                        "name"
+                      ],
+                      "parameters": {
+                        "name": {
+                          "description": "Required. The name of the database to delete. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}/databases/{database_id}",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+/databases/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v1/{+name}",
+                      "response": {
+                        "$ref": "Database"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/bigquery",
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "get": {
+                      "description": "Gets the database specified by the resource name.",
+                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}/databases/{databasesId}",
+                      "httpMethod": "GET",
+                      "id": "biglake.projects.locations.catalogs.databases.get",
+                      "parameterOrder": [
+                        "name"
+                      ],
+                      "parameters": {
+                        "name": {
+                          "description": "Required. The name of the database to retrieve. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}/databases/{database_id}",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+/databases/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v1/{+name}",
+                      "response": {
+                        "$ref": "Database"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/bigquery",
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "list": {
+                      "description": "List all databases in a specified catalog.",
+                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}/databases",
+                      "httpMethod": "GET",
+                      "id": "biglake.projects.locations.catalogs.databases.list",
+                      "parameterOrder": [
+                        "parent"
+                      ],
+                      "parameters": {
+                        "pageSize": {
+                          "description": "The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000.",
+                          "format": "int32",
+                          "location": "query",
+                          "type": "integer"
+                        },
+                        "pageToken": {
+                          "description": "A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token.",
+                          "location": "query",
+                          "type": "string"
+                        },
+                        "parent": {
+                          "description": "Required. The parent, which owns this collection of databases. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        }
+                      },
+                      "path": "v1/{+parent}/databases",
+                      "response": {
+                        "$ref": "ListDatabasesResponse"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/bigquery",
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    },
+                    "patch": {
+                      "description": "Updates an existing database specified by the database ID.",
+                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}/databases/{databasesId}",
+                      "httpMethod": "PATCH",
+                      "id": "biglake.projects.locations.catalogs.databases.patch",
+                      "parameterOrder": [
+                        "name"
+                      ],
+                      "parameters": {
+                        "name": {
+                          "description": "Output only. The resource name. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}/databases/{database_id}",
+                          "location": "path",
+                          "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+/databases/[^/]+$",
+                          "required": true,
+                          "type": "string"
+                        },
+                        "updateMask": {
+                          "description": "The list of fields to update. For the `FieldMask` definition, see https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#fieldmask If not set, defaults to all of the fields that are allowed to update.",
+                          "format": "google-fieldmask",
+                          "location": "query",
+                          "type": "string"
+                        }
+                      },
+                      "path": "v1/{+name}",
+                      "request": {
+                        "$ref": "Database"
+                      },
+                      "response": {
+                        "$ref": "Database"
+                      },
+                      "scopes": [
+                        "https://www.googleapis.com/auth/bigquery",
+                        "https://www.googleapis.com/auth/cloud-platform"
+                      ]
+                    }
+                  },
+                  "resources": {
+                    "tables": {
+                      "methods": {
+                        "create": {
+                          "description": "Creates a new table.",
+                          "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}/databases/{databasesId}/tables",
+                          "httpMethod": "POST",
+                          "id": "biglake.projects.locations.catalogs.databases.tables.create",
+                          "parameterOrder": [
+                            "parent"
+                          ],
+                          "parameters": {
+                            "parent": {
+                              "description": "Required. The parent resource where this table will be created. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}/databases/{database_id}",
+                              "location": "path",
+                              "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+/databases/[^/]+$",
+                              "required": true,
+                              "type": "string"
+                            },
+                            "tableId": {
+                              "description": "Required. The ID to use for the table, which will become the final component of the table's resource name.",
+                              "location": "query",
+                              "type": "string"
+                            }
+                          },
+                          "path": "v1/{+parent}/tables",
+                          "request": {
+                            "$ref": "Table"
+                          },
+                          "response": {
+                            "$ref": "Table"
+                          },
+                          "scopes": [
+                            "https://www.googleapis.com/auth/bigquery",
+                            "https://www.googleapis.com/auth/cloud-platform"
+                          ]
+                        },
+                        "delete": {
+                          "description": "Deletes an existing table specified by the table ID.",
+                          "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}/databases/{databasesId}/tables/{tablesId}",
+                          "httpMethod": "DELETE",
+                          "id": "biglake.projects.locations.catalogs.databases.tables.delete",
+                          "parameterOrder": [
+                            "name"
+                          ],
+                          "parameters": {
+                            "name": {
+                              "description": "Required. The name of the table to delete. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}/databases/{database_id}/tables/{table_id}",
+                              "location": "path",
+                              "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+/databases/[^/]+/tables/[^/]+$",
+                              "required": true,
+                              "type": "string"
+                            }
+                          },
+                          "path": "v1/{+name}",
+                          "response": {
+                            "$ref": "Table"
+                          },
+                          "scopes": [
+                            "https://www.googleapis.com/auth/bigquery",
+                            "https://www.googleapis.com/auth/cloud-platform"
+                          ]
+                        },
+                        "get": {
+                          "description": "Gets the table specified by the resource name.",
+                          "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}/databases/{databasesId}/tables/{tablesId}",
+                          "httpMethod": "GET",
+                          "id": "biglake.projects.locations.catalogs.databases.tables.get",
+                          "parameterOrder": [
+                            "name"
+                          ],
+                          "parameters": {
+                            "name": {
+                              "description": "Required. The name of the table to retrieve. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}/databases/{database_id}/tables/{table_id}",
+                              "location": "path",
+                              "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+/databases/[^/]+/tables/[^/]+$",
+                              "required": true,
+                              "type": "string"
+                            }
+                          },
+                          "path": "v1/{+name}",
+                          "response": {
+                            "$ref": "Table"
+                          },
+                          "scopes": [
+                            "https://www.googleapis.com/auth/bigquery",
+                            "https://www.googleapis.com/auth/cloud-platform"
+                          ]
+                        },
+                        "list": {
+                          "description": "List all tables in a specified database.",
+                          "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}/databases/{databasesId}/tables",
+                          "httpMethod": "GET",
+                          "id": "biglake.projects.locations.catalogs.databases.tables.list",
+                          "parameterOrder": [
+                            "parent"
+                          ],
+                          "parameters": {
+                            "pageSize": {
+                              "description": "The maximum number of tables to return. The service may return fewer than this value. If unspecified, at most 50 tables will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000.",
+                              "format": "int32",
+                              "location": "query",
+                              "type": "integer"
+                            },
+                            "pageToken": {
+                              "description": "A page token, received from a previous `ListTables` call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to `ListTables` must match the call that provided the page token.",
+                              "location": "query",
+                              "type": "string"
+                            },
+                            "parent": {
+                              "description": "Required. The parent, which owns this collection of tables. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}/databases/{database_id}",
+                              "location": "path",
+                              "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+/databases/[^/]+$",
+                              "required": true,
+                              "type": "string"
+                            },
+                            "view": {
+                              "description": "The view for the returned tables.",
+                              "enum": [
+                                "TABLE_VIEW_UNSPECIFIED",
+                                "BASIC",
+                                "FULL"
+                              ],
+                              "enumDescriptions": [
+                                "Default value. The API will default to the BASIC view.",
+                                "Include only table names. This is the default value.",
+                                "Include everything."
+                              ],
+                              "location": "query",
+                              "type": "string"
+                            }
+                          },
+                          "path": "v1/{+parent}/tables",
+                          "response": {
+                            "$ref": "ListTablesResponse"
+                          },
+                          "scopes": [
+                            "https://www.googleapis.com/auth/bigquery",
+                            "https://www.googleapis.com/auth/cloud-platform"
+                          ]
+                        },
+                        "patch": {
+                          "description": "Updates an existing table specified by the table ID.",
+                          "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}/databases/{databasesId}/tables/{tablesId}",
+                          "httpMethod": "PATCH",
+                          "id": "biglake.projects.locations.catalogs.databases.tables.patch",
+                          "parameterOrder": [
+                            "name"
+                          ],
+                          "parameters": {
+                            "name": {
+                              "description": "Output only. The resource name. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}/databases/{database_id}/tables/{table_id}",
+                              "location": "path",
+                              "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+/databases/[^/]+/tables/[^/]+$",
+                              "required": true,
+                              "type": "string"
+                            },
+                            "updateMask": {
+                              "description": "The list of fields to update. For the `FieldMask` definition, see https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#fieldmask If not set, defaults to all of the fields that are allowed to update.",
+                              "format": "google-fieldmask",
+                              "location": "query",
+                              "type": "string"
+                            }
+                          },
+                          "path": "v1/{+name}",
+                          "request": {
+                            "$ref": "Table"
+                          },
+                          "response": {
+                            "$ref": "Table"
+                          },
+                          "scopes": [
+                            "https://www.googleapis.com/auth/bigquery",
+                            "https://www.googleapis.com/auth/cloud-platform"
+                          ]
+                        },
+                        "rename": {
+                          "description": "Renames an existing table specified by the table ID.",
+                          "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/catalogs/{catalogsId}/databases/{databasesId}/tables/{tablesId}:rename",
+                          "httpMethod": "POST",
+                          "id": "biglake.projects.locations.catalogs.databases.tables.rename",
+                          "parameterOrder": [
+                            "name"
+                          ],
+                          "parameters": {
+                            "name": {
+                              "description": "Required. The table's `name` field is used to identify the table to rename. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}/databases/{database_id}/tables/{table_id}",
+                              "location": "path",
+                              "pattern": "^projects/[^/]+/locations/[^/]+/catalogs/[^/]+/databases/[^/]+/tables/[^/]+$",
+                              "required": true,
+                              "type": "string"
+                            }
+                          },
+                          "path": "v1/{+name}:rename",
+                          "request": {
+                            "$ref": "RenameTableRequest"
+                          },
+                          "response": {
+                            "$ref": "Table"
+                          },
+                          "scopes": [
+                            "https://www.googleapis.com/auth/bigquery",
+                            "https://www.googleapis.com/auth/cloud-platform"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "revision": "20231016",
+  "rootUrl": "https://biglake.googleapis.com/",
+  "schemas": {
+    "Catalog": {
+      "description": "Catalog is the container of databases.",
+      "id": "Catalog",
+      "properties": {
+        "createTime": {
+          "description": "Output only. The creation time of the catalog.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "deleteTime": {
+          "description": "Output only. The deletion time of the catalog. Only set after the catalog is deleted.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "expireTime": {
+          "description": "Output only. The time when this catalog is considered expired. Only set after the catalog is deleted.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "name": {
+          "description": "Output only. The resource name. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}",
+          "readOnly": true,
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "Output only. The last modification time of the catalog.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Database": {
+      "description": "Database is the container of tables.",
+      "id": "Database",
+      "properties": {
+        "createTime": {
+          "description": "Output only. The creation time of the database.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "deleteTime": {
+          "description": "Output only. The deletion time of the database. Only set after the database is deleted.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "expireTime": {
+          "description": "Output only. The time when this database is considered expired. Only set after the database is deleted.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "hiveOptions": {
+          "$ref": "HiveDatabaseOptions",
+          "description": "Options of a Hive database."
+        },
+        "name": {
+          "description": "Output only. The resource name. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}/databases/{database_id}",
+          "readOnly": true,
+          "type": "string"
+        },
+        "type": {
+          "description": "The database type.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "HIVE"
+          ],
+          "enumDescriptions": [
+            "The type is not specified.",
+            "Represents a database storing tables compatible with Hive Metastore tables."
+          ],
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "Output only. The last modification time of the database.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "HiveDatabaseOptions": {
+      "description": "Options of a Hive database.",
+      "id": "HiveDatabaseOptions",
+      "properties": {
+        "locationUri": {
+          "description": "Cloud Storage folder URI where the database data is stored, starting with \"gs://\".",
+          "type": "string"
+        },
+        "parameters": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Stores user supplied Hive database parameters.",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "HiveTableOptions": {
+      "description": "Options of a Hive table.",
+      "id": "HiveTableOptions",
+      "properties": {
+        "parameters": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Stores user supplied Hive table parameters.",
+          "type": "object"
+        },
+        "storageDescriptor": {
+          "$ref": "StorageDescriptor",
+          "description": "Stores physical storage information of the data."
+        },
+        "tableType": {
+          "description": "Hive table type. For example, MANAGED_TABLE, EXTERNAL_TABLE.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListCatalogsResponse": {
+      "description": "Response message for the ListCatalogs method.",
+      "id": "ListCatalogsResponse",
+      "properties": {
+        "catalogs": {
+          "description": "The catalogs from the specified project.",
+          "items": {
+            "$ref": "Catalog"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListDatabasesResponse": {
+      "description": "Response message for the ListDatabases method.",
+      "id": "ListDatabasesResponse",
+      "properties": {
+        "databases": {
+          "description": "The databases from the specified catalog.",
+          "items": {
+            "$ref": "Database"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ListTablesResponse": {
+      "description": "Response message for the ListTables method.",
+      "id": "ListTablesResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        },
+        "tables": {
+          "description": "The tables from the specified database.",
+          "items": {
+            "$ref": "Table"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "RenameTableRequest": {
+      "description": "Request message for the RenameTable method in MetastoreService",
+      "id": "RenameTableRequest",
+      "properties": {
+        "newName": {
+          "description": "Required. The new `name` for the specified table, must be in the same database. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}/databases/{database_id}/tables/{table_id}",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SerDeInfo": {
+      "description": "Serializer and deserializer information.",
+      "id": "SerDeInfo",
+      "properties": {
+        "serializationLib": {
+          "description": "The fully qualified Java class name of the serialization library.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "StorageDescriptor": {
+      "description": "Stores physical storage information of the data.",
+      "id": "StorageDescriptor",
+      "properties": {
+        "inputFormat": {
+          "description": "The fully qualified Java class name of the input format.",
+          "type": "string"
+        },
+        "locationUri": {
+          "description": "Cloud Storage folder URI where the table data is stored, starting with \"gs://\".",
+          "type": "string"
+        },
+        "outputFormat": {
+          "description": "The fully qualified Java class name of the output format.",
+          "type": "string"
+        },
+        "serdeInfo": {
+          "$ref": "SerDeInfo",
+          "description": "Serializer and deserializer information."
+        }
+      },
+      "type": "object"
+    },
+    "Table": {
+      "description": "Represents a table.",
+      "id": "Table",
+      "properties": {
+        "createTime": {
+          "description": "Output only. The creation time of the table.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "deleteTime": {
+          "description": "Output only. The deletion time of the table. Only set after the table is deleted.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "etag": {
+          "description": "The checksum of a table object computed by the server based on the value of other fields. It may be sent on update requests to ensure the client has an up-to-date value before proceeding. It is only checked for update table operations.",
+          "type": "string"
+        },
+        "expireTime": {
+          "description": "Output only. The time when this table is considered expired. Only set after the table is deleted.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "hiveOptions": {
+          "$ref": "HiveTableOptions",
+          "description": "Options of a Hive table."
+        },
+        "name": {
+          "description": "Output only. The resource name. Format: projects/{project_id_or_number}/locations/{location_id}/catalogs/{catalog_id}/databases/{database_id}/tables/{table_id}",
+          "readOnly": true,
+          "type": "string"
+        },
+        "type": {
+          "description": "The table type.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "HIVE"
+          ],
+          "enumDescriptions": [
+            "The type is not specified.",
+            "Represents a table compatible with Hive Metastore tables."
+          ],
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "Output only. The last modification time of the table.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "servicePath": "",
+  "title": "BigLake API",
+  "version": "v1",
+  "version_module": true
+}

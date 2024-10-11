@@ -1,0 +1,18 @@
+=============== Mar 30, 2020 (CEST) ===============
+02:07:34.137606 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+02:07:34.144547 db@open opening
+02:07:34.144770 version@stat F·[] S·0B[] Sc·[]
+02:07:34.145843 db@janitor F·2 G·0
+02:07:34.145875 db@open done T·1.315251ms
+02:07:34.335635 db@close closing
+02:07:34.335736 db@close done T·98.95µs
+=============== Mar 30, 2020 (CEST) ===============
+02:08:33.239115 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+02:08:33.239264 version@stat F·[] S·0B[] Sc·[]
+02:08:33.239281 db@open opening
+02:08:33.239310 journal@recovery F·1
+02:08:33.239398 journal@recovery recovering @1
+02:08:33.322008 memdb@flush created L0@2 N·4 S·391B "cos..ess,v4":"run..nfo,v3"
+02:08:33.323091 version@stat F·[1] S·391B[391B] Sc·[0.25]
+02:08:33.421979 db@janitor F·3 G·0
+02:08:33.422153 db@open done T·182.707962ms

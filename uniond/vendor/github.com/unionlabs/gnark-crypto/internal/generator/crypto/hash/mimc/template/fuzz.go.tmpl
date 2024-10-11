@@ -1,0 +1,15 @@
+
+
+const (
+	fuzzInteresting = 1
+	fuzzNormal      = 0
+	fuzzDiscard     = -1
+)
+
+func Fuzz(data []byte) int {
+    var s []byte
+    h := NewMiMC()
+    h.Write(data)
+    h.Sum(s)
+	return fuzzNormal
+}

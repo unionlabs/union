@@ -1,0 +1,31 @@
+# golangci-feature runs on pull requests from branches that do not target main.
+#
+# Working on feature branches (PRs where the PR base-ref != main) is a common
+# workflow used, in order to make the merging of PRs easier certain lints are excluded
+# when it makes sense. Currently, unused lints are excluded since many PRs will add
+# unused code that will be used in a later PR.
+name: golangci-lint feature branch
+on:
+  pull_request:
+    # Ignore if the target is main. (Negation of golanci-lint.yml)
+    branches-ignore:
+      - main
+permissions:
+  contents: read
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  # pull-requests: read
+
+jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - uses: actions/checkout@v4
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3.7.0
+        with:
+          version: v1.54.2
+          args: --timeout 10m

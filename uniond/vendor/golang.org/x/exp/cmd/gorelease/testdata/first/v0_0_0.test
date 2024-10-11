@@ -1,0 +1,12 @@
+mod=example.com/first
+base=none
+release=v0.0.0
+-- want --
+# summary
+v0.0.0 is a valid semantic version for this release.
+-- go.mod --
+module example.com/first
+
+go 1.12
+-- p.go --
+package p

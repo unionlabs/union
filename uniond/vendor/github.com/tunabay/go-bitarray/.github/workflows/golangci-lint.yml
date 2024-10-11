@@ -1,0 +1,31 @@
+name: golangci-lint
+on:
+  push:
+    tags:
+      - v*
+    branches-ignore:
+      - 'doc-*'
+      - 'doc/*'
+  pull_request:
+    branches:
+      - main
+      - master
+      - release
+jobs:
+  golangci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ^1.17
+      - uses: actions/checkout@v2
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.42
+          only-new-issues: true
+          skip-go-installation: true
+          args: >-
+            --verbose
+            --issues-exit-code=1
+            --config=.ci/golangci-lint.yml

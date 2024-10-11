@@ -1,0 +1,24 @@
+{
+  "chain-a": [
+    "release-v7.3.x",
+    "release-v7.2.x",
+    "release-v6.2.x",
+    "release-v6.1.x"
+  ],
+  "chain-b": [
+    "release-v7.3.x",
+    "release-v7.2.x",
+    "release-v6.2.x",
+    "release-v6.1.x"
+  ],
+  "entrypoint": [
+    "TestIncentivizedInterchainAccountsTestSuite"
+  ],
+  "test": [
+    "TestMsgSendTx_SuccessfulBankSend_Incentivized",
+    "TestMsgSendTx_FailedBankSend_Incentivized"
+  ],
+  "relayer-type": [
+    "hermes"
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "genesis": {
+    "difficulty": "4683014",
+    "extraData": "0x537465762d63676574682d76312e31312e34",
+    "gasLimit": "9435044",
+    "hash": "0x3452ca5005cb73cd60dfa488a7b124251168e564491f80eb66765e79d78cfd95",
+    "miner": "0x415aa6292d1db797a467b22139704956c030e62f",
+    "mixHash": "0x6037612618507ae70c74a72bc2580253662971db959cfbc06d3f8527d4d01575",
+    "nonce": "0x314fc90dee5e39a2",
+    "number": "1555274",
+    "stateRoot": "0x795751f3f96a5de1fd3944ddd78cbfe4ef10491e1086be47609869a30929d0e5",
+    "timestamp": "1590795228",
+    "totalDifficulty": "2242595605834",
+    "alloc": {
+      "0x0000000000000000000000000000000000000009": {
+        "balance": "0x0",
+        "nonce": "0",
+        "code": "0x",
+        "storage": {}
+      },
+      "0x877bd459c9b7d8576b44e59e09d076c25946f443": {
+        "balance": "0x6242e3ccf48e66425fb1",
+        "nonce": "264981",
+        "code": "0x",
+        "storage": {}
+      }
+    },
+    "config": {
+      "chainId": 63,
+      "daoForkSupport": true,
+      "eip150Block": 0,
+      "eip150Hash": "0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d",
+      "eip155Block": 0,
+      "eip158Block": 0,
+      "ethash": {},
+      "homesteadBlock": 0,
+      "byzantiumBlock": 0,
+      "constantinopleBlock": 301243,
+      "petersburgBlock": 999983,
+      "istanbulBlock": 999983
+    }
+  },
+  "context": {
+    "number": "1555275",
+    "difficulty": "4683014",
+    "timestamp": "1590795244",
+    "gasLimit": "9444256",
+    "miner": "0x877bd459c9b7d8576b44e59e09d076c25946f443"
+  },
+  "input": "0xf87a83040b15843b9aca008301a0348080a636600060003760406103e8366000600060095af26001556103e851600255610408516003550081a1a0dd883fbbb489b640dadc8c1bf151767155228d0a1321f687f070f35f14374b05a02dd0ccb16a8de39bc8ee61381bbbbb54f0ab18422afd7b03c6163da1f5023934",
+  "result": [
+    {
+      "type": "create",
+      "action": {
+        "from": "0x877bd459c9b7d8576b44e59e09d076c25946f443",
+        "value": "0x0",
+        "gas": "0x1a034",
+        "init": "0x36600060003760406103e8366000600060095af26001556103e8516002556104085160035500"
+      },
+      "error": "out of gas",
+      "traceAddress": [],
+      "subtraces": 1,
+      "transactionPosition": 117,
+      "transactionHash": "0x7fe4dec901e1a62c1a1d96b8267bb9ff9dc1f75def43aa45b998743455eff8f9",
+      "blockNumber": 1555275,
+      "blockHash": "0x80945caaff2fc67253cbb0217d2e5a307afde943929e97d8b36e58b88cbb02fd",
+      "time": "332.877µs"
+    },
+    {
+      "type": "call",
+      "action": {
+        "from": "0x8832ef498070145c3a5b30f47fbca71fd7b1de9f",
+        "to": "0x0000000000000000000000000000000000000009",
+        "value": "0x0",
+        "gas": "0xc897",
+        "input": "0x",
+        "callType": "callcode"
+      },
+      "error": "invalid input length",
+      "traceAddress": [
+        0
+      ],
+      "subtraces": 0,
+      "transactionPosition": 117,
+      "transactionHash": "0x7fe4dec901e1a62c1a1d96b8267bb9ff9dc1f75def43aa45b998743455eff8f9",
+      "blockNumber": 1555275,
+      "blockHash": "0x80945caaff2fc67253cbb0217d2e5a307afde943929e97d8b36e58b88cbb02fd"
+    }
+  ]
+}

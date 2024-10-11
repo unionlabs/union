@@ -1,0 +1,29 @@
+name: Build
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.14.x, 1.15.x]
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Build
+      run: go build ./...
+    - name: Test
+      run: go test -race -cover -covermode=atomic -coverprofile=coverage.out ./...
+    - uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.out
+        verbose: true

@@ -1,0 +1,1980 @@
+{
+  "version": "2.0",
+  "service": "<p>Glue DataBrew is a visual, cloud-scale data-preparation service. DataBrew simplifies data preparation tasks, targeting data issues that are hard to spot and time-consuming to fix. DataBrew empowers users of all technical levels to visualize the data and perform one-click data transformations, with no coding required.</p>",
+  "operations": {
+    "BatchDeleteRecipeVersion": "<p>Deletes one or more versions of a recipe at a time.</p> <p>The entire request will be rejected if:</p> <ul> <li> <p>The recipe does not exist.</p> </li> <li> <p>There is an invalid version identifier in the list of versions.</p> </li> <li> <p>The version list is empty.</p> </li> <li> <p>The version list size exceeds 50.</p> </li> <li> <p>The version list contains duplicate entries.</p> </li> </ul> <p>The request will complete successfully, but with partial failures, if:</p> <ul> <li> <p>A version does not exist.</p> </li> <li> <p>A version is being used by a job.</p> </li> <li> <p>You specify <code>LATEST_WORKING</code>, but it's being used by a project.</p> </li> <li> <p>The version fails to be deleted.</p> </li> </ul> <p>The <code>LATEST_WORKING</code> version will only be deleted if the recipe has no other versions. If you try to delete <code>LATEST_WORKING</code> while other versions exist (or if they can't be deleted), then <code>LATEST_WORKING</code> will be listed as partial failure in the response.</p>",
+    "CreateDataset": "<p>Creates a new DataBrew dataset.</p>",
+    "CreateProfileJob": "<p>Creates a new job to analyze a dataset and create its data profile.</p>",
+    "CreateProject": "<p>Creates a new DataBrew project.</p>",
+    "CreateRecipe": "<p>Creates a new DataBrew recipe.</p>",
+    "CreateRecipeJob": "<p>Creates a new job to transform input data, using steps defined in an existing Glue DataBrew recipe</p>",
+    "CreateRuleset": "<p>Creates a new ruleset that can be used in a profile job to validate the data quality of a dataset.</p>",
+    "CreateSchedule": "<p>Creates a new schedule for one or more DataBrew jobs. Jobs can be run at a specific date and time, or at regular intervals.</p>",
+    "DeleteDataset": "<p>Deletes a dataset from DataBrew.</p>",
+    "DeleteJob": "<p>Deletes the specified DataBrew job.</p>",
+    "DeleteProject": "<p>Deletes an existing DataBrew project.</p>",
+    "DeleteRecipeVersion": "<p>Deletes a single version of a DataBrew recipe.</p>",
+    "DeleteRuleset": "<p>Deletes a ruleset.</p>",
+    "DeleteSchedule": "<p>Deletes the specified DataBrew schedule.</p>",
+    "DescribeDataset": "<p>Returns the definition of a specific DataBrew dataset.</p>",
+    "DescribeJob": "<p>Returns the definition of a specific DataBrew job.</p>",
+    "DescribeJobRun": "<p>Represents one run of a DataBrew job.</p>",
+    "DescribeProject": "<p>Returns the definition of a specific DataBrew project.</p>",
+    "DescribeRecipe": "<p>Returns the definition of a specific DataBrew recipe corresponding to a particular version.</p>",
+    "DescribeRuleset": "<p>Retrieves detailed information about the ruleset.</p>",
+    "DescribeSchedule": "<p>Returns the definition of a specific DataBrew schedule.</p>",
+    "ListDatasets": "<p>Lists all of the DataBrew datasets.</p>",
+    "ListJobRuns": "<p>Lists all of the previous runs of a particular DataBrew job.</p>",
+    "ListJobs": "<p>Lists all of the DataBrew jobs that are defined.</p>",
+    "ListProjects": "<p>Lists all of the DataBrew projects that are defined.</p>",
+    "ListRecipeVersions": "<p>Lists the versions of a particular DataBrew recipe, except for <code>LATEST_WORKING</code>.</p>",
+    "ListRecipes": "<p>Lists all of the DataBrew recipes that are defined.</p>",
+    "ListRulesets": "<p>List all rulesets available in the current account or rulesets associated with a specific resource (dataset).</p>",
+    "ListSchedules": "<p>Lists the DataBrew schedules that are defined.</p>",
+    "ListTagsForResource": "<p>Lists all the tags for a DataBrew resource. </p>",
+    "PublishRecipe": "<p>Publishes a new version of a DataBrew recipe.</p>",
+    "SendProjectSessionAction": "<p>Performs a recipe step within an interactive DataBrew session that's currently open.</p>",
+    "StartJobRun": "<p>Runs a DataBrew job.</p>",
+    "StartProjectSession": "<p>Creates an interactive session, enabling you to manipulate data in a DataBrew project.</p>",
+    "StopJobRun": "<p>Stops a particular run of a job.</p>",
+    "TagResource": "<p>Adds metadata tags to a DataBrew resource, such as a dataset, project, recipe, job, or schedule.</p>",
+    "UntagResource": "<p>Removes metadata tags from a DataBrew resource.</p>",
+    "UpdateDataset": "<p>Modifies the definition of an existing DataBrew dataset.</p>",
+    "UpdateProfileJob": "<p>Modifies the definition of an existing profile job.</p>",
+    "UpdateProject": "<p>Modifies the definition of an existing DataBrew project.</p>",
+    "UpdateRecipe": "<p>Modifies the definition of the <code>LATEST_WORKING</code> version of a DataBrew recipe.</p>",
+    "UpdateRecipeJob": "<p>Modifies the definition of an existing DataBrew recipe job.</p>",
+    "UpdateRuleset": "<p>Updates specified ruleset.</p>",
+    "UpdateSchedule": "<p>Modifies the definition of an existing DataBrew schedule.</p>"
+  },
+  "shapes": {
+    "AccessDeniedException": {
+      "base": "<p>Access to the specified resource was denied.</p>",
+      "refs": {
+      }
+    },
+    "AccountId": {
+      "base": null,
+      "refs": {
+        "Dataset$AccountId": "<p>The ID of the Amazon Web Services account that owns the dataset.</p>",
+        "Job$AccountId": "<p>The ID of the Amazon Web Services account that owns the job.</p>",
+        "Project$AccountId": "<p>The ID of the Amazon Web Services account that owns the project.</p>",
+        "RulesetItem$AccountId": "<p>The ID of the Amazon Web Services account that owns the ruleset.</p>",
+        "Schedule$AccountId": "<p>The ID of the Amazon Web Services account that owns the schedule.</p>"
+      }
+    },
+    "ActionId": {
+      "base": null,
+      "refs": {
+        "SendProjectSessionActionResponse$ActionId": "<p>A unique identifier for the action that was performed.</p>"
+      }
+    },
+    "AllowedStatisticList": {
+      "base": null,
+      "refs": {
+        "EntityDetectorConfiguration$AllowedStatistics": "<p>Configuration of statistics that are allowed to be run on columns that contain detected entities. When undefined, no statistics will be computed on columns that contain detected entities.</p>"
+      }
+    },
+    "AllowedStatistics": {
+      "base": "<p>Configuration of statistics that are allowed to be run on columns that contain detected entities. When undefined, no statistics will be computed on columns that contain detected entities.</p>",
+      "refs": {
+        "AllowedStatisticList$member": null
+      }
+    },
+    "AnalyticsMode": {
+      "base": null,
+      "refs": {
+        "ViewFrame$Analytics": "<p>Controls if analytics computation is enabled or disabled. Enabled by default.</p>"
+      }
+    },
+    "Arn": {
+      "base": null,
+      "refs": {
+        "CreateProfileJobRequest$RoleArn": "<p>The Amazon Resource Name (ARN) of the Identity and Access Management (IAM) role to be assumed when DataBrew runs the job.</p>",
+        "CreateProjectRequest$RoleArn": "<p>The Amazon Resource Name (ARN) of the Identity and Access Management (IAM) role to be assumed for this request.</p>",
+        "CreateRecipeJobRequest$RoleArn": "<p>The Amazon Resource Name (ARN) of the Identity and Access Management (IAM) role to be assumed when DataBrew runs the job.</p>",
+        "CreateRulesetRequest$TargetArn": "<p>The Amazon Resource Name (ARN) of a resource (dataset) that the ruleset is associated with.</p>",
+        "Dataset$ResourceArn": "<p>The unique Amazon Resource Name (ARN) for the dataset.</p>",
+        "DescribeDatasetResponse$ResourceArn": "<p>The Amazon Resource Name (ARN) of the dataset.</p>",
+        "DescribeJobResponse$ResourceArn": "<p>The Amazon Resource Name (ARN) of the job.</p>",
+        "DescribeJobResponse$RoleArn": "<p>The ARN of the Identity and Access Management (IAM) role to be assumed when DataBrew runs the job.</p>",
+        "DescribeProjectResponse$ResourceArn": "<p>The Amazon Resource Name (ARN) of the project.</p>",
+        "DescribeProjectResponse$RoleArn": "<p>The ARN of the Identity and Access Management (IAM) role to be assumed when DataBrew runs the job.</p>",
+        "DescribeRecipeResponse$ResourceArn": "<p>The ARN of the recipe.</p>",
+        "DescribeRulesetResponse$TargetArn": "<p>The Amazon Resource Name (ARN) of a resource (dataset) that the ruleset is associated with.</p>",
+        "DescribeRulesetResponse$ResourceArn": "<p>The Amazon Resource Name (ARN) for the ruleset.</p>",
+        "DescribeScheduleResponse$ResourceArn": "<p>The Amazon Resource Name (ARN) of the schedule.</p>",
+        "Job$ResourceArn": "<p>The unique Amazon Resource Name (ARN) for the job.</p>",
+        "Job$RoleArn": "<p>The Amazon Resource Name (ARN) of the role to be assumed for this job.</p>",
+        "ListRulesetsRequest$TargetArn": "<p>The Amazon Resource Name (ARN) of a resource (dataset). Using this parameter indicates to return only those rulesets that are associated with the specified resource.</p>",
+        "ListTagsForResourceRequest$ResourceArn": "<p>The Amazon Resource Name (ARN) string that uniquely identifies the DataBrew resource. </p>",
+        "Metadata$SourceArn": "<p>The Amazon Resource Name (ARN) associated with the dataset. Currently, DataBrew only supports ARNs from Amazon AppFlow.</p>",
+        "Project$ResourceArn": "<p>The Amazon Resource Name (ARN) for the project.</p>",
+        "Project$RoleArn": "<p>The Amazon Resource Name (ARN) of the role that will be assumed for this project.</p>",
+        "Recipe$ResourceArn": "<p>The Amazon Resource Name (ARN) for the recipe.</p>",
+        "RulesetItem$ResourceArn": "<p>The Amazon Resource Name (ARN) for the ruleset.</p>",
+        "RulesetItem$TargetArn": "<p>The Amazon Resource Name (ARN) of a resource (dataset) that the ruleset is associated with.</p>",
+        "Schedule$ResourceArn": "<p>The Amazon Resource Name (ARN) of the schedule.</p>",
+        "TagResourceRequest$ResourceArn": "<p>The DataBrew resource to which tags should be added. The value for this parameter is an Amazon Resource Name (ARN). For DataBrew, you can tag a dataset, a job, a project, or a recipe.</p>",
+        "UntagResourceRequest$ResourceArn": "<p>A DataBrew resource from which you want to remove a tag or tags. The value for this parameter is an Amazon Resource Name (ARN). </p>",
+        "UpdateProfileJobRequest$RoleArn": "<p>The Amazon Resource Name (ARN) of the Identity and Access Management (IAM) role to be assumed when DataBrew runs the job.</p>",
+        "UpdateProjectRequest$RoleArn": "<p>The Amazon Resource Name (ARN) of the IAM role to be assumed for this request.</p>",
+        "UpdateRecipeJobRequest$RoleArn": "<p>The Amazon Resource Name (ARN) of the Identity and Access Management (IAM) role to be assumed when DataBrew runs the job.</p>",
+        "ValidationConfiguration$RulesetArn": "<p>The Amazon Resource Name (ARN) for the ruleset to be validated in the profile job. The TargetArn of the selected ruleset should be the same as the Amazon Resource Name (ARN) of the dataset that is associated with the profile job.</p>"
+      }
+    },
+    "AssumeControl": {
+      "base": null,
+      "refs": {
+        "StartProjectSessionRequest$AssumeControl": "<p>A value that, if true, enables you to take control of a session, even if a different client is currently accessing the project.</p>"
+      }
+    },
+    "Attempt": {
+      "base": null,
+      "refs": {
+        "DescribeJobRunResponse$Attempt": "<p>The number of times that DataBrew has attempted to run the job.</p>",
+        "JobRun$Attempt": "<p>The number of times that DataBrew has attempted to run the job.</p>"
+      }
+    },
+    "BatchDeleteRecipeVersionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "BatchDeleteRecipeVersionResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Bucket": {
+      "base": null,
+      "refs": {
+        "S3Location$Bucket": "<p>The Amazon S3 bucket name.</p>"
+      }
+    },
+    "BucketOwner": {
+      "base": null,
+      "refs": {
+        "S3Location$BucketOwner": "<p>The Amazon Web Services account ID of the bucket owner.</p>"
+      }
+    },
+    "CatalogId": {
+      "base": null,
+      "refs": {
+        "DataCatalogInputDefinition$CatalogId": "<p>The unique identifier of the Amazon Web Services account that holds the Data Catalog that stores the data.</p>",
+        "DataCatalogOutput$CatalogId": "<p>The unique identifier of the Amazon Web Services account that holds the Data Catalog that stores the data.</p>"
+      }
+    },
+    "ClientSessionId": {
+      "base": null,
+      "refs": {
+        "SendProjectSessionActionRequest$ClientSessionId": "<p>A unique identifier for an interactive session that's currently open and ready for work. The action will be performed on this session.</p>",
+        "StartProjectSessionResponse$ClientSessionId": "<p>A system-generated identifier for the session.</p>"
+      }
+    },
+    "ColumnName": {
+      "base": null,
+      "refs": {
+        "ColumnNameList$member": null,
+        "ColumnSelector$Regex": "<p>A regular expression for selecting a column from a dataset.</p>",
+        "ColumnSelector$Name": "<p>The name of a column from a dataset.</p>",
+        "HiddenColumnList$member": null
+      }
+    },
+    "ColumnNameList": {
+      "base": null,
+      "refs": {
+        "Output$PartitionColumns": "<p>The names of one or more partition columns for the output of the job.</p>"
+      }
+    },
+    "ColumnRange": {
+      "base": null,
+      "refs": {
+        "ViewFrame$ColumnRange": "<p>The number of columns to include in the view frame, beginning with the <code>StartColumnIndex</code> value and ignoring any columns in the <code>HiddenColumns</code> list.</p>"
+      }
+    },
+    "ColumnSelector": {
+      "base": "<p>Selector of a column from a dataset for profile job configuration. One selector includes either a column name or a regular expression.</p>",
+      "refs": {
+        "ColumnSelectorList$member": null
+      }
+    },
+    "ColumnSelectorList": {
+      "base": null,
+      "refs": {
+        "ColumnStatisticsConfiguration$Selectors": "<p>List of column selectors. Selectors can be used to select columns from the dataset. When selectors are undefined, configuration will be applied to all supported columns. </p>",
+        "ProfileConfiguration$ProfileColumns": "<p>List of column selectors. ProfileColumns can be used to select columns from the dataset. When ProfileColumns is undefined, the profile job will profile all supported columns. </p>",
+        "Rule$ColumnSelectors": "<p>List of column selectors. Selectors can be used to select columns using a name or regular expression from the dataset. Rule will be applied to selected columns.</p>"
+      }
+    },
+    "ColumnStatisticsConfiguration": {
+      "base": "<p>Configuration for column evaluations for a profile job. ColumnStatisticsConfiguration can be used to select evaluations and override parameters of evaluations for particular columns. </p>",
+      "refs": {
+        "ColumnStatisticsConfigurationList$member": null
+      }
+    },
+    "ColumnStatisticsConfigurationList": {
+      "base": null,
+      "refs": {
+        "ProfileConfiguration$ColumnStatisticsConfigurations": "<p>List of configurations for column evaluations. ColumnStatisticsConfigurations are used to select evaluations and override parameters of evaluations for particular columns. When ColumnStatisticsConfigurations is undefined, the profile job will profile all supported columns and run all supported evaluations. </p>"
+      }
+    },
+    "CompressionFormat": {
+      "base": null,
+      "refs": {
+        "Output$CompressionFormat": "<p>The compression algorithm used to compress the output text of the job.</p>"
+      }
+    },
+    "Condition": {
+      "base": null,
+      "refs": {
+        "ConditionExpression$Condition": "<p>A specific condition to apply to a recipe action. For more information, see <a href=\"https://docs.aws.amazon.com/databrew/latest/dg/recipes.html#recipes.structure\">Recipe structure</a> in the <i>Glue DataBrew Developer Guide</i>.</p>"
+      }
+    },
+    "ConditionExpression": {
+      "base": "<p>Represents an individual condition that evaluates to true or false.</p> <p>Conditions are used with recipe actions. The action is only performed for column values where the condition evaluates to true.</p> <p>If a recipe requires more than one condition, then the recipe must specify multiple <code>ConditionExpression</code> elements. Each condition is applied to the rows in a dataset first, before the recipe action is performed.</p>",
+      "refs": {
+        "ConditionExpressionList$member": null
+      }
+    },
+    "ConditionExpressionList": {
+      "base": null,
+      "refs": {
+        "RecipeStep$ConditionExpressions": "<p>One or more conditions that must be met for the recipe step to succeed.</p> <note> <p>All of the conditions in the array must be met. In other words, all of the conditions must be combined using a logical AND operation.</p> </note>"
+      }
+    },
+    "ConditionValue": {
+      "base": null,
+      "refs": {
+        "ConditionExpression$Value": "<p>A value that the condition must evaluate to for the condition to succeed.</p>",
+        "ValuesMap$value": null
+      }
+    },
+    "ConflictException": {
+      "base": "<p>Updating or deleting a resource can cause an inconsistent state.</p>",
+      "refs": {
+      }
+    },
+    "CreateColumn": {
+      "base": null,
+      "refs": {
+        "DatasetParameter$CreateColumn": "<p>Optional boolean value that defines whether the captured value of this parameter should be used to create a new column in a dataset.</p>"
+      }
+    },
+    "CreateDatasetRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateDatasetResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateProfileJobRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateProfileJobResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateProjectRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateProjectResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateRecipeJobRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateRecipeJobResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateRecipeRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateRecipeResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateRulesetRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateRulesetResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateScheduleRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreateScheduleResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "CreatedBy": {
+      "base": null,
+      "refs": {
+        "Dataset$CreatedBy": "<p>The Amazon Resource Name (ARN) of the user who created the dataset.</p>",
+        "DescribeDatasetResponse$CreatedBy": "<p>The identifier (user name) of the user who created the dataset.</p>",
+        "DescribeJobResponse$CreatedBy": "<p>The identifier (user name) of the user associated with the creation of the job.</p>",
+        "DescribeProjectResponse$CreatedBy": "<p>The identifier (user name) of the user who created the project.</p>",
+        "DescribeRecipeResponse$CreatedBy": "<p>The identifier (user name) of the user who created the recipe.</p>",
+        "DescribeRulesetResponse$CreatedBy": "<p>The Amazon Resource Name (ARN) of the user who created the ruleset.</p>",
+        "DescribeScheduleResponse$CreatedBy": "<p>The identifier (user name) of the user who created the schedule. </p>",
+        "Job$CreatedBy": "<p>The Amazon Resource Name (ARN) of the user who created the job.</p>",
+        "Project$CreatedBy": "<p>The Amazon Resource Name (ARN) of the user who crated the project.</p>",
+        "Recipe$CreatedBy": "<p>The Amazon Resource Name (ARN) of the user who created the recipe.</p>",
+        "RulesetItem$CreatedBy": "<p>The Amazon Resource Name (ARN) of the user who created the ruleset.</p>",
+        "Schedule$CreatedBy": "<p>The Amazon Resource Name (ARN) of the user who created the schedule.</p>"
+      }
+    },
+    "CronExpression": {
+      "base": null,
+      "refs": {
+        "CreateScheduleRequest$CronExpression": "<p>The date or dates and time or times when the jobs are to be run. For more information, see <a href=\"https://docs.aws.amazon.com/databrew/latest/dg/jobs.cron.html\">Cron expressions</a> in the <i>Glue DataBrew Developer Guide</i>.</p>",
+        "DescribeScheduleResponse$CronExpression": "<p>The date or dates and time or times when the jobs are to be run for the schedule. For more information, see <a href=\"https://docs.aws.amazon.com/databrew/latest/dg/jobs.cron.html\">Cron expressions</a> in the <i>Glue DataBrew Developer Guide</i>.</p>",
+        "Schedule$CronExpression": "<p>The dates and times when the job is to run. For more information, see <a href=\"https://docs.aws.amazon.com/databrew/latest/dg/jobs.cron.html\">Cron expressions</a> in the <i>Glue DataBrew Developer Guide</i>.</p>",
+        "UpdateScheduleRequest$CronExpression": "<p>The date or dates and time or times when the jobs are to be run. For more information, see <a href=\"https://docs.aws.amazon.com/databrew/latest/dg/jobs.cron.html\">Cron expressions</a> in the <i>Glue DataBrew Developer Guide</i>.</p>"
+      }
+    },
+    "CsvOptions": {
+      "base": "<p>Represents a set of options that define how DataBrew will read a comma-separated value (CSV) file when creating a dataset from that file.</p>",
+      "refs": {
+        "FormatOptions$Csv": "<p>Options that define how CSV input is to be interpreted by DataBrew.</p>"
+      }
+    },
+    "CsvOutputOptions": {
+      "base": "<p>Represents a set of options that define how DataBrew will write a comma-separated value (CSV) file.</p>",
+      "refs": {
+        "OutputFormatOptions$Csv": "<p>Represents a set of options that define the structure of comma-separated value (CSV) job output.</p>"
+      }
+    },
+    "DataCatalogInputDefinition": {
+      "base": "<p>Represents how metadata stored in the Glue Data Catalog is defined in a DataBrew dataset. </p>",
+      "refs": {
+        "Input$DataCatalogInputDefinition": "<p>The Glue Data Catalog parameters for the data.</p>"
+      }
+    },
+    "DataCatalogOutput": {
+      "base": "<p>Represents options that specify how and where in the Glue Data Catalog DataBrew writes the output generated by recipe jobs.</p>",
+      "refs": {
+        "DataCatalogOutputList$member": null
+      }
+    },
+    "DataCatalogOutputList": {
+      "base": null,
+      "refs": {
+        "CreateRecipeJobRequest$DataCatalogOutputs": "<p>One or more artifacts that represent the Glue Data Catalog output from running the job.</p>",
+        "DescribeJobResponse$DataCatalogOutputs": "<p>One or more artifacts that represent the Glue Data Catalog output from running the job.</p>",
+        "DescribeJobRunResponse$DataCatalogOutputs": "<p>One or more artifacts that represent the Glue Data Catalog output from running the job.</p>",
+        "Job$DataCatalogOutputs": "<p>One or more artifacts that represent the Glue Data Catalog output from running the job.</p>",
+        "JobRun$DataCatalogOutputs": "<p>One or more artifacts that represent the Glue Data Catalog output from running the job.</p>",
+        "UpdateRecipeJobRequest$DataCatalogOutputs": "<p>One or more artifacts that represent the Glue Data Catalog output from running the job.</p>"
+      }
+    },
+    "DatabaseInputDefinition": {
+      "base": "<p>Connection information for dataset input files stored in a database.</p>",
+      "refs": {
+        "Input$DatabaseInputDefinition": "<p>Connection information for dataset input files stored in a database.</p>"
+      }
+    },
+    "DatabaseName": {
+      "base": null,
+      "refs": {
+        "DataCatalogInputDefinition$DatabaseName": "<p>The name of a database in the Data Catalog.</p>",
+        "DataCatalogOutput$DatabaseName": "<p>The name of a database in the Data Catalog.</p>"
+      }
+    },
+    "DatabaseOutput": {
+      "base": "<p>Represents a JDBC database output object which defines the output destination for a DataBrew recipe job to write into.</p>",
+      "refs": {
+        "DatabaseOutputList$member": null
+      }
+    },
+    "DatabaseOutputList": {
+      "base": null,
+      "refs": {
+        "CreateRecipeJobRequest$DatabaseOutputs": "<p>Represents a list of JDBC database output objects which defines the output destination for a DataBrew recipe job to write to. </p>",
+        "DescribeJobResponse$DatabaseOutputs": "<p>Represents a list of JDBC database output objects which defines the output destination for a DataBrew recipe job to write into.</p>",
+        "DescribeJobRunResponse$DatabaseOutputs": "<p>Represents a list of JDBC database output objects which defines the output destination for a DataBrew recipe job to write into.</p>",
+        "Job$DatabaseOutputs": "<p>Represents a list of JDBC database output objects which defines the output destination for a DataBrew recipe job to write into.</p>",
+        "JobRun$DatabaseOutputs": "<p>Represents a list of JDBC database output objects which defines the output destination for a DataBrew recipe job to write into.</p>",
+        "UpdateRecipeJobRequest$DatabaseOutputs": "<p>Represents a list of JDBC database output objects which defines the output destination for a DataBrew recipe job to write into.</p>"
+      }
+    },
+    "DatabaseOutputMode": {
+      "base": null,
+      "refs": {
+        "DatabaseOutput$DatabaseOutputMode": "<p>The output mode to write into the database. Currently supported option: NEW_TABLE.</p>"
+      }
+    },
+    "DatabaseTableName": {
+      "base": null,
+      "refs": {
+        "DatabaseInputDefinition$DatabaseTableName": "<p>The table within the target database.</p>",
+        "DatabaseTableOutputOptions$TableName": "<p>A prefix for the name of a table DataBrew will create in the database.</p>"
+      }
+    },
+    "DatabaseTableOutputOptions": {
+      "base": "<p>Represents options that specify how and where DataBrew writes the database output generated by recipe jobs.</p>",
+      "refs": {
+        "DataCatalogOutput$DatabaseOptions": "<p>Represents options that specify how and where DataBrew writes the database output generated by recipe jobs.</p>",
+        "DatabaseOutput$DatabaseOptions": "<p>Represents options that specify how and where DataBrew writes the database output generated by recipe jobs.</p>"
+      }
+    },
+    "Dataset": {
+      "base": "<p>Represents a dataset that can be processed by DataBrew.</p>",
+      "refs": {
+        "DatasetList$member": null
+      }
+    },
+    "DatasetList": {
+      "base": null,
+      "refs": {
+        "ListDatasetsResponse$Datasets": "<p>A list of datasets that are defined.</p>"
+      }
+    },
+    "DatasetName": {
+      "base": null,
+      "refs": {
+        "CreateDatasetRequest$Name": "<p>The name of the dataset to be created. Valid characters are alphanumeric (A-Z, a-z, 0-9), hyphen (-), period (.), and space.</p>",
+        "CreateDatasetResponse$Name": "<p>The name of the dataset that you created.</p>",
+        "CreateProfileJobRequest$DatasetName": "<p>The name of the dataset that this job is to act upon.</p>",
+        "CreateProjectRequest$DatasetName": "<p>The name of an existing dataset to associate this project with.</p>",
+        "CreateRecipeJobRequest$DatasetName": "<p>The name of the dataset that this job processes.</p>",
+        "Dataset$Name": "<p>The unique name of the dataset.</p>",
+        "DeleteDatasetRequest$Name": "<p>The name of the dataset to be deleted.</p>",
+        "DeleteDatasetResponse$Name": "<p>The name of the dataset that you deleted.</p>",
+        "DescribeDatasetRequest$Name": "<p>The name of the dataset to be described.</p>",
+        "DescribeDatasetResponse$Name": "<p>The name of the dataset.</p>",
+        "DescribeJobResponse$DatasetName": "<p>The dataset that the job acts upon.</p>",
+        "DescribeJobRunResponse$DatasetName": "<p>The name of the dataset for the job to process.</p>",
+        "DescribeProjectResponse$DatasetName": "<p>The dataset associated with the project.</p>",
+        "Job$DatasetName": "<p>A dataset that the job is to process.</p>",
+        "JobRun$DatasetName": "<p>The name of the dataset for the job to process.</p>",
+        "ListJobsRequest$DatasetName": "<p>The name of a dataset. Using this parameter indicates to return only those jobs that act on the specified dataset.</p>",
+        "Project$DatasetName": "<p>The dataset that the project is to act upon.</p>",
+        "UpdateDatasetRequest$Name": "<p>The name of the dataset to be updated.</p>",
+        "UpdateDatasetResponse$Name": "<p>The name of the dataset that you updated.</p>"
+      }
+    },
+    "DatasetParameter": {
+      "base": "<p>Represents a dataset parameter that defines type and conditions for a parameter in the Amazon S3 path of the dataset.</p>",
+      "refs": {
+        "PathParametersMap$value": null
+      }
+    },
+    "Date": {
+      "base": null,
+      "refs": {
+        "Dataset$CreateDate": "<p>The date and time that the dataset was created.</p>",
+        "Dataset$LastModifiedDate": "<p>The last modification date and time of the dataset.</p>",
+        "DescribeDatasetResponse$CreateDate": "<p>The date and time that the dataset was created.</p>",
+        "DescribeDatasetResponse$LastModifiedDate": "<p>The date and time that the dataset was last modified.</p>",
+        "DescribeJobResponse$CreateDate": "<p>The date and time that the job was created.</p>",
+        "DescribeJobResponse$LastModifiedDate": "<p>The date and time that the job was last modified.</p>",
+        "DescribeJobRunResponse$CompletedOn": "<p>The date and time when the job completed processing.</p>",
+        "DescribeJobRunResponse$StartedOn": "<p>The date and time when the job run began.</p>",
+        "DescribeProjectResponse$CreateDate": "<p>The date and time that the project was created.</p>",
+        "DescribeProjectResponse$LastModifiedDate": "<p>The date and time that the project was last modified.</p>",
+        "DescribeProjectResponse$OpenDate": "<p>The date and time when the project was opened. </p>",
+        "DescribeRecipeResponse$CreateDate": "<p>The date and time that the recipe was created.</p>",
+        "DescribeRecipeResponse$LastModifiedDate": "<p>The date and time that the recipe was last modified.</p>",
+        "DescribeRecipeResponse$PublishedDate": "<p>The date and time when the recipe was last published.</p>",
+        "DescribeRulesetResponse$CreateDate": "<p>The date and time that the ruleset was created.</p>",
+        "DescribeRulesetResponse$LastModifiedDate": "<p>The modification date and time of the ruleset.</p>",
+        "DescribeScheduleResponse$CreateDate": "<p>The date and time that the schedule was created.</p>",
+        "DescribeScheduleResponse$LastModifiedDate": "<p>The date and time that the schedule was last modified.</p>",
+        "Job$CreateDate": "<p>The date and time that the job was created.</p>",
+        "Job$LastModifiedDate": "<p>The modification date and time of the job.</p>",
+        "JobRun$CompletedOn": "<p>The date and time when the job completed processing.</p>",
+        "JobRun$StartedOn": "<p>The date and time when the job run began. </p>",
+        "Project$CreateDate": "<p>The date and time that the project was created.</p>",
+        "Project$LastModifiedDate": "<p>The last modification date and time for the project.</p>",
+        "Project$OpenDate": "<p>The date and time when the project was opened.</p>",
+        "Recipe$CreateDate": "<p>The date and time that the recipe was created.</p>",
+        "Recipe$LastModifiedDate": "<p>The last modification date and time of the recipe.</p>",
+        "Recipe$PublishedDate": "<p>The date and time when the recipe was published.</p>",
+        "RulesetItem$CreateDate": "<p>The date and time that the ruleset was created.</p>",
+        "RulesetItem$LastModifiedDate": "<p>The modification date and time of the ruleset.</p>",
+        "Schedule$CreateDate": "<p>The date and time that the schedule was created.</p>",
+        "Schedule$LastModifiedDate": "<p>The date and time when the schedule was last modified.</p>",
+        "UpdateProjectResponse$LastModifiedDate": "<p>The date and time that the project was last modified.</p>"
+      }
+    },
+    "DatetimeFormat": {
+      "base": null,
+      "refs": {
+        "DatetimeOptions$Format": "<p>Required option, that defines the datetime format used for a date parameter in the Amazon S3 path. Should use only supported datetime specifiers and separation characters, all literal a-z or A-Z characters should be escaped with single quotes. E.g. \"MM.dd.yyyy-'at'-HH:mm\".</p>"
+      }
+    },
+    "DatetimeOptions": {
+      "base": "<p>Represents additional options for correct interpretation of datetime parameters used in the Amazon S3 path of a dataset.</p>",
+      "refs": {
+        "DatasetParameter$DatetimeOptions": "<p>Additional parameter options such as a format and a timezone. Required for datetime parameters.</p>"
+      }
+    },
+    "DeleteDatasetRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteDatasetResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteJobRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteJobResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteProjectRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteProjectResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteRecipeVersionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteRecipeVersionResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteRulesetRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteRulesetResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteScheduleRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DeleteScheduleResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Delimiter": {
+      "base": null,
+      "refs": {
+        "CsvOptions$Delimiter": "<p>A single character that specifies the delimiter being used in the CSV file.</p>",
+        "CsvOutputOptions$Delimiter": "<p>A single character that specifies the delimiter used to create CSV job output.</p>"
+      }
+    },
+    "DescribeDatasetRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeDatasetResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeJobRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeJobResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeJobRunRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeJobRunResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeProjectRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeProjectResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeRecipeRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeRecipeResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeRulesetRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeRulesetResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeScheduleRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeScheduleResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "Disabled": {
+      "base": null,
+      "refs": {
+        "Rule$Disabled": "<p>A value that specifies whether the rule is disabled. Once a rule is disabled, a profile job will not validate it during a job run. Default value is false.</p>"
+      }
+    },
+    "EncryptionKeyArn": {
+      "base": null,
+      "refs": {
+        "CreateProfileJobRequest$EncryptionKeyArn": "<p>The Amazon Resource Name (ARN) of an encryption key that is used to protect the job.</p>",
+        "CreateRecipeJobRequest$EncryptionKeyArn": "<p>The Amazon Resource Name (ARN) of an encryption key that is used to protect the job.</p>",
+        "DescribeJobResponse$EncryptionKeyArn": "<p>The Amazon Resource Name (ARN) of an encryption key that is used to protect the job.</p>",
+        "Job$EncryptionKeyArn": "<p>The Amazon Resource Name (ARN) of an encryption key that is used to protect the job output. For more information, see <a href=\"https://docs.aws.amazon.com/databrew/latest/dg/encryption-security-configuration.html\">Encrypting data written by DataBrew jobs</a> </p>",
+        "UpdateProfileJobRequest$EncryptionKeyArn": "<p>The Amazon Resource Name (ARN) of an encryption key that is used to protect the job.</p>",
+        "UpdateRecipeJobRequest$EncryptionKeyArn": "<p>The Amazon Resource Name (ARN) of an encryption key that is used to protect the job.</p>"
+      }
+    },
+    "EncryptionMode": {
+      "base": null,
+      "refs": {
+        "CreateProfileJobRequest$EncryptionMode": "<p>The encryption mode for the job, which can be one of the following:</p> <ul> <li> <p> <code>SSE-KMS</code> - <code>SSE-KMS</code> - Server-side encryption with KMS-managed keys.</p> </li> <li> <p> <code>SSE-S3</code> - Server-side encryption with keys managed by Amazon S3.</p> </li> </ul>",
+        "CreateRecipeJobRequest$EncryptionMode": "<p>The encryption mode for the job, which can be one of the following:</p> <ul> <li> <p> <code>SSE-KMS</code> - Server-side encryption with keys managed by KMS.</p> </li> <li> <p> <code>SSE-S3</code> - Server-side encryption with keys managed by Amazon S3.</p> </li> </ul>",
+        "DescribeJobResponse$EncryptionMode": "<p>The encryption mode for the job, which can be one of the following:</p> <ul> <li> <p> <code>SSE-KMS</code> - Server-side encryption with keys managed by KMS.</p> </li> <li> <p> <code>SSE-S3</code> - Server-side encryption with keys managed by Amazon S3.</p> </li> </ul>",
+        "Job$EncryptionMode": "<p>The encryption mode for the job, which can be one of the following:</p> <ul> <li> <p> <code>SSE-KMS</code> - Server-side encryption with keys managed by KMS.</p> </li> <li> <p> <code>SSE-S3</code> - Server-side encryption with keys managed by Amazon S3.</p> </li> </ul>",
+        "UpdateProfileJobRequest$EncryptionMode": "<p>The encryption mode for the job, which can be one of the following:</p> <ul> <li> <p> <code>SSE-KMS</code> - Server-side encryption with keys managed by KMS.</p> </li> <li> <p> <code>SSE-S3</code> - Server-side encryption with keys managed by Amazon S3.</p> </li> </ul>",
+        "UpdateRecipeJobRequest$EncryptionMode": "<p>The encryption mode for the job, which can be one of the following:</p> <ul> <li> <p> <code>SSE-KMS</code> - Server-side encryption with keys managed by KMS.</p> </li> <li> <p> <code>SSE-S3</code> - Server-side encryption with keys managed by Amazon S3.</p> </li> </ul>"
+      }
+    },
+    "EntityDetectorConfiguration": {
+      "base": "<p>Configuration of entity detection for a profile job. When undefined, entity detection is disabled.</p>",
+      "refs": {
+        "ProfileConfiguration$EntityDetectorConfiguration": "<p>Configuration of entity detection for a profile job. When undefined, entity detection is disabled.</p>"
+      }
+    },
+    "EntityType": {
+      "base": null,
+      "refs": {
+        "EntityTypeList$member": null
+      }
+    },
+    "EntityTypeList": {
+      "base": null,
+      "refs": {
+        "EntityDetectorConfiguration$EntityTypes": "<p>Entity types to detect. Can be any of the following:</p> <ul> <li> <p>USA_SSN</p> </li> <li> <p>EMAIL</p> </li> <li> <p>USA_ITIN</p> </li> <li> <p>USA_PASSPORT_NUMBER</p> </li> <li> <p>PHONE_NUMBER</p> </li> <li> <p>USA_DRIVING_LICENSE</p> </li> <li> <p>BANK_ACCOUNT</p> </li> <li> <p>CREDIT_CARD</p> </li> <li> <p>IP_ADDRESS</p> </li> <li> <p>MAC_ADDRESS</p> </li> <li> <p>USA_DEA_NUMBER</p> </li> <li> <p>USA_HCPCS_CODE</p> </li> <li> <p>USA_NATIONAL_PROVIDER_IDENTIFIER</p> </li> <li> <p>USA_NATIONAL_DRUG_CODE</p> </li> <li> <p>USA_HEALTH_INSURANCE_CLAIM_NUMBER</p> </li> <li> <p>USA_MEDICARE_BENEFICIARY_IDENTIFIER</p> </li> <li> <p>USA_CPT_CODE</p> </li> <li> <p>PERSON_NAME</p> </li> <li> <p>DATE</p> </li> </ul> <p>The Entity type group USA_ALL is also supported, and includes all of the above entity types except PERSON_NAME and DATE.</p>"
+      }
+    },
+    "ErrorCode": {
+      "base": null,
+      "refs": {
+        "RecipeVersionErrorDetail$ErrorCode": "<p>The HTTP status code for the error.</p>"
+      }
+    },
+    "ExcelOptions": {
+      "base": "<p>Represents a set of options that define how DataBrew will interpret a Microsoft Excel file when creating a dataset from that file.</p>",
+      "refs": {
+        "FormatOptions$Excel": "<p>Options that define how Excel input is to be interpreted by DataBrew.</p>"
+      }
+    },
+    "ExecutionTime": {
+      "base": null,
+      "refs": {
+        "DescribeJobRunResponse$ExecutionTime": "<p>The amount of time, in seconds, during which the job run consumed resources.</p>",
+        "JobRun$ExecutionTime": "<p>The amount of time, in seconds, during which a job run consumed resources.</p>"
+      }
+    },
+    "Expression": {
+      "base": null,
+      "refs": {
+        "FilterExpression$Expression": "<p>The expression which includes condition names followed by substitution variables, possibly grouped and combined with other conditions. For example, \"(starts_with :prefix1 or starts_with :prefix2) and (ends_with :suffix1 or ends_with :suffix2)\". Substitution variables should start with ':' symbol.</p>",
+        "Rule$CheckExpression": "<p>The expression which includes column references, condition names followed by variable references, possibly grouped and combined with other conditions. For example, <code>(:col1 starts_with :prefix1 or :col1 starts_with :prefix2) and (:col1 ends_with :suffix1 or :col1 ends_with :suffix2)</code>. Column and value references are substitution variables that should start with the ':' symbol. Depending on the context, substitution variables' values can be either an actual value or a column name. These values are defined in the SubstitutionMap. If a CheckExpression starts with a column reference, then ColumnSelectors in the rule should be null. If ColumnSelectors has been defined, then there should be no column reference in the left side of a condition, for example, <code>is_between :val1 and :val2</code>.</p> <p>For more information, see <a href=\"https://docs.aws.amazon.com/databrew/latest/dg/profile.data-quality-available-checks.html\">Available checks</a> </p>"
+      }
+    },
+    "FilesLimit": {
+      "base": "<p>Represents a limit imposed on number of Amazon S3 files that should be selected for a dataset from a connected Amazon S3 path.</p>",
+      "refs": {
+        "PathOptions$FilesLimit": "<p>If provided, this structure imposes a limit on a number of files that should be selected.</p>"
+      }
+    },
+    "FilterExpression": {
+      "base": "<p>Represents a structure for defining parameter conditions. Supported conditions are described here: <a href=\"https://docs.aws.amazon.com/databrew/latest/dg/datasets.multiple-files.html#conditions.for.dynamic.datasets\">Supported conditions for dynamic datasets</a> in the <i>Glue DataBrew Developer Guide</i>.</p>",
+      "refs": {
+        "DatasetParameter$Filter": "<p>The optional filter expression structure to apply additional matching criteria to the parameter.</p>",
+        "PathOptions$LastModifiedDateCondition": "<p>If provided, this structure defines a date range for matching Amazon S3 objects based on their LastModifiedDate attribute in Amazon S3.</p>"
+      }
+    },
+    "FormatOptions": {
+      "base": "<p>Represents a set of options that define the structure of either comma-separated value (CSV), Excel, or JSON input.</p>",
+      "refs": {
+        "CreateDatasetRequest$FormatOptions": null,
+        "Dataset$FormatOptions": "<p>A set of options that define how DataBrew interprets the data in the dataset.</p>",
+        "DescribeDatasetResponse$FormatOptions": null,
+        "UpdateDatasetRequest$FormatOptions": null
+      }
+    },
+    "GlueConnectionName": {
+      "base": null,
+      "refs": {
+        "DatabaseInputDefinition$GlueConnectionName": "<p>The Glue Connection that stores the connection information for the target database.</p>",
+        "DatabaseOutput$GlueConnectionName": "<p>The Glue connection that stores the connection information for the target database.</p>"
+      }
+    },
+    "HeaderRow": {
+      "base": null,
+      "refs": {
+        "CsvOptions$HeaderRow": "<p>A variable that specifies whether the first row in the file is parsed as the header. If this value is false, column names are auto-generated.</p>",
+        "ExcelOptions$HeaderRow": "<p>A variable that specifies whether the first row in the file is parsed as the header. If this value is false, column names are auto-generated.</p>"
+      }
+    },
+    "HiddenColumnList": {
+      "base": null,
+      "refs": {
+        "ViewFrame$HiddenColumns": "<p>A list of columns to hide in the view frame.</p>"
+      }
+    },
+    "Input": {
+      "base": "<p>Represents information on how DataBrew can find data, in either the Glue Data Catalog or Amazon S3.</p>",
+      "refs": {
+        "CreateDatasetRequest$Input": null,
+        "Dataset$Input": "<p>Information on how DataBrew can find the dataset, in either the Glue Data Catalog or Amazon S3.</p>",
+        "DescribeDatasetResponse$Input": null,
+        "UpdateDatasetRequest$Input": null
+      }
+    },
+    "InputFormat": {
+      "base": null,
+      "refs": {
+        "CreateDatasetRequest$Format": "<p>The file format of a dataset that is created from an Amazon S3 file or folder.</p>",
+        "Dataset$Format": "<p>The file format of a dataset that is created from an Amazon S3 file or folder.</p>",
+        "DescribeDatasetResponse$Format": "<p>The file format of a dataset that is created from an Amazon S3 file or folder.</p>",
+        "UpdateDatasetRequest$Format": "<p>The file format of a dataset that is created from an Amazon S3 file or folder.</p>"
+      }
+    },
+    "InternalServerException": {
+      "base": "<p>An internal service failure occurred.</p>",
+      "refs": {
+      }
+    },
+    "Job": {
+      "base": "<p>Represents all of the attributes of a DataBrew job.</p>",
+      "refs": {
+        "JobList$member": null
+      }
+    },
+    "JobList": {
+      "base": null,
+      "refs": {
+        "ListJobsResponse$Jobs": "<p>A list of jobs that are defined.</p>"
+      }
+    },
+    "JobName": {
+      "base": null,
+      "refs": {
+        "CreateProfileJobRequest$Name": "<p>The name of the job to be created. Valid characters are alphanumeric (A-Z, a-z, 0-9), hyphen (-), period (.), and space.</p>",
+        "CreateProfileJobResponse$Name": "<p>The name of the job that was created.</p>",
+        "CreateRecipeJobRequest$Name": "<p>A unique name for the job. Valid characters are alphanumeric (A-Z, a-z, 0-9), hyphen (-), period (.), and space.</p>",
+        "CreateRecipeJobResponse$Name": "<p>The name of the job that you created.</p>",
+        "DeleteJobRequest$Name": "<p>The name of the job to be deleted.</p>",
+        "DeleteJobResponse$Name": "<p>The name of the job that you deleted.</p>",
+        "DescribeJobRequest$Name": "<p>The name of the job to be described.</p>",
+        "DescribeJobResponse$Name": "<p>The name of the job.</p>",
+        "DescribeJobRunRequest$Name": "<p>The name of the job being processed during this run.</p>",
+        "DescribeJobRunResponse$JobName": "<p>The name of the job being processed during this run.</p>",
+        "Job$Name": "<p>The unique name of the job.</p>",
+        "JobNameList$member": null,
+        "JobRun$JobName": "<p>The name of the job being processed during this run.</p>",
+        "ListJobRunsRequest$Name": "<p>The name of the job.</p>",
+        "ListSchedulesRequest$JobName": "<p>The name of the job that these schedules apply to.</p>",
+        "StartJobRunRequest$Name": "<p>The name of the job to be run.</p>",
+        "StopJobRunRequest$Name": "<p>The name of the job to be stopped.</p>",
+        "UpdateProfileJobRequest$Name": "<p>The name of the job to be updated.</p>",
+        "UpdateProfileJobResponse$Name": "<p>The name of the job that was updated.</p>",
+        "UpdateRecipeJobRequest$Name": "<p>The name of the job to update.</p>",
+        "UpdateRecipeJobResponse$Name": "<p>The name of the job that you updated.</p>"
+      }
+    },
+    "JobNameList": {
+      "base": null,
+      "refs": {
+        "CreateScheduleRequest$JobNames": "<p>The name or names of one or more jobs to be run.</p>",
+        "DescribeScheduleResponse$JobNames": "<p>The name or names of one or more jobs to be run by using the schedule.</p>",
+        "Schedule$JobNames": "<p>A list of jobs to be run, according to the schedule.</p>",
+        "UpdateScheduleRequest$JobNames": "<p>The name or names of one or more jobs to be run for this schedule.</p>"
+      }
+    },
+    "JobRun": {
+      "base": "<p>Represents one run of a DataBrew job.</p>",
+      "refs": {
+        "JobRunList$member": null
+      }
+    },
+    "JobRunErrorMessage": {
+      "base": null,
+      "refs": {
+        "DescribeJobRunResponse$ErrorMessage": "<p>A message indicating an error (if any) that was encountered when the job ran.</p>",
+        "JobRun$ErrorMessage": "<p>A message indicating an error (if any) that was encountered when the job ran.</p>"
+      }
+    },
+    "JobRunId": {
+      "base": null,
+      "refs": {
+        "DescribeJobRunRequest$RunId": "<p>The unique identifier of the job run.</p>",
+        "DescribeJobRunResponse$RunId": "<p>The unique identifier of the job run.</p>",
+        "JobRun$RunId": "<p>The unique identifier of the job run.</p>",
+        "StartJobRunResponse$RunId": "<p>A system-generated identifier for this particular job run.</p>",
+        "StopJobRunRequest$RunId": "<p>The ID of the job run to be stopped.</p>",
+        "StopJobRunResponse$RunId": "<p>The ID of the job run that you stopped.</p>"
+      }
+    },
+    "JobRunList": {
+      "base": null,
+      "refs": {
+        "ListJobRunsResponse$JobRuns": "<p>A list of job runs that have occurred for the specified job.</p>"
+      }
+    },
+    "JobRunState": {
+      "base": null,
+      "refs": {
+        "DescribeJobRunResponse$State": "<p>The current state of the job run entity itself.</p>",
+        "JobRun$State": "<p>The current state of the job run entity itself.</p>"
+      }
+    },
+    "JobSample": {
+      "base": "<p>A sample configuration for profile jobs only, which determines the number of rows on which the profile job is run. If a <code>JobSample</code> value isn't provided, the default is used. The default value is CUSTOM_ROWS for the mode parameter and 20,000 for the size parameter.</p>",
+      "refs": {
+        "CreateProfileJobRequest$JobSample": "<p>Sample configuration for profile jobs only. Determines the number of rows on which the profile job will be executed. If a JobSample value is not provided, the default value will be used. The default value is CUSTOM_ROWS for the mode parameter and 20000 for the size parameter.</p>",
+        "DescribeJobResponse$JobSample": "<p>Sample configuration for profile jobs only. Determines the number of rows on which the profile job will be executed.</p>",
+        "DescribeJobRunResponse$JobSample": "<p>Sample configuration for profile jobs only. Determines the number of rows on which the profile job will be executed. If a JobSample value is not provided, the default value will be used. The default value is CUSTOM_ROWS for the mode parameter and 20000 for the size parameter.</p>",
+        "Job$JobSample": "<p>A sample configuration for profile jobs only, which determines the number of rows on which the profile job is run. If a <code>JobSample</code> value isn't provided, the default value is used. The default value is CUSTOM_ROWS for the mode parameter and 20,000 for the size parameter.</p>",
+        "JobRun$JobSample": "<p>A sample configuration for profile jobs only, which determines the number of rows on which the profile job is run. If a <code>JobSample</code> value isn't provided, the default is used. The default value is CUSTOM_ROWS for the mode parameter and 20,000 for the size parameter.</p>",
+        "UpdateProfileJobRequest$JobSample": "<p>Sample configuration for Profile Jobs only. Determines the number of rows on which the Profile job will be executed. If a JobSample value is not provided for profile jobs, the default value will be used. The default value is CUSTOM_ROWS for the mode parameter and 20000 for the size parameter.</p>"
+      }
+    },
+    "JobSize": {
+      "base": null,
+      "refs": {
+        "JobSample$Size": "<p>The <code>Size</code> parameter is only required when the mode is CUSTOM_ROWS. The profile job is run on the specified number of rows. The maximum value for size is Long.MAX_VALUE.</p> <p>Long.MAX_VALUE = 9223372036854775807</p>"
+      }
+    },
+    "JobType": {
+      "base": null,
+      "refs": {
+        "DescribeJobResponse$Type": "<p>The job type, which must be one of the following:</p> <ul> <li> <p> <code>PROFILE</code> - The job analyzes the dataset to determine its size, data types, data distribution, and more.</p> </li> <li> <p> <code>RECIPE</code> - The job applies one or more transformations to a dataset.</p> </li> </ul>",
+        "Job$Type": "<p>The job type of the job, which must be one of the following:</p> <ul> <li> <p> <code>PROFILE</code> - A job to analyze a dataset, to determine its size, data types, data distribution, and more.</p> </li> <li> <p> <code>RECIPE</code> - A job to apply one or more transformations to a dataset.</p> </li> </ul>"
+      }
+    },
+    "JsonOptions": {
+      "base": "<p>Represents the JSON-specific options that define how input is to be interpreted by Glue DataBrew.</p>",
+      "refs": {
+        "FormatOptions$Json": "<p>Options that define how JSON input is to be interpreted by DataBrew.</p>"
+      }
+    },
+    "Key": {
+      "base": null,
+      "refs": {
+        "S3Location$Key": "<p>The unique name of the object in the bucket.</p>"
+      }
+    },
+    "LastModifiedBy": {
+      "base": null,
+      "refs": {
+        "Dataset$LastModifiedBy": "<p>The Amazon Resource Name (ARN) of the user who last modified the dataset.</p>",
+        "DescribeDatasetResponse$LastModifiedBy": "<p>The identifier (user name) of the user who last modified the dataset.</p>",
+        "DescribeJobResponse$LastModifiedBy": "<p>The identifier (user name) of the user who last modified the job.</p>",
+        "DescribeProjectResponse$LastModifiedBy": "<p>The identifier (user name) of the user who last modified the project.</p>",
+        "DescribeRecipeResponse$LastModifiedBy": "<p>The identifier (user name) of the user who last modified the recipe.</p>",
+        "DescribeRulesetResponse$LastModifiedBy": "<p>The Amazon Resource Name (ARN) of the user who last modified the ruleset.</p>",
+        "DescribeScheduleResponse$LastModifiedBy": "<p>The identifier (user name) of the user who last modified the schedule.</p>",
+        "Job$LastModifiedBy": "<p>The Amazon Resource Name (ARN) of the user who last modified the job.</p>",
+        "Project$LastModifiedBy": "<p>The Amazon Resource Name (ARN) of the user who last modified the project.</p>",
+        "Recipe$LastModifiedBy": "<p>The Amazon Resource Name (ARN) of the user who last modified the recipe.</p>",
+        "RulesetItem$LastModifiedBy": "<p>The Amazon Resource Name (ARN) of the user who last modified the ruleset.</p>",
+        "Schedule$LastModifiedBy": "<p>The Amazon Resource Name (ARN) of the user who last modified the schedule.</p>"
+      }
+    },
+    "ListDatasetsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListDatasetsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListJobRunsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListJobRunsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListJobsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListJobsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListProjectsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListProjectsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListRecipeVersionsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListRecipeVersionsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListRecipesRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListRecipesResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListRulesetsRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListRulesetsResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListSchedulesRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListSchedulesResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTagsForResourceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ListTagsForResourceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "LocaleCode": {
+      "base": null,
+      "refs": {
+        "DatetimeOptions$LocaleCode": "<p>Optional value for a non-US locale code, needed for correct interpretation of some date formats.</p>"
+      }
+    },
+    "LogGroupName": {
+      "base": null,
+      "refs": {
+        "DescribeJobRunResponse$LogGroupName": "<p>The name of an Amazon CloudWatch log group, where the job writes diagnostic messages when it runs.</p>",
+        "JobRun$LogGroupName": "<p>The name of an Amazon CloudWatch log group, where the job writes diagnostic messages when it runs.</p>"
+      }
+    },
+    "LogSubscription": {
+      "base": null,
+      "refs": {
+        "CreateProfileJobRequest$LogSubscription": "<p>Enables or disables Amazon CloudWatch logging for the job. If logging is enabled, CloudWatch writes one log stream for each job run.</p>",
+        "CreateRecipeJobRequest$LogSubscription": "<p>Enables or disables Amazon CloudWatch logging for the job. If logging is enabled, CloudWatch writes one log stream for each job run.</p>",
+        "DescribeJobResponse$LogSubscription": "<p>Indicates whether Amazon CloudWatch logging is enabled for this job.</p>",
+        "DescribeJobRunResponse$LogSubscription": "<p>The current status of Amazon CloudWatch logging for the job run.</p>",
+        "Job$LogSubscription": "<p>The current status of Amazon CloudWatch logging for the job.</p>",
+        "JobRun$LogSubscription": "<p>The current status of Amazon CloudWatch logging for the job run.</p>",
+        "UpdateProfileJobRequest$LogSubscription": "<p>Enables or disables Amazon CloudWatch logging for the job. If logging is enabled, CloudWatch writes one log stream for each job run.</p>",
+        "UpdateRecipeJobRequest$LogSubscription": "<p>Enables or disables Amazon CloudWatch logging for the job. If logging is enabled, CloudWatch writes one log stream for each job run.</p>"
+      }
+    },
+    "MaxCapacity": {
+      "base": null,
+      "refs": {
+        "CreateProfileJobRequest$MaxCapacity": "<p>The maximum number of nodes that DataBrew can use when the job processes data.</p>",
+        "CreateRecipeJobRequest$MaxCapacity": "<p>The maximum number of nodes that DataBrew can consume when the job processes data.</p>",
+        "DescribeJobResponse$MaxCapacity": "<p>The maximum number of compute nodes that DataBrew can consume when the job processes data.</p>",
+        "Job$MaxCapacity": "<p>The maximum number of nodes that can be consumed when the job processes data.</p>",
+        "UpdateProfileJobRequest$MaxCapacity": "<p>The maximum number of compute nodes that DataBrew can use when the job processes data.</p>",
+        "UpdateRecipeJobRequest$MaxCapacity": "<p>The maximum number of nodes that DataBrew can consume when the job processes data.</p>"
+      }
+    },
+    "MaxFiles": {
+      "base": null,
+      "refs": {
+        "FilesLimit$MaxFiles": "<p>The number of Amazon S3 files to select.</p>"
+      }
+    },
+    "MaxOutputFiles": {
+      "base": null,
+      "refs": {
+        "Output$MaxOutputFiles": "<p>Maximum number of files to be generated by the job and written to the output folder. For output partitioned by column(s), the MaxOutputFiles value is the maximum number of files per partition.</p>"
+      }
+    },
+    "MaxResults100": {
+      "base": null,
+      "refs": {
+        "ListDatasetsRequest$MaxResults": "<p>The maximum number of results to return in this request. </p>",
+        "ListJobRunsRequest$MaxResults": "<p>The maximum number of results to return in this request. </p>",
+        "ListJobsRequest$MaxResults": "<p>The maximum number of results to return in this request. </p>",
+        "ListProjectsRequest$MaxResults": "<p>The maximum number of results to return in this request. </p>",
+        "ListRecipeVersionsRequest$MaxResults": "<p>The maximum number of results to return in this request. </p>",
+        "ListRecipesRequest$MaxResults": "<p>The maximum number of results to return in this request. </p>",
+        "ListRulesetsRequest$MaxResults": "<p>The maximum number of results to return in this request.</p>",
+        "ListSchedulesRequest$MaxResults": "<p>The maximum number of results to return in this request. </p>"
+      }
+    },
+    "MaxRetries": {
+      "base": null,
+      "refs": {
+        "CreateProfileJobRequest$MaxRetries": "<p>The maximum number of times to retry the job after a job run fails.</p>",
+        "CreateRecipeJobRequest$MaxRetries": "<p>The maximum number of times to retry the job after a job run fails.</p>",
+        "DescribeJobResponse$MaxRetries": "<p>The maximum number of times to retry the job after a job run fails.</p>",
+        "Job$MaxRetries": "<p>The maximum number of times to retry the job after a job run fails.</p>",
+        "UpdateProfileJobRequest$MaxRetries": "<p>The maximum number of times to retry the job after a job run fails.</p>",
+        "UpdateRecipeJobRequest$MaxRetries": "<p>The maximum number of times to retry the job after a job run fails.</p>"
+      }
+    },
+    "Message": {
+      "base": null,
+      "refs": {
+        "AccessDeniedException$Message": null,
+        "ConflictException$Message": null,
+        "InternalServerException$Message": null,
+        "ResourceNotFoundException$Message": null,
+        "ServiceQuotaExceededException$Message": null,
+        "ValidationException$Message": null
+      }
+    },
+    "Metadata": {
+      "base": "<p>Contains additional resource information needed for specific datasets.</p>",
+      "refs": {
+        "Input$Metadata": "<p>Contains additional resource information needed for specific datasets.</p>"
+      }
+    },
+    "MultiLine": {
+      "base": null,
+      "refs": {
+        "JsonOptions$MultiLine": "<p>A value that specifies whether JSON input contains embedded new line characters.</p>"
+      }
+    },
+    "NextToken": {
+      "base": null,
+      "refs": {
+        "ListDatasetsRequest$NextToken": "<p>The token returned by a previous call to retrieve the next set of results.</p>",
+        "ListDatasetsResponse$NextToken": "<p>A token that you can use in a subsequent call to retrieve the next set of results.</p>",
+        "ListJobRunsRequest$NextToken": "<p>The token returned by a previous call to retrieve the next set of results.</p>",
+        "ListJobRunsResponse$NextToken": "<p>A token that you can use in a subsequent call to retrieve the next set of results.</p>",
+        "ListJobsRequest$NextToken": "<p>A token generated by DataBrew that specifies where to continue pagination if a previous request was truncated. To get the next set of pages, pass in the NextToken value from the response object of the previous page call. </p>",
+        "ListJobsResponse$NextToken": "<p>A token that you can use in a subsequent call to retrieve the next set of results.</p>",
+        "ListProjectsRequest$NextToken": "<p>The token returned by a previous call to retrieve the next set of results.</p>",
+        "ListProjectsResponse$NextToken": "<p>A token that you can use in a subsequent call to retrieve the next set of results.</p>",
+        "ListRecipeVersionsRequest$NextToken": "<p>The token returned by a previous call to retrieve the next set of results.</p>",
+        "ListRecipeVersionsResponse$NextToken": "<p>A token that you can use in a subsequent call to retrieve the next set of results.</p>",
+        "ListRecipesRequest$NextToken": "<p>The token returned by a previous call to retrieve the next set of results.</p>",
+        "ListRecipesResponse$NextToken": "<p>A token that you can use in a subsequent call to retrieve the next set of results.</p>",
+        "ListRulesetsRequest$NextToken": "<p>A token generated by DataBrew that specifies where to continue pagination if a previous request was truncated. To get the next set of pages, pass in the NextToken value from the response object of the previous page call.</p>",
+        "ListRulesetsResponse$NextToken": "<p>A token that you can use in a subsequent call to retrieve the next set of results.</p>",
+        "ListSchedulesRequest$NextToken": "<p>The token returned by a previous call to retrieve the next set of results.</p>",
+        "ListSchedulesResponse$NextToken": "<p>A token that you can use in a subsequent call to retrieve the next set of results.</p>"
+      }
+    },
+    "OpenedBy": {
+      "base": null,
+      "refs": {
+        "DescribeProjectResponse$OpenedBy": "<p>The identifier (user name) of the user that opened the project for use. </p>",
+        "Project$OpenedBy": "<p>The Amazon Resource Name (ARN) of the user that opened the project for use.</p>"
+      }
+    },
+    "Operation": {
+      "base": null,
+      "refs": {
+        "RecipeAction$Operation": "<p>The name of a valid DataBrew transformation to be performed on the data.</p>"
+      }
+    },
+    "Order": {
+      "base": null,
+      "refs": {
+        "FilesLimit$Order": "<p>A criteria to use for Amazon S3 files sorting before their selection. By default uses DESCENDING order, i.e. most recent files are selected first. Another possible value is ASCENDING.</p>"
+      }
+    },
+    "OrderedBy": {
+      "base": null,
+      "refs": {
+        "FilesLimit$OrderedBy": "<p>A criteria to use for Amazon S3 files sorting before their selection. By default uses LAST_MODIFIED_DATE as a sorting criteria. Currently it's the only allowed value.</p>"
+      }
+    },
+    "Output": {
+      "base": "<p>Represents options that specify how and where in Amazon S3 DataBrew writes the output generated by recipe jobs or profile jobs.</p>",
+      "refs": {
+        "OutputList$member": null
+      }
+    },
+    "OutputFormat": {
+      "base": null,
+      "refs": {
+        "Output$Format": "<p>The data format of the output of the job.</p>"
+      }
+    },
+    "OutputFormatOptions": {
+      "base": "<p>Represents a set of options that define the structure of comma-separated (CSV) job output.</p>",
+      "refs": {
+        "Output$FormatOptions": "<p>Represents options that define how DataBrew formats job output files.</p>"
+      }
+    },
+    "OutputList": {
+      "base": null,
+      "refs": {
+        "CreateRecipeJobRequest$Outputs": "<p>One or more artifacts that represent the output from running the job.</p>",
+        "DescribeJobResponse$Outputs": "<p>One or more artifacts that represent the output from running the job.</p>",
+        "DescribeJobRunResponse$Outputs": "<p>One or more output artifacts from a job run.</p>",
+        "Job$Outputs": "<p>One or more artifacts that represent output from running the job.</p>",
+        "JobRun$Outputs": "<p>One or more output artifacts from a job run.</p>",
+        "UpdateRecipeJobRequest$Outputs": "<p>One or more artifacts that represent the output from running the job. </p>"
+      }
+    },
+    "OverwriteOutput": {
+      "base": null,
+      "refs": {
+        "DataCatalogOutput$Overwrite": "<p>A value that, if true, means that any data in the location specified for output is overwritten with new output. Not supported with DatabaseOptions.</p>",
+        "Output$Overwrite": "<p>A value that, if true, means that any data in the location specified for output is overwritten with new output.</p>"
+      }
+    },
+    "ParameterMap": {
+      "base": null,
+      "refs": {
+        "RecipeAction$Parameters": "<p>Contextual parameters for the transformation.</p>",
+        "StatisticOverride$Parameters": "<p>A map that includes overrides of an evaluation’s parameters.</p>"
+      }
+    },
+    "ParameterName": {
+      "base": null,
+      "refs": {
+        "ParameterMap$key": null
+      }
+    },
+    "ParameterType": {
+      "base": null,
+      "refs": {
+        "DatasetParameter$Type": "<p>The type of the dataset parameter, can be one of a 'String', 'Number' or 'Datetime'.</p>"
+      }
+    },
+    "ParameterValue": {
+      "base": null,
+      "refs": {
+        "ParameterMap$value": null
+      }
+    },
+    "PathOptions": {
+      "base": "<p>Represents a set of options that define how DataBrew selects files for a given Amazon S3 path in a dataset.</p>",
+      "refs": {
+        "CreateDatasetRequest$PathOptions": "<p>A set of options that defines how DataBrew interprets an Amazon S3 path of the dataset.</p>",
+        "Dataset$PathOptions": "<p>A set of options that defines how DataBrew interprets an Amazon S3 path of the dataset.</p>",
+        "DescribeDatasetResponse$PathOptions": "<p>A set of options that defines how DataBrew interprets an Amazon S3 path of the dataset.</p>",
+        "UpdateDatasetRequest$PathOptions": "<p>A set of options that defines how DataBrew interprets an Amazon S3 path of the dataset.</p>"
+      }
+    },
+    "PathParameterName": {
+      "base": null,
+      "refs": {
+        "DatasetParameter$Name": "<p>The name of the parameter that is used in the dataset's Amazon S3 path.</p>",
+        "PathParametersMap$key": null
+      }
+    },
+    "PathParametersMap": {
+      "base": "<p>A structure that map names of parameters used in the Amazon S3 path of a dataset to their definitions. A definition includes parameter type and conditions.</p>",
+      "refs": {
+        "PathOptions$Parameters": "<p>A structure that maps names of parameters used in the Amazon S3 path of a dataset to their definitions.</p>"
+      }
+    },
+    "Preview": {
+      "base": null,
+      "refs": {
+        "SendProjectSessionActionRequest$Preview": "<p>If true, the result of the recipe step will be returned, but not applied.</p>"
+      }
+    },
+    "ProfileConfiguration": {
+      "base": "<p>Configuration for profile jobs. Configuration can be used to select columns, do evaluations, and override default parameters of evaluations. When configuration is undefined, the profile job will apply default settings to all supported columns. </p>",
+      "refs": {
+        "CreateProfileJobRequest$Configuration": "<p>Configuration for profile jobs. Used to select columns, do evaluations, and override default parameters of evaluations. When configuration is null, the profile job will run with default settings.</p>",
+        "DescribeJobResponse$ProfileConfiguration": "<p>Configuration for profile jobs. Used to select columns, do evaluations, and override default parameters of evaluations. When configuration is null, the profile job will run with default settings.</p>",
+        "DescribeJobRunResponse$ProfileConfiguration": "<p>Configuration for profile jobs. Used to select columns, do evaluations, and override default parameters of evaluations. When configuration is null, the profile job will run with default settings.</p>",
+        "UpdateProfileJobRequest$Configuration": "<p>Configuration for profile jobs. Used to select columns, do evaluations, and override default parameters of evaluations. When configuration is null, the profile job will run with default settings.</p>"
+      }
+    },
+    "Project": {
+      "base": "<p>Represents all of the attributes of a DataBrew project.</p>",
+      "refs": {
+        "ProjectList$member": null
+      }
+    },
+    "ProjectList": {
+      "base": null,
+      "refs": {
+        "ListProjectsResponse$Projects": "<p>A list of projects that are defined .</p>"
+      }
+    },
+    "ProjectName": {
+      "base": null,
+      "refs": {
+        "CreateProjectRequest$Name": "<p>A unique name for the new project. Valid characters are alphanumeric (A-Z, a-z, 0-9), hyphen (-), period (.), and space.</p>",
+        "CreateProjectResponse$Name": "<p>The name of the project that you created.</p>",
+        "CreateRecipeJobRequest$ProjectName": "<p>Either the name of an existing project, or a combination of a recipe and a dataset to associate with the recipe.</p>",
+        "DeleteProjectRequest$Name": "<p>The name of the project to be deleted.</p>",
+        "DeleteProjectResponse$Name": "<p>The name of the project that you deleted.</p>",
+        "DescribeJobResponse$ProjectName": "<p>The DataBrew project associated with this job.</p>",
+        "DescribeProjectRequest$Name": "<p>The name of the project to be described.</p>",
+        "DescribeProjectResponse$Name": "<p>The name of the project.</p>",
+        "DescribeRecipeResponse$ProjectName": "<p>The name of the project associated with this recipe.</p>",
+        "Job$ProjectName": "<p>The name of the project that the job is associated with.</p>",
+        "ListJobsRequest$ProjectName": "<p>The name of a project. Using this parameter indicates to return only those jobs that are associated with the specified project.</p>",
+        "Project$Name": "<p>The unique name of a project.</p>",
+        "Recipe$ProjectName": "<p>The name of the project that the recipe is associated with.</p>",
+        "SendProjectSessionActionRequest$Name": "<p>The name of the project to apply the action to.</p>",
+        "SendProjectSessionActionResponse$Name": "<p>The name of the project that was affected by the action.</p>",
+        "StartProjectSessionRequest$Name": "<p>The name of the project to act upon.</p>",
+        "StartProjectSessionResponse$Name": "<p>The name of the project to be acted upon.</p>",
+        "UpdateProjectRequest$Name": "<p>The name of the project to be updated.</p>",
+        "UpdateProjectResponse$Name": "<p>The name of the project that you updated.</p>"
+      }
+    },
+    "PublishRecipeRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "PublishRecipeResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "PublishedBy": {
+      "base": null,
+      "refs": {
+        "DescribeRecipeResponse$PublishedBy": "<p>The identifier (user name) of the user who last published the recipe.</p>",
+        "Recipe$PublishedBy": "<p>The Amazon Resource Name (ARN) of the user who published the recipe.</p>"
+      }
+    },
+    "QueryString": {
+      "base": null,
+      "refs": {
+        "DatabaseInputDefinition$QueryString": "<p>Custom SQL to run against the provided Glue connection. This SQL will be used as the input for DataBrew projects and jobs.</p>"
+      }
+    },
+    "Recipe": {
+      "base": "<p>Represents one or more actions to be performed on a DataBrew dataset.</p>",
+      "refs": {
+        "RecipeList$member": null
+      }
+    },
+    "RecipeAction": {
+      "base": "<p>Represents a transformation and associated parameters that are used to apply a change to a DataBrew dataset. For more information, see <a href=\"https://docs.aws.amazon.com/databrew/latest/dg/recipe-actions-reference.html\">Recipe actions reference</a>.</p>",
+      "refs": {
+        "RecipeStep$Action": "<p>The particular action to be performed in the recipe step.</p>"
+      }
+    },
+    "RecipeDescription": {
+      "base": null,
+      "refs": {
+        "CreateRecipeRequest$Description": "<p>A description for the recipe.</p>",
+        "DescribeRecipeResponse$Description": "<p>The description of the recipe.</p>",
+        "PublishRecipeRequest$Description": "<p>A description of the recipe to be published, for this version of the recipe.</p>",
+        "Recipe$Description": "<p>The description of the recipe.</p>",
+        "UpdateRecipeRequest$Description": "<p>A description of the recipe.</p>"
+      }
+    },
+    "RecipeErrorList": {
+      "base": null,
+      "refs": {
+        "BatchDeleteRecipeVersionResponse$Errors": "<p>Errors, if any, that occurred while attempting to delete the recipe versions.</p>"
+      }
+    },
+    "RecipeErrorMessage": {
+      "base": null,
+      "refs": {
+        "RecipeVersionErrorDetail$ErrorMessage": "<p>The text of the error message.</p>"
+      }
+    },
+    "RecipeList": {
+      "base": null,
+      "refs": {
+        "ListRecipeVersionsResponse$Recipes": "<p>A list of versions for the specified recipe.</p>",
+        "ListRecipesResponse$Recipes": "<p>A list of recipes that are defined.</p>"
+      }
+    },
+    "RecipeName": {
+      "base": null,
+      "refs": {
+        "BatchDeleteRecipeVersionRequest$Name": "<p>The name of the recipe whose versions are to be deleted.</p>",
+        "BatchDeleteRecipeVersionResponse$Name": "<p>The name of the recipe that was modified.</p>",
+        "CreateProjectRequest$RecipeName": "<p>The name of an existing recipe to associate with the project.</p>",
+        "CreateRecipeRequest$Name": "<p>A unique name for the recipe. Valid characters are alphanumeric (A-Z, a-z, 0-9), hyphen (-), period (.), and space.</p>",
+        "CreateRecipeResponse$Name": "<p>The name of the recipe that you created.</p>",
+        "DeleteRecipeVersionRequest$Name": "<p>The name of the recipe.</p>",
+        "DeleteRecipeVersionResponse$Name": "<p>The name of the recipe that was deleted.</p>",
+        "DescribeProjectResponse$RecipeName": "<p>The recipe associated with this job.</p>",
+        "DescribeRecipeRequest$Name": "<p>The name of the recipe to be described.</p>",
+        "DescribeRecipeResponse$Name": "<p>The name of the recipe.</p>",
+        "ListRecipeVersionsRequest$Name": "<p>The name of the recipe for which to return version information.</p>",
+        "Project$RecipeName": "<p>The name of a recipe that will be developed during a project session.</p>",
+        "PublishRecipeRequest$Name": "<p>The name of the recipe to be published.</p>",
+        "PublishRecipeResponse$Name": "<p>The name of the recipe that you published.</p>",
+        "Recipe$Name": "<p>The unique name for the recipe.</p>",
+        "RecipeReference$Name": "<p>The name of the recipe.</p>",
+        "UpdateRecipeRequest$Name": "<p>The name of the recipe to be updated.</p>",
+        "UpdateRecipeResponse$Name": "<p>The name of the recipe that was updated.</p>"
+      }
+    },
+    "RecipeReference": {
+      "base": "<p>Represents the name and version of a DataBrew recipe.</p>",
+      "refs": {
+        "CreateRecipeJobRequest$RecipeReference": null,
+        "DescribeJobResponse$RecipeReference": null,
+        "DescribeJobRunResponse$RecipeReference": null,
+        "Job$RecipeReference": "<p>A set of steps that the job runs.</p>",
+        "JobRun$RecipeReference": "<p>The set of steps processed by the job.</p>"
+      }
+    },
+    "RecipeStep": {
+      "base": "<p>Represents a single step from a DataBrew recipe to be performed.</p>",
+      "refs": {
+        "RecipeStepList$member": null,
+        "SendProjectSessionActionRequest$RecipeStep": null
+      }
+    },
+    "RecipeStepList": {
+      "base": null,
+      "refs": {
+        "CreateRecipeRequest$Steps": "<p>An array containing the steps to be performed by the recipe. Each recipe step consists of one recipe action and (optionally) an array of condition expressions.</p>",
+        "DescribeRecipeResponse$Steps": "<p>One or more steps to be performed by the recipe. Each step consists of an action, and the conditions under which the action should succeed.</p>",
+        "Recipe$Steps": "<p>A list of steps that are defined by the recipe.</p>",
+        "UpdateRecipeRequest$Steps": "<p>One or more steps to be performed by the recipe. Each step consists of an action, and the conditions under which the action should succeed.</p>"
+      }
+    },
+    "RecipeVersion": {
+      "base": null,
+      "refs": {
+        "DeleteRecipeVersionRequest$RecipeVersion": "<p>The version of the recipe to be deleted. You can specify a numeric versions (<code>X.Y</code>) or <code>LATEST_WORKING</code>. <code>LATEST_PUBLISHED</code> is not supported.</p>",
+        "DeleteRecipeVersionResponse$RecipeVersion": "<p>The version of the recipe that was deleted.</p>",
+        "DescribeRecipeRequest$RecipeVersion": "<p>The recipe version identifier. If this parameter isn't specified, then the latest published version is returned.</p>",
+        "DescribeRecipeResponse$RecipeVersion": "<p>The recipe version identifier.</p>",
+        "ListRecipesRequest$RecipeVersion": "<p>Return only those recipes with a version identifier of <code>LATEST_WORKING</code> or <code>LATEST_PUBLISHED</code>. If <code>RecipeVersion</code> is omitted, <code>ListRecipes</code> returns all of the <code>LATEST_PUBLISHED</code> recipe versions.</p> <p>Valid values: <code>LATEST_WORKING</code> | <code>LATEST_PUBLISHED</code> </p>",
+        "Recipe$RecipeVersion": "<p>The identifier for the version for the recipe. Must be one of the following:</p> <ul> <li> <p>Numeric version (<code>X.Y</code>) - <code>X</code> and <code>Y</code> stand for major and minor version numbers. The maximum length of each is 6 digits, and neither can be negative values. Both <code>X</code> and <code>Y</code> are required, and \"0.0\" isn't a valid version.</p> </li> <li> <p> <code>LATEST_WORKING</code> - the most recent valid version being developed in a DataBrew project.</p> </li> <li> <p> <code>LATEST_PUBLISHED</code> - the most recent published version.</p> </li> </ul>",
+        "RecipeReference$RecipeVersion": "<p>The identifier for the version for the recipe. </p>",
+        "RecipeVersionErrorDetail$RecipeVersion": "<p>The identifier for the recipe version associated with this error.</p>",
+        "RecipeVersionList$member": null
+      }
+    },
+    "RecipeVersionErrorDetail": {
+      "base": "<p>Represents any errors encountered when attempting to delete multiple recipe versions.</p>",
+      "refs": {
+        "RecipeErrorList$member": null
+      }
+    },
+    "RecipeVersionList": {
+      "base": null,
+      "refs": {
+        "BatchDeleteRecipeVersionRequest$RecipeVersions": "<p>An array of version identifiers, for the recipe versions to be deleted. You can specify numeric versions (<code>X.Y</code>) or <code>LATEST_WORKING</code>. <code>LATEST_PUBLISHED</code> is not supported.</p>"
+      }
+    },
+    "ResourceNotFoundException": {
+      "base": "<p>One or more resources can't be found.</p>",
+      "refs": {
+      }
+    },
+    "Result": {
+      "base": null,
+      "refs": {
+        "SendProjectSessionActionResponse$Result": "<p>A message indicating the result of performing the action.</p>"
+      }
+    },
+    "RowRange": {
+      "base": null,
+      "refs": {
+        "ViewFrame$RowRange": "<p>The number of rows to include in the view frame, beginning with the <code>StartRowIndex</code> value.</p>"
+      }
+    },
+    "Rule": {
+      "base": "<p>Represents a single data quality requirement that should be validated in the scope of this dataset.</p>",
+      "refs": {
+        "RuleList$member": null
+      }
+    },
+    "RuleCount": {
+      "base": null,
+      "refs": {
+        "RulesetItem$RuleCount": "<p>The number of rules that are defined in the ruleset.</p>"
+      }
+    },
+    "RuleList": {
+      "base": null,
+      "refs": {
+        "CreateRulesetRequest$Rules": "<p>A list of rules that are defined with the ruleset. A rule includes one or more checks to be validated on a DataBrew dataset.</p>",
+        "DescribeRulesetResponse$Rules": "<p>A list of rules that are defined with the ruleset. A rule includes one or more checks to be validated on a DataBrew dataset.</p>",
+        "UpdateRulesetRequest$Rules": "<p>A list of rules that are defined with the ruleset. A rule includes one or more checks to be validated on a DataBrew dataset.</p>"
+      }
+    },
+    "RuleName": {
+      "base": null,
+      "refs": {
+        "Rule$Name": "<p>The name of the rule.</p>"
+      }
+    },
+    "RulesetDescription": {
+      "base": null,
+      "refs": {
+        "CreateRulesetRequest$Description": "<p>The description of the ruleset.</p>",
+        "DescribeRulesetResponse$Description": "<p>The description of the ruleset.</p>",
+        "RulesetItem$Description": "<p>The description of the ruleset.</p>",
+        "UpdateRulesetRequest$Description": "<p>The description of the ruleset.</p>"
+      }
+    },
+    "RulesetItem": {
+      "base": "<p>Contains metadata about the ruleset.</p>",
+      "refs": {
+        "RulesetItemList$member": null
+      }
+    },
+    "RulesetItemList": {
+      "base": null,
+      "refs": {
+        "ListRulesetsResponse$Rulesets": "<p>A list of RulesetItem. RulesetItem contains meta data of a ruleset.</p>"
+      }
+    },
+    "RulesetName": {
+      "base": null,
+      "refs": {
+        "CreateRulesetRequest$Name": "<p>The name of the ruleset to be created. Valid characters are alphanumeric (A-Z, a-z, 0-9), hyphen (-), period (.), and space.</p>",
+        "CreateRulesetResponse$Name": "<p>The unique name of the created ruleset.</p>",
+        "DeleteRulesetRequest$Name": "<p>The name of the ruleset to be deleted.</p>",
+        "DeleteRulesetResponse$Name": "<p>The name of the deleted ruleset.</p>",
+        "DescribeRulesetRequest$Name": "<p>The name of the ruleset to be described.</p>",
+        "DescribeRulesetResponse$Name": "<p>The name of the ruleset.</p>",
+        "RulesetItem$Name": "<p>The name of the ruleset.</p>",
+        "UpdateRulesetRequest$Name": "<p>The name of the ruleset to be updated.</p>",
+        "UpdateRulesetResponse$Name": "<p>The name of the updated ruleset.</p>"
+      }
+    },
+    "S3Location": {
+      "base": "<p>Represents an Amazon S3 location (bucket name, bucket owner, and object key) where DataBrew can read input data, or write output from a job.</p>",
+      "refs": {
+        "CreateProfileJobRequest$OutputLocation": null,
+        "DataCatalogInputDefinition$TempDirectory": "<p>Represents an Amazon location where DataBrew can store intermediate results.</p>",
+        "DatabaseInputDefinition$TempDirectory": null,
+        "DatabaseTableOutputOptions$TempDirectory": "<p>Represents an Amazon S3 location (bucket name and object key) where DataBrew can store intermediate results.</p>",
+        "Input$S3InputDefinition": "<p>The Amazon S3 location where the data is stored.</p>",
+        "Output$Location": "<p>The location in Amazon S3 where the job writes its output.</p>",
+        "S3TableOutputOptions$Location": "<p>Represents an Amazon S3 location (bucket name and object key) where DataBrew can write output from a job.</p>",
+        "UpdateProfileJobRequest$OutputLocation": null
+      }
+    },
+    "S3TableOutputOptions": {
+      "base": "<p>Represents options that specify how and where DataBrew writes the Amazon S3 output generated by recipe jobs.</p>",
+      "refs": {
+        "DataCatalogOutput$S3Options": "<p>Represents options that specify how and where DataBrew writes the Amazon S3 output generated by recipe jobs.</p>"
+      }
+    },
+    "Sample": {
+      "base": "<p>Represents the sample size and sampling type for DataBrew to use for interactive data analysis.</p>",
+      "refs": {
+        "CreateProjectRequest$Sample": null,
+        "DescribeProjectResponse$Sample": null,
+        "Project$Sample": "<p>The sample size and sampling type to apply to the data. If this parameter isn't specified, then the sample consists of the first 500 rows from the dataset.</p>",
+        "UpdateProjectRequest$Sample": null
+      }
+    },
+    "SampleMode": {
+      "base": null,
+      "refs": {
+        "JobSample$Mode": "<p>A value that determines whether the profile job is run on the entire dataset or a specified number of rows. This value must be one of the following:</p> <ul> <li> <p>FULL_DATASET - The profile job is run on the entire dataset.</p> </li> <li> <p>CUSTOM_ROWS - The profile job is run on the number of rows specified in the <code>Size</code> parameter.</p> </li> </ul>"
+      }
+    },
+    "SampleSize": {
+      "base": null,
+      "refs": {
+        "Sample$Size": "<p>The number of rows in the sample.</p>"
+      }
+    },
+    "SampleType": {
+      "base": null,
+      "refs": {
+        "Sample$Type": "<p>The way in which DataBrew obtains rows from a dataset.</p>"
+      }
+    },
+    "Schedule": {
+      "base": "<p>Represents one or more dates and times when a job is to run.</p>",
+      "refs": {
+        "ScheduleList$member": null
+      }
+    },
+    "ScheduleList": {
+      "base": null,
+      "refs": {
+        "ListSchedulesResponse$Schedules": "<p>A list of schedules that are defined.</p>"
+      }
+    },
+    "ScheduleName": {
+      "base": null,
+      "refs": {
+        "CreateScheduleRequest$Name": "<p>A unique name for the schedule. Valid characters are alphanumeric (A-Z, a-z, 0-9), hyphen (-), period (.), and space.</p>",
+        "CreateScheduleResponse$Name": "<p>The name of the schedule that was created.</p>",
+        "DeleteScheduleRequest$Name": "<p>The name of the schedule to be deleted.</p>",
+        "DeleteScheduleResponse$Name": "<p>The name of the schedule that was deleted.</p>",
+        "DescribeScheduleRequest$Name": "<p>The name of the schedule to be described.</p>",
+        "DescribeScheduleResponse$Name": "<p>The name of the schedule.</p>",
+        "Schedule$Name": "<p>The name of the schedule.</p>",
+        "UpdateScheduleRequest$Name": "<p>The name of the schedule to update.</p>",
+        "UpdateScheduleResponse$Name": "<p>The name of the schedule that was updated.</p>"
+      }
+    },
+    "SendProjectSessionActionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "SendProjectSessionActionResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ServiceQuotaExceededException": {
+      "base": "<p>A service quota is exceeded.</p>",
+      "refs": {
+      }
+    },
+    "SessionStatus": {
+      "base": null,
+      "refs": {
+        "DescribeProjectResponse$SessionStatus": "<p>Describes the current state of the session:</p> <ul> <li> <p> <code>PROVISIONING</code> - allocating resources for the session.</p> </li> <li> <p> <code>INITIALIZING</code> - getting the session ready for first use.</p> </li> <li> <p> <code>ASSIGNED</code> - the session is ready for use.</p> </li> </ul>"
+      }
+    },
+    "SheetIndex": {
+      "base": null,
+      "refs": {
+        "SheetIndexList$member": null
+      }
+    },
+    "SheetIndexList": {
+      "base": null,
+      "refs": {
+        "ExcelOptions$SheetIndexes": "<p>One or more sheet numbers in the Excel file that will be included in the dataset.</p>"
+      }
+    },
+    "SheetName": {
+      "base": null,
+      "refs": {
+        "SheetNameList$member": null
+      }
+    },
+    "SheetNameList": {
+      "base": null,
+      "refs": {
+        "ExcelOptions$SheetNames": "<p>One or more named sheets in the Excel file that will be included in the dataset.</p>"
+      }
+    },
+    "Source": {
+      "base": null,
+      "refs": {
+        "Dataset$Source": "<p>The location of the data for the dataset, either Amazon S3 or the Glue Data Catalog.</p>",
+        "DescribeDatasetResponse$Source": "<p>The location of the data for this dataset, Amazon S3 or the Glue Data Catalog.</p>"
+      }
+    },
+    "StartColumnIndex": {
+      "base": null,
+      "refs": {
+        "ViewFrame$StartColumnIndex": "<p>The starting index for the range of columns to return in the view frame.</p>"
+      }
+    },
+    "StartJobRunRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StartJobRunResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StartProjectSessionRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StartProjectSessionResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StartRowIndex": {
+      "base": null,
+      "refs": {
+        "ViewFrame$StartRowIndex": "<p>The starting index for the range of rows to return in the view frame.</p>"
+      }
+    },
+    "StartedBy": {
+      "base": null,
+      "refs": {
+        "DescribeJobRunResponse$StartedBy": "<p>The Amazon Resource Name (ARN) of the user who started the job run.</p>",
+        "JobRun$StartedBy": "<p>The Amazon Resource Name (ARN) of the user who initiated the job run. </p>"
+      }
+    },
+    "Statistic": {
+      "base": null,
+      "refs": {
+        "StatisticList$member": null,
+        "StatisticOverride$Statistic": "<p>The name of an evaluation</p>"
+      }
+    },
+    "StatisticList": {
+      "base": null,
+      "refs": {
+        "AllowedStatistics$Statistics": "<p>One or more column statistics to allow for columns that contain detected entities.</p>",
+        "StatisticsConfiguration$IncludedStatistics": "<p>List of included evaluations. When the list is undefined, all supported evaluations will be included.</p>"
+      }
+    },
+    "StatisticOverride": {
+      "base": "<p>Override of a particular evaluation for a profile job. </p>",
+      "refs": {
+        "StatisticOverrideList$member": null
+      }
+    },
+    "StatisticOverrideList": {
+      "base": null,
+      "refs": {
+        "StatisticsConfiguration$Overrides": "<p>List of overrides for evaluations.</p>"
+      }
+    },
+    "StatisticsConfiguration": {
+      "base": "<p>Configuration of evaluations for a profile job. This configuration can be used to select evaluations and override the parameters of selected evaluations. </p>",
+      "refs": {
+        "ColumnStatisticsConfiguration$Statistics": "<p>Configuration for evaluations. Statistics can be used to select evaluations and override parameters of evaluations. </p>",
+        "ProfileConfiguration$DatasetStatisticsConfiguration": "<p>Configuration for inter-column evaluations. Configuration can be used to select evaluations and override parameters of evaluations. When configuration is undefined, the profile job will run all supported inter-column evaluations. </p>"
+      }
+    },
+    "StepIndex": {
+      "base": null,
+      "refs": {
+        "SendProjectSessionActionRequest$StepIndex": "<p>The index from which to preview a step. This index is used to preview the result of steps that have already been applied, so that the resulting view frame is from earlier in the view frame stack.</p>"
+      }
+    },
+    "StopJobRunRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "StopJobRunResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "TableName": {
+      "base": null,
+      "refs": {
+        "DataCatalogInputDefinition$TableName": "<p>The name of a database table in the Data Catalog. This table corresponds to a DataBrew dataset.</p>",
+        "DataCatalogOutput$TableName": "<p>The name of a table in the Data Catalog.</p>"
+      }
+    },
+    "TagKey": {
+      "base": null,
+      "refs": {
+        "TagKeyList$member": null,
+        "TagMap$key": null
+      }
+    },
+    "TagKeyList": {
+      "base": null,
+      "refs": {
+        "UntagResourceRequest$TagKeys": "<p>The tag keys (names) of one or more tags to be removed.</p>"
+      }
+    },
+    "TagMap": {
+      "base": null,
+      "refs": {
+        "CreateDatasetRequest$Tags": "<p>Metadata tags to apply to this dataset.</p>",
+        "CreateProfileJobRequest$Tags": "<p>Metadata tags to apply to this job.</p>",
+        "CreateProjectRequest$Tags": "<p>Metadata tags to apply to this project.</p>",
+        "CreateRecipeJobRequest$Tags": "<p>Metadata tags to apply to this job.</p>",
+        "CreateRecipeRequest$Tags": "<p>Metadata tags to apply to this recipe.</p>",
+        "CreateRulesetRequest$Tags": "<p>Metadata tags to apply to the ruleset.</p>",
+        "CreateScheduleRequest$Tags": "<p>Metadata tags to apply to this schedule.</p>",
+        "Dataset$Tags": "<p>Metadata tags that have been applied to the dataset.</p>",
+        "DescribeDatasetResponse$Tags": "<p>Metadata tags associated with this dataset.</p>",
+        "DescribeJobResponse$Tags": "<p>Metadata tags associated with this job.</p>",
+        "DescribeProjectResponse$Tags": "<p>Metadata tags associated with this project.</p>",
+        "DescribeRecipeResponse$Tags": "<p>Metadata tags associated with this project.</p>",
+        "DescribeRulesetResponse$Tags": "<p>Metadata tags that have been applied to the ruleset.</p>",
+        "DescribeScheduleResponse$Tags": "<p>Metadata tags associated with this schedule.</p>",
+        "Job$Tags": "<p>Metadata tags that have been applied to the job.</p>",
+        "ListTagsForResourceResponse$Tags": "<p>A list of tags associated with the DataBrew resource.</p>",
+        "Project$Tags": "<p>Metadata tags that have been applied to the project.</p>",
+        "Recipe$Tags": "<p>Metadata tags that have been applied to the recipe.</p>",
+        "RulesetItem$Tags": "<p>Metadata tags that have been applied to the ruleset.</p>",
+        "Schedule$Tags": "<p>Metadata tags that have been applied to the schedule.</p>",
+        "TagResourceRequest$Tags": "<p>One or more tags to be assigned to the resource.</p>"
+      }
+    },
+    "TagResourceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "TagResourceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "TagValue": {
+      "base": null,
+      "refs": {
+        "TagMap$value": null
+      }
+    },
+    "TargetColumn": {
+      "base": null,
+      "refs": {
+        "ConditionExpression$TargetColumn": "<p>A column to apply this condition to.</p>"
+      }
+    },
+    "Threshold": {
+      "base": "<p>The threshold used with a non-aggregate check expression. The non-aggregate check expression will be applied to each row in a specific column. Then the threshold will be used to determine whether the validation succeeds.</p>",
+      "refs": {
+        "Rule$Threshold": "<p>The threshold used with a non-aggregate check expression. Non-aggregate check expressions will be applied to each row in a specific column, and the threshold will be used to determine whether the validation succeeds.</p>"
+      }
+    },
+    "ThresholdType": {
+      "base": null,
+      "refs": {
+        "Threshold$Type": "<p>The type of a threshold. Used for comparison of an actual count of rows that satisfy the rule to the threshold value.</p>"
+      }
+    },
+    "ThresholdUnit": {
+      "base": null,
+      "refs": {
+        "Threshold$Unit": "<p>Unit of threshold value. Can be either a COUNT or PERCENTAGE of the full sample size used for validation.</p>"
+      }
+    },
+    "ThresholdValue": {
+      "base": null,
+      "refs": {
+        "Threshold$Value": "<p>The value of a threshold.</p>"
+      }
+    },
+    "Timeout": {
+      "base": null,
+      "refs": {
+        "CreateProfileJobRequest$Timeout": "<p>The job's timeout in minutes. A job that attempts to run longer than this timeout period ends with a status of <code>TIMEOUT</code>.</p>",
+        "CreateRecipeJobRequest$Timeout": "<p>The job's timeout in minutes. A job that attempts to run longer than this timeout period ends with a status of <code>TIMEOUT</code>.</p>",
+        "DescribeJobResponse$Timeout": "<p>The job's timeout in minutes. A job that attempts to run longer than this timeout period ends with a status of <code>TIMEOUT</code>.</p>",
+        "Job$Timeout": "<p>The job's timeout in minutes. A job that attempts to run longer than this timeout period ends with a status of <code>TIMEOUT</code>.</p>",
+        "UpdateProfileJobRequest$Timeout": "<p>The job's timeout in minutes. A job that attempts to run longer than this timeout period ends with a status of <code>TIMEOUT</code>.</p>",
+        "UpdateRecipeJobRequest$Timeout": "<p>The job's timeout in minutes. A job that attempts to run longer than this timeout period ends with a status of <code>TIMEOUT</code>.</p>"
+      }
+    },
+    "TimezoneOffset": {
+      "base": null,
+      "refs": {
+        "DatetimeOptions$TimezoneOffset": "<p>Optional value for a timezone offset of the datetime parameter value in the Amazon S3 path. Shouldn't be used if Format for this parameter includes timezone fields. If no offset specified, UTC is assumed.</p>"
+      }
+    },
+    "UntagResourceRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UntagResourceResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateDatasetRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateDatasetResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateProfileJobRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateProfileJobResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateProjectRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateProjectResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateRecipeJobRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateRecipeJobResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateRecipeRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateRecipeResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateRulesetRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateRulesetResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateScheduleRequest": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "UpdateScheduleResponse": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "ValidationConfiguration": {
+      "base": "<p>Configuration for data quality validation. Used to select the Rulesets and Validation Mode to be used in the profile job. When ValidationConfiguration is null, the profile job will run without data quality validation.</p>",
+      "refs": {
+        "ValidationConfigurationList$member": null
+      }
+    },
+    "ValidationConfigurationList": {
+      "base": null,
+      "refs": {
+        "CreateProfileJobRequest$ValidationConfigurations": "<p>List of validation configurations that are applied to the profile job.</p>",
+        "DescribeJobResponse$ValidationConfigurations": "<p>List of validation configurations that are applied to the profile job.</p>",
+        "DescribeJobRunResponse$ValidationConfigurations": "<p>List of validation configurations that are applied to the profile job.</p>",
+        "Job$ValidationConfigurations": "<p>List of validation configurations that are applied to the profile job.</p>",
+        "JobRun$ValidationConfigurations": "<p>List of validation configurations that are applied to the profile job run.</p>",
+        "UpdateProfileJobRequest$ValidationConfigurations": "<p>List of validation configurations that are applied to the profile job.</p>"
+      }
+    },
+    "ValidationException": {
+      "base": "<p>The input parameters for this request failed validation.</p>",
+      "refs": {
+      }
+    },
+    "ValidationMode": {
+      "base": null,
+      "refs": {
+        "ValidationConfiguration$ValidationMode": "<p>Mode of data quality validation. Default mode is “CHECK_ALL” which verifies all rules defined in the selected ruleset.</p>"
+      }
+    },
+    "ValueReference": {
+      "base": null,
+      "refs": {
+        "ValuesMap$key": null
+      }
+    },
+    "ValuesMap": {
+      "base": null,
+      "refs": {
+        "FilterExpression$ValuesMap": "<p>The map of substitution variable names to their values used in this filter expression.</p>",
+        "Rule$SubstitutionMap": "<p>The map of substitution variable names to their values used in a check expression. Variable names should start with a ':' (colon). Variable values can either be actual values or column names. To differentiate between the two, column names should be enclosed in backticks, for example, <code>\":col1\": \"`Column A`\".</code> </p>"
+      }
+    },
+    "ViewFrame": {
+      "base": "<p>Represents the data being transformed during an action.</p>",
+      "refs": {
+        "SendProjectSessionActionRequest$ViewFrame": null
+      }
+    }
+  }
+}

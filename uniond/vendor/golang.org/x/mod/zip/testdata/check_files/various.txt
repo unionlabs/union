@@ -1,0 +1,25 @@
+-- want --
+valid:
+valid.go
+
+omitted:
+vendor/x/y: file is in vendor directory
+sub/go.mod: file is in another module
+.hg_archival.txt: file is inserted by 'hg archive' and is always omitted
+
+invalid:
+not/../clean: file path is not clean
+GO.MOD: go.mod files must have lowercase names
+invalid.go': malformed file path "invalid.go'": invalid char '\''
+valid.go: multiple entries for file "valid.go"
+-- valid.go --
+-- not/../clean --
+-- GO.MOD --
+-- invalid.go' --
+-- vendor/x/y --
+-- sub/go.mod --
+-- .hg_archival.txt --
+-- valid.go --
+duplicate
+-- valid.go --
+another duplicate

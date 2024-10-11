@@ -1,0 +1,53 @@
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# Github action job to test core java library features on
+# downstream client libraries before they are released.
+on:
+  push:
+    paths:
+      - 'bigtable/**'
+    branches:
+    - main
+  pull_request:
+    paths:
+      - 'bigtable/**'
+name: bigtable_conformance
+
+permissions:
+  contents: read
+
+jobs:
+  bigtable_conformance:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Bigtable test proxy can be run on any of these Go versions
+        go: [ '1.20', '1.22']
+        folders: ['bigtable']
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        path: google-cloud-go
+    - uses: actions/checkout@v4
+      with:
+        repository: googleapis/cloud-bigtable-clients-test
+        ref: main
+        path: cloud-bigtable-clients-test
+    - uses: actions/setup-go@v5
+      with:
+          go-version: ${{ matrix.go }}
+    - run: go version
+    - run: go install github.com/jstemmer/go-junit-report/v2@latest
+    - run: chmod +x ./google-cloud-go/${{ matrix.folders }}/conformance_test.sh
+    - run: ./google-cloud-go/${{ matrix.folders }}/conformance_test.sh

@@ -1,0 +1,29 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "feed.go",
+        "subscription.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/async/event",
+    visibility = ["//visibility:public"],
+    deps = ["//time/mclock:go_default_library"],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = [
+        "example_feed_test.go",
+        "example_scope_test.go",
+        "example_subscription_test.go",
+        "feed_test.go",
+        "subscription_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
+    ],
+)

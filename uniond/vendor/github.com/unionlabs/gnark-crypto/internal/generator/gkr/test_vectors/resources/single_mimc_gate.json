@@ -1,0 +1,7 @@
+[
+  {"gate": null, "inputs": []}, {"gate": null, "inputs": []},
+  {
+    "gate": "mimc",
+    "inputs": [0, 1]
+  }
+]

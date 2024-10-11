@@ -1,0 +1,23 @@
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["eth1_types.go"],
+    importpath = "github.com/prysmaticlabs/prysm/v4/beacon-chain/execution/types",
+    visibility = ["//beacon-chain:__subpackages__"],
+    deps = [
+        "//encoding/bytesutil:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["eth1_types_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//testing/assert:go_default_library",
+        "@com_github_ethereum_go_ethereum//common:go_default_library",
+    ],
+)

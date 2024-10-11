@@ -1,0 +1,87 @@
+// Generated from test.proto
+
+include "imported.fbs";
+
+namespace proto.test;
+
+/// Enum doc comment.
+enum ProtoEnum : int {
+  NUL = 0,
+  FOO = 1,
+  /// Enum 2nd value doc comment misaligned.
+  BAR = 5,
+}
+
+namespace proto.test.ProtoMessage_.OtherMessage_;
+
+enum ProtoEnum : int {
+  NUL = 0,
+  FOO = 1,
+  BAR = 2,
+  BAZ = 3,
+}
+
+namespace proto.test.ProtoMessage_;
+
+union RUnion {
+  /// doc comment for s.
+  proto.test.ImportedMessage,
+  /// doc comment for t on 2
+  /// lines.
+  proto.test.ProtoMessage_.OtherMessage,
+}
+
+namespace proto.test;
+
+/// 2nd table doc comment with
+/// many lines.
+table ProtoMessage {
+  c:int = 16;
+  d:long;
+  p:uint;
+  e:ulong;
+  /// doc comment for f.
+  f:int = -1;
+  g:long;
+  h:uint;
+  q:ulong;
+  i:int;
+  j:long;
+  /// doc comment for k.
+  k:bool;
+  /// doc comment for l on 2
+  /// lines
+  l:string (required);
+  m:[ubyte];
+  n:proto.test.ProtoMessage_.OtherMessage;
+  o:[string];
+  z:proto.test.ImportedMessage;
+  /// doc comment for r.
+  r:proto.test.ProtoMessage_.RUnion;
+  outer_enum:proto.test.ProtoEnum;
+  u:float = +inf;
+  v:float = +inf;
+  w:float = -inf;
+  grades:[proto.test.ProtoMessage_.GradesEntry];
+  other_message_map:[proto.test.ProtoMessage_.OtherMessageMapEntry];
+}
+
+namespace proto.test.ProtoMessage_;
+
+table OtherMessage {
+  a:double;
+  /// doc comment for b.
+  b:float = 3.14149;
+  foo_bar_baz:proto.test.ProtoMessage_.OtherMessage_.ProtoEnum;
+}
+
+table GradesEntry {
+  key:string (key);
+  value:float;
+}
+
+table OtherMessageMapEntry {
+  key:string (key);
+  value:proto.test.ProtoMessage_.OtherMessage;
+}
+

@@ -1,0 +1,160 @@
+name: Test
+
+on:
+  push:
+    branches:
+    - master
+    - crl-release-*
+  pull_request:
+    branches:
+    - master
+    - crl-release-*
+
+jobs:
+
+  linux:
+    name: go-linux
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.21"
+
+    - run: make test generate
+
+  linux-32bit:
+    name: go-linux-32bit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+
+      - run: GOARCH=386 make test
+
+  linux-crossversion:
+    name: go-linux-crossversion
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.21"
+
+    - run: make crossversion-meta
+
+  linux-race:
+    name: go-linux-race
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.21"
+
+    - run: make testrace TAGS=
+
+  linux-no-invariants:
+    name: go-linux-no-invariants
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.21"
+
+    - run: make test TAGS=
+
+  linux-no-cgo:
+    name: go-linux-no-cgo
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.21"
+
+    - run: CGO_ENABLED=0 make test TAGS=
+
+  darwin:
+    name: go-macos
+    runs-on: macos-12
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.21"
+
+    - run: make test
+
+  windows:
+    name: go-windows
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.21"
+
+    - run: go test -v ./...
+
+  bsds:
+    name: go-bsds
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.21"
+
+    - name: FreeBSD build
+      env:
+        GOOS: freebsd
+      run: go build -v ./...
+
+    - name: NetBSD build
+      env:
+        GOOS: netbsd
+      run: go build -v ./...
+
+    - name: OpenBSD build
+      env:
+        GOOS: openbsd
+      run: go build -v ./...
+
+  go-lint-checks:
+    name: go-lint-checks
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.21"
+
+    - name: mod-tidy-check
+      run: make mod-tidy-check
+
+    - name: format-check
+      run: make format-check

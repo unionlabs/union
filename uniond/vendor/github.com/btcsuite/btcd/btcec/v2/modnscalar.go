@@ -11,7 +11,7 @@ import (
 // arithmetic over the secp256k1 group order. This means all arithmetic is
 // performed modulo:
 //
-//   0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
+//	0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
 //
 // It only implements the arithmetic needed for elliptic curve operations,
 // however, the operations that are not implemented can typically be worked

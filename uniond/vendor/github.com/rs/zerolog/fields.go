@@ -139,13 +139,13 @@ func appendFieldList(dst []byte, kvList []interface{}, stack bool) []byte {
 		case uint64:
 			dst = enc.AppendUint64(dst, val)
 		case float32:
-			dst = enc.AppendFloat32(dst, val)
+			dst = enc.AppendFloat32(dst, val, FloatingPointPrecision)
 		case float64:
-			dst = enc.AppendFloat64(dst, val)
+			dst = enc.AppendFloat64(dst, val, FloatingPointPrecision)
 		case time.Time:
 			dst = enc.AppendTime(dst, val, TimeFieldFormat)
 		case time.Duration:
-			dst = enc.AppendDuration(dst, val, DurationFieldUnit, DurationFieldInteger)
+			dst = enc.AppendDuration(dst, val, DurationFieldUnit, DurationFieldInteger, FloatingPointPrecision)
 		case *string:
 			if val != nil {
 				dst = enc.AppendString(dst, *val)
@@ -220,13 +220,13 @@ func appendFieldList(dst []byte, kvList []interface{}, stack bool) []byte {
 			}
 		case *float32:
 			if val != nil {
-				dst = enc.AppendFloat32(dst, *val)
+				dst = enc.AppendFloat32(dst, *val, FloatingPointPrecision)
 			} else {
 				dst = enc.AppendNil(dst)
 			}
 		case *float64:
 			if val != nil {
-				dst = enc.AppendFloat64(dst, *val)
+				dst = enc.AppendFloat64(dst, *val, FloatingPointPrecision)
 			} else {
 				dst = enc.AppendNil(dst)
 			}
@@ -238,7 +238,7 @@ func appendFieldList(dst []byte, kvList []interface{}, stack bool) []byte {
 			}
 		case *time.Duration:
 			if val != nil {
-				dst = enc.AppendDuration(dst, *val, DurationFieldUnit, DurationFieldInteger)
+				dst = enc.AppendDuration(dst, *val, DurationFieldUnit, DurationFieldInteger, FloatingPointPrecision)
 			} else {
 				dst = enc.AppendNil(dst)
 			}
@@ -267,13 +267,13 @@ func appendFieldList(dst []byte, kvList []interface{}, stack bool) []byte {
 		case []uint64:
 			dst = enc.AppendUints64(dst, val)
 		case []float32:
-			dst = enc.AppendFloats32(dst, val)
+			dst = enc.AppendFloats32(dst, val, FloatingPointPrecision)
 		case []float64:
-			dst = enc.AppendFloats64(dst, val)
+			dst = enc.AppendFloats64(dst, val, FloatingPointPrecision)
 		case []time.Time:
 			dst = enc.AppendTimes(dst, val, TimeFieldFormat)
 		case []time.Duration:
-			dst = enc.AppendDurations(dst, val, DurationFieldUnit, DurationFieldInteger)
+			dst = enc.AppendDurations(dst, val, DurationFieldUnit, DurationFieldInteger, FloatingPointPrecision)
 		case nil:
 			dst = enc.AppendNil(dst)
 		case net.IP:
