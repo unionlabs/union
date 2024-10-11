@@ -192,6 +192,13 @@ async fn contribute(
     tx_status
         .send(Status::DownloadStarted(current_payload.id.clone()))
         .expect("impossible");
+    // If the current payload is not present, wipe all cached contribution
+    // files. This is needed because if a user rejoin the queue after having
+    // contributed using the previous cursor, it may have changed.
+    if let Err(_) = tokio::fs::metadata(&temp_file(&contributor_id, &current_payload.id)).await {
+        remove_temp_dir(&contributor_id).await?;
+        create_temp_dir(&contributor_id).await?;
+    }
     let payload = client
         .download_payload(
             &current_payload.id,
