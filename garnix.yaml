@@ -29,6 +29,8 @@ builds:
       - 'packages.aarch64-linux.evm-deployer-image'
       - 'packages.aarch64-linux.full-dev-setup'
       - 'packages.aarch64-linux.generate-ssz-compliance-tests'
+      - 'packages.aarch64-linux.solidity-coverage'
+      - 'packages.aarch64-linux.show-solidity-coverage'
       - 'packages.*.devnet-osmosis-home'
       - 'packages.*.devnet-simd-home'
       - 'packages.*.devnet-stargaze-home'
