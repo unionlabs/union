@@ -51,6 +51,8 @@ require (
 	google.golang.org/grpc v1.67.1
 )
 
+require cosmossdk.io/collections v0.4.1-0.20240802064046-23fac2f1b8ab
+
 require (
 	buf.build/gen/go/cometbft/cometbft/protocolbuffers/go v1.34.2-20240701160653-fedbb9acfd2f.2 // indirect
 	buf.build/gen/go/cosmos/gogo-proto/protocolbuffers/go v1.34.2-20240130113600-88ef6483f90f.2 // indirect
@@ -60,7 +62,6 @@ require (
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	cloud.google.com/go/iam v1.1.9 // indirect
 	cloud.google.com/go/storage v1.42.0 // indirect
-	cosmossdk.io/collections v0.4.1-0.20240802064046-23fac2f1b8ab // indirect
 	cosmossdk.io/core/testing v0.0.0-20240923163230-04da382a9f29 // indirect
 	cosmossdk.io/depinject v1.0.0 // indirect
 	cosmossdk.io/schema v0.3.1-0.20240930054013-7c6e0388a3f9 // indirect
@@ -256,7 +257,7 @@ require (
 // Cosmos SDK v0.52
 replace (
 	cosmossdk.io/api => cosmossdk.io/api v0.7.3-0.20240924065902-eb7653cfecdf
-	cosmossdk.io/client/v2 => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20241009165632-574e6929042c
+	cosmossdk.io/client/v2 => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20241009174353-cb4ef3142d00
 	cosmossdk.io/core => cosmossdk.io/core v1.0.0-alpha.4
 	cosmossdk.io/core/testing => cosmossdk.io/core/testing v0.0.0-20240924155446-f195a8660be9
 	cosmossdk.io/store => cosmossdk.io/store v1.0.0-rc.0.0.20240913190136-3bc707a5a214
@@ -286,7 +287,7 @@ replace (
 )
 
 // CosmWasm
-replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241009192201-46a74a00cf20
+replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241012094609-5da042685f7b
 
 // CometBLS
 replace (

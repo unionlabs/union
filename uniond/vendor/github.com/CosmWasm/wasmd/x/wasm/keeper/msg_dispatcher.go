@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -89,7 +90,7 @@ func (d MessageDispatcher) dispatchMsgWithGasLimit(ctx sdk.Context, contractAddr
 
 // DispatchSubmessages builds a sandbox to execute these messages and returns the execution result to the contract
 // that dispatched them, both on success as well as failure
-func (d MessageDispatcher) DispatchSubmessages(ctx sdk.Context, contractAddr sdk.AccAddress, ibcPort string, msgs []wasmvmtypes.SubMsg) ([]byte, error) {
+func (d MessageDispatcher) DispatchSubmessages(ctx context.Context, contractAddr sdk.AccAddress, ibcPort string, msgs []wasmvmtypes.SubMsg) ([]byte, error) {
 	var rsp []byte
 	for _, msg := range msgs {
 		switch msg.ReplyOn {
@@ -98,12 +99,12 @@ func (d MessageDispatcher) DispatchSubmessages(ctx sdk.Context, contractAddr sdk
 			return nil, errorsmod.Wrap(types.ErrInvalid, "replyOn value")
 		}
 		// first, we build a sub-context which we can use inside the submessages
-		subCtx, commit := ctx.CacheContext()
+		subCtx, commit := sdk.UnwrapSDKContext(ctx).CacheContext()
 		em := sdk.NewEventManager()
 		subCtx = subCtx.WithEventManager(em)
 
 		// check how much gas left locally, optionally wrap the gas meter
-		gasRemaining := ctx.GasMeter().Limit() - ctx.GasMeter().GasConsumed()
+		gasRemaining := sdk.UnwrapSDKContext(ctx).GasMeter().Limit() - sdk.UnwrapSDKContext(ctx).GasMeter().GasConsumed()
 		limitGas := msg.GasLimit != nil && (*msg.GasLimit < gasRemaining)
 
 		var err error
@@ -121,7 +122,7 @@ func (d MessageDispatcher) DispatchSubmessages(ctx sdk.Context, contractAddr sdk
 		if err == nil {
 			commit()
 			filteredEvents = filterEvents(append(em.Events(), events...))
-			ctx.EventManager().EmitEvents(filteredEvents)
+			sdk.UnwrapSDKContext(ctx).EventManager().EmitEvents(filteredEvents)
 			if msg.Msg.Wasm == nil {
 				filteredEvents = []sdk.Event{}
 			} else {
@@ -175,7 +176,7 @@ func (d MessageDispatcher) DispatchSubmessages(ctx sdk.Context, contractAddr sdk
 			}
 		} else {
 			// Issue #759 - we don't return error string for worries of non-determinism
-			moduleLogger(ctx).Debug("Redacting submessage error", "cause", err)
+			moduleLogger(sdk.UnwrapSDKContext(ctx)).Debug("Redacting submessage error", "cause", err)
 			result = wasmvmtypes.SubMsgResult{
 				Err: redactError(err).Error(),
 			}
@@ -190,7 +191,7 @@ func (d MessageDispatcher) DispatchSubmessages(ctx sdk.Context, contractAddr sdk
 
 		// we can ignore any result returned as there is nothing to do with the data
 		// and the events are already in the ctx.EventManager()
-		rspData, err := d.keeper.reply(ctx, contractAddr, reply)
+		rspData, err := d.keeper.reply(sdk.UnwrapSDKContext(ctx), contractAddr, reply)
 		switch {
 		case err != nil:
 			return nil, errorsmod.Wrap(err, "reply")
