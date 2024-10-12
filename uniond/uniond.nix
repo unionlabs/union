@@ -89,6 +89,7 @@
                     # Statically link if we're on linux
                     nativeBuildInputs = [ pkgs.musl ];
                     ldflags = [
+                      "-checklinkname=0"
                       "-linkmode external"
                       "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
                       "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
@@ -104,6 +105,7 @@
                       --set DYLD_LIBRARY_PATH ${(pkgs.lib.makeLibraryPath [ libwasmvm ])};
                     '';
                     ldflags = [
+                      "-checklinkname=0"
                       "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
                       "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
                     ];

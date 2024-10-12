@@ -167,6 +167,9 @@ var (
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName:     nil,
 		distrtypes.ModuleName:          nil,
+		pooltypes.ModuleName:               nil,
+		pooltypes.StreamAccount:            nil,
+		pooltypes.ProtocolPoolDistrAccount: nil,
 		icatypes.ModuleName:            nil,
 		minttypes.ModuleName:           {authtypes.Minter},
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
@@ -308,7 +311,7 @@ func NewUnionApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibcexported.StoreKey, upgradetypes.StoreKey,
 		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcwasmtypes.StoreKey, icahosttypes.StoreKey,
 		capabilitytypes.StoreKey, group.StoreKey, icacontrollertypes.StoreKey, consensusparamtypes.StoreKey,
-		ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey,
+		ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey, pooltypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 
@@ -711,6 +714,7 @@ func NewUnionApp(
 		capabilitytypes.ModuleName,
 		minttypes.ModuleName,
 		distrtypes.ModuleName,
+		pooltypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
 		stakingtypes.ModuleName,
@@ -756,6 +760,7 @@ func NewUnionApp(
 		consensusparamtypes.ModuleName,
 		wasmtypes.ModuleName,
 		tftypes.ModuleName,
+		pooltypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -765,6 +770,7 @@ func NewUnionApp(
 	// can do so safely.
 	genesisModuleOrder := []string{
 		capabilitytypes.ModuleName,
+		accounts.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
@@ -785,6 +791,7 @@ func NewUnionApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		pooltypes.ModuleName,
 		wasmtypes.ModuleName,
 		tftypes.ModuleName,
 	}
