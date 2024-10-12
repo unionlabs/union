@@ -101,7 +101,7 @@ cosmossdk.io/api/cosmos/tx/v1beta1
 cosmossdk.io/api/cosmos/upgrade/module/v1
 cosmossdk.io/api/cosmos/upgrade/v1beta1
 cosmossdk.io/api/cosmos/vesting/module/v1
-# cosmossdk.io/client/v2 v2.0.0-beta.3 => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/client/v2 v2.0.0-beta.3 => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/client/v2/autocli
 cosmossdk.io/client/v2/autocli/flag
@@ -194,11 +194,11 @@ cosmossdk.io/store/streaming/abci
 cosmossdk.io/store/tracekv
 cosmossdk.io/store/transient
 cosmossdk.io/store/types
-# cosmossdk.io/tools/confix v0.1.2 => github.com/unionlabs/cosmos-sdk-union/tools/confix v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/tools/confix v0.1.2 => github.com/unionlabs/cosmos-sdk-union/tools/confix v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/tools/confix
 cosmossdk.io/tools/confix/cmd
-# cosmossdk.io/x/accounts v0.1.1 => github.com/unionlabs/cosmos-sdk-union/x/accounts v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/accounts v0.1.1 => github.com/unionlabs/cosmos-sdk-union/x/accounts v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/accounts
 cosmossdk.io/x/accounts/accountstd
@@ -207,7 +207,7 @@ cosmossdk.io/x/accounts/interfaces/account_abstraction/v1
 cosmossdk.io/x/accounts/internal/implementation
 cosmossdk.io/x/accounts/internal/prefixstore
 cosmossdk.io/x/accounts/v1
-# cosmossdk.io/x/authz v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/authz v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/authz v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/authz v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/authz
 cosmossdk.io/x/authz/client/cli
@@ -216,7 +216,7 @@ cosmossdk.io/x/authz/keeper
 cosmossdk.io/x/authz/migrations/v2
 cosmossdk.io/x/authz/module
 cosmossdk.io/x/authz/simulation
-# cosmossdk.io/x/bank v0.0.0-20240226161501-23359a0b6d91 => github.com/unionlabs/cosmos-sdk-union/x/bank v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/bank v0.0.0-20240226161501-23359a0b6d91 => github.com/unionlabs/cosmos-sdk-union/x/bank v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/bank
 cosmossdk.io/x/bank/client/cli
@@ -224,13 +224,13 @@ cosmossdk.io/x/bank/exported
 cosmossdk.io/x/bank/keeper
 cosmossdk.io/x/bank/simulation
 cosmossdk.io/x/bank/types
-# cosmossdk.io/x/consensus v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/consensus v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/consensus v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/consensus v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/consensus
 cosmossdk.io/x/consensus/exported
 cosmossdk.io/x/consensus/keeper
 cosmossdk.io/x/consensus/types
-# cosmossdk.io/x/distribution v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/distribution v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/distribution v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/distribution v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/distribution
 cosmossdk.io/x/distribution/client/cli
@@ -238,10 +238,10 @@ cosmossdk.io/x/distribution/keeper
 cosmossdk.io/x/distribution/migrations/v4
 cosmossdk.io/x/distribution/simulation
 cosmossdk.io/x/distribution/types
-# cosmossdk.io/x/epochs v0.0.0-20240522060652-a1ae4c3e0337 => github.com/unionlabs/cosmos-sdk-union/x/epochs v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/epochs v0.0.0-20240522060652-a1ae4c3e0337 => github.com/unionlabs/cosmos-sdk-union/x/epochs v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/epochs/types
-# cosmossdk.io/x/evidence v0.1.1 => github.com/unionlabs/cosmos-sdk-union/x/evidence v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/evidence v0.1.1 => github.com/unionlabs/cosmos-sdk-union/x/evidence v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/evidence
 cosmossdk.io/x/evidence/client
@@ -250,7 +250,7 @@ cosmossdk.io/x/evidence/exported
 cosmossdk.io/x/evidence/keeper
 cosmossdk.io/x/evidence/simulation
 cosmossdk.io/x/evidence/types
-# cosmossdk.io/x/feegrant v0.1.1 => github.com/unionlabs/cosmos-sdk-union/x/feegrant v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/feegrant v0.1.1 => github.com/unionlabs/cosmos-sdk-union/x/feegrant v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/feegrant
 cosmossdk.io/x/feegrant/client/cli
@@ -258,7 +258,7 @@ cosmossdk.io/x/feegrant/keeper
 cosmossdk.io/x/feegrant/migrations/v2
 cosmossdk.io/x/feegrant/module
 cosmossdk.io/x/feegrant/simulation
-# cosmossdk.io/x/gov v0.0.0-20231113122742-912390d5fc4a => github.com/unionlabs/cosmos-sdk-union/x/gov v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/gov v0.0.0-20231113122742-912390d5fc4a => github.com/unionlabs/cosmos-sdk-union/x/gov v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/gov
 cosmossdk.io/x/gov/client
@@ -272,7 +272,7 @@ cosmossdk.io/x/gov/simulation
 cosmossdk.io/x/gov/types
 cosmossdk.io/x/gov/types/v1
 cosmossdk.io/x/gov/types/v1beta1
-# cosmossdk.io/x/group v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/group v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/group v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/group v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/group
 cosmossdk.io/x/group/client/cli
@@ -284,32 +284,32 @@ cosmossdk.io/x/group/keeper
 cosmossdk.io/x/group/migrations/v2
 cosmossdk.io/x/group/module
 cosmossdk.io/x/group/simulation
-# cosmossdk.io/x/mint v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/mint v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/mint v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/mint v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/mint
 cosmossdk.io/x/mint/keeper
 cosmossdk.io/x/mint/simulation
 cosmossdk.io/x/mint/types
-# cosmossdk.io/x/params v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/params v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/params v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/params v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/params
 cosmossdk.io/x/params/keeper
 cosmossdk.io/x/params/types
 cosmossdk.io/x/params/types/proposal
-# cosmossdk.io/x/protocolpool v0.1.0 => github.com/unionlabs/cosmos-sdk-union/x/protocolpool v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/protocolpool v0.1.0 => github.com/unionlabs/cosmos-sdk-union/x/protocolpool v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/protocolpool
 cosmossdk.io/x/protocolpool/keeper
 cosmossdk.io/x/protocolpool/simulation
 cosmossdk.io/x/protocolpool/types
-# cosmossdk.io/x/slashing v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/slashing v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/slashing v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/slashing v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/slashing
 cosmossdk.io/x/slashing/keeper
 cosmossdk.io/x/slashing/migrations/v4
 cosmossdk.io/x/slashing/simulation
 cosmossdk.io/x/slashing/types
-# cosmossdk.io/x/staking v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/staking v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/staking v0.0.0-00010101000000-000000000000 => github.com/unionlabs/cosmos-sdk-union/x/staking v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/staking
 cosmossdk.io/x/staking/client/cli
@@ -329,7 +329,7 @@ cosmossdk.io/x/tx/signing/directaux
 cosmossdk.io/x/tx/signing/textual
 cosmossdk.io/x/tx/signing/textual/internal/cbor
 cosmossdk.io/x/tx/signing/textual/internal/textualpb
-# cosmossdk.io/x/upgrade v0.1.4 => github.com/unionlabs/cosmos-sdk-union/x/upgrade v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/x/upgrade v0.1.4 => github.com/unionlabs/cosmos-sdk-union/x/upgrade v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 cosmossdk.io/x/upgrade
 cosmossdk.io/x/upgrade/client/cli
@@ -347,7 +347,7 @@ github.com/99designs/go-keychain
 # github.com/99designs/keyring v1.2.2
 ## explicit; go 1.19
 github.com/99designs/keyring
-# github.com/CosmWasm/wasmd v0.51.0 => github.com/unionlabs/wasmd v0.0.0-20241012094609-5da042685f7b
+# github.com/CosmWasm/wasmd v0.51.0 => github.com/unionlabs/wasmd v0.0.0-20241012112303-f38638018b90
 ## explicit; go 1.23.1
 github.com/CosmWasm/wasmd/x/wasm
 github.com/CosmWasm/wasmd/x/wasm/client/cli
@@ -686,7 +686,7 @@ github.com/cosmos/cosmos-db
 github.com/cosmos/cosmos-proto
 github.com/cosmos/cosmos-proto/anyutil
 github.com/cosmos/cosmos-proto/runtime
-# github.com/cosmos/cosmos-sdk v0.53.0 => github.com/unionlabs/cosmos-sdk-union v0.0.0-20241009174353-cb4ef3142d00
+# github.com/cosmos/cosmos-sdk v0.53.0 => github.com/unionlabs/cosmos-sdk-union v0.0.0-20241012095916-552069d283f6
 ## explicit; go 1.23.1
 github.com/cosmos/cosmos-sdk/baseapp
 github.com/cosmos/cosmos-sdk/baseapp/internal/protocompat
@@ -850,13 +850,13 @@ github.com/cosmos/iavl/internal/color
 github.com/cosmos/iavl/internal/encoding
 github.com/cosmos/iavl/keyformat
 github.com/cosmos/iavl/proto
-# github.com/cosmos/ibc-go/modules/capability v1.0.1 => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241010223220-5f65d29d30eb
+# github.com/cosmos/ibc-go/modules/capability v1.0.1 => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241012112009-2470dce3532c
 ## explicit; go 1.23.1
 github.com/cosmos/ibc-go/modules/capability
 github.com/cosmos/ibc-go/modules/capability/keeper
 github.com/cosmos/ibc-go/modules/capability/simulation
 github.com/cosmos/ibc-go/modules/capability/types
-# github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.0.0 => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241010223220-5f65d29d30eb
+# github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.0.0 => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241012112009-2470dce3532c
 ## explicit; go 1.23.1
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/client/cli
@@ -865,7 +865,7 @@ github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/types
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/simulation
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types
-# github.com/cosmos/ibc-go/v8 v8.4.0 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241010223220-5f65d29d30eb
+# github.com/cosmos/ibc-go/v8 v8.4.0 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241012112009-2470dce3532c
 ## explicit; go 1.23.1
 github.com/cosmos/ibc-go/v8/internal/logging
 github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts
@@ -1936,38 +1936,38 @@ rsc.io/tmplfunc/internal/parse
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
 # cosmossdk.io/api => cosmossdk.io/api v0.7.3-0.20240924065902-eb7653cfecdf
-# cosmossdk.io/client/v2 => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/client/v2 => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20241012095916-552069d283f6
 # cosmossdk.io/core => cosmossdk.io/core v1.0.0-alpha.4
 # cosmossdk.io/core/testing => cosmossdk.io/core/testing v0.0.0-20240924155446-f195a8660be9
 # cosmossdk.io/store => cosmossdk.io/store v1.0.0-rc.0.0.20240913190136-3bc707a5a214
-# cosmossdk.io/tools/confix => github.com/unionlabs/cosmos-sdk-union/tools/confix v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/accounts => github.com/unionlabs/cosmos-sdk-union/x/accounts v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/accounts/defaults/lockup => github.com/unionlabs/cosmos-sdk-union/x/accounts/defaults/lockup v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/accounts/defaults/multisig => github.com/unionlabs/cosmos-sdk-union/x/accounts/defaults/multisig v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/authz => github.com/unionlabs/cosmos-sdk-union/x/authz v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/bank => github.com/unionlabs/cosmos-sdk-union/x/bank v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/circuit => github.com/unionlabs/cosmos-sdk-union/x/circuit v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/consensus => github.com/unionlabs/cosmos-sdk-union/x/consensus v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/distribution => github.com/unionlabs/cosmos-sdk-union/x/distribution v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/epochs => github.com/unionlabs/cosmos-sdk-union/x/epochs v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/evidence => github.com/unionlabs/cosmos-sdk-union/x/evidence v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/feegrant => github.com/unionlabs/cosmos-sdk-union/x/feegrant v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/gov => github.com/unionlabs/cosmos-sdk-union/x/gov v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/group => github.com/unionlabs/cosmos-sdk-union/x/group v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/mint => github.com/unionlabs/cosmos-sdk-union/x/mint v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/nft => github.com/unionlabs/cosmos-sdk-union/x/nft v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/params => github.com/unionlabs/cosmos-sdk-union/x/params v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/protocolpool => github.com/unionlabs/cosmos-sdk-union/x/protocolpool v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/slashing => github.com/unionlabs/cosmos-sdk-union/x/slashing v0.0.0-20241009174353-cb4ef3142d00
-# cosmossdk.io/x/staking => github.com/unionlabs/cosmos-sdk-union/x/staking v0.0.0-20241009174353-cb4ef3142d00
+# cosmossdk.io/tools/confix => github.com/unionlabs/cosmos-sdk-union/tools/confix v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/accounts => github.com/unionlabs/cosmos-sdk-union/x/accounts v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/accounts/defaults/lockup => github.com/unionlabs/cosmos-sdk-union/x/accounts/defaults/lockup v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/accounts/defaults/multisig => github.com/unionlabs/cosmos-sdk-union/x/accounts/defaults/multisig v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/authz => github.com/unionlabs/cosmos-sdk-union/x/authz v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/bank => github.com/unionlabs/cosmos-sdk-union/x/bank v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/circuit => github.com/unionlabs/cosmos-sdk-union/x/circuit v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/consensus => github.com/unionlabs/cosmos-sdk-union/x/consensus v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/distribution => github.com/unionlabs/cosmos-sdk-union/x/distribution v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/epochs => github.com/unionlabs/cosmos-sdk-union/x/epochs v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/evidence => github.com/unionlabs/cosmos-sdk-union/x/evidence v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/feegrant => github.com/unionlabs/cosmos-sdk-union/x/feegrant v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/gov => github.com/unionlabs/cosmos-sdk-union/x/gov v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/group => github.com/unionlabs/cosmos-sdk-union/x/group v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/mint => github.com/unionlabs/cosmos-sdk-union/x/mint v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/nft => github.com/unionlabs/cosmos-sdk-union/x/nft v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/params => github.com/unionlabs/cosmos-sdk-union/x/params v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/protocolpool => github.com/unionlabs/cosmos-sdk-union/x/protocolpool v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/slashing => github.com/unionlabs/cosmos-sdk-union/x/slashing v0.0.0-20241012095916-552069d283f6
+# cosmossdk.io/x/staking => github.com/unionlabs/cosmos-sdk-union/x/staking v0.0.0-20241012095916-552069d283f6
 # cosmossdk.io/x/tx => cosmossdk.io/x/tx v0.13.4-0.20240815194237-858ec2fcb897
-# cosmossdk.io/x/upgrade => github.com/unionlabs/cosmos-sdk-union/x/upgrade v0.0.0-20241009174353-cb4ef3142d00
-# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk-union v0.0.0-20241009174353-cb4ef3142d00
-# github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241012094609-5da042685f7b
+# cosmossdk.io/x/upgrade => github.com/unionlabs/cosmos-sdk-union/x/upgrade v0.0.0-20241012095916-552069d283f6
+# github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk-union v0.0.0-20241012095916-552069d283f6
+# github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241012112303-f38638018b90
 # github.com/cometbft/cometbft => github.com/unionlabs/cometbft v0.0.0-20241009165438-d82e5fece358
 # github.com/cometbft/cometbft/api => github.com/unionlabs/cometbft/api v0.0.0-20241009165438-d82e5fece358
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
-# github.com/cosmos/ibc-go/modules/capability => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241010223220-5f65d29d30eb
-# github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241010223220-5f65d29d30eb
-# github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241010223220-5f65d29d30eb
+# github.com/cosmos/ibc-go/modules/capability => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241012112009-2470dce3532c
+# github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241012112009-2470dce3532c
+# github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241012112009-2470dce3532c
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

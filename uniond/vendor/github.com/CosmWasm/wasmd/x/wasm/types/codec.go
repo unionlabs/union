@@ -2,7 +2,6 @@ package types
 
 import (
 	"cosmossdk.io/core/registry"
-	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"cosmossdk.io/x/authz"
@@ -61,7 +60,7 @@ func RegisterLegacyAminoCodec(cdc registry.AminoRegistrar) {
 }
 
 // RegisterInterfaces registers the concrete proto types and interfaces with the SDK interface registry
-func RegisterInterfaces(registry types.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
 		&MsgStoreCode{},

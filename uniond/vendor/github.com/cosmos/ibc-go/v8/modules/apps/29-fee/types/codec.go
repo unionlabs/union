@@ -6,20 +6,23 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
+
+	"cosmossdk.io/core/registry"
 )
 
 // RegisterLegacyAminoCodec registers the necessary x/ibc 29-fee interfaces and concrete types
 // on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
-func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	legacy.RegisterAminoMsg(cdc, &MsgPayPacketFee{}, "cosmos-sdk/MsgPayPacketFee")
-	legacy.RegisterAminoMsg(cdc, &MsgPayPacketFeeAsync{}, "cosmos-sdk/MsgPayPacketFeeAsync")
-	legacy.RegisterAminoMsg(cdc, &MsgRegisterPayee{}, "cosmos-sdk/MsgRegisterPayee")
-	legacy.RegisterAminoMsg(cdc, &MsgRegisterCounterpartyPayee{}, "cosmos-sdk/MsgRegisterCounterpartyPayee")
+// RegisterLegacyAminoCodec does nothing. Capability does not support amino.
+func RegisterLegacyAminoCodec(registrar registry.AminoRegistrar) {
+	legacy.RegisterAminoMsg(registrar, &MsgPayPacketFee{}, "cosmos-sdk/MsgPayPacketFee")
+	legacy.RegisterAminoMsg(registrar, &MsgPayPacketFeeAsync{}, "cosmos-sdk/MsgPayPacketFeeAsync")
+	legacy.RegisterAminoMsg(registrar, &MsgRegisterPayee{}, "cosmos-sdk/MsgRegisterPayee")
+	legacy.RegisterAminoMsg(registrar, &MsgRegisterCounterpartyPayee{}, "cosmos-sdk/MsgRegisterCounterpartyPayee")
 }
 
 // RegisterInterfaces register the 29-fee module interfaces to protobuf
 // Any.
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
 		&MsgPayPacketFee{},

@@ -7,11 +7,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+
+	"cosmossdk.io/core/registry"
 )
 
 // RegisterInterfaces register the ibc channel submodule interfaces to protobuf
 // Any.
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterInterface(
 		"ibc.core.channel.v1.ChannelI",
 		(*exported.ChannelI)(nil),
