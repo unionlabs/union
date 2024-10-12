@@ -28,7 +28,7 @@
           throwBadSystem;
 
       rustToolchain = rust.mkNightly {
-        channel = "nightly-2024-01-27";
+        channel = "nightly-2024-09-17";
         targets = [ CARGO_BUILD_TARGET ];
       };
 

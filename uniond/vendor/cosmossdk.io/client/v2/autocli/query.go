@@ -124,7 +124,6 @@ func (b *Builder) BuildQueryMethodCommand(ctx context.Context, descriptor protor
 		Indent:             "  ",
 		EnumAsString:       true,
 		DoNotSortFields:    true,
-		AminoNameAsTypeURL: true,
 		TypeResolver:       b.TypeResolver,
 		FileResolver:       b.FileResolver,
 	}

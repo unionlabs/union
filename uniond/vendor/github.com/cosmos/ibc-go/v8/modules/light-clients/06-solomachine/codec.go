@@ -4,15 +4,16 @@ import (
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+
+	"cosmossdk.io/core/registry"
 )
 
 // RegisterInterfaces register the ibc channel submodule interfaces to protobuf
 // Any.
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterImplementations(
 		(*exported.ClientState)(nil),
 		&ClientState{},

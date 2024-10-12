@@ -7,11 +7,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"cosmossdk.io/core/appmodule"
-	coreregistry "cosmossdk.io/core/registry"
+	"cosmossdk.io/core/registry"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 )
 
@@ -32,11 +31,11 @@ func (AppModule) IsOnePerModuleType() {}
 func (AppModule) IsAppModule() {}
 
 // RegisterLegacyAminoCodec performs a no-op. The Tendermint client does not support amino.
-func (AppModule) RegisterLegacyAminoCodec(coreregistry.AminoRegistrar) {}
+func (AppModule) RegisterLegacyAminoCodec(registry.AminoRegistrar) {}
 
 // RegisterInterfaces registers module concrete types into protobuf Any. This allows core IBC
 // to unmarshal tendermint light client types.
-func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func (AppModule) RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	RegisterInterfaces(registry)
 }
 

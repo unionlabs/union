@@ -1,13 +1,12 @@
 package types
 
 import (
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-
+	"cosmossdk.io/core/registry"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 // RegisterInterfaces registers the commitment interfaces to protobuf Any.
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterInterface(
 		"ibc.core.commitment.v1.Root",
 		(*exported.Root)(nil),

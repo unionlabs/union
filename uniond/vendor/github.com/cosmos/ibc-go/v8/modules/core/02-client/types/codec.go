@@ -12,10 +12,12 @@ import (
 
 	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+
+	"cosmossdk.io/core/registry"
 )
 
 // RegisterInterfaces registers the client interfaces to protobuf Any.
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterInterface(
 		"ibc.core.client.v1.ClientState",
 		(*exported.ClientState)(nil),

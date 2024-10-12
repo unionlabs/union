@@ -18,7 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -92,7 +91,7 @@ func (b AppModuleBasic) GetQueryCmd() *cobra.Command {
 }
 
 // RegisterInterfaces implements InterfaceModule
-func (b AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
+func (b AppModuleBasic) RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	types.RegisterInterfaces(registry)
 }
 
