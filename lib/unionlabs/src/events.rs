@@ -130,6 +130,7 @@ macro_rules! event {
                             )+
                             // TODO(aeryz): this is newly added to cosmos-sdk, until we understand what to do with this, ignore
                             "msg_index" => {}
+                            "authz_msg_index" => {}
                             key => {
                                 if !DEPRECATED.contains(&key) {
                                     return Err(TryFromTendermintEventError::UnknownField(attr.key))
