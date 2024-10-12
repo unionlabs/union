@@ -1,12 +1,12 @@
 package keeper
 
 import (
+	"context"
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
 	wasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
@@ -30,28 +30,25 @@ func NewConsensusHost(cdc codec.BinaryCodec, stakingKeeper clienttypes.StakingKe
 	}
 }
 
-func (k ConsensusHost) GetSelfConsensusState(ctx sdk.Context, height exported.Height) (exported.ConsensusState, error) {
+func (k ConsensusHost) GetSelfConsensusState(ctx context.Context, height exported.Height) (exported.ConsensusState, error) {
 	selfHeight, ok := height.(clienttypes.Height)
 	if !ok {
 		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidHeight, "expected %T, got %T", clienttypes.Height{}, height)
 	}
 	// check that height revision matches chainID revision
-	revision := clienttypes.ParseChainID(ctx.ChainID())
+	revision := clienttypes.ParseChainID(sdk.UnwrapSDKContext(ctx).ChainID())
 	if revision != height.GetRevisionNumber() {
 		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidHeight, "chainID revision number does not match height revision number: expected %d, got %d", revision, height.GetRevisionNumber())
 	}
 
-	histInfo, err := k.stakingKeeper.GetHistoricalInfo(ctx, int64(selfHeight.RevisionHeight))
-	if err != nil {
-		return nil, errorsmod.Wrapf(errors.ErrNotFound, "no historical info found at height %d", selfHeight.RevisionHeight)
-	}
+	header := sdk.UnwrapSDKContext(ctx).WithBlockHeight(int64(selfHeight.RevisionHeight)).BlockHeader();
 
-	timestamp := uint64(histInfo.Header.Time.UnixNano())
+	timestamp := uint64(header.GetTime().UnixNano())
 
 	cometblsConsensusState := &ConsensusState{
 		Timestamp:          timestamp,
-		Root:               commitmenttypes.NewMerkleRoot(histInfo.Header.GetAppHash()),
-		NextValidatorsHash: histInfo.Header.NextValidatorsHash,
+		Root:               commitmenttypes.NewMerkleRoot(header.GetAppHash()),
+		NextValidatorsHash: header.GetNextValidatorsHash(),
 	}
 
 	// FIXME(aeryz): we should not wrap this state in wasm since our own consensus state is just cometbls.ConsensusState
@@ -68,7 +65,7 @@ func (k ConsensusHost) GetSelfConsensusState(ctx sdk.Context, height exported.He
 
 }
 
-func (k ConsensusHost) ValidateSelfClient(ctx sdk.Context, clientState exported.ClientState) error {
+func (k ConsensusHost) ValidateSelfClient(ctx context.Context, clientState exported.ClientState) error {
 	// we don't have to verify cometbls client state
 	return nil
 }
@@ -95,7 +92,7 @@ func (cs ClientState) GetLatestHeight() exported.Height {
 func (ClientState) Validate() error { return nil }
 
 // Status must return the status of the client. Only Active clients are allowed to process packets.
-func (ClientState) Status(_ sdk.Context, _ storetypes.KVStore, _ codec.BinaryCodec) exported.Status {
+func (ClientState) Status(_ context.Context, _ storetypes.KVStore, _ codec.BinaryCodec) exported.Status {
 	return ""
 }
 
@@ -113,7 +110,7 @@ func (ClientState) ZeroCustomFields() exported.ClientState {
 
 // GetTimestampAtHeight must return the timestamp for the consensus state associated with the provided height.
 func (ClientState) GetTimestampAtHeight(
-	_ sdk.Context,
+	_ context.Context,
 	_ storetypes.KVStore,
 	_ codec.BinaryCodec,
 	_ exported.Height,
@@ -123,14 +120,14 @@ func (ClientState) GetTimestampAtHeight(
 
 // Initialize is called upon client creation, it allows the client to perform validation on the initial consensus state and set the
 // client state, consensus state and any client-specific metadata necessary for correct light client operation in the provided client store.
-func (ClientState) Initialize(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ConsensusState) error {
+func (ClientState) Initialize(_ context.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ConsensusState) error {
 	return nil
 }
 
 // VerifyMembership is a generic proof verification method which verifies a proof of the existence of a value at a given CommitmentPath at the specified height.
 // The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
 func (ClientState) VerifyMembership(
-	_ sdk.Context,
+	_ context.Context,
 	_ storetypes.KVStore,
 	_ codec.BinaryCodec,
 	_ exported.Height,
@@ -146,7 +143,7 @@ func (ClientState) VerifyMembership(
 // VerifyNonMembership is a generic proof verification method which verifies the absence of a given CommitmentPath at a specified height.
 // The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
 func (ClientState) VerifyNonMembership(
-	_ sdk.Context,
+	_ context.Context,
 	_ storetypes.KVStore,
 	_ codec.BinaryCodec,
 	_ exported.Height,
@@ -162,29 +159,29 @@ func (ClientState) VerifyNonMembership(
 // It must handle each type of ClientMessage appropriately. Calls to CheckForMisbehaviour, UpdateState, and UpdateStateOnMisbehaviour
 // will assume that the content of the ClientMessage has been verified and can be trusted. An error should be returned
 // if the ClientMessage fails to verify.
-func (ClientState) VerifyClientMessage(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, clientMsg exported.ClientMessage) error {
+func (ClientState) VerifyClientMessage(_ context.Context, _ codec.BinaryCodec, _ storetypes.KVStore, clientMsg exported.ClientMessage) error {
 	return nil
 }
 
 // Checks for evidence of a misbehaviour in Header or Misbehaviour type. It assumes the ClientMessage
 // has already been verified.
-func (ClientState) CheckForMisbehaviour(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) bool {
+func (ClientState) CheckForMisbehaviour(_ context.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) bool {
 	return false
 }
 
 // UpdateStateOnMisbehaviour should perform appropriate state changes on a client state given that misbehaviour has been detected and verified
-func (ClientState) UpdateStateOnMisbehaviour(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) {
+func (ClientState) UpdateStateOnMisbehaviour(_ context.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) {
 }
 
 // UpdateState updates and stores as necessary any associated information for an IBC client, such as the ClientState and corresponding ConsensusState.
 // Upon successful update, a list of consensus heights is returned. It assumes the ClientMessage has already been verified.
-func (ClientState) UpdateState(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) []exported.Height {
+func (ClientState) UpdateState(_ context.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) []exported.Height {
 	return nil
 }
 
 // CheckSubstituteAndUpdateState must verify that the provided substitute may be used to update the subject client.
 // The light client must set the updated client and consensus states within the clientStore for the subject client.
-func (ClientState) CheckSubstituteAndUpdateState(_ sdk.Context, _ codec.BinaryCodec, _, _ storetypes.KVStore, _ exported.ClientState) error {
+func (ClientState) CheckSubstituteAndUpdateState(_ context.Context, _ codec.BinaryCodec, _, _ storetypes.KVStore, _ exported.ClientState) error {
 	return nil
 }
 
@@ -196,7 +193,7 @@ func (ClientState) CheckSubstituteAndUpdateState(_ sdk.Context, _ codec.BinaryCo
 // may be cancelled or modified before the last planned height.
 // If the upgrade is verified, the upgraded client and consensus states must be set in the client store.
 func (ClientState) VerifyUpgradeAndUpdateState(
-	_ sdk.Context,
+	_ context.Context,
 	_ codec.BinaryCodec,
 	_ storetypes.KVStore,
 	_ exported.ClientState,

@@ -47,6 +47,10 @@ const ConsensusVersion = 1
 // AppModuleBasic implements the AppModuleBasic interface for the capability module.
 type AppModuleBasic struct{}
 
+func (AppModuleBasic) IsAppModule() {}
+
+func (AppModuleBasic) IsOnePerModuleType() {}
+
 func NewAppModuleBasic() AppModuleBasic {
 	return AppModuleBasic{}
 }
