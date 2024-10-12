@@ -101,7 +101,7 @@ cosmossdk.io/api/cosmos/tx/v1beta1
 cosmossdk.io/api/cosmos/upgrade/module/v1
 cosmossdk.io/api/cosmos/upgrade/v1beta1
 cosmossdk.io/api/cosmos/vesting/module/v1
-# cosmossdk.io/client/v2 v2.0.0-beta.3 => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20241009165632-574e6929042c
+# cosmossdk.io/client/v2 v2.0.0-beta.3 => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20241009174353-cb4ef3142d00
 ## explicit; go 1.23.1
 cosmossdk.io/client/v2/autocli
 cosmossdk.io/client/v2/autocli/flag
@@ -347,7 +347,7 @@ github.com/99designs/go-keychain
 # github.com/99designs/keyring v1.2.2
 ## explicit; go 1.19
 github.com/99designs/keyring
-# github.com/CosmWasm/wasmd v0.51.0 => github.com/unionlabs/wasmd v0.0.0-20241009192201-46a74a00cf20
+# github.com/CosmWasm/wasmd v0.51.0 => github.com/unionlabs/wasmd v0.0.0-20241012094609-5da042685f7b
 ## explicit; go 1.23.1
 github.com/CosmWasm/wasmd/x/wasm
 github.com/CosmWasm/wasmd/x/wasm/client/cli
@@ -1936,7 +1936,7 @@ rsc.io/tmplfunc/internal/parse
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
 # cosmossdk.io/api => cosmossdk.io/api v0.7.3-0.20240924065902-eb7653cfecdf
-# cosmossdk.io/client/v2 => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20241009165632-574e6929042c
+# cosmossdk.io/client/v2 => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20241009174353-cb4ef3142d00
 # cosmossdk.io/core => cosmossdk.io/core v1.0.0-alpha.4
 # cosmossdk.io/core/testing => cosmossdk.io/core/testing v0.0.0-20240924155446-f195a8660be9
 # cosmossdk.io/store => cosmossdk.io/store v1.0.0-rc.0.0.20240913190136-3bc707a5a214
@@ -1963,7 +1963,7 @@ sigs.k8s.io/yaml/goyaml.v2
 # cosmossdk.io/x/tx => cosmossdk.io/x/tx v0.13.4-0.20240815194237-858ec2fcb897
 # cosmossdk.io/x/upgrade => github.com/unionlabs/cosmos-sdk-union/x/upgrade v0.0.0-20241009174353-cb4ef3142d00
 # github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk-union v0.0.0-20241009174353-cb4ef3142d00
-# github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241009192201-46a74a00cf20
+# github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241012094609-5da042685f7b
 # github.com/cometbft/cometbft => github.com/unionlabs/cometbft v0.0.0-20241009165438-d82e5fece358
 # github.com/cometbft/cometbft/api => github.com/unionlabs/cometbft/api v0.0.0-20241009165438-d82e5fece358
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
