@@ -169,7 +169,7 @@ impl Module {
         event_height: Height,
         self_port_id: PortId,
         self_channel_id: ChannelId,
-        voyager_rpc_client: &reconnecting_jsonrpc_ws_client::Client,
+        voyager_rpc_client: &VoyagerClient,
     ) -> RpcResult<(
         ChainId<'static>,
         ClientInfo,

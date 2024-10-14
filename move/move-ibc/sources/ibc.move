@@ -1088,9 +1088,9 @@ module IBC::ibc {
 
         let channel = ensure_channel_state(source_port_id, source_channel_id);
 
-        assert!(destination_port_id != *channel::chan_counterparty_port_id(&channel), E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH);
+        assert!(destination_port_id == *channel::chan_counterparty_port_id(&channel), E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH);
 
-        assert!(destination_channel_id != *channel::chan_counterparty_channel_id(&channel), E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH);
+        assert!(destination_channel_id == *channel::chan_counterparty_channel_id(&channel), E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH);
 
         let connection = ensure_connection_state(*vector::borrow(channel::connection_hops(&channel), 0));
 
