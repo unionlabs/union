@@ -298,9 +298,9 @@ replace (
 
 // ibc-go
 replace (
-	github.com/cosmos/ibc-go/modules/capability => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241014125815-671cdc1206be
-	github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241014125815-671cdc1206be
-	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241014125815-671cdc1206be
+	github.com/cosmos/ibc-go/modules/capability => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241014162652-259791a062da
+	github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241014162652-259791a062da
+	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241014162652-259791a062da
 )
 
 replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
