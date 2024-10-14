@@ -145,8 +145,8 @@ wasmd tx wasm store /path/to/contract.wasm \
     --from $ACCOUNT_NAME
 ```
 
-## Instantiating the Contract
+## Running a transfer
 
 ```sh frame="none"
-# TODO
+$NODE_BIN tx wasm execute union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h '{ "transfer": { "channel": "channel-377", "receiver": "1363462745291c711144011c1305e737dd74ace69a5576612745e29a2e4fa1b5", "memo": "" } }' --node https://rpc.node.testnet-8.union.build:443 --home result --from alice --keyring-backend test --amount 155muno --chain-id union-testnet-8
 ```
