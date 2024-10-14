@@ -32,11 +32,11 @@ import (
 )
 
 var (
-	_ module.AppModule           = (*AppModule)(nil)
-	_ module.AppModuleBasic      = (*AppModule)(nil)
-	_ module.AppModuleSimulation = (*AppModule)(nil)
-	_ module.HasGenesis          = (*AppModule)(nil)
-	_ appmodule.AppModule        = (*AppModule)(nil)
+	_ module.AppModule                = (*AppModule)(nil)
+	_ module.AppModuleBasic           = (*AppModule)(nil)
+	_ module.AppModuleSimulation      = (*AppModule)(nil)
+	_ module.HasGenesis               = (*AppModule)(nil)
+	_ appmodule.AppModule             = (*AppModule)(nil)
 	_ appmodule.HasMigrations         = AppModule{}
 	_ appmodule.HasRegisterInterfaces = AppModule{}
 
@@ -141,7 +141,7 @@ func (am AppModule) InitModule(ctx context.Context, controllerParams controllert
 }
 
 // RegisterServices registers module services
-func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
 	if am.controllerKeeper != nil {
 		controllertypes.RegisterMsgServer(registrar, controllerkeeper.NewMsgServerImpl(am.controllerKeeper))
 		controllertypes.RegisterQueryServer(registrar, am.controllerKeeper)
@@ -151,6 +151,8 @@ func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
 		hosttypes.RegisterMsgServer(registrar, hostkeeper.NewMsgServerImpl(am.hostKeeper))
 		hosttypes.RegisterQueryServer(registrar, am.hostKeeper)
 	}
+
+	return nil
 }
 
 func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {

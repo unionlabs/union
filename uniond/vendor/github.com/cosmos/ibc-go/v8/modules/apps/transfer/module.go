@@ -27,13 +27,13 @@ import (
 )
 
 var (
-	_ module.AppModule              = (*AppModule)(nil)
-	_ module.AppModuleBasic         = (*AppModule)(nil)
-	_ module.AppModuleSimulation    = (*AppModule)(nil)
-	_ module.HasGenesis             = (*AppModule)(nil)
-	_ appmodule.HasConsensusVersion = (*AppModule)(nil)
-	_ module.HasInvariants          = (*AppModule)(nil)
-	_ appmodule.AppModule           = (*AppModule)(nil)
+	_ module.AppModule                = (*AppModule)(nil)
+	_ module.AppModuleBasic           = (*AppModule)(nil)
+	_ module.AppModuleSimulation      = (*AppModule)(nil)
+	_ module.HasGenesis               = (*AppModule)(nil)
+	_ appmodule.HasConsensusVersion   = (*AppModule)(nil)
+	_ module.HasInvariants            = (*AppModule)(nil)
+	_ appmodule.AppModule             = (*AppModule)(nil)
 	_ appmodule.HasMigrations         = AppModule{}
 	_ appmodule.HasRegisterInterfaces = AppModule{}
 
@@ -115,9 +115,10 @@ func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 }
 
 // RegisterServices registers module services.
-func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
 	types.RegisterMsgServer(registrar, am.keeper)
 	types.RegisterQueryServer(registrar, am.keeper)
+	return nil
 }
 
 func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {
