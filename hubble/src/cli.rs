@@ -68,12 +68,6 @@ impl IntoIterator for Indexers {
 #[serde(tag = "type")]
 #[allow(clippy::large_enum_variant)]
 pub enum IndexerConfig {
-    #[serde(rename = "tendermint")]
-    Tm(crate::tm::Config),
-    #[serde(rename = "ethereum")]
-    Eth(crate::eth::Config),
-    #[serde(rename = "ethereum-fork")]
-    EthFork(crate::eth::fork::Config),
     #[serde(rename = "beacon")]
     Beacon(crate::beacon::Config),
     #[serde(rename = "bera")]
@@ -95,11 +89,8 @@ pub enum IndexerConfig {
 impl IndexerConfig {
     pub fn label(&self) -> &str {
         match &self {
-            Self::Tm(cfg) => &cfg.label,
-            Self::Eth(cfg) => &cfg.label,
             Self::Beacon(cfg) => &cfg.label,
             Self::Bera(cfg) => &cfg.label,
-            Self::EthFork(cfg) => &cfg.label,
             Self::Arb(cfg) => &cfg.label,
             Self::Scroll(cfg) => &cfg.label,
             Self::DummyFetcher(cfg) => &cfg.indexer_id,
@@ -118,15 +109,6 @@ impl IndexerConfig {
         let indexer_span = info_span!("indexer", label);
 
         match self {
-            Self::Tm(cfg) => cfg.index(db).instrument(indexer_span).await,
-            Self::Eth(cfg) => {
-                cfg.indexer(db)
-                    .instrument(initializer_span)
-                    .await?
-                    .index()
-                    .instrument(indexer_span)
-                    .await
-            }
             Self::Beacon(cfg) => {
                 cfg.indexer(db)
                     .instrument(initializer_span)
@@ -136,14 +118,6 @@ impl IndexerConfig {
                     .await
             }
             Self::Bera(cfg) => {
-                cfg.indexer(db)
-                    .instrument(initializer_span)
-                    .await?
-                    .index()
-                    .instrument(indexer_span)
-                    .await
-            }
-            Self::EthFork(cfg) => {
                 cfg.indexer(db)
                     .instrument(initializer_span)
                     .await?
