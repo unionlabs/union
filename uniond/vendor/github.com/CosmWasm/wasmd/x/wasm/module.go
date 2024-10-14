@@ -34,11 +34,14 @@ import (
 )
 
 var (
-	_ appmodule.AppModule           = AppModule{}
-	_ appmodule.HasMigrations         = AppModule{}
-	_ appmodule.HasGenesis            = AppModule{}
-	_ appmodule.HasRegisterInterfaces = AppModule{}
-	_ module.HasGRPCGateway      = AppModule{}
+
+	_ appmodule.AppModule				= AppModule{}
+	_ appmodule.HasMigrations			= AppModule{}
+	_ appmodule.HasGenesis				= AppModule{}
+	_ appmodule.HasRegisterInterfaces	= AppModule{}
+
+	_ module.HasAminoCodec       = AppModule{}
+	_ module.HasGRPCGateway				= AppModule{}
 )
 
 // Module init related flags
@@ -48,8 +51,6 @@ const (
 	flagWasmSimulationGasLimit     = "wasm.simulation_gas_limit"
 	flagWasmSkipWasmVMVersionCheck = "wasm.skip_wasmvm_version_check"
 )
-
-var _ appmodule.AppModule = AppModule{}
 
 // AppModule implements an application module for the wasm module.
 type AppModule struct {
