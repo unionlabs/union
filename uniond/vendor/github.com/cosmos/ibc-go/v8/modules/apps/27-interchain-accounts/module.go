@@ -8,6 +8,8 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
+	"google.golang.org/grpc"
+
 	"cosmossdk.io/core/appmodule"
 	coreregistry "cosmossdk.io/core/registry"
 
@@ -34,8 +36,9 @@ var (
 	_ module.AppModuleBasic      = (*AppModule)(nil)
 	_ module.AppModuleSimulation = (*AppModule)(nil)
 	_ module.HasGenesis          = (*AppModule)(nil)
-	_ module.HasServices         = (*AppModule)(nil)
 	_ appmodule.AppModule        = (*AppModule)(nil)
+	_ appmodule.HasMigrations         = AppModule{}
+	_ appmodule.HasRegisterInterfaces = AppModule{}
 
 	_ porttypes.IBCModule = (*host.IBCModule)(nil)
 )
@@ -138,24 +141,27 @@ func (am AppModule) InitModule(ctx context.Context, controllerParams controllert
 }
 
 // RegisterServices registers module services
-func (am AppModule) RegisterServices(cfg module.Configurator) {
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
 	if am.controllerKeeper != nil {
-		controllertypes.RegisterMsgServer(cfg.MsgServer(), controllerkeeper.NewMsgServerImpl(am.controllerKeeper))
-		controllertypes.RegisterQueryServer(cfg.QueryServer(), am.controllerKeeper)
+		controllertypes.RegisterMsgServer(registrar, controllerkeeper.NewMsgServerImpl(am.controllerKeeper))
+		controllertypes.RegisterQueryServer(registrar, am.controllerKeeper)
 	}
 
 	if am.hostKeeper != nil {
-		hosttypes.RegisterMsgServer(cfg.MsgServer(), hostkeeper.NewMsgServerImpl(am.hostKeeper))
-		hosttypes.RegisterQueryServer(cfg.QueryServer(), am.hostKeeper)
+		hosttypes.RegisterMsgServer(registrar, hostkeeper.NewMsgServerImpl(am.hostKeeper))
+		hosttypes.RegisterQueryServer(registrar, am.hostKeeper)
 	}
+}
 
+func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {
 	controllerMigrator := controllerkeeper.NewMigrator(am.controllerKeeper)
-	if err := cfg.RegisterMigration(types.ModuleName, 1, controllerMigrator.AssertChannelCapabilityMigrations); err != nil {
+	if err := mr.Register(types.ModuleName, 1, controllerMigrator.AssertChannelCapabilityMigrations); err != nil {
 		panic(fmt.Errorf("failed to migrate interchainaccounts app from version 1 to 2 (channel capabilities owned by controller submodule check): %v", err))
 	}
 
 	hostMigrator := hostkeeper.NewMigrator(am.hostKeeper)
-	if err := cfg.RegisterMigration(types.ModuleName, 2, func(ctx sdk.Context) error {
+	if err := mr.Register(types.ModuleName, 2, func(bareCtx context.Context) error {
+		ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 		if err := hostMigrator.MigrateParams(ctx); err != nil {
 			return err
 		}
@@ -163,6 +169,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	}); err != nil {
 		panic(fmt.Errorf("failed to migrate interchainaccounts app from version 2 to 3 (self-managed params migration): %v", err))
 	}
+	return nil
 }
 
 // InitGenesis performs genesis initialization for the interchain accounts module.

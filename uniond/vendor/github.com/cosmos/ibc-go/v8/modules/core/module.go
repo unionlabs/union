@@ -8,6 +8,8 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
+	"google.golang.org/grpc"
+
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/registry"
 
@@ -37,10 +39,14 @@ var (
 	_ module.AppModule              = (*AppModule)(nil)
 	_ module.AppModuleSimulation    = (*AppModule)(nil)
 	_ module.HasGenesis             = (*AppModule)(nil)
+
 	_ appmodule.HasConsensusVersion = (*AppModule)(nil)
-	_ module.HasServices            = (*AppModule)(nil)
 	_ appmodule.AppModule           = (*AppModule)(nil)
 	_ appmodule.HasBeginBlocker     = (*AppModule)(nil)
+
+	_ appmodule.HasMigrations         = AppModule{}
+	_ appmodule.HasGenesis            = AppModule{}
+	_ appmodule.HasRegisterInterfaces = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the ibc module.
@@ -109,6 +115,11 @@ func (AppModuleBasic) RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	types.RegisterInterfaces(registry)
 }
 
+// RegisterInterfaces registers module concrete types into protobuf Any.
+func (AppModule) RegisterInterfaces(registry registry.InterfaceRegistrar) {
+	types.RegisterInterfaces(registry)
+}
+
 // AppModule implements an application module for the ibc module.
 type AppModule struct {
 	AppModuleBasic
@@ -131,39 +142,42 @@ func (AppModule) Name() string {
 }
 
 // RegisterServices registers module services.
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	clienttypes.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	connectiontypes.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	channeltypes.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	ibcclient.RegisterQueryService(cfg.MsgServer(), am.keeper)
-	connection.RegisterQueryService(cfg.MsgServer(), am.keeper)
-	channel.RegisterQueryService(cfg.MsgServer(), am.keeper)
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
+	clienttypes.RegisterMsgServer(registrar, am.keeper)
+	connectiontypes.RegisterMsgServer(registrar, am.keeper)
+	channeltypes.RegisterMsgServer(registrar, am.keeper)
+	ibcclient.RegisterQueryService(registrar, am.keeper)
+	connection.RegisterQueryService(registrar, am.keeper)
+	channel.RegisterQueryService(registrar, am.keeper)
+}
 
+func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {
 	clientMigrator := clientkeeper.NewMigrator(am.keeper.ClientKeeper)
-	if err := cfg.RegisterMigration(exported.ModuleName, 2, clientMigrator.Migrate2to3); err != nil {
+	if err := mr.Register(exported.ModuleName, 2, clientMigrator.Migrate2to3); err != nil {
 		panic(err)
 	}
 
 	connectionMigrator := connectionkeeper.NewMigrator(am.keeper.ConnectionKeeper)
-	if err := cfg.RegisterMigration(exported.ModuleName, 3, connectionMigrator.Migrate3to4); err != nil {
+	if err := mr.Register(exported.ModuleName, 3, connectionMigrator.Migrate3to4); err != nil {
 		panic(err)
 	}
 
-	if err := cfg.RegisterMigration(exported.ModuleName, 4, func(ctx sdk.Context) error {
+	if err := mr.Register(exported.ModuleName, 4, func(bareCtx context.Context) error {
+		ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 		if err := clientMigrator.MigrateParams(ctx); err != nil {
 			return err
 		}
-
 		return connectionMigrator.MigrateParams(ctx)
 	}); err != nil {
 		panic(err)
 	}
 
 	channelMigrator := channelkeeper.NewMigrator(am.keeper.ChannelKeeper)
-	err := cfg.RegisterMigration(exported.ModuleName, 5, channelMigrator.MigrateParams)
+	err := mr.Register(exported.ModuleName, 5, channelMigrator.MigrateParams)
 	if err != nil {
 		panic(err)
 	}
+	return nil
 }
 
 // InitGenesis performs genesis initialization for the ibc module. It returns
