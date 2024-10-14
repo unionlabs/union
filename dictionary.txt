@@ -553,6 +553,7 @@ evidencekeeper
 evidencetypes
 evmincosmos
 evmos
+exff
 extldflags
 extralight
 fastfetch
@@ -1098,6 +1099,7 @@ schnorr
 scrollbars
 scrollproof
 scure
+scxnnk
 sdkerrors
 sdkmath
 searchk
@@ -1409,6 +1411,7 @@ webgl
 webkit
 webp
 webpki
+wfwapxlufzm
 wght
 whistleblower
 withdrawability
