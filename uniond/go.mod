@@ -287,7 +287,7 @@ replace (
 )
 
 // CosmWasm
-replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241012112303-f38638018b90
+replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241014130933-875e4f7e259a
 
 // CometBLS
 replace (
@@ -298,9 +298,9 @@ replace (
 
 // ibc-go
 replace (
-	github.com/cosmos/ibc-go/modules/capability => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241014094113-f05b739f83ef
-	github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241014094113-f05b739f83ef
-	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241014094113-f05b739f83ef
+	github.com/cosmos/ibc-go/modules/capability => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241014125815-671cdc1206be
+	github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241014125815-671cdc1206be
+	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241014125815-671cdc1206be
 )
 
 replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
