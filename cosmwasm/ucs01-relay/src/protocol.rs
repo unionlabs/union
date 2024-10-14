@@ -100,29 +100,7 @@ pub trait TransferProtocolExt<'a>:
             },
         };
 
-        let deferred_packet_into = DeferredPacketInfo {
-            refund_channel_id: refund_info.origin_packet.dest.channel_id,
-            refund_port_id: refund_info.origin_packet.dest.port_id,
-            packet_src_channel_id: refund_info.origin_packet.src.channel_id,
-            packet_src_port_id: refund_info.origin_packet.src.port_id,
-            packet_timeout_timestamp,
-            packet_timeout_height: packet_timeout_height.to_string(),
-            packet_data: refund_info.origin_packet.data.to_vec(),
-            sequence: refund_info.origin_packet.sequence,
-        };
-
-        let deferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
-            type_url: MsgWriteDeferredAck::type_url(),
-            value: MsgWriteDeferredAck {
-                sender: self.self_addr().to_string(),
-                deferred_packet_info: Some(deferred_packet_into),
-                ack: ack_bytes,
-            }
-            .encode_to_vec()
-            .into(),
-        });
-
-        ack_msgs.push(deferred_ack_msg);
+        // ack_msgs.push(deferred_ack_msg);
         ack_attrs.push(Attribute::new(ATTR_PFM, ATTR_VALUE_PFM_ACK.to_string()));
 
         IN_FLIGHT_PFM_PACKETS.remove(
