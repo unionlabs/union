@@ -149,9 +149,10 @@ func (am AppModule) IsAppModule() { // marker
 func (AppModule) ConsensusVersion() uint64 { return 4 }
 
 // RegisterServices registers module services.
-func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
 	types.RegisterMsgServer(registrar, keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(registrar, keeper.Querier(am.keeper))
+	return nil
 }
 
 func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {

@@ -912,8 +912,8 @@ github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-202410141
 github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241014125815-671cdc1206be/go.mod h1:qVeHn8nJclxXEdaKINaSZIz+yebGV+qBdcxUxuY9R80=
 github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241014125815-671cdc1206be h1:kdRw9f1Kl3jOCNICuqeFEsVw05ctXXVig3HRRbqfzVs=
 github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241014125815-671cdc1206be/go.mod h1:yUn1eMicg+PkovX7GoBMFv/VTNRKNptDNGW5lVxMjLY=
-github.com/unionlabs/wasmd v0.0.0-20241014154655-dc4e6eeb6b42 h1:68KJbVUiBYHbmoR6WGTA+UQ43pfhl1eV+LAZUi3HATs=
-github.com/unionlabs/wasmd v0.0.0-20241014154655-dc4e6eeb6b42/go.mod h1:6/ohJ11tSxsUzcEAB7cvKghevLM/kQdOkKhwv2Zql5Q=
+github.com/unionlabs/wasmd v0.0.0-20241014162235-cc7764ecf9b9 h1:ukefYPYhGj+I0HvwoxXFmWeyMWTICC93RLFyJqyabt0=
+github.com/unionlabs/wasmd v0.0.0-20241014162235-cc7764ecf9b9/go.mod h1:6/ohJ11tSxsUzcEAB7cvKghevLM/kQdOkKhwv2Zql5Q=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
