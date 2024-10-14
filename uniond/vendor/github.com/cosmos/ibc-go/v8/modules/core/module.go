@@ -36,9 +36,9 @@ import (
 )
 
 var (
-	_ module.AppModule              = (*AppModule)(nil)
-	_ module.AppModuleSimulation    = (*AppModule)(nil)
-	_ module.HasGenesis             = (*AppModule)(nil)
+	_ module.AppModule           = (*AppModule)(nil)
+	_ module.AppModuleSimulation = (*AppModule)(nil)
+	_ module.HasGenesis          = (*AppModule)(nil)
 
 	_ appmodule.HasConsensusVersion = (*AppModule)(nil)
 	_ appmodule.AppModule           = (*AppModule)(nil)
@@ -142,13 +142,15 @@ func (AppModule) Name() string {
 }
 
 // RegisterServices registers module services.
-func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
 	clienttypes.RegisterMsgServer(registrar, am.keeper)
 	connectiontypes.RegisterMsgServer(registrar, am.keeper)
 	channeltypes.RegisterMsgServer(registrar, am.keeper)
 	ibcclient.RegisterQueryService(registrar, am.keeper)
 	connection.RegisterQueryService(registrar, am.keeper)
 	channel.RegisterQueryService(registrar, am.keeper)
+
+	return nil
 }
 
 func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {

@@ -25,25 +25,25 @@ import (
 )
 
 var (
-	_ module.AppModule              = (*AppModule)(nil)
-	_ module.HasGenesis             = (*AppModule)(nil)
-	_ appmodule.HasConsensusVersion = (*AppModule)(nil)
-	_ appmodule.AppModule           = (*AppModule)(nil)
+	_ module.AppModule                = AppModule{}
+	_ module.HasGenesis               = AppModule{}
+	_ appmodule.HasConsensusVersion   = AppModule{}
+	_ appmodule.AppModule             = AppModule{}
 	_ appmodule.HasMigrations         = AppModule{}
 	_ appmodule.HasRegisterInterfaces = AppModule{}
 )
 
 // AppModule represents the AppModule for this module
 type AppModule struct {
-	cdc codec.Codec
+	cdc    codec.Codec
 	keeper keeper.Keeper
 }
 
 // NewAppModule creates a new 08-wasm module
 func NewAppModule(cdc codec.Codec, k keeper.Keeper) AppModule {
 	return AppModule{
-		cdc: cdc,
-		keeper:         k,
+		cdc:    cdc,
+		keeper: k,
 	}
 }
 
@@ -99,9 +99,10 @@ func (AppModule) GetQueryCmd() *cobra.Command {
 }
 
 // RegisterServices registers module services.
-func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
 	types.RegisterMsgServer(registrar, am.keeper)
 	types.RegisterQueryServer(registrar, am.keeper)
+	return nil
 }
 
 func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {
