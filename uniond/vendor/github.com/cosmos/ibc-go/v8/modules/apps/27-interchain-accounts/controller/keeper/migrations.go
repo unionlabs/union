@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"context"
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -26,7 +27,8 @@ func NewMigrator(k *Keeper) Migrator {
 
 // AssertChannelCapabilityMigrations checks that all channel capabilities generated using the interchain accounts controller port prefix
 // are owned by the controller submodule and ibc.
-func (m Migrator) AssertChannelCapabilityMigrations(ctx sdk.Context) error {
+func (m Migrator) AssertChannelCapabilityMigrations(bareCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 	if m.keeper != nil {
 		logger := m.keeper.Logger(ctx)
 		filteredChannels := m.keeper.channelKeeper.GetAllChannelsWithPortPrefix(ctx, icatypes.ControllerPortPrefix)
@@ -52,7 +54,8 @@ func (m Migrator) AssertChannelCapabilityMigrations(ctx sdk.Context) error {
 }
 
 // MigrateParams migrates the controller submodule's parameters from the x/params to self store.
-func (m Migrator) MigrateParams(ctx sdk.Context) error {
+func (m Migrator) MigrateParams(bareCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 	if m.keeper != nil {
 		params := controllertypes.DefaultParams()
 		if m.keeper.legacySubspace != nil {

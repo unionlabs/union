@@ -8,6 +8,8 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
+	"google.golang.org/grpc"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -27,8 +29,9 @@ var (
 	_ module.AppModuleBasic         = (*AppModule)(nil)
 	_ module.HasGenesis             = (*AppModule)(nil)
 	_ appmodule.HasConsensusVersion = (*AppModule)(nil)
-	_ module.HasServices            = (*AppModule)(nil)
 	_ appmodule.AppModule           = (*AppModule)(nil)
+	_ appmodule.HasMigrations         = AppModule{}
+	_ appmodule.HasRegisterInterfaces = AppModule{}
 )
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
@@ -63,6 +66,11 @@ func (AppModule) RegisterLegacyAminoCodec(cdc coreregistry.AminoRegistrar) {}
 func (AppModuleBasic) RegisterInterfaces(registry coreregistry.InterfaceRegistrar) {
 	types.RegisterInterfaces(registry)
 }
+
+func (AppModule) RegisterInterfaces(registry coreregistry.InterfaceRegistrar) {
+	types.RegisterInterfaces(registry)
+}
+
 
 // DefaultGenesis returns an empty state, i.e. no contracts
 func (am AppModuleBasic) DefaultGenesis() json.RawMessage {
@@ -114,14 +122,17 @@ func NewAppModule(cdc codec.Codec, k keeper.Keeper) AppModule {
 }
 
 // RegisterServices registers module services.
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
+	types.RegisterMsgServer(registrar, am.keeper)
+	types.RegisterQueryServer(registrar, am.keeper)
+}
 
+func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {
 	wasmMigrator := keeper.NewMigrator(am.keeper)
-	if err := cfg.RegisterMigration(types.ModuleName, 1, wasmMigrator.MigrateChecksums); err != nil {
+	if err := mr.Register(types.ModuleName, 1, wasmMigrator.MigrateChecksums); err != nil {
 		panic(fmt.Errorf("failed to migrate 08-wasm module from version 1 to 2 (checksums migration to collections): %v", err))
 	}
+	return nil
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.

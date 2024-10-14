@@ -8,6 +8,8 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
+	"google.golang.org/grpc"
+
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/registry"
 
@@ -26,8 +28,9 @@ var (
 	_ module.AppModuleSimulation    = (*AppModule)(nil)
 	_ module.HasGenesis             = (*AppModule)(nil)
 	_ appmodule.HasConsensusVersion = (*AppModule)(nil)
-	_ module.HasServices            = (*AppModule)(nil)
 	_ appmodule.AppModule           = (*AppModule)(nil)
+	_ appmodule.HasMigrations         = AppModule{}
+	_ appmodule.HasRegisterInterfaces = AppModule{}
 )
 
 // AppModuleBasic is the 29-fee AppModuleBasic
@@ -55,6 +58,11 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(registrar registry.AminoRegistrar
 
 // RegisterInterfaces registers module concrete types into protobuf Any.
 func (AppModuleBasic) RegisterInterfaces(registry registry.InterfaceRegistrar) {
+	types.RegisterInterfaces(registry)
+}
+
+// RegisterInterfaces registers module concrete types into protobuf Any.
+func (AppModule) RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	types.RegisterInterfaces(registry)
 }
 
@@ -107,14 +115,17 @@ func NewAppModule(cdc codec.Codec, k keeper.Keeper) AppModule {
 }
 
 // RegisterServices registers module services.
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
+	types.RegisterMsgServer(registrar, am.keeper)
+	types.RegisterQueryServer(registrar, am.keeper)
+}
 
+func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {
 	m := keeper.NewMigrator(am.keeper)
-	if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+	if err := mr.Register(types.ModuleName, 1, m.Migrate1to2); err != nil {
 		panic(fmt.Errorf("failed to migrate ibc-fee module from version 1 to 2 (refund leftover fees): %v", err))
 	}
+	return nil
 }
 
 // InitGenesis performs genesis initialization for the ibc-29-fee module. It returns

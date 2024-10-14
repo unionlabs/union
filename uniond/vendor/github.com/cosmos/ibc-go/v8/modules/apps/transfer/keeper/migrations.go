@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,7 +22,8 @@ func NewMigrator(keeper Keeper) Migrator {
 }
 
 // MigrateParams migrates the transfer module's parameters from the x/params to self store.
-func (m Migrator) MigrateParams(ctx sdk.Context) error {
+func (m Migrator) MigrateParams(bareCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 	var params types.Params
 	m.keeper.legacySubspace.GetParamSet(ctx, &params)
 
@@ -31,7 +33,8 @@ func (m Migrator) MigrateParams(ctx sdk.Context) error {
 }
 
 // MigrateTraces migrates the DenomTraces to the correct format, accounting for slashes in the BaseDenom.
-func (m Migrator) MigrateTraces(ctx sdk.Context) error {
+func (m Migrator) MigrateTraces(bareCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 	// list of traces that must replace the old traces in store
 	var newTraces []types.DenomTrace
 	m.keeper.IterateDenomTraces(ctx,
@@ -67,7 +70,8 @@ func (m Migrator) MigrateTraces(ctx sdk.Context) error {
 }
 
 // MigrateDenomMetadata sets token metadata for all the IBC denom traces
-func (m Migrator) MigrateDenomMetadata(ctx sdk.Context) error {
+func (m Migrator) MigrateDenomMetadata(bareCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 	m.keeper.IterateDenomTraces(ctx,
 		func(dt types.DenomTrace) (stop bool) {
 			// check if the metadata for the given denom trace does not already exist
@@ -82,7 +86,8 @@ func (m Migrator) MigrateDenomMetadata(ctx sdk.Context) error {
 }
 
 // MigrateTotalEscrowForDenom migrates the total amount of source chain tokens in escrow.
-func (m Migrator) MigrateTotalEscrowForDenom(ctx sdk.Context) error {
+func (m Migrator) MigrateTotalEscrowForDenom(bareCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 	var totalEscrowed sdk.Coins
 	portID := m.keeper.GetPort(ctx)
 

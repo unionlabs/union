@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	connectionv7 "github.com/cosmos/ibc-go/v8/modules/core/03-connection/migrations/v7"
@@ -19,7 +20,8 @@ func NewMigrator(keeper *Keeper) Migrator {
 
 // Migrate3to4 migrates from version 3 to 4.
 // This migration writes the sentinel localhost connection end to state.
-func (m Migrator) Migrate3to4(ctx sdk.Context) error {
+func (m Migrator) Migrate3to4(bareCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 	connectionv7.MigrateLocalhostConnection(ctx, m.keeper)
 	return nil
 }
@@ -27,7 +29,8 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 // MigrateParams migrates from consensus version 4 to 5.
 // This migration takes the parameters that are currently stored and managed by x/params
 // and stores them directly in the ibc module's state.
-func (m Migrator) MigrateParams(ctx sdk.Context) error {
+func (m Migrator) MigrateParams(bareCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 	var params types.Params
 	m.keeper.legacySubspace.GetParamSet(ctx, &params)
 	if err := params.Validate(); err != nil {
