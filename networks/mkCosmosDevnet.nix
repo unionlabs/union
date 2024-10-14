@@ -130,6 +130,7 @@ let
       cat ${mkNodeMnemonic (if idx == null then 0 else idx)} | ${nodeBin} \
         init \
         testnet ${pkgs.lib.optionalString (sdkVersion >= 50) ''--default-denom ${denom}''} \
+        --consensus-key-algo ${keyType} \
         --chain-id ${chainId} \
         --home $out \
         --recover 2>/dev/null
@@ -300,6 +301,48 @@ let
   #       '.app_state.ibc.connection_genesis.next_connection_sequence = "1"' \
   #       $out/config/genesis.json | sponge $out/config/genesis.json
   #   '';
+
+  setValidatorPubkey =
+    home:
+    pkgs.runCommand "${chainName}-set-validator-pubkey"
+      {
+        buildInputs = [
+          pkgs.jq
+          pkgs.moreutils
+        ];
+      }
+      ''
+        export HOME=$(pwd)
+        mkdir -p $out
+        cp --no-preserve=mode -r ${home}/* $out
+
+        jq \
+         '.consensus.params.validator.pub_key_types = ["${keyType}"]' \
+          $out/config/genesis.json | sponge $out/config/genesis.json
+      '';
+
+  enablePBTS =
+    home:
+    pkgs.runCommand "${chainName}-set-validator-pubkey"
+      {
+        buildInputs = [
+          pkgs.jq
+          pkgs.moreutils
+        ];
+      }
+      ''
+        export HOME=$(pwd)
+        mkdir -p $out
+        cp --no-preserve=mode -r ${home}/* $out
+
+        jq \
+         '.consensus.params.feature.vote_extensions_enable_height = "0"' \
+          $out/config/genesis.json | sponge $out/config/genesis.json
+
+        jq \
+         '.consensus.params.feature.pbts_enable_height = "1"' \
+          $out/config/genesis.json | sponge $out/config/genesis.json
+      '';
 
   enableAllClients =
     home:
@@ -689,6 +732,10 @@ let
 
       # add light clients
       (builtins.map addLightClientCodeToGenesis lightClients)
+
+      setValidatorPubkey
+
+      enablePBTS
 
       # add ibc contracts
       enableAllClients
