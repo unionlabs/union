@@ -287,7 +287,7 @@ replace (
 )
 
 // CosmWasm
-replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241014154655-dc4e6eeb6b42
+replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241014162235-cc7764ecf9b9
 
 // CometBLS
 replace (
