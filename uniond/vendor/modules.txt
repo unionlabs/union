@@ -537,7 +537,7 @@ github.com/cockroachdb/redact/internal/rfmt/fmtsort
 # github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06
 ## explicit; go 1.19
 github.com/cockroachdb/tokenbucket
-# github.com/cometbft/cometbft v1.0.0-rc1.0.20240908111210-ab0be101882f => github.com/unionlabs/cometbft v0.0.0-20241009165438-d82e5fece358
+# github.com/cometbft/cometbft v1.0.0-rc1.0.20240908111210-ab0be101882f => github.com/unionlabs/cometbft v0.0.0-20241014115136-9ea090e8aeb8
 ## explicit; go 1.22.5
 github.com/cometbft/cometbft/abci/client
 github.com/cometbft/cometbft/abci/example/kvstore
@@ -637,7 +637,7 @@ github.com/cometbft/cometbft/version
 # github.com/cometbft/cometbft-db v1.0.1
 ## explicit; go 1.23.1
 github.com/cometbft/cometbft-db
-# github.com/cometbft/cometbft/api v1.0.0-rc.1 => github.com/unionlabs/cometbft/api v0.0.0-20241009165438-d82e5fece358
+# github.com/cometbft/cometbft/api v1.0.0-rc.1 => github.com/unionlabs/cometbft/api v0.0.0-20241014115136-9ea090e8aeb8
 ## explicit; go 1.22
 github.com/cometbft/cometbft/api/cometbft/abci/v1
 github.com/cometbft/cometbft/api/cometbft/blocksync/v1
@@ -1964,8 +1964,8 @@ sigs.k8s.io/yaml/goyaml.v2
 # cosmossdk.io/x/upgrade => github.com/unionlabs/cosmos-sdk-union/x/upgrade v0.0.0-20241012095916-552069d283f6
 # github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk-union v0.0.0-20241012095916-552069d283f6
 # github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241012112303-f38638018b90
-# github.com/cometbft/cometbft => github.com/unionlabs/cometbft v0.0.0-20241009165438-d82e5fece358
-# github.com/cometbft/cometbft/api => github.com/unionlabs/cometbft/api v0.0.0-20241009165438-d82e5fece358
+# github.com/cometbft/cometbft => github.com/unionlabs/cometbft v0.0.0-20241014115136-9ea090e8aeb8
+# github.com/cometbft/cometbft/api => github.com/unionlabs/cometbft/api v0.0.0-20241014115136-9ea090e8aeb8
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 # github.com/cosmos/ibc-go/modules/capability => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241014094113-f05b739f83ef
 # github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241014094113-f05b739f83ef

@@ -311,7 +311,7 @@ func NewUnionApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibcexported.StoreKey, upgradetypes.StoreKey,
 		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcwasmtypes.StoreKey, icahosttypes.StoreKey,
 		capabilitytypes.StoreKey, group.StoreKey, icacontrollertypes.StoreKey, consensusparamtypes.StoreKey,
-		ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey, pooltypes.StoreKey,
+		ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey, pooltypes.StoreKey, accounts.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 

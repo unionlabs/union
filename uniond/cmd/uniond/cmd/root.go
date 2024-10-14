@@ -6,6 +6,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/cosmos/cosmos-sdk/codec/address"
+	"cosmossdk.io/x/tx/signing"
+
+	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"cosmossdk.io/client/v2/autocli"
 	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
@@ -26,14 +30,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/pruning"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
-	"github.com/cosmos/cosmos-sdk/codec"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
@@ -97,8 +99,13 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		WithLegacyAmino(encodingConfig.Amino).
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
+		WithAddressCodec(addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())).
+		WithValidatorAddressCodec(addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())).
+		WithConsensusAddressCodec(addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix())).
 		WithHomeDir(tempDir()).
-		WithViper("")
+		WithViper(""). // uses by default the binary name as prefix
+		WithAddressPrefix(sdk.GetConfig().GetBech32AccountAddrPrefix()).
+		WithValidatorPrefix(sdk.GetConfig().GetBech32ValidatorAddrPrefix())
 
 	rootCmd := &cobra.Command{
 		Use:   app.Name + "d",
@@ -124,11 +131,19 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 			// is only available if the client is online.
 			if !initClientCtx.Offline {
 				txConfigOpts := tx.ConfigOptions{
-					EnabledSignModes:           append(tx.DefaultSignModes, signing.SignMode_SIGN_MODE_TEXTUAL),
+					EnabledSignModes:           append(tx.DefaultSignModes, sigtypes.SignMode_SIGN_MODE_TEXTUAL),
 					TextualCoinMetadataQueryFn: txmodule.NewGRPCCoinMetadataQueryFn(initClientCtx),
+					SigningOptions: &signing.Options{
+						AddressCodec: address.Bech32Codec{
+							Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
+						},
+						ValidatorAddressCodec: address.Bech32Codec{
+							Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
+						},
+					},
 				}
 				txConfigWithTextual, err := tx.NewTxConfigWithOptions(
-					codec.NewProtoCodec(encodingConfig.InterfaceRegistry),
+					initClientCtx.Codec,
 					txConfigOpts,
 				)
 				if err != nil {

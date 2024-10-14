@@ -186,7 +186,16 @@ func NewFilePV(privKey crypto.PrivKey, keyFilePath, stateFilePath string) *FileP
 // and sets the filePaths, but does not call Save().
 // TODO: Use keyGen if available
 func GenFilePV(keyFilePath, stateFilePath string, keyGen func() (crypto.PrivKey, error)) (*FilePV, error) {
-	return NewFilePV(bn254.GenPrivKey(), keyFilePath, stateFilePath), nil
+	if keyGen == nil {
+		keyGen = func() (crypto.PrivKey, error) {
+			return bn254.GenPrivKey(), nil
+		}
+	}
+	key, err := keyGen()
+	if err != nil {
+		return nil, err
+	}
+	return NewFilePV(key, keyFilePath, stateFilePath), nil
 }
 
 // LoadFilePV loads a FilePV from the filePaths.  The FilePV handles double

@@ -291,8 +291,8 @@ replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-202410121
 
 // CometBLS
 replace (
-	github.com/cometbft/cometbft => github.com/unionlabs/cometbft v0.0.0-20241009165438-d82e5fece358
-	github.com/cometbft/cometbft/api => github.com/unionlabs/cometbft/api v0.0.0-20241009165438-d82e5fece358
+	github.com/cometbft/cometbft => github.com/unionlabs/cometbft v0.0.0-20241014115136-9ea090e8aeb8
+	github.com/cometbft/cometbft/api => github.com/unionlabs/cometbft/api v0.0.0-20241014115136-9ea090e8aeb8
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 )
 
