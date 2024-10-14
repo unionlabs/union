@@ -7,7 +7,7 @@ module IBC::ChannelTest {
     use aptos_std::any;
     use IBC::height;
     use std::hash;
-    use IBC::ibc_test;
+    use IBC::ibc;
     use std::bcs;
     use IBC::connection_end::{Self, Version};
     use IBC::IBCCommitment;
@@ -32,12 +32,12 @@ module IBC::ChannelTest {
         let version = connection_end::new_version(string::utf8(b"1"), features);
         // Test case where the feature is supported
         let feature_a = string::utf8(b"FEATURE_A");
-        let is_supported = ibc_test::verify_supported_feature(&version, feature_a);
+        let is_supported = ibc::verify_supported_feature(&version, feature_a);
         assert!(is_supported, 1001);
 
         // Test case where the feature is not supported
         let feature_c = string::utf8(b"FEATURE_C");
-        let is_not_supported = ibc_test::verify_supported_feature(&version, feature_c);
+        let is_not_supported = ibc::verify_supported_feature(&version, feature_c);
         assert!(!is_not_supported, 1002);
     }
 

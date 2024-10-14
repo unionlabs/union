@@ -612,15 +612,13 @@ module UCS01::ibc {
 
 
                 if (denom_address == @0x0) {
-                                        
-                    // TODO CHANGE THOSE, in here we are creating(?) a new token
                     UCS01::fa_coin::initialize(
                         &get_signer(),
-                        string::utf8(b"TODO"),
-                        string::utf8(b"TODO"),
+                        string::utf8(b""),
+                        string::utf8(b""),
                         18,
-                        string::utf8(b"TODO"),
-                        string::utf8(b"TODO"),
+                        string::utf8(b""),
+                        string::utf8(b""),
                         *string::bytes(&denom),
                     );
 
