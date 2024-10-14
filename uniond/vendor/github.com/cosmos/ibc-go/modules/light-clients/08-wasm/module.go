@@ -26,7 +26,6 @@ import (
 
 var (
 	_ module.AppModule              = (*AppModule)(nil)
-	_ module.AppModuleBasic         = (*AppModule)(nil)
 	_ module.HasGenesis             = (*AppModule)(nil)
 	_ appmodule.HasConsensusVersion = (*AppModule)(nil)
 	_ appmodule.AppModule           = (*AppModule)(nil)
@@ -34,46 +33,40 @@ var (
 	_ appmodule.HasRegisterInterfaces = AppModule{}
 )
 
+// AppModule represents the AppModule for this module
+type AppModule struct {
+	cdc codec.Codec
+	keeper keeper.Keeper
+}
+
+// NewAppModule creates a new 08-wasm module
+func NewAppModule(cdc codec.Codec, k keeper.Keeper) AppModule {
+	return AppModule{
+		cdc: cdc,
+		keeper:         k,
+	}
+}
+
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
 func (AppModule) IsOnePerModuleType() {}
 
 // IsAppModule implements the appmodule.AppModule interface.
 func (AppModule) IsAppModule() {}
 
-// AppModuleBasic defines the basic application module used by the Wasm light client.
-// Only the RegisterInterfaces function needs to be implemented. All other function perform
-// a no-op.
-type AppModuleBasic struct {
-	cdc codec.Codec
-}
-
-func NewAppModuleBasic(cdc codec.Codec) AppModuleBasic {
-	return AppModuleBasic{
-		cdc: cdc,
-	}
-}
-
 // Name returns the tendermint module name.
-func (AppModuleBasic) Name() string {
+func (AppModule) Name() string {
 	return types.ModuleName
 }
 
 // RegisterLegacyAminoCodec performs a no-op. The Wasm client does not support amino.
 func (AppModule) RegisterLegacyAminoCodec(cdc coreregistry.AminoRegistrar) {}
 
-// RegisterInterfaces registers module concrete types into protobuf Any. This allows core IBC
-// to unmarshal Wasm light client types.
-func (AppModuleBasic) RegisterInterfaces(registry coreregistry.InterfaceRegistrar) {
-	types.RegisterInterfaces(registry)
-}
-
 func (AppModule) RegisterInterfaces(registry coreregistry.InterfaceRegistrar) {
 	types.RegisterInterfaces(registry)
 }
 
-
 // DefaultGenesis returns an empty state, i.e. no contracts
-func (am AppModuleBasic) DefaultGenesis() json.RawMessage {
+func (am AppModule) DefaultGenesis() json.RawMessage {
 	return am.cdc.MustMarshalJSON(&types.GenesisState{
 		Contracts: []types.Contract{},
 	})
@@ -90,35 +83,19 @@ func (am AppModule) ValidateGenesis(bz json.RawMessage) error {
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for Wasm client module.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 	if err != nil {
 		panic(err)
 	}
 }
 
-// GetTxCmd implements AppModuleBasic interface
-func (AppModuleBasic) GetTxCmd() *cobra.Command {
+func (AppModule) GetTxCmd() *cobra.Command {
 	return cli.NewTxCmd()
 }
 
-// GetQueryCmd implements AppModuleBasic interface
-func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+func (AppModule) GetQueryCmd() *cobra.Command {
 	return cli.GetQueryCmd()
-}
-
-// AppModule represents the AppModule for this module
-type AppModule struct {
-	AppModuleBasic
-	keeper keeper.Keeper
-}
-
-// NewAppModule creates a new 08-wasm module
-func NewAppModule(cdc codec.Codec, k keeper.Keeper) AppModule {
-	return AppModule{
-		AppModuleBasic: NewAppModuleBasic(cdc),
-		keeper:         k,
-	}
 }
 
 // RegisterServices registers module services.

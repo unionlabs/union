@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 
+	"google.golang.org/grpc"
+
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/registry"
 
@@ -32,7 +34,11 @@ import (
 )
 
 var (
-	_ module.AppModuleBasic      = AppModuleBasic{}
+	_ appmodule.AppModule           = AppModule{}
+	_ appmodule.HasMigrations         = AppModule{}
+	_ appmodule.HasGenesis            = AppModule{}
+	_ appmodule.HasRegisterInterfaces = AppModule{}
+	_ module.HasGRPCGateway      = AppModule{}
 )
 
 // Module init related flags
@@ -43,64 +49,10 @@ const (
 	flagWasmSkipWasmVMVersionCheck = "wasm.skip_wasmvm_version_check"
 )
 
-// AppModuleBasic defines the basic application module used by the wasm module.
-type AppModuleBasic struct{}
-
-func (b AppModuleBasic) RegisterLegacyAminoCodec(amino registry.AminoRegistrar) {
-	types.RegisterLegacyAminoCodec(amino)
-}
-
-func (b AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, serveMux *runtime.ServeMux) {
-	err := types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(clientCtx))
-	if err != nil {
-		panic(err)
-	}
-}
-
-// Name returns the wasm module's name.
-func (AppModuleBasic) Name() string {
-	return types.ModuleName
-}
-
-// DefaultGenesis returns default genesis state as raw bytes for the wasm
-// module.
-func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(&types.GenesisState{
-		Params: types.DefaultParams(),
-	})
-}
-
-// ValidateGenesis performs genesis state validation for the wasm module.
-func (b AppModuleBasic) ValidateGenesis(marshaler codec.JSONCodec, _ client.TxEncodingConfig, message json.RawMessage) error {
-	var data types.GenesisState
-	err := marshaler.UnmarshalJSON(message, &data)
-	if err != nil {
-		return err
-	}
-	return types.ValidateGenesis(data)
-}
-
-// GetTxCmd returns the root tx command for the wasm module.
-func (b AppModuleBasic) GetTxCmd() *cobra.Command {
-	return cli.GetTxCmd()
-}
-
-// GetQueryCmd returns no root query command for the wasm module.
-func (b AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return cli.GetQueryCmd()
-}
-
-// RegisterInterfaces implements InterfaceModule
-func (b AppModuleBasic) RegisterInterfaces(registry registry.InterfaceRegistrar) {
-	types.RegisterInterfaces(registry)
-}
-
-// ____________________________________________________________________________
 var _ appmodule.AppModule = AppModule{}
 
 // AppModule implements an application module for the wasm module.
 type AppModule struct {
-	AppModuleBasic
 	cdc                codec.Codec
 	keeper             *keeper.Keeper
 	validatorSetSource keeper.ValidatorSetSource
@@ -122,7 +74,6 @@ func NewAppModule(
 	ss exported.Subspace,
 ) AppModule {
 	return AppModule{
-		AppModuleBasic:     AppModuleBasic{},
 		cdc:                cdc,
 		keeper:             keeper,
 		validatorSetSource: validatorSetSource,
@@ -132,6 +83,55 @@ func NewAppModule(
 		legacySubspace:     ss,
 	}
 }
+
+func (b AppModule) RegisterLegacyAminoCodec(amino registry.AminoRegistrar) {
+	types.RegisterLegacyAminoCodec(amino)
+}
+
+func (b AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, serveMux *runtime.ServeMux) {
+	err := types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(clientCtx))
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (AppModule) Name() string {
+	return types.ModuleName
+}
+
+// DefaultGenesis returns default genesis state as raw bytes for the wasm
+// module.
+func (am AppModule) DefaultGenesis() json.RawMessage {
+	return am.cdc.MustMarshalJSON(&types.GenesisState{
+		Params: types.DefaultParams(),
+	})
+}
+
+// ValidateGenesis performs genesis state validation for the wasm module.
+func (am AppModule) ValidateGenesis(bz json.RawMessage) error {
+	var gs types.GenesisState
+	if err := am.cdc.UnmarshalJSON(bz, &gs); err != nil {
+		return fmt.Errorf("failed to unmarshal genesis state: %w", err)
+	}
+	return types.ValidateGenesis(gs)
+}
+
+// GetTxCmd returns the root tx command for the wasm module.
+func (b AppModule) GetTxCmd() *cobra.Command {
+	return cli.GetTxCmd()
+}
+
+// GetQueryCmd returns no root query command for the wasm module.
+func (b AppModule) GetQueryCmd() *cobra.Command {
+	return cli.GetQueryCmd()
+}
+
+// RegisterInterfaces implements InterfaceModule
+func (b AppModule) RegisterInterfaces(registry registry.InterfaceRegistrar) {
+	types.RegisterInterfaces(registry)
+}
+
+// ____________________________________________________________________________
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
 func (am AppModule) IsOnePerModuleType() { // marker
@@ -147,23 +147,27 @@ func (am AppModule) IsAppModule() { // marker
 // should be set to 1.
 func (AppModule) ConsensusVersion() uint64 { return 4 }
 
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
-	types.RegisterQueryServer(cfg.QueryServer(), keeper.Querier(am.keeper))
+// RegisterServices registers module services.
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) {
+	types.RegisterMsgServer(registrar, keeper.NewMsgServerImpl(am.keeper))
+	types.RegisterQueryServer(registrar, keeper.Querier(am.keeper))
+}
 
+func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {
 	m := keeper.NewMigrator(*am.keeper, am.legacySubspace)
-	err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2)
+	err := mr.Register(types.ModuleName, 1, m.Migrate1to2)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	err = cfg.RegisterMigration(types.ModuleName, 2, m.Migrate2to3)
+	err = mr.Register(types.ModuleName, 2, m.Migrate2to3)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	err = cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4)
+	err = mr.Register(types.ModuleName, 3, m.Migrate3to4)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 // RegisterInvariants registers the wasm module invariants.
@@ -176,21 +180,23 @@ func (AppModule) QuerierRoute() string {
 
 // InitGenesis performs genesis initialization for the wasm module. It returns
 // no validator updates.
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []appmodule.ValidatorUpdate {
-	var genesisState types.GenesisState
-	cdc.MustUnmarshalJSON(data, &genesisState)
-	validators, err := keeper.InitGenesis(ctx, am.keeper, genesisState)
+func (am AppModule) InitGenesis(ctx context.Context, bz json.RawMessage) error {
+	var gs types.GenesisState
+	err := am.cdc.UnmarshalJSON(bz, &gs)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to unmarshal genesis state: %s", err)
 	}
-	return validators
+	return InitGenesis(ctx, am.keeper, &gs)
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the wasm
 // module.
-func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := keeper.ExportGenesis(ctx, am.keeper)
-	return cdc.MustMarshalJSON(gs)
+func (am AppModule) ExportGenesis(ctx context.Context) (json.RawMessage, error) {
+	gs, err := ExportGenesis(ctx, am.keeper)
+	if err != nil {
+		return nil, err
+	}
+	return am.cdc.MarshalJSON(gs)
 }
 
 // ____________________________________________________________________________

@@ -20,25 +20,26 @@ type ValidatorSetSource interface {
 // InitGenesis sets supply information for genesis.
 //
 // CONTRACT: all types of accounts must have been already initialized/created
-func InitGenesis(ctx sdk.Context, keeper *Keeper, data types.GenesisState) ([]appmodule.ValidatorUpdate, error) {
+func InitGenesis(bareCtx context.Context, keeper *Keeper, data *types.GenesisState) error {
+	ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 	contractKeeper := NewGovPermissionKeeper(keeper)
 	err := keeper.SetParams(ctx, data.Params)
 	if err != nil {
-		return nil, errorsmod.Wrapf(err, "set params")
+		return errorsmod.Wrapf(err, "set params")
 	}
 
 	var maxCodeID uint64
 	for i, code := range data.Codes {
 		err := keeper.importCode(ctx, code.CodeID, code.CodeInfo, code.CodeBytes)
 		if err != nil {
-			return nil, errorsmod.Wrapf(err, "code %d with id: %d", i, code.CodeID)
+			return errorsmod.Wrapf(err, "code %d with id: %d", i, code.CodeID)
 		}
 		if code.CodeID > maxCodeID {
 			maxCodeID = code.CodeID
 		}
 		if code.Pinned {
 			if err := contractKeeper.PinCode(ctx, code.CodeID); err != nil {
-				return nil, errorsmod.Wrapf(err, "contract number %d", i)
+				return errorsmod.Wrapf(err, "contract number %d", i)
 			}
 		}
 	}
@@ -46,44 +47,45 @@ func InitGenesis(ctx sdk.Context, keeper *Keeper, data types.GenesisState) ([]ap
 	for i, contract := range data.Contracts {
 		contractAddr, err := sdk.AccAddressFromBech32(contract.ContractAddress)
 		if err != nil {
-			return nil, errorsmod.Wrapf(err, "address in contract number %d", i)
+			return errorsmod.Wrapf(err, "address in contract number %d", i)
 		}
 		err = keeper.importContract(ctx, contractAddr, &contract.ContractInfo, contract.ContractState, contract.ContractCodeHistory) //nolint:gosec
 		if err != nil {
-			return nil, errorsmod.Wrapf(err, "contract number %d", i)
+			return errorsmod.Wrapf(err, "contract number %d", i)
 		}
 	}
 
 	for i, seq := range data.Sequences {
 		err := keeper.importAutoIncrementID(ctx, seq.IDKey, seq.Value)
 		if err != nil {
-			return nil, errorsmod.Wrapf(err, "sequence number %d", i)
+			return errorsmod.Wrapf(err, "sequence number %d", i)
 		}
 	}
 
 	// sanity check seq values
 	seqVal, err := keeper.PeekAutoIncrementID(ctx, types.KeySequenceCodeID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if seqVal <= maxCodeID {
-		return nil, errorsmod.Wrapf(types.ErrInvalid, "seq %s with value: %d must be greater than: %d ", string(types.KeySequenceCodeID), seqVal, maxCodeID)
+		return errorsmod.Wrapf(types.ErrInvalid, "seq %s with value: %d must be greater than: %d ", string(types.KeySequenceCodeID), seqVal, maxCodeID)
 	}
 	// ensure next classic address is unused so that we know the sequence is good
 	rCtx, _ := ctx.CacheContext()
 	seqVal, err = keeper.PeekAutoIncrementID(rCtx, types.KeySequenceInstanceID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	addr := keeper.ClassicAddressGenerator()(rCtx, seqVal, nil)
 	if keeper.HasContractInfo(ctx, addr) {
-		return nil, errorsmod.Wrapf(types.ErrInvalid, "value: %d for seq %s was used already", seqVal, string(types.KeySequenceInstanceID))
+		return errorsmod.Wrapf(types.ErrInvalid, "value: %d for seq %s was used already", seqVal, string(types.KeySequenceInstanceID))
 	}
-	return nil, nil
+	return nil
 }
 
 // ExportGenesis returns a GenesisState for a given context and keeper.
-func ExportGenesis(ctx sdk.Context, keeper *Keeper) *types.GenesisState {
+func ExportGenesis(bareCtx context.Context, keeper *Keeper) (*types.GenesisState, error) {
+	ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 	var genState types.GenesisState
 
 	genState.Params = keeper.GetParams(ctx)
@@ -123,7 +125,7 @@ func ExportGenesis(ctx sdk.Context, keeper *Keeper) *types.GenesisState {
 	for _, k := range [][]byte{types.KeySequenceCodeID, types.KeySequenceInstanceID} {
 		id, err := keeper.PeekAutoIncrementID(ctx, k)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		genState.Sequences = append(genState.Sequences, types.Sequence{
 			IDKey: k,
@@ -131,5 +133,5 @@ func ExportGenesis(ctx sdk.Context, keeper *Keeper) *types.GenesisState {
 		})
 	}
 
-	return &genState
+	return &genState, nil
 }

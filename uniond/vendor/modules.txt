@@ -347,7 +347,7 @@ github.com/99designs/go-keychain
 # github.com/99designs/keyring v1.2.2
 ## explicit; go 1.19
 github.com/99designs/keyring
-# github.com/CosmWasm/wasmd v0.51.0 => github.com/unionlabs/wasmd v0.0.0-20241012112303-f38638018b90
+# github.com/CosmWasm/wasmd v0.51.0 => github.com/unionlabs/wasmd v0.0.0-20241014130933-875e4f7e259a
 ## explicit; go 1.23.1
 github.com/CosmWasm/wasmd/x/wasm
 github.com/CosmWasm/wasmd/x/wasm/client/cli
@@ -850,13 +850,13 @@ github.com/cosmos/iavl/internal/color
 github.com/cosmos/iavl/internal/encoding
 github.com/cosmos/iavl/keyformat
 github.com/cosmos/iavl/proto
-# github.com/cosmos/ibc-go/modules/capability v1.0.1 => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241014094113-f05b739f83ef
+# github.com/cosmos/ibc-go/modules/capability v1.0.1 => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241014125815-671cdc1206be
 ## explicit; go 1.23.1
 github.com/cosmos/ibc-go/modules/capability
 github.com/cosmos/ibc-go/modules/capability/keeper
 github.com/cosmos/ibc-go/modules/capability/simulation
 github.com/cosmos/ibc-go/modules/capability/types
-# github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.0.0 => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241014094113-f05b739f83ef
+# github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.0.0 => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241014125815-671cdc1206be
 ## explicit; go 1.23.1
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/client/cli
@@ -865,7 +865,7 @@ github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/types
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/simulation
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types
-# github.com/cosmos/ibc-go/v8 v8.4.0 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241014094113-f05b739f83ef
+# github.com/cosmos/ibc-go/v8 v8.4.0 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241014125815-671cdc1206be
 ## explicit; go 1.23.1
 github.com/cosmos/ibc-go/v8/internal/logging
 github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts
@@ -1963,11 +1963,11 @@ sigs.k8s.io/yaml/goyaml.v2
 # cosmossdk.io/x/tx => cosmossdk.io/x/tx v0.13.4-0.20240815194237-858ec2fcb897
 # cosmossdk.io/x/upgrade => github.com/unionlabs/cosmos-sdk-union/x/upgrade v0.0.0-20241012095916-552069d283f6
 # github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk-union v0.0.0-20241012095916-552069d283f6
-# github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241012112303-f38638018b90
+# github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20241014130933-875e4f7e259a
 # github.com/cometbft/cometbft => github.com/unionlabs/cometbft v0.0.0-20241014115136-9ea090e8aeb8
 # github.com/cometbft/cometbft/api => github.com/unionlabs/cometbft/api v0.0.0-20241014115136-9ea090e8aeb8
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
-# github.com/cosmos/ibc-go/modules/capability => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241014094113-f05b739f83ef
-# github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241014094113-f05b739f83ef
-# github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241014094113-f05b739f83ef
+# github.com/cosmos/ibc-go/modules/capability => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241014125815-671cdc1206be
+# github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241014125815-671cdc1206be
+# github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241014125815-671cdc1206be
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
