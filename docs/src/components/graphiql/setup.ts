@@ -4,7 +4,9 @@ import { GraphiQL, type GraphiQLProps } from "graphiql"
 import { createGraphiQLFetcher } from "@graphiql/toolkit"
 import { explorerPlugin } from "@graphiql/plugin-explorer"
 
-const GRAPHQL_ENDPOINT = "https://graphql.union.build/v1/graphql"
+const GRAPHQL_ENDPOINT =
+  import.meta.env.PUBLIC_GRAPHQL_URL ?? "https://graphql.union.build/v1/graphql"
+
 const fetcher = createGraphiQLFetcher({
   url: GRAPHQL_ENDPOINT,
   enableIncrementalDelivery: true

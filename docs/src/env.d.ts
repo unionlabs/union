@@ -13,6 +13,7 @@ interface EnvironmentVariables {
   readonly PORT: string
   /* https://docs.union.build in production, http://localhost:${PORT} in development */
   readonly SITE_URL: string
+  readonly PUBLIC_GRAPHQL_URL: string
 }
 
 // Node.js environment variables types
