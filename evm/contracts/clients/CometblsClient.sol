@@ -232,7 +232,7 @@ contract CometblsClient is
         Header calldata headerB
     ) internal returns (bool) {
         // Ensures that A > B to simplify the misbehavior of time violation check
-        if (headerA.trustedHeight < headerB.trustedHeight) {
+        if (headerA.signedHeader.height < headerB.signedHeader.height) {
             revert CometblsClientLib.ErrInvalidMisbehaviorHeadersSequence();
         }
 
@@ -247,7 +247,7 @@ contract CometblsClient is
         (, uint64 untrustedTimestampB,) =
             verifyHeader(headerB, consensusStateB, clientState);
 
-        if (headerA.trustedHeight == headerB.trustedHeight) {
+        if (headerA.signedHeader.height == headerB.signedHeader.height) {
             bytes32 hashA = keccak256(abi.encode(headerA.signedHeader));
             bytes32 hashB = keccak256(abi.encode(headerB.signedHeader));
             if (hashA != hashB) {

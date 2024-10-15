@@ -70,6 +70,12 @@ pub enum Error {
 
     #[error("the chain id cannot be more than 31 bytes long to fit in the bn254 scalar field")]
     InvalidChainId,
+
+    #[error("header_b.height should be greater than or equal to header_a.height")]
+    InvalidMisbehaviourHeaderSequence,
+
+    #[error("given headers don't prove a misbehaviour")]
+    MisbehaviourNotFound,
 }
 
 // required for IbcClient trait
