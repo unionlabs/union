@@ -39,10 +39,10 @@ Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-Instsll CLI packages: `ripgrep` and `jq` <Badge text="Optional" type="warning" class='ml-2' />
+Install CLI packages: `ripgrep` and `jq` <Badge text="Optional" type="warning" class='ml-2' />
 
 ```sh frame="none"
-cargo add ripgrep jq cowsay
+cargo add ripgrep jq
 ```
 
 Create a new directory and initialize a git repository
@@ -292,7 +292,7 @@ tx wasm store ./target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.was
     --node $RPC_URL --yes
 ```
 
-The above will returun a transaction hash at the end, use it t query the transaction to get the `code_id`:
+The above will return a transaction hash at the end, use it t query the transaction to get the `code_id`:
 
 ```sh frame="none"
 uniond query tx $DEPLOY_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg "_id"
@@ -314,7 +314,7 @@ uniond \
     --node $RPC_URL --yes
 ```
 
-The above will returun a transaction hash at the end, use it t query the transaction to get the `_contract_address`:
+The above will return a transaction hash at the end, use it t query the transaction to get the `_contract_address`:
 
 ```sh frame="none" 
 query tx $INSTANTIATE_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg "_contract_address"
@@ -322,12 +322,17 @@ query tx $INSTANTIATE_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg 
 
 Now you can execute the contract to transfer assets:
 
-Let's construct the JSON payload for the contract execution. For the `receiver` field we are using Vitalik's address:
+Let's construct the JSON payload for the contract execution.
+- `receiver` field we are using Vitalik's address,
+- `amount` is the amount of tokens to transfer,
+- `denom` is the token's denomination. Use `muno` for this example,
+- `contract_address` is the UCS01 Relay contract address (defined at the beginning),
+- `channel` is the channel to use for the transfer.
 
 ```json title="payload.json"
 {
   "transfer": {
-    "receiver": "6053a7794e8aCe9be62808828003fFFE2710BBBC",
+    "receiver": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
     "amount": "1",
     "denom": "muno",
     "contract_address": "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h",
@@ -350,7 +355,7 @@ uniond \
         --node $RPC_URL --amount 2muno
 ```
 
-To see the result of your cross chain tranasfer, go to this query and replace the sender with yours: [here](https://docs.union.build/reference/graphql/?query=query%20ContractTransfers%20%7B%0A%20%20v1_transfers(%0A%20%20%20%20where%3A%20%7B%0A%20%20%20%20%20%20sender%3A%20%7B%0A%20%20%20%20%20%20%20%20_like%3A%20%22union1ekc5agfsj2mhp2em4a9gxz8hag8uh74fwwzfa752lp2f52w3rrsqvdcxcs%22%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20)%20%7B%0A%20%20%20%20sender%0A%20%20%20%20source_chain_id%0A%20%20%20%20source_timestamp%0A%20%20%20%20source_port_id%0A%20%20%20%20source_channel_id%0A%20%20%20%20source_block_hash%0A%20%20%20%20source_connection_id%0A%20%20%20%20source_transaction_hash%0A%0A%20%20%20%20receiver%0A%20%20%20%20destination_chain_id%0A%20%20%20%20destination_timestamp%0A%20%20%20%20destination_port_id%0A%20%20%20%20destination_channel_id%0A%20%20%20%20destination_block_hash%0A%20%20%20%20destination_connection_id%0A%20%20%20%20destination_transaction_hash%0A%20%20%7D%0A%7D)
+To see the result of your cross chain transfer, go to this query and replace the sender with yours: [here](https://docs.union.build/reference/graphql/?query=query%20ContractTransfers%20%7B%0A%20%20v1_transfers(%0A%20%20%20%20where%3A%20%7B%0A%20%20%20%20%20%20sender%3A%20%7B%0A%20%20%20%20%20%20%20%20_like%3A%20%22union1ekc5agfsj2mhp2em4a9gxz8hag8uh74fwwzfa752lp2f52w3rrsqvdcxcs%22%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20)%20%7B%0A%20%20%20%20sender%0A%20%20%20%20source_chain_id%0A%20%20%20%20source_timestamp%0A%20%20%20%20source_port_id%0A%20%20%20%20source_channel_id%0A%20%20%20%20source_block_hash%0A%20%20%20%20source_connection_id%0A%20%20%20%20source_transaction_hash%0A%0A%20%20%20%20receiver%0A%20%20%20%20destination_chain_id%0A%20%20%20%20destination_timestamp%0A%20%20%20%20destination_port_id%0A%20%20%20%20destination_channel_id%0A%20%20%20%20destination_block_hash%0A%20%20%20%20destination_connection_id%0A%20%20%20%20destination_transaction_hash%0A%20%20%7D%0A%7D)
 
 ___
 
