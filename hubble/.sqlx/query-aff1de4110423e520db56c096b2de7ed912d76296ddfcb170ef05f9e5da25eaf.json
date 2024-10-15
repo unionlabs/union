@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT cc.transaction_version, cc.height, cc.client_id\n        FROM   v1_aptos.client_created_event cc\n        LEFT JOIN v0.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id\n        WHERE  cc.internal_chain_id = $1\n        AND    cl.chain_id IS NULL\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "transaction_version",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "client_id",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "aff1de4110423e520db56c096b2de7ed912d76296ddfcb170ef05f9e5da25eaf"
+}
