@@ -12,8 +12,8 @@ workspace = true
 # test-include = ["lib/arbitrum-verifier/tests"]
 
 [dependencies]
+alloy-core        = { workspace = true }
 ethereum-verifier = { workspace = true }
-alloy-core       = { workspace = true }
 hex               = { workspace = true }
 hex-literal       = { workspace = true }
 rlp               = { workspace = true }

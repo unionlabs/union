@@ -13,4 +13,4 @@ alloy = { workspace = true, features = ["sol-types"] }
 
 [features]
 default = ["rpc"]
-rpc = ["alloy/contract"]
+rpc     = ["alloy/contract"]

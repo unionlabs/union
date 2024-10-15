@@ -527,7 +527,7 @@ pub struct ResponseQuery {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "8")]
-    #[serde(alias = "proofOps")]
+    #[cfg_attr(feature = "serde", serde(alias = "proofOps"))]
     pub proof_ops: ::core::option::Option<super::crypto::ProofOps>,
     #[prost(int64, tag = "9")]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]

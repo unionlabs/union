@@ -83,7 +83,8 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     .into());
                 }
 
-                if &packet.destination_channel != channel.counterparty.channel_id.as_ref().unwrap() {
+                if &packet.destination_channel != channel.counterparty.channel_id.as_ref().unwrap()
+                {
                     return Err(IbcError::SourceChannelMismatch(
                         packet.source_channel,
                         channel.counterparty.channel_id.unwrap(),
@@ -594,7 +595,8 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                     .into());
                 }
 
-                if &packet.destination_channel != channel.counterparty.channel_id.as_ref().unwrap() {
+                if &packet.destination_channel != channel.counterparty.channel_id.as_ref().unwrap()
+                {
                     return Err(IbcError::DestinationChannelMismatch(
                         packet.destination_channel,
                         channel.counterparty.channel_id.unwrap(),

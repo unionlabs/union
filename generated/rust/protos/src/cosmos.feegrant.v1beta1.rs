@@ -105,6 +105,98 @@ impl ::prost::Name for GenesisState {
         ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
     }
 }
+/// MsgGrantAllowance adds permission for Grantee to spend up to Allowance
+/// of fees from the account of Granter.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgGrantAllowance {
+    /// granter is the address of the user granting an allowance of their funds.
+    #[prost(string, tag = "1")]
+    pub granter: ::prost::alloc::string::String,
+    /// grantee is the address of the user being granted an allowance of another user's funds.
+    #[prost(string, tag = "2")]
+    pub grantee: ::prost::alloc::string::String,
+    /// allowance can be any of basic, periodic, allowed fee allowance.
+    #[prost(message, optional, tag = "3")]
+    pub allowance: ::core::option::Option<::pbjson_types::Any>,
+}
+impl ::prost::Name for MsgGrantAllowance {
+    const NAME: &'static str = "MsgGrantAllowance";
+    const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgGrantAllowanceResponse defines the Msg/GrantAllowanceResponse response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgGrantAllowanceResponse {}
+impl ::prost::Name for MsgGrantAllowanceResponse {
+    const NAME: &'static str = "MsgGrantAllowanceResponse";
+    const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgRevokeAllowance removes any existing Allowance from Granter to Grantee.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgRevokeAllowance {
+    /// granter is the address of the user granting an allowance of their funds.
+    #[prost(string, tag = "1")]
+    pub granter: ::prost::alloc::string::String,
+    /// grantee is the address of the user being granted an allowance of another user's funds.
+    #[prost(string, tag = "2")]
+    pub grantee: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgRevokeAllowance {
+    const NAME: &'static str = "MsgRevokeAllowance";
+    const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgRevokeAllowanceResponse defines the Msg/RevokeAllowanceResponse response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgRevokeAllowanceResponse {}
+impl ::prost::Name for MsgRevokeAllowanceResponse {
+    const NAME: &'static str = "MsgRevokeAllowanceResponse";
+    const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgPruneAllowances prunes expired fee allowances.
+///
+/// Since cosmos-sdk 0.50
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgPruneAllowances {
+    /// pruner is the address of the user pruning expired allowances.
+    #[prost(string, tag = "1")]
+    pub pruner: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgPruneAllowances {
+    const NAME: &'static str = "MsgPruneAllowances";
+    const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgPruneAllowancesResponse defines the Msg/PruneAllowancesResponse response type.
+///
+/// Since cosmos-sdk 0.50
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgPruneAllowancesResponse {}
+impl ::prost::Name for MsgPruneAllowancesResponse {
+    const NAME: &'static str = "MsgPruneAllowancesResponse";
+    const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryAllowanceRequest is the request type for the Query/Allowance RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -207,98 +299,6 @@ pub struct QueryAllowancesByGranterResponse {
 }
 impl ::prost::Name for QueryAllowancesByGranterResponse {
     const NAME: &'static str = "QueryAllowancesByGranterResponse";
-    const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgGrantAllowance adds permission for Grantee to spend up to Allowance
-/// of fees from the account of Granter.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgGrantAllowance {
-    /// granter is the address of the user granting an allowance of their funds.
-    #[prost(string, tag = "1")]
-    pub granter: ::prost::alloc::string::String,
-    /// grantee is the address of the user being granted an allowance of another user's funds.
-    #[prost(string, tag = "2")]
-    pub grantee: ::prost::alloc::string::String,
-    /// allowance can be any of basic, periodic, allowed fee allowance.
-    #[prost(message, optional, tag = "3")]
-    pub allowance: ::core::option::Option<::pbjson_types::Any>,
-}
-impl ::prost::Name for MsgGrantAllowance {
-    const NAME: &'static str = "MsgGrantAllowance";
-    const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgGrantAllowanceResponse defines the Msg/GrantAllowanceResponse response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgGrantAllowanceResponse {}
-impl ::prost::Name for MsgGrantAllowanceResponse {
-    const NAME: &'static str = "MsgGrantAllowanceResponse";
-    const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgRevokeAllowance removes any existing Allowance from Granter to Grantee.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRevokeAllowance {
-    /// granter is the address of the user granting an allowance of their funds.
-    #[prost(string, tag = "1")]
-    pub granter: ::prost::alloc::string::String,
-    /// grantee is the address of the user being granted an allowance of another user's funds.
-    #[prost(string, tag = "2")]
-    pub grantee: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgRevokeAllowance {
-    const NAME: &'static str = "MsgRevokeAllowance";
-    const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgRevokeAllowanceResponse defines the Msg/RevokeAllowanceResponse response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRevokeAllowanceResponse {}
-impl ::prost::Name for MsgRevokeAllowanceResponse {
-    const NAME: &'static str = "MsgRevokeAllowanceResponse";
-    const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgPruneAllowances prunes expired fee allowances.
-///
-/// Since cosmos-sdk 0.50
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgPruneAllowances {
-    /// pruner is the address of the user pruning expired allowances.
-    #[prost(string, tag = "1")]
-    pub pruner: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgPruneAllowances {
-    const NAME: &'static str = "MsgPruneAllowances";
-    const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgPruneAllowancesResponse defines the Msg/PruneAllowancesResponse response type.
-///
-/// Since cosmos-sdk 0.50
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgPruneAllowancesResponse {}
-impl ::prost::Name for MsgPruneAllowancesResponse {
-    const NAME: &'static str = "MsgPruneAllowancesResponse";
     const PACKAGE: &'static str = "cosmos.feegrant.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.feegrant.v1beta1.{}", Self::NAME)

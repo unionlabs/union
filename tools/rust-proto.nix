@@ -250,7 +250,7 @@ _: {
 
           # jsonschema = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), derive(::schemars::JsonSchema))]'';
           # jsonschema_str = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]'';
-          serde_alias = alias: ''#[#[cfg_attr(feature = "serde", serde(alias = "${alias}"))]'';
+          serde_alias = alias: ''#[cfg_attr(feature = "serde", serde(alias = "${alias}"))]'';
         in
         {
           type_attribute = {

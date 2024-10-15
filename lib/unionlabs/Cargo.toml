@@ -80,7 +80,7 @@ full = [
   "rlp",
   "valuable",
   "beacon",
-  "json"
+  "json",
 ]
 
 cosmwasm = ["dep:cosmwasm-std", "dep:serde"]

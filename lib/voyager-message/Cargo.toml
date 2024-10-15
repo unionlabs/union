@@ -49,8 +49,8 @@ tracing                        = { workspace = true }
 tracing-subscriber             = { workspace = true, features = ["json"] }
 typenum                        = { workspace = true }
 unionlabs                      = { workspace = true, features = ["ethabi"] }
-unionlabs-tracing.workspace = true
-valuable = { workspace = true, features = ["derive"] }
+unionlabs-tracing.workspace    = true
+valuable                       = { workspace = true, features = ["derive"] }
 voyager-core                   = { workspace = true }
 voyager-vm                     = { workspace = true }
 

@@ -9,14 +9,14 @@ pub struct ClientState {
     #[prost(uint64, tag = "2")]
     pub trusting_period: u64,
     /// defines how much new (untrusted) header's Time can drift into the future.
-    #[prost(uint64, tag = "4")]
+    #[prost(uint64, tag = "3")]
     pub max_clock_drift: u64,
     /// Block height when the client was frozen due to a misbehaviour
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "4")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
     /// Latest height the client was updated to
-    #[prost(message, optional, tag = "6")]
+    #[prost(message, optional, tag = "5")]
     pub latest_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
 }
@@ -66,7 +66,7 @@ impl ::prost::Name for Misbehaviour {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct LightHeader {
+pub struct SignedHeader {
     #[prost(int64, tag = "1")]
     pub height: i64,
     #[prost(message, optional, tag = "2")]
@@ -78,8 +78,8 @@ pub struct LightHeader {
     #[prost(bytes = "vec", tag = "5")]
     pub app_hash: ::prost::alloc::vec::Vec<u8>,
 }
-impl ::prost::Name for LightHeader {
-    const NAME: &'static str = "LightHeader";
+impl ::prost::Name for SignedHeader {
+    const NAME: &'static str = "SignedHeader";
     const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
@@ -89,7 +89,7 @@ impl ::prost::Name for LightHeader {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {
     #[prost(message, optional, tag = "1")]
-    pub signed_header: ::core::option::Option<LightHeader>,
+    pub signed_header: ::core::option::Option<SignedHeader>,
     #[prost(message, optional, tag = "2")]
     pub trusted_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
