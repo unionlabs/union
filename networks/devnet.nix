@@ -50,6 +50,7 @@
         denom = "muno";
         keyType = "bn254";
         validatorCount = 4;
+        sdkVersion = 52;
         genesisOverwrites = {
           app_state = {
             gov.params = {
