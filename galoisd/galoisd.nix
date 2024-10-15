@@ -14,7 +14,7 @@
       packages = {
         galoisd-coverage-show = pkgs.writeShellApplication {
           name = "galoisd-coverage-show";
-          runtimeInputs = [ goPkgs.go ];
+          runtimeInputs = [ goPkgs.go_1_23 ];
           text = ''
             ${ensureAtRepositoryRoot}
             pushd galoisd
@@ -23,13 +23,13 @@
           '';
         };
 
-        galoisd-coverage = pkgs.runCommand "galoisd-coverage" { buildInputs = [ goPkgs.go ]; } ''
+        galoisd-coverage = pkgs.runCommand "galoisd-coverage" { buildInputs = [ goPkgs.go_1_23 ]; } ''
           HOME="$(mktemp -d)"
           cd ${./.}
           go test -v -coverpkg=./... -coverprofile=$out ./...
         '';
 
-        galoisd = goPkgs.buildGoModule (
+        galoisd = goPkgs.pkgsStatic.buildGo123Module (
           {
             name = "galoisd";
             src = ./.;
@@ -42,8 +42,9 @@
             if pkgs.stdenv.isLinux then
               {
                 nativeBuildInputs = [ pkgs.musl ];
-                CGO_ENABLED = 0;
+                CGO_ENABLED = 1;
                 ldflags = [
+                  "-checklinkname=0"
                   "-linkmode external"
                   "-extldflags '-static -L${pkgs.musl}/lib -s -w'"
                 ];
