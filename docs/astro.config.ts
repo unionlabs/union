@@ -80,7 +80,6 @@ export default defineConfig({
 
         themes: ["min-light", "houston"],
         useStarlightDarkModeSwitch: true
-        // @ts-expect-error
         // plugins: [pluginCollapsibleSections(), pluginLineNumbers()]
       },
       locales: { root: { label: "English", lang: "en" } },

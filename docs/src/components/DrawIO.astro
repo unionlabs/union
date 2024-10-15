@@ -18,6 +18,12 @@ const { src } = Astro.props
 
   if (currentTheme) drawIOElement?.setAttribute('style', `filter: ${filter}`)
 
+  const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light'
+
+  function onThemeChange(_event: Event) {
+    const selectedTheme = document.documentElement.getAttribute('data-theme')
     filter =
       selectedTheme === 'dark'
         ? 'invert(1)'

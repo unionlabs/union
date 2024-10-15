@@ -1,26 +1,22 @@
 ---
-import { Code } from "@astrojs/starlight/components"
-import type { PartiallyRequired } from "#/lib/types.ts"
+import { Code as CCode } from "@astrojs/starlight/components"
 
-
-type AstroCodeProps = Parameters<typeof Code>[number]
-
-type CodeProps = PartiallyRequired<AstroCodeProps, "lang" | "code"> & {
-  inline?: boolean
-  transformers?: AstroCodeProps["transformers"]
-}
+type CodeProps = Parameters<typeof CCode>[number]
 
 interface Props extends CodeProps {}
 
-const { code, lang, inline = false, } = Astro.props
+const { code, lang, frame = "none", title, class: className, ...restProps } = Astro.props
 ---
 
-<Code
-  lang={lang}
-  frame="none"
+<CCode
+  {lang}
+  {title}
+  {frame}
   code={code.trim()}
-  class="text-sm sm:text-base"
+  class:list={[className, 'text-sm sm:text-base']}
+  {...restProps}
 />
+/
 
 <style lang="postcss">
 </style>
