@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"union/x/tokenfactory/types"
@@ -8,7 +9,8 @@ import (
 
 // InitGenesis initializes the tokenfactory module's state from a provided genesis
 // state.
-func (k Keeper) InitGenesis(ctx sdk.Context, genState types.GenesisState) {
+func (k Keeper) InitGenesis(bareCtx context.Context, genState *types.GenesisState) {
+	ctx := sdk.UnwrapSDKContext(bareCtx)
 	k.CreateModuleAccount(ctx)
 
 	if genState.Params.DenomCreationFee == nil {
@@ -34,7 +36,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, genState types.GenesisState) {
 }
 
 // ExportGenesis returns the tokenfactory module's exported genesis.
-func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
+func (k Keeper) ExportGenesis(bareCtx context.Context) *types.GenesisState {
+	ctx := sdk.UnwrapSDKContext(bareCtx)
 	genDenoms := []types.GenesisDenom{}
 	iterator := k.GetAllDenomsIterator(ctx)
 	defer iterator.Close()

@@ -553,7 +553,9 @@ func NewUnionApp(
 		app.BankKeeper,
 		app.PoolKeeper,
 	)
-	tfModule := tfmodule.NewAppModule(app.TfKeeper,
+	tfModule := tfmodule.NewAppModule(
+		appCodec,
+		app.TfKeeper,
 		app.AuthKeeper,
 		app.BankKeeper,
 	)
