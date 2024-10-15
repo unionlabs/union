@@ -1,5 +1,5 @@
 figure:not(.has-title) > pre:nth-child(2) {
-  border-radius: 8px !important;
+  /* border-radius: 8px !important; */
 }
 
 figcaption > span .title {

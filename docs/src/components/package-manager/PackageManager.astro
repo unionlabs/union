@@ -1,8 +1,6 @@
 ---
-import { Code } from "astro:components"
-import { shikiConfig } from "markdown.config"
 import type { NoRepetition } from "#/lib/types.ts"
-import { Tabs, TabItem } from "@astrojs/starlight/components"
+import { Tabs, TabItem, Code } from "@astrojs/starlight/components"
 import { commands, type CommandType, type PackageManager } from "./index.ts"
 
 interface Props {
@@ -11,6 +9,7 @@ interface Props {
   packageId: string
   command: CommandType
   pkgManagers: NoRepetition<PackageManager>
+  
 }
 
 const {
@@ -28,11 +27,10 @@ const {
       <TabItem label={pkgManager} icon={commands[pkgManager].icon}>
         <Code
           lang="bash"
-          themes={shikiConfig.themes}
+          frame="none"
           class="text-sm sm:text-base size-full"
-          transformers={shikiConfig.transformers}
           code={`${prefix ?? ''} ${pkgManager} ${commands[pkgManager].commands[command]} ${packageId} ${postfix ?? ''}`.trim()}
-        />
+          />  
       </TabItem>
     ))
   }

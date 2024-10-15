@@ -27,6 +27,7 @@ export const shikiConfig = {
     light: "min-light",
     dark: "houston"
   },
+  defaultColor: "dark",
   transformers: [
     transformerTwoslash({
       explicitTrigger: /\btwoslash\b/,

@@ -10,8 +10,6 @@ import starlightUtils from "@lorenzo_lewis/starlight-utils"
 import { markdownConfiguration } from "./markdown.config.ts"
 import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
-import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers"
-import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections"
 
 const SITE_URL = "https://docs.union.build"
 const SITE_DESCRIPTION =
@@ -81,9 +79,9 @@ export default defineConfig({
         },
 
         themes: ["min-light", "houston"],
-        useStarlightDarkModeSwitch: true,
+        useStarlightDarkModeSwitch: true
         // @ts-expect-error
-        plugins: [pluginCollapsibleSections(), pluginLineNumbers()]
+        // plugins: [pluginCollapsibleSections(), pluginLineNumbers()]
       },
       locales: { root: { label: "English", lang: "en" } },
       editLink: {

@@ -1,9 +1,9 @@
 ---
-import { shikiConfig } from "markdown.config"
-import { Code as AstroCode } from "astro:components"
+import { Code } from "@astrojs/starlight/components"
 import type { PartiallyRequired } from "#/lib/types.ts"
 
-type AstroCodeProps = Parameters<typeof AstroCode>[number]
+
+type AstroCodeProps = Parameters<typeof Code>[number]
 
 type CodeProps = PartiallyRequired<AstroCodeProps, "lang" | "code"> & {
   inline?: boolean
@@ -12,25 +12,15 @@ type CodeProps = PartiallyRequired<AstroCodeProps, "lang" | "code"> & {
 
 interface Props extends CodeProps {}
 
-const { code, lang, inline = false, transformers: _transformers } = Astro.props
+const { code, lang, inline = false, } = Astro.props
 ---
 
-<AstroCode
-  {inline}
+<Code
   lang={lang}
+  frame="none"
   code={code.trim()}
-  themes={shikiConfig.themes}
   class="text-sm sm:text-base"
 />
 
 <style lang="postcss">
-  figure[data-rehype-pretty-code-figure],
-  pre {
-    @apply rounded-lg overflow-visible;
-    margin: 0;
-    padding: 0;
-    background-color: transparent;
-    width: 100%;
-    min-width: 100%;
-  }
 </style>
