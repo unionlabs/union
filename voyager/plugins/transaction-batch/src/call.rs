@@ -1,5 +1,5 @@
 use enumorph::Enumorph;
-use macros::model;
+use voyager_message::macros::model;
 use unionlabs::id::ClientId;
 
 use crate::data::BatchableEvent;

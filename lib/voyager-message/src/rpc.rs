@@ -4,7 +4,7 @@ use jsonrpsee::{
     proc_macros::rpc,
     types::{ErrorObject, ErrorObjectOwned},
 };
-use macros::model;
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
 use tracing::debug;
@@ -14,10 +14,12 @@ use unionlabs::{
     id::ClientId,
     ErrorReporter, QueryHeight,
 };
+use valuable::Valuable;
 
 use crate::{
     context::LoadedModulesInfo,
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface},
+    macros::model,
     FATAL_JSONRPC_ERROR_CODE,
 };
 
@@ -154,13 +156,13 @@ pub trait VoyagerRpcClientExt: VoyagerRpcClient {
     // TODO: Maybe rename? Cor likes "_checked"
     // TODO: Maybe take by ref here?
     #[allow(async_fn_in_trait)]
-    async fn query_ibc_state_typed<P: IbcPath>(
+    async fn query_ibc_state_typed<P: IbcPath<Value: DeserializeOwned> + Serialize + Valuable>(
         &self,
         chain_id: ChainId<'static>,
         at: QueryHeight,
         path: P,
     ) -> Result<IbcState<P::Value, P>, jsonrpsee::core::client::Error> {
-        debug!(path, %at, "querying ibc state");
+        debug!(path = path.as_value(), %at, "querying ibc state");
 
         let ibc_state = self
             .query_ibc_state(chain_id.clone(), at, path.clone().into())

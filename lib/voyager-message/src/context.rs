@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    fmt::Debug,
     path::{Path, PathBuf},
     process::Stdio,
     sync::Arc,
@@ -12,7 +13,6 @@ use futures::{
     Future, StreamExt, TryStreamExt,
 };
 use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
-use macros::model;
 use schemars::JsonSchema;
 use serde::Serialize;
 use serde_json::{Map, Value};
@@ -25,6 +25,7 @@ use voyager_vm::{BoxDynError, QueueError};
 
 use crate::{
     core::{ChainId, ClientType, IbcInterface},
+    macros::model,
     module::{
         ChainModuleClient, ChainModuleInfo, ClientModuleClient, ClientModuleInfo,
         ConsensusModuleClient, ConsensusModuleInfo, PluginClient, PluginInfo,
@@ -66,12 +67,19 @@ pub struct Modules {
 
 impl voyager_vm::Context for Context {}
 
-#[derive(macros::Debug, Clone)]
+#[derive(Clone)]
 pub struct ModuleRpcClient {
-    #[debug(skip)]
     client: reconnecting_jsonrpc_ws_client::Client,
     #[allow(dead_code)]
     name: String,
+}
+
+impl Debug for ModuleRpcClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ModuleRpcClient")
+            .field("name", &self.name)
+            .finish_non_exhaustive()
+    }
 }
 
 impl ModuleRpcClient {

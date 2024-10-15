@@ -3,7 +3,7 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
-use macros::model;
+use voyager_message::macros::model;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;

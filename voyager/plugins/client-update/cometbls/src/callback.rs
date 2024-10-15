@@ -1,5 +1,5 @@
 use enumorph::Enumorph;
-use macros::model;
+use voyager_message::macros::model;
 use subset_of::SubsetOf;
 use unionlabs::ibc::{
     core::client::height::Height,

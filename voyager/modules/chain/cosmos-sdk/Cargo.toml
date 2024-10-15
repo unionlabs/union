@@ -9,6 +9,7 @@ cometbft-rpc       = { workspace = true }
 dashmap            = { workspace = true }
 enumorph           = { workspace = true }
 futures            = { workspace = true }
+itertools = "0.13.0"
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }
 prost              = { workspace = true }

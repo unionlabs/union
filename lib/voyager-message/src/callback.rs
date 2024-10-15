@@ -3,16 +3,15 @@ use std::collections::VecDeque;
 use enumorph::Enumorph;
 use futures::{stream, StreamExt, TryFutureExt, TryStreamExt};
 use itertools::Itertools;
-use macros::model;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{ibc::core::client::msg_update_client::MsgUpdateClient, id::ClientId};
-use voyager_core::ClientInfo;
 use voyager_vm::{CallbackT, Op, QueueError};
 
 use crate::{
-    core::ChainId,
+    core::{ChainId, ClientInfo},
     data::{Data, OrderedHeaders, OrderedMsgUpdateClients},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
+    macros::model,
     module::{ClientModuleClient, PluginClient},
     Context, PluginMessage, VoyagerMessage,
 };

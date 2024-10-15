@@ -2,7 +2,6 @@ use std::{borrow::Cow, collections::VecDeque};
 
 use ::serde::{Deserialize, Serialize};
 use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject};
-use macros::model;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
@@ -14,7 +13,7 @@ use unionlabs::{
     id::ClientId,
     ErrorReporter,
 };
-use voyager_core::ConsensusType;
+use valuable::Valuable;
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 #[cfg(doc)]
 use {
@@ -23,12 +22,16 @@ use {
 };
 
 use crate::{
-    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface},
+    core::{
+        ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType,
+        IbcInterface,
+    },
     data::Data,
-    VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    macros::model,
+    Member, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, clap::Args, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, clap::Args, JsonSchema)]
 pub struct ChainModuleInfo {
     #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
     pub chain_id: ChainId<'static>,
@@ -55,7 +58,7 @@ fn ok<T>(t: T) -> Result<T, BoxDynError> {
     Ok(t)
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, clap::Args, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, clap::Args, JsonSchema)]
 pub struct ConsensusModuleInfo {
     #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
     pub chain_id: ChainId<'static>,
@@ -126,7 +129,7 @@ pub struct UnexpectedIbcInterfaceError {
     pub found: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, clap::Args, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, clap::Args, JsonSchema)]
 pub struct ClientModuleInfo {
     /// The client type that this client module provides functionality for.
     #[arg(value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
@@ -192,7 +195,7 @@ impl ClientModuleInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, clap::Args, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, clap::Args, JsonSchema)]
 pub struct PluginInfo {
     /// The name of this plugin. Any plugin messages with this name will be
     /// routed to this plugin.
@@ -274,12 +277,12 @@ pub trait ChainModuleClientExt: ChainModuleClient + Send + Sync {
     // TODO: Maybe rename? Cor likes "_checked"
     // TODO: Maybe take by ref here?
     #[allow(async_fn_in_trait)]
-    async fn query_ibc_state_typed<P: IbcPath>(
+    async fn query_ibc_state_typed<P: IbcPath<Value: DeserializeOwned> + Serialize + Valuable>(
         &self,
         at: Height,
         path: P,
     ) -> Result<P::Value, jsonrpsee::core::client::Error> {
-        debug!(%path, %at, "querying ibc state");
+        debug!(path = path.as_value(), %at, "querying ibc state");
 
         let state = self.query_ibc_state(at, path.clone().into()).await?;
 

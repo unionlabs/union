@@ -352,7 +352,7 @@ impl Module {
                             .counterparty_client_id()
                             .expect("all batchable messages have a counterparty");
 
-                        trace!(%client_id, "batching event");
+                        trace!(client_id = client_id.as_value(), "batching event");
 
                         let first_seen_at: u64 = SystemTime::now()
                             .duration_since(UNIX_EPOCH)
@@ -524,7 +524,10 @@ impl Module {
                         .max()
                         .expect("batch has at least one event; qed;");
 
-                    debug!(%client_id, "querying client meta for client");
+                    debug!(
+                        client_id = client_id.as_value(),
+                        "querying client meta for client"
+                    );
 
                     client
                         .client_meta(

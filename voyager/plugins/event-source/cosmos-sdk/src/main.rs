@@ -218,7 +218,7 @@ impl Module {
         }
     }
 
-    #[instrument(skip_all, fields(%client_id))]
+    #[instrument(skip_all, fields(client_id = client_id.as_value()))]
     async fn checksum_of_client_id(&self, client_id: ClientId) -> RpcResult<H256> {
         type WasmClientState = protos::ibc::lightclients::wasm::v1::ClientState;
 

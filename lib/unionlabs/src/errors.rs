@@ -43,15 +43,15 @@ pub struct InvalidLength {
 
 #[derive(Debug, Clone, PartialEq, Eq, derive_more::Display)]
 pub enum ExpectedLength {
-    #[display(fmt = "exactly {_0}")]
+    #[display("exactly {_0}")]
     Exact(usize),
-    #[display(fmt = "less than {_0}")]
+    #[display("less than {_0}")]
     LessThan(usize),
-    #[display(fmt = "between ({_0}, {_1})")]
+    #[display("between ({_0}, {_1})")]
     Between(usize, usize),
-    #[display(fmt = "greater than or equal to ({_0})")]
+    #[display("greater than or equal to ({_0})")]
     Gte(usize),
-    #[display(fmt = "either {_0} or {_1}")]
+    #[display("either {_0} or {_1}")]
     Either(usize, usize),
 }
 

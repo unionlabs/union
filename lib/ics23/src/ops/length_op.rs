@@ -8,7 +8,7 @@ pub enum ApplyError {
     Required32Bytes(usize),
     #[error("required 64 bytes, ({0})")]
     Required64Bytes(usize),
-    #[error("unsupported op ({0?})")]
+    #[error("unsupported op ({0:?})")]
     UnsupportedOp(LengthOp),
     #[error("too many data items (0)")]
     TooManyDataItems(usize),

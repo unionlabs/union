@@ -25,7 +25,7 @@ use unionlabs::{
         connection::{self, connection_end::ConnectionEnd},
     },
     ics24::{ClientStatePath, Path},
-    id::ClientId,
+    id::{ClientId, ConnectionId},
     uint::U256,
     ErrorReporter,
 };
@@ -33,7 +33,9 @@ use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcInterface},
     into_value,
     module::{ChainModuleInfo, ChainModuleServer, RawClientState},
-    run_chain_module_server, ChainModule,
+    run_chain_module_server,
+    valuable::Valuable,
+    ChainModule,
 };
 use voyager_vm::BoxDynError;
 
@@ -173,23 +175,25 @@ impl ChainModuleServer for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
-        match client_id.to_string().rsplit_once('-') {
-            Some(("cometbls", _)) => Ok(ClientInfo {
-                client_type: ClientType::new(ClientType::COMETBLS_GROTH16),
-                ibc_interface: IbcInterface::new(IbcInterface::IBC_MOVE_APTOS),
-                metadata: Default::default(),
-            }),
-            _ => Err(ErrorObject::owned(
-                -1,
-                format!("unknown client type (client id `{client_id}`)"),
-                Some(json!({
-                    "client_id": client_id.to_string()
-                })),
-            )),
-        }
+        // match client_id.to_string().rsplit_once('-') {
+        //     Some(("cometbls", _)) => Ok(ClientInfo {
+        //         client_type: ClientType::new(ClientType::COMETBLS_GROTH16),
+        //         ibc_interface: IbcInterface::new(IbcInterface::IBC_MOVE_APTOS),
+        //         metadata: Default::default(),
+        //     }),
+        //     _ => Err(ErrorObject::owned(
+        //         -1,
+        //         format!("unknown client type (client id `{client_id}`)"),
+        //         Some(json!({
+        //             "client_id": client_id.to_string()
+        //         })),
+        //     )),
+        // }
+
+        todo!()
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %at, %path))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %at, path = path.as_value()))]
     async fn query_ibc_state(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
         let ledger_version = self.ledger_version_of_height(at.height()).await;
 
@@ -198,7 +202,7 @@ impl ChainModuleServer for Module {
                 let client_state_bytes = self
                     .client_state(
                         self.ibc_handler_address.into(),
-                        (path.client_id.to_string(),),
+                        (path.client_id.to_string_prefixed(),),
                         Some(ledger_version),
                     )
                     .await
@@ -211,7 +215,7 @@ impl ChainModuleServer for Module {
                     .consensus_state(
                         self.ibc_handler_address.into(),
                         (
-                            path.client_id.to_string(),
+                            path.client_id.to_string_prefixed(),
                             path.height.revision(),
                             path.height.height(),
                         ),
@@ -225,7 +229,7 @@ impl ChainModuleServer for Module {
             Path::Connection(path) => into_value(
                 self.get_connection(
                     self.ibc_handler_address.into(),
-                    (path.connection_id.to_string(),),
+                    (path.connection_id.to_string_prefixed(),),
                     Some(ledger_version),
                 )
                 .await
@@ -236,7 +240,10 @@ impl ChainModuleServer for Module {
             Path::ChannelEnd(path) => into_value(
                 self.get_channel(
                     self.ibc_handler_address.into(),
-                    (path.port_id.to_string(), path.channel_id.to_string()),
+                    (
+                        path.port_id.to_string(),
+                        path.channel_id.to_string_prefixed(),
+                    ),
                     Some(ledger_version),
                 )
                 .await
@@ -248,7 +255,7 @@ impl ChainModuleServer for Module {
                 let commitment = self
                     .get_commitment(
                         self.ibc_handler_address.into(),
-                        (path.to_string().into_bytes().into(),),
+                        (path.ics24_commitment_path().into_bytes().into(),),
                         Some(ledger_version),
                     )
                     .await
@@ -260,7 +267,7 @@ impl ChainModuleServer for Module {
                 let commitment = self
                     .get_commitment(
                         self.ibc_handler_address.into(),
-                        (path.to_string().into_bytes().into(),),
+                        (path.ics24_commitment_path().into_bytes().into(),),
                         Some(ledger_version),
                     )
                     .await
@@ -272,7 +279,7 @@ impl ChainModuleServer for Module {
                 let commitment = self
                     .get_commitment(
                         self.ibc_handler_address.into(),
-                        (path.to_string().into_bytes().into(),),
+                        (path.ics24_commitment_path().into_bytes().into(),),
                         Some(ledger_version),
                     )
                     .await
@@ -467,7 +474,7 @@ pub fn convert_connection(
             connection_id: if connection.counterparty.connection_id.is_empty() {
                 None
             } else {
-                Some(connection.counterparty.connection_id.parse().unwrap())
+                Some(ConnectionId::parse_prefixed(&connection.counterparty.connection_id).unwrap())
             },
             prefix: MerklePrefix {
                 key_prefix: connection.counterparty.prefix.key_prefix.into(),

@@ -11,7 +11,7 @@ workspace = true
 
 [dependencies]
 alloy                          = { workspace = true }
-clap                           = { workspace = true, features = ["derive"] }
+clap                           = { workspace = true, features = ["default", "derive", "env", "error-context"] }
 dashmap                        = { workspace = true }
 enumorph                       = { workspace = true }
 futures                        = { workspace = true }
@@ -35,13 +35,13 @@ subset-of                      = { workspace = true }
 thiserror                      = { workspace = true }
 tokio                          = { workspace = true, features = ["time", "process", "fs"] }
 tokio-util                     = "0.7.11"
-tracing                        = { workspace = true }
+tracing                        = { workspace = true, features = ["valuable"] }
 tracing-subscriber             = { workspace = true, features = ["json"] }
 unionlabs                      = { workspace = true, features = ["std", "serde", "valuable"] }
 unionlabs-tracing              = { workspace = true }
 valuable                       = { workspace = true, features = ["derive"] }
 voyager-core                   = { workspace = true }
-voyager-macros.workspace = true
+voyager-macros                 = { workspace = true }
 voyager-vm                     = { workspace = true }
 
 [dev-dependencies]

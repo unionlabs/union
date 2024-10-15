@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use enumorph::Enumorph;
 use itertools::Itertools;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
-use macros::model;
+use voyager_message::macros::model;
 use tracing::warn;
 use unionlabs::{ibc::core::client::height::Height, id::ClientId, QueryHeight};
 use voyager_message::{

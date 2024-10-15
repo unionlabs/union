@@ -184,7 +184,6 @@ zktrie                         = { path = "lib/zktrie-rs", default-features = fa
 milagro_bls = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
 
 tendermint       = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
-tendermint-proto = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 tendermint-rpc   = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 
 alloy                    = { version = "0.4.2" }
@@ -207,7 +206,7 @@ cosmwasm-std             = { version = "1.5", default-features = false }
 crossbeam-queue          = { version = "0.3.8", default-features = false }
 cw-storage-plus          = { version = "1.2", default-features = false }
 dashmap                  = { version = "5.5.3", default-features = false }
-derive_more              = { version = "0.99.17", default-features = false }
+derive_more              = { version = "1.0.0", default-features = false }
 dlmalloc                 = { version = "=0.2.4", default-features = false }
 either                   = { version = "1.9.0", default-features = false }
 enumorph                 = { version = "0.1.2", default-features = false }
@@ -220,9 +219,7 @@ hex-literal              = { version = "0.4.1", default-features = false }
 jsonrpsee                = { version = "0.24.2", default-features = false }
 lazy_static              = { version = "1.4.0", default-features = false }
 move-core-types          = { git = "https://github.com/unionlabs/aptos-core" }
-near-contract-standards  = { version = "5.1.0", default-features = false }
 near-sdk                 = { version = "5.1.0", default-features = false }
-near-sdk-contract-tools  = { version = "3.0.2", default-features = false }
 num-bigint               = { version = "0.4", default-features = false }
 primitive-types          = { version = "0.12.1", default-features = false }
 prost                    = { version = "0.12.3", default-features = false }

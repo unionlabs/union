@@ -325,6 +325,7 @@ impl CallT<VoyagerMessage> for Call {
                     client_id: connection_open_init_event.counterparty_client_id,
                     client_state: encoded_client_state,
                     counterparty: connection::counterparty::Counterparty {
+                        client_type: todo!(),
                         client_id: connection_open_init_event.client_id,
                         connection_id: Some(connection_open_init_event.connection_id),
                         prefix: MerklePrefix {
@@ -772,14 +773,7 @@ impl CallT<VoyagerMessage> for Call {
         %origin_chain_id,
         %origin_chain_proof_height,
         %target_chain_id,
-        %send_packet_event.packet.sequence,
-        %send_packet_event.packet.source_channel.port_id,
-        %send_packet_event.packet.source_channel.channel_id,
-        %send_packet_event.packet.destination_channel.port_id,
-        %send_packet_event.packet.destination_channel.channel_id,
-        %send_packet_event.packet.channel_ordering,
-        %send_packet_event.packet.timeout_height,
-        %send_packet_event.packet.timeout_timestamp,
+        send_packet_event.packet = send_packet_event.packet.as_value(),
     )
 )]
 async fn make_msg_recv_packet(
@@ -882,14 +876,7 @@ async fn make_msg_recv_packet(
         %origin_chain_id,
         %origin_chain_proof_height,
         %target_chain_id,
-        %write_acknowledgement_event.packet.sequence,
-        %write_acknowledgement_event.packet.source_channel.port_id,
-        %write_acknowledgement_event.packet.source_channel.channel_id,
-        %write_acknowledgement_event.packet.destination_channel.port_id,
-        %write_acknowledgement_event.packet.destination_channel.channel_id,
-        %write_acknowledgement_event.packet.channel_ordering,
-        %write_acknowledgement_event.packet.timeout_height,
-        %write_acknowledgement_event.packet.timeout_timestamp,
+        write_acknowledgement_event.packet = write_acknowledgement_event.packet.as_value(),
     )
 )]
 async fn make_msg_acknowledgement(
@@ -1106,9 +1093,9 @@ async fn make_msg_create_client(
     fields(
         %origin_chain_id,
         %target_chain_id,
-        %client_id,
-        %counterparty_client_id,
-        %connection_id,
+        client_id = client_id.as_value(),
+        counterparty_client_id = counterparty_client_id.as_value(),
+        connection_id = connection_id.as_value(),
         %origin_chain_proof_height,
     )
 )]
@@ -1130,7 +1117,7 @@ async fn mk_connection_handshake_state_and_proofs(
         .await?;
 
     debug!(
-        %counterparty_client_id,
+        counterparty_client_id = counterparty_client_id.as_value(),
         target_client_info = target_client_info.as_value()
     );
 
@@ -1143,7 +1130,7 @@ async fn mk_connection_handshake_state_and_proofs(
         .await?;
 
     debug!(
-        %client_id,
+        client_id = client_id.as_value(),
         origin_client_info = origin_client_info.as_value()
     );
 

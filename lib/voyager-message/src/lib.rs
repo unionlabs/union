@@ -14,7 +14,6 @@ use jsonrpsee::{
     },
     Extensions, RpcModule,
 };
-use macros::model;
 use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
@@ -28,6 +27,7 @@ use crate::{
     context::{Context, INVALID_CONFIG_EXIT_CODE, STARTUP_ERROR_EXIT_CODE},
     data::Data,
     filter::JaqInterestFilter,
+    macros::model,
     module::{
         ChainModuleInfo, ChainModuleServer, ClientModuleInfo, ClientModuleServer,
         ConsensusModuleInfo, ConsensusModuleServer, PluginInfo, PluginServer,
@@ -49,6 +49,7 @@ pub mod rpc;
 
 pub use reconnecting_jsonrpc_ws_client;
 pub use reth_ipc;
+pub use valuable;
 pub use voyager_core as core;
 pub use voyager_macros as macros;
 

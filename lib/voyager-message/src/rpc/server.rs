@@ -1,12 +1,15 @@
-use std::sync::{Arc, OnceLock};
+use std::{
+    fmt::Debug,
+    sync::{Arc, OnceLock},
+};
 
 use jsonrpsee::{
-    core::RpcResult,
+    core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
 };
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
-use tonic::async_trait;
 use tracing::{debug, error, info_span, instrument, Instrument};
 use unionlabs::{
     ibc::core::client::height::Height,
@@ -14,6 +17,7 @@ use unionlabs::{
     id::ClientId,
     ErrorReporter, QueryHeight,
 };
+use valuable::Valuable;
 
 use crate::{
     context::{LoadedModulesInfo, Modules},
@@ -31,11 +35,19 @@ pub struct Server {
     inner: Arc<ServerInner>,
 }
 
-#[derive(macros::Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct ServerInner {
     modules: OnceLock<Arc<Modules>>,
-    #[debug("Cache({:?}, {})", self.ibc_state_cache.name(), self.ibc_state_cache.entry_count())]
-    ibc_state_cache: moka::future::Cache<(ChainId<'static>, Path, Height), Value>,
+    ibc_state_cache: Cache,
+}
+
+#[derive(Clone)]
+struct Cache(moka::future::Cache<(ChainId<'static>, Path, Height), Value>);
+
+impl Debug for Cache {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Cache({:?}, {})", self.0.name(), self.0.entry_count())
+    }
 }
 
 // #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -87,13 +99,15 @@ impl Server {
         Server {
             inner: Arc::new(ServerInner {
                 modules: OnceLock::new(),
-                ibc_state_cache: moka::future::Cache::builder()
-                    .eviction_listener(|k, v, why| {
-                        error!(?k, ?v, ?why, "value evicted from the cache")
-                    })
-                    .max_capacity(10_000)
-                    .name("ibc_state_cache")
-                    .build(),
+                ibc_state_cache: Cache(
+                    moka::future::Cache::builder()
+                        .eviction_listener(|k, v, why| {
+                            error!(?k, ?v, ?why, "value evicted from the cache")
+                        })
+                        .max_capacity(10_000)
+                        .name("ibc_state_cache")
+                        .build(),
+                ),
             }),
         }
     }
@@ -153,10 +167,11 @@ impl ServerInner {
 
         let state = self
             .ibc_state_cache
+            .0
             .entry_by_ref(&key)
             .or_try_insert_with(
                 async {
-                    debug!(%chain_id, %path, %at, "querying ibc state (not yet cached)");
+                    debug!(%chain_id, path = path.as_value(), %at, "querying ibc state (not yet cached)");
 
                     let state = self
                         .modules()?
@@ -177,11 +192,11 @@ impl ServerInner {
 
         if !state.is_fresh() {
             debug!(
-                cache = %self.ibc_state_cache.name().unwrap_or_default(),
+                cache = %self.ibc_state_cache.0.name().unwrap_or_default(),
                 key.chain_id = %chain_id,
-                key.path = %path,
+                key.path = path.as_value(),
                 key.height = %height,
-                raw_key = %format_args!("chain_id:{chain_id};path:{path};height:{height}"),
+                // raw_key = %format_args!("chain_id:{chain_id};path:{path};height:{height}"),
                 "cache hit"
             );
         }
@@ -222,7 +237,10 @@ impl Server {
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
-        debug!(%latest_height, "queried latest height");
+        debug!(
+            latest_height = latest_height.as_value(),
+            "queried latest height"
+        );
 
         Ok(latest_height)
     }
@@ -240,12 +258,12 @@ impl Server {
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
-        debug!(%latest_timestamp, "queried latest timestamp");
+        debug!(latest_timestamp, "queried latest timestamp");
 
         Ok(latest_timestamp)
     }
 
-    #[instrument(skip_all, fields(%chain_id, %client_id))]
+    #[instrument(skip_all, fields(chain_id, client_id))]
     pub async fn client_info(
         &self,
         chain_id: &ChainId<'static>,
@@ -271,7 +289,7 @@ impl Server {
         Ok(client_info)
     }
 
-    #[instrument(skip_all, fields(%chain_id, height = %at, %client_id))]
+    #[instrument(skip_all, fields(%chain_id, height = %at, client_id = client_id.as_value()))]
     pub async fn client_meta(
         &self,
         chain_id: ChainId<'static>,
@@ -310,17 +328,15 @@ impl Server {
             .map_err(json_rpc_error_to_error_object)?;
 
         debug!(
-            client_state_meta.height = %meta.height,
-            client_state_meta.chain_id = %meta.chain_id,
-            %client_info.ibc_interface,
-            %client_info.client_type,
+            client_state_meta = meta.as_value(),
+            client_info = client_info.as_value(),
             "fetched client meta"
         );
 
         Ok(meta)
     }
 
-    #[instrument(skip_all, fields(%chain_id, %path, %height))]
+    #[instrument(skip_all, fields(%chain_id, path = path.as_value(), %height))]
     pub async fn query_ibc_state(
         &self,
         chain_id: &ChainId<'_>,
@@ -343,7 +359,7 @@ impl Server {
         Ok(state)
     }
 
-    #[instrument(skip_all, fields(%chain_id, %path, %height))]
+    #[instrument(skip_all, fields(%chain_id, path = path.as_value(), %height))]
     pub async fn query_ibc_proof(
         &self,
         chain_id: &ChainId<'_>,
@@ -515,13 +531,15 @@ impl Server {
             .map_err(json_rpc_error_to_error_object)
     }
 
-    pub async fn query_ibc_state_typed<P: IbcPath>(
+    pub async fn query_ibc_state_typed<
+        P: IbcPath<Value: DeserializeOwned> + Serialize + Valuable,
+    >(
         &self,
         chain_id: &ChainId<'_>,
         at: Height,
         path: P,
     ) -> Result<IbcState<P::Value, P>, jsonrpsee::core::client::Error> {
-        debug!(%chain_id, %path, %at, "querying ibc state");
+        debug!(%chain_id, path = path.as_value(), %at, "querying ibc state");
 
         let ibc_state = self
             .query_ibc_state(chain_id, at, path.clone().into())

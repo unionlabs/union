@@ -1,7 +1,6 @@
 use std::num::NonZeroU64;
 
 use enumorph::Enumorph;
-use macros::model;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use subset_of::SubsetOf;
@@ -34,6 +33,7 @@ use valuable::Valuable;
 
 use crate::{
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta},
+    macros::model,
     PluginMessage,
 };
 
@@ -300,11 +300,11 @@ pub struct ChannelOpenConfirm {
 #[model]
 pub struct WriteAcknowledgement {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub packet_data: Vec<u8>,
 
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub packet_ack: Vec<u8>,
 
     pub packet: PacketMetadata,
@@ -313,7 +313,7 @@ pub struct WriteAcknowledgement {
 #[model]
 pub struct RecvPacket {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub packet_data: Vec<u8>,
 
     pub packet: PacketMetadata,
@@ -322,7 +322,7 @@ pub struct RecvPacket {
 #[model]
 pub struct SendPacket {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub packet_data: Vec<u8>,
 
     pub packet: PacketMetadata,
@@ -363,6 +363,7 @@ pub struct ChannelMetadata {
 }
 
 #[model]
+#[derive(Valuable)]
 pub struct ConnectionMetadata {
     pub client_id: ClientId,
     // this is really `Either<ConnectionId, EmptyString>`
@@ -403,7 +404,10 @@ pub struct UnfinalizedTrustedClientState {
 }
 
 #[model]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(
+    serialize = "P: Serialize, P::Value: Serialize",
+    deserialize = "P: Deserialize<'de>, P::Value: Deserialize<'de>"
+))]
 pub struct IbcState<P: IbcPath> {
     pub chain_id: ChainId<'static>,
     pub path: P,
@@ -413,12 +417,15 @@ pub struct IbcState<P: IbcPath> {
 }
 
 #[model]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[serde(bound(
+    serialize = "P: Serialize, P::Value: Serialize",
+    deserialize = "P: Deserialize<'de>, P::Value: Deserialize<'de>"
+))]
 pub struct IbcProof<P: IbcPath> {
     pub path: P,
     pub height: Height,
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub proof: Vec<u8>,
 }
 
@@ -465,21 +472,21 @@ pub struct OrderedMsgUpdateClients {
 #[model]
 pub struct EncodedClientState {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub encoded_client_state: Vec<u8>,
 }
 
 #[model]
 pub struct EncodedConsensusState {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub encoded_consensus_state: Vec<u8>,
 }
 
 #[model]
 pub struct EncodedHeader {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub encoded_header: Vec<u8>,
 }
 

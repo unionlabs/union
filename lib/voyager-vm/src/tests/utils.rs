@@ -1,8 +1,8 @@
 use std::collections::VecDeque;
 
 use enumorph::Enumorph;
-use macros::model;
 use subset_of::SubsetOf;
+use voyager_macros::model;
 
 use crate::{call, data, noop, CallT, CallbackT, Op, QueueError, QueueMessage};
 

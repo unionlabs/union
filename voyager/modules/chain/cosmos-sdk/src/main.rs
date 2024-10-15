@@ -7,7 +7,10 @@ use std::{
     sync::Arc,
 };
 
+use clap::{builder::TypedValueParser, value_parser};
 use dashmap::DashMap;
+use futures::{stream::FuturesUnordered, TryStreamExt};
+use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -37,7 +40,9 @@ use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcGo08WasmClientMetadata, IbcInterface},
     into_value,
     module::{ChainModuleInfo, ChainModuleServer, RawClientState},
-    run_chain_module_server, ChainModule, FATAL_JSONRPC_ERROR_CODE,
+    run_chain_module_server,
+    valuable::Valuable,
+    ChainModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
@@ -50,6 +55,10 @@ async fn main() {
 pub enum Cmd {
     ChainId,
     LatestHeight,
+    PrefixOfClientId {
+        #[arg(value_parser = value_parser!(u32).map(ClientId::new))]
+        client_id: ClientId,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -150,31 +159,95 @@ impl Module {
         .data;
 
         match parse_wasm_client_type(bz) {
-            Ok(Some(ty)) => {
+            Some(ty) => {
                 info!(
                     %checksum,
                     ?ty,
                     "parsed checksum"
                 );
 
+                let ty = match &*ty {
+                    "EthereumMinimal" => WasmClientType::EthereumMinimal,
+                    "EthereumMainnet" => WasmClientType::EthereumMainnet,
+                    "Cometbls" => WasmClientType::Cometbls,
+                    "Tendermint" => WasmClientType::Tendermint,
+                    "Scroll" => WasmClientType::Scroll,
+                    "Arbitrum" => WasmClientType::Arbitrum,
+                    "Linea" => WasmClientType::Linea,
+                    // TODO: Rename to beacon-kit
+                    "Berachain" => WasmClientType::Berachain,
+                    "EvmInCosmos" => WasmClientType::EvmInCosmos,
+                    "Movement" => WasmClientType::Movement,
+                    _ => {
+                        warn!("unknown wasm client type `{ty}` for checksum {checksum}");
+                        return Ok(None);
+                    }
+                };
+
                 self.checksum_cache.insert(checksum, ty);
 
                 Ok(Some(ty))
             }
-            Ok(None) => Ok(None),
-            Err(err) => {
-                error!(
-                    %checksum,
-                    %err,
-                    "unable to parse wasm client type"
-                );
-
-                Ok(None)
-            }
+            None => Ok(None),
         }
     }
 
-    #[instrument(skip_all, fields(%client_id))]
+    async fn prefix_of_client_id(&self, client_id: &ClientId) -> RpcResult<&'static str> {
+        const KNOWN_PREFIXES: &[&str] = &["07-tendermint", "08-wasm"];
+
+        KNOWN_PREFIXES
+            .iter()
+            .map(move |prefix| {
+                let client_id = client_id.clone();
+                async move {
+                    protos::ibc::core::client::v1::query_client::QueryClient::connect(
+                        self.grpc_url.clone(),
+                    )
+                    .await
+                    .map_err(rpc_error(
+                        "error connecting to grpc server",
+                        Some(json!({ "client_id": client_id })),
+                    ))?
+                    .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
+                        // NOTE: We assume this is a wasm client if we're fetching the checksum
+                        client_id: client_id.to_string_prefixed("08-wasm"),
+                    })
+                    .await
+                    .map_err(rpc_error(
+                        "error querying client state",
+                        Some(json!({ "client_id": client_id })),
+                    ))?
+                    .into_inner()
+                    .client_state
+                    .ok_or_else(|| {
+                        // lol
+                        rpc_error(
+                            "error fetching client state",
+                            Some(json!({ "client_id": client_id })),
+                        )(&*Box::<dyn Error>::from(
+                            "client state field is empty",
+                        ))
+                    })
+                    .map(|_| prefix)
+                }
+            })
+            .collect::<FuturesUnordered<_>>()
+            .try_collect::<Vec<&'static str>>()
+            .await?
+            .into_iter()
+            .exactly_one()
+            .map_err(|e| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    format!("error fetching prefix of client id: {e}"),
+                    Some(json!({
+                        "found_prefixes": e.collect::<Vec<_>>()
+                    })),
+                )
+            })
+    }
+
+    #[instrument(skip_all, fields(client_id = client_id.as_value()))]
     async fn checksum_of_client_id(&self, client_id: ClientId) -> RpcResult<H256> {
         type WasmClientState = protos::ibc::lightclients::wasm::v1::ClientState;
 
@@ -187,7 +260,8 @@ impl Module {
             Some(json!({ "client_id": client_id })),
         ))?
         .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
-            client_id: client_id.to_string(),
+            // NOTE: We assume this is a wasm client if we're fetching the checksum
+            client_id: client_id.to_string_prefixed("08-wasm"),
         })
         .await
         .map_err(rpc_error(
@@ -357,13 +431,15 @@ impl ChainModuleServer for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
-        match client_id.to_string().rsplit_once('-') {
-            Some(("07-tendermint", _)) => Ok(ClientInfo {
+        let prefix = self.prefix_of_client_id(&client_id).await?;
+
+        match prefix {
+            "07-tendermint" => Ok(ClientInfo {
                 client_type: ClientType::new(ClientType::TENDERMINT),
                 ibc_interface: IbcInterface::new(IbcInterface::IBC_GO_V8_NATIVE),
                 metadata: Default::default(),
             }),
-            Some(("08-wasm", _)) => {
+            "08-wasm" => {
                 let checksum = self.checksum_of_client_id(client_id.clone()).await?;
 
                 Ok(ClientInfo {
@@ -387,13 +463,16 @@ impl ChainModuleServer for Module {
                             WasmClientType::EvmInCosmos => todo!(),
                         },
                         None => {
-                            warn!(%client_id, "unknown client type for 08-wasm client");
+                            warn!(
+                                client_id = client_id.as_value(),
+                                "unknown client type for 08-wasm client"
+                            );
                             // this early return is kind of dirty but it works
                             return Err(ErrorObject::owned(
                                 -1,
                                 "unknown client type for 08-wasm client",
                                 Some(json!({
-                                    "client_id": client_id.to_string()
+                                    "client_id": client_id.to_string_prefixed(prefix)
                                 })),
                             ));
                         }
@@ -404,9 +483,12 @@ impl ChainModuleServer for Module {
             }
             _ => Err(ErrorObject::owned(
                 -1,
-                format!("unknown client type (client id `{client_id}`)"),
+                format!(
+                    "unknown client type (prefix `{prefix}`, id {})",
+                    client_id.id()
+                ),
                 Some(json!({
-                    "client_id": client_id.to_string()
+                    "client_id": client_id
                 })),
             )),
         }
@@ -416,7 +498,24 @@ impl ChainModuleServer for Module {
     async fn query_ibc_state(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
         const IBC_STORE_PATH: &str = "store/ibc/key";
 
-        let path_string = path.to_string();
+        let path_string = match &path {
+            Path::ClientState(path) => {
+                path.ics24_commitment_path(self.prefix_of_client_id(&path.client_id).await?)
+            }
+            Path::ClientConsensusState(path) => {
+                path.ics24_commitment_path(self.prefix_of_client_id(&path.client_id).await?)
+            }
+            Path::Connection(path) => path.ics24_commitment_path(),
+            Path::ChannelEnd(path) => path.ics24_commitment_path(),
+            Path::Commitment(path) => path.ics24_commitment_path(),
+            Path::Acknowledgement(path) => path.ics24_commitment_path(),
+            Path::Receipt(path) => path.ics24_commitment_path(),
+            Path::NextSequenceSend(path) => path.ics24_commitment_path(),
+            Path::NextSequenceRecv(path) => path.ics24_commitment_path(),
+            Path::NextSequenceAck(path) => path.ics24_commitment_path(),
+            Path::NextConnectionSequence(path) => path.ics24_commitment_path(),
+            Path::NextClientSequence(path) => path.ics24_commitment_path(),
+        };
 
         let error_data = || Some(json!({ "height": at, "path": path }));
 
@@ -562,7 +661,24 @@ impl ChainModuleServer for Module {
 
         const IBC_STORE_PATH: &str = "store/ibc/key";
 
-        let path_string = path.to_string();
+        let path_string = match &path {
+            Path::ClientState(path) => {
+                path.ics24_commitment_path(self.prefix_of_client_id(&path.client_id).await?)
+            }
+            Path::ClientConsensusState(path) => {
+                path.ics24_commitment_path(self.prefix_of_client_id(&path.client_id).await?)
+            }
+            Path::Connection(path) => path.ics24_commitment_path(),
+            Path::ChannelEnd(path) => path.ics24_commitment_path(),
+            Path::Commitment(path) => path.ics24_commitment_path(),
+            Path::Acknowledgement(path) => path.ics24_commitment_path(),
+            Path::Receipt(path) => path.ics24_commitment_path(),
+            Path::NextSequenceSend(path) => path.ics24_commitment_path(),
+            Path::NextSequenceRecv(path) => path.ics24_commitment_path(),
+            Path::NextSequenceAck(path) => path.ics24_commitment_path(),
+            Path::NextConnectionSequence(path) => path.ics24_commitment_path(),
+            Path::NextClientSequence(path) => path.ics24_commitment_path(),
+        };
 
         let query_result = self
             .tm_client

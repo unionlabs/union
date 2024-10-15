@@ -1,7 +1,7 @@
 use std::num::NonZeroU32;
 
 use enumorph::Enumorph;
-use macros::model;
+use voyager_message::macros::model;
 use unionlabs::{events::IbcEvent, hash::H256, ibc::core::client::height::Height};
 
 #[model]

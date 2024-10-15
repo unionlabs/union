@@ -15,12 +15,13 @@ use crate::{
 
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
 /// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
-pub trait IbcPath: TryFrom<Path, Error = Path> + Into<Path> {
+pub trait IbcPath: Clone + TryFrom<Path, Error = Path> + Into<Path> {
     type Value;
 }
 
 #[model]
 #[derive(Hash, Enumorph)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub enum Path {
     ClientState(ClientStatePath),
     ClientConsensusState(ClientConsensusStatePath),
@@ -39,16 +40,17 @@ pub enum Path {
 /// The raw client state bytes as encoded by the light client.
 #[model]
 #[derive(Hash)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct ClientStatePath {
     pub client_id: ClientId,
 }
 
 impl ClientStatePath {
     #[must_use]
-    pub fn ics24_commitment_path(&self, client_type: impl AsRef<str>) -> String {
+    pub fn ics24_commitment_path(&self, prefix: impl AsRef<str>) -> String {
         format!(
             "clients/{}-{}/clientState",
-            client_type.as_ref(),
+            prefix.as_ref(),
             self.client_id.id()
         )
     }
@@ -61,6 +63,7 @@ impl IbcPath for ClientStatePath {
 /// The raw consensus state bytes as encoded by the light client.
 #[model]
 #[derive(Hash)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct ClientConsensusStatePath {
     pub client_id: ClientId,
     pub height: Height,
@@ -68,10 +71,10 @@ pub struct ClientConsensusStatePath {
 
 impl ClientConsensusStatePath {
     #[must_use]
-    pub fn ics24_commitment_path(&self, client_type: impl AsRef<str>) -> String {
+    pub fn ics24_commitment_path(&self, prefix: impl AsRef<str>) -> String {
         format!(
             "clients/{}-{}/consensusStates/{}",
-            client_type.as_ref(),
+            prefix.as_ref(),
             self.client_id.id(),
             self.height
         )
@@ -84,6 +87,7 @@ impl IbcPath for ClientConsensusStatePath {
 
 #[model]
 #[derive(Hash)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct ConnectionPath {
     pub connection_id: ConnectionId,
 }
@@ -104,6 +108,7 @@ impl IbcPath for ConnectionPath {
 
 #[model]
 #[derive(Hash)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct ChannelEndPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -126,6 +131,7 @@ impl IbcPath for ChannelEndPath {
 
 #[model]
 #[derive(Hash)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct CommitmentPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -153,6 +159,7 @@ impl IbcPath for CommitmentPath {
 /// If the packet has not yet been acknowledged (either because the packet does not exist or the packet has not been acknowledged yet), then the acknowledgement commitment is unset.
 #[model]
 #[derive(Hash)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct AcknowledgementPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -178,6 +185,7 @@ impl IbcPath for AcknowledgementPath {
 /// This defaults to `false` for packets which have not yet been received.
 #[model]
 #[derive(Hash)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct ReceiptPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -202,6 +210,7 @@ impl IbcPath for ReceiptPath {
 
 #[model]
 #[derive(Hash)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct NextSequenceSendPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -224,6 +233,7 @@ impl IbcPath for NextSequenceSendPath {
 
 #[model]
 #[derive(Hash)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct NextSequenceRecvPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -246,6 +256,7 @@ impl IbcPath for NextSequenceRecvPath {
 
 #[model]
 #[derive(Hash)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct NextSequenceAckPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -268,6 +279,7 @@ impl IbcPath for NextSequenceAckPath {
 
 #[model]
 #[derive(Hash)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct NextConnectionSequencePath {}
 
 impl NextConnectionSequencePath {
@@ -283,6 +295,7 @@ impl IbcPath for NextConnectionSequencePath {
 
 #[model]
 #[derive(Hash)]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct NextClientSequencePath {}
 
 impl NextClientSequencePath {

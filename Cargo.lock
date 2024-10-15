@@ -345,7 +345,7 @@ dependencies = [
  "alloy-rlp",
  "alloy-serde 0.1.4",
  "c-kzg",
- "derive_more 0.99.17",
+ "derive_more 0.99.18",
  "once_cell",
  "serde",
  "sha2 0.10.8",
@@ -506,7 +506,7 @@ dependencies = [
  "bytes",
  "cfg-if",
  "const-hex",
- "derive_more 0.99.17",
+ "derive_more 0.99.18",
  "hex-literal",
  "itoa",
  "k256",
@@ -4539,6 +4539,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive-where"
+version = "1.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62d671cc41a825ebabc75757b62d3d168c577f9149b2d49ece1dad1f72119d25"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.77",
+]
+
+[[package]]
 name = "derive_arbitrary"
 version = "1.3.2"
 source = "git+https://github.com/unionlabs/arbitrary#b5796f1a0066dc5707d7681a80e19b99a910987d"
@@ -4550,15 +4561,15 @@ dependencies = [
 
 [[package]]
 name = "derive_more"
-version = "0.99.17"
+version = "0.99.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fb810d30a7c1953f91334de7244731fc3f3c10d7fe163338a35b9f640960321"
+checksum = "5f33878137e4dafd7fa914ad4e259e18a4e8e532b9617a2d0150262bf53abfce"
 dependencies = [
  "convert_case",
  "proc-macro2",
  "quote",
  "rustc_version 0.4.0",
- "syn 1.0.109",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -8084,7 +8095,7 @@ dependencies = [
  "base64 0.21.7",
  "borsh",
  "bs58 0.4.0",
- "derive_more 0.99.17",
+ "derive_more 0.99.18",
  "enum-map",
  "near-account-id",
  "num-rational 0.3.2",
@@ -9011,7 +9022,7 @@ source = "git+https://github.com/poem-web/poem.git?rev=809b2816d3504beeba140fef3
 dependencies = [
  "base64 0.22.1",
  "bytes",
- "derive_more 0.99.17",
+ "derive_more 0.99.18",
  "futures-util",
  "indexmap 2.6.0",
  "mime",
@@ -12788,7 +12799,7 @@ dependencies = [
  "bs58 0.4.0",
  "chrono",
  "cosmwasm-std 1.5.2",
- "derive_more 0.99.17",
+ "derive_more 1.0.0",
  "either",
  "enumorph",
  "frame-support-procedural",
@@ -12994,7 +13005,7 @@ dependencies = [
  "chain-utils",
  "clap 4.5.4",
  "crossbeam-queue",
- "derive_more 0.99.17",
+ "derive_more 1.0.0",
  "either",
  "enumorph",
  "futures",
@@ -13041,6 +13052,7 @@ dependencies = [
  "dashmap 5.5.3",
  "enumorph",
  "futures",
+ "itertools 0.13.0",
  "jsonrpsee",
  "macros",
  "prost 0.12.6",
@@ -13720,12 +13732,11 @@ name = "voyager-vm"
 version = "0.1.0"
 dependencies = [
  "criterion 0.5.1",
+ "derive-where",
  "either",
  "enumorph",
- "frame-support-procedural",
  "futures",
  "itertools 0.12.1",
- "macros",
  "serde",
  "serde_json",
  "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
@@ -13736,6 +13747,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "unionlabs",
+ "voyager-macros",
  "voyager-message",
 ]
 

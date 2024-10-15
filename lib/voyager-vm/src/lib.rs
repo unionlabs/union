@@ -13,6 +13,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
+use derive_where::derive_where;
 use either::Either::{self, Left, Right};
 use itertools::Itertools;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -68,13 +69,8 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
     ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + Send + 'a;
 }
 
-#[derive(
-    ::macros::Debug,
-    ::frame_support_procedural::CloneNoBound,
-    ::frame_support_procedural::PartialEqNoBound,
-    ::serde::Serialize,
-    ::serde::Deserialize,
-)]
+#[derive_where(Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize)]
 #[serde(
     tag = "@type",
     content = "@value",
@@ -82,7 +78,6 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
     bound(serialize = "", deserialize = ""),
     deny_unknown_fields
 )]
-#[debug(bound())]
 pub enum Op<T: QueueMessage> {
     /// Inert data that will either be used in an [`Op::Promise`] or bubbled up to the top and sent as
     /// an output.
@@ -120,15 +115,13 @@ pub enum Op<T: QueueMessage> {
     Noop,
 }
 
-#[derive(
-    ::macros::Debug,
-    ::frame_support_procedural::CloneNoBound,
-    ::frame_support_procedural::PartialEqNoBound,
-    ::serde::Serialize,
-    ::serde::Deserialize,
+#[derive_where(Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize)]
+#[serde(
+    rename_all = "snake_case",
+    bound(serialize = "", deserialize = ""),
+    deny_unknown_fields
 )]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[debug(bound())]
 pub struct Promise<T: QueueMessage> {
     /// Messages that are expected to resolve to [`Op::Data`].
     pub queue: VecDeque<Op<T>>,
