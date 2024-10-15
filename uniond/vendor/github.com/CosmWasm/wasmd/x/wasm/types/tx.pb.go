@@ -233,7 +233,7 @@ func (m *MsgInstantiateContractResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgInstantiateContractResponse proto.InternalMessageInfo
 
 // MsgInstantiateContract2 create a new smart contract instance for the given
-// code id with a predicable address.
+// code id with a predictable address.
 type MsgInstantiateContract2 struct {
 	// Sender is the that actor that signed the messages
 	Sender string `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`

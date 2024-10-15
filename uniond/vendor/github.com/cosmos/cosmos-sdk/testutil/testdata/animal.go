@@ -1,13 +1,10 @@
 package testdata
 
-// nolint
-
 import (
 	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
-
-	"github.com/cosmos/cosmos-sdk/codec/types"
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
 )
 
 type Animal interface {
@@ -34,9 +31,9 @@ func (d Dog) Greet() string {
 	return fmt.Sprintf("Roof, my name is %s", d.Name)
 }
 
-var _ types.UnpackInterfacesMessage = HasAnimal{}
+var _ gogoprotoany.UnpackInterfacesMessage = HasAnimal{}
 
-func (m HasAnimal) UnpackInterfaces(unpacker types.AnyUnpacker) error {
+func (m HasAnimal) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	var animal Animal
 	return unpacker.UnpackAny(m.Animal, &animal)
 }
@@ -61,9 +58,9 @@ func (m HasHasAnimal) TheHasAnimal() HasAnimalI {
 	return m.HasAnimal.GetCachedValue().(HasAnimalI)
 }
 
-var _ types.UnpackInterfacesMessage = HasHasAnimal{}
+var _ gogoprotoany.UnpackInterfacesMessage = HasHasAnimal{}
 
-func (m HasHasAnimal) UnpackInterfaces(unpacker types.AnyUnpacker) error {
+func (m HasHasAnimal) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	var animal HasAnimalI
 	return unpacker.UnpackAny(m.HasAnimal, &animal)
 }
@@ -78,9 +75,9 @@ func (m HasHasHasAnimal) TheHasHasAnimal() HasHasAnimalI {
 	return m.HasHasAnimal.GetCachedValue().(HasHasAnimalI)
 }
 
-var _ types.UnpackInterfacesMessage = HasHasHasAnimal{}
+var _ gogoprotoany.UnpackInterfacesMessage = HasHasHasAnimal{}
 
-func (m HasHasHasAnimal) UnpackInterfaces(unpacker types.AnyUnpacker) error {
+func (m HasHasHasAnimal) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	var animal HasHasAnimalI
 	return unpacker.UnpackAny(m.HasHasAnimal, &animal)
 }

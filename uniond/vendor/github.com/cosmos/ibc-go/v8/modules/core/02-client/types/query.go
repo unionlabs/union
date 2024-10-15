@@ -3,18 +3,20 @@ package types
 import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
+
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 var (
-	_ codectypes.UnpackInterfacesMessage = (*QueryClientStateResponse)(nil)
-	_ codectypes.UnpackInterfacesMessage = (*QueryClientStatesResponse)(nil)
-	_ codectypes.UnpackInterfacesMessage = (*QueryConsensusStateResponse)(nil)
-	_ codectypes.UnpackInterfacesMessage = (*QueryConsensusStatesResponse)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*QueryClientStateResponse)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*QueryClientStatesResponse)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*QueryConsensusStateResponse)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*QueryConsensusStatesResponse)(nil)
 )
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnpackInterfaces
-func (qcsr QueryClientStatesResponse) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (qcsr QueryClientStatesResponse) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	for _, cs := range qcsr.ClientStates {
 		if err := cs.UnpackInterfaces(unpacker); err != nil {
 			return err
@@ -35,12 +37,12 @@ func NewQueryClientStateResponse(
 }
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnpackInterfaces
-func (qcsr QueryClientStateResponse) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (qcsr QueryClientStateResponse) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return unpacker.UnpackAny(qcsr.ClientState, new(exported.ClientState))
 }
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnpackInterfaces
-func (qcsr QueryConsensusStatesResponse) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (qcsr QueryConsensusStatesResponse) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	for _, cs := range qcsr.ConsensusStates {
 		if err := cs.UnpackInterfaces(unpacker); err != nil {
 			return err
@@ -61,6 +63,6 @@ func NewQueryConsensusStateResponse(
 }
 
 // UnpackInterfaces implements UnpackInterfacesMesssage.UnpackInterfaces
-func (qcsr QueryConsensusStateResponse) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (qcsr QueryConsensusStateResponse) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return unpacker.UnpackAny(qcsr.ConsensusState, new(exported.ConsensusState))
 }

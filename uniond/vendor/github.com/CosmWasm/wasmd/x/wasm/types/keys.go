@@ -1,6 +1,8 @@
 package types
 
 import (
+	"encoding/binary"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 )
@@ -33,6 +35,7 @@ var (
 	TXCounterPrefix                                = []byte{0x08}
 	ContractsByCreatorPrefix                       = []byte{0x09}
 	ParamsKey                                      = []byte{0x10}
+	AsyncAckKeyPrefix                              = []byte{0x11}
 
 	KeySequenceCodeID     = append(SequenceKeyPrefix, []byte("lastCodeId")...)
 	KeySequenceInstanceID = append(SequenceKeyPrefix, []byte("lastContractId")...)
@@ -58,6 +61,23 @@ func GetContractsByCreatorPrefix(addr sdk.AccAddress) []byte {
 // GetContractStorePrefix returns the store prefix for the WASM contract instance
 func GetContractStorePrefix(addr sdk.AccAddress) []byte {
 	return append(ContractStorePrefix, addr...)
+}
+
+// GetAsyncPacketKey returns the key for a packet that is acknowledged asynchronously
+func GetAsyncPacketKey(destChannel string, sequence uint64) []byte {
+	// key is a concatenation of length-prefixed destination channel and sequence
+	channel := []byte(destChannel)
+	channelLen := make([]byte, 4)
+	binary.BigEndian.PutUint32(channelLen, uint32(len(channel)))
+	seq := make([]byte, 8)
+	binary.BigEndian.PutUint64(seq, sequence)
+
+	return append(append(channelLen, channel...), seq...)
+}
+
+// GetAsyncAckStorePrefix returns the store prefix for packets that are acknowledged asynchronously
+func GetAsyncAckStorePrefix(portID string) []byte {
+	return append(AsyncAckKeyPrefix, portID...)
 }
 
 // GetContractByCreatedSecondaryIndexKey returns the key for the secondary index:

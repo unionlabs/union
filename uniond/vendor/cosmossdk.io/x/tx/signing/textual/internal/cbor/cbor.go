@@ -107,7 +107,7 @@ type Array struct {
 	elts []Cbor
 }
 
-// NewArray reutnrs a CBOR array data item,
+// NewArray returns a CBOR array data item,
 // containing the specified elements.
 func NewArray(elts ...Cbor) Array {
 	return Array{elts: elts}

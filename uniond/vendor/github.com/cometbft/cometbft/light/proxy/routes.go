@@ -73,7 +73,7 @@ func makeStatusFunc(c *lrpc.Client) rpcStatusFunc {
 type rpcNetInfoFunc func(ctx *rpctypes.Context, minHeight, maxHeight int64) (*ctypes.ResultNetInfo, error)
 
 func makeNetInfoFunc(c *lrpc.Client) rpcNetInfoFunc {
-	return func(ctx *rpctypes.Context, minHeight, maxHeight int64) (*ctypes.ResultNetInfo, error) {
+	return func(ctx *rpctypes.Context, _, _ int64) (*ctypes.ResultNetInfo, error) {
 		return c.NetInfo(ctx.Context())
 	}
 }
@@ -190,7 +190,7 @@ func makeBlockSearchFunc(c *lrpc.Client) rpcBlockSearchFunc {
 	return func(
 		ctx *rpctypes.Context,
 		query string,
-		prove bool,
+		_ bool,
 		page, perPage *int,
 		orderBy string,
 	) (*ctypes.ResultBlockSearch, error) {

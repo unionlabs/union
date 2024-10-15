@@ -17,6 +17,10 @@ import (
 	"sync"
 	"time"
 
+	"cloud.google.com/go/auth"
+	"cloud.google.com/go/auth/credentials"
+	"cloud.google.com/go/auth/grpctransport"
+	"cloud.google.com/go/auth/oauth2adapt"
 	"cloud.google.com/go/compute/metadata"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -79,6 +83,13 @@ func Dial(ctx context.Context, opts ...option.ClientOption) (*grpc.ClientConn, e
 	if o.GRPCConnPool != nil {
 		return o.GRPCConnPool.Conn(), nil
 	}
+	if o.IsNewAuthLibraryEnabled() {
+		pool, err := dialPoolNewAuth(ctx, true, 1, o)
+		if err != nil {
+			return nil, err
+		}
+		return pool.Connection(), nil
+	}
 	// NOTE(cbro): We removed support for option.WithGRPCConnPool (GRPCConnPoolSize)
 	// on 2020-02-12 because RoundRobin and WithBalancer are deprecated and we need to remove usages of it.
 	//
@@ -93,6 +104,13 @@ func DialInsecure(ctx context.Context, opts ...option.ClientOption) (*grpc.Clien
 	o, err := processAndValidateOpts(opts)
 	if err != nil {
 		return nil, err
+	}
+	if o.IsNewAuthLibraryEnabled() {
+		pool, err := dialPoolNewAuth(ctx, false, 1, o)
+		if err != nil {
+			return nil, err
+		}
+		return pool.Connection(), nil
 	}
 	return dial(ctx, true, o)
 }
@@ -112,6 +130,18 @@ func DialPool(ctx context.Context, opts ...option.ClientOption) (ConnPool, error
 	if o.GRPCConnPool != nil {
 		return o.GRPCConnPool, nil
 	}
+
+	if o.IsNewAuthLibraryEnabled() {
+		if o.GRPCConn != nil {
+			return &singleConnPool{o.GRPCConn}, nil
+		}
+		pool, err := dialPoolNewAuth(ctx, true, o.GRPCConnPoolSize, o)
+		if err != nil {
+			return nil, err
+		}
+		return &poolAdapter{pool}, nil
+	}
+
 	poolSize := o.GRPCConnPoolSize
 	if o.GRPCConn != nil {
 		// WithGRPCConn is technically incompatible with WithGRPCConnectionPool.
@@ -139,6 +169,89 @@ func DialPool(ctx context.Context, opts ...option.ClientOption) (ConnPool, error
 		pool.conns = append(pool.conns, conn)
 	}
 	return pool, nil
+}
+
+// dialPoolNewAuth is an adapter to call new auth library.
+func dialPoolNewAuth(ctx context.Context, secure bool, poolSize int, ds *internal.DialSettings) (grpctransport.GRPCClientConnPool, error) {
+	// honor options if set
+	var creds *auth.Credentials
+	if ds.InternalCredentials != nil {
+		creds = oauth2adapt.AuthCredentialsFromOauth2Credentials(ds.InternalCredentials)
+	} else if ds.Credentials != nil {
+		creds = oauth2adapt.AuthCredentialsFromOauth2Credentials(ds.Credentials)
+	} else if ds.AuthCredentials != nil {
+		creds = ds.AuthCredentials
+	} else if ds.TokenSource != nil {
+		credOpts := &auth.CredentialsOptions{
+			TokenProvider: oauth2adapt.TokenProviderFromTokenSource(ds.TokenSource),
+		}
+		if ds.QuotaProject != "" {
+			credOpts.QuotaProjectIDProvider = auth.CredentialsPropertyFunc(func(ctx context.Context) (string, error) {
+				return ds.QuotaProject, nil
+			})
+		}
+		creds = auth.NewCredentials(credOpts)
+	}
+
+	var skipValidation bool
+	// If our clients explicitly setup the credential skip validation as it is
+	// assumed correct
+	if ds.SkipValidation || ds.InternalCredentials != nil {
+		skipValidation = true
+	}
+
+	var aud string
+	if len(ds.Audiences) > 0 {
+		aud = ds.Audiences[0]
+	}
+	metadata := map[string]string{}
+	if ds.QuotaProject != "" {
+		metadata["X-goog-user-project"] = ds.QuotaProject
+	}
+	if ds.RequestReason != "" {
+		metadata["X-goog-request-reason"] = ds.RequestReason
+	}
+
+	// Defaults for older clients that don't set this value yet
+	defaultEndpointTemplate := ds.DefaultEndpointTemplate
+	if defaultEndpointTemplate == "" {
+		defaultEndpointTemplate = ds.DefaultEndpoint
+	}
+
+	tokenURL, oauth2Client, err := internal.GetOAuth2Configuration(ctx, ds)
+	if err != nil {
+		return nil, err
+	}
+
+	pool, err := grpctransport.Dial(ctx, secure, &grpctransport.Options{
+		DisableTelemetry:      ds.TelemetryDisabled,
+		DisableAuthentication: ds.NoAuth,
+		Endpoint:              ds.Endpoint,
+		Metadata:              metadata,
+		GRPCDialOpts:          ds.GRPCDialOpts,
+		PoolSize:              poolSize,
+		Credentials:           creds,
+		DetectOpts: &credentials.DetectOptions{
+			Scopes:          ds.Scopes,
+			Audience:        aud,
+			CredentialsFile: ds.CredentialsFile,
+			CredentialsJSON: ds.CredentialsJSON,
+			TokenURL:        tokenURL,
+			Client:          oauth2Client,
+		},
+		InternalOptions: &grpctransport.InternalOptions{
+			EnableNonDefaultSAForDirectPath: ds.AllowNonDefaultServiceAccount,
+			EnableDirectPath:                ds.EnableDirectPath,
+			EnableDirectPathXds:             ds.EnableDirectPathXds,
+			EnableJWTWithScope:              ds.EnableJwtWithScope,
+			DefaultAudience:                 ds.DefaultAudience,
+			DefaultEndpointTemplate:         defaultEndpointTemplate,
+			DefaultMTLSEndpoint:             ds.DefaultMTLSEndpoint,
+			DefaultScopes:                   ds.DefaultScopes,
+			SkipValidation:                  skipValidation,
+		},
+	})
+	return pool, err
 }
 
 func dial(ctx context.Context, insecure bool, o *internal.DialSettings) (*grpc.ClientConn, error) {
@@ -177,13 +290,13 @@ func dial(ctx context.Context, insecure bool, o *internal.DialSettings) (*grpc.C
 			if err != nil {
 				return nil, err
 			}
-			credsUniverseDomain, err := internal.GetUniverseDomain(creds)
-			if err != nil {
-				return nil, err
-			}
 			if o.TokenSource == nil {
 				// We only validate non-tokensource creds, as TokenSource-based credentials
 				// don't propagate universe.
+				credsUniverseDomain, err := internal.GetUniverseDomain(creds)
+				if err != nil {
+					return nil, err
+				}
 				if o.GetUniverseDomain() != credsUniverseDomain {
 					return nil, internal.ErrUniverseNotMatch(o.GetUniverseDomain(), credsUniverseDomain)
 				}

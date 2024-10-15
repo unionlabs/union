@@ -1,6 +1,6 @@
 // Copyright (c) 2013-2014 The btcsuite developers
-// Copyright (c) 2015-2022 The Decred developers
-// Copyright (c) 2013-2022 Dave Collins
+// Copyright (c) 2015-2023 The Decred developers
+// Copyright (c) 2013-2023 Dave Collins
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
@@ -435,7 +435,7 @@ func (f *FieldVal) Normalize() *FieldVal {
 
 // PutBytesUnchecked unpacks the field value to a 32-byte big-endian value
 // directly into the passed byte slice in constant time.  The target slice must
-// must have at least 32 bytes available or it will panic.
+// have at least 32 bytes available or it will panic.
 //
 // There is a similar function, PutBytes, which unpacks the field value into a
 // 32-byte array directly.  This version is provided since it can be useful
@@ -816,11 +816,10 @@ func (f *FieldVal) Mul(val *FieldVal) *FieldVal {
 	return f.Mul2(f, val)
 }
 
-// Mul2 multiplies the passed two field values together and stores the result
-// result in f in constant time.  Note that this function can overflow if
-// multiplying any of the individual words exceeds a max uint32.  In practice,
-// this means the magnitude of either value involved in the multiplication must
-// be a max of 8.
+// Mul2 multiplies the passed two field values together and stores the result in
+// f in constant time.  Note that this function can overflow if multiplying any
+// of the individual words exceeds a max uint32.  In practice, this means the
+// magnitude of either value involved in the multiplication must be a max of 8.
 //
 // The field value is returned to support chaining.  This enables syntax like:
 // f3.Mul2(f, f2).AddInt(1) so that f3 = (f * f2) + 1.
@@ -1510,8 +1509,8 @@ func (f *FieldVal) SquareVal(val *FieldVal) *FieldVal {
 //	Output Max Magnitude: 1
 func (f *FieldVal) Inverse() *FieldVal {
 	// Fermat's little theorem states that for a nonzero number a and prime
-	// prime p, a^(p-1) = 1 (mod p).  Since the multiplicative inverse is
-	// a*b = 1 (mod p), it follows that b = a*a^(p-2) = a^(p-1) = 1 (mod p).
+	// p, a^(p-1) ≡ 1 (mod p).  Since the multiplicative inverse is
+	// a*b ≡ 1 (mod p), it follows that b ≡ a*a^(p-2) ≡ a^(p-1) ≡ 1 (mod p).
 	// Thus, a^(p-2) is the multiplicative inverse.
 	//
 	// In order to efficiently compute a^(p-2), p-2 needs to be split into

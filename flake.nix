@@ -4,8 +4,8 @@
     nixpkgs.url = "github:NixOS/nixpkgs?rev=75a5ebf473cd60148ba9aec0d219f72e5cf52519";
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # We need the latest nixpkgs for buildGo121Module, remove this once we upgrade nixpkgs
-    nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-23.11";
+    # We need the latest nixpkgs for buildGo123Module, remove this once we upgrade nixpkgs
+    nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Track a separate nixpkgs for unstable nixos
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Remove when lnav is updated on upstream nixpkgs
@@ -84,6 +84,10 @@
     };
     wasmvm-2_0_1 = {
       url = "github:CosmWasm/wasmvm/v2.0.1";
+      flake = false;
+    };
+    wasmvm-2_1_3 = {
+      url = "github:CosmWasm/wasmvm/v2.1.3";
       flake = false;
     };
     biome = {
@@ -534,8 +538,8 @@
                 nodePackages_latest.typescript-language-server
                 nodePackages_latest.vscode-langservers-extracted
               ])
-              ++ (with goPkgs; [
-                go
+              ++ (with unstablePkgs; [
+                go_1_23
                 gopls
                 go-tools
                 gotools

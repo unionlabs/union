@@ -35,7 +35,7 @@ Anonymous sealing/opening is an extension of NaCl defined by and interoperable
 with libsodium:
 https://libsodium.gitbook.io/doc/public-key_cryptography/sealed_boxes.
 */
-package box // import "golang.org/x/crypto/nacl/box"
+package box
 
 import (
 	cryptorand "crypto/rand"

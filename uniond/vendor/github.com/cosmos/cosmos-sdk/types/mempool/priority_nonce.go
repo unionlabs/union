@@ -9,7 +9,6 @@ import (
 	"github.com/huandu/skiplist"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 )
 
 var (
@@ -223,6 +222,16 @@ func (mp *PriorityNonceMempool[C]) Insert(ctx context.Context, tx sdk.Tx) error 
 	sender := sig.Signer.String()
 	priority := mp.cfg.TxPriority.GetTxPriority(ctx, tx)
 	nonce := sig.Sequence
+
+	// if it's an unordered tx, we use the gas instead of the nonce
+	if unordered, ok := tx.(sdk.TxWithUnordered); ok && unordered.GetUnordered() {
+		gasLimit, err := unordered.GetGasLimit()
+		nonce = gasLimit
+		if err != nil {
+			return err
+		}
+	}
+
 	key := txMeta[C]{nonce: nonce, priority: priority, sender: sender}
 
 	senderIndex, ok := mp.senderIndices[sender]
@@ -351,9 +360,13 @@ func (i *PriorityNonceIterator[C]) Tx() sdk.Tx {
 //
 // NOTE: It is not safe to use this iterator while removing transactions from
 // the underlying mempool.
-func (mp *PriorityNonceMempool[C]) Select(_ context.Context, _ [][]byte) Iterator {
+func (mp *PriorityNonceMempool[C]) Select(ctx context.Context, txs []sdk.Tx) Iterator {
 	mp.mtx.Lock()
 	defer mp.mtx.Unlock()
+	return mp.doSelect(ctx, txs)
+}
+
+func (mp *PriorityNonceMempool[C]) doSelect(_ context.Context, _ []sdk.Tx) Iterator {
 	if mp.priorityIndex.Len() == 0 {
 		return nil
 	}
@@ -366,6 +379,17 @@ func (mp *PriorityNonceMempool[C]) Select(_ context.Context, _ [][]byte) Iterato
 	}
 
 	return iterator.iteratePriority()
+}
+
+// SelectBy will hold the mutex during the iteration, callback returns if continue.
+func (mp *PriorityNonceMempool[C]) SelectBy(ctx context.Context, txs []sdk.Tx, callback func(sdk.Tx) bool) {
+	mp.mtx.Lock()
+	defer mp.mtx.Unlock()
+
+	iter := mp.doSelect(ctx, txs)
+	for iter != nil && callback(iter.Tx()) {
+		iter = iter.Next()
+	}
 }
 
 type reorderKey[C comparable] struct {
@@ -432,7 +456,7 @@ func (mp *PriorityNonceMempool[C]) CountTx() int {
 func (mp *PriorityNonceMempool[C]) Remove(tx sdk.Tx) error {
 	mp.mtx.Lock()
 	defer mp.mtx.Unlock()
-	sigs, err := tx.(signing.SigVerifiableTx).GetSignaturesV2()
+	sigs, err := mp.cfg.SignerExtractor.GetSigners(tx)
 	if err != nil {
 		return err
 	}
@@ -441,8 +465,17 @@ func (mp *PriorityNonceMempool[C]) Remove(tx sdk.Tx) error {
 	}
 
 	sig := sigs[0]
-	sender := sdk.AccAddress(sig.PubKey.Address()).String()
+	sender := sig.Signer.String()
 	nonce := sig.Sequence
+
+	// if it's an unordered tx, we use the gas instead of the nonce
+	if unordered, ok := tx.(sdk.TxWithUnordered); ok && unordered.GetUnordered() {
+		gasLimit, err := unordered.GetGasLimit()
+		nonce = gasLimit
+		if err != nil {
+			return err
+		}
+	}
 
 	scoreKey := txMeta[C]{nonce: nonce, sender: sender}
 	score, ok := mp.scores[scoreKey]

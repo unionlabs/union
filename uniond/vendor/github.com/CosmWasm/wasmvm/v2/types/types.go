@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+
+	"github.com/shamaton/msgpack/v2"
 )
 
 // Uint64 is a wrapper for uint64, but it is marshalled to and from JSON as a string
@@ -169,6 +171,11 @@ type AnalysisReport struct {
 	HasIBCEntryPoints    bool
 	RequiredCapabilities string
 	Entrypoints          []string
+	// ContractMigrateVersion is the migrate version of the contract
+	// This is nil if the contract does not have a migrate version and the `migrate` entrypoint
+	// needs to be called for every migration (if present).
+	// If it is some number, the entrypoint only needs to be called if it increased.
+	ContractMigrateVersion *uint64
 }
 
 type Metrics struct {
@@ -182,6 +189,24 @@ type Metrics struct {
 	SizePinnedMemoryCache uint64
 	// Cumulative size of all elements in memory cache (in bytes)
 	SizeMemoryCache uint64
+}
+
+type PerModuleMetrics struct {
+	Hits uint32 `msgpack:"hits"`
+	Size uint64 `msgpack:"size"`
+}
+
+type PerModuleEntry struct {
+	Checksum Checksum
+	Metrics  PerModuleMetrics
+}
+
+type PinnedMetrics struct {
+	PerModule []PerModuleEntry `msgpack:"per_module"`
+}
+
+func (pm *PinnedMetrics) UnmarshalMessagePack(data []byte) error {
+	return msgpack.UnmarshalAsArray(data, pm)
 }
 
 // Array is a wrapper around a slice that ensures that we get "[]" JSON for nil values.

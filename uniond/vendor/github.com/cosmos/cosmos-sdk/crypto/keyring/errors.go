@@ -1,6 +1,6 @@
 package keyring
 
-import "github.com/cockroachdb/errors"
+import "errors"
 
 var (
 	// ErrUnsupportedSigningAlgo is raised when the caller tries to use a
@@ -14,8 +14,8 @@ var (
 	// ErrOverwriteKey is raised when a key cannot be overwritten
 	ErrOverwriteKey = errors.New("cannot overwrite key")
 	// ErrKeyAlreadyExists is raised when creating a key that already exists
-	ErrKeyAlreadyExists = errors.Newf("key already exists")
-	// ErrInvalidSignMode is raised when trying to sign with an invaled method
+	ErrKeyAlreadyExists = errors.New("key already exists")
+	// ErrInvalidSignMode is raised when trying to sign with an invalid method
 	ErrInvalidSignMode = errors.New("invalid sign mode, expected LEGACY_AMINO_JSON or TEXTUAL")
 	// ErrMaxPassPhraseAttempts is raised when the maxPassphraseEntryAttempts is reached
 	ErrMaxPassPhraseAttempts = errors.New("too many failed passphrase attempts")
@@ -30,7 +30,7 @@ var (
 	// ErrNotLedgerObj is raised when record.GetLedger() returns nil.
 	ErrNotLedgerObj = errors.New("not a ledger object")
 	// ErrLedgerInvalidSignature is raised when ledger generates an invalid signature.
-	ErrLedgerInvalidSignature = errors.New("Ledger generated an invalid signature. Perhaps you have multiple ledgers and need to try another one")
+	ErrLedgerInvalidSignature = errors.New("ledger generated an invalid signature. Perhaps you have multiple ledgers and need to try another one")
 	// ErrLegacyToRecord is raised when cannot be converted to a Record
 	ErrLegacyToRecord = errors.New("unable to convert LegacyInfo to Record")
 	// ErrUnknownLegacyType is raised when a LegacyInfo type is unknown.

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	stakingtypes "cosmossdk.io/x/staking/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // NewGenesisState creates a new GenesisState object
@@ -124,7 +125,7 @@ func DefaultMessageValidator(msgs []sdk.Msg) error {
 func ValidateAndGetGenTx(genTx json.RawMessage, txJSONDecoder sdk.TxDecoder, validator MessageValidator) (sdk.Tx, error) {
 	tx, err := txJSONDecoder(genTx)
 	if err != nil {
-		return tx, fmt.Errorf("failed to decode gentx: %s, error: %s", genTx, err)
+		return tx, fmt.Errorf("failed to decode gentx: %s, error: %w", genTx, err)
 	}
 
 	return tx, validator(tx.GetMsgs())

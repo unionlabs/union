@@ -95,7 +95,7 @@ func decodeFloat(src *bufio.Reader) (float64, int) {
 
 	switch minor {
 	case additionalTypeFloat16:
-		panic(fmt.Errorf("float16 is not suppported in decodeFloat"))
+		panic(fmt.Errorf("float16 is not supported in decodeFloat"))
 
 	case additionalTypeFloat32:
 		pb := readNBytes(src, 4)

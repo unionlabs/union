@@ -71,9 +71,6 @@ func (e Event) Check() error {
 	if len(e.Title) == 0 {
 		return fmt.Errorf("statsd.Event title is required")
 	}
-	if len(e.Text) == 0 {
-		return fmt.Errorf("statsd.Event text is required")
-	}
 	return nil
 }
 

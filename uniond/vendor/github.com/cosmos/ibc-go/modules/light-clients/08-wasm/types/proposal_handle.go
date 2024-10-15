@@ -2,13 +2,13 @@ package types
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -16,7 +16,7 @@ import (
 
 // CheckSubstituteAndUpdateState will verify that a substitute client state is valid and update the subject client state.
 // Note that this method is used only for recovery and will not allow changes to the checksum.
-func (cs ClientState) CheckSubstituteAndUpdateState(ctx sdk.Context, cdc codec.BinaryCodec, subjectClientStore, substituteClientStore storetypes.KVStore, substituteClient exported.ClientState) error {
+func (cs ClientState) CheckSubstituteAndUpdateState(ctx context.Context, cdc codec.BinaryCodec, subjectClientStore, substituteClientStore storetypes.KVStore, substituteClient exported.ClientState) error {
 	substituteClientState, ok := substituteClient.(*ClientState)
 	if !ok {
 		return errorsmod.Wrapf(

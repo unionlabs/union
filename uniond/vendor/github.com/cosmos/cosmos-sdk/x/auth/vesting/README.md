@@ -4,6 +4,11 @@ sidebar_position: 1
 
 # `x/auth/vesting`
 
+:::warning
+Vesting accounts are deprecated in favor of `x/accounts`.
+The creation of vesting account, using `x/auth/vesting`, is not possible since v0.52.
+For existing chains, importing the `x/auth/vesting module` is still required for backward compatibility purposes.
+:::
 
 * [Intro and Requirements](#intro-and-requirements)
 * [Note](#note)
@@ -35,8 +40,8 @@ This specification defines the vesting account implementation that is used by th
 For all vesting accounts, the owner of the vesting account is able to delegate and undelegate from validators, however they cannot transfer coins to another account until those coins are vested. This specification allows for four different kinds of vesting:
 
 * Delayed vesting, where all coins are vested once `ET` is reached.
-* Continous vesting, where coins begin to vest at `ST` and vest linearly with respect to time until `ET` is reached
-* Periodic vesting, where coins begin to vest at `ST` and vest periodically according to number of periods and the vesting amount per period. The number of periods, length per period, and amount per period are configurable. A periodic vesting account is distinguished from a continuous vesting account in that coins can be released in staggered tranches. For example, a periodic vesting account could be used for vesting arrangements where coins are relased quarterly, yearly, or over any other function of tokens over time.
+* Continuous vesting, where coins begin to vest at `ST` and vest linearly with respect to time until `ET` is reached
+* Periodic vesting, where coins begin to vest at `ST` and vest periodically according to number of periods and the vesting amount per period. The number of periods, length per period, and amount per period are configurable. A periodic vesting account is distinguished from a continuous vesting account in that coins can be released in staggered tranches. For example, a periodic vesting account could be used for vesting arrangements where coins are released quarterly, yearly, or over any other function of tokens over time.
 * Permanent locked vesting, where coins are locked forever. Coins in this account can still be used for delegating and for governance votes even while locked.
 
 ## Note
@@ -256,7 +261,7 @@ func (k Keeper) LockedCoins(ctx Context, addr AccAddress) Coins {
     acc := k.GetAccount(ctx, addr)
     if acc != nil {
         if acc.IsVesting() {
-            return acc.LockedCoins(ctx.BlockTime())
+            return acc.LockedCoins(ctx.HeaderInfo().Time)
         }
     }
 
@@ -543,7 +548,7 @@ V' = 0
     V' = 25
     ```
 
-3. During vesting period 2, 5 coins are transfered and 5 coins are delegated
+3. During vesting period 2, 5 coins are transferred and 5 coins are delegated
 
     ```text
     DV = 5
@@ -577,42 +582,3 @@ according to a custom vesting schedule.
 Coins in this account can still be used for delegating and for governance votes even while locked.
 
 
-## CLI
-
-A user can query and interact with the `vesting` module using the CLI.
-
-### Transactions
-
-The `tx` commands allow users to interact with the `vesting` module.
-
-```bash
-simd tx vesting --help
-```
-
-#### create-periodic-vesting-account
-
-The `create-periodic-vesting-account` command creates a new vesting account funded with an allocation of tokens, where a sequence of coins and period length in seconds. Periods are sequential, in that the duration of of a period only starts at the end of the previous period. The duration of the first period starts upon account creation.
-
-```bash
-simd tx vesting create-periodic-vesting-account [to_address] [periods_json_file] [flags]
-```
-
-Example:
-
-```bash
-simd tx vesting create-periodic-vesting-account cosmos1.. periods.json
-```
-
-#### create-vesting-account
-
-The `create-vesting-account` command creates a new vesting account funded with an allocation of tokens. The account can either be a delayed or continuous vesting account, which is determined by the '--delayed' flag. All vesting accouts created will have their start time set by the committed block's time. The end_time must be provided as a UNIX epoch timestamp.
-
-```bash
-simd tx vesting create-vesting-account [to_address] [amount] [end_time] [flags]
-```
-
-Example:
-
-```bash
-simd tx vesting create-vesting-account cosmos1.. 100stake 2592000
-```

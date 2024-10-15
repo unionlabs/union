@@ -139,7 +139,7 @@ func (m *ConfigResponse) GetHaltHeight() uint64 {
 	return 0
 }
 
-// StateRequest defines the request structure for the status of a node.
+// StatusRequest defines the request structure for the status of a node.
 type StatusRequest struct {
 }
 
@@ -176,7 +176,7 @@ func (m *StatusRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_StatusRequest proto.InternalMessageInfo
 
-// StateResponse defines the response structure for the status of a node.
+// StatusResponse defines the response structure for the status of a node.
 type StatusResponse struct {
 	EarliestStoreHeight uint64     `protobuf:"varint,1,opt,name=earliest_store_height,json=earliestStoreHeight,proto3" json:"earliest_store_height,omitempty"`
 	Height              uint64     `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`

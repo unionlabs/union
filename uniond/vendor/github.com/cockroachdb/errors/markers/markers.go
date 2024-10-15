@@ -179,6 +179,13 @@ func IsAny(err error, references ...error) bool {
 				return true
 			}
 		}
+
+		// Recursively try multi-error causes, if applicable.
+		for _, me := range errbase.UnwrapMulti(c) {
+			if IsAny(me, references...) {
+				return true
+			}
+		}
 	}
 
 	// Try harder with marks.

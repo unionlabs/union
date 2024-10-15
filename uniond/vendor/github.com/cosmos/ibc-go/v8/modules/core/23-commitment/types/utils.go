@@ -5,11 +5,11 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
-	crypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	cmtprotocrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 )
 
 // ConvertProofs converts crypto.ProofOps into MerkleProof
-func ConvertProofs(tmProof *crypto.ProofOps) (MerkleProof, error) {
+func ConvertProofs(tmProof *cmtprotocrypto.ProofOps) (MerkleProof, error) {
 	if tmProof == nil {
 		return MerkleProof{}, errorsmod.Wrapf(ErrInvalidMerkleProof, "tendermint proof is nil")
 	}

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"context"
 	"slices"
 	"strconv"
 
@@ -21,7 +22,7 @@ import (
 // The packet sequence generated for the packet to be sent is returned. An error
 // is returned if one occurs.
 func (k Keeper) SendPacket(
-	ctx sdk.Context,
+	ctx context.Context,
 	channelCap *capabilitytypes.Capability,
 	sourcePort string,
 	sourceChannel string,
@@ -107,7 +108,7 @@ func (k Keeper) SendPacket(
 // RecvPacket is called by a module in order to receive & process an IBC packet
 // sent on the corresponding channel end on the counterparty chain.
 func (k Keeper) RecvPacket(
-	ctx sdk.Context,
+	ctx context.Context,
 	chanCap *capabilitytypes.Capability,
 	packet exported.PacketI,
 	proof []byte,
@@ -175,7 +176,8 @@ func (k Keeper) RecvPacket(
 	}
 
 	// check if packet timed out by comparing it with the latest height of the chain
-	selfHeight, selfTimestamp := clienttypes.GetSelfHeight(ctx), uint64(ctx.BlockTime().UnixNano())
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	selfHeight, selfTimestamp := clienttypes.GetSelfHeight(ctx), uint64(sdkCtx.BlockTime().UnixNano())
 	timeout := types.NewTimeout(packet.GetTimeoutHeight().(clienttypes.Height), packet.GetTimeoutTimestamp())
 	if timeout.Elapsed(selfHeight, selfTimestamp) {
 		return errorsmod.Wrap(timeout.ErrTimeoutElapsed(selfHeight, selfTimestamp), "packet timeout elapsed")
@@ -192,6 +194,29 @@ func (k Keeper) RecvPacket(
 		return errorsmod.Wrap(err, "couldn't verify counterparty packet commitment")
 	}
 
+	if err := k.applyReplayProtection(ctx, packet, channel); err != nil {
+		return err
+	}
+
+	// log that a packet has been received & executed
+	k.Logger(ctx).Info(
+		"packet received",
+		"sequence", strconv.FormatUint(packet.GetSequence(), 10),
+		"src_port", packet.GetSourcePort(),
+		"src_channel", packet.GetSourceChannel(),
+		"dst_port", packet.GetDestPort(),
+		"dst_channel", packet.GetDestChannel(),
+	)
+
+	// emit an event that the relayer can query for
+	emitRecvPacketEvent(ctx, packet, channel)
+
+	return nil
+}
+
+// applyReplayProtection ensures a packet has not already been received
+// and performs the necessary state changes to ensure it cannot be received again.
+func (k *Keeper) applyReplayProtection(ctx context.Context, packet exported.PacketI, channel types.Channel) error {
 	// REPLAY PROTECTION: The recvStartSequence will prevent historical proofs from allowing replay
 	// attacks on packets processed in previous lifecycles of a channel. After a successful channel
 	// upgrade all packets under the recvStartSequence will have been processed and thus should be
@@ -257,19 +282,6 @@ func (k Keeper) RecvPacket(
 		k.SetNextSequenceRecv(ctx, packet.GetDestPort(), packet.GetDestChannel(), nextSequenceRecv)
 	}
 
-	// log that a packet has been received & executed
-	k.Logger(ctx).Info(
-		"packet received",
-		"sequence", strconv.FormatUint(packet.GetSequence(), 10),
-		"src_port", packet.GetSourcePort(),
-		"src_channel", packet.GetSourceChannel(),
-		"dst_port", packet.GetDestPort(),
-		"dst_channel", packet.GetDestChannel(),
-	)
-
-	// emit an event that the relayer can query for
-	emitRecvPacketEvent(ctx, packet, channel)
-
 	return nil
 }
 
@@ -285,7 +297,7 @@ func (k Keeper) RecvPacket(
 // 2) Assumes that packet receipt has been written (unordered), or nextSeqRecv was incremented (ordered)
 // previously by RecvPacket.
 func (k Keeper) WriteAcknowledgement(
-	ctx sdk.Context,
+	ctx context.Context,
 	chanCap *capabilitytypes.Capability,
 	packet exported.PacketI,
 	acknowledgement exported.Acknowledgement,
@@ -352,7 +364,7 @@ func (k Keeper) WriteAcknowledgement(
 // which is no longer necessary since the packet has been received and acted upon.
 // It will also increment NextSequenceAck in case of ORDERED channels.
 func (k Keeper) AcknowledgePacket(
-	ctx sdk.Context,
+	ctx context.Context,
 	chanCap *capabilitytypes.Capability,
 	packet exported.PacketI,
 	acknowledgement []byte,
@@ -480,7 +492,8 @@ func (k Keeper) AcknowledgePacket(
 		counterpartyUpgrade, found := k.GetCounterpartyUpgrade(ctx, packet.GetSourcePort(), packet.GetSourceChannel())
 		if found {
 			timeout := counterpartyUpgrade.Timeout
-			selfHeight, selfTimestamp := clienttypes.GetSelfHeight(ctx), uint64(ctx.BlockTime().UnixNano())
+			sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+			selfHeight, selfTimestamp := clienttypes.GetSelfHeight(ctx), uint64(sdkCtx.BlockTime().UnixNano())
 
 			if timeout.Elapsed(selfHeight, selfTimestamp) {
 				// packet flushing timeout has expired, abort the upgrade and return nil,

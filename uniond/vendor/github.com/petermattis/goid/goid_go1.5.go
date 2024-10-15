@@ -13,8 +13,8 @@
 // permissions and limitations under the License. See the AUTHORS file
 // for names of contributors.
 
-//go:build (386 || amd64 || amd64p32 || arm || arm64) && gc && go1.5
-// +build 386 amd64 amd64p32 arm arm64
+//go:build (386 || amd64 || amd64p32 || arm || arm64 || s390x) && gc && go1.5
+// +build 386 amd64 amd64p32 arm arm64 s390x
 // +build gc
 // +build go1.5
 

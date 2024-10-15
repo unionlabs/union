@@ -2,12 +2,12 @@ package statesync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
-
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light"
@@ -15,10 +15,10 @@ import (
 	lighthttp "github.com/cometbft/cometbft/light/provider/http"
 	lightrpc "github.com/cometbft/cometbft/light/rpc"
 	lightdb "github.com/cometbft/cometbft/light/store/db"
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -44,15 +44,14 @@ type lightClientStateProvider struct {
 	providers     map[lightprovider.Provider]string
 }
 
-// NewLightClientStateProvider creates a new StateProvider using a light client and RPC clients.
-func NewLightClientStateProvider(
-	ctx context.Context,
+func NewLightClientStateProviderWithDBKeyVersion(ctx context.Context,
 	chainID string,
 	version cmtstate.Version,
 	initialHeight int64,
 	servers []string,
 	trustOptions light.TrustOptions,
 	logger log.Logger,
+	dbKeyLayoutVereson string,
 ) (StateProvider, error) {
 	if len(servers) < 2 {
 		return nil, fmt.Errorf("at least 2 RPC servers are required, got %v", len(servers))
@@ -73,7 +72,7 @@ func NewLightClientStateProvider(
 	}
 
 	lc, err := light.NewClient(ctx, chainID, trustOptions, providers[0], providers[1:],
-		lightdb.New(dbm.NewMemDB(), ""), light.Logger(logger), light.MaxRetryAttempts(5))
+		lightdb.NewWithDBVersion(dbm.NewMemDB(), "", dbKeyLayoutVereson), light.Logger(logger), light.MaxRetryAttempts(5))
 	if err != nil {
 		return nil, err
 	}
@@ -85,13 +84,28 @@ func NewLightClientStateProvider(
 	}, nil
 }
 
+// NewLightClientStateProvider creates a new StateProvider using a light client and RPC clients.
+// DB Key layout will default to v1.
+func NewLightClientStateProvider(
+	ctx context.Context,
+	chainID string,
+	version cmtstate.Version,
+	initialHeight int64,
+	servers []string,
+	trustOptions light.TrustOptions,
+	logger log.Logger,
+) (StateProvider, error) {
+	return NewLightClientStateProviderWithDBKeyVersion(ctx,
+		chainID, version, initialHeight, servers, trustOptions, logger, "")
+}
+
 // AppHash implements StateProvider.
 func (s *lightClientStateProvider) AppHash(ctx context.Context, height uint64) ([]byte, error) {
 	s.Lock()
 	defer s.Unlock()
 
 	// We have to fetch the next height, which contains the app hash for the previous height.
-	header, err := s.lc.VerifyLightBlockAtHeight(ctx, int64(height+1), time.Now())
+	header, err := s.lc.VerifyLightBlockAtHeight(ctx, int64(height+1), cmttime.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +117,7 @@ func (s *lightClientStateProvider) AppHash(ctx context.Context, height uint64) (
 	// breaking it. We should instead have a Has(ctx, height) method which checks
 	// that the state provider has access to the necessary data for the height.
 	// We piggyback on AppHash() since it's called when adding snapshots to the pool.
-	_, err = s.lc.VerifyLightBlockAtHeight(ctx, int64(height+2), time.Now())
+	_, err = s.lc.VerifyLightBlockAtHeight(ctx, int64(height+2), cmttime.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +128,7 @@ func (s *lightClientStateProvider) AppHash(ctx context.Context, height uint64) (
 func (s *lightClientStateProvider) Commit(ctx context.Context, height uint64) (*types.Commit, error) {
 	s.Lock()
 	defer s.Unlock()
-	header, err := s.lc.VerifyLightBlockAtHeight(ctx, int64(height), time.Now())
+	header, err := s.lc.VerifyLightBlockAtHeight(ctx, int64(height), cmttime.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -143,22 +157,22 @@ func (s *lightClientStateProvider) State(ctx context.Context, height uint64) (sm
 	//
 	// We need to fetch the NextValidators from height+2 because if the application changed
 	// the validator set at the snapshot height then this only takes effect at height+2.
-	lastLightBlock, err := s.lc.VerifyLightBlockAtHeight(ctx, int64(height), time.Now())
+	lastLightBlock, err := s.lc.VerifyLightBlockAtHeight(ctx, int64(height), cmttime.Now())
 	if err != nil {
 		return sm.State{}, err
 	}
-	currentLightBlock, err := s.lc.VerifyLightBlockAtHeight(ctx, int64(height+1), time.Now())
+	currentLightBlock, err := s.lc.VerifyLightBlockAtHeight(ctx, int64(height+1), cmttime.Now())
 	if err != nil {
 		return sm.State{}, err
 	}
-	nextLightBlock, err := s.lc.VerifyLightBlockAtHeight(ctx, int64(height+2), time.Now())
+	nextLightBlock, err := s.lc.VerifyLightBlockAtHeight(ctx, int64(height+2), cmttime.Now())
 	if err != nil {
 		return sm.State{}, err
 	}
 
 	state.Version = cmtstate.Version{
 		Consensus: currentLightBlock.Version,
-		Software:  version.TMCoreSemVer,
+		Software:  version.CMTSemVer,
 	}
 	state.LastBlockHeight = lastLightBlock.Height
 	state.LastBlockTime = lastLightBlock.Time
@@ -173,7 +187,7 @@ func (s *lightClientStateProvider) State(ctx context.Context, height uint64) (sm
 	// We'll also need to fetch consensus params via RPC, using light client verification.
 	primaryURL, ok := s.providers[s.lc.Primary()]
 	if !ok || primaryURL == "" {
-		return sm.State{}, fmt.Errorf("could not find address for primary light client provider")
+		return sm.State{}, errors.New("could not find address for primary light client provider")
 	}
 	primaryRPC, err := rpcClient(primaryURL)
 	if err != nil {
@@ -191,12 +205,12 @@ func (s *lightClientStateProvider) State(ctx context.Context, height uint64) (sm
 	return state, nil
 }
 
-// rpcClient sets up a new RPC client
+// rpcClient sets up a new RPC client.
 func rpcClient(server string) (*rpchttp.HTTP, error) {
 	if !strings.Contains(server, "://") {
 		server = "http://" + server
 	}
-	c, err := rpchttp.New(server, "/websocket")
+	c, err := rpchttp.New(server)
 	if err != nil {
 		return nil, err
 	}

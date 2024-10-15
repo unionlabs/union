@@ -16,7 +16,7 @@ const flagHex = "hex"
 // it into a JSON-encoded transaction.
 func GetDecodeCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "decode [protobuf-byte-string]",
+		Use:   "decode <protobuf-byte-string>",
 		Short: "Decode a binary encoded transaction string",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {

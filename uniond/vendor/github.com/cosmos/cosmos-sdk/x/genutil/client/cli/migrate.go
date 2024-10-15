@@ -3,29 +3,28 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/version"
-	v043 "github.com/cosmos/cosmos-sdk/x/genutil/migrations/v043"
-	v046 "github.com/cosmos/cosmos-sdk/x/genutil/migrations/v046"
-	v047 "github.com/cosmos/cosmos-sdk/x/genutil/migrations/v047"
+	v052 "github.com/cosmos/cosmos-sdk/x/genutil/migration/v052"
 	"github.com/cosmos/cosmos-sdk/x/genutil/types"
 )
 
-const flagGenesisTime = "genesis-time"
+const (
+	flagGenesisTime = "genesis-time"
+	v52             = "v0.52"
+)
 
 // MigrationMap is a map of SDK versions to their respective genesis migration functions.
 var MigrationMap = types.MigrationMap{
-	"v0.43": v043.Migrate, // NOTE: v0.43, v0.44 and v0.45 are genesis compatible.
-	"v0.46": v046.Migrate,
-	"v0.47": v047.Migrate,
+	v52: v052.Migrate,
 }
 
 // MigrateGenesisCmd returns a command to execute genesis state migration.
@@ -33,10 +32,10 @@ var MigrationMap = types.MigrationMap{
 // When the application migration includes a SDK migration, the Cosmos SDK migration function should as well be called.
 func MigrateGenesisCmd(migrations types.MigrationMap) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "migrate [target-version] [genesis-file]",
+		Use:     "migrate <target-version> <genesis-file>",
 		Short:   "Migrate genesis to a specified target version",
 		Long:    "Migrate the source genesis into the target version and print to STDOUT",
-		Example: fmt.Sprintf("%s migrate v0.47 /path/to/genesis.json --chain-id=cosmoshub-3 --genesis-time=2019-04-22T17:00:00Z", version.AppName),
+		Example: fmt.Sprintf("%s genesis migrate v0.47 /path/to/genesis.json --chain-id=cosmoshub-3 --genesis-time=2019-04-22T17:00:00Z", version.AppName),
 		Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return MigrateHandler(cmd, args, migrations)
@@ -59,12 +58,21 @@ func MigrateHandler(cmd *cobra.Command, args []string, migrations types.Migratio
 	migrationFunc, ok := migrations[target]
 	if !ok || migrationFunc == nil {
 		versions := maps.Keys(migrations)
-		sort.Strings(versions)
-		return fmt.Errorf("unknown migration function for version: %s (supported versions %s)", target, strings.Join(versions, ", "))
+		return fmt.Errorf("unknown migration function for version: %s (supported versions %s)", target, strings.Join(slices.Sorted(versions), ", "))
 	}
 
 	importGenesis := args[1]
-	appGenesis, err := types.AppGenesisFromFile(importGenesis)
+	outputDocument, _ := cmd.Flags().GetString(flags.FlagOutputDocument)
+
+	// for v52 we need to migrate the consensus validator address from hex bytes to
+	// sdk consensus address.
+	var appGenesis *types.AppGenesis
+	var err error
+	if target == v52 {
+		appGenesis, err = v052.MigrateGenesisFile(importGenesis)
+	} else {
+		appGenesis, err = types.AppGenesisFromFile(importGenesis)
+	}
 	if err != nil {
 		return err
 	}
@@ -118,7 +126,6 @@ func MigrateHandler(cmd *cobra.Command, args []string, migrations types.Migratio
 		return fmt.Errorf("failed to marshal app genesis: %w", err)
 	}
 
-	outputDocument, _ := cmd.Flags().GetString(flags.FlagOutputDocument)
 	if outputDocument == "" {
 		cmd.Println(string(bz))
 		return nil

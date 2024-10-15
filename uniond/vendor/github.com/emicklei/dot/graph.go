@@ -12,6 +12,7 @@ import (
 type Graph struct {
 	AttributesMap
 	id        string
+	isStrict  bool
 	graphType string
 	seq       int
 	nodes     map[string]Node
@@ -28,6 +29,7 @@ type Graph struct {
 func NewGraph(options ...GraphOption) *Graph {
 	graph := &Graph{
 		AttributesMap: AttributesMap{attributes: map[string]interface{}{}},
+		isStrict:      false,
 		graphType:     Directed.Name,
 		nodes:         map[string]Node{},
 		edgesFrom:     map[string][]Edge{},
@@ -268,6 +270,9 @@ func (g *Graph) Write(w io.Writer) {
 
 // IndentedWrite write the graph to a writer using simple TAB indentation.
 func (g *Graph) IndentedWrite(w *IndentWriter) {
+	if g.isStrict && g.graphType != Sub.Name {
+		fmt.Fprintf(w, "strict ")
+	}
 	fmt.Fprintf(w, "%s %s {", g.graphType, g.id)
 	w.NewLineIndentWhile(func() {
 		// subgraphs

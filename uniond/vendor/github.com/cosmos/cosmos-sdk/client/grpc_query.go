@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strconv"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/encoding"
@@ -83,7 +83,7 @@ func (ctx Context) Invoke(grpcCtx gocontext.Context, method string, req, reply i
 		ctx = ctx.WithHeight(height)
 	}
 
-	abciReq := abci.RequestQuery{
+	abciReq := abci.QueryRequest{
 		Path:   method,
 		Data:   reqBz,
 		Height: ctx.Height,

@@ -1,6 +1,7 @@
 package tendermint
 
 import (
+	"context"
 	"reflect"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -27,7 +27,7 @@ import (
 // In case 1) before updating the client, the client will be unfrozen by resetting
 // the FrozenHeight to the zero Height.
 func (cs ClientState) CheckSubstituteAndUpdateState(
-	ctx sdk.Context, cdc codec.BinaryCodec, subjectClientStore,
+	ctx context.Context, cdc codec.BinaryCodec, subjectClientStore,
 	substituteClientStore storetypes.KVStore, substituteClient exported.ClientState,
 ) error {
 	substituteClientState, ok := substituteClient.(*ClientState)

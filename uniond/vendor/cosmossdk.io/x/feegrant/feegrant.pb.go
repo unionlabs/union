@@ -6,13 +6,13 @@ package feegrant
 import (
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
-	types1 "github.com/cosmos/cosmos-sdk/codec/types"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
+	any "github.com/cosmos/gogoproto/types/any"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
 	io "io"
@@ -181,7 +181,7 @@ func (m *PeriodicAllowance) GetPeriodReset() time.Time {
 // AllowedMsgAllowance creates allowance only for specified message types.
 type AllowedMsgAllowance struct {
 	// allowance can be any of basic and periodic fee allowance.
-	Allowance *types1.Any `protobuf:"bytes,1,opt,name=allowance,proto3" json:"allowance,omitempty"`
+	Allowance *any.Any `protobuf:"bytes,1,opt,name=allowance,proto3" json:"allowance,omitempty"`
 	// allowed_messages are the messages for which the grantee has the access.
 	AllowedMessages []string `protobuf:"bytes,2,rep,name=allowed_messages,json=allowedMessages,proto3" json:"allowed_messages,omitempty"`
 }
@@ -226,7 +226,7 @@ type Grant struct {
 	// grantee is the address of the user being granted an allowance of another user's funds.
 	Grantee string `protobuf:"bytes,2,opt,name=grantee,proto3" json:"grantee,omitempty"`
 	// allowance can be any of basic, periodic, allowed fee allowance.
-	Allowance *types1.Any `protobuf:"bytes,3,opt,name=allowance,proto3" json:"allowance,omitempty"`
+	Allowance *any.Any `protobuf:"bytes,3,opt,name=allowance,proto3" json:"allowance,omitempty"`
 }
 
 func (m *Grant) Reset()         { *m = Grant{} }
@@ -276,7 +276,7 @@ func (m *Grant) GetGrantee() string {
 	return ""
 }
 
-func (m *Grant) GetAllowance() *types1.Any {
+func (m *Grant) GetAllowance() *any.Any {
 	if m != nil {
 		return m.Allowance
 	}
@@ -1056,7 +1056,7 @@ func (m *AllowedMsgAllowance) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Allowance == nil {
-				m.Allowance = &types1.Any{}
+				m.Allowance = &any.Any{}
 			}
 			if err := m.Allowance.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1238,7 +1238,7 @@ func (m *Grant) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Allowance == nil {
-				m.Allowance = &types1.Any{}
+				m.Allowance = &any.Any{}
 			}
 			if err := m.Allowance.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

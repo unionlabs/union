@@ -40,18 +40,20 @@ func cleanupBucket(t time.Time) int64 {
 type bucket map[uint64]uint64
 
 // expirationMap is a map of bucket number to the corresponding bucket.
-type expirationMap struct {
+type expirationMap[V any] struct {
 	sync.RWMutex
-	buckets map[int64]bucket
+	buckets              map[int64]bucket
+	lastCleanedBucketNum int64
 }
 
-func newExpirationMap() *expirationMap {
-	return &expirationMap{
-		buckets: make(map[int64]bucket),
+func newExpirationMap[V any]() *expirationMap[V] {
+	return &expirationMap[V]{
+		buckets:              make(map[int64]bucket),
+		lastCleanedBucketNum: cleanupBucket(time.Now()),
 	}
 }
 
-func (m *expirationMap) add(key, conflict uint64, expiration time.Time) {
+func (m *expirationMap[_]) add(key, conflict uint64, expiration time.Time) {
 	if m == nil {
 		return
 	}
@@ -73,7 +75,7 @@ func (m *expirationMap) add(key, conflict uint64, expiration time.Time) {
 	b[key] = conflict
 }
 
-func (m *expirationMap) update(key, conflict uint64, oldExpTime, newExpTime time.Time) {
+func (m *expirationMap[_]) update(key, conflict uint64, oldExpTime, newExpTime time.Time) {
 	if m == nil {
 		return
 	}
@@ -87,6 +89,11 @@ func (m *expirationMap) update(key, conflict uint64, oldExpTime, newExpTime time
 		delete(oldBucket, key)
 	}
 
+	// Items that don't expire don't need to be in the expiration map.
+	if newExpTime.IsZero() {
+		return
+	}
+
 	newBucketNum := storageBucket(newExpTime)
 	newBucket, ok := m.buckets[newBucketNum]
 	if !ok {
@@ -96,7 +103,7 @@ func (m *expirationMap) update(key, conflict uint64, oldExpTime, newExpTime time
 	newBucket[key] = conflict
 }
 
-func (m *expirationMap) del(key uint64, expiration time.Time) {
+func (m *expirationMap[_]) del(key uint64, expiration time.Time) {
 	if m == nil {
 		return
 	}
@@ -114,34 +121,57 @@ func (m *expirationMap) del(key uint64, expiration time.Time) {
 // cleanup removes all the items in the bucket that was just completed. It deletes
 // those items from the store, and calls the onEvict function on those items.
 // This function is meant to be called periodically.
-func (m *expirationMap) cleanup(store store, policy policy, onEvict itemCallback) {
+func (m *expirationMap[V]) cleanup(store store[V], policy policy[V], onEvict func(item *Item[V])) {
 	if m == nil {
 		return
 	}
 
 	m.Lock()
 	now := time.Now()
-	bucketNum := cleanupBucket(now)
-	keys := m.buckets[bucketNum]
-	delete(m.buckets, bucketNum)
+	currentBucketNum := cleanupBucket(now)
+	// Clean up all buckets up to and including currentBucketNum, starting from
+	// (but not including) the last one that was cleaned up
+	var buckets []bucket
+	for bucketNum := m.lastCleanedBucketNum + 1; bucketNum <= currentBucketNum; bucketNum++ {
+		buckets = append(buckets, m.buckets[bucketNum])
+		delete(m.buckets, bucketNum)
+	}
+	m.lastCleanedBucketNum = currentBucketNum
 	m.Unlock()
 
-	for key, conflict := range keys {
-		// Sanity check. Verify that the store agrees that this key is expired.
-		if store.Expiration(key).After(now) {
-			continue
-		}
+	for _, keys := range buckets {
+		for key, conflict := range keys {
+			expr := store.Expiration(key)
+			// Sanity check. Verify that the store agrees that this key is expired.
+			if expr.After(now) {
+				continue
+			}
 
-		cost := policy.Cost(key)
-		policy.Del(key)
-		_, value := store.Del(key, conflict)
+			cost := policy.Cost(key)
+			policy.Del(key)
+			_, value := store.Del(key, conflict)
 
-		if onEvict != nil {
-			onEvict(&Item{Key: key,
-				Conflict: conflict,
-				Value:    value,
-				Cost:     cost,
-			})
+			if onEvict != nil {
+				onEvict(&Item[V]{Key: key,
+					Conflict:   conflict,
+					Value:      value,
+					Cost:       cost,
+					Expiration: expr,
+				})
+			}
 		}
 	}
+}
+
+// clear clears the expirationMap, the caller is responsible for properly
+// evicting the referenced items
+func (m *expirationMap[V]) clear() {
+	if m == nil {
+		return
+	}
+
+	m.Lock()
+	m.buckets = make(map[int64]bucket)
+	m.lastCleanedBucketNum = cleanupBucket(time.Now())
+	m.Unlock()
 }

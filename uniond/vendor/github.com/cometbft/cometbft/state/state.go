@@ -9,19 +9,19 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
 
-// database keys
+// database keys.
 var (
 	stateKey = []byte("stateKey")
 )
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // InitStateVersion sets the Consensus.Block and Software versions,
 // but leaves the Consensus.App version blank.
@@ -32,10 +32,10 @@ var InitStateVersion = cmtstate.Version{
 		Block: version.BlockProtocol,
 		App:   0,
 	},
-	Software: version.TMCoreSemVer,
+	Software: version.CMTSemVer,
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // State is a short description of the latest committed block of the consensus protocol.
 // It keeps all information necessary to validate new blocks,
@@ -81,7 +81,6 @@ type State struct {
 
 // Copy makes a copy of the State for mutating.
 func (state State) Copy() State {
-
 	return State{
 		Version:       state.Version,
 		ChainID:       state.ChainID,
@@ -130,7 +129,7 @@ func (state State) IsEmpty() bool {
 	return state.Validators == nil // XXX can't compare to Empty
 }
 
-// ToProto takes the local state type and returns the equivalent proto type
+// ToProto takes the local state type and returns the equivalent proto type.
 func (state *State) ToProto() (*cmtstate.State, error) {
 	if state == nil {
 		return nil, errors.New("state is nil")
@@ -174,7 +173,7 @@ func (state *State) ToProto() (*cmtstate.State, error) {
 	return sm, nil
 }
 
-// FromProto takes a state proto message & returns the local state type
+// FromProto takes a state proto message & returns the local state type.
 func FromProto(pb *cmtstate.State) (*State, error) { //nolint:golint
 	if pb == nil {
 		return nil, errors.New("nil State")
@@ -225,7 +224,7 @@ func FromProto(pb *cmtstate.State) (*State, error) { //nolint:golint
 	return state, nil
 }
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Create a block from the latest state
 
 // MakeBlock builds a block from the current state with the given txs, commit,
@@ -238,16 +237,18 @@ func (state State) MakeBlock(
 	evidence []types.Evidence,
 	proposerAddress []byte,
 ) *types.Block {
-
 	// Build base block with block data.
 	block := types.MakeBlock(height, txs, lastCommit, evidence)
 
 	// Set time.
 	var timestamp time.Time
-	if height == state.InitialHeight {
+	switch {
+	case state.ConsensusParams.Feature.PbtsEnabled(height):
+		timestamp = cmttime.Now()
+	case height == state.InitialHeight:
 		timestamp = state.LastBlockTime // genesis time
-	} else {
-		timestamp = MedianTime(lastCommit, state.LastValidators)
+	default:
+		timestamp = lastCommit.MedianTime(state.LastValidators)
 	}
 
 	// Fill rest of header with state data.
@@ -262,30 +263,7 @@ func (state State) MakeBlock(
 	return block
 }
 
-// MedianTime computes a median time for a given Commit (based on Timestamp field of votes messages) and the
-// corresponding validator set. The computed time is always between timestamps of
-// the votes sent by honest processes, i.e., a faulty processes can not arbitrarily increase or decrease the
-// computed value.
-func MedianTime(commit *types.Commit, validators *types.ValidatorSet) time.Time {
-	weightedTimes := make([]*cmttime.WeightedTime, len(commit.Signatures))
-	totalVotingPower := int64(0)
-
-	for i, commitSig := range commit.Signatures {
-		if commitSig.BlockIDFlag == types.BlockIDFlagAbsent {
-			continue
-		}
-		_, validator := validators.GetByAddress(commitSig.ValidatorAddress)
-		// If there's no condition, TestValidateBlockCommit panics; not needed normally.
-		if validator != nil {
-			totalVotingPower += validator.VotingPower
-			weightedTimes[i] = cmttime.NewWeightedTime(commitSig.Timestamp, validator.VotingPower)
-		}
-	}
-
-	return cmttime.WeightedMedian(weightedTimes, totalVotingPower)
-}
-
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Genesis
 
 // MakeGenesisStateFromFile reads and unmarshals state from the given
@@ -304,11 +282,11 @@ func MakeGenesisStateFromFile(genDocFile string) (State, error) {
 func MakeGenesisDocFromFile(genDocFile string) (*types.GenesisDoc, error) {
 	genDocJSON, err := os.ReadFile(genDocFile)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't read GenesisDoc file: %v", err)
+		return nil, fmt.Errorf("couldn't read GenesisDoc file: %w", err)
 	}
 	genDoc, err := types.GenesisDocFromJSON(genDocJSON)
 	if err != nil {
-		return nil, fmt.Errorf("error reading GenesisDoc: %v", err)
+		return nil, fmt.Errorf("error reading GenesisDoc: %w", err)
 	}
 	return genDoc, nil
 }

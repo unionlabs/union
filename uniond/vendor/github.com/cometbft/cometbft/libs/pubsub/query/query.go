@@ -197,7 +197,7 @@ func compileCondition(cond syntax.Condition) (condition, error) {
 
 	// Precompile the argument value matcher.
 	argType := cond.Arg.Type
-	var argValue interface{}
+	var argValue any
 
 	switch argType {
 	case syntax.TString:
@@ -218,7 +218,7 @@ func compileCondition(cond syntax.Condition) (condition, error) {
 	return out, nil
 }
 
-// We use this regex to support queries of the form "8atom", "6.5stake",
+// We use this regex to support queries of the from "8atom", "6.5stake",
 // which are actively used in production.
 // The regex takes care of removing the non-number suffix.
 var extractNum = regexp.MustCompile(`^\d+(\.\d+)?`)
@@ -234,7 +234,6 @@ func parseNumber(s string) (*big.Float, error) {
 	}
 	f, _, err := big.ParseFloat(extractNum.FindString(s), 10, uint(intVal.BitLen()), big.ToNearestEven)
 	return f, err
-
 }
 
 // A map of operator ⇒ argtype ⇒ match-constructor.
@@ -243,31 +242,31 @@ func parseNumber(s string) (*big.Float, error) {
 // Disable the dupl lint for this map. The result isn't even correct.
 //
 //nolint:dupl
-var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string) bool{
+var opTypeMap = map[syntax.Token]map[syntax.Token]func(any) func(string) bool{
 	syntax.TContains: {
-		syntax.TString: func(v interface{}) func(string) bool {
+		syntax.TString: func(v any) func(string) bool {
 			return func(s string) bool {
 				return strings.Contains(s, v.(string))
 			}
 		},
 	},
 	syntax.TEq: {
-		syntax.TString: func(v interface{}) func(string) bool {
+		syntax.TString: func(v any) func(string) bool {
 			return func(s string) bool { return s == v.(string) }
 		},
-		syntax.TNumber: func(v interface{}) func(string) bool {
+		syntax.TNumber: func(v any) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
 				return err == nil && w.Cmp(v.(*big.Float)) == 0
 			}
 		},
-		syntax.TDate: func(v interface{}) func(string) bool {
+		syntax.TDate: func(v any) func(string) bool {
 			return func(s string) bool {
 				ts, err := syntax.ParseDate(s)
 				return err == nil && ts.Equal(v.(time.Time))
 			}
 		},
-		syntax.TTime: func(v interface{}) func(string) bool {
+		syntax.TTime: func(v any) func(string) bool {
 			return func(s string) bool {
 				ts, err := syntax.ParseTime(s)
 				return err == nil && ts.Equal(v.(time.Time))
@@ -275,19 +274,19 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		},
 	},
 	syntax.TLt: {
-		syntax.TNumber: func(v interface{}) func(string) bool {
+		syntax.TNumber: func(v any) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
 				return err == nil && w.Cmp(v.(*big.Float)) < 0
 			}
 		},
-		syntax.TDate: func(v interface{}) func(string) bool {
+		syntax.TDate: func(v any) func(string) bool {
 			return func(s string) bool {
 				ts, err := syntax.ParseDate(s)
 				return err == nil && ts.Before(v.(time.Time))
 			}
 		},
-		syntax.TTime: func(v interface{}) func(string) bool {
+		syntax.TTime: func(v any) func(string) bool {
 			return func(s string) bool {
 				ts, err := syntax.ParseTime(s)
 				return err == nil && ts.Before(v.(time.Time))
@@ -295,19 +294,19 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		},
 	},
 	syntax.TLeq: {
-		syntax.TNumber: func(v interface{}) func(string) bool {
+		syntax.TNumber: func(v any) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
 				return err == nil && w.Cmp(v.(*big.Float)) <= 0
 			}
 		},
-		syntax.TDate: func(v interface{}) func(string) bool {
+		syntax.TDate: func(v any) func(string) bool {
 			return func(s string) bool {
 				ts, err := syntax.ParseDate(s)
 				return err == nil && !ts.After(v.(time.Time))
 			}
 		},
-		syntax.TTime: func(v interface{}) func(string) bool {
+		syntax.TTime: func(v any) func(string) bool {
 			return func(s string) bool {
 				ts, err := syntax.ParseTime(s)
 				return err == nil && !ts.After(v.(time.Time))
@@ -315,19 +314,19 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		},
 	},
 	syntax.TGt: {
-		syntax.TNumber: func(v interface{}) func(string) bool {
+		syntax.TNumber: func(v any) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
 				return err == nil && w.Cmp(v.(*big.Float)) > 0
 			}
 		},
-		syntax.TDate: func(v interface{}) func(string) bool {
+		syntax.TDate: func(v any) func(string) bool {
 			return func(s string) bool {
 				ts, err := syntax.ParseDate(s)
 				return err == nil && ts.After(v.(time.Time))
 			}
 		},
-		syntax.TTime: func(v interface{}) func(string) bool {
+		syntax.TTime: func(v any) func(string) bool {
 			return func(s string) bool {
 				ts, err := syntax.ParseTime(s)
 				return err == nil && ts.After(v.(time.Time))
@@ -335,19 +334,19 @@ var opTypeMap = map[syntax.Token]map[syntax.Token]func(interface{}) func(string)
 		},
 	},
 	syntax.TGeq: {
-		syntax.TNumber: func(v interface{}) func(string) bool {
+		syntax.TNumber: func(v any) func(string) bool {
 			return func(s string) bool {
 				w, err := parseNumber(s)
 				return err == nil && w.Cmp(v.(*big.Float)) >= 0
 			}
 		},
-		syntax.TDate: func(v interface{}) func(string) bool {
+		syntax.TDate: func(v any) func(string) bool {
 			return func(s string) bool {
 				ts, err := syntax.ParseDate(s)
 				return err == nil && !ts.Before(v.(time.Time))
 			}
 		},
-		syntax.TTime: func(v interface{}) func(string) bool {
+		syntax.TTime: func(v any) func(string) bool {
 			return func(s string) bool {
 				ts, err := syntax.ParseTime(s)
 				return err == nil && !ts.Before(v.(time.Time))

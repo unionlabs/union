@@ -39,6 +39,7 @@ type SDKMessageHandler struct {
 
 // NewDefaultMessageHandler constructor
 func NewDefaultMessageHandler(
+	keeper *Keeper,
 	router MessageRouter,
 	ics4Wrapper types.ICS4Wrapper,
 	channelKeeper types.ChannelKeeper,
@@ -54,7 +55,7 @@ func NewDefaultMessageHandler(
 	}
 	return NewMessageHandlerChain(
 		NewSDKMessageHandler(cdc, router, encoders),
-		NewIBCRawPacketHandler(ics4Wrapper, channelKeeper, capabilityKeeper),
+		NewIBCRawPacketHandler(ics4Wrapper, keeper, channelKeeper, capabilityKeeper),
 		NewBurnCoinMessageHandler(bankKeeper),
 	)
 }
@@ -99,7 +100,7 @@ func (h SDKMessageHandler) handleSdkMessage(ctx sdk.Context, contractAddr sdk.Ad
 	}
 
 	// make sure this account can send it
-	signers, _, err := h.cdc.GetMsgV1Signers(msg)
+	signers, _, err := h.cdc.GetMsgSigners(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +123,20 @@ func (h SDKMessageHandler) handleSdkMessage(ctx sdk.Context, contractAddr sdk.Ad
 	// path should never be called, because all those Msgs should be
 	// registered within the `msgServiceRouter` already.
 	return nil, errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "can't route message %+v", msg)
+}
+
+type callDepthMessageHandler struct {
+	Messenger
+	MaxCallDepth uint32
+}
+
+func (h callDepthMessageHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress, contractIBCPortID string, msg wasmvmtypes.CosmosMsg) (events []sdk.Event, data [][]byte, msgResponses [][]*codectypes.Any, err error) {
+	ctx, err = checkAndIncreaseCallDepth(ctx, h.MaxCallDepth)
+	if err != nil {
+		return nil, nil, nil, errorsmod.Wrap(err, "dispatch")
+	}
+
+	return h.Messenger.DispatchMsg(ctx, contractAddr, contractIBCPortID, msg)
 }
 
 // MessageHandlerChain defines a chain of handlers that are called one by one until it can be handled.
@@ -161,14 +176,16 @@ func (m MessageHandlerChain) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAd
 // IBCRawPacketHandler handles IBC.SendPacket messages which are published to an IBC channel.
 type IBCRawPacketHandler struct {
 	ics4Wrapper      types.ICS4Wrapper
+	wasmKeeper       types.IBCContractKeeper
 	channelKeeper    types.ChannelKeeper
 	capabilityKeeper types.CapabilityKeeper
 }
 
 // NewIBCRawPacketHandler constructor
-func NewIBCRawPacketHandler(ics4Wrapper types.ICS4Wrapper, channelKeeper types.ChannelKeeper, capabilityKeeper types.CapabilityKeeper) IBCRawPacketHandler {
+func NewIBCRawPacketHandler(ics4Wrapper types.ICS4Wrapper, wasmKeeper types.IBCContractKeeper, channelKeeper types.ChannelKeeper, capabilityKeeper types.CapabilityKeeper) IBCRawPacketHandler {
 	return IBCRawPacketHandler{
 		ics4Wrapper:      ics4Wrapper,
+		wasmKeeper:       wasmKeeper,
 		channelKeeper:    channelKeeper,
 		capabilityKeeper: capabilityKeeper,
 	}
@@ -176,39 +193,86 @@ func NewIBCRawPacketHandler(ics4Wrapper types.ICS4Wrapper, channelKeeper types.C
 
 // DispatchMsg publishes a raw IBC packet onto the channel.
 func (h IBCRawPacketHandler) DispatchMsg(ctx sdk.Context, _ sdk.AccAddress, contractIBCPortID string, msg wasmvmtypes.CosmosMsg) ([]sdk.Event, [][]byte, [][]*codectypes.Any, error) {
-	if msg.IBC == nil || msg.IBC.SendPacket == nil {
+	if msg.IBC == nil {
 		return nil, nil, nil, types.ErrUnknownMsg
 	}
-	if contractIBCPortID == "" {
-		return nil, nil, nil, errorsmod.Wrapf(types.ErrUnsupportedForContract, "ibc not supported")
-	}
-	contractIBCChannelID := msg.IBC.SendPacket.ChannelID
-	if contractIBCChannelID == "" {
-		return nil, nil, nil, errorsmod.Wrapf(types.ErrEmpty, "ibc channel")
-	}
+	switch {
+	case msg.IBC.SendPacket != nil:
+		if contractIBCPortID == "" {
+			return nil, nil, nil, errorsmod.Wrapf(types.ErrUnsupportedForContract, "ibc not supported")
+		}
+		contractIBCChannelID := msg.IBC.SendPacket.ChannelID
+		if contractIBCChannelID == "" {
+			return nil, nil, nil, errorsmod.Wrapf(types.ErrEmpty, "ibc channel")
+		}
 
-	channelCap, ok := h.capabilityKeeper.GetCapability(ctx, host.ChannelCapabilityPath(contractIBCPortID, contractIBCChannelID))
-	if !ok {
-		return nil, nil, nil, errorsmod.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
-	}
-	seq, err := h.ics4Wrapper.SendPacket(ctx, channelCap, contractIBCPortID, contractIBCChannelID, ConvertWasmIBCTimeoutHeightToCosmosHeight(msg.IBC.SendPacket.Timeout.Block), msg.IBC.SendPacket.Timeout.Timestamp, msg.IBC.SendPacket.Data)
-	if err != nil {
-		return nil, nil, nil, errorsmod.Wrap(err, "channel")
-	}
-	moduleLogger(ctx).Debug("ibc packet set", "seq", seq)
+		channelCap, ok := h.capabilityKeeper.GetCapability(ctx, host.ChannelCapabilityPath(contractIBCPortID, contractIBCChannelID))
+		if !ok {
+			return nil, nil, nil, errorsmod.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
+		}
+		seq, err := h.ics4Wrapper.SendPacket(ctx, channelCap, contractIBCPortID, contractIBCChannelID, ConvertWasmIBCTimeoutHeightToCosmosHeight(msg.IBC.SendPacket.Timeout.Block), msg.IBC.SendPacket.Timeout.Timestamp, msg.IBC.SendPacket.Data)
+		if err != nil {
+			return nil, nil, nil, errorsmod.Wrap(err, "channel")
+		}
+		moduleLogger(ctx).Debug("ibc packet set", "seq", seq)
 
-	resp := &types.MsgIBCSendResponse{Sequence: seq}
-	val, err := resp.Marshal()
-	if err != nil {
-		return nil, nil, nil, errorsmod.Wrap(err, "failed to marshal IBC send response")
-	}
-	any, err := codectypes.NewAnyWithValue(resp)
-	if err != nil {
-		return nil, nil, nil, errorsmod.Wrap(err, "failed to convert IBC send response to Any")
-	}
-	msgResponses := [][]*codectypes.Any{{any}}
+		resp := &types.MsgIBCSendResponse{Sequence: seq}
+		val, err := resp.Marshal()
+		if err != nil {
+			return nil, nil, nil, errorsmod.Wrap(err, "failed to marshal IBC send response")
+		}
+		any, err := codectypes.NewAnyWithValue(resp)
+		if err != nil {
+			return nil, nil, nil, errorsmod.Wrap(err, "failed to convert IBC send response to Any")
+		}
+		msgResponses := [][]*codectypes.Any{{any}}
 
-	return nil, [][]byte{val}, msgResponses, nil
+		return nil, [][]byte{val}, msgResponses, nil
+	case msg.IBC.WriteAcknowledgement != nil:
+		if contractIBCPortID == "" {
+			return nil, nil, nil, errorsmod.Wrapf(types.ErrUnsupportedForContract, "ibc not supported")
+		}
+		contractIBCChannelID := msg.IBC.WriteAcknowledgement.ChannelID
+		if contractIBCChannelID == "" {
+			return nil, nil, nil, errorsmod.Wrapf(types.ErrEmpty, "ibc channel")
+		}
+
+		channelCap, ok := h.capabilityKeeper.GetCapability(ctx, host.ChannelCapabilityPath(contractIBCPortID, contractIBCChannelID))
+		if !ok {
+			return nil, nil, nil, errorsmod.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
+		}
+
+		packet, err := h.wasmKeeper.LoadAsyncAckPacket(ctx, contractIBCPortID, contractIBCChannelID, msg.IBC.WriteAcknowledgement.PacketSequence)
+		if err != nil {
+			return nil, nil, nil, errorsmod.Wrap(types.ErrInvalid, "packet")
+		}
+
+		err = h.ics4Wrapper.WriteAcknowledgement(ctx, channelCap, packet, ContractConfirmStateAck(msg.IBC.WriteAcknowledgement.Ack.Data))
+		if err != nil {
+			return nil, nil, nil, errorsmod.Wrap(err, "acknowledgement")
+		}
+
+		// Delete the packet from the store after acknowledgement.
+		// This ensures WriteAcknowledgement can only be used once per packet
+		// such that overriding the acknowledgement later on is not possible.
+		h.wasmKeeper.DeleteAsyncAckPacket(ctx, contractIBCPortID, contractIBCChannelID, msg.IBC.WriteAcknowledgement.PacketSequence)
+
+		resp := &types.MsgIBCWriteAcknowledgementResponse{}
+		val, err := resp.Marshal()
+		if err != nil {
+			return nil, nil, nil, errorsmod.Wrap(err, "failed to marshal IBC send response")
+		}
+
+		any, err := codectypes.NewAnyWithValue(resp)
+		if err != nil {
+			return nil, nil, nil, errorsmod.Wrap(err, "failed to convert IBC send response to Any")
+		}
+		msgResponses := [][]*codectypes.Any{{any}}
+
+		return nil, [][]byte{val}, msgResponses, nil
+	default:
+		return nil, nil, nil, types.ErrUnknownMsg
+	}
 }
 
 var _ Messenger = MessageHandlerFunc(nil)
@@ -235,7 +299,7 @@ func NewBurnCoinMessageHandler(burner types.Burner) MessageHandlerFunc {
 			if err := burner.SendCoinsFromAccountToModule(ctx, contractAddr, types.ModuleName, coins); err != nil {
 				return nil, nil, nil, errorsmod.Wrap(err, "transfer to module")
 			}
-			if err := burner.BurnCoins(ctx, types.ModuleName, coins); err != nil {
+			if err := burner.BurnCoins(ctx, []byte(types.ModuleName), coins); err != nil {
 				return nil, nil, nil, errorsmod.Wrap(err, "burn coins")
 			}
 			moduleLogger(ctx).Info("Burned", "amount", coins)

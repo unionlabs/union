@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"log"
 
+	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/store/types"
+	slashingtypes "cosmossdk.io/x/slashing/types"
+	"cosmossdk.io/x/staking"
+	stakingtypes "cosmossdk.io/x/staking/types"
 
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // ExportAppStateAndValidators exports the state of the application for a genesis
@@ -22,7 +23,7 @@ func (app *UnionApp) ExportAppStateAndValidators(
 	modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
 	// as if they could withdraw from the start of the next block
-	ctx := app.NewContextLegacy(true, tmproto.Header{Height: app.LastBlockHeight()})
+	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
 
 	// We export at last height + 1, because that's the height at which
 	// Tendermint will start InitChain.
@@ -32,7 +33,7 @@ func (app *UnionApp) ExportAppStateAndValidators(
 		app.prepForZeroHeightGenesis(ctx, jailAllowedAddrs)
 	}
 
-	genState, err := app.ModuleManager.ExportGenesisForModules(ctx, app.appCodec, modulesToExport)
+	genState, err := app.ModuleManager.ExportGenesisForModules(ctx, modulesToExport)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
@@ -75,13 +76,10 @@ func (app *UnionApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs 
 		allowedAddrsMap[addr] = true
 	}
 
-	/* Just to be safe, assert the invariants on current state. */
-	app.CrisisKeeper.AssertInvariants(ctx)
-
 	/* Handle fee distribution state. */
 
 	// withdraw all validator commission
-	app.StakingKeeper.IterateValidators(ctx, func(_ int64, val stakingtypes.ValidatorI) (stop bool) {
+	app.StakingKeeper.IterateValidators(ctx, func(_ int64, val sdk.ValidatorI) (stop bool) {
 		valbz, err := app.StakingKeeper.ValidatorAddressCodec().StringToBytes(val.GetOperator())
 		if err != nil {
 			panic(err)
@@ -115,17 +113,23 @@ func (app *UnionApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs 
 	}
 
 	// clear validator slash events
-	app.DistrKeeper.DeleteAllValidatorSlashEvents(ctx)
+	err = app.DistrKeeper.ValidatorSlashEvents.Clear(ctx, nil)
+	if err != nil {
+		panic(err)
+	}
 
 	// clear validator historical rewards
-	app.DistrKeeper.DeleteAllValidatorHistoricalRewards(ctx)
+	err = app.DistrKeeper.ValidatorHistoricalRewards.Clear(ctx, nil)
+	if err != nil {
+		panic(err)
+	}
 
 	// set context height to zero
 	height := ctx.BlockHeight()
 	ctx = ctx.WithBlockHeight(0)
 
 	// reinitialize all validators
-	app.StakingKeeper.IterateValidators(ctx, func(_ int64, val stakingtypes.ValidatorI) (stop bool) {
+	app.StakingKeeper.IterateValidators(ctx, func(_ int64, val sdk.ValidatorI) (stop bool) {
 		// donate any unwithdrawn outstanding reward fraction tokens to the community pool
 		valbz, err := app.StakingKeeper.ValidatorAddressCodec().StringToBytes(val.GetOperator())
 		if err != nil {
@@ -184,13 +188,23 @@ func (app *UnionApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs 
 	})
 
 	// iterate through unbonding delegations, reset creation height
-	app.StakingKeeper.IterateUnbondingDelegations(ctx, func(_ int64, ubd stakingtypes.UnbondingDelegation) (stop bool) {
-		for i := range ubd.Entries {
-			ubd.Entries[i].CreationHeight = 0
-		}
-		app.StakingKeeper.SetUnbondingDelegation(ctx, ubd)
-		return false
-	})
+	err = app.StakingKeeper.UnbondingDelegations.Walk(
+		ctx,
+		nil,
+		func(_ collections.Pair[[]byte, []byte], ubd stakingtypes.UnbondingDelegation) (stop bool, err error) {
+			for i := range ubd.Entries {
+				ubd.Entries[i].CreationHeight = 0
+			}
+			err = app.StakingKeeper.SetUnbondingDelegation(ctx, ubd)
+			if err != nil {
+				return true, err
+			}
+			return false, err
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
 
 	// Iterate through validators by power descending, reset bond heights, and
 	// update bond intra-tx counters.
@@ -223,12 +237,15 @@ func (app *UnionApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs 
 	/* Handle slashing state. */
 
 	// reset start height on signing infos
-	app.SlashingKeeper.IterateValidatorSigningInfos(
-		ctx,
-		func(addr sdk.ConsAddress, info slashingtypes.ValidatorSigningInfo) (stop bool) {
-			info.StartHeight = 0
-			app.SlashingKeeper.SetValidatorSigningInfo(ctx, addr, info)
-			return false
-		},
-	)
+	err = app.SlashingKeeper.ValidatorSigningInfo.Walk(ctx, nil, func(addr sdk.ConsAddress, info slashingtypes.ValidatorSigningInfo) (stop bool, err error) {
+		info.StartHeight = 0
+		err = app.SlashingKeeper.ValidatorSigningInfo.Set(ctx, addr, info)
+		if err != nil {
+			return true, err
+		}
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
+	}
 }

@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/mdp/qrterminal/v3"
 	"github.com/spf13/cobra"
 
+	"cosmossdk.io/core/address"
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -29,12 +31,13 @@ const (
 	FlagDevice = "device"
 
 	flagMultiSigThreshold = "multisig-threshold"
+	flagQRCode            = "qrcode"
 )
 
 // ShowKeysCmd shows key information for a given key name.
 func ShowKeysCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "show [name_or_address [name_or_address...]]",
+		Use:   "show <name_or_address> [name_or_address...]",
 		Short: "Retrieve key information by name or address",
 		Long: `Display keys details. If multiple names or addresses are provided,
 then an ephemeral multisig key will be created under the name "multi"
@@ -48,6 +51,7 @@ consisting of all the keys provided by name and multisig threshold.`,
 	f.BoolP(FlagPublicKey, "p", false, "Output the public key only (cannot be used with --output)")
 	f.BoolP(FlagDevice, "d", false, "Output the address in a ledger device (cannot be used with --pubkey)")
 	f.Int(flagMultiSigThreshold, 1, "K out of N required signatures")
+	f.Bool(flagQRCode, false, "Display key address QR code (will be ignored if -a or --address is false)")
 
 	return cmd
 }
@@ -61,17 +65,26 @@ func runShowCmd(cmd *cobra.Command, args []string) (err error) {
 	outputFormat := clientCtx.OutputFormat
 
 	if len(args) == 1 {
-		k, err = fetchKey(clientCtx.Keyring, args[0])
+		k, err = fetchKey(clientCtx.Keyring, args[0], clientCtx.AddressCodec)
 		if err != nil {
-			return fmt.Errorf("%s is not a valid name or address: %v", args[0], err)
+			return fmt.Errorf("%s is not a valid name or address: %w", args[0], err)
 		}
 	} else {
 		pks := make([]cryptotypes.PubKey, len(args))
-		for i, keyref := range args {
-			k, err := fetchKey(clientCtx.Keyring, keyref)
-			if err != nil {
-				return fmt.Errorf("%s is not a valid name or address: %v", keyref, err)
+		seenKeys := make(map[string]struct{})
+		for i, keyRef := range args {
+			if _, ok := seenKeys[keyRef]; ok {
+				// we just show warning message instead of return error in case someone relies on this behavior.
+				cmd.PrintErrf("WARNING: duplicate keys found: %s.\n\n", keyRef)
+			} else {
+				seenKeys[keyRef] = struct{}{}
 			}
+
+			k, err := fetchKey(clientCtx.Keyring, keyRef, clientCtx.AddressCodec)
+			if err != nil {
+				return fmt.Errorf("%s is not a valid name or address: %w", keyRef, err)
+			}
+
 			key, err := k.GetPubKey()
 			if err != nil {
 				return err
@@ -95,6 +108,7 @@ func runShowCmd(cmd *cobra.Command, args []string) (err error) {
 	isShowAddr, _ := cmd.Flags().GetBool(FlagAddress)
 	isShowPubKey, _ := cmd.Flags().GetBool(FlagPublicKey)
 	isShowDevice, _ := cmd.Flags().GetBool(FlagDevice)
+	isShowQRCode, _ := cmd.Flags().GetBool(flagQRCode)
 
 	isOutputSet := false
 	tmp := cmd.Flag(flags.FlagOutput)
@@ -111,7 +125,7 @@ func runShowCmd(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	bechPrefix, _ := cmd.Flags().GetString(FlagBechPrefix)
-	bechKeyOut, err := getBechKeyOut(bechPrefix)
+	ko, err := getKeyOutput(clientCtx, bechPrefix, k)
 	if err != nil {
 		return err
 	}
@@ -122,35 +136,33 @@ func runShowCmd(cmd *cobra.Command, args []string) (err error) {
 
 	switch {
 	case isShowAddr, isShowPubKey:
-		ko, err := bechKeyOut(k)
-		if err != nil {
-			return err
-		}
 		out := ko.Address
 		if isShowPubKey {
 			out = ko.PubKey
+		} else if isShowQRCode {
+			qrterminal.GenerateHalfBlock(out, qrterminal.H, cmd.OutOrStdout())
 		}
 
 		if _, err := fmt.Fprintln(cmd.OutOrStdout(), out); err != nil {
 			return err
 		}
 	default:
-		if err := printKeyringRecord(cmd.OutOrStdout(), k, bechKeyOut, outputFormat); err != nil {
+		if err := printKeyringRecord(cmd.OutOrStdout(), ko, outputFormat); err != nil {
 			return err
 		}
 	}
 
 	if isShowDevice {
 		if isShowPubKey {
-			return fmt.Errorf("the device flag (-d) can only be used for addresses not pubkeys")
+			return errors.New("the device flag (-d) can only be used for addresses not pubkeys")
 		}
 		if bechPrefix != "acc" {
-			return fmt.Errorf("the device flag (-d) can only be used for accounts")
+			return errors.New("the device flag (-d) can only be used for accounts")
 		}
 
 		// Override and show in the device
 		if k.GetType() != keyring.TypeLedger {
-			return fmt.Errorf("the device flag (-d) can only be used for accounts stored in devices")
+			return errors.New("the device flag (-d) can only be used for accounts stored in devices")
 		}
 
 		ledgerItem := k.GetLedger()
@@ -163,13 +175,13 @@ func runShowCmd(cmd *cobra.Command, args []string) (err error) {
 			return err
 		}
 
-		return ledger.ShowAddress(*ledgerItem.Path, pk, sdk.GetConfig().GetBech32AccountAddrPrefix())
+		return ledger.ShowAddress(*ledgerItem.Path, pk, clientCtx.AddressPrefix)
 	}
 
 	return nil
 }
 
-func fetchKey(kb keyring.Keyring, keyref string) (*keyring.Record, error) {
+func fetchKey(kb keyring.Keyring, keyref string, addressCodec address.Codec) (*keyring.Record, error) {
 	// firstly check if the keyref is a key name of a key registered in a keyring.
 	k, err := kb.Key(keyref)
 	// if the key is not there or if we have a problem with a keyring itself then we move to a
@@ -179,7 +191,7 @@ func fetchKey(kb keyring.Keyring, keyref string) (*keyring.Record, error) {
 		return k, err
 	}
 
-	accAddr, err := sdk.AccAddressFromBech32(keyref)
+	accAddr, err := addressCodec.StringToBytes(keyref)
 	if err != nil {
 		return k, err
 	}
@@ -190,7 +202,7 @@ func fetchKey(kb keyring.Keyring, keyref string) (*keyring.Record, error) {
 
 func validateMultisigThreshold(k, nKeys int) error {
 	if k <= 0 {
-		return fmt.Errorf("threshold must be a positive integer")
+		return errors.New("threshold must be a positive integer")
 	}
 	if nKeys < k {
 		return fmt.Errorf(
@@ -199,15 +211,15 @@ func validateMultisigThreshold(k, nKeys int) error {
 	return nil
 }
 
-func getBechKeyOut(bechPrefix string) (bechKeyOutFn, error) {
+func getKeyOutput(clientCtx client.Context, bechPrefix string, k *keyring.Record) (KeyOutput, error) {
 	switch bechPrefix {
 	case sdk.PrefixAccount:
-		return MkAccKeyOutput, nil
+		return MkAccKeyOutput(k, clientCtx.AddressCodec)
 	case sdk.PrefixValidator:
-		return MkValKeyOutput, nil
+		return MkValKeyOutput(k, clientCtx.ValidatorAddressCodec)
 	case sdk.PrefixConsensus:
-		return MkConsKeyOutput, nil
+		return MkConsKeyOutput(k, clientCtx.ConsensusAddressCodec)
 	}
 
-	return nil, fmt.Errorf("invalid Bech32 prefix encoding provided: %s", bechPrefix)
+	return KeyOutput{}, fmt.Errorf("invalid Bech32 prefix encoding provided: %s", bechPrefix)
 }

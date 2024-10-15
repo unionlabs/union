@@ -33,7 +33,7 @@
       "location": "me-central2"
     }
   ],
-  "etag": "\"3136323232353032373039383637313835303036\"",
+  "etag": "\"39393431363637393939313737343036323439\"",
   "icons": {
     "x16": "https://www.google.com/images/icons/product/cloud_storage-16.png",
     "x32": "https://www.google.com/images/icons/product/cloud_storage-32.png"
@@ -679,6 +679,38 @@
           "scopes": [
             "https://www.googleapis.com/auth/cloud-platform",
             "https://www.googleapis.com/auth/devstorage.full_control"
+          ]
+        },
+        "getStorageLayout": {
+          "description": "Returns the storage layout configuration for the specified bucket. Note that this operation requires storage.objects.list permission.",
+          "httpMethod": "GET",
+          "id": "storage.buckets.getStorageLayout",
+          "parameterOrder": [
+            "bucket"
+          ],
+          "parameters": {
+            "bucket": {
+              "description": "Name of a bucket.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "prefix": {
+              "description": "An optional prefix used for permission check. It is useful when the caller only has storage.objects.list permission under a specific prefix.",
+              "location": "query",
+              "type": "string"
+            }
+          },
+          "path": "b/{bucket}/storageLayout",
+          "response": {
+            "$ref": "BucketStorageLayout"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/cloud-platform.read-only",
+            "https://www.googleapis.com/auth/devstorage.full_control",
+            "https://www.googleapis.com/auth/devstorage.read_only",
+            "https://www.googleapis.com/auth/devstorage.read_write"
           ]
         },
         "insert": {
@@ -1632,6 +1664,11 @@
             "managedFolder"
           ],
           "parameters": {
+            "allowNonEmpty": {
+              "description": "Allows the deletion of a managed folder even if it is not empty. A managed folder is empty if there are no objects or managed folders that it applies to. Callers must have storage.managedFolders.setIamPolicy permission.",
+              "location": "query",
+              "type": "boolean"
+            },
             "bucket": {
               "description": "Name of the bucket containing the managed folder.",
               "location": "path",
@@ -3141,7 +3178,8 @@
           "id": "storage.objects.restore",
           "parameterOrder": [
             "bucket",
-            "object"
+            "object",
+            "generation"
           ],
           "parameters": {
             "bucket": {
@@ -3212,9 +3250,6 @@
             }
           },
           "path": "b/{bucket}/o/{object}/restore",
-          "request": {
-            "$ref": "Object"
-          },
           "response": {
             "$ref": "Object"
           },
@@ -4040,7 +4075,7 @@
       }
     }
   },
-  "revision": "20240105",
+  "revision": "20240621",
   "rootUrl": "https://storage.googleapis.com/",
   "schemas": {
     "AnywhereCache": {
@@ -4659,6 +4694,53 @@
       },
       "type": "object"
     },
+    "BucketStorageLayout": {
+      "description": "The storage layout configuration of a bucket.",
+      "id": "BucketStorageLayout",
+      "properties": {
+        "bucket": {
+          "description": "The name of the bucket.",
+          "type": "string"
+        },
+        "customPlacementConfig": {
+          "description": "The bucket's custom placement configuration for Custom Dual Regions.",
+          "properties": {
+            "dataLocations": {
+              "description": "The list of regional locations in which data is placed.",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "hierarchicalNamespace": {
+          "description": "The bucket's hierarchical namespace configuration.",
+          "properties": {
+            "enabled": {
+              "description": "When set to true, hierarchical namespace is enabled for this bucket.",
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        },
+        "kind": {
+          "default": "storage#storageLayout",
+          "description": "The kind of item this is. For storage layout, this is always storage#storageLayout.",
+          "type": "string"
+        },
+        "location": {
+          "description": "The location of the bucket.",
+          "type": "string"
+        },
+        "locationType": {
+          "description": "The type of the bucket location.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "Buckets": {
       "description": "A list of buckets.",
       "id": "Buckets",
@@ -4853,6 +4935,11 @@
           "description": "The name of the bucket containing this folder.",
           "type": "string"
         },
+        "createTime": {
+          "description": "The creation time of the folder in RFC 3339 format.",
+          "format": "date-time",
+          "type": "string"
+        },
         "id": {
           "description": "The ID of the folder, including the bucket name, folder name.",
           "type": "string"
@@ -4861,14 +4948,6 @@
           "default": "storage#folder",
           "description": "The kind of item this is. For folders, this is always storage#folder.",
           "type": "string"
-        },
-        "metadata": {
-          "additionalProperties": {
-            "description": "An individual metadata entry.",
-            "type": "string"
-          },
-          "description": "User-provided metadata, in key/value pairs.",
-          "type": "object"
         },
         "metageneration": {
           "description": "The version of the metadata for this folder. Used for preconditions and for detecting changes in metadata.",
@@ -4893,12 +4972,7 @@
           "description": "The link to this folder.",
           "type": "string"
         },
-        "timeCreated": {
-          "description": "The creation time of the folder in RFC 3339 format.",
-          "format": "date-time",
-          "type": "string"
-        },
-        "updated": {
+        "updateTime": {
           "description": "The modification time of the folder metadata in RFC 3339 format.",
           "format": "date-time",
           "type": "string"
@@ -4933,6 +5007,11 @@
       "description": "The response message for storage.buckets.operations.list.",
       "id": "GoogleLongrunningListOperationsResponse",
       "properties": {
+        "kind": {
+          "default": "storage#operations",
+          "description": "The kind of item this is. For lists of operations, this is always storage#operations.",
+          "type": "string"
+        },
         "nextPageToken": {
           "description": "The continuation token, used to page through large result sets. Provide this value in a subsequent request to return the next page of results.",
           "type": "string"
@@ -4959,6 +5038,11 @@
           "$ref": "GoogleRpcStatus",
           "description": "The error result of the operation in case of failure or cancellation."
         },
+        "kind": {
+          "default": "storage#operation",
+          "description": "The kind of item this is. For operations, this is always storage#operation.",
+          "type": "string"
+        },
         "metadata": {
           "additionalProperties": {
             "description": "Properties of the object. Contains field @type with type URL.",
@@ -4978,6 +5062,10 @@
           },
           "description": "The normal response of the operation in case of success. If the original method returns no data on success, such as \"Delete\", the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type \"XxxResponse\", where \"Xxx\" is the original method name. For example, if the original method name is \"TakeSnapshot()\", the inferred response type is \"TakeSnapshotResponse\".",
           "type": "object"
+        },
+        "selfLink": {
+          "description": "The link to this long running operation.",
+          "type": "string"
         }
       },
       "type": "object"

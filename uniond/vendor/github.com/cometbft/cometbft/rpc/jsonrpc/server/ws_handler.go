@@ -14,7 +14,7 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // WebSocket handler
@@ -28,7 +28,7 @@ const (
 
 // WebsocketManager provides a WS handler for incoming connections and passes a
 // map of functions along with any additional params to new connections.
-// NOTE: The websocket path is defined externally, e.g. in node/node.go
+// NOTE: The websocket path is defined externally, e.g. in node/node.go.
 type WebsocketManager struct {
 	websocket.Upgrader
 
@@ -46,7 +46,7 @@ func NewWebsocketManager(
 	return &WebsocketManager{
 		funcMap: funcMap,
 		Upgrader: websocket.Upgrader{
-			CheckOrigin: func(r *http.Request) bool {
+			CheckOrigin: func(_ *http.Request) bool {
 				// TODO ???
 				//
 				// The default behavior would be relevant to browser-based clients,
@@ -243,7 +243,7 @@ func (wsc *wsConnection) OnStop() {
 }
 
 // GetRemoteAddr returns the remote address of the underlying connection.
-// It implements WSRPCConnection
+// It implements WSRPCConnection.
 func (wsc *wsConnection) GetRemoteAddr() string {
 	return wsc.remoteAddr
 }
@@ -264,7 +264,7 @@ func (wsc *wsConnection) WriteRPCResponse(ctx context.Context, resp types.RPCRes
 
 // TryWriteRPCResponse attempts to push a response to the writeChan, but does
 // not block.
-// It implements WSRPCConnection. It is Goroutine-safe
+// It implements WSRPCConnection. It is Goroutine-safe.
 func (wsc *wsConnection) TryWriteRPCResponse(resp types.RPCResponse) bool {
 	select {
 	case <-wsc.Quit():
@@ -286,7 +286,7 @@ func (wsc *wsConnection) Context() context.Context {
 	return wsc.ctx
 }
 
-// Read from the socket and subscribe to or unsubscribe from events
+// Read from the socket and subscribe to or unsubscribe from events.
 func (wsc *wsConnection) readRoutine() {
 	// readRoutine will block until response is written or WS connection is closed
 	writeCtx := context.Background()
@@ -305,7 +305,7 @@ func (wsc *wsConnection) readRoutine() {
 		}
 	}()
 
-	wsc.baseConn.SetPongHandler(func(m string) error {
+	wsc.baseConn.SetPongHandler(func(_ string) error {
 		return wsc.baseConn.SetReadDeadline(time.Now().Add(wsc.readWait))
 	})
 
@@ -381,7 +381,7 @@ func (wsc *wsConnection) readRoutine() {
 			returns := rpcFunc.f.Call(args)
 
 			// TODO: Need to encode args/returns to string if we want to log them
-			wsc.Logger.Info("WSJSONRPC", "method", request.Method)
+			wsc.Logger.Debug("WSJSONRPC", "method", request.Method)
 
 			result, err := unreflectResult(returns)
 			if err != nil {
@@ -398,7 +398,7 @@ func (wsc *wsConnection) readRoutine() {
 	}
 }
 
-// receives on a write channel and writes out on the socket
+// receives on a write channel and writes out on the socket.
 func (wsc *wsConnection) writeRoutine() {
 	pingTicker := time.NewTicker(wsc.pingPeriod)
 	defer pingTicker.Stop()

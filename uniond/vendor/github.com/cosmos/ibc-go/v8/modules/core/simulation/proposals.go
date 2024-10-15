@@ -1,9 +1,11 @@
 package simulation
 
 import (
+	"context"
 	"math/rand"
 	"time"
 
+	coreaddress "cosmossdk.io/core/address"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -29,22 +31,22 @@ const (
 // ProposalMsgs defines the module weighted proposals' contents
 func ProposalMsgs() []simtypes.WeightedProposalMsg {
 	return []simtypes.WeightedProposalMsg{
-		simulation.NewWeightedProposalMsg(
+		simulation.NewWeightedProposalMsgX(
 			OpWeightMsgUpdateParams,
 			DefaultWeight,
 			SimulateClientMsgUpdateParams,
 		),
-		simulation.NewWeightedProposalMsg(
+		simulation.NewWeightedProposalMsgX(
 			OpWeightMsgUpdateParams,
 			DefaultWeight,
 			SimulateConnectionMsgUpdateParams,
 		),
-		simulation.NewWeightedProposalMsg(
+		simulation.NewWeightedProposalMsgX(
 			OpWeightMsgRecoverClient,
 			DefaultWeight,
 			SimulateClientMsgRecoverClient,
 		),
-		simulation.NewWeightedProposalMsg(
+		simulation.NewWeightedProposalMsgX(
 			OpWeightMsgIBCSoftwareUpgrade,
 			DefaultWeight,
 			SimulateClientMsgScheduleIBCSoftwareUpgrade,
@@ -53,7 +55,7 @@ func ProposalMsgs() []simtypes.WeightedProposalMsg {
 }
 
 // SimulateClientMsgUpdateParams returns a MsgUpdateParams for 02-client
-func SimulateClientMsgUpdateParams(r *rand.Rand, _ sdk.Context, _ []simtypes.Account) sdk.Msg {
+func SimulateClientMsgUpdateParams(ctx context.Context, r *rand.Rand, _ []simtypes.Account, _ coreaddress.Codec) (sdk.Msg, error) {
 	var signer sdk.AccAddress = address.Module("gov")
 	params := types.DefaultParams()
 	params.AllowedClients = []string{"06-solomachine", "07-tendermint"}
@@ -61,22 +63,22 @@ func SimulateClientMsgUpdateParams(r *rand.Rand, _ sdk.Context, _ []simtypes.Acc
 	return &types.MsgUpdateParams{
 		Signer: signer.String(),
 		Params: params,
-	}
+	}, nil
 }
 
 // SimulateClientMsgRecoverClient returns a MsgRecoverClient for 02-client
-func SimulateClientMsgRecoverClient(r *rand.Rand, _ sdk.Context, _ []simtypes.Account) sdk.Msg {
+func SimulateClientMsgRecoverClient(ctx context.Context, r *rand.Rand, _ []simtypes.Account, _ coreaddress.Codec) (sdk.Msg, error) {
 	var signer sdk.AccAddress = address.Module("gov")
 
 	return &types.MsgRecoverClient{
 		Signer:             signer.String(),
 		SubjectClientId:    "07-tendermint-0",
 		SubstituteClientId: "07-tendermint-1",
-	}
+	}, nil
 }
 
 // SimulateClientMsgScheduleIBCSoftwareUpgrade returns a MsgScheduleIBCSoftwareUpgrade for 02-client
-func SimulateClientMsgScheduleIBCSoftwareUpgrade(r *rand.Rand, _ sdk.Context, _ []simtypes.Account) sdk.Msg {
+func SimulateClientMsgScheduleIBCSoftwareUpgrade(ctx context.Context, r *rand.Rand, _ []simtypes.Account, _ coreaddress.Codec) (sdk.Msg, error) {
 	var signer sdk.AccAddress = address.Module("gov")
 
 	chainID := "chain-a-0"
@@ -101,11 +103,11 @@ func SimulateClientMsgScheduleIBCSoftwareUpgrade(r *rand.Rand, _ sdk.Context, _ 
 			Height: 100,
 		},
 		UpgradedClientState: anyClient,
-	}
+	}, nil
 }
 
 // SimulateConnectionMsgUpdateParams returns a MsgUpdateParams 03-connection
-func SimulateConnectionMsgUpdateParams(r *rand.Rand, _ sdk.Context, _ []simtypes.Account) sdk.Msg {
+func SimulateConnectionMsgUpdateParams(ctx context.Context, r *rand.Rand, _ []simtypes.Account, _ coreaddress.Codec) (sdk.Msg, error) {
 	var signer sdk.AccAddress = address.Module("gov")
 	params := connectiontypes.DefaultParams()
 	params.MaxExpectedTimePerBlock = uint64(100)
@@ -113,5 +115,5 @@ func SimulateConnectionMsgUpdateParams(r *rand.Rand, _ sdk.Context, _ []simtypes
 	return &connectiontypes.MsgUpdateParams{
 		Signer: signer.String(),
 		Params: params,
-	}
+	}, nil
 }

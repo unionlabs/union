@@ -15,12 +15,12 @@ import (
 
 // Info is the special structure that the Plan.Info string can be (as json).
 type Info struct {
-	parseConfig ParseConfig `json:"-"`
+	parseConfig ParseConfig
 
 	Binaries BinaryDownloadURLMap `json:"binaries"`
 }
 
-// BinaryDownloadURLMap is a map of os/architecture stings to a URL where the binary can be downloaded.
+// BinaryDownloadURLMap is a map of os/architecture strings to a URL where the binary can be downloaded.
 type BinaryDownloadURLMap map[string]string
 
 // ParseConfig is used to configure the parsing of a Plan.Info string.
@@ -54,7 +54,7 @@ func ParseInfo(infoStr string, opts ...ParseOption) (*Info, error) {
 	}
 
 	// If it's a url, download it and treat the result as the real info.
-	if _, err := neturl.Parse(infoStr); err == nil {
+	if _, err := neturl.ParseRequestURI(infoStr); err == nil {
 		if err := ValidateURL(infoStr, parseConfig.EnforceChecksum); err != nil {
 			return nil, err
 		}
@@ -68,7 +68,7 @@ func ParseInfo(infoStr string, opts ...ParseOption) (*Info, error) {
 	// Now, try to parse it into the expected structure.
 	var planInfo Info
 	if err := json.Unmarshal(conv.UnsafeStrToBytes(infoStr), &planInfo); err != nil {
-		return nil, fmt.Errorf("could not parse plan info: %v", err)
+		return nil, fmt.Errorf("could not parse plan info: %w", err)
 	}
 
 	planInfo.parseConfig = *parseConfig

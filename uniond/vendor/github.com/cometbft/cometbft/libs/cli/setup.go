@@ -19,12 +19,12 @@ const (
 )
 
 // Executable is the minimal interface to *corba.Command, so we can
-// wrap if desired before the test
+// wrap if desired before the test.
 type Executable interface {
 	Execute() error
 }
 
-// PrepareBaseCmd is meant for CometBFT and other servers
+// PrepareBaseCmd is meant for CometBFT and other servers.
 func PrepareBaseCmd(cmd *cobra.Command, envPrefix, defaultHome string) Executor {
 	cobra.OnInitialize(func() { initEnv(envPrefix) })
 	cmd.PersistentFlags().StringP(HomeFlag, "", defaultHome, "directory for config and data")
@@ -55,7 +55,7 @@ func initEnv(prefix string) {
 }
 
 // This copies all variables like TMROOT to TM_ROOT,
-// so we can support both formats for the user
+// so we can support both formats for the user.
 func copyEnvVars(prefix string) {
 	prefix = strings.ToUpper(prefix)
 	ps := prefix + "_"
@@ -71,7 +71,7 @@ func copyEnvVars(prefix string) {
 	}
 }
 
-// Executor wraps the cobra Command with a nicer Execute method
+// Executor wraps the cobra Command with a nicer Execute method.
 type Executor struct {
 	*cobra.Command
 	Exit func(int) // this is os.Exit by default, override in tests
@@ -110,7 +110,7 @@ func (e Executor) Execute() error {
 type cobraCmdFunc func(cmd *cobra.Command, args []string) error
 
 // Returns a single function that calls each argument function in sequence
-// RunE, PreRunE, PersistentPreRunE, etc. all have this same signature
+// RunE, PreRunE, PersistentPreRunE, etc. all have this same signature.
 func concatCobraCmdFuncs(fs ...cobraCmdFunc) cobraCmdFunc {
 	return func(cmd *cobra.Command, args []string) error {
 		for _, f := range fs {
@@ -124,7 +124,7 @@ func concatCobraCmdFuncs(fs ...cobraCmdFunc) cobraCmdFunc {
 	}
 }
 
-// Bind all flags and read the config into viper
+// Bind all flags and read the config into viper.
 func bindFlagsLoadViper(cmd *cobra.Command, _ []string) error {
 	// cmd.Flags() includes flags from this command and all persistent flags from the parent
 	if err := viper.BindPFlags(cmd.Flags()); err != nil {

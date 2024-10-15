@@ -237,7 +237,7 @@ func (s *Scanner) scanLiteralString(open rune) error {
 // beyond the apparent end of a multiline string.
 //
 // After we have seen enough quotes to close the string, we might be done, but
-// lexicall grammar allows up to 2 unhedged quotes at the end, so we have to
+// the lexical grammar allows up to 2 unhedged quotes at the end, so we have to
 // check further.  If there are 0, 1, or 2 additional quotes, all is well; any
 // more than that is an error.
 func (s *Scanner) checkMultilineStringEnd(open rune, resType Token) error {

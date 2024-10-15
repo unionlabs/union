@@ -112,3 +112,7 @@ func revisionFromBuildInfo(info *debug.BuildInfo) string {
 
 	return ""
 }
+
+func Pointer[T any](v T) *T {
+	return &v
+}

@@ -3,10 +3,10 @@ package tx
 import (
 	"context"
 
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	bankv1beta1 "cosmossdk.io/api/cosmos/bank/v1beta1"
 )
 
 // BankKeeper defines the contract needed for tx-related APIs
 type BankKeeper interface {
-	DenomMetadata(c context.Context, req *types.QueryDenomMetadataRequest) (*types.QueryDenomMetadataResponse, error)
+	DenomMetadataV2(c context.Context, req *bankv1beta1.QueryDenomMetadataRequest) (*bankv1beta1.QueryDenomMetadataResponse, error)
 }

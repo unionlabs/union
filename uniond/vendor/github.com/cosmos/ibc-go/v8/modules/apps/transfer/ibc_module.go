@@ -1,6 +1,7 @@
 package transfer
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"strings"
@@ -41,7 +42,7 @@ func NewIBCModule(k keeper.Keeper) IBCModule {
 // channel must be UNORDERED, use the correct port (by default 'transfer'), and use the current
 // supported version. Only 2^32 channels are allowed to be created.
 func ValidateTransferChannelParams(
-	ctx sdk.Context,
+	ctx context.Context,
 	transferkeeper keeper.Keeper,
 	order channeltypes.Order,
 	portID string,
@@ -71,7 +72,7 @@ func ValidateTransferChannelParams(
 
 // OnChanOpenInit implements the IBCModule interface
 func (im IBCModule) OnChanOpenInit(
-	ctx sdk.Context,
+	ctx context.Context,
 	order channeltypes.Order,
 	connectionHops []string,
 	portID string,
@@ -102,7 +103,7 @@ func (im IBCModule) OnChanOpenInit(
 
 // OnChanOpenTry implements the IBCModule interface.
 func (im IBCModule) OnChanOpenTry(
-	ctx sdk.Context,
+	ctx context.Context,
 	order channeltypes.Order,
 	connectionHops []string,
 	portID,
@@ -115,13 +116,15 @@ func (im IBCModule) OnChanOpenTry(
 		return "", err
 	}
 
-	if counterpartyVersion != types.Version {
-		return "", errorsmod.Wrapf(types.ErrInvalidVersion, "invalid counterparty version: expected %s, got %s", types.Version, counterpartyVersion)
-	}
-
 	// OpenTry must claim the channelCapability that IBC passes into the callback
 	if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
 		return "", err
+	}
+
+	if counterpartyVersion != types.Version {
+		// Propose the current version
+		im.keeper.Logger(ctx).Debug("invalid counterparty version, proposing current app version", "counterpartyVersion", counterpartyVersion, "version", types.Version)
+		return types.Version, nil
 	}
 
 	return types.Version, nil
@@ -129,7 +132,7 @@ func (im IBCModule) OnChanOpenTry(
 
 // OnChanOpenAck implements the IBCModule interface
 func (IBCModule) OnChanOpenAck(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 	_ string,
@@ -143,7 +146,7 @@ func (IBCModule) OnChanOpenAck(
 
 // OnChanOpenConfirm implements the IBCModule interface
 func (IBCModule) OnChanOpenConfirm(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 ) error {
@@ -152,7 +155,7 @@ func (IBCModule) OnChanOpenConfirm(
 
 // OnChanCloseInit implements the IBCModule interface
 func (IBCModule) OnChanCloseInit(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 ) error {
@@ -162,7 +165,7 @@ func (IBCModule) OnChanCloseInit(
 
 // OnChanCloseConfirm implements the IBCModule interface
 func (IBCModule) OnChanCloseConfirm(
-	ctx sdk.Context,
+	ctx context.Context,
 	portID,
 	channelID string,
 ) error {
@@ -173,7 +176,7 @@ func (IBCModule) OnChanCloseConfirm(
 // is returned if the packet data is successfully decoded and the receive application
 // logic returns without error.
 func (im IBCModule) OnRecvPacket(
-	ctx sdk.Context,
+	ctx context.Context,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) ibcexported.Acknowledgement {
@@ -215,7 +218,8 @@ func (im IBCModule) OnRecvPacket(
 		eventAttributes = append(eventAttributes, sdk.NewAttribute(types.AttributeKeyAckError, ackErr.Error()))
 	}
 
-	ctx.EventManager().EmitEvent(
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypePacket,
 			eventAttributes...,
@@ -228,7 +232,7 @@ func (im IBCModule) OnRecvPacket(
 
 // OnAcknowledgementPacket implements the IBCModule interface
 func (im IBCModule) OnAcknowledgementPacket(
-	ctx sdk.Context,
+	ctx context.Context,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
@@ -246,7 +250,8 @@ func (im IBCModule) OnAcknowledgementPacket(
 		return err
 	}
 
-	ctx.EventManager().EmitEvent(
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypePacket,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
@@ -261,14 +266,16 @@ func (im IBCModule) OnAcknowledgementPacket(
 
 	switch resp := ack.Response.(type) {
 	case *channeltypes.Acknowledgement_Result:
-		ctx.EventManager().EmitEvent(
+		sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+		sdkCtx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				types.EventTypePacket,
 				sdk.NewAttribute(types.AttributeKeyAckSuccess, string(resp.Result)),
 			),
 		)
 	case *channeltypes.Acknowledgement_Error:
-		ctx.EventManager().EmitEvent(
+		sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+		sdkCtx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				types.EventTypePacket,
 				sdk.NewAttribute(types.AttributeKeyAckError, resp.Error),
@@ -281,7 +288,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 
 // OnTimeoutPacket implements the IBCModule interface
 func (im IBCModule) OnTimeoutPacket(
-	ctx sdk.Context,
+	ctx context.Context,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
@@ -294,7 +301,8 @@ func (im IBCModule) OnTimeoutPacket(
 		return err
 	}
 
-	ctx.EventManager().EmitEvent(
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeTimeout,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
@@ -309,7 +317,7 @@ func (im IBCModule) OnTimeoutPacket(
 }
 
 // OnChanUpgradeInit implements the IBCModule interface
-func (im IBCModule) OnChanUpgradeInit(ctx sdk.Context, portID, channelID string, proposedOrder channeltypes.Order, proposedConnectionHops []string, proposedVersion string) (string, error) {
+func (im IBCModule) OnChanUpgradeInit(ctx context.Context, portID, channelID string, proposedOrder channeltypes.Order, proposedConnectionHops []string, proposedVersion string) (string, error) {
 	if err := ValidateTransferChannelParams(ctx, im.keeper, proposedOrder, portID, channelID); err != nil {
 		return "", err
 	}
@@ -322,7 +330,7 @@ func (im IBCModule) OnChanUpgradeInit(ctx sdk.Context, portID, channelID string,
 }
 
 // OnChanUpgradeTry implements the IBCModule interface
-func (im IBCModule) OnChanUpgradeTry(ctx sdk.Context, portID, channelID string, proposedOrder channeltypes.Order, proposedConnectionHops []string, counterpartyVersion string) (string, error) {
+func (im IBCModule) OnChanUpgradeTry(ctx context.Context, portID, channelID string, proposedOrder channeltypes.Order, proposedConnectionHops []string, counterpartyVersion string) (string, error) {
 	if err := ValidateTransferChannelParams(ctx, im.keeper, proposedOrder, portID, channelID); err != nil {
 		return "", err
 	}
@@ -335,7 +343,7 @@ func (im IBCModule) OnChanUpgradeTry(ctx sdk.Context, portID, channelID string, 
 }
 
 // OnChanUpgradeAck implements the IBCModule interface
-func (IBCModule) OnChanUpgradeAck(ctx sdk.Context, portID, channelID, counterpartyVersion string) error {
+func (IBCModule) OnChanUpgradeAck(ctx context.Context, portID, channelID, counterpartyVersion string) error {
 	if counterpartyVersion != types.Version {
 		return errorsmod.Wrapf(types.ErrInvalidVersion, "expected %s, got %s", types.Version, counterpartyVersion)
 	}
@@ -344,7 +352,7 @@ func (IBCModule) OnChanUpgradeAck(ctx sdk.Context, portID, channelID, counterpar
 }
 
 // OnChanUpgradeOpen implements the IBCModule interface
-func (IBCModule) OnChanUpgradeOpen(ctx sdk.Context, portID, channelID string, proposedOrder channeltypes.Order, proposedConnectionHops []string, proposedVersion string) {
+func (IBCModule) OnChanUpgradeOpen(ctx context.Context, portID, channelID string, proposedOrder channeltypes.Order, proposedConnectionHops []string, proposedVersion string) {
 }
 
 // UnmarshalPacketData attempts to unmarshal the provided packet data bytes

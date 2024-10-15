@@ -1,7 +1,8 @@
 package tx
 
 import (
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
+
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -21,7 +22,7 @@ func (s *SignDocDirectAux) ValidateBasic() error {
 }
 
 // UnpackInterfaces implements the UnpackInterfaceMessages.UnpackInterfaces method
-func (s *SignDocDirectAux) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (s *SignDocDirectAux) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return unpacker.UnpackAny(s.PublicKey, new(cryptotypes.PubKey))
 }
 
@@ -42,7 +43,7 @@ func (a *AuxSignerData) ValidateBasic() error {
 	return a.GetSignDoc().ValidateBasic()
 }
 
-// GetSignaturesV2 gets the SignatureV2 of the aux signer.
+// GetSignatureV2 gets the SignatureV2 of the aux signer.
 func (a *AuxSignerData) GetSignatureV2() (signing.SignatureV2, error) {
 	pk, ok := a.SignDoc.PublicKey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
@@ -60,6 +61,6 @@ func (a *AuxSignerData) GetSignatureV2() (signing.SignatureV2, error) {
 }
 
 // UnpackInterfaces implements the UnpackInterfaceMessages.UnpackInterfaces method
-func (a *AuxSignerData) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (a *AuxSignerData) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return a.GetSignDoc().UnpackInterfaces(unpacker)
 }

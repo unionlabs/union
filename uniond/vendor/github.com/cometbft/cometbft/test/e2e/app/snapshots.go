@@ -15,7 +15,7 @@ import (
 const (
 	snapshotChunkSize = 1e6
 
-	// Keep only the most recent 10 snapshots. Older snapshots are pruned
+	// Keep only the most recent 10 snapshots. Older snapshots are pruned.
 	maxSnapshotCount = 10
 )
 
@@ -106,7 +106,7 @@ func (s *SnapshotStore) Create(state *State) (abci.Snapshot, error) {
 	return snapshot, nil
 }
 
-// Prune removes old snapshots ensuring only the most recent n snapshots remain
+// Prune removes old snapshots ensuring only the most recent n snapshots remain.
 func (s *SnapshotStore) Prune(n int) error {
 	s.Lock()
 	defer s.Unlock()

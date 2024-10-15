@@ -1,0 +1,11 @@
+version: v1
+deps:
+  - buf.build/cosmos/cosmos-sdk
+lint:
+  use:
+    - DEFAULT
+  except:
+    - PACKAGE_VERSION_SUFFIX
+breaking:
+  ignore:
+    - testpb

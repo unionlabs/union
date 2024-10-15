@@ -3,14 +3,14 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"reflect"
+	"slices"
 	"strings"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cosmos/gogoproto/jsonpb"
-	proto "github.com/cosmos/gogoproto/proto"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
+	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 )
@@ -100,9 +100,7 @@ func TypedEventToEvent(tev proto.Message) (Event, error) {
 	}
 
 	// sort the keys to ensure the order is always the same
-	keys := maps.Keys(attrMap)
-	slices.Sort(keys)
-
+	keys := slices.Sorted(maps.Keys(attrMap))
 	attrs := make([]abci.EventAttribute, 0, len(attrMap))
 	for _, k := range keys {
 		v := attrMap[k]

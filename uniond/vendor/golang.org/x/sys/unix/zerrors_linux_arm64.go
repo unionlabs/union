@@ -78,6 +78,8 @@ const (
 	ECHOPRT                          = 0x400
 	EFD_CLOEXEC                      = 0x80000
 	EFD_NONBLOCK                     = 0x800
+	EPIOCGPARAMS                     = 0x80088a02
+	EPIOCSPARAMS                     = 0x40088a01
 	EPOLL_CLOEXEC                    = 0x80000
 	ESR_MAGIC                        = 0x45535201
 	EXTPROC                          = 0x10000
@@ -87,6 +89,7 @@ const (
 	FICLONE                          = 0x40049409
 	FICLONERANGE                     = 0x4020940d
 	FLUSHO                           = 0x1000
+	FPMR_MAGIC                       = 0x46504d52
 	FPSIMD_MAGIC                     = 0x46508001
 	FS_IOC_ENABLE_VERITY             = 0x40806685
 	FS_IOC_GETFLAGS                  = 0x80086601
@@ -151,9 +154,14 @@ const (
 	NFDBITS                          = 0x40
 	NLDLY                            = 0x100
 	NOFLSH                           = 0x80
+	NS_GET_MNTNS_ID                  = 0x8008b705
 	NS_GET_NSTYPE                    = 0xb703
 	NS_GET_OWNER_UID                 = 0xb704
 	NS_GET_PARENT                    = 0xb702
+	NS_GET_PID_FROM_PIDNS            = 0x8004b706
+	NS_GET_PID_IN_PIDNS              = 0x8004b708
+	NS_GET_TGID_FROM_PIDNS           = 0x8004b707
+	NS_GET_TGID_IN_PIDNS             = 0x8004b709
 	NS_GET_USERNS                    = 0xb701
 	OLCUC                            = 0x2
 	ONLCR                            = 0x4

@@ -40,10 +40,10 @@ func (s msgServer) RegisterInterchainAccount(goCtx context.Context, msg *types.M
 
 	s.SetMiddlewareDisabled(ctx, portID, msg.ConnectionId)
 
-	// use ORDER_ORDERED as default in case msg's ordering is NONE
+	// use ORDER_UNORDERED as default in case msg's ordering is NONE
 	var order channeltypes.Order
 	if msg.Ordering == channeltypes.NONE {
-		order = channeltypes.ORDERED
+		order = channeltypes.UNORDERED
 	} else {
 		order = msg.Ordering
 	}

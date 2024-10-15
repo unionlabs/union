@@ -1,5 +1,76 @@
 # Changelog
 
+## 0.29.0
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry Go SDK v0.29.0.
+
+### Breaking Changes
+
+- Remove the `sentrymartini` integration ([#861](https://github.com/getsentry/sentry-go/pull/861))
+- The `WrapResponseWriter` has been moved from the `sentryhttp` package to the `internal/httputils` package. If you've imported it previosuly, you'll need to copy the implementation in your project. ([#871](https://github.com/getsentry/sentry-go/pull/871))
+
+### Features
+
+- Add new convenience methods to continue a trace and propagate tracing headers for error-only use cases. ([#862](https://github.com/getsentry/sentry-go/pull/862))
+
+  If you are not using one of our integrations, you can manually continue an incoming trace by using `sentry.ContinueTrace()` by providing the `sentry-trace` and `baggage` header received from a downstream SDK.
+
+  ```go
+  hub := sentry.CurrentHub()
+  sentry.ContinueTrace(hub, r.Header.Get(sentry.SentryTraceHeader), r.Header.Get(sentry.SentryBaggageHeader)),
+  ```
+
+  You can use `hub.GetTraceparent()` and `hub.GetBaggage()` to fetch the necessary header values for outgoing HTTP requests.
+
+  ```go
+  hub := sentry.GetHubFromContext(ctx)
+  req, _ := http.NewRequest("GET", "http://localhost:3000", nil)
+  req.Header.Add(sentry.SentryTraceHeader, hub.GetTraceparent())
+  req.Header.Add(sentry.SentryBaggageHeader, hub.GetBaggage())
+  ```
+
+### Bug Fixes
+
+- Initialize `HTTPTransport.limit` if `nil` ([#844](https://github.com/getsentry/sentry-go/pull/844))
+- Fix `sentry.StartTransaction()` returning a transaction with an outdated context on existing transactions ([#854](https://github.com/getsentry/sentry-go/pull/854))
+- Treat `Proxy-Authorization` as a sensitive header ([#859](https://github.com/getsentry/sentry-go/pull/859))
+- Add support for the `http.Hijacker` interface to the `sentrynegroni` package ([#871](https://github.com/getsentry/sentry-go/pull/871))
+- Go version >= 1.23: Use value from `http.Request.Pattern` for HTTP transaction names when using `sentryhttp` & `sentrynegroni` ([#875](https://github.com/getsentry/sentry-go/pull/875))
+- Go version >= 1.21: Fix closure functions name grouping ([#877](https://github.com/getsentry/sentry-go/pull/877))
+
+### Misc
+
+- Collect `span` origins ([#849](https://github.com/getsentry/sentry-go/pull/849))
+
+## 0.28.1
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry Go SDK v0.28.1.
+
+### Bug Fixes
+
+- Implement `http.ResponseWriter` to hook into various parts of the response process ([#837](https://github.com/getsentry/sentry-go/pull/837))
+
+## 0.28.0
+
+The Sentry SDK team is happy to announce the immediate availability of Sentry Go SDK v0.28.0.
+
+### Features
+
+- Add a `Fiber` performance tracing & error reporting integration ([#795](https://github.com/getsentry/sentry-go/pull/795))
+- Add performance tracing to the `Echo` integration ([#722](https://github.com/getsentry/sentry-go/pull/722))
+- Add performance tracing to the `FastHTTP` integration ([#732](https://github.com/getsentry/sentry-go/pull/723))
+- Add performance tracing to the `Iris` integration ([#809](https://github.com/getsentry/sentry-go/pull/809))
+- Add performance tracing to the `Negroni` integration ([#808](https://github.com/getsentry/sentry-go/pull/808))
+- Add `FailureIssueThreshold` & `RecoveryThreshold` to `MonitorConfig` ([#775](https://github.com/getsentry/sentry-go/pull/775))
+- Use `errors.Unwrap()` to create exception groups ([#792](https://github.com/getsentry/sentry-go/pull/792))
+- Add support for matching on strings for `ClientOptions.IgnoreErrors` & `ClientOptions.IgnoreTransactions` ([#819](https://github.com/getsentry/sentry-go/pull/819))
+- Add `http.request.method` attribute for performance span data ([#786](https://github.com/getsentry/sentry-go/pull/786))
+- Accept `interface{}` for span data values ([#784](https://github.com/getsentry/sentry-go/pull/784))
+
+### Bug Fixes
+
+- Fix missing stack trace for parsing error in `logrusentry` ([#689](https://github.com/getsentry/sentry-go/pull/689))
+
 ## 0.27.0
 
 The Sentry SDK team is happy to announce the immediate availability of Sentry Go SDK v0.27.0.

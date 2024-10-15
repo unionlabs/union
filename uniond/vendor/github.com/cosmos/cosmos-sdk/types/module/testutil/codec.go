@@ -11,7 +11,7 @@ import (
 )
 
 // TestEncodingConfig defines an encoding configuration that is used for testing
-// purposes. Note, MakeTestEncodingConfig takes a series of AppModuleBasic types
+// purposes. Note, MakeTestEncodingConfig takes a series of AppModule types
 // which should only contain the relevant module being tested and any potential
 // dependencies.
 type TestEncodingConfig struct {
@@ -21,20 +21,20 @@ type TestEncodingConfig struct {
 	Amino             *codec.LegacyAmino
 }
 
-func MakeTestEncodingConfig(modules ...module.AppModuleBasic) TestEncodingConfig {
+func MakeTestEncodingConfig(codecOpt testutil.CodecOptions, modules ...module.AppModule) TestEncodingConfig {
 	aminoCodec := codec.NewLegacyAmino()
-	interfaceRegistry := testutil.CodecOptions{}.NewInterfaceRegistry()
-	codec := codec.NewProtoCodec(interfaceRegistry)
+	interfaceRegistry := codecOpt.NewInterfaceRegistry()
+	cdc := codec.NewProtoCodec(interfaceRegistry)
+	signingCtx := cdc.InterfaceRegistry().SigningContext()
 
 	encCfg := TestEncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
-		Codec:             codec,
-		TxConfig:          tx.NewTxConfig(codec, tx.DefaultSignModes),
+		Codec:             cdc,
+		TxConfig:          tx.NewTxConfig(cdc, signingCtx.AddressCodec(), signingCtx.ValidatorAddressCodec(), tx.DefaultSignModes),
 		Amino:             aminoCodec,
 	}
 
-	mb := module.NewBasicManager(modules...)
-
+	mb := module.NewManager(modules...)
 	std.RegisterLegacyAminoCodec(encCfg.Amino)
 	std.RegisterInterfaces(encCfg.InterfaceRegistry)
 	mb.RegisterLegacyAminoCodec(encCfg.Amino)
@@ -43,10 +43,11 @@ func MakeTestEncodingConfig(modules ...module.AppModuleBasic) TestEncodingConfig
 	return encCfg
 }
 
-func MakeTestTxConfig() client.TxConfig {
-	interfaceRegistry := testutil.CodecOptions{}.NewInterfaceRegistry()
+func MakeTestTxConfig(codecOpt testutil.CodecOptions) client.TxConfig {
+	interfaceRegistry := codecOpt.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(interfaceRegistry)
-	return tx.NewTxConfig(cdc, tx.DefaultSignModes)
+	signingCtx := interfaceRegistry.SigningContext()
+	return tx.NewTxConfig(cdc, signingCtx.AddressCodec(), signingCtx.ValidatorAddressCodec(), tx.DefaultSignModes)
 }
 
 type TestBuilderTxConfig struct {
@@ -54,9 +55,9 @@ type TestBuilderTxConfig struct {
 	TxBuilder *TestTxBuilder
 }
 
-func MakeBuilderTestTxConfig() TestBuilderTxConfig {
+func MakeBuilderTestTxConfig(codecOpt testutil.CodecOptions) TestBuilderTxConfig {
 	return TestBuilderTxConfig{
-		TxConfig: MakeTestTxConfig(),
+		TxConfig: MakeTestTxConfig(codecOpt),
 	}
 }
 

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"reflect"
 
-	errorsmod "cosmossdk.io/errors"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	errorsmod "cosmossdk.io/errors"
+	govtypes "cosmossdk.io/x/gov/types/v1beta1"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
@@ -21,9 +21,9 @@ const (
 )
 
 var (
-	_ govtypes.Content                   = &ClientUpdateProposal{}
-	_ govtypes.Content                   = &UpgradeProposal{}
-	_ codectypes.UnpackInterfacesMessage = &UpgradeProposal{}
+	_ govtypes.Content                     = &ClientUpdateProposal{}
+	_ govtypes.Content                     = &UpgradeProposal{}
+	_ gogoprotoany.UnpackInterfacesMessage = &UpgradeProposal{}
 )
 
 func init() {
@@ -150,6 +150,6 @@ func (up UpgradeProposal) String() string {
 }
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (up UpgradeProposal) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (up UpgradeProposal) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return unpacker.UnpackAny(up.UpgradedClientState, new(exported.ClientState))
 }

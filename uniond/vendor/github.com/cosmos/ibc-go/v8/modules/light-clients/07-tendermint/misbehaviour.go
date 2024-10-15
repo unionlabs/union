@@ -5,7 +5,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -117,7 +117,7 @@ func validCommit(chainID string, blockID tmtypes.BlockID, commit *tmproto.Commit
 		return errorsmod.Wrap(err, "validator set is not tendermint validator set type")
 	}
 
-	if err := tmValset.VerifyCommitLightLegacy(chainID, blockID, tmCommit.Height, tmCommit); err != nil {
+	if err := tmValset.VerifyCommitLight(chainID, blockID, tmCommit.Height, tmCommit); err != nil {
 		return errorsmod.Wrap(clienttypes.ErrInvalidMisbehaviour, "validator set did not commit to header")
 	}
 

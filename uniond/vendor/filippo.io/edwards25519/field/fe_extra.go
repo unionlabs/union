@@ -7,7 +7,7 @@ package field
 import "errors"
 
 // This file contains additional functionality that is not included in the
-// upstream crypto/ed25519/internal/edwards25519/field package.
+// upstream crypto/ed25519/edwards25519/field package.
 
 // SetWideBytes sets v to x, where x is a 64-byte little-endian encoding, which
 // is reduced modulo the field order. If x is not of the right length,

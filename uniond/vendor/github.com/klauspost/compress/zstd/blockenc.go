@@ -427,6 +427,16 @@ func (b *blockEnc) encodeLits(lits []byte, raw bool) error {
 	return nil
 }
 
+// encodeRLE will encode an RLE block.
+func (b *blockEnc) encodeRLE(val byte, length uint32) {
+	var bh blockHeader
+	bh.setLast(b.last)
+	bh.setSize(length)
+	bh.setType(blockTypeRLE)
+	b.output = bh.appendTo(b.output)
+	b.output = append(b.output, val)
+}
+
 // fuzzFseEncoder can be used to fuzz the FSE encoder.
 func fuzzFseEncoder(data []byte) int {
 	if len(data) > maxSequences || len(data) < 2 {
@@ -479,6 +489,16 @@ func (b *blockEnc) encode(org []byte, raw, rawAllLits bool) error {
 	if len(b.sequences) == 0 {
 		return b.encodeLits(b.literals, rawAllLits)
 	}
+	if len(b.sequences) == 1 && len(org) > 0 && len(b.literals) <= 1 {
+		// Check common RLE cases.
+		seq := b.sequences[0]
+		if seq.litLen == uint32(len(b.literals)) && seq.offset-3 == 1 {
+			// Offset == 1 and 0 or 1 literals.
+			b.encodeRLE(org[0], b.sequences[0].matchLen+zstdMinMatch+seq.litLen)
+			return nil
+		}
+	}
+
 	// We want some difference to at least account for the headers.
 	saved := b.size - len(b.literals) - (b.size >> 6)
 	if saved < 16 {

@@ -25,15 +25,17 @@ const defaultIndent = "  "
 
 // Format formats the message as a multiline string.
 // This function is only intended for human consumption and ignores errors.
-// Do not depend on the output being stable. It may change over time across
-// different versions of the program.
+// Do not depend on the output being stable. Its output will change across
+// different builds of your program, even when using the same version of the
+// protobuf module.
 func Format(m proto.Message) string {
 	return MarshalOptions{Multiline: true}.Format(m)
 }
 
 // Marshal writes the given [proto.Message] in JSON format using default options.
-// Do not depend on the output being stable. It may change over time across
-// different versions of the program.
+// Do not depend on the output being stable. Its output will change across
+// different builds of your program, even when using the same version of the
+// protobuf module.
 func Marshal(m proto.Message) ([]byte, error) {
 	return MarshalOptions{}.Marshal(m)
 }
@@ -110,8 +112,9 @@ type MarshalOptions struct {
 
 // Format formats the message as a string.
 // This method is only intended for human consumption and ignores errors.
-// Do not depend on the output being stable. It may change over time across
-// different versions of the program.
+// Do not depend on the output being stable. Its output will change across
+// different builds of your program, even when using the same version of the
+// protobuf module.
 func (o MarshalOptions) Format(m proto.Message) string {
 	if m == nil || !m.ProtoReflect().IsValid() {
 		return "<nil>" // invalid syntax, but okay since this is for debugging
@@ -122,8 +125,9 @@ func (o MarshalOptions) Format(m proto.Message) string {
 }
 
 // Marshal marshals the given [proto.Message] in the JSON format using options in
-// MarshalOptions. Do not depend on the output being stable. It may change over
-// time across different versions of the program.
+// Do not depend on the output being stable. Its output will change across
+// different builds of your program, even when using the same version of the
+// protobuf module.
 func (o MarshalOptions) Marshal(m proto.Message) ([]byte, error) {
 	return o.marshal(nil, m)
 }
@@ -212,9 +216,7 @@ func (m unpopulatedFieldRanger) Range(f func(protoreflect.FieldDescriptor, proto
 		}
 
 		v := m.Get(fd)
-		isProto2Scalar := fd.Syntax() == protoreflect.Proto2 && fd.Default().IsValid()
-		isSingularMessage := fd.Cardinality() != protoreflect.Repeated && fd.Message() != nil
-		if isProto2Scalar || isSingularMessage {
+		if fd.HasPresence() {
 			if m.skipNull {
 				continue
 			}

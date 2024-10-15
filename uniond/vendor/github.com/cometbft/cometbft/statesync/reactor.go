@@ -1,3 +1,5 @@
+// Package statesync may be internalized (made private) in future  releases.
+// XXX Deprecated.
 package statesync
 
 import (
@@ -7,19 +9,19 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
 	"github.com/cometbft/cometbft/config"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
-	ssproto "github.com/cometbft/cometbft/proto/tendermint/statesync"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
 
 const (
-	// SnapshotChannel exchanges snapshot metadata
+	// SnapshotChannel exchanges snapshot metadata.
 	SnapshotChannel = byte(0x60)
-	// ChunkChannel exchanges chunk contents
+	// ChunkChannel exchanges chunk contents.
 	ChunkChannel = byte(0x61)
 	// recentSnapshots is the number of recent snapshots to send and receive per peer.
 	recentSnapshots = 10
@@ -61,7 +63,7 @@ func NewReactor(
 }
 
 // GetChannels implements p2p.Reactor.
-func (r *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  SnapshotChannel,
@@ -81,7 +83,7 @@ func (r *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 }
 
 // OnStart implements p2p.Reactor.
-func (r *Reactor) OnStart() error {
+func (*Reactor) OnStart() error {
 	return nil
 }
 
@@ -95,7 +97,7 @@ func (r *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements p2p.Reactor.
-func (r *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
+func (r *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
 	if r.syncer != nil {
@@ -171,7 +173,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 		case *ssproto.ChunkRequest:
 			r.Logger.Debug("Received chunk request", "height", msg.Height, "format", msg.Format,
 				"chunk", msg.Index, "peer", e.Src.ID())
-			resp, err := r.conn.LoadSnapshotChunk(context.TODO(), &abci.RequestLoadSnapshotChunk{
+			resp, err := r.conn.LoadSnapshotChunk(context.TODO(), &abci.LoadSnapshotChunkRequest{
 				Height: msg.Height,
 				Format: msg.Format,
 				Chunk:  msg.Index,
@@ -225,9 +227,9 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 	}
 }
 
-// recentSnapshots fetches the n most recent snapshots from the app
+// recentSnapshots fetches the n most recent snapshots from the app.
 func (r *Reactor) recentSnapshots(n uint32) ([]*snapshot, error) {
-	resp, err := r.conn.ListSnapshots(context.TODO(), &abci.RequestListSnapshots{})
+	resp, err := r.conn.ListSnapshots(context.TODO(), &abci.ListSnapshotsRequest{})
 	if err != nil {
 		return nil, err
 	}

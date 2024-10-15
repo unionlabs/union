@@ -417,16 +417,16 @@
     },
     "nixpkgs-go": {
       "locked": {
-        "lastModified": 1707786466,
-        "narHash": "sha256-yLPfrmW87M2qt+8bAmwopJawa+MJLh3M9rUbXtpUc1o=",
+        "lastModified": 1728492678,
+        "narHash": "sha256-9UTxR8eukdg+XZeHgxW5hQA9fIKHsKCdOIUycTryeVw=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "01885a071465e223f8f68971f864b15829988504",
+        "rev": "5633bcff0c6162b9e4b5f1264264611e950c8ec7",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-23.11",
+        "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -603,7 +603,8 @@
         "wasmd": "wasmd",
         "wasmvm": "wasmvm",
         "wasmvm-1_5_0": "wasmvm-1_5_0",
-        "wasmvm-2_0_1": "wasmvm-2_0_1"
+        "wasmvm-2_0_1": "wasmvm-2_0_1",
+        "wasmvm-2_1_3": "wasmvm-2_1_3"
       }
     },
     "rust-overlay": {
@@ -795,6 +796,23 @@
       "original": {
         "owner": "CosmWasm",
         "ref": "v2.0.1",
+        "repo": "wasmvm",
+        "type": "github"
+      }
+    },
+    "wasmvm-2_1_3": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1727089467,
+        "narHash": "sha256-gYrK2EHhXnearJgLX38O6NLI6TfoGtpzA9be/7S/0ZU=",
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "2a104d140a5b2974dab7c15044da652769018cbe",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "ref": "v2.1.3",
         "repo": "wasmvm",
         "type": "github"
       }

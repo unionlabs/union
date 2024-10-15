@@ -1,14 +1,14 @@
 package types
 
 import (
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 )
 
-var _ codectypes.UnpackInterfacesMessage = (*GenesisState)(nil)
+var _ gogoprotoany.UnpackInterfacesMessage = (*GenesisState)(nil)
 
 // DefaultGenesisState returns the ibc module's default genesis state.
 func DefaultGenesisState() *GenesisState {
@@ -20,7 +20,7 @@ func DefaultGenesisState() *GenesisState {
 }
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (gs GenesisState) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (gs GenesisState) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	return gs.ClientGenesis.UnpackInterfaces(unpacker)
 }
 

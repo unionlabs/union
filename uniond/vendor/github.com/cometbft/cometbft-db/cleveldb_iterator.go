@@ -57,7 +57,6 @@ func (itr cLevelDBIterator) Domain() ([]byte, []byte) {
 
 // Valid implements Iterator.
 func (itr cLevelDBIterator) Valid() bool {
-
 	// Once invalid, forever invalid.
 	if itr.isInvalid {
 		return false
@@ -76,9 +75,9 @@ func (itr cLevelDBIterator) Valid() bool {
 	}
 
 	// If key is end or past it, invalid.
-	var start = itr.start
-	var end = itr.end
-	var key = itr.source.Key()
+	start := itr.start
+	end := itr.end
+	key := itr.source.Key()
 	if itr.isReverse {
 		if start != nil && bytes.Compare(key, start) < 0 {
 			itr.isInvalid = true
@@ -96,12 +95,16 @@ func (itr cLevelDBIterator) Valid() bool {
 }
 
 // Key implements Iterator.
+// The caller should not modify the contents of the returned slice.
+// Instead, the caller should make a copy and work on the copy.
 func (itr cLevelDBIterator) Key() []byte {
 	itr.assertIsValid()
 	return itr.source.Key()
 }
 
 // Value implements Iterator.
+// The caller should not modify the contents of the returned slice.
+// Instead, the caller should make a copy and work on the copy.
 func (itr cLevelDBIterator) Value() []byte {
 	itr.assertIsValid()
 	return itr.source.Value()

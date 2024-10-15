@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"sort"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
 
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 var (
-	_ codectypes.UnpackInterfacesMessage = (*IdentifiedClientState)(nil)
-	_ codectypes.UnpackInterfacesMessage = (*ClientsConsensusStates)(nil)
-	_ codectypes.UnpackInterfacesMessage = (*ClientConsensusStates)(nil)
-	_ codectypes.UnpackInterfacesMessage = (*GenesisState)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*IdentifiedClientState)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*ClientsConsensusStates)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*ClientConsensusStates)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*GenesisState)(nil)
 
 	_ sort.Interface           = (*ClientsConsensusStates)(nil)
 	_ exported.GenesisMetadata = (*GenesisMetadata)(nil)
@@ -39,7 +39,7 @@ func (ccs ClientsConsensusStates) Sort() ClientsConsensusStates {
 }
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (ccs ClientsConsensusStates) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (ccs ClientsConsensusStates) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	for _, clientConsensus := range ccs {
 		if err := clientConsensus.UnpackInterfaces(unpacker); err != nil {
 			return err
@@ -57,7 +57,7 @@ func NewClientConsensusStates(clientID string, consensusStates []ConsensusStateW
 }
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (ccs ClientConsensusStates) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (ccs ClientConsensusStates) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	for _, consStateWithHeight := range ccs.ConsensusStates {
 		if err := consStateWithHeight.UnpackInterfaces(unpacker); err != nil {
 			return err
@@ -93,7 +93,7 @@ func DefaultGenesisState() GenesisState {
 }
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (gs GenesisState) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (gs GenesisState) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	for _, client := range gs.Clients {
 		if err := client.UnpackInterfaces(unpacker); err != nil {
 			return err

@@ -4,19 +4,21 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
 
 	"github.com/cometbft/cometbft/crypto"
-	secp256k1 "github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"golang.org/x/crypto/ripemd160" //nolint: staticcheck // keep around for backwards compatibility
+	secp256k1dcrd "github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"gitlab.com/yawning/secp256k1-voi/secec"
+	"golang.org/x/crypto/ripemd160" //nolint:staticcheck,gosec // keep around for backwards compatibility
 
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 var (
@@ -39,9 +41,12 @@ func (privKey *PrivKey) Bytes() []byte {
 // PubKey performs the point-scalar multiplication from the privKey on the
 // generator point to get the pubkey.
 func (privKey *PrivKey) PubKey() cryptotypes.PubKey {
-	pubkeyObject := secp256k1.PrivKeyFromBytes(privKey.Key).PubKey()
-	pk := pubkeyObject.SerializeCompressed()
-	return &PubKey{Key: pk}
+	privateKeyObject, err := secec.NewPrivateKey(privKey.Key)
+	if err != nil {
+		panic(err)
+	}
+
+	return &PubKey{Key: privateKeyObject.PublicKey().CompressedBytes()}
 }
 
 // Equals - you probably don't need to use this.
@@ -62,7 +67,7 @@ func (privKey PrivKey) MarshalAmino() ([]byte, error) {
 // UnmarshalAmino overrides Amino binary marshaling.
 func (privKey *PrivKey) UnmarshalAmino(bz []byte) error {
 	if len(bz) != PrivKeySize {
-		return fmt.Errorf("invalid privkey size")
+		return errors.New("invalid privkey size")
 	}
 	privKey.Key = bz
 
@@ -84,11 +89,21 @@ func (privKey *PrivKey) UnmarshalAminoJSON(bz []byte) error {
 // GenPrivKey generates a new ECDSA private key on curve secp256k1 private key.
 // It uses OS randomness to generate the private key.
 func GenPrivKey() *PrivKey {
-	return &PrivKey{Key: genPrivKey(crypto.CReader())}
+	return &PrivKey{Key: genPrivKey()}
 }
 
-// genPrivKey generates a new secp256k1 private key using the provided reader.
-func genPrivKey(rand io.Reader) []byte {
+// genPrivKey generates a new secp256k1 private key.
+func genPrivKey() []byte {
+	privateKeyObject, err := secec.GenerateKey()
+	if err != nil {
+		panic(err)
+	}
+
+	return privateKeyObject.Bytes()
+}
+
+// genPrivKeyLegacy generates a new secp256k1 private key using the provided reader.
+func genPrivKeyLegacy(rand io.Reader) []byte {
 	var privKeyBytes [PrivKeySize]byte
 	d := new(big.Int)
 	for {
@@ -100,7 +115,7 @@ func genPrivKey(rand io.Reader) []byte {
 
 		d.SetBytes(privKeyBytes[:])
 		// break if we found a valid point (i.e. > 0 and < N == curverOrder)
-		isValidFieldElement := 0 < d.Sign() && d.Cmp(secp256k1.S256().N) < 0
+		isValidFieldElement := 0 < d.Sign() && d.Cmp(secp256k1dcrd.S256().N) < 0
 		if isValidFieldElement {
 			break
 		}
@@ -128,7 +143,7 @@ func GenPrivKeyFromSecret(secret []byte) *PrivKey {
 	// https://apps.nsa.gov/iaarchive/library/ia-guidance/ia-solutions-for-classified/algorithm-guidance/suite-b-implementers-guide-to-fips-186-3-ecdsa.cfm
 	// see also https://github.com/golang/go/blob/0380c9ad38843d523d9c9804fe300cb7edd7cd3c/src/crypto/ecdsa/ecdsa.go#L89-L101
 	fe := new(big.Int).SetBytes(secHash[:])
-	n := new(big.Int).Sub(secp256k1.S256().N, one)
+	n := new(big.Int).Sub(secp256k1dcrd.S256().N, one)
 	fe.Mod(fe, n)
 	fe.Add(fe, one)
 
@@ -158,8 +173,8 @@ func (pubKey *PubKey) Address() crypto.Address {
 	}
 
 	sha := sha256.Sum256(pubKey.Key)
-	hasherRIPEMD160 := ripemd160.New()
-	hasherRIPEMD160.Write(sha[:]) // does not error
+	hasherRIPEMD160 := ripemd160.New() //nolint:gosec // keep around for backwards compatibility
+	hasherRIPEMD160.Write(sha[:])      // does not error
 	return crypto.Address(hasherRIPEMD160.Sum(nil))
 }
 
@@ -188,7 +203,7 @@ func (pubKey PubKey) MarshalAmino() ([]byte, error) {
 // UnmarshalAmino overrides Amino binary marshaling.
 func (pubKey *PubKey) UnmarshalAmino(bz []byte) error {
 	if len(bz) != PubKeySize {
-		return errorsmod.Wrap(errors.ErrInvalidPubKey, "invalid pubkey size")
+		return errorsmod.Wrap(sdkerrors.ErrInvalidPubKey, "invalid pubkey size")
 	}
 	pubKey.Key = bz
 

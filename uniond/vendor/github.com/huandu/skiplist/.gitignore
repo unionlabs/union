@@ -23,4 +23,18 @@ _testmain.go
 *.test
 *.prof
 
+# Intellij
+*.iml
+.idea/
+
+# VS Code
+debug
+debug_test
 .vscode/
+
+# Mac
+.DS_Store
+
+# go work
+go.work
+go.work.sum

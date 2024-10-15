@@ -47,6 +47,20 @@ CGO_LDFLAGS="-L/path/to/rocksdb -lrocksdb -lstdc++ -lm -lz -lsnappy -llz4 -lzstd
   go build
 ```
 
+#### Customize the build flags
+Currently, the default build flags without specifying `CGO_LDFLAGS` or the corresponding environment variables are `-lrocksdb -pthread -lstdc++ -ldl -lm -lzstd -llz4 -lz -lsnappy`
+
+If you want to customize the build flags:
+
+1. Use `-tags grocksdb_clean_link` to create a cleaner set of flags and build it based on the cleaner flag. The base build flags after using the tag are `-lrocksdb -pthread -lstdc++ -ldl`.
+```bash
+CGO_LDFLAGS="-L/path/to/rocksdb -lzstd" go build -tags grocksdb_clean_link
+```
+2. Use `-tags grocksdb_no_link` to ignore the build flags provided by the library and build it fully based on the custom flags.
+```bash
+CGO_LDFLAGS="-L/path/to/rocksdb -lrocksdb -lstdc++ -lzstd -llz4" go build -tags grocksdb_clean_link
+```
+
 ## Usage
 
 See also: [doc](https://godoc.org/github.com/linxGnu/grocksdb)

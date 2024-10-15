@@ -61,7 +61,7 @@ func (m Map[K, V]) Set(ctx context.Context, key K, value V) error {
 
 	valueBytes, err := m.vc.Encode(value)
 	if err != nil {
-		return fmt.Errorf("%w: value encode: %s", ErrEncoding, err) // TODO: use multi err wrapping in go1.20: https://github.com/golang/go/issues/53435
+		return fmt.Errorf("%w: value encode: %w", ErrEncoding, err)
 	}
 
 	kvStore := m.sa(ctx)
@@ -88,7 +88,7 @@ func (m Map[K, V]) Get(ctx context.Context, key K) (v V, err error) {
 
 	v, err = m.vc.Decode(valueBytes)
 	if err != nil {
-		return v, fmt.Errorf("%w: value decode: %s", ErrEncoding, err) // TODO: use multi err wrapping in go1.20: https://github.com/golang/go/issues/53435
+		return v, fmt.Errorf("%w: value decode: %w", ErrEncoding, err)
 	}
 	return v, nil
 }
@@ -262,7 +262,7 @@ func EncodeKeyWithPrefix[K any](prefix []byte, kc codec.KeyCodec[K], key K) ([]b
 	// put key
 	_, err := kc.Encode(keyBytes[prefixLen:], key)
 	if err != nil {
-		return nil, fmt.Errorf("%w: key encode: %s", ErrEncoding, err) // TODO: use multi err wrapping in go1.20: https://github.com/golang/go/issues/53435
+		return nil, fmt.Errorf("%w: key encode: %w", ErrEncoding, err)
 	}
 	return keyBytes, nil
 }

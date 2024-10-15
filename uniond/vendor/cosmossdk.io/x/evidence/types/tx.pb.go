@@ -8,12 +8,12 @@ import (
 	context "context"
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
-	types "github.com/cosmos/cosmos-sdk/codec/types"
 	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	proto "github.com/cosmos/gogoproto/proto"
+	any "github.com/cosmos/gogoproto/types/any"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -39,7 +39,7 @@ type MsgSubmitEvidence struct {
 	// submitter is the signer account address of evidence.
 	Submitter string `protobuf:"bytes,1,opt,name=submitter,proto3" json:"submitter,omitempty"`
 	// evidence defines the evidence of misbehavior.
-	Evidence *types.Any `protobuf:"bytes,2,opt,name=evidence,proto3" json:"evidence,omitempty"`
+	Evidence *any.Any `protobuf:"bytes,2,opt,name=evidence,proto3" json:"evidence,omitempty"`
 }
 
 func (m *MsgSubmitEvidence) Reset()         { *m = MsgSubmitEvidence{} }
@@ -475,7 +475,7 @@ func (m *MsgSubmitEvidence) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Evidence == nil {
-				m.Evidence = &types.Any{}
+				m.Evidence = &any.Any{}
 			}
 			if err := m.Evidence.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

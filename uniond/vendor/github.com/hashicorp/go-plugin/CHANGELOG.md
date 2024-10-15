@@ -1,3 +1,30 @@
+## v1.6.1
+
+BUGS:
+
+* Suppress spurious `os.ErrClosed` on plugin shutdown [[GH-299](https://github.com/hashicorp/go-plugin/pull/299)]
+
+ENHANCEMENTS:
+
+* deps: bump google.golang.org/grpc to v1.58.3 [[GH-296](https://github.com/hashicorp/go-plugin/pull/296)]
+
+## v1.6.0
+
+CHANGES:
+
+* plugin: Plugins written in other languages can optionally start to advertise whether they support gRPC broker multiplexing.
+  If the environment variable `PLUGIN_MULTIPLEX_GRPC` is set, it is safe to include a seventh field containing a boolean 
+  value in the `|`-separated protocol negotiation line.
+
+ENHANCEMENTS:
+
+* Support muxing gRPC broker connections over a single listener [[GH-288](https://github.com/hashicorp/go-plugin/pull/288)]
+* client: Configurable buffer size for reading plugin log lines [[GH-265](https://github.com/hashicorp/go-plugin/pull/265)]
+* Use `buf` for proto generation [[GH-286](https://github.com/hashicorp/go-plugin/pull/286)]
+* deps: bump golang.org/x/net to v0.17.0 [[GH-285](https://github.com/hashicorp/go-plugin/pull/285)]
+* deps: bump golang.org/x/sys to v0.13.0 [[GH-285](https://github.com/hashicorp/go-plugin/pull/285)]
+* deps: bump golang.org/x/text to v0.13.0 [[GH-285](https://github.com/hashicorp/go-plugin/pull/285)]
+
 ## v1.5.2
 
 ENHANCEMENTS:

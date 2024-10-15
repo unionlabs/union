@@ -22,7 +22,7 @@ func NewAddNewKey(name, password, mnemonic string, account, index int) AddNewKey
 	}
 }
 
-// RecoverKeyBody recovers a key
+// RecoverKey recovers a key
 type RecoverKey struct {
 	Password string `json:"password"`
 	Mnemonic string `json:"mnemonic"`

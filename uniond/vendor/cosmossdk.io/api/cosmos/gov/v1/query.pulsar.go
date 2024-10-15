@@ -8663,6 +8663,1700 @@ func (x *fastReflection_QueryTallyResultResponse) ProtoMethods() *protoiface.Met
 	}
 }
 
+var (
+	md_QueryProposalVoteOptionsRequest             protoreflect.MessageDescriptor
+	fd_QueryProposalVoteOptionsRequest_proposal_id protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_cosmos_gov_v1_query_proto_init()
+	md_QueryProposalVoteOptionsRequest = File_cosmos_gov_v1_query_proto.Messages().ByName("QueryProposalVoteOptionsRequest")
+	fd_QueryProposalVoteOptionsRequest_proposal_id = md_QueryProposalVoteOptionsRequest.Fields().ByName("proposal_id")
+}
+
+var _ protoreflect.Message = (*fastReflection_QueryProposalVoteOptionsRequest)(nil)
+
+type fastReflection_QueryProposalVoteOptionsRequest QueryProposalVoteOptionsRequest
+
+func (x *QueryProposalVoteOptionsRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryProposalVoteOptionsRequest)(x)
+}
+
+func (x *QueryProposalVoteOptionsRequest) slowProtoReflect() protoreflect.Message {
+	mi := &file_cosmos_gov_v1_query_proto_msgTypes[18]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_QueryProposalVoteOptionsRequest_messageType fastReflection_QueryProposalVoteOptionsRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryProposalVoteOptionsRequest_messageType{}
+
+type fastReflection_QueryProposalVoteOptionsRequest_messageType struct{}
+
+func (x fastReflection_QueryProposalVoteOptionsRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryProposalVoteOptionsRequest)(nil)
+}
+func (x fastReflection_QueryProposalVoteOptionsRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryProposalVoteOptionsRequest)
+}
+func (x fastReflection_QueryProposalVoteOptionsRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryProposalVoteOptionsRequest
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryProposalVoteOptionsRequest
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryProposalVoteOptionsRequest_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryProposalVoteOptionsRequest)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryProposalVoteOptionsRequest)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.ProposalId != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.ProposalId)
+		if !f(fd_QueryProposalVoteOptionsRequest_proposal_id, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryProposalVoteOptionsRequest.proposal_id":
+		return x.ProposalId != uint64(0)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryProposalVoteOptionsRequest"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryProposalVoteOptionsRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryProposalVoteOptionsRequest.proposal_id":
+		x.ProposalId = uint64(0)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryProposalVoteOptionsRequest"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryProposalVoteOptionsRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "cosmos.gov.v1.QueryProposalVoteOptionsRequest.proposal_id":
+		value := x.ProposalId
+		return protoreflect.ValueOfUint64(value)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryProposalVoteOptionsRequest"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryProposalVoteOptionsRequest does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryProposalVoteOptionsRequest.proposal_id":
+		x.ProposalId = value.Uint()
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryProposalVoteOptionsRequest"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryProposalVoteOptionsRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryProposalVoteOptionsRequest.proposal_id":
+		panic(fmt.Errorf("field proposal_id of message cosmos.gov.v1.QueryProposalVoteOptionsRequest is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryProposalVoteOptionsRequest"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryProposalVoteOptionsRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryProposalVoteOptionsRequest.proposal_id":
+		return protoreflect.ValueOfUint64(uint64(0))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryProposalVoteOptionsRequest"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryProposalVoteOptionsRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in cosmos.gov.v1.QueryProposalVoteOptionsRequest", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_QueryProposalVoteOptionsRequest) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*QueryProposalVoteOptionsRequest)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if x.ProposalId != 0 {
+			n += 1 + runtime.Sov(uint64(x.ProposalId))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*QueryProposalVoteOptionsRequest)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.ProposalId != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.ProposalId))
+			i--
+			dAtA[i] = 0x8
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*QueryProposalVoteOptionsRequest)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryProposalVoteOptionsRequest: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryProposalVoteOptionsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ProposalId", wireType)
+				}
+				x.ProposalId = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.ProposalId |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var (
+	md_QueryProposalVoteOptionsResponse              protoreflect.MessageDescriptor
+	fd_QueryProposalVoteOptionsResponse_vote_options protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_cosmos_gov_v1_query_proto_init()
+	md_QueryProposalVoteOptionsResponse = File_cosmos_gov_v1_query_proto.Messages().ByName("QueryProposalVoteOptionsResponse")
+	fd_QueryProposalVoteOptionsResponse_vote_options = md_QueryProposalVoteOptionsResponse.Fields().ByName("vote_options")
+}
+
+var _ protoreflect.Message = (*fastReflection_QueryProposalVoteOptionsResponse)(nil)
+
+type fastReflection_QueryProposalVoteOptionsResponse QueryProposalVoteOptionsResponse
+
+func (x *QueryProposalVoteOptionsResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryProposalVoteOptionsResponse)(x)
+}
+
+func (x *QueryProposalVoteOptionsResponse) slowProtoReflect() protoreflect.Message {
+	mi := &file_cosmos_gov_v1_query_proto_msgTypes[19]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_QueryProposalVoteOptionsResponse_messageType fastReflection_QueryProposalVoteOptionsResponse_messageType
+var _ protoreflect.MessageType = fastReflection_QueryProposalVoteOptionsResponse_messageType{}
+
+type fastReflection_QueryProposalVoteOptionsResponse_messageType struct{}
+
+func (x fastReflection_QueryProposalVoteOptionsResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryProposalVoteOptionsResponse)(nil)
+}
+func (x fastReflection_QueryProposalVoteOptionsResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryProposalVoteOptionsResponse)
+}
+func (x fastReflection_QueryProposalVoteOptionsResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryProposalVoteOptionsResponse
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryProposalVoteOptionsResponse
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) Type() protoreflect.MessageType {
+	return _fastReflection_QueryProposalVoteOptionsResponse_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) New() protoreflect.Message {
+	return new(fastReflection_QueryProposalVoteOptionsResponse)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) Interface() protoreflect.ProtoMessage {
+	return (*QueryProposalVoteOptionsResponse)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.VoteOptions != nil {
+		value := protoreflect.ValueOfMessage(x.VoteOptions.ProtoReflect())
+		if !f(fd_QueryProposalVoteOptionsResponse_vote_options, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryProposalVoteOptionsResponse.vote_options":
+		return x.VoteOptions != nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryProposalVoteOptionsResponse"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryProposalVoteOptionsResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryProposalVoteOptionsResponse.vote_options":
+		x.VoteOptions = nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryProposalVoteOptionsResponse"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryProposalVoteOptionsResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "cosmos.gov.v1.QueryProposalVoteOptionsResponse.vote_options":
+		value := x.VoteOptions
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryProposalVoteOptionsResponse"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryProposalVoteOptionsResponse does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryProposalVoteOptionsResponse.vote_options":
+		x.VoteOptions = value.Message().Interface().(*ProposalVoteOptions)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryProposalVoteOptionsResponse"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryProposalVoteOptionsResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryProposalVoteOptionsResponse.vote_options":
+		if x.VoteOptions == nil {
+			x.VoteOptions = new(ProposalVoteOptions)
+		}
+		return protoreflect.ValueOfMessage(x.VoteOptions.ProtoReflect())
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryProposalVoteOptionsResponse"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryProposalVoteOptionsResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryProposalVoteOptionsResponse.vote_options":
+		m := new(ProposalVoteOptions)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryProposalVoteOptionsResponse"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryProposalVoteOptionsResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in cosmos.gov.v1.QueryProposalVoteOptionsResponse", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_QueryProposalVoteOptionsResponse) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*QueryProposalVoteOptionsResponse)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if x.VoteOptions != nil {
+			l = options.Size(x.VoteOptions)
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*QueryProposalVoteOptionsResponse)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.VoteOptions != nil {
+			encoded, err := options.Marshal(x.VoteOptions)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			i--
+			dAtA[i] = 0xa
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*QueryProposalVoteOptionsResponse)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryProposalVoteOptionsResponse: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryProposalVoteOptionsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field VoteOptions", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.VoteOptions == nil {
+					x.VoteOptions = &ProposalVoteOptions{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.VoteOptions); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var (
+	md_QueryMessageBasedParamsRequest         protoreflect.MessageDescriptor
+	fd_QueryMessageBasedParamsRequest_msg_url protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_cosmos_gov_v1_query_proto_init()
+	md_QueryMessageBasedParamsRequest = File_cosmos_gov_v1_query_proto.Messages().ByName("QueryMessageBasedParamsRequest")
+	fd_QueryMessageBasedParamsRequest_msg_url = md_QueryMessageBasedParamsRequest.Fields().ByName("msg_url")
+}
+
+var _ protoreflect.Message = (*fastReflection_QueryMessageBasedParamsRequest)(nil)
+
+type fastReflection_QueryMessageBasedParamsRequest QueryMessageBasedParamsRequest
+
+func (x *QueryMessageBasedParamsRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryMessageBasedParamsRequest)(x)
+}
+
+func (x *QueryMessageBasedParamsRequest) slowProtoReflect() protoreflect.Message {
+	mi := &file_cosmos_gov_v1_query_proto_msgTypes[20]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_QueryMessageBasedParamsRequest_messageType fastReflection_QueryMessageBasedParamsRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryMessageBasedParamsRequest_messageType{}
+
+type fastReflection_QueryMessageBasedParamsRequest_messageType struct{}
+
+func (x fastReflection_QueryMessageBasedParamsRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryMessageBasedParamsRequest)(nil)
+}
+func (x fastReflection_QueryMessageBasedParamsRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryMessageBasedParamsRequest)
+}
+func (x fastReflection_QueryMessageBasedParamsRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryMessageBasedParamsRequest
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_QueryMessageBasedParamsRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryMessageBasedParamsRequest
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_QueryMessageBasedParamsRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryMessageBasedParamsRequest_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_QueryMessageBasedParamsRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryMessageBasedParamsRequest)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_QueryMessageBasedParamsRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryMessageBasedParamsRequest)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_QueryMessageBasedParamsRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.MsgUrl != "" {
+		value := protoreflect.ValueOfString(x.MsgUrl)
+		if !f(fd_QueryMessageBasedParamsRequest_msg_url, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_QueryMessageBasedParamsRequest) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryMessageBasedParamsRequest.msg_url":
+		return x.MsgUrl != ""
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryMessageBasedParamsRequest"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryMessageBasedParamsRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryMessageBasedParamsRequest) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryMessageBasedParamsRequest.msg_url":
+		x.MsgUrl = ""
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryMessageBasedParamsRequest"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryMessageBasedParamsRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_QueryMessageBasedParamsRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "cosmos.gov.v1.QueryMessageBasedParamsRequest.msg_url":
+		value := x.MsgUrl
+		return protoreflect.ValueOfString(value)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryMessageBasedParamsRequest"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryMessageBasedParamsRequest does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryMessageBasedParamsRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryMessageBasedParamsRequest.msg_url":
+		x.MsgUrl = value.Interface().(string)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryMessageBasedParamsRequest"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryMessageBasedParamsRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryMessageBasedParamsRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryMessageBasedParamsRequest.msg_url":
+		panic(fmt.Errorf("field msg_url of message cosmos.gov.v1.QueryMessageBasedParamsRequest is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryMessageBasedParamsRequest"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryMessageBasedParamsRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_QueryMessageBasedParamsRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryMessageBasedParamsRequest.msg_url":
+		return protoreflect.ValueOfString("")
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryMessageBasedParamsRequest"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryMessageBasedParamsRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_QueryMessageBasedParamsRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in cosmos.gov.v1.QueryMessageBasedParamsRequest", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_QueryMessageBasedParamsRequest) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryMessageBasedParamsRequest) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_QueryMessageBasedParamsRequest) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_QueryMessageBasedParamsRequest) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*QueryMessageBasedParamsRequest)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		l = len(x.MsgUrl)
+		if l > 0 {
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*QueryMessageBasedParamsRequest)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if len(x.MsgUrl) > 0 {
+			i -= len(x.MsgUrl)
+			copy(dAtA[i:], x.MsgUrl)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.MsgUrl)))
+			i--
+			dAtA[i] = 0xa
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*QueryMessageBasedParamsRequest)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryMessageBasedParamsRequest: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryMessageBasedParamsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field MsgUrl", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.MsgUrl = string(dAtA[iNdEx:postIndex])
+				iNdEx = postIndex
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var (
+	md_QueryMessageBasedParamsResponse        protoreflect.MessageDescriptor
+	fd_QueryMessageBasedParamsResponse_params protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_cosmos_gov_v1_query_proto_init()
+	md_QueryMessageBasedParamsResponse = File_cosmos_gov_v1_query_proto.Messages().ByName("QueryMessageBasedParamsResponse")
+	fd_QueryMessageBasedParamsResponse_params = md_QueryMessageBasedParamsResponse.Fields().ByName("params")
+}
+
+var _ protoreflect.Message = (*fastReflection_QueryMessageBasedParamsResponse)(nil)
+
+type fastReflection_QueryMessageBasedParamsResponse QueryMessageBasedParamsResponse
+
+func (x *QueryMessageBasedParamsResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryMessageBasedParamsResponse)(x)
+}
+
+func (x *QueryMessageBasedParamsResponse) slowProtoReflect() protoreflect.Message {
+	mi := &file_cosmos_gov_v1_query_proto_msgTypes[21]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_QueryMessageBasedParamsResponse_messageType fastReflection_QueryMessageBasedParamsResponse_messageType
+var _ protoreflect.MessageType = fastReflection_QueryMessageBasedParamsResponse_messageType{}
+
+type fastReflection_QueryMessageBasedParamsResponse_messageType struct{}
+
+func (x fastReflection_QueryMessageBasedParamsResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryMessageBasedParamsResponse)(nil)
+}
+func (x fastReflection_QueryMessageBasedParamsResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryMessageBasedParamsResponse)
+}
+func (x fastReflection_QueryMessageBasedParamsResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryMessageBasedParamsResponse
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_QueryMessageBasedParamsResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryMessageBasedParamsResponse
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_QueryMessageBasedParamsResponse) Type() protoreflect.MessageType {
+	return _fastReflection_QueryMessageBasedParamsResponse_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_QueryMessageBasedParamsResponse) New() protoreflect.Message {
+	return new(fastReflection_QueryMessageBasedParamsResponse)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_QueryMessageBasedParamsResponse) Interface() protoreflect.ProtoMessage {
+	return (*QueryMessageBasedParamsResponse)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_QueryMessageBasedParamsResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.Params != nil {
+		value := protoreflect.ValueOfMessage(x.Params.ProtoReflect())
+		if !f(fd_QueryMessageBasedParamsResponse_params, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_QueryMessageBasedParamsResponse) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryMessageBasedParamsResponse.params":
+		return x.Params != nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryMessageBasedParamsResponse"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryMessageBasedParamsResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryMessageBasedParamsResponse) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryMessageBasedParamsResponse.params":
+		x.Params = nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryMessageBasedParamsResponse"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryMessageBasedParamsResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_QueryMessageBasedParamsResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "cosmos.gov.v1.QueryMessageBasedParamsResponse.params":
+		value := x.Params
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryMessageBasedParamsResponse"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryMessageBasedParamsResponse does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryMessageBasedParamsResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryMessageBasedParamsResponse.params":
+		x.Params = value.Message().Interface().(*MessageBasedParams)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryMessageBasedParamsResponse"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryMessageBasedParamsResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryMessageBasedParamsResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryMessageBasedParamsResponse.params":
+		if x.Params == nil {
+			x.Params = new(MessageBasedParams)
+		}
+		return protoreflect.ValueOfMessage(x.Params.ProtoReflect())
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryMessageBasedParamsResponse"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryMessageBasedParamsResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_QueryMessageBasedParamsResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "cosmos.gov.v1.QueryMessageBasedParamsResponse.params":
+		m := new(MessageBasedParams)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: cosmos.gov.v1.QueryMessageBasedParamsResponse"))
+		}
+		panic(fmt.Errorf("message cosmos.gov.v1.QueryMessageBasedParamsResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_QueryMessageBasedParamsResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in cosmos.gov.v1.QueryMessageBasedParamsResponse", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_QueryMessageBasedParamsResponse) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryMessageBasedParamsResponse) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_QueryMessageBasedParamsResponse) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_QueryMessageBasedParamsResponse) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*QueryMessageBasedParamsResponse)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if x.Params != nil {
+			l = options.Size(x.Params)
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*QueryMessageBasedParamsResponse)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.Params != nil {
+			encoded, err := options.Marshal(x.Params)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			i--
+			dAtA[i] = 0xa
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*QueryMessageBasedParamsResponse)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryMessageBasedParamsResponse: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryMessageBasedParamsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Params", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.Params == nil {
+					x.Params = &MessageBasedParams{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Params); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
 // Since: cosmos-sdk 0.46
 
 // Code generated by protoc-gen-go. DO NOT EDIT.
@@ -9109,6 +10803,9 @@ type QueryParamsRequest struct {
 
 	// params_type defines which parameters to query for, can be one of "voting",
 	// "tallying" or "deposit".
+	// Deprecated: all params are stored in Params.
+	//
+	// Deprecated: Do not use.
 	ParamsType string `protobuf:"bytes,1,opt,name=params_type,json=paramsType,proto3" json:"params_type,omitempty"`
 }
 
@@ -9132,6 +10829,7 @@ func (*QueryParamsRequest) Descriptor() ([]byte, []int) {
 	return file_cosmos_gov_v1_query_proto_rawDescGZIP(), []int{10}
 }
 
+// Deprecated: Do not use.
 func (x *QueryParamsRequest) GetParamsType() string {
 	if x != nil {
 		return x.ParamsType
@@ -9160,9 +10858,7 @@ type QueryParamsResponse struct {
 	//
 	// Deprecated: Do not use.
 	TallyParams *TallyParams `protobuf:"bytes,3,opt,name=tally_params,json=tallyParams,proto3" json:"tally_params,omitempty"`
-	// params defines all the paramaters of x/gov module.
-	//
-	// Since: cosmos-sdk 0.47
+	// params defines all the parameters of x/gov module.
 	Params *Params `protobuf:"bytes,4,opt,name=params,proto3" json:"params,omitempty"`
 }
 
@@ -9466,6 +11162,152 @@ func (x *QueryTallyResultResponse) GetTally() *TallyResult {
 	return nil
 }
 
+// QueryProposalVoteOptionsRequest is the request type for the Query/ProposalVoteOptions RPC method.
+type QueryProposalVoteOptionsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// proposal_id defines the unique id of the proposal.
+	ProposalId uint64 `protobuf:"varint,1,opt,name=proposal_id,json=proposalId,proto3" json:"proposal_id,omitempty"`
+}
+
+func (x *QueryProposalVoteOptionsRequest) Reset() {
+	*x = QueryProposalVoteOptionsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_cosmos_gov_v1_query_proto_msgTypes[18]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryProposalVoteOptionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryProposalVoteOptionsRequest) ProtoMessage() {}
+
+// Deprecated: Use QueryProposalVoteOptionsRequest.ProtoReflect.Descriptor instead.
+func (*QueryProposalVoteOptionsRequest) Descriptor() ([]byte, []int) {
+	return file_cosmos_gov_v1_query_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *QueryProposalVoteOptionsRequest) GetProposalId() uint64 {
+	if x != nil {
+		return x.ProposalId
+	}
+	return 0
+}
+
+// QueryProposalVoteOptionsResponse is the response type for the Query/ProposalVoteOptions RPC method.
+type QueryProposalVoteOptionsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// vote_options defines the valid voting options for a proposal.
+	VoteOptions *ProposalVoteOptions `protobuf:"bytes,1,opt,name=vote_options,json=voteOptions,proto3" json:"vote_options,omitempty"`
+}
+
+func (x *QueryProposalVoteOptionsResponse) Reset() {
+	*x = QueryProposalVoteOptionsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_cosmos_gov_v1_query_proto_msgTypes[19]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryProposalVoteOptionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryProposalVoteOptionsResponse) ProtoMessage() {}
+
+// Deprecated: Use QueryProposalVoteOptionsResponse.ProtoReflect.Descriptor instead.
+func (*QueryProposalVoteOptionsResponse) Descriptor() ([]byte, []int) {
+	return file_cosmos_gov_v1_query_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *QueryProposalVoteOptionsResponse) GetVoteOptions() *ProposalVoteOptions {
+	if x != nil {
+		return x.VoteOptions
+	}
+	return nil
+}
+
+// QueryMessageBasedParamsRequest is the request type for the Query/MessageBasedParams RPC method.
+type QueryMessageBasedParamsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	MsgUrl string `protobuf:"bytes,1,opt,name=msg_url,json=msgUrl,proto3" json:"msg_url,omitempty"`
+}
+
+func (x *QueryMessageBasedParamsRequest) Reset() {
+	*x = QueryMessageBasedParamsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_cosmos_gov_v1_query_proto_msgTypes[20]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryMessageBasedParamsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryMessageBasedParamsRequest) ProtoMessage() {}
+
+// Deprecated: Use QueryMessageBasedParamsRequest.ProtoReflect.Descriptor instead.
+func (*QueryMessageBasedParamsRequest) Descriptor() ([]byte, []int) {
+	return file_cosmos_gov_v1_query_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *QueryMessageBasedParamsRequest) GetMsgUrl() string {
+	if x != nil {
+		return x.MsgUrl
+	}
+	return ""
+}
+
+// QueryMessageBasedParamsResponse is the response for the Query/MessageBasedParams RPC method.
+type QueryMessageBasedParamsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Params *MessageBasedParams `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
+}
+
+func (x *QueryMessageBasedParamsResponse) Reset() {
+	*x = QueryMessageBasedParamsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_cosmos_gov_v1_query_proto_msgTypes[21]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryMessageBasedParamsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryMessageBasedParamsResponse) ProtoMessage() {}
+
+// Deprecated: Use QueryMessageBasedParamsResponse.ProtoReflect.Descriptor instead.
+func (*QueryMessageBasedParamsResponse) Descriptor() ([]byte, []int) {
+	return file_cosmos_gov_v1_query_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *QueryMessageBasedParamsResponse) GetParams() *MessageBasedParams {
+	if x != nil {
+		return x.Params
+	}
+	return nil
+}
+
 var File_cosmos_gov_v1_query_proto protoreflect.FileDescriptor
 
 var file_cosmos_gov_v1_query_proto_rawDesc = []byte{
@@ -9547,154 +11389,201 @@ var file_cosmos_gov_v1_query_proto_rawDesc = []byte{
 	0x32, 0x27, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x71,
 	0x75, 0x65, 0x72, 0x79, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x50, 0x61, 0x67,
 	0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e,
-	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x35, 0x0a, 0x12, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61,
-	0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x70,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x39, 0x0a, 0x12, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61,
+	0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x23, 0x0a, 0x0b, 0x70,
 	0x61, 0x72, 0x61, 0x6d, 0x73, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x0a, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x54, 0x79, 0x70, 0x65, 0x22, 0x96, 0x02, 0x0a,
-	0x13, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x44, 0x0a, 0x0d, 0x76, 0x6f, 0x74, 0x69, 0x6e, 0x67, 0x5f, 0x70,
-	0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x63, 0x6f,
-	0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x6f, 0x74, 0x69,
-	0x6e, 0x67, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x42, 0x02, 0x18, 0x01, 0x52, 0x0c, 0x76, 0x6f,
-	0x74, 0x69, 0x6e, 0x67, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x47, 0x0a, 0x0e, 0x64, 0x65,
-	0x70, 0x6f, 0x73, 0x69, 0x74, 0x5f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e,
-	0x76, 0x31, 0x2e, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
-	0x42, 0x02, 0x18, 0x01, 0x52, 0x0d, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x50, 0x61, 0x72,
-	0x61, 0x6d, 0x73, 0x12, 0x41, 0x0a, 0x0c, 0x74, 0x61, 0x6c, 0x6c, 0x79, 0x5f, 0x70, 0x61, 0x72,
-	0x61, 0x6d, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x63, 0x6f, 0x73, 0x6d,
-	0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x61, 0x6c, 0x6c, 0x79, 0x50,
-	0x61, 0x72, 0x61, 0x6d, 0x73, 0x42, 0x02, 0x18, 0x01, 0x52, 0x0b, 0x74, 0x61, 0x6c, 0x6c, 0x79,
-	0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x2d, 0x0a, 0x06, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73,
-	0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e,
-	0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x06, 0x70,
-	0x61, 0x72, 0x61, 0x6d, 0x73, 0x22, 0x6e, 0x0a, 0x13, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x65,
-	0x70, 0x6f, 0x73, 0x69, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b,
-	0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x04, 0x52, 0x0a, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x49, 0x64, 0x12, 0x36, 0x0a,
-	0x09, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
-	0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64,
-	0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x09, 0x64, 0x65, 0x70, 0x6f,
-	0x73, 0x69, 0x74, 0x6f, 0x72, 0x22, 0x48, 0x0a, 0x14, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x65,
-	0x70, 0x6f, 0x73, 0x69, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x30, 0x0a,
-	0x07, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16,
-	0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x44,
-	0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x52, 0x07, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x22,
-	0x7f, 0x0a, 0x14, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x73,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x70, 0x72, 0x6f, 0x70, 0x6f,
-	0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0a, 0x70, 0x72,
-	0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x49, 0x64, 0x12, 0x46, 0x0a, 0x0a, 0x70, 0x61, 0x67, 0x69,
-	0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x63,
-	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x71, 0x75, 0x65, 0x72, 0x79,
-	0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x50, 0x61, 0x67, 0x65, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x52, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e,
-	0x22, 0x94, 0x01, 0x0a, 0x15, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69,
-	0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x32, 0x0a, 0x08, 0x64, 0x65,
-	0x70, 0x6f, 0x73, 0x69, 0x74, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x63,
-	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x70,
-	0x6f, 0x73, 0x69, 0x74, 0x52, 0x08, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x73, 0x12, 0x47,
-	0x0a, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x27, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x62, 0x61, 0x73, 0x65,
-	0x2e, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x50,
-	0x61, 0x67, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x0a, 0x70, 0x61, 0x67,
-	0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x3a, 0x0a, 0x17, 0x51, 0x75, 0x65, 0x72, 0x79,
-	0x54, 0x61, 0x6c, 0x6c, 0x79, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69,
-	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0a, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61,
-	0x6c, 0x49, 0x64, 0x22, 0x4c, 0x0a, 0x18, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54, 0x61, 0x6c, 0x6c,
-	0x79, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
-	0x30, 0x0a, 0x05, 0x74, 0x61, 0x6c, 0x6c, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a,
-	0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x54,
-	0x61, 0x6c, 0x6c, 0x79, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x05, 0x74, 0x61, 0x6c, 0x6c,
-	0x79, 0x32, 0xe3, 0x09, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x86, 0x01, 0x0a, 0x0c,
-	0x43, 0x6f, 0x6e, 0x73, 0x74, 0x69, 0x74, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x27, 0x2e, 0x63,
-	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65,
-	0x72, 0x79, 0x43, 0x6f, 0x6e, 0x73, 0x74, 0x69, 0x74, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67,
-	0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x6f, 0x6e, 0x73, 0x74,
-	0x69, 0x74, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x23, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1d, 0x12, 0x1b, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73,
-	0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6e, 0x73, 0x74, 0x69, 0x74, 0x75,
-	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x85, 0x01, 0x0a, 0x08, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61,
-	0x6c, 0x12, 0x23, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76,
-	0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e,
-	0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70,
-	0x6f, 0x73, 0x61, 0x6c, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2e, 0x82, 0xd3,
-	0xe4, 0x93, 0x02, 0x28, 0x12, 0x26, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f,
-	0x76, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x2f, 0x7b,
-	0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x7d, 0x12, 0x7a, 0x0a, 0x09,
-	0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x12, 0x24, 0x2e, 0x63, 0x6f, 0x73, 0x6d,
-	0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50,
-	0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
-	0x25, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x20, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1a, 0x12, 0x18,
-	0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f, 0x70,
-	0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x12, 0x87, 0x01, 0x0a, 0x04, 0x56, 0x6f, 0x74,
-	0x65, 0x12, 0x1f, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76,
-	0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x6f, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x1a, 0x20, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e,
-	0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x6f, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x3c, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x36, 0x12, 0x34, 0x2f, 0x63,
-	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x72, 0x6f,
-	0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c,
-	0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x2f, 0x7b, 0x76, 0x6f, 0x74, 0x65,
-	0x72, 0x7d, 0x12, 0x82, 0x01, 0x0a, 0x05, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x12, 0x20, 0x2e, 0x63,
-	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65,
-	0x72, 0x79, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x21,
-	0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51,
-	0x75, 0x65, 0x72, 0x79, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x34, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2e, 0x12, 0x2c, 0x2f, 0x63, 0x6f, 0x73, 0x6d,
-	0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73,
-	0x61, 0x6c, 0x73, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64,
-	0x7d, 0x2f, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x12, 0x7c, 0x0a, 0x06, 0x50, 0x61, 0x72, 0x61, 0x6d,
-	0x73, 0x12, 0x21, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76,
-	0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f,
-	0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2b, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x25,
-	0x12, 0x23, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31,
-	0x2f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x2f, 0x7b, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x5f,
-	0x74, 0x79, 0x70, 0x65, 0x7d, 0x12, 0x97, 0x01, 0x0a, 0x07, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69,
-	0x74, 0x12, 0x22, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76,
-	0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67,
-	0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x65, 0x70, 0x6f, 0x73,
-	0x69, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x43, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x3d, 0x12, 0x3b, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f,
-	0x76, 0x31, 0x2f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x2f, 0x7b, 0x70, 0x72,
-	0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x64, 0x65, 0x70, 0x6f, 0x73,
-	0x69, 0x74, 0x73, 0x2f, 0x7b, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x6f, 0x72, 0x7d, 0x12,
-	0x8e, 0x01, 0x0a, 0x08, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x73, 0x12, 0x23, 0x2e, 0x63,
-	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65,
+	0x42, 0x02, 0x18, 0x01, 0x52, 0x0a, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x54, 0x79, 0x70, 0x65,
+	0x22, 0xac, 0x02, 0x0a, 0x13, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x44, 0x0a, 0x0d, 0x76, 0x6f, 0x74, 0x69,
+	0x6e, 0x67, 0x5f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x1b, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e,
+	0x56, 0x6f, 0x74, 0x69, 0x6e, 0x67, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x42, 0x02, 0x18, 0x01,
+	0x52, 0x0c, 0x76, 0x6f, 0x74, 0x69, 0x6e, 0x67, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x47,
+	0x0a, 0x0e, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x5f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e,
+	0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x50, 0x61,
+	0x72, 0x61, 0x6d, 0x73, 0x42, 0x02, 0x18, 0x01, 0x52, 0x0d, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69,
+	0x74, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x41, 0x0a, 0x0c, 0x74, 0x61, 0x6c, 0x6c, 0x79,
+	0x5f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e,
+	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x61,
+	0x6c, 0x6c, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x42, 0x02, 0x18, 0x01, 0x52, 0x0b, 0x74,
+	0x61, 0x6c, 0x6c, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x43, 0x0a, 0x06, 0x70, 0x61,
+	0x72, 0x61, 0x6d, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x63, 0x6f, 0x73,
+	0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x61, 0x72, 0x61, 0x6d,
+	0x73, 0x42, 0x14, 0xda, 0xb4, 0x2d, 0x10, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2d, 0x73, 0x64,
+	0x6b, 0x20, 0x76, 0x30, 0x2e, 0x34, 0x37, 0x52, 0x06, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x22,
+	0x6e, 0x0a, 0x13, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73,
+	0x61, 0x6c, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0a, 0x70, 0x72, 0x6f,
+	0x70, 0x6f, 0x73, 0x61, 0x6c, 0x49, 0x64, 0x12, 0x36, 0x0a, 0x09, 0x64, 0x65, 0x70, 0x6f, 0x73,
+	0x69, 0x74, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14,
+	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74,
+	0x72, 0x69, 0x6e, 0x67, 0x52, 0x09, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x6f, 0x72, 0x22,
+	0x48, 0x0a, 0x14, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x30, 0x0a, 0x07, 0x64, 0x65, 0x70, 0x6f, 0x73,
+	0x69, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
+	0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74,
+	0x52, 0x07, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x22, 0x7f, 0x0a, 0x14, 0x51, 0x75, 0x65,
 	0x72, 0x79, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x24, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76,
-	0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x73, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x37, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x31, 0x12,
-	0x2f, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f,
+	0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0a, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c,
+	0x49, 0x64, 0x12, 0x46, 0x0a, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e,
+	0x62, 0x61, 0x73, 0x65, 0x2e, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74,
+	0x61, 0x31, 0x2e, 0x50, 0x61, 0x67, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x52, 0x0a,
+	0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x94, 0x01, 0x0a, 0x15, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x32, 0x0a, 0x08, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x73,
+	0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e,
+	0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x52, 0x08,
+	0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x73, 0x12, 0x47, 0x0a, 0x0a, 0x70, 0x61, 0x67, 0x69,
+	0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x63,
+	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x71, 0x75, 0x65, 0x72, 0x79,
+	0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x50, 0x61, 0x67, 0x65, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f,
+	0x6e, 0x22, 0x3a, 0x0a, 0x17, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54, 0x61, 0x6c, 0x6c, 0x79, 0x52,
+	0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b,
+	0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x04, 0x52, 0x0a, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x49, 0x64, 0x22, 0x4c, 0x0a,
+	0x18, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54, 0x61, 0x6c, 0x6c, 0x79, 0x52, 0x65, 0x73, 0x75, 0x6c,
+	0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x30, 0x0a, 0x05, 0x74, 0x61, 0x6c,
+	0x6c, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
+	0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x61, 0x6c, 0x6c, 0x79, 0x52, 0x65,
+	0x73, 0x75, 0x6c, 0x74, 0x52, 0x05, 0x74, 0x61, 0x6c, 0x6c, 0x79, 0x22, 0x42, 0x0a, 0x1f, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x56, 0x6f, 0x74, 0x65,
+	0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f,
+	0x0a, 0x0b, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x04, 0x52, 0x0a, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x49, 0x64, 0x22,
+	0x69, 0x0a, 0x20, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c,
+	0x56, 0x6f, 0x74, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x12, 0x45, 0x0a, 0x0c, 0x76, 0x6f, 0x74, 0x65, 0x5f, 0x6f, 0x70, 0x74, 0x69,
+	0x6f, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x63, 0x6f, 0x73, 0x6d,
+	0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73,
+	0x61, 0x6c, 0x56, 0x6f, 0x74, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x0b, 0x76,
+	0x6f, 0x74, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x4a, 0x0a, 0x1e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x64, 0x50,
+	0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x28, 0x0a, 0x07,
+	0x6d, 0x73, 0x67, 0x5f, 0x75, 0x72, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x0f, 0xda,
+	0xb4, 0x2d, 0x0b, 0x78, 0x2f, 0x67, 0x6f, 0x76, 0x20, 0x31, 0x2e, 0x30, 0x2e, 0x30, 0x52, 0x06,
+	0x6d, 0x73, 0x67, 0x55, 0x72, 0x6c, 0x22, 0x6d, 0x0a, 0x1f, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4d,
+	0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x64, 0x50, 0x61, 0x72, 0x61, 0x6d,
+	0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x4a, 0x0a, 0x06, 0x70, 0x61, 0x72,
+	0x61, 0x6d, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x21, 0x2e, 0x63, 0x6f, 0x73, 0x6d,
+	0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67,
+	0x65, 0x42, 0x61, 0x73, 0x65, 0x64, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x42, 0x0f, 0xda, 0xb4,
+	0x2d, 0x0b, 0x78, 0x2f, 0x67, 0x6f, 0x76, 0x20, 0x31, 0x2e, 0x30, 0x2e, 0x30, 0x52, 0x06, 0x70,
+	0x61, 0x72, 0x61, 0x6d, 0x73, 0x32, 0xca, 0x0c, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12,
+	0x86, 0x01, 0x0a, 0x0c, 0x43, 0x6f, 0x6e, 0x73, 0x74, 0x69, 0x74, 0x75, 0x74, 0x69, 0x6f, 0x6e,
+	0x12, 0x27, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31,
+	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x6f, 0x6e, 0x73, 0x74, 0x69, 0x74, 0x75, 0x74, 0x69,
+	0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x63, 0x6f, 0x73, 0x6d,
+	0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43,
+	0x6f, 0x6e, 0x73, 0x74, 0x69, 0x74, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x23, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1d, 0x12, 0x1b, 0x2f, 0x63, 0x6f,
+	0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6e, 0x73,
+	0x74, 0x69, 0x74, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x85, 0x01, 0x0a, 0x08, 0x50, 0x72, 0x6f,
+	0x70, 0x6f, 0x73, 0x61, 0x6c, 0x12, 0x23, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67,
+	0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f,
+	0x73, 0x61, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x63, 0x6f, 0x73,
+	0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x2e, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x28, 0x12, 0x26, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
+	0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61,
+	0x6c, 0x73, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x7d,
+	0x12, 0x7a, 0x0a, 0x09, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x12, 0x24, 0x2e,
+	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76,
+	0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61,
+	0x6c, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x20, 0x82, 0xd3, 0xe4, 0x93,
+	0x02, 0x1a, 0x12, 0x18, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f,
+	0x76, 0x31, 0x2f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x12, 0x87, 0x01, 0x0a,
+	0x04, 0x56, 0x6f, 0x74, 0x65, 0x12, 0x1f, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67,
+	0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x6f, 0x74, 0x65, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x20, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e,
+	0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x6f, 0x74, 0x65,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x3c, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x36,
+	0x12, 0x34, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31,
+	0x2f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x70,
+	0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x2f, 0x7b,
+	0x76, 0x6f, 0x74, 0x65, 0x72, 0x7d, 0x12, 0x82, 0x01, 0x0a, 0x05, 0x56, 0x6f, 0x74, 0x65, 0x73,
+	0x12, 0x20, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31,
+	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x21, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e,
+	0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x34, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2e, 0x12, 0x2c, 0x2f,
+	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x72,
+	0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61,
+	0x6c, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x12, 0x6e, 0x0a, 0x06, 0x50,
+	0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x21, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67,
+	0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d,
+	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
+	0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61,
+	0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1d, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x17, 0x12, 0x15, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f,
+	0x76, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x97, 0x01, 0x0a, 0x07,
+	0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x12, 0x22, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73,
+	0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x65, 0x70,
+	0x6f, 0x73, 0x69, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x63, 0x6f,
+	0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72,
+	0x79, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x43, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x3d, 0x12, 0x3b, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
+	0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61,
+	0x6c, 0x73, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x7d,
+	0x2f, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x73, 0x2f, 0x7b, 0x64, 0x65, 0x70, 0x6f, 0x73,
+	0x69, 0x74, 0x6f, 0x72, 0x7d, 0x12, 0x8e, 0x01, 0x0a, 0x08, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69,
+	0x74, 0x73, 0x12, 0x23, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e,
+	0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x73,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73,
+	0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x65, 0x70,
+	0x6f, 0x73, 0x69, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x37, 0x82,
+	0xd3, 0xe4, 0x93, 0x02, 0x31, 0x12, 0x2f, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67,
+	0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x2f,
+	0x7b, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x64, 0x65,
+	0x70, 0x6f, 0x73, 0x69, 0x74, 0x73, 0x12, 0x94, 0x01, 0x0a, 0x0b, 0x54, 0x61, 0x6c, 0x6c, 0x79,
+	0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x26, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e,
+	0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54, 0x61, 0x6c, 0x6c,
+	0x79, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27,
+	0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x54, 0x61, 0x6c, 0x6c, 0x79, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x34, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2e, 0x12,
+	0x2c, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f,
 	0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x70, 0x6f,
-	0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x73,
-	0x12, 0x94, 0x01, 0x0a, 0x0b, 0x54, 0x61, 0x6c, 0x6c, 0x79, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74,
-	0x12, 0x26, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31,
-	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54, 0x61, 0x6c, 0x6c, 0x79, 0x52, 0x65, 0x73, 0x75, 0x6c,
-	0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
-	0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54, 0x61,
-	0x6c, 0x6c, 0x79, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x34, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2e, 0x12, 0x2c, 0x2f, 0x63, 0x6f, 0x73, 0x6d,
-	0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73,
-	0x61, 0x6c, 0x73, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64,
-	0x7d, 0x2f, 0x74, 0x61, 0x6c, 0x6c, 0x79, 0x42, 0x9b, 0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e,
-	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x42, 0x0a, 0x51,
-	0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x24, 0x63, 0x6f, 0x73,
-	0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x63, 0x6f,
-	0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x3b, 0x67, 0x6f, 0x76, 0x76,
-	0x31, 0xa2, 0x02, 0x03, 0x43, 0x47, 0x58, 0xaa, 0x02, 0x0d, 0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73,
-	0x2e, 0x47, 0x6f, 0x76, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x0d, 0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73,
-	0x5c, 0x47, 0x6f, 0x76, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x19, 0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73,
-	0x5c, 0x47, 0x6f, 0x76, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64,
-	0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x3a, 0x3a, 0x47, 0x6f,
-	0x76, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x73, 0x61, 0x6c, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x74, 0x61, 0x6c, 0x6c, 0x79, 0x12, 0xc3, 0x01,
+	0x0a, 0x13, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x56, 0x6f, 0x74, 0x65, 0x4f, 0x70,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x2e, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67,
+	0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f,
+	0x73, 0x61, 0x6c, 0x56, 0x6f, 0x74, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2f, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x67,
+	0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f,
+	0x73, 0x61, 0x6c, 0x56, 0x6f, 0x74, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x4b, 0xca, 0xb4, 0x2d, 0x0c, 0x78, 0x2f, 0x67, 0x6f,
+	0x76, 0x20, 0x76, 0x30, 0x2e, 0x32, 0x2e, 0x30, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x35, 0x12, 0x33,
+	0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x2f, 0x70,
+	0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73,
+	0x61, 0x6c, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x76, 0x6f, 0x74, 0x65, 0x5f, 0x6f, 0x70, 0x74, 0x69,
+	0x6f, 0x6e, 0x73, 0x12, 0xac, 0x01, 0x0a, 0x12, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x42,
+	0x61, 0x73, 0x65, 0x64, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x2d, 0x2e, 0x63, 0x6f, 0x73,
+	0x6d, 0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x64, 0x50, 0x61, 0x72, 0x61,
+	0x6d, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2e, 0x2e, 0x63, 0x6f, 0x73, 0x6d,
+	0x6f, 0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4d,
+	0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x42, 0x61, 0x73, 0x65, 0x64, 0x50, 0x61, 0x72, 0x61, 0x6d,
+	0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x37, 0xca, 0xb4, 0x2d, 0x0c, 0x78,
+	0x2f, 0x67, 0x6f, 0x76, 0x20, 0x76, 0x30, 0x2e, 0x32, 0x2e, 0x30, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x21, 0x12, 0x1f, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x67, 0x6f, 0x76, 0x2f, 0x76,
+	0x31, 0x2f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x2f, 0x7b, 0x6d, 0x73, 0x67, 0x5f, 0x75, 0x72,
+	0x6c, 0x7d, 0x42, 0x9b, 0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
+	0x73, 0x2e, 0x67, 0x6f, 0x76, 0x2e, 0x76, 0x31, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50,
+	0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x24, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64,
+	0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f,
+	0x67, 0x6f, 0x76, 0x2f, 0x76, 0x31, 0x3b, 0x67, 0x6f, 0x76, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x43,
+	0x47, 0x58, 0xaa, 0x02, 0x0d, 0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x47, 0x6f, 0x76, 0x2e,
+	0x56, 0x31, 0xca, 0x02, 0x0d, 0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x5c, 0x47, 0x6f, 0x76, 0x5c,
+	0x56, 0x31, 0xe2, 0x02, 0x19, 0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x5c, 0x47, 0x6f, 0x76, 0x5c,
+	0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02,
+	0x0f, 0x43, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x3a, 0x3a, 0x47, 0x6f, 0x76, 0x3a, 0x3a, 0x56, 0x31,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -9709,80 +11598,92 @@ func file_cosmos_gov_v1_query_proto_rawDescGZIP() []byte {
 	return file_cosmos_gov_v1_query_proto_rawDescData
 }
 
-var file_cosmos_gov_v1_query_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_cosmos_gov_v1_query_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_cosmos_gov_v1_query_proto_goTypes = []interface{}{
-	(*QueryConstitutionRequest)(nil),  // 0: cosmos.gov.v1.QueryConstitutionRequest
-	(*QueryConstitutionResponse)(nil), // 1: cosmos.gov.v1.QueryConstitutionResponse
-	(*QueryProposalRequest)(nil),      // 2: cosmos.gov.v1.QueryProposalRequest
-	(*QueryProposalResponse)(nil),     // 3: cosmos.gov.v1.QueryProposalResponse
-	(*QueryProposalsRequest)(nil),     // 4: cosmos.gov.v1.QueryProposalsRequest
-	(*QueryProposalsResponse)(nil),    // 5: cosmos.gov.v1.QueryProposalsResponse
-	(*QueryVoteRequest)(nil),          // 6: cosmos.gov.v1.QueryVoteRequest
-	(*QueryVoteResponse)(nil),         // 7: cosmos.gov.v1.QueryVoteResponse
-	(*QueryVotesRequest)(nil),         // 8: cosmos.gov.v1.QueryVotesRequest
-	(*QueryVotesResponse)(nil),        // 9: cosmos.gov.v1.QueryVotesResponse
-	(*QueryParamsRequest)(nil),        // 10: cosmos.gov.v1.QueryParamsRequest
-	(*QueryParamsResponse)(nil),       // 11: cosmos.gov.v1.QueryParamsResponse
-	(*QueryDepositRequest)(nil),       // 12: cosmos.gov.v1.QueryDepositRequest
-	(*QueryDepositResponse)(nil),      // 13: cosmos.gov.v1.QueryDepositResponse
-	(*QueryDepositsRequest)(nil),      // 14: cosmos.gov.v1.QueryDepositsRequest
-	(*QueryDepositsResponse)(nil),     // 15: cosmos.gov.v1.QueryDepositsResponse
-	(*QueryTallyResultRequest)(nil),   // 16: cosmos.gov.v1.QueryTallyResultRequest
-	(*QueryTallyResultResponse)(nil),  // 17: cosmos.gov.v1.QueryTallyResultResponse
-	(*Proposal)(nil),                  // 18: cosmos.gov.v1.Proposal
-	(ProposalStatus)(0),               // 19: cosmos.gov.v1.ProposalStatus
-	(*v1beta1.PageRequest)(nil),       // 20: cosmos.base.query.v1beta1.PageRequest
-	(*v1beta1.PageResponse)(nil),      // 21: cosmos.base.query.v1beta1.PageResponse
-	(*Vote)(nil),                      // 22: cosmos.gov.v1.Vote
-	(*VotingParams)(nil),              // 23: cosmos.gov.v1.VotingParams
-	(*DepositParams)(nil),             // 24: cosmos.gov.v1.DepositParams
-	(*TallyParams)(nil),               // 25: cosmos.gov.v1.TallyParams
-	(*Params)(nil),                    // 26: cosmos.gov.v1.Params
-	(*Deposit)(nil),                   // 27: cosmos.gov.v1.Deposit
-	(*TallyResult)(nil),               // 28: cosmos.gov.v1.TallyResult
+	(*QueryConstitutionRequest)(nil),         // 0: cosmos.gov.v1.QueryConstitutionRequest
+	(*QueryConstitutionResponse)(nil),        // 1: cosmos.gov.v1.QueryConstitutionResponse
+	(*QueryProposalRequest)(nil),             // 2: cosmos.gov.v1.QueryProposalRequest
+	(*QueryProposalResponse)(nil),            // 3: cosmos.gov.v1.QueryProposalResponse
+	(*QueryProposalsRequest)(nil),            // 4: cosmos.gov.v1.QueryProposalsRequest
+	(*QueryProposalsResponse)(nil),           // 5: cosmos.gov.v1.QueryProposalsResponse
+	(*QueryVoteRequest)(nil),                 // 6: cosmos.gov.v1.QueryVoteRequest
+	(*QueryVoteResponse)(nil),                // 7: cosmos.gov.v1.QueryVoteResponse
+	(*QueryVotesRequest)(nil),                // 8: cosmos.gov.v1.QueryVotesRequest
+	(*QueryVotesResponse)(nil),               // 9: cosmos.gov.v1.QueryVotesResponse
+	(*QueryParamsRequest)(nil),               // 10: cosmos.gov.v1.QueryParamsRequest
+	(*QueryParamsResponse)(nil),              // 11: cosmos.gov.v1.QueryParamsResponse
+	(*QueryDepositRequest)(nil),              // 12: cosmos.gov.v1.QueryDepositRequest
+	(*QueryDepositResponse)(nil),             // 13: cosmos.gov.v1.QueryDepositResponse
+	(*QueryDepositsRequest)(nil),             // 14: cosmos.gov.v1.QueryDepositsRequest
+	(*QueryDepositsResponse)(nil),            // 15: cosmos.gov.v1.QueryDepositsResponse
+	(*QueryTallyResultRequest)(nil),          // 16: cosmos.gov.v1.QueryTallyResultRequest
+	(*QueryTallyResultResponse)(nil),         // 17: cosmos.gov.v1.QueryTallyResultResponse
+	(*QueryProposalVoteOptionsRequest)(nil),  // 18: cosmos.gov.v1.QueryProposalVoteOptionsRequest
+	(*QueryProposalVoteOptionsResponse)(nil), // 19: cosmos.gov.v1.QueryProposalVoteOptionsResponse
+	(*QueryMessageBasedParamsRequest)(nil),   // 20: cosmos.gov.v1.QueryMessageBasedParamsRequest
+	(*QueryMessageBasedParamsResponse)(nil),  // 21: cosmos.gov.v1.QueryMessageBasedParamsResponse
+	(*Proposal)(nil),                         // 22: cosmos.gov.v1.Proposal
+	(ProposalStatus)(0),                      // 23: cosmos.gov.v1.ProposalStatus
+	(*v1beta1.PageRequest)(nil),              // 24: cosmos.base.query.v1beta1.PageRequest
+	(*v1beta1.PageResponse)(nil),             // 25: cosmos.base.query.v1beta1.PageResponse
+	(*Vote)(nil),                             // 26: cosmos.gov.v1.Vote
+	(*VotingParams)(nil),                     // 27: cosmos.gov.v1.VotingParams
+	(*DepositParams)(nil),                    // 28: cosmos.gov.v1.DepositParams
+	(*TallyParams)(nil),                      // 29: cosmos.gov.v1.TallyParams
+	(*Params)(nil),                           // 30: cosmos.gov.v1.Params
+	(*Deposit)(nil),                          // 31: cosmos.gov.v1.Deposit
+	(*TallyResult)(nil),                      // 32: cosmos.gov.v1.TallyResult
+	(*ProposalVoteOptions)(nil),              // 33: cosmos.gov.v1.ProposalVoteOptions
+	(*MessageBasedParams)(nil),               // 34: cosmos.gov.v1.MessageBasedParams
 }
 var file_cosmos_gov_v1_query_proto_depIdxs = []int32{
-	18, // 0: cosmos.gov.v1.QueryProposalResponse.proposal:type_name -> cosmos.gov.v1.Proposal
-	19, // 1: cosmos.gov.v1.QueryProposalsRequest.proposal_status:type_name -> cosmos.gov.v1.ProposalStatus
-	20, // 2: cosmos.gov.v1.QueryProposalsRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
-	18, // 3: cosmos.gov.v1.QueryProposalsResponse.proposals:type_name -> cosmos.gov.v1.Proposal
-	21, // 4: cosmos.gov.v1.QueryProposalsResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
-	22, // 5: cosmos.gov.v1.QueryVoteResponse.vote:type_name -> cosmos.gov.v1.Vote
-	20, // 6: cosmos.gov.v1.QueryVotesRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
-	22, // 7: cosmos.gov.v1.QueryVotesResponse.votes:type_name -> cosmos.gov.v1.Vote
-	21, // 8: cosmos.gov.v1.QueryVotesResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
-	23, // 9: cosmos.gov.v1.QueryParamsResponse.voting_params:type_name -> cosmos.gov.v1.VotingParams
-	24, // 10: cosmos.gov.v1.QueryParamsResponse.deposit_params:type_name -> cosmos.gov.v1.DepositParams
-	25, // 11: cosmos.gov.v1.QueryParamsResponse.tally_params:type_name -> cosmos.gov.v1.TallyParams
-	26, // 12: cosmos.gov.v1.QueryParamsResponse.params:type_name -> cosmos.gov.v1.Params
-	27, // 13: cosmos.gov.v1.QueryDepositResponse.deposit:type_name -> cosmos.gov.v1.Deposit
-	20, // 14: cosmos.gov.v1.QueryDepositsRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
-	27, // 15: cosmos.gov.v1.QueryDepositsResponse.deposits:type_name -> cosmos.gov.v1.Deposit
-	21, // 16: cosmos.gov.v1.QueryDepositsResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
-	28, // 17: cosmos.gov.v1.QueryTallyResultResponse.tally:type_name -> cosmos.gov.v1.TallyResult
-	0,  // 18: cosmos.gov.v1.Query.Constitution:input_type -> cosmos.gov.v1.QueryConstitutionRequest
-	2,  // 19: cosmos.gov.v1.Query.Proposal:input_type -> cosmos.gov.v1.QueryProposalRequest
-	4,  // 20: cosmos.gov.v1.Query.Proposals:input_type -> cosmos.gov.v1.QueryProposalsRequest
-	6,  // 21: cosmos.gov.v1.Query.Vote:input_type -> cosmos.gov.v1.QueryVoteRequest
-	8,  // 22: cosmos.gov.v1.Query.Votes:input_type -> cosmos.gov.v1.QueryVotesRequest
-	10, // 23: cosmos.gov.v1.Query.Params:input_type -> cosmos.gov.v1.QueryParamsRequest
-	12, // 24: cosmos.gov.v1.Query.Deposit:input_type -> cosmos.gov.v1.QueryDepositRequest
-	14, // 25: cosmos.gov.v1.Query.Deposits:input_type -> cosmos.gov.v1.QueryDepositsRequest
-	16, // 26: cosmos.gov.v1.Query.TallyResult:input_type -> cosmos.gov.v1.QueryTallyResultRequest
-	1,  // 27: cosmos.gov.v1.Query.Constitution:output_type -> cosmos.gov.v1.QueryConstitutionResponse
-	3,  // 28: cosmos.gov.v1.Query.Proposal:output_type -> cosmos.gov.v1.QueryProposalResponse
-	5,  // 29: cosmos.gov.v1.Query.Proposals:output_type -> cosmos.gov.v1.QueryProposalsResponse
-	7,  // 30: cosmos.gov.v1.Query.Vote:output_type -> cosmos.gov.v1.QueryVoteResponse
-	9,  // 31: cosmos.gov.v1.Query.Votes:output_type -> cosmos.gov.v1.QueryVotesResponse
-	11, // 32: cosmos.gov.v1.Query.Params:output_type -> cosmos.gov.v1.QueryParamsResponse
-	13, // 33: cosmos.gov.v1.Query.Deposit:output_type -> cosmos.gov.v1.QueryDepositResponse
-	15, // 34: cosmos.gov.v1.Query.Deposits:output_type -> cosmos.gov.v1.QueryDepositsResponse
-	17, // 35: cosmos.gov.v1.Query.TallyResult:output_type -> cosmos.gov.v1.QueryTallyResultResponse
-	27, // [27:36] is the sub-list for method output_type
-	18, // [18:27] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	22, // 0: cosmos.gov.v1.QueryProposalResponse.proposal:type_name -> cosmos.gov.v1.Proposal
+	23, // 1: cosmos.gov.v1.QueryProposalsRequest.proposal_status:type_name -> cosmos.gov.v1.ProposalStatus
+	24, // 2: cosmos.gov.v1.QueryProposalsRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	22, // 3: cosmos.gov.v1.QueryProposalsResponse.proposals:type_name -> cosmos.gov.v1.Proposal
+	25, // 4: cosmos.gov.v1.QueryProposalsResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	26, // 5: cosmos.gov.v1.QueryVoteResponse.vote:type_name -> cosmos.gov.v1.Vote
+	24, // 6: cosmos.gov.v1.QueryVotesRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	26, // 7: cosmos.gov.v1.QueryVotesResponse.votes:type_name -> cosmos.gov.v1.Vote
+	25, // 8: cosmos.gov.v1.QueryVotesResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	27, // 9: cosmos.gov.v1.QueryParamsResponse.voting_params:type_name -> cosmos.gov.v1.VotingParams
+	28, // 10: cosmos.gov.v1.QueryParamsResponse.deposit_params:type_name -> cosmos.gov.v1.DepositParams
+	29, // 11: cosmos.gov.v1.QueryParamsResponse.tally_params:type_name -> cosmos.gov.v1.TallyParams
+	30, // 12: cosmos.gov.v1.QueryParamsResponse.params:type_name -> cosmos.gov.v1.Params
+	31, // 13: cosmos.gov.v1.QueryDepositResponse.deposit:type_name -> cosmos.gov.v1.Deposit
+	24, // 14: cosmos.gov.v1.QueryDepositsRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	31, // 15: cosmos.gov.v1.QueryDepositsResponse.deposits:type_name -> cosmos.gov.v1.Deposit
+	25, // 16: cosmos.gov.v1.QueryDepositsResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	32, // 17: cosmos.gov.v1.QueryTallyResultResponse.tally:type_name -> cosmos.gov.v1.TallyResult
+	33, // 18: cosmos.gov.v1.QueryProposalVoteOptionsResponse.vote_options:type_name -> cosmos.gov.v1.ProposalVoteOptions
+	34, // 19: cosmos.gov.v1.QueryMessageBasedParamsResponse.params:type_name -> cosmos.gov.v1.MessageBasedParams
+	0,  // 20: cosmos.gov.v1.Query.Constitution:input_type -> cosmos.gov.v1.QueryConstitutionRequest
+	2,  // 21: cosmos.gov.v1.Query.Proposal:input_type -> cosmos.gov.v1.QueryProposalRequest
+	4,  // 22: cosmos.gov.v1.Query.Proposals:input_type -> cosmos.gov.v1.QueryProposalsRequest
+	6,  // 23: cosmos.gov.v1.Query.Vote:input_type -> cosmos.gov.v1.QueryVoteRequest
+	8,  // 24: cosmos.gov.v1.Query.Votes:input_type -> cosmos.gov.v1.QueryVotesRequest
+	10, // 25: cosmos.gov.v1.Query.Params:input_type -> cosmos.gov.v1.QueryParamsRequest
+	12, // 26: cosmos.gov.v1.Query.Deposit:input_type -> cosmos.gov.v1.QueryDepositRequest
+	14, // 27: cosmos.gov.v1.Query.Deposits:input_type -> cosmos.gov.v1.QueryDepositsRequest
+	16, // 28: cosmos.gov.v1.Query.TallyResult:input_type -> cosmos.gov.v1.QueryTallyResultRequest
+	18, // 29: cosmos.gov.v1.Query.ProposalVoteOptions:input_type -> cosmos.gov.v1.QueryProposalVoteOptionsRequest
+	20, // 30: cosmos.gov.v1.Query.MessageBasedParams:input_type -> cosmos.gov.v1.QueryMessageBasedParamsRequest
+	1,  // 31: cosmos.gov.v1.Query.Constitution:output_type -> cosmos.gov.v1.QueryConstitutionResponse
+	3,  // 32: cosmos.gov.v1.Query.Proposal:output_type -> cosmos.gov.v1.QueryProposalResponse
+	5,  // 33: cosmos.gov.v1.Query.Proposals:output_type -> cosmos.gov.v1.QueryProposalsResponse
+	7,  // 34: cosmos.gov.v1.Query.Vote:output_type -> cosmos.gov.v1.QueryVoteResponse
+	9,  // 35: cosmos.gov.v1.Query.Votes:output_type -> cosmos.gov.v1.QueryVotesResponse
+	11, // 36: cosmos.gov.v1.Query.Params:output_type -> cosmos.gov.v1.QueryParamsResponse
+	13, // 37: cosmos.gov.v1.Query.Deposit:output_type -> cosmos.gov.v1.QueryDepositResponse
+	15, // 38: cosmos.gov.v1.Query.Deposits:output_type -> cosmos.gov.v1.QueryDepositsResponse
+	17, // 39: cosmos.gov.v1.Query.TallyResult:output_type -> cosmos.gov.v1.QueryTallyResultResponse
+	19, // 40: cosmos.gov.v1.Query.ProposalVoteOptions:output_type -> cosmos.gov.v1.QueryProposalVoteOptionsResponse
+	21, // 41: cosmos.gov.v1.Query.MessageBasedParams:output_type -> cosmos.gov.v1.QueryMessageBasedParamsResponse
+	31, // [31:42] is the sub-list for method output_type
+	20, // [20:31] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_cosmos_gov_v1_query_proto_init() }
@@ -10008,6 +11909,54 @@ func file_cosmos_gov_v1_query_proto_init() {
 				return nil
 			}
 		}
+		file_cosmos_gov_v1_query_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryProposalVoteOptionsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_cosmos_gov_v1_query_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryProposalVoteOptionsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_cosmos_gov_v1_query_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryMessageBasedParamsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_cosmos_gov_v1_query_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryMessageBasedParamsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -10015,7 +11964,7 @@ func file_cosmos_gov_v1_query_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_cosmos_gov_v1_query_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

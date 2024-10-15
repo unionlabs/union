@@ -8,31 +8,44 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	"cosmossdk.io/core/appmodule"
+	"google.golang.org/grpc"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/gov/simulation"
+
+	"cosmossdk.io/core/appmodule"
+	coreregistry "cosmossdk.io/core/registry"
 
 	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/client/cli"
 	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
+	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/simulation"
 	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 )
 
 var (
-	_ module.AppModule           = (*AppModule)(nil)
-	_ module.AppModuleBasic      = (*AppModule)(nil)
-	_ module.HasProposalMsgs     = (*AppModule)(nil)
-	_ module.HasGenesis          = (*AppModule)(nil)
-	_ module.HasName             = (*AppModule)(nil)
-	_ module.HasConsensusVersion = (*AppModule)(nil)
-	_ module.HasServices         = (*AppModule)(nil)
-	_ appmodule.AppModule        = (*AppModule)(nil)
+	_ module.AppModule                = AppModule{}
+	_ module.HasGenesis               = AppModule{}
+	_ appmodule.HasConsensusVersion   = AppModule{}
+	_ appmodule.AppModule             = AppModule{}
+	_ appmodule.HasMigrations         = AppModule{}
+	_ appmodule.HasRegisterInterfaces = AppModule{}
 )
+
+// AppModule represents the AppModule for this module
+type AppModule struct {
+	cdc    codec.Codec
+	keeper keeper.Keeper
+}
+
+// NewAppModule creates a new 08-wasm module
+func NewAppModule(cdc codec.Codec, k keeper.Keeper) AppModule {
+	return AppModule{
+		cdc:    cdc,
+		keeper: k,
+	}
+}
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
 func (AppModule) IsOnePerModuleType() {}
@@ -40,36 +53,29 @@ func (AppModule) IsOnePerModuleType() {}
 // IsAppModule implements the appmodule.AppModule interface.
 func (AppModule) IsAppModule() {}
 
-// AppModuleBasic defines the basic application module used by the Wasm light client.
-// Only the RegisterInterfaces function needs to be implemented. All other function perform
-// a no-op.
-type AppModuleBasic struct{}
-
 // Name returns the tendermint module name.
-func (AppModuleBasic) Name() string {
+func (AppModule) Name() string {
 	return types.ModuleName
 }
 
 // RegisterLegacyAminoCodec performs a no-op. The Wasm client does not support amino.
-func (AppModuleBasic) RegisterLegacyAminoCodec(*codec.LegacyAmino) {}
+func (AppModule) RegisterLegacyAminoCodec(cdc coreregistry.AminoRegistrar) {}
 
-// RegisterInterfaces registers module concrete types into protobuf Any. This allows core IBC
-// to unmarshal Wasm light client types.
-func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func (AppModule) RegisterInterfaces(registry coreregistry.InterfaceRegistrar) {
 	types.RegisterInterfaces(registry)
 }
 
 // DefaultGenesis returns an empty state, i.e. no contracts
-func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(&types.GenesisState{
+func (am AppModule) DefaultGenesis() json.RawMessage {
+	return am.cdc.MustMarshalJSON(&types.GenesisState{
 		Contracts: []types.Contract{},
 	})
 }
 
 // ValidateGenesis performs a no-op.
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
+func (am AppModule) ValidateGenesis(bz json.RawMessage) error {
 	var gs types.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &gs); err != nil {
+	if err := am.cdc.UnmarshalJSON(bz, &gs); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
 
@@ -77,45 +83,34 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingCo
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for Wasm client module.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 	if err != nil {
 		panic(err)
 	}
 }
 
-// GetTxCmd implements AppModuleBasic interface
-func (AppModuleBasic) GetTxCmd() *cobra.Command {
+func (AppModule) GetTxCmd() *cobra.Command {
 	return cli.NewTxCmd()
 }
 
-// GetQueryCmd implements AppModuleBasic interface
-func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+func (AppModule) GetQueryCmd() *cobra.Command {
 	return cli.GetQueryCmd()
 }
 
-// AppModule represents the AppModule for this module
-type AppModule struct {
-	AppModuleBasic
-	keeper keeper.Keeper
-}
-
-// NewAppModule creates a new 08-wasm module
-func NewAppModule(k keeper.Keeper) AppModule {
-	return AppModule{
-		keeper: k,
-	}
-}
-
 // RegisterServices registers module services.
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
+	types.RegisterMsgServer(registrar, am.keeper)
+	types.RegisterQueryServer(registrar, am.keeper)
+	return nil
+}
 
+func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {
 	wasmMigrator := keeper.NewMigrator(am.keeper)
-	if err := cfg.RegisterMigration(types.ModuleName, 1, wasmMigrator.MigrateChecksums); err != nil {
+	if err := mr.Register(types.ModuleName, 1, wasmMigrator.MigrateChecksums); err != nil {
 		panic(fmt.Errorf("failed to migrate 08-wasm module from version 1 to 2 (checksums migration to collections): %v", err))
 	}
+	return nil
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
@@ -126,19 +121,14 @@ func (AppModule) ProposalMsgs(simState module.SimulationState) []simtypes.Weight
 	return simulation.ProposalMsgs()
 }
 
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, bz json.RawMessage) {
-	var gs types.GenesisState
-	err := cdc.UnmarshalJSON(bz, &gs)
-	if err != nil {
-		panic(fmt.Errorf("failed to unmarshal %s genesis state: %s", am.Name(), err))
-	}
-	err = am.keeper.InitGenesis(ctx, gs)
-	if err != nil {
-		panic(err)
-	}
+func (am AppModule) InitGenesis(ctx context.Context, data json.RawMessage) error {
+	var genesisState types.GenesisState
+	am.cdc.MustUnmarshalJSON(data, &genesisState)
+	am.keeper.InitGenesis(ctx, genesisState)
+	return nil
 }
 
-func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
+func (am AppModule) ExportGenesis(ctx context.Context) (json.RawMessage, error) {
 	gs := am.keeper.ExportGenesis(ctx)
-	return cdc.MustMarshalJSON(&gs)
+	return am.cdc.MarshalJSON(gs)
 }

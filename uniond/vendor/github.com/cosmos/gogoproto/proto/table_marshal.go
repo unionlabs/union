@@ -42,6 +42,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"unicode/utf8"
+
+	protov2 "google.golang.org/protobuf/proto"
 )
 
 // a sizer takes a pointer to a field and the size of its tag, computes the size of
@@ -2943,6 +2945,9 @@ func Marshal(pb Message) ([]byte, error) {
 		// If the message can marshal itself, let it do it, for compatibility.
 		// NOTE: This is not efficient.
 		return m.Marshal()
+	}
+	if m, ok := pb.(protov2.Message); ok {
+		return protov2.MarshalOptions{Deterministic: true}.Marshal(m)
 	}
 	// in case somehow we didn't generate the wrapper
 	if pb == nil {

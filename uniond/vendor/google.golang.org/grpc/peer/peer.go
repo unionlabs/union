@@ -22,7 +22,9 @@ package peer
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"strings"
 
 	"google.golang.org/grpc/credentials"
 )
@@ -37,6 +39,34 @@ type Peer struct {
 	// AuthInfo is the authentication information of the transport.
 	// It is nil if there is no transport security being used.
 	AuthInfo credentials.AuthInfo
+}
+
+// String ensures the Peer types implements the Stringer interface in order to
+// allow to print a context with a peerKey value effectively.
+func (p *Peer) String() string {
+	if p == nil {
+		return "Peer<nil>"
+	}
+	sb := &strings.Builder{}
+	sb.WriteString("Peer{")
+	if p.Addr != nil {
+		fmt.Fprintf(sb, "Addr: '%s', ", p.Addr.String())
+	} else {
+		fmt.Fprintf(sb, "Addr: <nil>, ")
+	}
+	if p.LocalAddr != nil {
+		fmt.Fprintf(sb, "LocalAddr: '%s', ", p.LocalAddr.String())
+	} else {
+		fmt.Fprintf(sb, "LocalAddr: <nil>, ")
+	}
+	if p.AuthInfo != nil {
+		fmt.Fprintf(sb, "AuthInfo: '%s'", p.AuthInfo.AuthType())
+	} else {
+		fmt.Fprintf(sb, "AuthInfo: <nil>")
+	}
+	sb.WriteString("}")
+
+	return sb.String()
 }
 
 type peerKey struct{}

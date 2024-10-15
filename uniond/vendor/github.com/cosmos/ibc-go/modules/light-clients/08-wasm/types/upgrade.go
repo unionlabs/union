@@ -1,11 +1,12 @@
 package types
 
 import (
+	"context"
+
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
@@ -15,7 +16,7 @@ import (
 // VerifyUpgradeAndUpdateState, on a successful verification expects the contract to update
 // the new client state, consensus state, and any other client metadata.
 func (cs ClientState) VerifyUpgradeAndUpdateState(
-	ctx sdk.Context,
+	ctx context.Context,
 	cdc codec.BinaryCodec,
 	clientStore storetypes.KVStore,
 	upgradedClient exported.ClientState,

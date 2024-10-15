@@ -49,6 +49,31 @@ const (
 	KDataBlockIndexTypeBinarySearchAndHash DataBlockIndexType = 1
 )
 
+// BlockBasedPinningTier is used to specify which tier of block-based tables should
+// be affected by a block cache pinning setting.
+type BlockBasedPinningTier int
+
+const (
+	// For compatibility, this value specifies to fallback to the behavior
+	// indicated by the deprecated options,
+	// `pin_l0_filter_and_index_blocks_in_cache` and
+	// `pin_top_level_index_and_filter`.
+	KFallbackPinningTier BlockBasedPinningTier = 0
+
+	// This tier contains no block-based tables.
+	KNonePinningTier = 1
+
+	// This tier contains block-based tables that may have originated from a
+	// memtable flush. In particular, it includes tables from L0 that are smaller
+	// than 1.5 times the current `write_buffer_size`. Note these criteria imply
+	// it can include intra-L0 compaction outputs and ingested files, as long as
+	// they are not abnormally large compared to flushed files in L0.
+	KFlushAndSimilarPinningTier = 2
+
+	// This tier contains all block-based tables.
+	KAllPinningTier = 3
+)
+
 // BlockBasedTableOptions represents block-based table options.
 type BlockBasedTableOptions struct {
 	c *C.rocksdb_block_based_table_options_t
@@ -116,6 +141,33 @@ func (opts *BlockBasedTableOptions) SetPinL0FilterAndIndexBlocksInCache(value bo
 // Default: 4K
 func (opts *BlockBasedTableOptions) SetBlockSize(blockSize int) {
 	C.rocksdb_block_based_options_set_block_size(opts.c, C.size_t(blockSize))
+}
+
+// SetTopLevelIndexPinningTier sets the tier of block-based tables whose top-level index into metadata
+// partitions will be pinned. Currently indexes and filters may be
+// partitioned.
+//
+// Note `cache_index_and_filter_blocks` must be true for this option to have
+// any effect. Otherwise any top-level index into metadata partitions would be
+// held in table reader memory, outside the block cache.
+func (opts *BlockBasedTableOptions) SetTopLevelIndexPinningTier(tier BlockBasedPinningTier) {
+	C.rocksdb_block_based_options_set_top_level_index_pinning_tier(opts.c, C.int(tier))
+}
+
+// SetPartitionPinningTier sets the tier of block-based tables whose metadata partitions will be pinned.
+// Currently indexes and filters may be partitioned.
+func (opts *BlockBasedTableOptions) SetPartitionPinningTier(tier BlockBasedPinningTier) {
+	C.rocksdb_block_based_options_set_partition_pinning_tier(opts.c, C.int(tier))
+}
+
+// SetUnpartitionedPinningTier sets the tier of block-based tables whose unpartitioned metadata blocks will be
+// pinned.
+//
+// Note `cache_index_and_filter_blocks` must be true for this option to have
+// any effect. Otherwise the unpartitioned meta-blocks would be held in table
+// reader memory, outside the block cache.
+func (opts *BlockBasedTableOptions) SetUnpartitionedPinningTier(tier BlockBasedPinningTier) {
+	C.rocksdb_block_based_options_set_unpartitioned_pinning_tier(opts.c, C.int(tier))
 }
 
 // SetBlockSizeDeviation sets the block size deviation.

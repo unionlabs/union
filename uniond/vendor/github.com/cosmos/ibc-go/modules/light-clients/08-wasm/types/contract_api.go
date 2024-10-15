@@ -1,8 +1,8 @@
 package types
 
 import (
+	internaltypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 )
 
 // InstantiateMessage is the message that is sent to the contract's instantiate entry point.
@@ -70,21 +70,21 @@ type UpdateStateOnMisbehaviourMsg struct {
 
 // VerifyMembershipMsg is a sudoMsg sent to the contract to verify a membership proof.
 type VerifyMembershipMsg struct {
-	Height           clienttypes.Height         `json:"height"`
-	DelayTimePeriod  uint64                     `json:"delay_time_period"`
-	DelayBlockPeriod uint64                     `json:"delay_block_period"`
-	Proof            []byte                     `json:"proof"`
-	Path             commitmenttypes.MerklePath `json:"path"`
-	Value            []byte                     `json:"value"`
+	Height           clienttypes.Height       `json:"height"`
+	DelayTimePeriod  uint64                   `json:"delay_time_period"`
+	DelayBlockPeriod uint64                   `json:"delay_block_period"`
+	Proof            []byte                   `json:"proof"`
+	Path             internaltypes.MerklePath `json:"merkle_path"`
+	Value            []byte                   `json:"value"`
 }
 
 // VerifyNonMembershipMsg is a sudoMsg sent to the contract to verify a non-membership proof.
 type VerifyNonMembershipMsg struct {
-	Height           clienttypes.Height         `json:"height"`
-	DelayTimePeriod  uint64                     `json:"delay_time_period"`
-	DelayBlockPeriod uint64                     `json:"delay_block_period"`
-	Proof            []byte                     `json:"proof"`
-	Path             commitmenttypes.MerklePath `json:"path"`
+	Height           clienttypes.Height       `json:"height"`
+	DelayTimePeriod  uint64                   `json:"delay_time_period"`
+	DelayBlockPeriod uint64                   `json:"delay_block_period"`
+	Proof            []byte                   `json:"proof"`
+	Path             internaltypes.MerklePath `json:"merkle_path"`
 }
 
 // VerifyUpgradeAndUpdateStateMsg is a sudoMsg sent to the contract to verify an upgrade and update its state.

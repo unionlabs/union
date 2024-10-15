@@ -6,7 +6,8 @@ import (
 	"crypto/elliptic"
 	"fmt"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"cosmossdk.io/core/registry"
+
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 )
 
@@ -30,6 +31,6 @@ func init() {
 }
 
 // RegisterInterfaces adds secp256r1 PubKey to pubkey registry
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterImplementations((*cryptotypes.PubKey)(nil), &PubKey{})
 }

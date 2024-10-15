@@ -20,8 +20,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
-	rpc "github.com/cosmos/cosmos-sdk/client/rpc"
+	"github.com/cosmos/cosmos-sdk/client/rpc"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -40,8 +39,11 @@ func StatusCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			status, err := cmtservice.GetNodeStatus(context.Background(), clientCtx)
+			node, err := clientCtx.GetNode()
+			if err != nil {
+				return err
+			}
+			status, err := node.Status(context.Background())
 			if err != nil {
 				return err
 			}
@@ -155,7 +157,7 @@ func VersionCmd() *cobra.Command {
 				BlockProtocol uint64
 				P2PProtocol   uint64
 			}{
-				CometBFT:      cmtversion.TMCoreSemVer,
+				CometBFT:      cmtversion.CMTSemVer,
 				ABCI:          cmtversion.ABCIVersion,
 				BlockProtocol: cmtversion.BlockProtocol,
 				P2PProtocol:   cmtversion.P2PProtocol,
@@ -182,7 +184,7 @@ Please refer to each module's documentation for the full set of events to query
 for. Each module documents its respective events under 'xx_events.md'.
 `,
 		Example: fmt.Sprintf(
-			"$ %s query blocks --query \"message.sender='cosmos1...' AND block.height > 7\" --page 1 --limit 30 --order-by ASC",
+			"$ %s query blocks --query \"message.sender='cosmos1...' AND block.height > 7\" --page 1 --limit 30 --order_by asc",
 			version.AppName,
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -217,7 +219,7 @@ for. Each module documents its respective events under 'xx_events.md'.
 // QueryBlockCmd implements the default command for a Block query.
 func QueryBlockCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "block --type=[height|hash] [height|hash]",
+		Use:   "block --type={height|hash} [height|hash]",
 		Short: "Query for a committed block by height, hash, or event(s)",
 		Long:  "Query for a specific committed block using the CometBFT RPC `block` and `block_by_hash` method",
 		Example: strings.TrimSpace(fmt.Sprintf(`
@@ -226,7 +228,7 @@ $ %s query block --%s=%s <hash>
 `,
 			version.AppName, auth.FlagType, auth.TypeHeight,
 			version.AppName, auth.FlagType, auth.TypeHash)),
-		Args: cobra.ExactArgs(1),
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -234,24 +236,37 @@ $ %s query block --%s=%s <hash>
 			}
 
 			typ, _ := cmd.Flags().GetString(auth.FlagType)
+			if len(args) == 0 {
+				// do not break default v0.50 behavior of block hash
+				// if no args are provided, set the type to height
+				typ = auth.TypeHeight
+			}
 
 			switch typ {
 			case auth.TypeHeight:
-
-				if args[0] == "" {
-					return fmt.Errorf("argument should be a block height")
+				var (
+					err    error
+					height int64
+				)
+				heightStr := ""
+				if len(args) > 0 {
+					heightStr = args[0]
 				}
 
-				// optional height
-				var height *int64
-				if len(args) > 0 {
-					height, err = parseOptionalHeight(args[0])
+				if heightStr == "" {
+					cmd.Println("Falling back to latest block height:")
+					height, err = rpc.GetChainHeight(clientCtx)
 					if err != nil {
-						return err
+						return fmt.Errorf("failed to get chain height: %w", err)
+					}
+				} else {
+					height, err = strconv.ParseInt(heightStr, 10, 64)
+					if err != nil {
+						return fmt.Errorf("failed to parse block height: %w", err)
 					}
 				}
 
-				output, err := rpc.GetBlockByHeight(clientCtx, height)
+				output, err := rpc.GetBlockByHeight(clientCtx, &height)
 				if err != nil {
 					return err
 				}
@@ -311,15 +326,21 @@ func QueryBlockResultsCmd() *cobra.Command {
 			}
 
 			// optional height
-			var height *int64
+			var height int64
 			if len(args) > 0 {
-				height, err = parseOptionalHeight(args[0])
+				height, err = strconv.ParseInt(args[0], 10, 64)
 				if err != nil {
 					return err
 				}
+			} else {
+				cmd.Println("Falling back to latest block height:")
+				height, err = rpc.GetChainHeight(clientCtx)
+				if err != nil {
+					return fmt.Errorf("failed to get chain height: %w", err)
+				}
 			}
 
-			blockRes, err := node.BlockResults(context.Background(), height)
+			blockRes, err := node.BlockResults(context.Background(), &height)
 			if err != nil {
 				return err
 			}
@@ -341,26 +362,12 @@ func QueryBlockResultsCmd() *cobra.Command {
 	return cmd
 }
 
-func parseOptionalHeight(heightStr string) (*int64, error) {
-	h, err := strconv.Atoi(heightStr)
-	if err != nil {
-		return nil, err
-	}
-
-	if h == 0 {
-		return nil, nil
-	}
-
-	tmp := int64(h)
-
-	return &tmp, nil
-}
-
-func BootstrapStateCmd(appCreator types.AppCreator) *cobra.Command {
+func BootstrapStateCmd[T types.Application](appCreator types.AppCreator[T]) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "bootstrap-state",
-		Short: "Bootstrap CometBFT state at an arbitrary block height using a light client",
-		Args:  cobra.NoArgs,
+		Use:     "bootstrap-state",
+		Short:   "Bootstrap CometBFT state at an arbitrary block height using a light client",
+		Args:    cobra.NoArgs,
+		Example: "bootstrap-state --height 1000000",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			serverCtx := GetServerContextFromCmd(cmd)
 			logger := log.NewLogger(cmd.OutOrStdout())
@@ -372,7 +379,7 @@ func BootstrapStateCmd(appCreator types.AppCreator) *cobra.Command {
 			}
 			if height == 0 {
 				home := serverCtx.Viper.GetString(flags.FlagHome)
-				db, err := openDB(home, GetAppDBBackend(serverCtx.Viper))
+				db, err := OpenDB(home, GetAppDBBackend(serverCtx.Viper))
 				if err != nil {
 					return err
 				}
@@ -381,7 +388,7 @@ func BootstrapStateCmd(appCreator types.AppCreator) *cobra.Command {
 				height = app.CommitMultiStore().LastCommitID().Version
 			}
 
-			return node.BootstrapState(cmd.Context(), cfg, cmtcfg.DefaultDBProvider, uint64(height), nil)
+			return node.BootstrapState(cmd.Context(), cfg, cmtcfg.DefaultDBProvider, getGenDocProvider(cfg), uint64(height), nil)
 		},
 	}
 

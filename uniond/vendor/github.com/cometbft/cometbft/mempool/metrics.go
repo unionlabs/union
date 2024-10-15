@@ -22,7 +22,7 @@ type Metrics struct {
 	SizeBytes metrics.Gauge
 
 	// Histogram of transaction sizes in bytes.
-	TxSizeBytes metrics.Histogram `metrics_buckettype:"exp" metrics_bucketsizes:"1,3,7"`
+	TxSizeBytes metrics.Histogram `metrics_bucketsizes:"1,3,7" metrics_buckettype:"exp"`
 
 	// Number of failed transactions.
 	FailedTxs metrics.Counter
@@ -31,18 +31,15 @@ type Metrics struct {
 	// transactions that passed CheckTx but failed to make it into the mempool
 	// due to resource limits, e.g. mempool is full and no lower priority
 	// transactions exist in the mempool.
-	//metrics:Number of rejected transactions.
+	// metrics:Number of rejected transactions.
 	RejectedTxs metrics.Counter
-
-	// EvictedTxs defines the number of evicted transactions. These are valid
-	// transactions that passed CheckTx and existed in the mempool but were later
-	// evicted to make room for higher priority valid transactions that passed
-	// CheckTx.
-	//metrics:Number of evicted transactions.
-	EvictedTxs metrics.Counter
 
 	// Number of times transactions are rechecked in the mempool.
 	RecheckTimes metrics.Counter
+
+	// Number of times transactions were received more than once.
+	// metrics:Number of duplicate transaction reception.
+	AlreadyReceivedTxs metrics.Counter
 
 	// Number of connections being actively used for gossiping transactions
 	// (experimental feature).

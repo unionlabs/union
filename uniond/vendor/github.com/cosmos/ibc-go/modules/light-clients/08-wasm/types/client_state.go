@@ -1,14 +1,15 @@
 package types
 
 import (
+	"context"
 	"encoding/hex"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	internaltypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
@@ -58,7 +59,7 @@ func (cs ClientState) Validate() error {
 //
 // A frozen client will become expired, so the Frozen status
 // has higher precedence.
-func (cs ClientState) Status(ctx sdk.Context, clientStore storetypes.KVStore, _ codec.BinaryCodec) exported.Status {
+func (cs ClientState) Status(ctx context.Context, clientStore storetypes.KVStore, _ codec.BinaryCodec) exported.Status {
 	// Return unauthorized if the checksum hasn't been previously stored via storeWasmCode.
 	if !HasChecksum(ctx, cs.Checksum) {
 		return exported.Unauthorized
@@ -81,7 +82,7 @@ func (cs ClientState) ZeroCustomFields() exported.ClientState {
 
 // GetTimestampAtHeight returns the timestamp in nanoseconds of the consensus state at the given height.
 func (cs ClientState) GetTimestampAtHeight(
-	ctx sdk.Context,
+	ctx context.Context,
 	clientStore storetypes.KVStore,
 	cdc codec.BinaryCodec,
 	height exported.Height,
@@ -108,7 +109,7 @@ func (cs ClientState) GetTimestampAtHeight(
 // Initialize checks that the initial consensus state is an 08-wasm consensus state and
 // sets the client state, consensus state in the provided client store.
 // It also initializes the wasm contract for the client.
-func (cs ClientState) Initialize(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, state exported.ConsensusState) error {
+func (cs ClientState) Initialize(ctx context.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, state exported.ConsensusState) error {
 	consensusState, ok := state.(*ConsensusState)
 	if !ok {
 		return errorsmod.Wrapf(clienttypes.ErrInvalidConsensus, "invalid initial consensus state. expected type: %T, got: %T",
@@ -133,7 +134,7 @@ func (cs ClientState) Initialize(ctx sdk.Context, cdc codec.BinaryCodec, clientS
 // The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
 // If a zero proof height is passed in, it will fail to retrieve the associated consensus state.
 func (cs ClientState) VerifyMembership(
-	ctx sdk.Context,
+	ctx context.Context,
 	clientStore storetypes.KVStore,
 	cdc codec.BinaryCodec,
 	height exported.Height,
@@ -166,7 +167,7 @@ func (cs ClientState) VerifyMembership(
 			DelayTimePeriod:  delayTimePeriod,
 			DelayBlockPeriod: delayBlockPeriod,
 			Proof:            proof,
-			Path:             merklePath,
+			Path:             internaltypes.ToMerklePathV2(merklePath),
 			Value:            value,
 		},
 	}
@@ -178,7 +179,7 @@ func (cs ClientState) VerifyMembership(
 // The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
 // If a zero proof height is passed in, it will fail to retrieve the associated consensus state.
 func (cs ClientState) VerifyNonMembership(
-	ctx sdk.Context,
+	ctx context.Context,
 	clientStore storetypes.KVStore,
 	cdc codec.BinaryCodec,
 	height exported.Height,
@@ -210,7 +211,7 @@ func (cs ClientState) VerifyNonMembership(
 			DelayTimePeriod:  delayTimePeriod,
 			DelayBlockPeriod: delayBlockPeriod,
 			Proof:            proof,
-			Path:             merklePath,
+			Path:             internaltypes.ToMerklePathV2(merklePath),
 		},
 	}
 	_, err := wasmSudo[EmptyResult](ctx, cdc, clientStore, &cs, payload)

@@ -39,7 +39,7 @@ func New(chainID, remote string) (provider.Provider, error) {
 		remote = "http://" + remote
 	}
 
-	httpClient, err := rpchttp.NewWithTimeout(remote, "/websocket", timeout)
+	httpClient, err := rpchttp.NewWithTimeout(remote, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,6 @@ OUTER_LOOP:
 			default:
 				return nil, err
 			}
-
 		}
 	}
 
@@ -223,7 +222,7 @@ func validateHeight(height int64) (*int64, error) {
 }
 
 // exponential backoff (with jitter)
-// 0.5s -> 2s -> 4.5s -> 8s -> 12.5 with 1s variation
+// 0.5s -> 2s -> 4.5s -> 8s -> 12.5 with 1s variation.
 func backoffTimeout(attempt uint16) time.Duration {
 	//nolint:gosec // G404: Use of weak random number generator
 	return time.Duration(500*attempt*attempt)*time.Millisecond + time.Duration(rand.Intn(1000))*time.Millisecond

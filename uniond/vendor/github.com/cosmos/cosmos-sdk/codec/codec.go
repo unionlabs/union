@@ -2,15 +2,16 @@ package codec
 
 import (
 	"github.com/cosmos/gogoproto/proto"
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
 	"google.golang.org/grpc/encoding"
-	protov2 "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/cosmos/cosmos-sdk/codec/types"
 )
 
 type (
 	// Codec defines a functionality for serializing other objects.
-	// Users can defin a custom Protobuf-based serialization.
+	// Users can define a custom Protobuf-based serialization.
 	// Note, Amino can still be used without any dependency on Protobuf.
 	// SDK provides to Codec implementations:
 	//
@@ -24,17 +25,19 @@ type (
 		InterfaceRegistry() types.InterfaceRegistry
 
 		// GetMsgAnySigners returns the signers of the given message encoded in a protobuf Any
-		// as well as the decoded google.golang.org/protobuf/proto.Message that was used to
-		// extract the signers so that this can be used in other contexts.
-		GetMsgAnySigners(msg *types.Any) ([][]byte, protov2.Message, error)
+		// as well as the decoded protoreflect.Message that was used to extract the
+		// signers so that this can be used in other context where proto reflection
+		// is needed.
+		GetMsgAnySigners(msg *types.Any) ([][]byte, protoreflect.Message, error)
 
-		// GetMsgV2Signers returns the signers of the given message.
-		GetMsgV2Signers(msg protov2.Message) ([][]byte, error)
+		// GetMsgSigners returns the signers of the given message plus the
+		// decoded protoreflect.Message that was used to extract the
+		// signers so that this can be used in other context where proto reflection
+		// is needed.
+		GetMsgSigners(msg proto.Message) ([][]byte, protoreflect.Message, error)
 
-		// GetMsgV1Signers returns the signers of the given message plus the
-		// decoded google.golang.org/protobuf/proto.Message that was used to extract the
-		// signers so that this can be used in other contexts.
-		GetMsgV1Signers(msg proto.Message) ([][]byte, protov2.Message, error)
+		// GetReflectMsgSigners returns the signers of the given reflected proto message.
+		GetReflectMsgSigners(msg protoreflect.Message) ([][]byte, error)
 
 		// mustEmbedCodec requires that all implementations of Codec embed an official implementation from the codec
 		// package. This allows new methods to be added to the Codec interface without breaking backwards compatibility.
@@ -59,7 +62,7 @@ type (
 		// MustUnmarshal calls Unmarshal and panics if error is returned.
 		MustUnmarshal(bz []byte, ptr proto.Message)
 
-		// Unmarshal parses the data encoded with UnmarshalLengthPrefixed method and stores
+		// UnmarshalLengthPrefixed parses the data encoded with UnmarshalLengthPrefixed method and stores
 		// the result in the value pointed to by v.
 		UnmarshalLengthPrefixed(bz []byte, ptr proto.Message) error
 		// MustUnmarshalLengthPrefixed calls UnmarshalLengthPrefixed and panics if error
@@ -74,7 +77,7 @@ type (
 		// is not registered in codec, or is not compatible with the serialized data
 		UnmarshalInterface(bz []byte, ptr interface{}) error
 
-		types.AnyUnpacker
+		gogoprotoany.AnyUnpacker
 	}
 
 	JSONCodec interface {

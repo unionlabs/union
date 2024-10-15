@@ -2,10 +2,10 @@ package flag
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/cockroachdb/errors"
 	"github.com/spf13/pflag"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
@@ -180,7 +180,7 @@ type compositeMapValue[T comparable] struct {
 	keyType          string
 	valueType        Type
 	values           map[T]protoreflect.Value
-	ctx              context.Context
+	ctx              *context.Context
 	opts             *Builder
 }
 
@@ -188,7 +188,7 @@ func (m compositeMapType[T]) DefaultValue() string {
 	return ""
 }
 
-func (m compositeMapType[T]) NewValue(ctx context.Context, opts *Builder) Value {
+func (m compositeMapType[T]) NewValue(ctx *context.Context, opts *Builder) Value {
 	return &compositeMapValue[T]{
 		keyValueResolver: m.keyValueResolver,
 		valueType:        m.valueType,

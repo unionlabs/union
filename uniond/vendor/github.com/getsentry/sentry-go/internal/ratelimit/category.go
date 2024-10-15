@@ -32,15 +32,14 @@ var knownCategories = map[Category]struct{}{
 
 // String returns the category formatted for debugging.
 func (c Category) String() string {
-	switch c {
-	case "":
+	if c == "" {
 		return "CategoryAll"
-	default:
-		caser := cases.Title(language.English)
-		rv := "Category"
-		for _, w := range strings.Fields(string(c)) {
-			rv += caser.String(w)
-		}
-		return rv
 	}
+
+	caser := cases.Title(language.English)
+	rv := "Category"
+	for _, w := range strings.Fields(string(c)) {
+		rv += caser.String(w)
+	}
+	return rv
 }

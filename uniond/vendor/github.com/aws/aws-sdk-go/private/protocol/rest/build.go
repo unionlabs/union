@@ -287,6 +287,10 @@ func convertType(v reflect.Value, tag reflect.StructTag) (str string, err error)
 		if tag.Get("location") != "header" || tag.Get("enum") == "" {
 			return "", fmt.Errorf("%T is only supported with location header and enum shapes", value)
 		}
+		if len(value) == 0 {
+			return "", errValueNotSet
+		}
+
 		buff := &bytes.Buffer{}
 		for i, sv := range value {
 			if sv == nil || len(*sv) == 0 {

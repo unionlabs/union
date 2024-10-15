@@ -1,6 +1,8 @@
 package legacytx
 
 import (
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
+
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
@@ -13,14 +15,14 @@ import (
 
 // Interface implementation checks
 var (
-	_ codectypes.UnpackInterfacesMessage = (*StdTx)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*StdTx)(nil)
 
-	_ codectypes.UnpackInterfacesMessage = (*StdSignature)(nil)
+	_ gogoprotoany.UnpackInterfacesMessage = (*StdSignature)(nil)
 )
 
 // StdFee includes the amount of coins paid in fees and the maximum
 // gas to be used by the transaction. The ratio yields an effective "gasprice",
-// which must be above some miminum to be accepted into the mempool.
+// which must be above some minimum to be accepted into the mempool.
 // [Deprecated]
 type StdFee struct {
 	Amount  sdk.Coins `json:"amount" yaml:"amount"`
@@ -169,7 +171,7 @@ func (tx StdTx) FeeGranter() sdk.AccAddress {
 	return nil
 }
 
-func (tx StdTx) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (tx StdTx) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	for _, m := range tx.Msgs {
 		err := codectypes.UnpackInterfaces(m, unpacker)
 		if err != nil {

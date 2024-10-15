@@ -5,9 +5,10 @@ import (
 	"strings"
 	"time"
 
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
+
 	errorsmod "cosmossdk.io/errors"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -54,7 +55,7 @@ func (iapd InterchainAccountPacketData) ValidateBasic() error {
 
 // GetBytes returns the JSON marshalled interchain account packet data.
 func (iapd InterchainAccountPacketData) GetBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&iapd))
+	return ModuleCdc.MustMarshalJSON(&iapd)
 }
 
 // UnmarshalJSON unmarshals raw JSON bytes into an InterchainAccountPacketData.
@@ -64,11 +65,11 @@ func (iapd *InterchainAccountPacketData) UnmarshalJSON(bz []byte) error {
 
 // GetBytes returns the JSON marshalled interchain account CosmosTx.
 func (ct CosmosTx) GetBytes() []byte {
-	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&ct))
+	return ModuleCdc.MustMarshalJSON(&ct)
 }
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (ct CosmosTx) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (ct CosmosTx) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	for _, protoAny := range ct.Messages {
 		err := unpacker.UnpackAny(protoAny, new(sdk.Msg))
 		if err != nil {

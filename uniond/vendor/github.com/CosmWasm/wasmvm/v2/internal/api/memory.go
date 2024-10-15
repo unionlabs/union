@@ -75,6 +75,13 @@ func copyAndDestroyUnmanagedVector(v C.UnmanagedVector) []byte {
 	return out
 }
 
+func optionalU64ToPtr(val C.OptionalU64) *uint64 {
+	if val.is_some {
+		return (*uint64)(&val.value)
+	}
+	return nil
+}
+
 // copyU8Slice copies the contents of an Option<&[u8]> that was allocated on the Rust side.
 // Returns nil if and only if the source is None.
 func copyU8Slice(view C.U8SliceView) []byte {

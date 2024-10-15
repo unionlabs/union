@@ -11,6 +11,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"
 
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
@@ -20,7 +21,20 @@ import (
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 )
 
-var _ types.QueryServer = (*Keeper)(nil)
+var _ types.QueryServer = (*queryServer)(nil)
+
+// queryServer implements the 04-channel types.QueryServer interface.
+// It embeds the channel keeper to leverage store access while limiting the api of the channel keeper.
+type queryServer struct {
+	*Keeper
+}
+
+// NewQueryServer returns a new 04-channel types.QueryServer implementation.
+func NewQueryServer(k *Keeper) types.QueryServer {
+	return &queryServer{
+		Keeper: k,
+	}
+}
 
 // Channel implements the Query/Channel gRPC method
 func (k Keeper) Channel(c context.Context, req *types.QueryChannelRequest) (*types.QueryChannelResponse, error) {
@@ -54,7 +68,7 @@ func (k Keeper) Channels(c context.Context, req *types.QueryChannelsRequest) (*t
 	ctx := sdk.UnwrapSDKContext(c)
 
 	var channels []*types.IdentifiedChannel
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte(host.KeyChannelEndPrefix))
+	store := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), []byte(host.KeyChannelEndPrefix))
 
 	pageRes, err := query.Paginate(store, req.Pagination, func(key, value []byte) error {
 		var result types.Channel
@@ -96,7 +110,7 @@ func (k Keeper) ConnectionChannels(c context.Context, req *types.QueryConnection
 	ctx := sdk.UnwrapSDKContext(c)
 
 	var channels []*types.IdentifiedChannel
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte(host.KeyChannelEndPrefix))
+	store := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), []byte(host.KeyChannelEndPrefix))
 
 	pageRes, err := query.FilteredPaginate(store, req.Pagination, func(key, value []byte, accumulate bool) (bool, error) {
 		// filter any metadata stored under channel key
@@ -239,7 +253,7 @@ func (k Keeper) PacketCommitments(c context.Context, req *types.QueryPacketCommi
 	ctx := sdk.UnwrapSDKContext(c)
 
 	var commitments []*types.PacketState
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte(host.PacketCommitmentPrefixPath(req.PortId, req.ChannelId)))
+	store := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), []byte(host.PacketCommitmentPrefixPath(req.PortId, req.ChannelId)))
 
 	pageRes, err := query.Paginate(store, req.Pagination, func(key, value []byte) error {
 		keySplit := strings.Split(string(key), "/")
@@ -325,7 +339,7 @@ func (k Keeper) PacketAcknowledgements(c context.Context, req *types.QueryPacket
 	ctx := sdk.UnwrapSDKContext(c)
 
 	var acks []*types.PacketState
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte(host.PacketAcknowledgementPrefixPath(req.PortId, req.ChannelId)))
+	store := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), []byte(host.PacketAcknowledgementPrefixPath(req.PortId, req.ChannelId)))
 
 	// if a list of packet sequences is provided then query for each specific ack and return a list <= len(req.PacketCommitmentSequences)
 	// otherwise, maintain previous behaviour and perform paginated query

@@ -9,12 +9,9 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
-	modulev1 "cosmossdk.io/api/cosmos/evidence/module/v1"
-	"cosmossdk.io/core/address"
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/comet"
-	store "cosmossdk.io/core/store"
-	"cosmossdk.io/depinject"
+	"cosmossdk.io/core/registry"
 	eviclient "cosmossdk.io/x/evidence/client"
 	"cosmossdk.io/x/evidence/client/cli"
 	"cosmossdk.io/x/evidence/keeper"
@@ -23,75 +20,66 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 )
 
 var (
-	_ module.AppModuleBasic      = AppModule{}
+	_ module.HasAminoCodec       = AppModule{}
+	_ module.HasGRPCGateway      = AppModule{}
 	_ module.AppModuleSimulation = AppModule{}
-	_ module.HasGenesis          = AppModule{}
 
-	_ appmodule.AppModule       = AppModule{}
-	_ appmodule.HasServices     = AppModule{}
-	_ appmodule.HasBeginBlocker = AppModule{}
+	_ appmodule.AppModule             = AppModule{}
+	_ appmodule.HasBeginBlocker       = AppModule{}
+	_ appmodule.HasRegisterInterfaces = AppModule{}
+	_ appmodule.HasGenesis            = AppModule{}
 )
 
-// ----------------------------------------------------------------------------
-// AppModuleBasic
-// ----------------------------------------------------------------------------
+const ConsensusVersion = 1
 
-// AppModuleBasic implements the AppModuleBasic interface for the evidence module.
-type AppModuleBasic struct {
-	evidenceHandlers []eviclient.EvidenceHandler // eviclient evidence submission handlers
+// AppModule implements the AppModule interface for the evidence module.
+type AppModule struct {
+	cdc              codec.Codec
+	evidenceHandlers []eviclient.EvidenceHandler
+	keeper           keeper.Keeper
+	cometService     comet.Service
 }
 
-// NewAppModuleBasic creates a AppModuleBasic without the codec.
-func NewAppModuleBasic(evidenceHandlers ...eviclient.EvidenceHandler) AppModuleBasic {
-	return AppModuleBasic{
+// NewAppModule creates a new AppModule object.
+func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, cometService comet.Service, evidenceHandlers ...eviclient.EvidenceHandler) AppModule {
+	return AppModule{
+		keeper:           keeper,
 		evidenceHandlers: evidenceHandlers,
+		cdc:              cdc,
+		cometService:     cometService,
 	}
 }
 
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
 // Name returns the evidence module's name.
-func (AppModuleBasic) Name() string {
+// Deprecated: kept for legacy reasons.
+func (AppModule) Name() string {
 	return types.ModuleName
 }
 
 // RegisterLegacyAminoCodec registers the evidence module's types to the LegacyAmino codec.
-func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	types.RegisterLegacyAminoCodec(cdc)
-}
-
-// DefaultGenesis returns the evidence module's default genesis state.
-func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(types.DefaultGenesisState())
-}
-
-// ValidateGenesis performs genesis state validation for the evidence module.
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
-	var gs types.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &gs); err != nil {
-		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
-	}
-
-	return gs.Validate()
+func (AppModule) RegisterLegacyAminoCodec(registrar registry.AminoRegistrar) {
+	types.RegisterLegacyAminoCodec(registrar)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the evidence module.
-func (a AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
+func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
 	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
 		panic(err)
 	}
 }
 
 // GetTxCmd returns the evidence module's root tx command.
-func (a AppModuleBasic) GetTxCmd() *cobra.Command {
-	evidenceCLIHandlers := make([]*cobra.Command, len(a.evidenceHandlers))
-
-	for i, evidenceHandler := range a.evidenceHandlers {
+func (am AppModule) GetTxCmd() *cobra.Command {
+	evidenceCLIHandlers := make([]*cobra.Command, len(am.evidenceHandlers))
+	for i, evidenceHandler := range am.evidenceHandlers {
 		evidenceCLIHandlers[i] = evidenceHandler.CLIHandler()
 	}
 
@@ -99,34 +87,9 @@ func (a AppModuleBasic) GetTxCmd() *cobra.Command {
 }
 
 // RegisterInterfaces registers the evidence module's interface types
-func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-	types.RegisterInterfaces(registry)
+func (AppModule) RegisterInterfaces(registrar registry.InterfaceRegistrar) {
+	types.RegisterInterfaces(registrar)
 }
-
-// ----------------------------------------------------------------------------
-// AppModule
-// ----------------------------------------------------------------------------
-
-// AppModule implements the AppModule interface for the evidence module.
-type AppModule struct {
-	AppModuleBasic
-
-	keeper keeper.Keeper
-}
-
-// NewAppModule creates a new AppModule object.
-func NewAppModule(keeper keeper.Keeper) AppModule {
-	return AppModule{
-		AppModuleBasic: AppModuleBasic{},
-		keeper:         keeper,
-	}
-}
-
-// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
-func (am AppModule) IsOnePerModuleType() {}
-
-// IsAppModule implements the appmodule.AppModule interface.
-func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
@@ -135,29 +98,47 @@ func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
 	return nil
 }
 
-// InitGenesis performs the evidence module's genesis initialization It returns
-// no validator updates.
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, bz json.RawMessage) {
+// DefaultGenesis returns the evidence module's default genesis state.
+func (am AppModule) DefaultGenesis() json.RawMessage {
+	return am.cdc.MustMarshalJSON(types.DefaultGenesisState())
+}
+
+// ValidateGenesis performs genesis state validation for the evidence module.
+func (am AppModule) ValidateGenesis(bz json.RawMessage) error {
 	var gs types.GenesisState
-	err := cdc.UnmarshalJSON(bz, &gs)
-	if err != nil {
-		panic(fmt.Sprintf("failed to unmarshal %s genesis state: %s", types.ModuleName, err))
+	if err := am.cdc.UnmarshalJSON(bz, &gs); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
 
-	InitGenesis(ctx, am.keeper, &gs)
+	return gs.Validate()
+}
+
+// InitGenesis performs the evidence module's genesis initialization
+func (am AppModule) InitGenesis(ctx context.Context, bz json.RawMessage) error {
+	var gs types.GenesisState
+	err := am.cdc.UnmarshalJSON(bz, &gs)
+	if err != nil {
+		return err
+	}
+
+	return InitGenesis(ctx, am.keeper, &gs)
 }
 
 // ExportGenesis returns the evidence module's exported genesis state as raw JSON bytes.
-func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(ExportGenesis(ctx, am.keeper))
+func (am AppModule) ExportGenesis(ctx context.Context) (json.RawMessage, error) {
+	gs, err := ExportGenesis(ctx, am.keeper)
+	if err != nil {
+		return nil, err
+	}
+	return am.cdc.MarshalJSON(gs)
 }
 
-// ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 1 }
+// ConsensusVersion implements HasConsensusVersion
+func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the evidence module.
 func (am AppModule) BeginBlock(ctx context.Context) error {
-	return am.keeper.BeginBlocker(ctx)
+	return am.keeper.BeginBlocker(ctx, am.cometService)
 }
 
 // AppModuleSimulation functions
@@ -170,46 +151,4 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 // RegisterStoreDecoder registers a decoder for evidence module's types
 func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
 	sdr[types.StoreKey] = simtypes.NewStoreDecoderFuncFromCollectionsSchema(am.keeper.Schema)
-}
-
-// WeightedOperations returns the all the gov module operations with their respective weights.
-func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
-	return nil
-}
-
-//
-// App Wiring Setup
-//
-
-func init() {
-	appmodule.Register(&modulev1.Module{},
-		appmodule.Provide(ProvideModule),
-	)
-}
-
-type ModuleInputs struct {
-	depinject.In
-
-	StoreService store.KVStoreService
-	Cdc          codec.Codec
-
-	StakingKeeper  types.StakingKeeper
-	SlashingKeeper types.SlashingKeeper
-	AddressCodec   address.Codec
-
-	BlockInfoService comet.BlockInfoService
-}
-
-type ModuleOutputs struct {
-	depinject.Out
-
-	EvidenceKeeper keeper.Keeper
-	Module         appmodule.AppModule
-}
-
-func ProvideModule(in ModuleInputs) ModuleOutputs {
-	k := keeper.NewKeeper(in.Cdc, in.StoreService, in.StakingKeeper, in.SlashingKeeper, in.AddressCodec, in.BlockInfoService)
-	m := NewAppModule(*k)
-
-	return ModuleOutputs{EvidenceKeeper: *k, Module: m}
 }

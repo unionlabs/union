@@ -12,15 +12,15 @@ sidebar_position: 1
 
 `depinject` is particularly useful for developing blockchain applications:
 
-*   With multiple interdependent components, modules, or services. Helping manage their dependencies effectively.
-*   That require decoupling of these components, making it easier to test, modify, or replace individual parts without affecting the entire system.
-*   That are wanting to simplify the setup and initialisation of modules and their dependencies by reducing boilerplate code and automating dependency management.
+* With multiple interdependent components, modules, or services. Helping manage their dependencies effectively.
+* That require decoupling of these components, making it easier to test, modify, or replace individual parts without affecting the entire system.
+* That are wanting to simplify the setup and initialisation of modules and their dependencies by reducing boilerplate code and automating dependency management.
 
 By using `depinject`, developers can achieve:
 
-*   Cleaner and more organised code.
-*   Improved modularity and maintainability.
-*   A more maintainable and modular structure for their blockchain applications, ultimately enhancing development velocity and code quality.
+* Cleaner and more organised code.
+* Improved modularity and maintainability.
+* A more maintainable and modular structure for their blockchain applications, ultimately enhancing development velocity and code quality.
 
 * [Go Doc](https://pkg.go.dev/cosmossdk.io/depinject)
 
@@ -38,41 +38,44 @@ Example:
 package main
 
 import (
-	"fmt"
+ "fmt"
 
-	"cosmossdk.io/depinject"
+ "cosmossdk.io/depinject"
 )
 
 type AnotherInt int
 
-func main() {
-	var (
-	  x int
-	  y AnotherInt
-	)
+func GetInt() int               { return 1 }
+func GetAnotherInt() AnotherInt { return 2 }
 
-	fmt.Printf("Before (%v, %v)\n", x, y)
-	depinject.Inject(
-		depinject.Provide(
-			func() int { return 1 },
-			func() AnotherInt { return AnotherInt(2) },
-		),
-		&x,
-		&y,
-	)
-	fmt.Printf("After (%v, %v)\n", x, y)
+func main() {
+ var (
+  x int
+  y AnotherInt
+ )
+
+ fmt.Printf("Before (%v, %v)\n", x, y)
+ depinject.Inject(
+  depinject.Provide(
+   GetInt,
+   GetAnotherInt,
+  ),
+  &x,
+  &y,
+ )
+ fmt.Printf("After (%v, %v)\n", x, y)
 }
 ```
 
 In this example, `depinject.Provide` registers two provider functions that return `int` and `AnotherInt` values. The `depinject.Inject` function is then used to inject these values into the variables `x` and `y`.
 
-Provider functions serve as the basis for the dependency tree. They are analysed to identify their inputs as dependencies and their outputs as dependents. These dependents can either be used by another provider function or be stored outside the DI container (e.g., `&x` and `&y` in the example above).
+Provider functions serve as the basis for the dependency tree. They are analysed to identify their inputs as dependencies and their outputs as dependents. These dependents can either be used by another provider function or be stored outside the DI container (e.g., `&x` and `&y` in the example above). Provider functions must be exported.
 
 ### Interface type resolution
 
 `depinject` supports the use of interface types as inputs to provider functions, which helps decouple dependencies between modules. This approach is particularly useful for managing complex systems with multiple modules, such as the Cosmos SDK, where dependencies need to be flexible and maintainable.
 
-For example, `x/bank` expects an [AccountKeeper](https://pkg.go.dev/github.com/cosmos/cosmos-sdk/x/bank/types#AccountKeeper) interface as [input to ProvideModule](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/x/bank/module.go#L208-L260). `SimApp` uses the implementation in `x/auth`, but the modular design allows for easy changes to the implementation if needed.
+For example, `x/bank` expects an [AccountKeeper](https://pkg.go.dev/cosmossdk.io/x/bank/types#AccountKeeper) interface as [input to ProvideModule](https://github.com/cosmos/cosmos-sdk/blob/v0.47.0-rc1/x/bank/module.go#L208-L260). `SimApp` uses the implementation in `x/auth`, but the modular design allows for easy changes to the implementation if needed.
 
 Consider the following example:
 
@@ -80,11 +83,11 @@ Consider the following example:
 package duck
 
 type Duck interface {
-	quack()
+ quack()
 }
 
 type AlsoDuck interface {
-	quack()
+ quack()
 }
 
 type Mallard struct{}
@@ -94,7 +97,23 @@ func (duck Mallard) quack()    {}
 func (duck Canvasback) quack() {}
 
 type Pond struct {
-	Duck AlsoDuck
+ Duck AlsoDuck
+}
+```
+
+And the following provider functions:
+
+```go
+func GetMallard() duck.Mallard {
+ return Mallard{}
+}
+
+func GetPond(duck Duck) Pond {
+ return Pond{Duck: duck}
+}
+
+func GetCanvasback() Canvasback {
+ return Canvasback{}
 }
 ```
 
@@ -105,10 +124,9 @@ var pond Pond
 
 depinject.Inject(
   depinject.Provide(
-    func() Mallard { return Mallard{} },
-    func(duck Duck) Pond {
-      return Pond{Duck: duck}
-    }),
+   GetMallard,
+   GetPond,
+  ),
    &pond)
 ```
 
@@ -120,13 +138,12 @@ However, if there are multiple implementations of the `Duck` interface, as in th
 var pond Pond
 
 depinject.Inject(
-  depinject.Provide(
-    func() Mallard { return Mallard{} },
-    func() Canvasback { return Canvasback{} },
-    func(duck Duck) Pond {
-      return Pond{Duck: duck}
-    }),
-   &pond)
+ depinject.Provide(
+  GetMallard,
+  GetCanvasback,
+  GetPond,
+ ),
+ &pond)
 ```
 
 A specific binding preference for `Duck` is required.
@@ -137,20 +154,21 @@ In the above situation registering a binding for a given interface binding may l
 
 ```go
 depinject.Inject(
-  depinject.Configs(
-    depinject.BindInterface(
-      "duck.Duck",
-      "duck.Mallard"),
-     depinject.Provide(
-       func() Mallard { return Mallard{} },
-       func() Canvasback { return Canvasback{} },
-       func(duck Duck) APond {
-         return Pond{Duck: duck}
-      })),
-   &pond)
+ depinject.Configs(
+  depinject.BindInterface(
+   "duck/duck.Duck",
+   "duck/duck.Mallard",
+  ),
+  depinject.Provide(
+   GetMallard,
+   GetCanvasback,
+   GetPond,
+  ),
+ ),
+ &pond)
 ```
 
-Now `depinject` has enough information to provide `Mallard` as an input to `APond`. 
+Now `depinject` has enough information to provide `Mallard` as an input to `APond`.
 
 ### Full example in real app
 

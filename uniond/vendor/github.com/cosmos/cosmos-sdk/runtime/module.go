@@ -3,49 +3,75 @@ package runtime
 import (
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/cosmos/gogoproto/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
 	runtimev1alpha1 "cosmossdk.io/api/cosmos/app/runtime/v1alpha1"
-	appv1alpha1 "cosmossdk.io/api/cosmos/app/v1alpha1"
-	authmodulev1 "cosmossdk.io/api/cosmos/auth/module/v1"
-	stakingmodulev1 "cosmossdk.io/api/cosmos/staking/module/v1"
-	"cosmossdk.io/core/address"
+	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
+	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/comet"
-	"cosmossdk.io/core/event"
-	"cosmossdk.io/core/genesis"
-	"cosmossdk.io/core/header"
+	"cosmossdk.io/core/registry"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/depinject"
+	"cosmossdk.io/depinject/appconfig"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
-	"cosmossdk.io/x/tx/signing"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
-	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
+	"github.com/cosmos/cosmos-sdk/x/genutil"
 )
 
+// appModule defines runtime as an AppModule
 type appModule struct {
 	app *App
 }
 
-func (m appModule) RegisterServices(configurator module.Configurator) {
+func (m appModule) IsOnePerModuleType() {}
+func (m appModule) IsAppModule()        {}
+
+func (m appModule) RegisterServices(configurator module.Configurator) { //nolint:staticcheck // SA1019: Configurator is deprecated but still used in runtime v1.
 	err := m.app.registerRuntimeServices(configurator)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (m appModule) IsOnePerModuleType() {}
-func (m appModule) IsAppModule()        {}
+func (m appModule) AutoCLIOptions() *autocliv1.ModuleOptions {
+	return &autocliv1.ModuleOptions{
+		Query: &autocliv1.ServiceCommandDescriptor{
+			SubCommands: map[string]*autocliv1.ServiceCommandDescriptor{
+				"autocli": {
+					Service: autocliv1.Query_ServiceDesc.ServiceName,
+					RpcCommandOptions: []*autocliv1.RpcCommandOptions{
+						{
+							RpcMethod: "AppOptions",
+							Short:     "Query the custom autocli options",
+						},
+					},
+				},
+				"reflection": {
+					Service: reflectionv1.ReflectionService_ServiceDesc.ServiceName,
+					RpcCommandOptions: []*autocliv1.RpcCommandOptions{
+						{
+							RpcMethod: "FileDescriptors",
+							Short:     "Query the app's protobuf file descriptors",
+						},
+					},
+				},
+			},
+		},
+	}
+}
 
 var (
 	_ appmodule.AppModule = appModule{}
@@ -60,36 +86,39 @@ type BaseAppOption func(*baseapp.BaseApp)
 func (b BaseAppOption) IsManyPerContainerType() {}
 
 func init() {
-	appmodule.Register(&runtimev1alpha1.Module{},
-		appmodule.Provide(
+	appconfig.RegisterModule(&runtimev1alpha1.Module{},
+		appconfig.Provide(
 			ProvideApp,
-			ProvideInterfaceRegistry,
+			// to decouple runtime from sdk/codec ProvideInterfaceReistry can be registered from the app
+			// i.e. in the call to depinject.Inject(...)
+			codec.ProvideInterfaceRegistry,
+			codec.ProvideLegacyAmino,
+			codec.ProvideProtoCodec,
+			codec.ProvideAddressCodec,
 			ProvideKVStoreKey,
 			ProvideTransientStoreKey,
 			ProvideMemoryStoreKey,
 			ProvideGenesisTxHandler,
-			ProvideKVStoreService,
-			ProvideMemoryStoreService,
+			ProvideEnvironment,
 			ProvideTransientStoreService,
-			ProvideEventService,
-			ProvideHeaderInfoService,
-			ProvideCometInfoService,
-			ProvideBasicManager,
-			ProvideAddressCodec,
+			ProvideModuleManager,
+			ProvideCometService,
 		),
-		appmodule.Invoke(SetupAppBuilder),
+		appconfig.Invoke(SetupAppBuilder),
 	)
 }
 
-func ProvideApp(interfaceRegistry codectypes.InterfaceRegistry) (
-	codec.Codec,
-	*codec.LegacyAmino,
+func ProvideApp(
+	interfaceRegistry codectypes.InterfaceRegistry,
+	amino registry.AminoRegistrar,
+	protoCodec *codec.ProtoCodec,
+) (
 	*AppBuilder,
 	*baseapp.MsgServiceRouter,
+	*baseapp.GRPCQueryRouter,
 	appmodule.AppModule,
 	protodesc.Resolver,
 	protoregistry.MessageTypeResolver,
-	error,
 ) {
 	protoFiles := proto.HybridResolver
 	protoTypes := protoregistry.GlobalTypes
@@ -101,85 +130,49 @@ func ProvideApp(interfaceRegistry codectypes.InterfaceRegistry) (
 		_, _ = fmt.Fprintln(os.Stderr, err.Error())
 	}
 
-	amino := codec.NewLegacyAmino()
-
 	std.RegisterInterfaces(interfaceRegistry)
 	std.RegisterLegacyAminoCodec(amino)
 
-	cdc := codec.NewProtoCodec(interfaceRegistry)
 	msgServiceRouter := baseapp.NewMsgServiceRouter()
+	grpcQueryRouter := baseapp.NewGRPCQueryRouter()
 	app := &App{
 		storeKeys:         nil,
 		interfaceRegistry: interfaceRegistry,
-		cdc:               cdc,
+		cdc:               protoCodec,
 		amino:             amino,
-		basicManager:      module.BasicManager{},
 		msgServiceRouter:  msgServiceRouter,
+		grpcQueryRouter:   grpcQueryRouter,
 	}
-	appBuilder := &AppBuilder{app}
+	appBuilder := &AppBuilder{app: app}
 
-	return cdc, amino, appBuilder, msgServiceRouter, appModule{app}, protoFiles, protoTypes, nil
+	return appBuilder, msgServiceRouter, grpcQueryRouter, appModule{app}, protoFiles, protoTypes
 }
 
 type AppInputs struct {
 	depinject.In
 
-	AppConfig          *appv1alpha1.Config
-	Config             *runtimev1alpha1.Module
-	AppBuilder         *AppBuilder
-	Modules            map[string]appmodule.AppModule
-	CustomModuleBasics map[string]module.AppModuleBasic `optional:"true"`
-	BaseAppOptions     []BaseAppOption
-	InterfaceRegistry  codectypes.InterfaceRegistry
-	LegacyAmino        *codec.LegacyAmino
-	Logger             log.Logger
+	Logger            log.Logger
+	Config            *runtimev1alpha1.Module
+	AppBuilder        *AppBuilder
+	ModuleManager     *module.Manager
+	BaseAppOptions    []BaseAppOption
+	InterfaceRegistry codectypes.InterfaceRegistry
+	LegacyAmino       registry.AminoRegistrar
+	AppOptions        servertypes.AppOptions `optional:"true"` // can be nil in client wiring
 }
 
 func SetupAppBuilder(inputs AppInputs) {
 	app := inputs.AppBuilder.app
 	app.baseAppOptions = inputs.BaseAppOptions
 	app.config = inputs.Config
-	app.appConfig = inputs.AppConfig
 	app.logger = inputs.Logger
-	app.ModuleManager = module.NewManagerFromMap(inputs.Modules)
+	app.ModuleManager = inputs.ModuleManager
+	app.ModuleManager.RegisterInterfaces(inputs.InterfaceRegistry)
+	app.ModuleManager.RegisterLegacyAminoCodec(inputs.LegacyAmino)
 
-	for name, mod := range inputs.Modules {
-		if customBasicMod, ok := inputs.CustomModuleBasics[name]; ok {
-			app.basicManager[name] = customBasicMod
-			customBasicMod.RegisterInterfaces(inputs.InterfaceRegistry)
-			customBasicMod.RegisterLegacyAminoCodec(inputs.LegacyAmino)
-			continue
-		}
-
-		coreAppModuleBasic := module.CoreAppModuleBasicAdaptor(name, mod)
-		app.basicManager[name] = coreAppModuleBasic
-		coreAppModuleBasic.RegisterInterfaces(inputs.InterfaceRegistry)
-		coreAppModuleBasic.RegisterLegacyAminoCodec(inputs.LegacyAmino)
+	if inputs.AppOptions != nil {
+		inputs.AppBuilder.appOptions = inputs.AppOptions
 	}
-}
-
-func ProvideInterfaceRegistry(addressCodec address.Codec, validatorAddressCodec ValidatorAddressCodec, customGetSigners []signing.CustomGetSigner) (codectypes.InterfaceRegistry, error) {
-	signingOptions := signing.Options{
-		AddressCodec:          addressCodec,
-		ValidatorAddressCodec: validatorAddressCodec,
-	}
-	for _, signer := range customGetSigners {
-		signingOptions.DefineCustomGetSigners(signer.MsgType, signer.Fn)
-	}
-
-	interfaceRegistry, err := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
-		ProtoFiles:     proto.HybridResolver,
-		SigningOptions: signingOptions,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if err := interfaceRegistry.SigningContext().Validate(); err != nil {
-		return nil, err
-	}
-
-	return interfaceRegistry, nil
 }
 
 func registerStoreKey(wrapper *AppBuilder, key storetypes.StoreKey) {
@@ -195,7 +188,15 @@ func storeKeyOverride(config *runtimev1alpha1.Module, moduleName string) *runtim
 	return nil
 }
 
-func ProvideKVStoreKey(config *runtimev1alpha1.Module, key depinject.ModuleKey, app *AppBuilder) *storetypes.KVStoreKey {
+func ProvideKVStoreKey(
+	config *runtimev1alpha1.Module,
+	key depinject.ModuleKey,
+	app *AppBuilder,
+) *storetypes.KVStoreKey {
+	if slices.Contains(config.SkipStoreKeys, key.Name()) {
+		return nil
+	}
+
 	override := storeKeyOverride(config, key.Name())
 
 	var storeKeyName string
@@ -210,96 +211,86 @@ func ProvideKVStoreKey(config *runtimev1alpha1.Module, key depinject.ModuleKey, 
 	return storeKey
 }
 
-func ProvideTransientStoreKey(key depinject.ModuleKey, app *AppBuilder) *storetypes.TransientStoreKey {
+func ProvideTransientStoreKey(
+	config *runtimev1alpha1.Module,
+	key depinject.ModuleKey,
+	app *AppBuilder,
+) *storetypes.TransientStoreKey {
+	if slices.Contains(config.SkipStoreKeys, key.Name()) {
+		return nil
+	}
+
 	storeKey := storetypes.NewTransientStoreKey(fmt.Sprintf("transient:%s", key.Name()))
 	registerStoreKey(app, storeKey)
 	return storeKey
 }
 
-func ProvideMemoryStoreKey(key depinject.ModuleKey, app *AppBuilder) *storetypes.MemoryStoreKey {
+func ProvideMemoryStoreKey(
+	config *runtimev1alpha1.Module,
+	key depinject.ModuleKey,
+	app *AppBuilder,
+) *storetypes.MemoryStoreKey {
+	if slices.Contains(config.SkipStoreKeys, key.Name()) {
+		return nil
+	}
+
 	storeKey := storetypes.NewMemoryStoreKey(fmt.Sprintf("memory:%s", key.Name()))
 	registerStoreKey(app, storeKey)
 	return storeKey
 }
 
-func ProvideGenesisTxHandler(appBuilder *AppBuilder) genesis.TxHandler {
+func ProvideModuleManager(modules map[string]appmodule.AppModule) *module.Manager {
+	return module.NewManagerFromMap(modules)
+}
+
+func ProvideGenesisTxHandler(appBuilder *AppBuilder) genutil.TxHandler {
 	return appBuilder.app
 }
 
-func ProvideKVStoreService(config *runtimev1alpha1.Module, key depinject.ModuleKey, app *AppBuilder) store.KVStoreService {
-	storeKey := ProvideKVStoreKey(config, key, app)
-	return kvStoreService{key: storeKey}
+func ProvideEnvironment(
+	logger log.Logger,
+	config *runtimev1alpha1.Module,
+	key depinject.ModuleKey,
+	app *AppBuilder,
+	msgServiceRouter *baseapp.MsgServiceRouter,
+	queryServiceRouter *baseapp.GRPCQueryRouter,
+) (store.KVStoreService, store.MemoryStoreService, appmodule.Environment) {
+	var (
+		kvService    store.KVStoreService     = failingStoreService{}
+		memKvService store.MemoryStoreService = failingStoreService{}
+	)
+
+	// skips modules that have no store
+	if !slices.Contains(config.SkipStoreKeys, key.Name()) {
+		storeKey := ProvideKVStoreKey(config, key, app)
+		kvService = kvStoreService{key: storeKey}
+
+		memStoreKey := ProvideMemoryStoreKey(config, key, app)
+		memKvService = memStoreService{key: memStoreKey}
+	}
+
+	return kvService, memKvService, NewEnvironment(
+		kvService,
+		logger.With(log.ModuleKey, fmt.Sprintf("x/%s", key.Name())),
+		EnvWithMsgRouterService(msgServiceRouter),
+		EnvWithQueryRouterService(queryServiceRouter),
+		EnvWithMemStoreService(memKvService),
+	)
 }
 
-func ProvideMemoryStoreService(key depinject.ModuleKey, app *AppBuilder) store.MemoryStoreService {
-	storeKey := ProvideMemoryStoreKey(key, app)
-	return memStoreService{key: storeKey}
-}
+func ProvideTransientStoreService(
+	config *runtimev1alpha1.Module,
+	key depinject.ModuleKey,
+	app *AppBuilder,
+) store.TransientStoreService {
+	storeKey := ProvideTransientStoreKey(config, key, app)
+	if storeKey == nil {
+		return failingStoreService{}
+	}
 
-func ProvideTransientStoreService(key depinject.ModuleKey, app *AppBuilder) store.TransientStoreService {
-	storeKey := ProvideTransientStoreKey(key, app)
 	return transientStoreService{key: storeKey}
 }
 
-func ProvideEventService() event.Service {
-	return EventService{}
-}
-
-func ProvideCometInfoService() comet.BlockInfoService {
-	return cometInfoService{}
-}
-
-func ProvideHeaderInfoService(app *AppBuilder) header.Service {
-	return headerInfoService{}
-}
-
-func ProvideBasicManager(app *AppBuilder) module.BasicManager {
-	return app.app.basicManager
-}
-
-type (
-	// ValidatorAddressCodec is an alias for address.Codec for validator addresses.
-	ValidatorAddressCodec address.Codec
-
-	// ConsensusAddressCodec is an alias for address.Codec for validator consensus addresses.
-	ConsensusAddressCodec address.Codec
-)
-
-type AddressCodecInputs struct {
-	depinject.In
-
-	AuthConfig    *authmodulev1.Module    `optional:"true"`
-	StakingConfig *stakingmodulev1.Module `optional:"true"`
-
-	AddressCodecFactory          func() address.Codec         `optional:"true"`
-	ValidatorAddressCodecFactory func() ValidatorAddressCodec `optional:"true"`
-	ConsensusAddressCodecFactory func() ConsensusAddressCodec `optional:"true"`
-}
-
-// ProvideAddressCodec provides an address.Codec to the container for any
-// modules that want to do address string <> bytes conversion.
-func ProvideAddressCodec(in AddressCodecInputs) (address.Codec, ValidatorAddressCodec, ConsensusAddressCodec) {
-	if in.AddressCodecFactory != nil && in.ValidatorAddressCodecFactory != nil && in.ConsensusAddressCodecFactory != nil {
-		return in.AddressCodecFactory(), in.ValidatorAddressCodecFactory(), in.ConsensusAddressCodecFactory()
-	}
-
-	if in.AuthConfig == nil || in.AuthConfig.Bech32Prefix == "" {
-		panic("auth config bech32 prefix cannot be empty if no custom address codec is provided")
-	}
-
-	if in.StakingConfig == nil {
-		in.StakingConfig = &stakingmodulev1.Module{}
-	}
-
-	if in.StakingConfig.Bech32PrefixValidator == "" {
-		in.StakingConfig.Bech32PrefixValidator = fmt.Sprintf("%svaloper", in.AuthConfig.Bech32Prefix)
-	}
-
-	if in.StakingConfig.Bech32PrefixConsensus == "" {
-		in.StakingConfig.Bech32PrefixConsensus = fmt.Sprintf("%svalcons", in.AuthConfig.Bech32Prefix)
-	}
-
-	return addresscodec.NewBech32Codec(in.AuthConfig.Bech32Prefix),
-		addresscodec.NewBech32Codec(in.StakingConfig.Bech32PrefixValidator),
-		addresscodec.NewBech32Codec(in.StakingConfig.Bech32PrefixConsensus)
+func ProvideCometService() comet.Service {
+	return NewContextAwareCometInfoService()
 }

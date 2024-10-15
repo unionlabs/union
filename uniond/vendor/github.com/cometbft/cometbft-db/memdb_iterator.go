@@ -56,7 +56,10 @@ func newMemDBIteratorMtxChoice(db *MemDB, start []byte, end []byte, reverse bool
 			abortLessThan []byte
 		)
 		visitor := func(i btree.Item) bool {
-			item := i.(*item)
+			item, ok := i.(*item)
+			if !ok {
+				return false // or handle the error as appropriate
+			}
 			if skipEqual != nil && bytes.Equal(item.key, skipEqual) {
 				skipEqual = nil
 				return true
@@ -105,7 +108,7 @@ func newMemDBIteratorMtxChoice(db *MemDB, start []byte, end []byte, reverse bool
 // Close implements Iterator.
 func (i *memDBIterator) Close() error {
 	i.cancel()
-	for range i.ch { // drain channel
+	for range i.ch { //nolint:revive // drain channel
 	}
 	i.item = nil
 	return nil
@@ -134,7 +137,7 @@ func (i *memDBIterator) Next() {
 }
 
 // Error implements Iterator.
-func (i *memDBIterator) Error() error {
+func (*memDBIterator) Error() error {
 	return nil // famous last words
 }
 

@@ -93,17 +93,16 @@ func compressStep(step *InnerOp, lookup *[]*InnerOp, registry map[string]int32) 
 	if err != nil {
 		panic(err)
 	}
-	sig := string(bz)
 
 	// load from cache if there
-	if num, ok := registry[sig]; ok {
+	if num, ok := registry[string(bz)]; ok {
 		return num
 	}
 
 	// create new step if not there
 	num := int32(len(*lookup))
 	*lookup = append(*lookup, step)
-	registry[sig] = num
+	registry[string(bz)] = num
 	return num
 }
 

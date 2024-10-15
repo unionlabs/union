@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 )
 
-// EmptyNetAddress defines the string representation of an empty NetAddress
+// EmptyNetAddress defines the string representation of an empty NetAddress.
 const EmptyNetAddress = "<nil-NetAddress>"
 
 // NetAddress defines information about a peer on the network
@@ -66,7 +66,7 @@ func NewNetAddress(id ID, addr net.Addr) *NetAddress {
 // NewNetAddressString returns a new NetAddress using the provided address in
 // the form of "ID@IP:Port".
 // Also resolves the host if host is not an IP.
-// Errors are of type ErrNetAddressXxx where Xxx is in (NoID, Invalid, Lookup)
+// Errors are of type ErrNetAddressXxx where Xxx is in (NoID, Invalid, Lookup).
 func NewNetAddressString(addr string) (*NetAddress, error) {
 	addrWithoutProtocol := removeProtocolIfDefined(addr)
 	spl := strings.Split(addrWithoutProtocol, "@")
@@ -89,7 +89,8 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	if len(host) == 0 {
 		return nil, ErrNetAddressInvalid{
 			addrWithoutProtocol,
-			errors.New("host is empty")}
+			errors.New("host is empty"),
+		}
 	}
 
 	ip := net.ParseIP(host)
@@ -187,7 +188,7 @@ func (na *NetAddress) ToProto() tmp2p.NetAddress {
 
 // Equals reports whether na and other are the same addresses,
 // including their ID, IP, and Port.
-func (na *NetAddress) Equals(other interface{}) bool {
+func (na *NetAddress) Equals(other any) bool {
 	if o, ok := other.(*NetAddress); ok {
 		return na.String() == o.String()
 	}
@@ -195,7 +196,7 @@ func (na *NetAddress) Equals(other interface{}) bool {
 }
 
 // Same returns true is na has the same non-empty ID or DialString as other.
-func (na *NetAddress) Same(other interface{}) bool {
+func (na *NetAddress) Same(other any) bool {
 	if o, ok := other.(*NetAddress); ok {
 		if na.DialString() == o.DialString() {
 			return true
@@ -207,7 +208,7 @@ func (na *NetAddress) Same(other interface{}) bool {
 	return false
 }
 
-// String representation: <ID>@<IP>:<PORT>
+// String representation: <ID>@<IP>:<PORT>.
 func (na *NetAddress) String() string {
 	if na == nil {
 		return EmptyNetAddress
@@ -289,7 +290,7 @@ func (na *NetAddress) Local() bool {
 // ReachabilityTo checks whenever o can be reached from na.
 func (na *NetAddress) ReachabilityTo(o *NetAddress) int {
 	const (
-		Unreachable = 0
+		unreachable = 0
 		Default     = iota
 		Teredo
 		Ipv6Weak
@@ -298,7 +299,7 @@ func (na *NetAddress) ReachabilityTo(o *NetAddress) int {
 	)
 	switch {
 	case !na.Routable():
-		return Unreachable
+		return unreachable
 	case na.RFC4380():
 		switch {
 		case !o.Routable():
@@ -345,32 +346,33 @@ func (na *NetAddress) ReachabilityTo(o *NetAddress) int {
 // RFC4843: IPv6 ORCHID: (2001:10::/28)
 // RFC4862: IPv6 Autoconfig (FE80::/64)
 // RFC6052: IPv6 well known prefix (64:FF9B::/96)
-// RFC6145: IPv6 IPv4 translated address ::FFFF:0:0:0/96
-var rfc1918_10 = net.IPNet{IP: net.ParseIP("10.0.0.0"), Mask: net.CIDRMask(8, 32)}
-var rfc1918_192 = net.IPNet{IP: net.ParseIP("192.168.0.0"), Mask: net.CIDRMask(16, 32)}
-var rfc1918_172 = net.IPNet{IP: net.ParseIP("172.16.0.0"), Mask: net.CIDRMask(12, 32)}
-var rfc3849 = net.IPNet{IP: net.ParseIP("2001:0DB8::"), Mask: net.CIDRMask(32, 128)}
-var rfc3927 = net.IPNet{IP: net.ParseIP("169.254.0.0"), Mask: net.CIDRMask(16, 32)}
-var rfc3964 = net.IPNet{IP: net.ParseIP("2002::"), Mask: net.CIDRMask(16, 128)}
-var rfc4193 = net.IPNet{IP: net.ParseIP("FC00::"), Mask: net.CIDRMask(7, 128)}
-var rfc4380 = net.IPNet{IP: net.ParseIP("2001::"), Mask: net.CIDRMask(32, 128)}
-var rfc4843 = net.IPNet{IP: net.ParseIP("2001:10::"), Mask: net.CIDRMask(28, 128)}
-var rfc4862 = net.IPNet{IP: net.ParseIP("FE80::"), Mask: net.CIDRMask(64, 128)}
-var rfc6052 = net.IPNet{IP: net.ParseIP("64:FF9B::"), Mask: net.CIDRMask(96, 128)}
-var rfc6145 = net.IPNet{IP: net.ParseIP("::FFFF:0:0:0"), Mask: net.CIDRMask(96, 128)}
-var zero4 = net.IPNet{IP: net.ParseIP("0.0.0.0"), Mask: net.CIDRMask(8, 32)}
+// RFC6145: IPv6 IPv4 translated address ::FFFF:0:0:0/96.
 var (
+	rfc1918_10  = net.IPNet{IP: net.ParseIP("10.0.0.0"), Mask: net.CIDRMask(8, 32)}
+	rfc1918_192 = net.IPNet{IP: net.ParseIP("192.168.0.0"), Mask: net.CIDRMask(16, 32)}
+	rfc1918_172 = net.IPNet{IP: net.ParseIP("172.16.0.0"), Mask: net.CIDRMask(12, 32)}
+	rfc3849     = net.IPNet{IP: net.ParseIP("2001:0DB8::"), Mask: net.CIDRMask(32, 128)}
+	rfc3927     = net.IPNet{IP: net.ParseIP("169.254.0.0"), Mask: net.CIDRMask(16, 32)}
+	rfc3964     = net.IPNet{IP: net.ParseIP("2002::"), Mask: net.CIDRMask(16, 128)}
+	rfc4193     = net.IPNet{IP: net.ParseIP("FC00::"), Mask: net.CIDRMask(7, 128)}
+	rfc4380     = net.IPNet{IP: net.ParseIP("2001::"), Mask: net.CIDRMask(32, 128)}
+	rfc4843     = net.IPNet{IP: net.ParseIP("2001:10::"), Mask: net.CIDRMask(28, 128)}
+	rfc4862     = net.IPNet{IP: net.ParseIP("FE80::"), Mask: net.CIDRMask(64, 128)}
+	rfc6052     = net.IPNet{IP: net.ParseIP("64:FF9B::"), Mask: net.CIDRMask(96, 128)}
+	rfc6145     = net.IPNet{IP: net.ParseIP("::FFFF:0:0:0"), Mask: net.CIDRMask(96, 128)}
+	zero4       = net.IPNet{IP: net.ParseIP("0.0.0.0"), Mask: net.CIDRMask(8, 32)}
+
 	// onionCatNet defines the IPv6 address block used to support Tor.
 	// bitcoind encodes a .onion address as a 16 byte number by decoding the
 	// address prior to the .onion (i.e. the key hash) base32 into a ten
 	// byte number. It then stores the first 6 bytes of the address as
 	// 0xfd, 0x87, 0xd8, 0x7e, 0xeb, 0x43.
 	//
-	// This is the same range used by OnionCat, which is part part of the
+	// This is the same range used by OnionCat, which is part of the
 	// RFC4193 unique local IPv6 range.
 	//
 	// In summary the format is:
-	// { magic 6 bytes, 10 bytes base32 decode of key hash }
+	// { magic 6 bytes, 10 bytes base32 decode of key hash }.
 	onionCatNet = ipNet("fd87:d87e:eb43::", 48, 128)
 )
 
@@ -402,7 +404,6 @@ func removeProtocolIfDefined(addr string) string {
 		return strings.Split(addr, "://")[1]
 	}
 	return addr
-
 }
 
 func validateID(id ID) error {

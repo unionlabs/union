@@ -16,7 +16,7 @@ import (
 	"google.golang.org/protobuf/runtime/protoiface"
 )
 
-func reflectValueOf(v interface{}) protoreflect.Value {
+func reflectValueOf(v any) protoreflect.Value {
 	switch v := v.(type) {
 	case Enum:
 		return protoreflect.ValueOfEnum(v.Number())

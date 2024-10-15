@@ -43,20 +43,22 @@ type Scope struct {
 		Overflow() bool
 	}
 	eventProcessors []EventProcessor
+
+	propagationContext PropagationContext
+	span               *Span
 }
 
 // NewScope creates a new Scope.
 func NewScope() *Scope {
-	scope := Scope{
-		breadcrumbs: make([]*Breadcrumb, 0),
-		attachments: make([]*Attachment, 0),
-		tags:        make(map[string]string),
-		contexts:    make(map[string]Context),
-		extra:       make(map[string]interface{}),
-		fingerprint: make([]string, 0),
+	return &Scope{
+		breadcrumbs:        make([]*Breadcrumb, 0),
+		attachments:        make([]*Attachment, 0),
+		tags:               make(map[string]string),
+		contexts:           make(map[string]Context),
+		extra:              make(map[string]interface{}),
+		fingerprint:        make([]string, 0),
+		propagationContext: NewPropagationContext(),
 	}
-
-	return &scope
 }
 
 // AddBreadcrumb adds new breadcrumb to the current scope
@@ -292,6 +294,22 @@ func (scope *Scope) SetLevel(level Level) {
 	scope.level = level
 }
 
+// SetPropagationContext sets the propagation context for the current scope.
+func (scope *Scope) SetPropagationContext(propagationContext PropagationContext) {
+	scope.mu.Lock()
+	defer scope.mu.Unlock()
+
+	scope.propagationContext = propagationContext
+}
+
+// SetSpan sets a span for the current scope.
+func (scope *Scope) SetSpan(span *Span) {
+	scope.mu.Lock()
+	defer scope.mu.Unlock()
+
+	scope.span = span
+}
+
 // Clone returns a copy of the current scope with all data copied over.
 func (scope *Scope) Clone() *Scope {
 	scope.mu.RLock()
@@ -318,6 +336,8 @@ func (scope *Scope) Clone() *Scope {
 	clone.request = scope.request
 	clone.requestBody = scope.requestBody
 	clone.eventProcessors = scope.eventProcessors
+	clone.propagationContext = scope.propagationContext
+	clone.span = scope.span
 	return clone
 }
 
@@ -335,7 +355,7 @@ func (scope *Scope) AddEventProcessor(processor EventProcessor) {
 }
 
 // ApplyToEvent takes the data from the current scope and attaches it to the event.
-func (scope *Scope) ApplyToEvent(event *Event, hint *EventHint) *Event {
+func (scope *Scope) ApplyToEvent(event *Event, hint *EventHint, client *Client) *Event {
 	scope.mu.RLock()
 	defer scope.mu.RUnlock()
 
@@ -363,20 +383,32 @@ func (scope *Scope) ApplyToEvent(event *Event, hint *EventHint) *Event {
 		}
 
 		for key, value := range scope.contexts {
-			if key == "trace" && event.Type == transactionType {
-				// Do not override trace context of
-				// transactions, otherwise it breaks the
-				// transaction event representation.
-				// For error events, the trace context is used
-				// to link errors and traces/spans in Sentry.
-				continue
-			}
-
 			// Ensure we are not overwriting event fields
 			if _, ok := event.Contexts[key]; !ok {
 				event.Contexts[key] = cloneContext(value)
 			}
 		}
+	}
+
+	if event.Contexts == nil {
+		event.Contexts = make(map[string]Context)
+	}
+
+	if scope.span != nil {
+		event.Contexts["trace"] = scope.span.traceContext().Map()
+
+		transaction := scope.span.GetTransaction()
+		if transaction != nil {
+			event.sdkMetaData.dsc = DynamicSamplingContextFromTransaction(transaction)
+		}
+	} else {
+		event.Contexts["trace"] = scope.propagationContext.Map()
+
+		dsc := scope.propagationContext.DynamicSamplingContext
+		if !dsc.HasEntries() && client != nil {
+			dsc = DynamicSamplingContextFromScope(scope, client)
+		}
+		event.sdkMetaData.dsc = dsc
 	}
 
 	if len(scope.extra) > 0 {

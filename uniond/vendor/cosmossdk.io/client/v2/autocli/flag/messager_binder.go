@@ -15,7 +15,9 @@ import (
 type SignerInfo struct {
 	PositionalArgIndex int
 	IsFlag             bool
-	FieldName          string
+
+	FieldName string
+	FlagName  string // flag name (always set if IsFlag is true)
 }
 
 // MessageBinder binds multiple flags in a flag set to a protobuf message.
@@ -25,12 +27,12 @@ type MessageBinder struct {
 
 	positionalFlagSet *pflag.FlagSet
 	positionalArgs    []fieldBinding
+	flagBindings      []fieldBinding
+	messageType       protoreflect.MessageType
+
 	hasVarargs        bool
 	hasOptional       bool
 	mandatoryArgUntil int
-
-	flagBindings []fieldBinding
-	messageType  protoreflect.MessageType
 }
 
 // BuildMessage builds and returns a new message for the bound flags.

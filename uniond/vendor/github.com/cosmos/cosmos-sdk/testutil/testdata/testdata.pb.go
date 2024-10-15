@@ -5,9 +5,9 @@ package testdata
 
 import (
 	fmt "fmt"
-	types "github.com/cosmos/cosmos-sdk/codec/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
+	any "github.com/cosmos/gogoproto/types/any"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -181,8 +181,8 @@ func (m *Bird) GetColor() int32 {
 }
 
 type HasAnimal struct {
-	Animal *types.Any `protobuf:"bytes,1,opt,name=animal,proto3" json:"animal,omitempty"`
-	X      int64      `protobuf:"varint,2,opt,name=x,proto3" json:"x,omitempty"`
+	Animal *any.Any `protobuf:"bytes,1,opt,name=animal,proto3" json:"animal,omitempty"`
+	X      int64    `protobuf:"varint,2,opt,name=x,proto3" json:"x,omitempty"`
 }
 
 func (m *HasAnimal) Reset()         { *m = HasAnimal{} }
@@ -218,7 +218,7 @@ func (m *HasAnimal) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_HasAnimal proto.InternalMessageInfo
 
-func (m *HasAnimal) GetAnimal() *types.Any {
+func (m *HasAnimal) GetAnimal() *any.Any {
 	if m != nil {
 		return m.Animal
 	}
@@ -233,7 +233,7 @@ func (m *HasAnimal) GetX() int64 {
 }
 
 type HasHasAnimal struct {
-	HasAnimal *types.Any `protobuf:"bytes,1,opt,name=has_animal,json=hasAnimal,proto3" json:"has_animal,omitempty"`
+	HasAnimal *any.Any `protobuf:"bytes,1,opt,name=has_animal,json=hasAnimal,proto3" json:"has_animal,omitempty"`
 }
 
 func (m *HasHasAnimal) Reset()         { *m = HasHasAnimal{} }
@@ -269,7 +269,7 @@ func (m *HasHasAnimal) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_HasHasAnimal proto.InternalMessageInfo
 
-func (m *HasHasAnimal) GetHasAnimal() *types.Any {
+func (m *HasHasAnimal) GetHasAnimal() *any.Any {
 	if m != nil {
 		return m.HasAnimal
 	}
@@ -277,7 +277,7 @@ func (m *HasHasAnimal) GetHasAnimal() *types.Any {
 }
 
 type HasHasHasAnimal struct {
-	HasHasAnimal *types.Any `protobuf:"bytes,1,opt,name=has_has_animal,json=hasHasAnimal,proto3" json:"has_has_animal,omitempty"`
+	HasHasAnimal *any.Any `protobuf:"bytes,1,opt,name=has_has_animal,json=hasHasAnimal,proto3" json:"has_has_animal,omitempty"`
 }
 
 func (m *HasHasHasAnimal) Reset()         { *m = HasHasHasAnimal{} }
@@ -313,7 +313,7 @@ func (m *HasHasHasAnimal) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_HasHasHasAnimal proto.InternalMessageInfo
 
-func (m *HasHasHasAnimal) GetHasHasAnimal() *types.Any {
+func (m *HasHasHasAnimal) GetHasHasAnimal() *any.Any {
 	if m != nil {
 		return m.HasHasAnimal
 	}
@@ -1322,7 +1322,7 @@ func (m *HasAnimal) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Animal == nil {
-				m.Animal = &types.Any{}
+				m.Animal = &any.Any{}
 			}
 			if err := m.Animal.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1427,7 +1427,7 @@ func (m *HasHasAnimal) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.HasAnimal == nil {
-				m.HasAnimal = &types.Any{}
+				m.HasAnimal = &any.Any{}
 			}
 			if err := m.HasAnimal.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1513,7 +1513,7 @@ func (m *HasHasHasAnimal) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.HasHasAnimal == nil {
-				m.HasHasAnimal = &types.Any{}
+				m.HasHasAnimal = &any.Any{}
 			}
 			if err := m.HasHasAnimal.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

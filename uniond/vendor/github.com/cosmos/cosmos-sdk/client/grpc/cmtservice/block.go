@@ -3,14 +3,12 @@ package cmtservice
 import (
 	"context"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
-
-	"github.com/cosmos/cosmos-sdk/client"
 )
 
-func getBlockHeight(ctx context.Context, clientCtx client.Context) (int64, error) {
-	status, err := GetNodeStatus(ctx, clientCtx)
+func getBlockHeight(ctx context.Context, rpc CometRPC) (int64, error) {
+	status, err := GetNodeStatus(ctx, rpc)
 	if err != nil {
 		return 0, err
 	}
@@ -18,18 +16,12 @@ func getBlockHeight(ctx context.Context, clientCtx client.Context) (int64, error
 	return height, nil
 }
 
-func getBlock(ctx context.Context, clientCtx client.Context, height *int64) (*coretypes.ResultBlock, error) {
-	// get the node
-	node, err := clientCtx.GetNode()
-	if err != nil {
-		return nil, err
-	}
-
-	return node.Block(ctx, height)
+func getBlock(ctx context.Context, rpc CometRPC, height *int64) (*coretypes.ResultBlock, error) {
+	return rpc.Block(ctx, height)
 }
 
-func GetProtoBlock(ctx context.Context, clientCtx client.Context, height *int64) (cmtproto.BlockID, *cmtproto.Block, error) {
-	block, err := getBlock(ctx, clientCtx, height)
+func GetProtoBlock(ctx context.Context, rpc CometRPC, height *int64) (cmtproto.BlockID, *cmtproto.Block, error) {
+	block, err := getBlock(ctx, rpc, height)
 	if err != nil {
 		return cmtproto.BlockID{}, nil, err
 	}

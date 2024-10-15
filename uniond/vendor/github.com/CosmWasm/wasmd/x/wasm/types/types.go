@@ -3,7 +3,9 @@ package types
 import (
 	"fmt"
 	"reflect"
+	"context"
 
+	gogoprotoany "github.com/cosmos/gogoproto/types/any"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
 	"github.com/cosmos/gogoproto/proto"
 
@@ -163,7 +165,7 @@ func (c ContractInfo) InitialHistory(initMsg []byte) ContractCodeHistoryEntry {
 	}
 }
 
-func (c *ContractInfo) AddMigration(ctx sdk.Context, codeID uint64, msg []byte) ContractCodeHistoryEntry {
+func (c *ContractInfo) AddMigration(ctx context.Context, codeID uint64, msg []byte) ContractCodeHistoryEntry {
 	h := ContractCodeHistoryEntry{
 		Operation: ContractCodeHistoryOperationTypeMigrate,
 		CodeID:    codeID,
@@ -192,10 +194,8 @@ type ContractInfoExtension interface {
 	String() string
 }
 
-var _ codectypes.UnpackInterfacesMessage = &ContractInfo{}
-
 // UnpackInterfaces implements codectypes.UnpackInterfaces
-func (c *ContractInfo) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (c *ContractInfo) UnpackInterfaces(unpacker gogoprotoany.AnyUnpacker) error {
 	var details ContractInfoExtension
 	if err := unpacker.UnpackAny(c.Extension, &details); err != nil {
 		return err
@@ -204,14 +204,15 @@ func (c *ContractInfo) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 }
 
 // NewAbsoluteTxPosition gets a block position from the context
-func NewAbsoluteTxPosition(ctx sdk.Context) *AbsoluteTxPosition {
+func NewAbsoluteTxPosition(ctx context.Context) *AbsoluteTxPosition {
 	// we must safely handle nil gas meters
 	var index uint64
-	meter := ctx.BlockGasMeter()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	meter := sdkCtx.BlockGasMeter()
 	if meter != nil {
 		index = meter.GasConsumed()
 	}
-	height := ctx.BlockHeight()
+	height := sdkCtx.BlockHeight()
 	if height < 0 {
 		panic(fmt.Sprintf("unsupported height: %d", height))
 	}
@@ -268,21 +269,22 @@ func (c ContractCodeHistoryEntry) ValidateBasic() error {
 }
 
 // NewEnv initializes the environment for a contract instance
-func NewEnv(ctx sdk.Context, contractAddr sdk.AccAddress) wasmvmtypes.Env {
+func NewEnv(ctx context.Context, contractAddr sdk.AccAddress) wasmvmtypes.Env {
 	// safety checks before casting below
-	if ctx.BlockHeight() < 0 {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if sdkCtx.BlockHeight() < 0 {
 		panic("Block height must never be negative")
 	}
-	nano := ctx.BlockTime().UnixNano()
+	nano := sdkCtx.BlockTime().UnixNano()
 	if nano < 1 {
 		panic("Block (unix) time must never be empty or negative ")
 	}
 
 	env := wasmvmtypes.Env{
 		Block: wasmvmtypes.BlockInfo{
-			Height:  uint64(ctx.BlockHeight()),
+			Height:  uint64(sdkCtx.BlockHeight()),
 			Time:    wasmvmtypes.Uint64(nano),
-			ChainID: ctx.ChainID(),
+			ChainID: sdkCtx.ChainID(),
 		},
 		Contract: wasmvmtypes.ContractInfo{
 			Address: contractAddr.String(),

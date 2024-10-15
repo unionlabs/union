@@ -1,9 +1,7 @@
 package secp256k1
 
 import (
-	"bytes"
 	"crypto/sha256"
-	"crypto/subtle"
 	"fmt"
 	"io"
 	"math/big"
@@ -16,7 +14,7 @@ import (
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
 
-// -------------------------------------
+// -------------------------------------.
 const (
 	PrivKeyName = "tendermint/PrivKeySecp256k1"
 	PubKeyName  = "tendermint/PubKeySecp256k1"
@@ -35,13 +33,15 @@ var _ crypto.PrivKey = PrivKey{}
 // PrivKey implements PrivKey.
 type PrivKey []byte
 
-// Bytes marshalls the private key using amino encoding.
+// Bytes returns the privkey as bytes.
 func (privKey PrivKey) Bytes() []byte {
 	return []byte(privKey)
 }
 
 // PubKey performs the point-scalar multiplication from the privKey on the
 // generator point to get the pubkey.
+//
+// See secp256k1.PrivKeyFromBytes.
 func (privKey PrivKey) PubKey() crypto.PubKey {
 	_, pubkeyObject := secp256k1.PrivKeyFromBytes(privKey)
 
@@ -50,26 +50,19 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 	return PubKey(pk)
 }
 
-// Equals - you probably don't need to use this.
-// Runs in constant time based on length of the keys.
-func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
-	if otherSecp, ok := other.(PrivKey); ok {
-		return subtle.ConstantTimeCompare(privKey[:], otherSecp[:]) == 1
-	}
-	return false
-}
-
-func (privKey PrivKey) Type() string {
+// Type returns the key type.
+func (PrivKey) Type() string {
 	return KeyType
 }
 
 // GenPrivKey generates a new ECDSA private key on curve secp256k1 private key.
 // It uses OS randomness to generate the private key.
+//
+// See crypto.CReader.
 func GenPrivKey() PrivKey {
 	return genPrivKey(crypto.CReader())
 }
 
-// genPrivKey generates a new secp256k1 private key using the provided reader.
 func genPrivKey(rand io.Reader) PrivKey {
 	var privKeyBytes [PrivKeySize]byte
 	d := new(big.Int)
@@ -128,16 +121,14 @@ func GenPrivKeySecp256k1(secret []byte) PrivKey {
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	priv, _ := secp256k1.PrivKeyFromBytes(privKey)
 
-	sig, err := ecdsa.SignCompact(priv, crypto.Sha256(msg), false)
-	if err != nil {
-		return nil, err
-	}
+	sum := sha256.Sum256(msg)
+	sig := ecdsa.SignCompact(priv, sum[:], false)
 
 	// remove the first byte which is compactSigRecoveryCode
 	return sig[1:], nil
 }
 
-//-------------------------------------
+// -------------------------------------
 
 var _ crypto.PubKey = PubKey{}
 
@@ -152,22 +143,33 @@ const PubKeySize = 33
 // This prefix is followed with the x-coordinate.
 type PubKey []byte
 
-// Address returns a Bitcoin style addresses: RIPEMD160(SHA256(pubkey))
+// Address returns a Bitcoin style address: RIPEMD160(SHA256(pubkey)).
 func (pubKey PubKey) Address() crypto.Address {
 	if len(pubKey) != PubKeySize {
 		panic("length of pubkey is incorrect")
 	}
 	hasherSHA256 := sha256.New()
-	_, _ = hasherSHA256.Write(pubKey) // does not error
+	_, err := hasherSHA256.Write(pubKey)
+	if err != nil {
+		panic(err)
+	}
 	sha := hasherSHA256.Sum(nil)
 
+	// Check if the size of the hash is what we expect.
+	if ripemd160.Size != crypto.AddressSize {
+		panic("ripemd160.Size != crypto.AddressSize")
+	}
+
 	hasherRIPEMD160 := ripemd160.New()
-	_, _ = hasherRIPEMD160.Write(sha) // does not error
+	_, err = hasherRIPEMD160.Write(sha)
+	if err != nil {
+		panic(err)
+	}
 
 	return crypto.Address(hasherRIPEMD160.Sum(nil))
 }
 
-// Bytes returns the pubkey marshaled with amino encoding.
+// Bytes returns the pubkey as bytes.
 func (pubKey PubKey) Bytes() []byte {
 	return []byte(pubKey)
 }
@@ -176,14 +178,8 @@ func (pubKey PubKey) String() string {
 	return fmt.Sprintf("PubKeySecp256k1{%X}", []byte(pubKey))
 }
 
-func (pubKey PubKey) Equals(other crypto.PubKey) bool {
-	if otherSecp, ok := other.(PubKey); ok {
-		return bytes.Equal(pubKey[:], otherSecp[:])
-	}
-	return false
-}
-
-func (pubKey PubKey) Type() string {
+// Type returns the key type.
+func (PubKey) Type() string {
 	return KeyType
 }
 
@@ -205,7 +201,7 @@ func (pubKey PubKey) VerifySignature(msg []byte, sigStr []byte) bool {
 	// see: https://github.com/ethereum/go-ethereum/blob/f9401ae011ddf7f8d2d95020b7446c17f8d98dc1/crypto/signature_nocgo.go#L90-L93
 	// Serialize() would negate S value if it is over half order.
 	// Hence, if the signature is different after Serialize() if should be rejected.
-	var modifiedSignature, parseErr = ecdsa.ParseDERSignature(signature.Serialize())
+	modifiedSignature, parseErr := ecdsa.ParseDERSignature(signature.Serialize())
 	if parseErr != nil {
 		return false
 	}

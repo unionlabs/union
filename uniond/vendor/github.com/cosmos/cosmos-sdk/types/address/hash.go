@@ -48,7 +48,7 @@ func Compose(typ string, subAddresses []Addressable) ([]byte, error) {
 		a := subAddresses[i].Address()
 		as[i], err = LengthPrefix(a)
 		if err != nil {
-			return nil, fmt.Errorf("not compatible sub-adddress=%v at index=%d [%w]", a, i, err)
+			return nil, fmt.Errorf("not compatible sub-address=%v at index=%d [%w]", a, i, err)
 		}
 		totalLen += len(as[i])
 	}
@@ -67,7 +67,7 @@ func Compose(typ string, subAddresses []Addressable) ([]byte, error) {
 // is constructed from a module name and a sequence of derivation keys (at least one
 // derivation key must be provided). The derivation keys must be unique
 // in the module scope, and is usually constructed from some object id. Example, let's
-// a x/dao module, and a new DAO object, it's address would be:
+// a x/dao module, and a new DAO object, its address would be:
 //
 //	address.Module(dao.ModuleName, newDAO.ID)
 func Module(moduleName string, derivationKeys ...[]byte) []byte {

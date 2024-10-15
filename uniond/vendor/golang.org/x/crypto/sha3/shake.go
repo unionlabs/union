@@ -85,9 +85,9 @@ func newCShake(N, S []byte, rate, outputLen int, dsbyte byte) ShakeHash {
 
 	// leftEncode returns max 9 bytes
 	c.initBlock = make([]byte, 0, 9*2+len(N)+len(S))
-	c.initBlock = append(c.initBlock, leftEncode(uint64(len(N)*8))...)
+	c.initBlock = append(c.initBlock, leftEncode(uint64(len(N))*8)...)
 	c.initBlock = append(c.initBlock, N...)
-	c.initBlock = append(c.initBlock, leftEncode(uint64(len(S)*8))...)
+	c.initBlock = append(c.initBlock, leftEncode(uint64(len(S))*8)...)
 	c.initBlock = append(c.initBlock, S...)
 	c.Write(bytepad(c.initBlock, c.rate))
 	return &c
@@ -115,19 +115,21 @@ func (c *state) Clone() ShakeHash {
 // Its generic security strength is 128 bits against all attacks if at
 // least 32 bytes of its output are used.
 func NewShake128() ShakeHash {
-	if h := newShake128Asm(); h != nil {
-		return h
-	}
-	return &state{rate: rate128, outputLen: 32, dsbyte: dsbyteShake}
+	return newShake128()
 }
 
 // NewShake256 creates a new SHAKE256 variable-output-length ShakeHash.
 // Its generic security strength is 256 bits against all attacks if
 // at least 64 bytes of its output are used.
 func NewShake256() ShakeHash {
-	if h := newShake256Asm(); h != nil {
-		return h
-	}
+	return newShake256()
+}
+
+func newShake128Generic() *state {
+	return &state{rate: rate128, outputLen: 32, dsbyte: dsbyteShake}
+}
+
+func newShake256Generic() *state {
 	return &state{rate: rate256, outputLen: 64, dsbyte: dsbyteShake}
 }
 

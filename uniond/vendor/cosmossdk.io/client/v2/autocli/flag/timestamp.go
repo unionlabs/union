@@ -10,7 +10,7 @@ import (
 
 type timestampType struct{}
 
-func (t timestampType) NewValue(context.Context, *Builder) Value {
+func (t timestampType) NewValue(*context.Context, *Builder) Value {
 	return &timestampValue{}
 }
 

@@ -5,7 +5,7 @@
 package edwards25519
 
 // This file contains additional functionality that is not included in the
-// upstream crypto/ed25519/internal/edwards25519 package.
+// upstream crypto/internal/edwards25519 package.
 
 import (
 	"errors"
@@ -79,6 +79,12 @@ func isOnCurve(X, Y, Z, T *field.Element) bool {
 // Note that BytesMontgomery only encodes the u-coordinate, so v and -v encode
 // to the same value. If v is the identity point, BytesMontgomery returns 32
 // zero bytes, analogously to the X25519 function.
+//
+// The lack of an inverse operation (such as SetMontgomeryBytes) is deliberate:
+// while every valid edwards25519 point has a unique u-coordinate Montgomery
+// encoding, X25519 accepts inputs on the quadratic twist, which don't correspond
+// to any edwards25519 point, and every other X25519 input corresponds to two
+// edwards25519 points.
 func (v *Point) BytesMontgomery() []byte {
 	// This function is outlined to make the allocations inline in the caller
 	// rather than happen on the heap.
@@ -137,7 +143,7 @@ func (s *Scalar) Invert(t *Scalar) *Scalar {
 	for i := 0; i < 7; i++ {
 		table[i+1].Multiply(&table[i], &tt)
 	}
-	// Now table = [t**1, t**3, t**7, t**11, t**13, t**15]
+	// Now table = [t**1, t**3, t**5, t**7, t**9, t**11, t**13, t**15]
 	// so t**k = t[k/2] for odd k
 
 	// To compute the sliding window digits, use the following Sage script:

@@ -5,10 +5,10 @@ import (
 	"net"
 	"time"
 
+	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
 )
 
 const (
@@ -30,14 +30,14 @@ func (se *signerEndpoint) Close() error {
 	return nil
 }
 
-// IsConnected indicates if there is an active connection
+// IsConnected indicates if there is an active connection.
 func (se *signerEndpoint) IsConnected() bool {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
 	return se.isConnected()
 }
 
-// TryGetConnection retrieves a connection if it is already available
+// TryGetConnection retrieves a connection if it is already available.
 func (se *signerEndpoint) GetAvailableConnection(connectionAvailableCh chan net.Conn) bool {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
@@ -51,13 +51,11 @@ func (se *signerEndpoint) GetAvailableConnection(connectionAvailableCh chan net.
 	return false
 }
 
-// TryGetConnection retrieves a connection if it is already available
+// TryGetConnection retrieves a connection if it is already available.
 func (se *signerEndpoint) WaitConnection(connectionAvailableCh chan net.Conn, maxWait time.Duration) error {
-	se.connMtx.Lock()
-	defer se.connMtx.Unlock()
-
 	select {
-	case se.conn = <-connectionAvailableCh:
+	case conn := <-connectionAvailableCh:
+		se.SetConnection(conn)
 	case <-time.After(maxWait):
 		return ErrConnectionTimeout
 	}
@@ -65,21 +63,21 @@ func (se *signerEndpoint) WaitConnection(connectionAvailableCh chan net.Conn, ma
 	return nil
 }
 
-// SetConnection replaces the current connection object
+// SetConnection replaces the current connection object.
 func (se *signerEndpoint) SetConnection(newConnection net.Conn) {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
 	se.conn = newConnection
 }
 
-// IsConnected indicates if there is an active connection
+// IsConnected indicates if there is an active connection.
 func (se *signerEndpoint) DropConnection() {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
 	se.dropConnection()
 }
 
-// ReadMessage reads a message from the endpoint
+// ReadMessage reads a message from the endpoint.
 func (se *signerEndpoint) ReadMessage() (msg privvalproto.Message, err error) {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
@@ -92,7 +90,7 @@ func (se *signerEndpoint) ReadMessage() (msg privvalproto.Message, err error) {
 
 	err = se.conn.SetReadDeadline(deadline)
 	if err != nil {
-		return
+		return msg, err
 	}
 	const maxRemoteSignerMsgSize = 1024 * 10
 	protoReader := protoio.NewDelimitedReader(se.conn, maxRemoteSignerMsgSize)
@@ -108,10 +106,10 @@ func (se *signerEndpoint) ReadMessage() (msg privvalproto.Message, err error) {
 		se.dropConnection()
 	}
 
-	return
+	return msg, err
 }
 
-// WriteMessage writes a message from the endpoint
+// WriteMessage writes a message from the endpoint.
 func (se *signerEndpoint) WriteMessage(msg privvalproto.Message) (err error) {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
@@ -126,7 +124,7 @@ func (se *signerEndpoint) WriteMessage(msg privvalproto.Message) (err error) {
 	deadline := time.Now().Add(se.timeoutReadWrite)
 	err = se.conn.SetWriteDeadline(deadline)
 	if err != nil {
-		return
+		return err
 	}
 
 	_, err = protoWriter.WriteMsg(&msg)
@@ -139,7 +137,7 @@ func (se *signerEndpoint) WriteMessage(msg privvalproto.Message) (err error) {
 		se.dropConnection()
 	}
 
-	return
+	return err
 }
 
 func (se *signerEndpoint) isConnected() bool {

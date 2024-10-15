@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	cmt "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmt "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -68,7 +68,7 @@ func QueryBlocks(clientCtx client.Context, page, limit int, query, orderBy strin
 	return result, nil
 }
 
-// get block by height
+// GetBlockByHeight get block by height
 func GetBlockByHeight(clientCtx client.Context, height *int64) (*cmt.Block, error) {
 	// get the node
 	node, err := clientCtx.GetNode()

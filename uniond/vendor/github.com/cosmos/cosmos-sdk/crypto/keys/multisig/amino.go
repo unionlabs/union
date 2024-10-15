@@ -3,7 +3,7 @@ package multisig
 import (
 	errorsmod "cosmossdk.io/errors"
 
-	types "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -66,7 +66,7 @@ func tmToProto(tmPk tmMultisig) (*LegacyAminoPubKey, error) {
 }
 
 // MarshalAminoJSON overrides amino JSON unmarshaling.
-func (m LegacyAminoPubKey) MarshalAminoJSON() (tmMultisig, error) { //nolint:golint,revive // we need to override the default amino JSON marshaling
+func (m LegacyAminoPubKey) MarshalAminoJSON() (tmMultisig, error) { //nolint:golint // we need to override the default amino JSON marshaling
 	return protoToTm(&m)
 }
 

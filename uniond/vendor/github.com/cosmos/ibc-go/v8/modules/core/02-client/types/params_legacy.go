@@ -9,7 +9,7 @@ package types
 import (
 	"fmt"
 
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramtypes "cosmossdk.io/x/params/types"
 )
 
 // KeyAllowedClients is store's key for AllowedClients Params

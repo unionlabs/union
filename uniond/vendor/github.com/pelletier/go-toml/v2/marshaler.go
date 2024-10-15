@@ -3,11 +3,12 @@ package toml
 import (
 	"bytes"
 	"encoding"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
 	"reflect"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -37,10 +38,11 @@ type Encoder struct {
 	w io.Writer
 
 	// global settings
-	tablesInline    bool
-	arraysMultiline bool
-	indentSymbol    string
-	indentTables    bool
+	tablesInline       bool
+	arraysMultiline    bool
+	indentSymbol       string
+	indentTables       bool
+	marshalJsonNumbers bool
 }
 
 // NewEncoder returns a new Encoder that writes to w.
@@ -84,6 +86,17 @@ func (enc *Encoder) SetIndentSymbol(s string) *Encoder {
 // SetIndentTables forces the encoder to intent tables and array tables.
 func (enc *Encoder) SetIndentTables(indent bool) *Encoder {
 	enc.indentTables = indent
+	return enc
+}
+
+// SetMarshalJsonNumbers forces the encoder to serialize `json.Number` as a
+// float or integer instead of relying on TextMarshaler to emit a string.
+//
+// *Unstable:* This method does not follow the compatibility guarantees of
+// semver. It can be changed or removed without a new major version being
+// issued.
+func (enc *Encoder) SetMarshalJsonNumbers(indent bool) *Encoder {
+	enc.marshalJsonNumbers = indent
 	return enc
 }
 
@@ -252,10 +265,22 @@ func (enc *Encoder) encode(b []byte, ctx encoderCtx, v reflect.Value) ([]byte, e
 		return append(b, x.String()...), nil
 	case LocalDateTime:
 		return append(b, x.String()...), nil
+	case json.Number:
+		if enc.marshalJsonNumbers {
+			if x == "" { /// Useful zero value.
+				return append(b, "0"...), nil
+			} else if v, err := x.Int64(); err == nil {
+				return enc.encode(b, ctx, reflect.ValueOf(v))
+			} else if f, err := x.Float64(); err == nil {
+				return enc.encode(b, ctx, reflect.ValueOf(f))
+			} else {
+				return nil, fmt.Errorf("toml: unable to convert %q to int64 or float64", x)
+			}
+		}
 	}
 
 	hasTextMarshaler := v.Type().Implements(textMarshalerType)
-	if hasTextMarshaler || (v.CanAddr() && reflect.PtrTo(v.Type()).Implements(textMarshalerType)) {
+	if hasTextMarshaler || (v.CanAddr() && reflect.PointerTo(v.Type()).Implements(textMarshalerType)) {
 		if !hasTextMarshaler {
 			v = v.Addr()
 		}
@@ -606,6 +631,18 @@ func (enc *Encoder) keyToString(k reflect.Value) (string, error) {
 			return "", fmt.Errorf("toml: error marshalling key %v from text: %w", k, err)
 		}
 		return string(keyB), nil
+
+	case keyType.Kind() == reflect.Int || keyType.Kind() == reflect.Int8 || keyType.Kind() == reflect.Int16 || keyType.Kind() == reflect.Int32 || keyType.Kind() == reflect.Int64:
+		return strconv.FormatInt(k.Int(), 10), nil
+
+	case keyType.Kind() == reflect.Uint || keyType.Kind() == reflect.Uint8 || keyType.Kind() == reflect.Uint16 || keyType.Kind() == reflect.Uint32 || keyType.Kind() == reflect.Uint64:
+		return strconv.FormatUint(k.Uint(), 10), nil
+
+	case keyType.Kind() == reflect.Float32:
+		return strconv.FormatFloat(k.Float(), 'f', -1, 32), nil
+
+	case keyType.Kind() == reflect.Float64:
+		return strconv.FormatFloat(k.Float(), 'f', -1, 64), nil
 	}
 	return "", fmt.Errorf("toml: type %s is not supported as a map key", keyType.Kind())
 }
@@ -643,8 +680,8 @@ func (enc *Encoder) encodeMap(b []byte, ctx encoderCtx, v reflect.Value) ([]byte
 }
 
 func sortEntriesByKey(e []entry) {
-	sort.Slice(e, func(i, j int) bool {
-		return e[i].Key < e[j].Key
+	slices.SortFunc(e, func(a, b entry) int {
+		return strings.Compare(a.Key, b.Key)
 	})
 }
 
@@ -707,6 +744,8 @@ func walkStruct(ctx encoderCtx, t *table, v reflect.Value) {
 			if fieldType.Anonymous {
 				if fieldType.Type.Kind() == reflect.Struct {
 					walkStruct(ctx, t, f)
+				} else if fieldType.Type.Kind() == reflect.Ptr && !f.IsNil() && f.Elem().Kind() == reflect.Struct {
+					walkStruct(ctx, t, f.Elem())
 				}
 				continue
 			} else {
@@ -924,7 +963,7 @@ func willConvertToTable(ctx encoderCtx, v reflect.Value) bool {
 	if !v.IsValid() {
 		return false
 	}
-	if v.Type() == timeType || v.Type().Implements(textMarshalerType) || (v.Kind() != reflect.Ptr && v.CanAddr() && reflect.PtrTo(v.Type()).Implements(textMarshalerType)) {
+	if v.Type() == timeType || v.Type().Implements(textMarshalerType) || (v.Kind() != reflect.Ptr && v.CanAddr() && reflect.PointerTo(v.Type()).Implements(textMarshalerType)) {
 		return false
 	}
 
@@ -997,6 +1036,10 @@ func (enc *Encoder) encodeSliceAsArrayTable(b []byte, ctx encoderCtx, v reflect.
 	scratch := make([]byte, 0, 64)
 
 	scratch = enc.commented(ctx.commented, scratch)
+
+	if enc.indentTables {
+		scratch = enc.indent(ctx.indent, scratch)
+	}
 
 	scratch = append(scratch, "[["...)
 

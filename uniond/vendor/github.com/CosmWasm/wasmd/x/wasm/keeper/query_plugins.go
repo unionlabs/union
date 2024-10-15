@@ -19,21 +19,21 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	banktypes "cosmossdk.io/x/bank/types"
+	distributiontypes "cosmossdk.io/x/distribution/types"
+	stakingtypes "cosmossdk.io/x/staking/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
 type QueryHandler struct {
-	Ctx         sdk.Context
+	Ctx         context.Context
 	Plugins     WasmVMQueryHandler
 	Caller      sdk.AccAddress
 	gasRegister types.GasRegister
 }
 
-func NewQueryHandler(ctx sdk.Context, vmQueryHandler WasmVMQueryHandler, caller sdk.AccAddress, gasRegister types.GasRegister) QueryHandler {
+func NewQueryHandler(ctx context.Context, vmQueryHandler WasmVMQueryHandler, caller sdk.AccAddress, gasRegister types.GasRegister) QueryHandler {
 	return QueryHandler{
 		Ctx:         ctx,
 		Plugins:     vmQueryHandler,
@@ -54,11 +54,11 @@ func (q QueryHandler) Query(request wasmvmtypes.QueryRequest, gasLimit uint64) (
 	// set a limit for a subCtx
 	sdkGas := q.gasRegister.FromWasmVMGas(gasLimit)
 	// discard all changes/ events in subCtx by not committing the cached context
-	subCtx, _ := q.Ctx.WithGasMeter(storetypes.NewGasMeter(sdkGas)).CacheContext()
+	subCtx, _ := sdk.UnwrapSDKContext(q.Ctx).WithGasMeter(storetypes.NewGasMeter(sdkGas)).CacheContext()
 
 	// make sure we charge the higher level context even on panic
 	defer func() {
-		q.Ctx.GasMeter().ConsumeGas(subCtx.GasMeter().GasConsumed(), "contract sub-query")
+		sdk.UnwrapSDKContext(q.Ctx).GasMeter().ConsumeGas(subCtx.GasMeter().GasConsumed(), "contract sub-query")
 	}()
 
 	res, err := q.Plugins.HandleQuery(subCtx, q.Caller, request)
@@ -74,25 +74,25 @@ func (q QueryHandler) Query(request wasmvmtypes.QueryRequest, gasLimit uint64) (
 	}
 
 	// Issue #759 - we don't return error string for worries of non-determinism
-	moduleLogger(q.Ctx).Debug("Redacting submessage error", "cause", err)
+	moduleLogger(sdk.UnwrapSDKContext(q.Ctx)).Debug("Redacting submessage error", "cause", err)
 	return nil, redactError(err)
 }
 
 func (q QueryHandler) GasConsumed() uint64 {
-	return q.gasRegister.ToWasmVMGas(q.Ctx.GasMeter().GasConsumed())
+	return q.gasRegister.ToWasmVMGas(sdk.UnwrapSDKContext(q.Ctx).GasMeter().GasConsumed())
 }
 
-type CustomQuerier func(ctx sdk.Context, request json.RawMessage) ([]byte, error)
+type CustomQuerier func(ctx context.Context, request json.RawMessage) ([]byte, error)
 
 type QueryPlugins struct {
-	Bank         func(ctx sdk.Context, request *wasmvmtypes.BankQuery) ([]byte, error)
+	Bank         func(ctx context.Context, request *wasmvmtypes.BankQuery) ([]byte, error)
 	Custom       CustomQuerier
-	IBC          func(ctx sdk.Context, caller sdk.AccAddress, request *wasmvmtypes.IBCQuery) ([]byte, error)
-	Staking      func(ctx sdk.Context, request *wasmvmtypes.StakingQuery) ([]byte, error)
-	Stargate     func(ctx sdk.Context, request *wasmvmtypes.StargateQuery) ([]byte, error)
-	Grpc         func(ctx sdk.Context, request *wasmvmtypes.GrpcQuery) (proto.Message, error)
-	Wasm         func(ctx sdk.Context, request *wasmvmtypes.WasmQuery) ([]byte, error)
-	Distribution func(ctx sdk.Context, request *wasmvmtypes.DistributionQuery) ([]byte, error)
+	IBC          func(ctx context.Context, caller sdk.AccAddress, request *wasmvmtypes.IBCQuery) ([]byte, error)
+	Staking      func(ctx context.Context, request *wasmvmtypes.StakingQuery) ([]byte, error)
+	Stargate     func(ctx context.Context, request *wasmvmtypes.StargateQuery) ([]byte, error)
+	Grpc         func(ctx context.Context, request *wasmvmtypes.GrpcQuery) (proto.Message, error)
+	Wasm         func(ctx context.Context, request *wasmvmtypes.WasmQuery) ([]byte, error)
+	Distribution func(ctx context.Context, request *wasmvmtypes.DistributionQuery) ([]byte, error)
 }
 
 type contractMetaDataSource interface {
@@ -161,7 +161,7 @@ func (e QueryPlugins) Merge(o *QueryPlugins) QueryPlugins {
 }
 
 // HandleQuery executes the requested query
-func (e QueryPlugins) HandleQuery(ctx sdk.Context, caller sdk.AccAddress, req wasmvmtypes.QueryRequest) ([]byte, error) {
+func (e QueryPlugins) HandleQuery(ctx context.Context, caller sdk.AccAddress, req wasmvmtypes.QueryRequest) ([]byte, error) {
 	// do the query
 	switch {
 	case req.Bank != nil:
@@ -190,8 +190,8 @@ func (e QueryPlugins) HandleQuery(ctx sdk.Context, caller sdk.AccAddress, req wa
 	return nil, wasmvmtypes.Unknown{}
 }
 
-func BankQuerier(bankKeeper types.BankViewKeeper) func(ctx sdk.Context, request *wasmvmtypes.BankQuery) ([]byte, error) {
-	return func(ctx sdk.Context, request *wasmvmtypes.BankQuery) ([]byte, error) {
+func BankQuerier(bankKeeper types.BankViewKeeper) func(ctx context.Context, request *wasmvmtypes.BankQuery) ([]byte, error) {
+	return func(ctx context.Context, request *wasmvmtypes.BankQuery) ([]byte, error) {
 		if request.AllBalances != nil {
 			addr, err := sdk.AccAddressFromBech32(request.AllBalances.Address)
 			if err != nil {
@@ -252,12 +252,12 @@ func BankQuerier(bankKeeper types.BankViewKeeper) func(ctx sdk.Context, request 
 	}
 }
 
-func NoCustomQuerier(sdk.Context, json.RawMessage) ([]byte, error) {
+func NoCustomQuerier(context.Context, json.RawMessage) ([]byte, error) {
 	return nil, wasmvmtypes.UnsupportedRequest{Kind: "custom"}
 }
 
-func IBCQuerier(wasm contractMetaDataSource, channelKeeper types.ChannelKeeper) func(ctx sdk.Context, caller sdk.AccAddress, request *wasmvmtypes.IBCQuery) ([]byte, error) {
-	return func(ctx sdk.Context, caller sdk.AccAddress, request *wasmvmtypes.IBCQuery) ([]byte, error) {
+func IBCQuerier(wasm contractMetaDataSource, channelKeeper types.ChannelKeeper) func(ctx context.Context, caller sdk.AccAddress, request *wasmvmtypes.IBCQuery) ([]byte, error) {
+	return func(ctx context.Context, caller sdk.AccAddress, request *wasmvmtypes.IBCQuery) ([]byte, error) {
 		if request.PortID != nil {
 			contractInfo := wasm.GetContractInfo(ctx, caller)
 			res := wasmvmtypes.PortIDResponse{
@@ -332,7 +332,7 @@ func IBCQuerier(wasm contractMetaDataSource, channelKeeper types.ChannelKeeper) 
 	}
 }
 
-func RejectGrpcQuerier(ctx sdk.Context, request *wasmvmtypes.GrpcQuery) (proto.Message, error) {
+func RejectGrpcQuerier(ctx context.Context, request *wasmvmtypes.GrpcQuery) (proto.Message, error) {
 	return nil, wasmvmtypes.UnsupportedRequest{Kind: "gRPC queries are disabled"}
 }
 
@@ -344,8 +344,8 @@ func RejectGrpcQuerier(ctx sdk.Context, request *wasmvmtypes.GrpcQuery) (proto.M
 //
 // These queries can be set via WithQueryPlugins option in the wasm keeper constructor:
 // WithQueryPlugins(&QueryPlugins{Grpc: AcceptListGrpcQuerier(acceptList, queryRouter, codec)})
-func AcceptListGrpcQuerier(acceptList AcceptedQueries, queryRouter GRPCQueryRouter, codec codec.Codec) func(ctx sdk.Context, request *wasmvmtypes.GrpcQuery) (proto.Message, error) {
-	return func(ctx sdk.Context, request *wasmvmtypes.GrpcQuery) (proto.Message, error) {
+func AcceptListGrpcQuerier(acceptList AcceptedQueries, queryRouter GRPCQueryRouter, codec codec.Codec) func(ctx context.Context, request *wasmvmtypes.GrpcQuery) (proto.Message, error) {
+	return func(ctx context.Context, request *wasmvmtypes.GrpcQuery) (proto.Message, error) {
 		protoResponse, accepted := acceptList[request.Path]
 		if !accepted {
 			return nil, wasmvmtypes.UnsupportedRequest{Kind: fmt.Sprintf("'%s' path is not allowed from the contract", request.Path)}
@@ -356,7 +356,7 @@ func AcceptListGrpcQuerier(acceptList AcceptedQueries, queryRouter GRPCQueryRout
 			return nil, wasmvmtypes.UnsupportedRequest{Kind: fmt.Sprintf("No route to query '%s'", request.Path)}
 		}
 
-		res, err := handler(ctx, &abci.RequestQuery{
+		res, err := handler(sdk.UnwrapSDKContext(ctx), &abci.QueryRequest{
 			Data: request.Data,
 			Path: request.Path,
 		})
@@ -375,8 +375,8 @@ func AcceptListGrpcQuerier(acceptList AcceptedQueries, queryRouter GRPCQueryRout
 }
 
 // RejectStargateQuerier rejects all stargate queries
-func RejectStargateQuerier() func(ctx sdk.Context, request *wasmvmtypes.StargateQuery) ([]byte, error) {
-	return func(ctx sdk.Context, request *wasmvmtypes.StargateQuery) ([]byte, error) {
+func RejectStargateQuerier() func(ctx context.Context, request *wasmvmtypes.StargateQuery) ([]byte, error) {
+	return func(ctx context.Context, request *wasmvmtypes.StargateQuery) ([]byte, error) {
 		return nil, wasmvmtypes.UnsupportedRequest{Kind: "Stargate queries are disabled"}
 	}
 }
@@ -394,8 +394,8 @@ type AcceptedQueries map[string]proto.Message
 //
 // These queries can be set via WithQueryPlugins option in the wasm keeper constructor:
 // WithQueryPlugins(&QueryPlugins{Stargate: AcceptListStargateQuerier(acceptList, queryRouter, codec)})
-func AcceptListStargateQuerier(acceptList AcceptedQueries, queryRouter GRPCQueryRouter, codec codec.Codec) func(ctx sdk.Context, request *wasmvmtypes.StargateQuery) ([]byte, error) {
-	return func(ctx sdk.Context, request *wasmvmtypes.StargateQuery) ([]byte, error) {
+func AcceptListStargateQuerier(acceptList AcceptedQueries, queryRouter GRPCQueryRouter, codec codec.Codec) func(ctx context.Context, request *wasmvmtypes.StargateQuery) ([]byte, error) {
+	return func(ctx context.Context, request *wasmvmtypes.StargateQuery) ([]byte, error) {
 		protoResponse, accepted := acceptList[request.Path]
 		if !accepted {
 			return nil, wasmvmtypes.UnsupportedRequest{Kind: fmt.Sprintf("'%s' path is not allowed from the contract", request.Path)}
@@ -406,7 +406,7 @@ func AcceptListStargateQuerier(acceptList AcceptedQueries, queryRouter GRPCQuery
 			return nil, wasmvmtypes.UnsupportedRequest{Kind: fmt.Sprintf("No route to query '%s'", request.Path)}
 		}
 
-		res, err := route(ctx, &abci.RequestQuery{
+		res, err := route(sdk.UnwrapSDKContext(ctx), &abci.QueryRequest{
 			Data: request.Data,
 			Path: request.Path,
 		})
@@ -418,8 +418,8 @@ func AcceptListStargateQuerier(acceptList AcceptedQueries, queryRouter GRPCQuery
 	}
 }
 
-func StakingQuerier(keeper types.StakingKeeper, distKeeper types.DistributionKeeper) func(ctx sdk.Context, request *wasmvmtypes.StakingQuery) ([]byte, error) {
-	return func(ctx sdk.Context, request *wasmvmtypes.StakingQuery) ([]byte, error) {
+func StakingQuerier(keeper types.StakingKeeper, distKeeper types.DistributionKeeper) func(ctx context.Context, request *wasmvmtypes.StakingQuery) ([]byte, error) {
+	return func(ctx context.Context, request *wasmvmtypes.StakingQuery) ([]byte, error) {
 		if request.BondedDenom != nil {
 			denom, err := keeper.BondDenom(ctx)
 			if err != nil {
@@ -501,7 +501,13 @@ func StakingQuerier(keeper types.StakingKeeper, distKeeper types.DistributionKee
 			}
 
 			var res wasmvmtypes.DelegationResponse
-			d, err := keeper.GetDelegation(ctx, delegator, validator)
+			dI, err := keeper.Delegation(ctx, delegator, validator)
+			d := stakingtypes.Delegation {
+				DelegatorAddress: dI.GetDelegatorAddr(),
+				ValidatorAddress: dI.GetValidatorAddr(),
+				Shares: dI.GetShares(),
+			}
+
 			switch {
 			case stakingtypes.ErrNoDelegation.Is(err): // return empty result for backwards compatibility. Changed in SDK 50
 			case err != nil:
@@ -518,7 +524,7 @@ func StakingQuerier(keeper types.StakingKeeper, distKeeper types.DistributionKee
 	}
 }
 
-func sdkToDelegations(ctx sdk.Context, keeper types.StakingKeeper, delegations []stakingtypes.Delegation) (wasmvmtypes.Array[wasmvmtypes.Delegation], error) {
+func sdkToDelegations(ctx context.Context, keeper types.StakingKeeper, delegations []stakingtypes.Delegation) (wasmvmtypes.Array[wasmvmtypes.Delegation], error) {
 	result := make([]wasmvmtypes.Delegation, len(delegations))
 	bondDenom, err := keeper.BondDenom(ctx)
 	if err != nil {
@@ -552,7 +558,7 @@ func sdkToDelegations(ctx sdk.Context, keeper types.StakingKeeper, delegations [
 	return result, nil
 }
 
-func sdkToFullDelegation(ctx sdk.Context, keeper types.StakingKeeper, distKeeper types.DistributionKeeper, delegation stakingtypes.Delegation) (*wasmvmtypes.FullDelegation, error) {
+func sdkToFullDelegation(ctx context.Context, keeper types.StakingKeeper, distKeeper types.DistributionKeeper, delegation stakingtypes.Delegation) (*wasmvmtypes.FullDelegation, error) {
 	delAddr, err := sdk.AccAddressFromBech32(delegation.DelegatorAddress)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "delegator address")
@@ -590,7 +596,7 @@ func sdkToFullDelegation(ctx sdk.Context, keeper types.StakingKeeper, distKeeper
 
 	// FIXME: make a cleaner way to do this (modify the sdk)
 	// we need the info from `distKeeper.calculateDelegationRewards()`, but it is not public
-	// neither is `queryDelegationRewards(ctx sdk.Context, _ []string, req abci.RequestQuery, k Keeper)`
+	// neither is `queryDelegationRewards(ctx context.Context, _ []string, req abci.RequestQuery, k Keeper)`
 	// so we go through the front door of the querier....
 	accRewards, err := getAccumulatedRewards(ctx, distKeeper, delegation)
 	if err != nil {
@@ -608,13 +614,13 @@ func sdkToFullDelegation(ctx sdk.Context, keeper types.StakingKeeper, distKeeper
 
 // FIXME: simplify this enormously when
 // https://github.com/cosmos/cosmos-sdk/issues/7466 is merged
-func getAccumulatedRewards(ctx sdk.Context, distKeeper types.DistributionKeeper, delegation stakingtypes.Delegation) ([]wasmvmtypes.Coin, error) {
+func getAccumulatedRewards(ctx context.Context, distKeeper types.DistributionKeeper, delegation stakingtypes.Delegation) ([]wasmvmtypes.Coin, error) {
 	// Try to get *delegator* reward info!
 	params := distributiontypes.QueryDelegationRewardsRequest{
 		DelegatorAddress: delegation.DelegatorAddress,
 		ValidatorAddress: delegation.ValidatorAddress,
 	}
-	cache, _ := ctx.CacheContext()
+	cache, _ := sdk.UnwrapSDKContext(ctx).CacheContext()
 	qres, err := distKeeper.DelegationRewards(cache, &params)
 	if err != nil {
 		return nil, err
@@ -631,8 +637,8 @@ func getAccumulatedRewards(ctx sdk.Context, distKeeper types.DistributionKeeper,
 	return rewards, nil
 }
 
-func WasmQuerier(k wasmQueryKeeper) func(ctx sdk.Context, request *wasmvmtypes.WasmQuery) ([]byte, error) {
-	return func(ctx sdk.Context, request *wasmvmtypes.WasmQuery) ([]byte, error) {
+func WasmQuerier(k wasmQueryKeeper) func(ctx context.Context, request *wasmvmtypes.WasmQuery) ([]byte, error) {
+	return func(ctx context.Context, request *wasmvmtypes.WasmQuery) ([]byte, error) {
 		switch {
 		case request.Smart != nil:
 			addr, err := sdk.AccAddressFromBech32(request.Smart.ContractAddr)
@@ -690,8 +696,8 @@ func WasmQuerier(k wasmQueryKeeper) func(ctx sdk.Context, request *wasmvmtypes.W
 	}
 }
 
-func DistributionQuerier(k types.DistributionKeeper) func(ctx sdk.Context, request *wasmvmtypes.DistributionQuery) ([]byte, error) {
-	return func(ctx sdk.Context, req *wasmvmtypes.DistributionQuery) ([]byte, error) {
+func DistributionQuerier(k types.DistributionKeeper) func(ctx context.Context, request *wasmvmtypes.DistributionQuery) ([]byte, error) {
+	return func(ctx context.Context, req *wasmvmtypes.DistributionQuery) ([]byte, error) {
 		switch {
 		case req.DelegatorWithdrawAddress != nil:
 			got, err := k.DelegatorWithdrawAddress(ctx, &distributiontypes.QueryDelegatorWithdrawAddressRequest{DelegatorAddress: req.DelegatorWithdrawAddress.DelegatorAddress})
@@ -846,9 +852,9 @@ func ConvertProtoToJSONMarshal(cdc codec.Codec, protoResponse proto.Message, bz 
 var _ WasmVMQueryHandler = WasmVMQueryHandlerFn(nil)
 
 // WasmVMQueryHandlerFn is a helper to construct a function based query handler.
-type WasmVMQueryHandlerFn func(ctx sdk.Context, caller sdk.AccAddress, request wasmvmtypes.QueryRequest) ([]byte, error)
+type WasmVMQueryHandlerFn func(ctx context.Context, caller sdk.AccAddress, request wasmvmtypes.QueryRequest) ([]byte, error)
 
 // HandleQuery delegates call into wrapped WasmVMQueryHandlerFn
-func (w WasmVMQueryHandlerFn) HandleQuery(ctx sdk.Context, caller sdk.AccAddress, request wasmvmtypes.QueryRequest) ([]byte, error) {
+func (w WasmVMQueryHandlerFn) HandleQuery(ctx context.Context, caller sdk.AccAddress, request wasmvmtypes.QueryRequest) ([]byte, error) {
 	return w(ctx, caller, request)
 }

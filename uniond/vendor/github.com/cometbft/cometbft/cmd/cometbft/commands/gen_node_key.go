@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/p2p"
 )
 

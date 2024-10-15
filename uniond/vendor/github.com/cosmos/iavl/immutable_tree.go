@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"cosmossdk.io/log"
+	corestore "cosmossdk.io/core/store"
 
 	dbm "github.com/cosmos/iavl/db"
 )
@@ -16,7 +16,7 @@ import (
 // Returned key/value byte slices must not be modified, since they may point to data located inside
 // IAVL which would also be modified.
 type ImmutableTree struct {
-	logger log.Logger
+	logger Logger
 
 	root                   *Node
 	ndb                    *nodeDB
@@ -25,7 +25,7 @@ type ImmutableTree struct {
 }
 
 // NewImmutableTree creates both in-memory and persistent instances
-func NewImmutableTree(db dbm.DB, cacheSize int, skipFastStorageUpgrade bool, lg log.Logger, options ...Option) *ImmutableTree {
+func NewImmutableTree(db dbm.DB, cacheSize int, skipFastStorageUpgrade bool, lg Logger, options ...Option) *ImmutableTree {
 	opts := DefaultOptions()
 	for _, opt := range options {
 		opt(&opts)
@@ -246,7 +246,7 @@ func (t *ImmutableTree) Iterate(fn func(key []byte, value []byte) bool) (bool, e
 }
 
 // Iterator returns an iterator over the immutable tree.
-func (t *ImmutableTree) Iterator(start, end []byte, ascending bool) (dbm.Iterator, error) {
+func (t *ImmutableTree) Iterator(start, end []byte, ascending bool) (corestore.Iterator, error) {
 	if !t.skipFastStorageUpgrade {
 		isFastCacheEnabled, err := t.IsFastCacheEnabled()
 		if err != nil {

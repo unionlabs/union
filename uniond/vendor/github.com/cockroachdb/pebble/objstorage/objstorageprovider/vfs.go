@@ -31,7 +31,11 @@ func (p *provider) vfsOpenForReading(
 		}
 		return nil, err
 	}
-	return newFileReadable(file, p.st.FS, filename)
+	readaheadConfig := DefaultReadaheadConfig
+	if f := p.st.Local.ReadaheadConfigFn; f != nil {
+		readaheadConfig = f()
+	}
+	return newFileReadable(file, p.st.FS, readaheadConfig, filename)
 }
 
 func (p *provider) vfsCreate(

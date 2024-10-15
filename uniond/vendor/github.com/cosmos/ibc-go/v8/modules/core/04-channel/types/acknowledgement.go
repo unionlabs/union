@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	errorsmod "cosmossdk.io/errors"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const (
@@ -90,5 +88,5 @@ func (ack Acknowledgement) Success() bool {
 // Acknowledgement implements the Acknowledgement interface. It returns the
 // acknowledgement serialised using JSON.
 func (ack Acknowledgement) Acknowledgement() []byte {
-	return sdk.MustSortJSON(SubModuleCdc.MustMarshalJSON(&ack))
+	return SubModuleCdc.MustMarshalJSON(&ack)
 }

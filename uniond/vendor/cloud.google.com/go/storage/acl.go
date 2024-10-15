@@ -16,8 +16,6 @@ package storage
 
 import (
 	"context"
-	"net/http"
-	"reflect"
 
 	"cloud.google.com/go/internal/trace"
 	"cloud.google.com/go/storage/internal/apiv2/storagepb"
@@ -160,15 +158,6 @@ func (a *ACLHandle) objectSet(ctx context.Context, entity ACLEntity, role ACLRol
 func (a *ACLHandle) objectDelete(ctx context.Context, entity ACLEntity) error {
 	opts := makeStorageOpts(false, a.retry, a.userProject)
 	return a.c.tc.DeleteObjectACL(ctx, a.bucket, a.object, entity, opts...)
-}
-
-func (a *ACLHandle) configureCall(ctx context.Context, call interface{ Header() http.Header }) {
-	vc := reflect.ValueOf(call)
-	vc.MethodByName("Context").Call([]reflect.Value{reflect.ValueOf(ctx)})
-	if a.userProject != "" {
-		vc.MethodByName("UserProject").Call([]reflect.Value{reflect.ValueOf(a.userProject)})
-	}
-	setClientHeader(call.Header())
 }
 
 func toObjectACLRules(items []*raw.ObjectAccessControl) []ACLRule {

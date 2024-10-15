@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	st "cosmossdk.io/api/cosmos/staking/v1beta1"
 	"cosmossdk.io/x/evidence/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // HandleEquivocationEvidence implements an equivocation evidence handler. Assuming the
@@ -25,8 +25,6 @@ import (
 // TODO: Some of the invalid constraints listed above may need to be reconsidered
 // in the case of a lunatic attack.
 func (k Keeper) handleEquivocationEvidence(ctx context.Context, evidence *types.Equivocation) error {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	logger := k.Logger(ctx)
 	consAddr := evidence.GetConsensusAddress(k.stakingKeeper.ConsensusAddressCodec())
 
 	validator, err := k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
@@ -40,6 +38,15 @@ func (k Keeper) handleEquivocationEvidence(ctx context.Context, evidence *types.
 	}
 
 	if len(validator.GetOperator()) != 0 {
+		// Get the consAddr from the validator read from the store and not from the evidence,
+		// because if the validator has rotated its key, the key in evidence could be outdated.
+		// (ValidatorByConsAddr can get a validator even if the key has been rotated)
+		valConsAddr, err := validator.GetConsAddr()
+		if err != nil {
+			return err
+		}
+		consAddr = valConsAddr
+
 		if _, err := k.slashingKeeper.GetPubkey(ctx, consAddr.Bytes()); err != nil {
 			// Ignore evidence that cannot be handled.
 			//
@@ -50,33 +57,33 @@ func (k Keeper) handleEquivocationEvidence(ctx context.Context, evidence *types.
 			// allowable but none of the disallowed evidence types.  Instead of
 			// getting this coordination right, it is easier to relax the
 			// constraints and ignore evidence that cannot be handled.
-			logger.Error(fmt.Sprintf("ignore evidence; expected public key for validator %s not found", consAddr))
+			k.Logger.Error(fmt.Sprintf("ignore evidence; expected public key for validator %s not found", consAddr))
 			return nil
 		}
 	}
 
+	headerInfo := k.HeaderService.HeaderInfo(ctx)
 	// calculate the age of the evidence
 	infractionHeight := evidence.GetHeight()
 	infractionTime := evidence.GetTime()
-	ageDuration := sdkCtx.BlockHeader().Time.Sub(infractionTime)
-	ageBlocks := sdkCtx.BlockHeader().Height - infractionHeight
+	ageDuration := headerInfo.Time.Sub(infractionTime)
+	ageBlocks := headerInfo.Height - infractionHeight
 
 	// Reject evidence if the double-sign is too old. Evidence is considered stale
 	// if the difference in time and number of blocks is greater than the allowed
 	// parameters defined.
-	cp := sdkCtx.ConsensusParams()
-	if cp.Evidence != nil {
-		if ageDuration > cp.Evidence.MaxAgeDuration && ageBlocks > cp.Evidence.MaxAgeNumBlocks {
-			logger.Info(
-				"ignored equivocation; evidence too old",
-				"validator", consAddr,
-				"infraction_height", infractionHeight,
-				"max_age_num_blocks", cp.Evidence.MaxAgeNumBlocks,
-				"infraction_time", infractionTime,
-				"max_age_duration", cp.Evidence.MaxAgeDuration,
-			)
-			return nil
-		}
+
+	eviAgeBlocks, eviAgeDuration, _, err := k.consensusKeeper.EvidenceParams(ctx)
+	if err == nil && ageDuration > eviAgeDuration && ageBlocks > eviAgeBlocks {
+		k.Logger.Info(
+			"ignored equivocation; evidence too old",
+			"validator", consAddr,
+			"infraction_height", infractionHeight,
+			"max_age_num_blocks", eviAgeBlocks,
+			"infraction_time", infractionTime,
+			"max_age_duration", eviAgeDuration,
+		)
+		return nil
 	}
 
 	if ok := k.slashingKeeper.HasValidatorSigningInfo(ctx, consAddr); !ok {
@@ -85,7 +92,7 @@ func (k Keeper) handleEquivocationEvidence(ctx context.Context, evidence *types.
 
 	// ignore if the validator is already tombstoned
 	if k.slashingKeeper.IsTombstoned(ctx, consAddr) {
-		logger.Info(
+		k.Logger.Info(
 			"ignored equivocation; validator already tombstoned",
 			"validator", consAddr,
 			"infraction_height", infractionHeight,
@@ -94,7 +101,7 @@ func (k Keeper) handleEquivocationEvidence(ctx context.Context, evidence *types.
 		return nil
 	}
 
-	logger.Info(
+	k.Logger.Info(
 		"confirmed equivocation",
 		"validator", consAddr,
 		"infraction_height", infractionHeight,
@@ -123,7 +130,7 @@ func (k Keeper) handleEquivocationEvidence(ctx context.Context, evidence *types.
 		consAddr,
 		slashFractionDoubleSign,
 		evidence.GetValidatorPower(), distributionHeight,
-		stakingtypes.Infraction_INFRACTION_DOUBLE_SIGN,
+		st.Infraction_INFRACTION_DOUBLE_SIGN,
 	)
 	if err != nil {
 		return err

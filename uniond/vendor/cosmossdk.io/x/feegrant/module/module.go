@@ -7,202 +7,143 @@ import (
 
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 
-	modulev1 "cosmossdk.io/api/cosmos/feegrant/module/v1"
-	"cosmossdk.io/core/address"
 	"cosmossdk.io/core/appmodule"
-	"cosmossdk.io/core/store"
-	"cosmossdk.io/depinject"
+	"cosmossdk.io/core/registry"
 	"cosmossdk.io/errors"
 	"cosmossdk.io/x/feegrant"
 	"cosmossdk.io/x/feegrant/client/cli"
 	"cosmossdk.io/x/feegrant/keeper"
-	"cosmossdk.io/x/feegrant/simulation"
 
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 )
 
 var (
-	_ module.AppModuleBasic      = AppModule{}
+	_ module.HasAminoCodec       = AppModule{}
+	_ module.HasGRPCGateway      = AppModule{}
 	_ module.AppModuleSimulation = AppModule{}
-	_ module.HasServices         = AppModule{}
-	_ module.HasGenesis          = AppModule{}
 
-	_ appmodule.AppModule     = AppModule{}
-	_ appmodule.HasEndBlocker = AppModule{}
+	_ appmodule.AppModule             = AppModule{}
+	_ appmodule.HasEndBlocker         = AppModule{}
+	_ appmodule.HasMigrations         = AppModule{}
+	_ appmodule.HasGenesis            = AppModule{}
+	_ appmodule.HasRegisterInterfaces = AppModule{}
 )
 
-// ----------------------------------------------------------------------------
-// AppModuleBasic
-// ----------------------------------------------------------------------------
+// AppModule implements an application module for the feegrant module.
+type AppModule struct {
+	cdc      codec.Codec
+	registry cdctypes.InterfaceRegistry
 
-// AppModuleBasic defines the basic application module used by the feegrant module.
-type AppModuleBasic struct {
-	cdc codec.Codec
-	ac  address.Codec
+	keeper keeper.Keeper
 }
 
+// NewAppModule creates a new AppModule object
+func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, registry cdctypes.InterfaceRegistry) AppModule {
+	return AppModule{
+		cdc:      cdc,
+		keeper:   keeper,
+		registry: registry,
+	}
+}
+
+// IsAppModule implements the appmodule.AppModule interface.
+func (AppModule) IsAppModule() {}
+
 // Name returns the feegrant module's name.
-func (ab AppModuleBasic) Name() string {
+// Deprecated: kept for legacy reasons.
+func (AppModule) Name() string {
 	return feegrant.ModuleName
 }
 
-// RegisterServices registers a gRPC query service to respond to the
-// module-specific gRPC queries.
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	feegrant.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
-	feegrant.RegisterQueryServer(cfg.QueryServer(), am.keeper)
-	m := keeper.NewMigrator(am.keeper)
-	err := cfg.RegisterMigration(feegrant.ModuleName, 1, m.Migrate1to2)
-	if err != nil {
-		panic(fmt.Sprintf("failed to migrate x/feegrant from version 1 to 2: %v", err))
-	}
-}
-
 // RegisterLegacyAminoCodec registers the feegrant module's types for the given codec.
-func (ab AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	feegrant.RegisterLegacyAminoCodec(cdc)
+func (AppModule) RegisterLegacyAminoCodec(registrar registry.AminoRegistrar) {
+	feegrant.RegisterLegacyAminoCodec(registrar)
 }
 
 // RegisterInterfaces registers the feegrant module's interface types
-func (ab AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
-	feegrant.RegisterInterfaces(registry)
-}
-
-// DefaultGenesis returns default genesis state as raw bytes for the feegrant
-// module.
-func (ab AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(feegrant.DefaultGenesisState())
-}
-
-// ValidateGenesis performs genesis state validation for the feegrant module.
-func (ab AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config sdkclient.TxEncodingConfig, bz json.RawMessage) error {
-	var data feegrant.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal %s genesis state", feegrant.ModuleName)
-	}
-
-	return feegrant.ValidateGenesis(data)
+func (AppModule) RegisterInterfaces(registrar registry.InterfaceRegistrar) {
+	feegrant.RegisterInterfaces(registrar)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the feegrant module.
-func (ab AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx sdkclient.Context, mux *gwruntime.ServeMux) {
+func (AppModule) RegisterGRPCGatewayRoutes(clientCtx sdkclient.Context, mux *gwruntime.ServeMux) {
 	if err := feegrant.RegisterQueryHandlerClient(context.Background(), mux, feegrant.NewQueryClient(clientCtx)); err != nil {
 		panic(err)
 	}
 }
 
 // GetTxCmd returns the root tx command for the feegrant module.
-func (ab AppModuleBasic) GetTxCmd() *cobra.Command {
-	return cli.GetTxCmd(ab.ac)
+func (AppModule) GetTxCmd() *cobra.Command {
+	return cli.GetTxCmd()
 }
 
-// ----------------------------------------------------------------------------
-// AppModule
-// ----------------------------------------------------------------------------
+// RegisterServices registers module services.
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
+	feegrant.RegisterMsgServer(registrar, keeper.NewMsgServerImpl(am.keeper))
+	feegrant.RegisterQueryServer(registrar, am.keeper)
 
-// AppModule implements an application module for the feegrant module.
-type AppModule struct {
-	AppModuleBasic
-
-	keeper        keeper.Keeper
-	accountKeeper feegrant.AccountKeeper
-	bankKeeper    feegrant.BankKeeper
-	registry      cdctypes.InterfaceRegistry
+	return nil
 }
 
-// NewAppModule creates a new AppModule object
-func NewAppModule(cdc codec.Codec, ak feegrant.AccountKeeper, bk feegrant.BankKeeper, keeper keeper.Keeper, registry cdctypes.InterfaceRegistry) AppModule {
-	return AppModule{
-		AppModuleBasic: AppModuleBasic{cdc: cdc, ac: ak.AddressCodec()},
-		keeper:         keeper.SetBankKeeper(bk),
-		accountKeeper:  ak,
-		bankKeeper:     bk,
-		registry:       registry,
+// RegisterMigrations registers module migrations.
+func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {
+	m := keeper.NewMigrator(am.keeper)
+
+	if err := mr.Register(feegrant.ModuleName, 1, m.Migrate1to2); err != nil {
+		return fmt.Errorf("failed to migrate x/feegrant from version 1 to 2: %w", err)
 	}
+
+	return nil
 }
 
-// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
-func (am AppModule) IsOnePerModuleType() {}
+// DefaultGenesis returns default genesis state as raw bytes for the feegrant module.
+func (am AppModule) DefaultGenesis() json.RawMessage {
+	return am.cdc.MustMarshalJSON(feegrant.DefaultGenesisState())
+}
 
-// IsAppModule implements the appmodule.AppModule interface.
-func (am AppModule) IsAppModule() {}
+// ValidateGenesis performs genesis state validation for the feegrant module.
+func (am AppModule) ValidateGenesis(bz json.RawMessage) error {
+	var data feegrant.GenesisState
+	if err := am.cdc.UnmarshalJSON(bz, &data); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal %s genesis state", feegrant.ModuleName)
+	}
 
-// InitGenesis performs genesis initialization for the feegrant module. It returns
-// no validator updates.
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, bz json.RawMessage) {
+	return feegrant.ValidateGenesis(data)
+}
+
+// InitGenesis performs genesis initialization for the feegrant module.
+func (am AppModule) InitGenesis(ctx context.Context, bz json.RawMessage) error {
 	var gs feegrant.GenesisState
-	cdc.MustUnmarshalJSON(bz, &gs)
+	if err := am.cdc.UnmarshalJSON(bz, &gs); err != nil {
+		return err
+	}
 
 	err := am.keeper.InitGenesis(ctx, &gs)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
-// ExportGenesis returns the exported genesis state as raw bytes for the feegrant
-// module.
-func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
+// ExportGenesis returns the exported genesis state as raw bytes for the feegrant module.
+func (am AppModule) ExportGenesis(ctx context.Context) (json.RawMessage, error) {
 	gs, err := am.keeper.ExportGenesis(ctx)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return cdc.MustMarshalJSON(gs)
+	return am.cdc.MarshalJSON(gs)
 }
 
-// ConsensusVersion implements AppModule/ConsensusVersion.
+// ConsensusVersion implements HasConsensusVersion
 func (AppModule) ConsensusVersion() uint64 { return 2 }
 
-// EndBlock returns the end blocker for the feegrant module. It returns no validator
-// updates.
+// EndBlock returns the end blocker for the feegrant module.
 func (am AppModule) EndBlock(ctx context.Context) error {
 	return EndBlocker(ctx, am.keeper)
-}
-
-func init() {
-	appmodule.Register(&modulev1.Module{},
-		appmodule.Provide(ProvideModule),
-	)
-}
-
-type FeegrantInputs struct {
-	depinject.In
-
-	StoreService  store.KVStoreService
-	Cdc           codec.Codec
-	AccountKeeper feegrant.AccountKeeper
-	BankKeeper    feegrant.BankKeeper
-	Registry      cdctypes.InterfaceRegistry
-}
-
-func ProvideModule(in FeegrantInputs) (keeper.Keeper, appmodule.AppModule) {
-	k := keeper.NewKeeper(in.Cdc, in.StoreService, in.AccountKeeper)
-	m := NewAppModule(in.Cdc, in.AccountKeeper, in.BankKeeper, k, in.Registry)
-	return k, m
-}
-
-// AppModuleSimulation functions
-
-// GenerateGenesisState creates a randomized GenState of the feegrant module.
-func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
-	simulation.RandomizedGenState(simState)
-}
-
-// RegisterStoreDecoder registers a decoder for feegrant module's types
-func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
-	sdr[feegrant.StoreKey] = simulation.NewDecodeStore(am.cdc)
-}
-
-// WeightedOperations returns all the feegrant module operations with their respective weights.
-func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
-	return simulation.WeightedOperations(
-		am.registry, simState.AppParams, simState.Cdc, simState.TxConfig,
-		am.accountKeeper, am.bankKeeper, am.keeper, am.ac,
-	)
 }

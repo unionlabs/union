@@ -16,9 +16,9 @@ applications built on [CometBFT], such as the [Cosmos SDK].
 totally deprecating and removing this library from CometBFT. As such, we do not
 recommend depending on this library for new projects.
 
-### Minimum Go Version
+## Minimum Go Version
 
-Go 1.21+
+Go 1.23+
 
 ## Supported Database Backends
 
@@ -33,14 +33,14 @@ Go 1.21+
   sets, and tests. Used for [IAVL](https://github.com/tendermint/iavl) working
   sets when the pruning strategy allows it.
 
-- **[LevelDB](https://github.com/google/leveldb) [experimental]:** A [Go
+- **[LevelDB](https://github.com/google/leveldb) [DEPRECATED]:** A [Go
   wrapper](https://github.com/jmhodges/levigo) around
   [LevelDB](https://github.com/google/leveldb). Uses LSM-trees for on-disk
   storage, which have good performance for write-heavy workloads, particularly
   on spinning disks, but requires periodic compaction to maintain decent read
   performance and reclaim disk space. Does not support transactions.
 
-- **[BoltDB](https://github.com/etcd-io/bbolt) [experimental]:** A
+- **[BoltDB](https://github.com/etcd-io/bbolt) [DEPRECATED]:** A
   [fork](https://github.com/etcd-io/bbolt) of
   [BoltDB](https://github.com/boltdb/bolt). Uses B+trees for on-disk storage,
   which have good performance for read-heavy workloads and range scans. Supports
@@ -58,6 +58,15 @@ Go 1.21+
   performance, and includes advanced features such as serializable ACID
   transactions, write batches, compression, and more.
 
+- **[PebbleDB](https://github.com/cockroachdb/pebble) [experimental]:** Pebble
+  is a LevelDB/RocksDB inspired key-value store focused on performance and
+  internal usage by CockroachDB. Pebble inherits the RocksDB file formats and a
+  few extensions such as range deletion tombstones, table-level bloom filters,
+  and updates to the MANIFEST format.
+
+  CAVEAT: there are reports of broken upgrade process when using [Cosmos
+  SDK](https://github.com/cosmos/cosmos-sdk).
+
 ## Meta-databases
 
 - **PrefixDB [stable]:** A database which wraps another database and uses a
@@ -65,11 +74,6 @@ Go 1.21+
   stored in a common underlying databases by using different namespaces. Used by
   the Cosmos SDK to give different modules their own namespaced database in a
   single application database.
-
-- **RemoteDB [experimental]:** A database that connects to distributed
-  CometBFT db instances via [gRPC](https://grpc.io/). This can help with
-  detaching difficult deployments such as LevelDB, and can also ease dependency
-  management for CometBFT developers.
 
 ## Tests
 

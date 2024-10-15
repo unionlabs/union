@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,7 +12,8 @@ import (
 
 // EmitAcknowledgementEvent emits an event signalling a successful or failed acknowledgement and including the error
 // details if any.
-func EmitAcknowledgementEvent(ctx sdk.Context, packet exported.PacketI, ack exported.Acknowledgement, err error) {
+func EmitAcknowledgementEvent(ctx context.Context, packet exported.PacketI, ack exported.Acknowledgement, err error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 	attributes := []sdk.Attribute{
 		sdk.NewAttribute(sdk.AttributeKeyModule, icatypes.ModuleName),
 		sdk.NewAttribute(icatypes.AttributeKeyControllerChannelID, packet.GetDestChannel()),
@@ -22,7 +24,7 @@ func EmitAcknowledgementEvent(ctx sdk.Context, packet exported.PacketI, ack expo
 		attributes = append(attributes, sdk.NewAttribute(icatypes.AttributeKeyAckError, err.Error()))
 	}
 
-	ctx.EventManager().EmitEvent(
+	sdkCtx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			icatypes.EventTypePacket,
 			attributes...,

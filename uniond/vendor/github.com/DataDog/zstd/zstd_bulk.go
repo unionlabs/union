@@ -112,12 +112,12 @@ func (p *BulkProcessor) Decompress(dst, src []byte) ([]byte, error) {
 
 	contentSize := decompressSizeHint(src)
 	if cap(dst) >= contentSize {
-		dst = dst[0:contentSize]
+		dst = dst[0:cap(dst)]
 	} else {
 		dst = make([]byte, contentSize)
 	}
 
-	if contentSize == 0 {
+	if len(dst) == 0 {
 		return dst, nil
 	}
 
@@ -125,7 +125,7 @@ func (p *BulkProcessor) Decompress(dst, src []byte) ([]byte, error) {
 	cWritten := C.ZSTD_decompress_usingDDict(
 		dctx,
 		unsafe.Pointer(&dst[0]),
-		C.size_t(contentSize),
+		C.size_t(len(dst)),
 		unsafe.Pointer(&src[0]),
 		C.size_t(len(src)),
 		p.dDict,

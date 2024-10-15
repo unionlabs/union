@@ -15,7 +15,7 @@ func init() {
 	dbCreator := func(name string, dir string) (DB, error) {
 		return NewRocksDB(name, dir)
 	}
-	registerDBCreator(RocksDBBackend, dbCreator, false)
+	registerDBCreator(RocksDBBackend, dbCreator)
 }
 
 // RocksDB is a RocksDB backend.
@@ -201,4 +201,9 @@ func (db *RocksDB) ReverseIterator(start, end []byte) (Iterator, error) {
 	}
 	itr := db.db.NewIterator(db.ro)
 	return newRocksDBIterator(itr, start, end, true), nil
+}
+
+func (db *RocksDB) Compact(start, end []byte) error {
+	db.db.CompactRange(grocksdb.Range{Start: start, Limit: end})
+	return nil
 }

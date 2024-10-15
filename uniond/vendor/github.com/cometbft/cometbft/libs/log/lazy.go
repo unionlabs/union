@@ -8,13 +8,13 @@ import (
 
 type LazySprintf struct {
 	format string
-	args   []interface{}
+	args   []any
 }
 
 // NewLazySprintf defers fmt.Sprintf until the Stringer interface is invoked.
 // This is particularly useful for avoiding calling Sprintf when debugging is not
 // active.
-func NewLazySprintf(format string, args ...interface{}) *LazySprintf {
+func NewLazySprintf(format string, args ...any) *LazySprintf {
 	return &LazySprintf{format, args}
 }
 

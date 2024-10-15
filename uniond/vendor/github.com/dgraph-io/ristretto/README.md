@@ -7,8 +7,7 @@
 
 Ristretto is a fast, concurrent cache library built with a focus on performance and correctness.
 
-The motivation to build Ristretto comes from the need for a contention-free
-cache in [Dgraph][].
+The motivation to build Ristretto comes from the need for a contention-free cache in [Dgraph][].
 
 [Dgraph]: https://github.com/dgraph-io/dgraph
 
@@ -19,7 +18,7 @@ cache in [Dgraph][].
 	* **Admission: TinyLFU** - extra performance with little memory overhead (12 bits per counter).
 * **Fast Throughput** - we use a variety of techniques for managing contention and the result is excellent throughput.
 * **Cost-Based Eviction** - any large new item deemed valuable can evict multiple smaller items (cost could be anything).
-* **Fully Concurrent** - you can use as many goroutines as you want with little throughput degradation. 
+* **Fully Concurrent** - you can use as many goroutines as you want with little throughput degradation.
 * **Metrics** - optional performance metrics for throughput, hit ratios, and other stats.
 * **Simple API** - just figure out your ideal `Config` values and you're off and running.
 
@@ -29,34 +28,41 @@ Ristretto is production-ready. See [Projects using Ristretto](#projects-using-ri
 
 ## Table of Contents
 
-* [Usage](#Usage)
-	* [Example](#Example)
-	* [Config](#Config)
-		* [NumCounters](#Config)
-		* [MaxCost](#Config)
-		* [BufferItems](#Config)
-		* [Metrics](#Config)
-		* [OnEvict](#Config)
-		* [KeyToHash](#Config)
-        * [Cost](#Config)
-* [Benchmarks](#Benchmarks)
-	* [Hit Ratios](#Hit-Ratios)
-		* [Search](#Search)
-		* [Database](#Database)
-		* [Looping](#Looping)
-		* [CODASYL](#CODASYL)
-	* [Throughput](#Throughput)
-		* [Mixed](#Mixed)
-		* [Read](#Read)
-		* [Write](#Write)
-* [Projects using Ristretto](#projects-using-ristretto)
-* [FAQ](#FAQ)
+- [Ristretto](#ristretto)
+	- [Features](#features)
+	- [Status](#status)
+	- [Table of Contents](#table-of-contents)
+	- [Usage](#usage)
+		- [Example](#example)
+		- [Config](#config)
+	- [Benchmarks](#benchmarks)
+		- [Hit Ratios](#hit-ratios)
+			- [Search](#search)
+			- [Database](#database)
+			- [Looping](#looping)
+			- [CODASYL](#codasyl)
+		- [Throughput](#throughput)
+			- [Mixed](#mixed)
+			- [Read](#read)
+			- [Write](#write)
+	- [Projects Using Ristretto](#projects-using-ristretto)
+	- [FAQ](#faq)
+		- [How are you achieving this performance? What shortcuts are you taking?](#how-are-you-achieving-this-performance-what-shortcuts-are-you-taking)
+		- [Is Ristretto distributed?](#is-ristretto-distributed)
 
 ## Usage
 
 ### Example
 
 ```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/dgraph-io/ristretto"
+)
+
 func main() {
 	cache, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: 1e7,     // number of keys to track frequency of (10M).
@@ -69,46 +75,49 @@ func main() {
 
 	// set a value with a cost of 1
 	cache.Set("key", "value", 1)
-	
-	// wait for value to pass through buffers
-	time.Sleep(10 * time.Millisecond)
 
+	// wait for value to pass through buffers
+	cache.Wait()
+
+	// get value from cache
 	value, found := cache.Get("key")
 	if !found {
 		panic("missing value")
 	}
 	fmt.Println(value)
+
+	// del value from cache
 	cache.Del("key")
 }
 ```
 
 ### Config
 
-The `Config` struct is passed to `NewCache` when creating Ristretto instances (see the example above). 
+The `Config` struct is passed to `NewCache` when creating Ristretto instances (see the example above).
 
 **NumCounters** `int64`
 
-NumCounters is the number of 4-bit access counters to keep for admission and eviction. We've seen good performance in setting this to 10x the number of items you expect to keep in the cache when full. 
+NumCounters is the number of 4-bit access counters to keep for admission and eviction. We've seen good performance in setting this to 10x the number of items you expect to keep in the cache when full.
 
-For example, if you expect each item to have a cost of 1 and MaxCost is 100, set NumCounters to 1,000. Or, if you use variable cost values but expect the cache to hold around 10,000 items when full, set NumCounters to 100,000. The important thing is the *number of unique items* in the full cache, not necessarily the MaxCost value. 
+For example, if you expect each item to have a cost of 1 and MaxCost is 100, set NumCounters to 1,000. Or, if you use variable cost values but expect the cache to hold around 10,000 items when full, set NumCounters to 100,000. The important thing is the *number of unique items* in the full cache, not necessarily the MaxCost value.
 
 **MaxCost** `int64`
 
-MaxCost is how eviction decisions are made. For example, if MaxCost is 100 and a new item with a cost of 1 increases total cache cost to 101, 1 item will be evicted. 
+MaxCost is how eviction decisions are made. For example, if MaxCost is 100 and a new item with a cost of 1 increases total cache cost to 101, 1 item will be evicted.
 
-MaxCost can also be used to denote the max size in bytes. For example, if MaxCost is 1,000,000 (1MB) and the cache is full with 1,000 1KB items, a new item (that's accepted) would cause 5 1KB items to be evicted. 
+MaxCost can also be used to denote the max size in bytes. For example, if MaxCost is 1,000,000 (1MB) and the cache is full with 1,000 1KB items, a new item (that's accepted) would cause 5 1KB items to be evicted.
 
-MaxCost could be anything as long as it matches how you're using the cost values when calling Set. 
+MaxCost could be anything as long as it matches how you're using the cost values when calling Set.
 
 **BufferItems** `int64`
 
-BufferItems is the size of the Get buffers. The best value we've found for this is 64. 
+BufferItems is the size of the Get buffers. The best value we've found for this is 64.
 
 If for some reason you see Get performance decreasing with lots of contention (you shouldn't), try increasing this value in increments of 64. This is a fine-tuning mechanism and you probably won't have to touch this.
 
 **Metrics** `bool`
 
-Metrics is true when you want real-time logging of a variety of stats. The reason this is a Config flag is because there's a 10% throughput performance overhead. 
+Metrics is true when you want real-time logging of a variety of stats. The reason this is a Config flag is because there's a 10% throughput performance overhead.
 
 **OnEvict** `func(hashes [2]uint64, value interface{}, cost int64)`
 
@@ -213,8 +222,8 @@ Below is a list of known projects that use Ristretto:
 
 We go into detail in the [Ristretto blog post](https://blog.dgraph.io/post/introducing-ristretto-high-perf-go-cache/), but in short: our throughput performance can be attributed to a mix of batching and eventual consistency. Our hit ratio performance is mostly due to an excellent [admission policy](https://arxiv.org/abs/1512.00727) and SampledLFU eviction policy.
 
-As for "shortcuts," the only thing Ristretto does that could be construed as one is dropping some Set calls. That means a Set call for a new item (updates are guaranteed) isn't guaranteed to make it into the cache. The new item could be dropped at two points: when passing through the Set buffer or when passing through the admission policy. However, this doesn't affect hit ratios much at all as we expect the most popular items to be Set multiple times and eventually make it in the cache. 
+As for "shortcuts," the only thing Ristretto does that could be construed as one is dropping some Set calls. That means a Set call for a new item (updates are guaranteed) isn't guaranteed to make it into the cache. The new item could be dropped at two points: when passing through the Set buffer or when passing through the admission policy. However, this doesn't affect hit ratios much at all as we expect the most popular items to be Set multiple times and eventually make it in the cache.
 
 ### Is Ristretto distributed?
 
-No, it's just like any other Go library that you can import into your project and use in a single process. 
+No, it's just like any other Go library that you can import into your project and use in a single process.

@@ -27,11 +27,31 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Changelog
 
-## v1.0.0
+## [Unreleased]
 
 ### Dependencies
 
-* [\#4068](https://github.com/cosmos/ibc-go/pull/4068) Upgrade capability module to cosmos-sdk v0.51.0
+* [\#6828](https://github.com/cosmos/ibc-go/pull/6828) Bump Cosmos SDK to v0.50.9.
+* [\#6193](https://github.com/cosmos/ibc-go/pull/6193) Bump `cosmossdk.io/store` to v1.1.0.
+* [\#6848](https://github.com/cosmos/ibc-go/pull/6848) Bump CometBFT to v0.38.10.
+
+### API Breaking
+
+### State Machine Breaking
+
+### Improvements
+
+* [\#6716](https://github.com/cosmos/ibc-go/pull/6716) Add `HasModule` to capability keeper to allow checking if a scoped module already exists.
+
+### Features
+
+### Bug Fixes
+
+## [v1.0.0]
+
+### Dependencies
+
+* [\#4068](https://github.com/cosmos/ibc-go/pull/4068) Upgrade capability module to cosmos-sdk v0.50
 
 ### API Breaking
 
@@ -40,7 +60,6 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Improvements
 
 * [\#4068](https://github.com/cosmos/ibc-go/pull/4068) Various improvements made to testing to reduce the dependency tree and use new cosmos-sdk test utils.
-* [\#4770](https://github.com/cosmos/ibc-go/pull/4770) Save gas on `IsInitialized`, use `Has` in favour of `Get`.
 
 ### Features
 

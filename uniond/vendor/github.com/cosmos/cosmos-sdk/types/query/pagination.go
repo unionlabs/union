@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math"
 
-	db "github.com/cosmos/cosmos-db"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/store/types"
 )
 
@@ -24,6 +24,11 @@ const DefaultLimit = 100
 var PaginationMaxLimit uint64 = math.MaxUint64
 
 // ParsePagination validate PageRequest and returns page number & limit.
+// Note: cometBFT enforces a maximum query limit of 100 to avoid node overload.
+// Queries above this limit will return the first 100 items.
+// To retrieve subsequent pages, use an offset equal to the
+// total number of results retrieved so far. For example, if you have retrieved 100 results and want to
+// retrieve the next set of results, set the offset to 100 and the appropriate limit.
 func ParsePagination(pageReq *PageRequest) (page, limit int, err error) {
 	offset := 0
 	limit = DefaultLimit
@@ -121,7 +126,7 @@ func Paginate(
 	return res, nil
 }
 
-func getIterator(prefixStore types.KVStore, start []byte, reverse bool) db.Iterator {
+func getIterator(prefixStore types.KVStore, start []byte, reverse bool) corestore.Iterator {
 	if reverse {
 		var end []byte
 		if start != nil {

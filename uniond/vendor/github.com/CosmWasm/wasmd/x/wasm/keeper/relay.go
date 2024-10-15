@@ -1,9 +1,11 @@
 package keeper
 
 import (
+	"context"
 	"time"
 
 	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 
@@ -23,7 +25,7 @@ var _ types.IBCContractKeeper = (*Keeper)(nil)
 // Protocol version and channel ordering should be verified for example.
 // See https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#channel-lifecycle-management
 func (k Keeper) OnOpenChannel(
-	ctx sdk.Context,
+	ctx context.Context,
 	contractAddr sdk.AccAddress,
 	msg wasmvmtypes.IBCChannelOpenMsg,
 ) (string, error) {
@@ -37,8 +39,8 @@ func (k Keeper) OnOpenChannel(
 	querier := k.newQueryHandler(ctx, contractAddr)
 
 	gasLeft := k.runtimeGasForContract(ctx)
-	res, gasUsed, execErr := k.wasmVM.IBCChannelOpen(codeInfo.CodeHash, env, msg, prefixStore, cosmwasmAPI, querier, ctx.GasMeter(), gasLeft, costJSONDeserialization)
-	k.consumeRuntimeGas(ctx, gasUsed)
+	res, gasUsed, execErr := k.wasmVM.IBCChannelOpen(codeInfo.CodeHash, env, msg, prefixStore, cosmwasmAPI, querier, sdk.UnwrapSDKContext(ctx).GasMeter(), gasLeft, costJSONDeserialization)
+	k.consumeRuntimeGas(sdk.UnwrapSDKContext(ctx), gasUsed)
 	if execErr != nil {
 		return "", errorsmod.Wrap(types.ErrExecuteFailed, execErr.Error())
 	}
@@ -56,7 +58,7 @@ func (k Keeper) OnOpenChannel(
 // that the counterparty channelID is empty on the initiating chain
 // See https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#channel-lifecycle-management
 func (k Keeper) OnConnectChannel(
-	ctx sdk.Context,
+	ctx context.Context,
 	contractAddr sdk.AccAddress,
 	msg wasmvmtypes.IBCChannelConnectMsg,
 ) error {
@@ -70,8 +72,8 @@ func (k Keeper) OnConnectChannel(
 	querier := k.newQueryHandler(ctx, contractAddr)
 
 	gasLeft := k.runtimeGasForContract(ctx)
-	res, gasUsed, execErr := k.wasmVM.IBCChannelConnect(codeInfo.CodeHash, env, msg, prefixStore, cosmwasmAPI, querier, ctx.GasMeter(), gasLeft, costJSONDeserialization)
-	k.consumeRuntimeGas(ctx, gasUsed)
+	res, gasUsed, execErr := k.wasmVM.IBCChannelConnect(codeInfo.CodeHash, env, msg, prefixStore, cosmwasmAPI, querier, sdk.UnwrapSDKContext(ctx).GasMeter(), gasLeft, costJSONDeserialization)
+	k.consumeRuntimeGas(sdk.UnwrapSDKContext(ctx), gasUsed)
 	if execErr != nil {
 		return errorsmod.Wrap(types.ErrExecuteFailed, execErr.Error())
 	}
@@ -93,7 +95,7 @@ func (k Keeper) OnConnectChannel(
 // we want to prevent potential replay of previously sent packets
 // See https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#channel-lifecycle-management
 func (k Keeper) OnCloseChannel(
-	ctx sdk.Context,
+	ctx context.Context,
 	contractAddr sdk.AccAddress,
 	msg wasmvmtypes.IBCChannelCloseMsg,
 ) error {
@@ -108,8 +110,8 @@ func (k Keeper) OnCloseChannel(
 	querier := k.newQueryHandler(ctx, contractAddr)
 
 	gasLeft := k.runtimeGasForContract(ctx)
-	res, gasUsed, execErr := k.wasmVM.IBCChannelClose(codeInfo.CodeHash, params, msg, prefixStore, cosmwasmAPI, querier, ctx.GasMeter(), gasLeft, costJSONDeserialization)
-	k.consumeRuntimeGas(ctx, gasUsed)
+	res, gasUsed, execErr := k.wasmVM.IBCChannelClose(codeInfo.CodeHash, params, msg, prefixStore, cosmwasmAPI, querier, sdk.UnwrapSDKContext(ctx).GasMeter(), gasLeft, costJSONDeserialization)
+	k.consumeRuntimeGas(sdk.UnwrapSDKContext(ctx), gasUsed)
 	if execErr != nil {
 		return errorsmod.Wrap(types.ErrExecuteFailed, execErr.Error())
 	}
@@ -131,7 +133,7 @@ func (k Keeper) OnCloseChannel(
 //
 // For more information see: https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#packet-flow--handling
 func (k Keeper) OnRecvPacket(
-	ctx sdk.Context,
+	ctx context.Context,
 	contractAddr sdk.AccAddress,
 	msg wasmvmtypes.IBCPacketReceiveMsg,
 ) (ibcexported.Acknowledgement, error) {
@@ -145,8 +147,8 @@ func (k Keeper) OnRecvPacket(
 	querier := k.newQueryHandler(ctx, contractAddr)
 
 	gasLeft := k.runtimeGasForContract(ctx)
-	res, gasUsed, execErr := k.wasmVM.IBCPacketReceive(codeInfo.CodeHash, env, msg, prefixStore, cosmwasmAPI, querier, ctx.GasMeter(), gasLeft, costJSONDeserialization)
-	k.consumeRuntimeGas(ctx, gasUsed)
+	res, gasUsed, execErr := k.wasmVM.IBCPacketReceive(codeInfo.CodeHash, env, msg, prefixStore, cosmwasmAPI, querier, sdk.UnwrapSDKContext(ctx).GasMeter(), gasLeft, costJSONDeserialization)
+	k.consumeRuntimeGas(sdk.UnwrapSDKContext(ctx), gasUsed)
 	if execErr != nil {
 		panic(execErr) // let the contract fully abort an IBC packet receive.
 		// Throwing a panic here instead of an error ack will revert
@@ -164,10 +166,21 @@ func (k Keeper) OnRecvPacket(
 		}, nil
 	}
 	// note submessage reply results can overwrite the `Acknowledgement` data
-	data, err := k.handleContractResponse(ctx, contractAddr, contractInfo.IBCPortID, res.Ok.Messages, res.Ok.Attributes, res.Ok.Acknowledgement, res.Ok.Events)
+	data, err := k.handleContractResponse(sdk.UnwrapSDKContext(ctx), contractAddr, contractInfo.IBCPortID, res.Ok.Messages, res.Ok.Attributes, res.Ok.Acknowledgement, res.Ok.Events)
 	if err != nil {
 		// submessage errors result in error ACK with state reverted. Error message is redacted
 		return nil, err
+	}
+
+	if data == nil {
+		// Protocol might never write acknowledgement or contract
+		// wants async acknowledgements, we don't know.
+		// So store the packet for later.
+		err = k.StoreAsyncAckPacket(ctx, convertPacket(msg.Packet))
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
 	}
 	// success ACK, state will be committed
 	return ContractConfirmStateAck(data), nil
@@ -193,7 +206,7 @@ func (w ContractConfirmStateAck) Acknowledgement() []byte {
 //
 // For more information see: https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#packet-flow--handling
 func (k Keeper) OnAckPacket(
-	ctx sdk.Context,
+	ctx context.Context,
 	contractAddr sdk.AccAddress,
 	msg wasmvmtypes.IBCPacketAckMsg,
 ) error {
@@ -207,8 +220,8 @@ func (k Keeper) OnAckPacket(
 	querier := k.newQueryHandler(ctx, contractAddr)
 
 	gasLeft := k.runtimeGasForContract(ctx)
-	res, gasUsed, execErr := k.wasmVM.IBCPacketAck(codeInfo.CodeHash, env, msg, prefixStore, cosmwasmAPI, querier, ctx.GasMeter(), gasLeft, costJSONDeserialization)
-	k.consumeRuntimeGas(ctx, gasUsed)
+	res, gasUsed, execErr := k.wasmVM.IBCPacketAck(codeInfo.CodeHash, env, msg, prefixStore, cosmwasmAPI, querier, sdk.UnwrapSDKContext(ctx).GasMeter(), gasLeft, costJSONDeserialization)
+	k.consumeRuntimeGas(sdk.UnwrapSDKContext(ctx), gasUsed)
 	if execErr != nil {
 		return errorsmod.Wrap(types.ErrExecuteFailed, execErr.Error())
 	}
@@ -227,7 +240,7 @@ func (k Keeper) OnAckPacket(
 // the timeout boundaries.
 // The contract should handle this on the application level and undo the original operation
 func (k Keeper) OnTimeoutPacket(
-	ctx sdk.Context,
+	ctx context.Context,
 	contractAddr sdk.AccAddress,
 	msg wasmvmtypes.IBCPacketTimeoutMsg,
 ) error {
@@ -242,8 +255,8 @@ func (k Keeper) OnTimeoutPacket(
 	querier := k.newQueryHandler(ctx, contractAddr)
 
 	gasLeft := k.runtimeGasForContract(ctx)
-	res, gasUsed, execErr := k.wasmVM.IBCPacketTimeout(codeInfo.CodeHash, env, msg, prefixStore, cosmwasmAPI, querier, ctx.GasMeter(), gasLeft, costJSONDeserialization)
-	k.consumeRuntimeGas(ctx, gasUsed)
+	res, gasUsed, execErr := k.wasmVM.IBCPacketTimeout(codeInfo.CodeHash, env, msg, prefixStore, cosmwasmAPI, querier, sdk.UnwrapSDKContext(ctx).GasMeter(), gasLeft, costJSONDeserialization)
+	k.consumeRuntimeGas(sdk.UnwrapSDKContext(ctx), gasUsed)
 	if execErr != nil {
 		return errorsmod.Wrap(types.ErrExecuteFailed, execErr.Error())
 	}
@@ -258,7 +271,94 @@ func (k Keeper) OnTimeoutPacket(
 	return k.handleIBCBasicContractResponse(ctx, contractAddr, contractInfo.IBCPortID, res.Ok)
 }
 
-func (k Keeper) handleIBCBasicContractResponse(ctx sdk.Context, addr sdk.AccAddress, id string, res *wasmvmtypes.IBCBasicResponse) error {
-	_, err := k.handleContractResponse(ctx, addr, id, res.Messages, res.Attributes, nil, res.Events)
+// IBCSourceCallback calls the contract to let it know the packet triggered by its
+// IBC-callbacks-enabled message either timed out or was acknowledged.
+func (k Keeper) IBCSourceCallback(
+	ctx context.Context,
+	contractAddr sdk.AccAddress,
+	msg wasmvmtypes.IBCSourceCallbackMsg,
+) error {
+	defer telemetry.MeasureSince(time.Now(), "wasm", "contract", "ibc-source-chain-callback")
+
+	contractInfo, codeInfo, prefixStore, err := k.contractInstance(ctx, contractAddr)
+	if err != nil {
+		return err
+	}
+
+	env := types.NewEnv(ctx, contractAddr)
+	querier := k.newQueryHandler(ctx, contractAddr)
+
+	gasLeft := k.runtimeGasForContract(ctx)
+	res, gasUsed, execErr := k.wasmVM.IBCSourceCallback(codeInfo.CodeHash, env, msg, prefixStore, cosmwasmAPI, querier, sdk.UnwrapSDKContext(ctx).GasMeter(), gasLeft, costJSONDeserialization)
+	k.consumeRuntimeGas(sdk.UnwrapSDKContext(ctx), gasUsed)
+	if execErr != nil {
+		return errorsmod.Wrap(types.ErrExecuteFailed, execErr.Error())
+	}
+	if res == nil {
+		// If this gets executed, that's a bug in wasmvm
+		return errorsmod.Wrap(types.ErrVMError, "internal wasmvm error")
+	}
+	if res.Err != "" {
+		return types.MarkErrorDeterministic(errorsmod.Wrap(types.ErrExecuteFailed, res.Err))
+	}
+
+	return k.handleIBCBasicContractResponse(ctx, contractAddr, contractInfo.IBCPortID, res.Ok)
+}
+
+// IBCDestinationCallback calls the contract to let it know that it received a packet of an
+// IBC-callbacks-enabled message that was acknowledged.
+func (k Keeper) IBCDestinationCallback(
+	ctx context.Context,
+	contractAddr sdk.AccAddress,
+	msg wasmvmtypes.IBCDestinationCallbackMsg,
+) error {
+	defer telemetry.MeasureSince(time.Now(), "wasm", "contract", "ibc-destination-chain-callback")
+
+	contractInfo, codeInfo, prefixStore, err := k.contractInstance(ctx, contractAddr)
+	if err != nil {
+		return err
+	}
+
+	env := types.NewEnv(ctx, contractAddr)
+	querier := k.newQueryHandler(ctx, contractAddr)
+
+	gasLeft := k.runtimeGasForContract(ctx)
+	res, gasUsed, execErr := k.wasmVM.IBCDestinationCallback(codeInfo.CodeHash, env, msg, prefixStore, cosmwasmAPI, querier, sdk.UnwrapSDKContext(ctx).GasMeter(), gasLeft, costJSONDeserialization)
+	k.consumeRuntimeGas(sdk.UnwrapSDKContext(ctx), gasUsed)
+	if execErr != nil {
+		return errorsmod.Wrap(types.ErrExecuteFailed, execErr.Error())
+	}
+	if res == nil {
+		// If this gets executed, that's a bug in wasmvm
+		return errorsmod.Wrap(types.ErrVMError, "internal wasmvm error")
+	}
+	if res.Err != "" {
+		return types.MarkErrorDeterministic(errorsmod.Wrap(types.ErrExecuteFailed, res.Err))
+	}
+
+	return k.handleIBCBasicContractResponse(ctx, contractAddr, contractInfo.IBCPortID, res.Ok)
+}
+
+func (k Keeper) handleIBCBasicContractResponse(ctx context.Context, addr sdk.AccAddress, id string, res *wasmvmtypes.IBCBasicResponse) error {
+	_, err := k.handleContractResponse(sdk.UnwrapSDKContext(ctx), addr, id, res.Messages, res.Attributes, nil, res.Events)
 	return err
+}
+
+func convertPacket(packet wasmvmtypes.IBCPacket) channeltypes.Packet {
+	p := channeltypes.Packet{
+		Sequence:           packet.Sequence,
+		SourcePort:         packet.Src.PortID,
+		SourceChannel:      packet.Src.ChannelID,
+		DestinationPort:    packet.Dest.PortID,
+		DestinationChannel: packet.Dest.ChannelID,
+		Data:               packet.Data,
+		TimeoutTimestamp:   packet.Timeout.Timestamp,
+	}
+	if packet.Timeout.Block != nil {
+		p.TimeoutHeight = clienttypes.Height{
+			RevisionNumber: packet.Timeout.Block.Revision,
+			RevisionHeight: packet.Timeout.Block.Height,
+		}
+	}
+	return p
 }

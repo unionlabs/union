@@ -23,7 +23,7 @@ import (
 // At most 20 items will be returned. Block headers are returned in descending
 // order (highest first).
 //
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/blockchain
+// More: https://docs.cometbft.com/main/rpc/#/Info/blockchain
 func (env *Environment) BlockchainInfo(
 	_ *rpctypes.Context,
 	minHeight, maxHeight int64,
@@ -56,10 +56,10 @@ func (env *Environment) BlockchainInfo(
 // error if either min or max are negative or min > max
 // if 0, use blockstore base for min, latest block height for max
 // enforce limit.
-func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
+func filterMinMax(base, height, min, max, limit int64) (minHeight, maxHeight int64, err error) {
 	// filter negatives
 	if min < 0 || max < 0 {
-		return min, max, fmt.Errorf("heights must be non-negative")
+		return min, max, errors.New("heights must be non-negative")
 	}
 
 	// adjust for default values
@@ -88,7 +88,7 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 
 // Header gets block header at a given height.
 // If no height is provided, it will fetch the latest header.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/header
+// More: https://docs.cometbft.com/main/rpc/#/Info/header
 func (env *Environment) Header(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultHeader, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -104,7 +104,7 @@ func (env *Environment) Header(_ *rpctypes.Context, heightPtr *int64) (*ctypes.R
 }
 
 // HeaderByHash gets header by hash.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/header_by_hash
+// More: https://docs.cometbft.com/main/rpc/#/Info/header_by_hash
 func (env *Environment) HeaderByHash(_ *rpctypes.Context, hash bytes.HexBytes) (*ctypes.ResultHeader, error) {
 	// N.B. The hash parameter is HexBytes so that the reflective parameter
 	// decoding logic in the HTTP service will correctly translate from JSON.
@@ -120,15 +120,14 @@ func (env *Environment) HeaderByHash(_ *rpctypes.Context, hash bytes.HexBytes) (
 
 // Block gets block at a given height.
 // If no height is provided, it will fetch the latest block.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/block
+// More: https://docs.cometbft.com/main/rpc/#/Info/block
 func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlock, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
 		return nil, err
 	}
 
-	block := env.BlockStore.LoadBlock(height)
-	blockMeta := env.BlockStore.LoadBlockMeta(height)
+	block, blockMeta := env.BlockStore.LoadBlock(height)
 	if blockMeta == nil {
 		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: block}, nil
 	}
@@ -136,20 +135,18 @@ func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.Re
 }
 
 // BlockByHash gets block by hash.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/block_by_hash
+// More: https://docs.cometbft.com/main/rpc/#/Info/block_by_hash
 func (env *Environment) BlockByHash(_ *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
-	block := env.BlockStore.LoadBlockByHash(hash)
-	if block == nil {
+	block, blockMeta := env.BlockStore.LoadBlockByHash(hash)
+	if blockMeta == nil {
 		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: nil}, nil
 	}
-	// If block is not nil, then blockMeta can't be nil.
-	blockMeta := env.BlockStore.LoadBlockMeta(block.Height)
 	return &ctypes.ResultBlock{BlockID: blockMeta.BlockID, Block: block}, nil
 }
 
 // Commit gets block commit at a given height.
 // If no height is provided, it will fetch the commit for the latest block.
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/commit
+// More: https://docs.cometbft.com/main/rpc/#/Info/commit
 func (env *Environment) Commit(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultCommit, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -180,7 +177,7 @@ func (env *Environment) Commit(_ *rpctypes.Context, heightPtr *int64) (*ctypes.R
 // Results are for the height of the block containing the txs.
 // Thus response.results.deliver_tx[5] is the results of executing
 // getBlock(h).Txs[5]
-// More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/block_results
+// More: https://docs.cometbft.com/main/rpc/#/Info/block_results
 func (env *Environment) BlockResults(_ *rpctypes.Context, heightPtr *int64) (*ctypes.ResultBlockResults, error) {
 	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
 	if err != nil {
@@ -194,10 +191,11 @@ func (env *Environment) BlockResults(_ *rpctypes.Context, heightPtr *int64) (*ct
 
 	return &ctypes.ResultBlockResults{
 		Height:                height,
-		TxsResults:            results.TxResults,
+		TxResults:             results.TxResults,
 		FinalizeBlockEvents:   results.Events,
 		ValidatorUpdates:      results.ValidatorUpdates,
 		ConsensusParamUpdates: results.ConsensusParamUpdates,
+		AppHash:               results.AppHash,
 	}, nil
 }
 
@@ -226,10 +224,10 @@ func (env *Environment) BlockSearch(
 
 	// sort results (must be done before pagination)
 	switch orderBy {
-	case "desc", "":
+	case Descending, "":
 		sort.Slice(results, func(i, j int) bool { return results[i] > results[j] })
 
-	case "asc":
+	case Ascending:
 		sort.Slice(results, func(i, j int) bool { return results[i] < results[j] })
 
 	default:
@@ -250,15 +248,12 @@ func (env *Environment) BlockSearch(
 
 	apiResults := make([]*ctypes.ResultBlock, 0, pageSize)
 	for i := skipCount; i < skipCount+pageSize; i++ {
-		block := env.BlockStore.LoadBlock(results[i])
-		if block != nil {
-			blockMeta := env.BlockStore.LoadBlockMeta(block.Height)
-			if blockMeta != nil {
-				apiResults = append(apiResults, &ctypes.ResultBlock{
-					Block:   block,
-					BlockID: blockMeta.BlockID,
-				})
-			}
+		block, blockMeta := env.BlockStore.LoadBlock(results[i])
+		if blockMeta != nil {
+			apiResults = append(apiResults, &ctypes.ResultBlock{
+				Block:   block,
+				BlockID: blockMeta.BlockID,
+			})
 		}
 	}
 

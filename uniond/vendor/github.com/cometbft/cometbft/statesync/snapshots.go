@@ -55,7 +55,7 @@ type snapshotPool struct {
 	snapshotBlacklist map[snapshotKey]bool
 }
 
-// newSnapshotPool creates a new snapshot pool. The state source is used for
+// newSnapshotPool creates a new snapshot pool. The state source is used for.
 func newSnapshotPool() *snapshotPool {
 	return &snapshotPool{
 		snapshots:         make(map[snapshotKey]*snapshot),

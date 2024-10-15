@@ -325,25 +325,25 @@ func (c Context) Uints64(key string, i []uint64) Context {
 
 // Float32 adds the field key with f as a float32 to the logger context.
 func (c Context) Float32(key string, f float32) Context {
-	c.l.context = enc.AppendFloat32(enc.AppendKey(c.l.context, key), f)
+	c.l.context = enc.AppendFloat32(enc.AppendKey(c.l.context, key), f, FloatingPointPrecision)
 	return c
 }
 
 // Floats32 adds the field key with f as a []float32 to the logger context.
 func (c Context) Floats32(key string, f []float32) Context {
-	c.l.context = enc.AppendFloats32(enc.AppendKey(c.l.context, key), f)
+	c.l.context = enc.AppendFloats32(enc.AppendKey(c.l.context, key), f, FloatingPointPrecision)
 	return c
 }
 
 // Float64 adds the field key with f as a float64 to the logger context.
 func (c Context) Float64(key string, f float64) Context {
-	c.l.context = enc.AppendFloat64(enc.AppendKey(c.l.context, key), f)
+	c.l.context = enc.AppendFloat64(enc.AppendKey(c.l.context, key), f, FloatingPointPrecision)
 	return c
 }
 
 // Floats64 adds the field key with f as a []float64 to the logger context.
 func (c Context) Floats64(key string, f []float64) Context {
-	c.l.context = enc.AppendFloats64(enc.AppendKey(c.l.context, key), f)
+	c.l.context = enc.AppendFloats64(enc.AppendKey(c.l.context, key), f, FloatingPointPrecision)
 	return c
 }
 
@@ -365,13 +365,13 @@ func (c Context) Timestamp() Context {
 	return c
 }
 
-// Time adds the field key with t formated as string using zerolog.TimeFieldFormat.
+// Time adds the field key with t formatted as string using zerolog.TimeFieldFormat.
 func (c Context) Time(key string, t time.Time) Context {
 	c.l.context = enc.AppendTime(enc.AppendKey(c.l.context, key), t, TimeFieldFormat)
 	return c
 }
 
-// Times adds the field key with t formated as string using zerolog.TimeFieldFormat.
+// Times adds the field key with t formatted as string using zerolog.TimeFieldFormat.
 func (c Context) Times(key string, t []time.Time) Context {
 	c.l.context = enc.AppendTimes(enc.AppendKey(c.l.context, key), t, TimeFieldFormat)
 	return c
@@ -379,13 +379,13 @@ func (c Context) Times(key string, t []time.Time) Context {
 
 // Dur adds the fields key with d divided by unit and stored as a float.
 func (c Context) Dur(key string, d time.Duration) Context {
-	c.l.context = enc.AppendDuration(enc.AppendKey(c.l.context, key), d, DurationFieldUnit, DurationFieldInteger)
+	c.l.context = enc.AppendDuration(enc.AppendKey(c.l.context, key), d, DurationFieldUnit, DurationFieldInteger, FloatingPointPrecision)
 	return c
 }
 
 // Durs adds the fields key with d divided by unit and stored as a float.
 func (c Context) Durs(key string, d []time.Duration) Context {
-	c.l.context = enc.AppendDurations(enc.AppendKey(c.l.context, key), d, DurationFieldUnit, DurationFieldInteger)
+	c.l.context = enc.AppendDurations(enc.AppendKey(c.l.context, key), d, DurationFieldUnit, DurationFieldInteger, FloatingPointPrecision)
 	return c
 }
 
@@ -407,6 +407,12 @@ func (c Context) Type(key string, val interface{}) Context {
 // Any is a wrapper around Context.Interface.
 func (c Context) Any(key string, i interface{}) Context {
 	return c.Interface(key, i)
+}
+
+// Reset removes all the context fields.
+func (c Context) Reset() Context {
+	c.l.context = enc.AppendBeginMarker(make([]byte, 0, 500))
+	return c
 }
 
 type callerHook struct {

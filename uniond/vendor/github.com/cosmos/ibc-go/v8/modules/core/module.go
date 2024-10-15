@@ -8,11 +8,13 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
+	"google.golang.org/grpc"
+
 	"cosmossdk.io/core/appmodule"
+	"cosmossdk.io/core/registry"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
@@ -20,8 +22,10 @@ import (
 	ibcclient "github.com/cosmos/ibc-go/v8/modules/core/02-client"
 	clientkeeper "github.com/cosmos/ibc-go/v8/modules/core/02-client/keeper"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	connection "github.com/cosmos/ibc-go/v8/modules/core/03-connection"
 	connectionkeeper "github.com/cosmos/ibc-go/v8/modules/core/03-connection/keeper"
 	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	channel "github.com/cosmos/ibc-go/v8/modules/core/04-channel"
 	channelkeeper "github.com/cosmos/ibc-go/v8/modules/core/04-channel/keeper"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/client/cli"
@@ -33,19 +37,22 @@ import (
 
 var (
 	_ module.AppModule           = (*AppModule)(nil)
-	_ module.AppModuleBasic      = (*AppModuleBasic)(nil)
 	_ module.AppModuleSimulation = (*AppModule)(nil)
 	_ module.HasGenesis          = (*AppModule)(nil)
-	_ module.HasName             = (*AppModule)(nil)
-	_ module.HasConsensusVersion = (*AppModule)(nil)
-	_ module.HasServices         = (*AppModule)(nil)
-	_ module.HasProposalMsgs     = (*AppModule)(nil)
-	_ appmodule.AppModule        = (*AppModule)(nil)
-	_ appmodule.HasBeginBlocker  = (*AppModule)(nil)
+
+	_ appmodule.HasConsensusVersion = (*AppModule)(nil)
+	_ appmodule.AppModule           = (*AppModule)(nil)
+	_ appmodule.HasBeginBlocker     = (*AppModule)(nil)
+
+	_ appmodule.HasMigrations         = AppModule{}
+	_ appmodule.HasGenesis            = AppModule{}
+	_ appmodule.HasRegisterInterfaces = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the ibc module.
-type AppModuleBasic struct{}
+type AppModuleBasic struct {
+	cdc codec.Codec
+}
 
 // Name returns the ibc module's name.
 func (AppModuleBasic) Name() string {
@@ -59,18 +66,18 @@ func (AppModule) IsOnePerModuleType() {}
 func (AppModule) IsAppModule() {}
 
 // RegisterLegacyAminoCodec does nothing. IBC does not support amino.
-func (AppModuleBasic) RegisterLegacyAminoCodec(*codec.LegacyAmino) {}
+func (AppModuleBasic) RegisterLegacyAminoCodec(registrar registry.AminoRegistrar) {}
 
 // DefaultGenesis returns default genesis state as raw bytes for the ibc
 // module.
-func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(types.DefaultGenesisState())
+func (am AppModuleBasic) DefaultGenesis() json.RawMessage {
+	return am.cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the ibc module.
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+func (am AppModuleBasic) ValidateGenesis(bz json.RawMessage) error {
 	var gs types.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &gs); err != nil {
+	if err := am.cdc.UnmarshalJSON(bz, &gs); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", exported.ModuleName, err)
 	}
 
@@ -104,7 +111,12 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 }
 
 // RegisterInterfaces registers module concrete types into protobuf Any.
-func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func (AppModuleBasic) RegisterInterfaces(registry registry.InterfaceRegistrar) {
+	types.RegisterInterfaces(registry)
+}
+
+// RegisterInterfaces registers module concrete types into protobuf Any.
+func (AppModule) RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	types.RegisterInterfaces(registry)
 }
 
@@ -115,9 +127,12 @@ type AppModule struct {
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(k *keeper.Keeper) AppModule {
+func NewAppModule(cdc codec.Codec, k *keeper.Keeper) AppModule {
 	return AppModule{
 		keeper: k,
+		AppModuleBasic: AppModuleBasic{
+			cdc: cdc,
+		},
 	}
 }
 
@@ -127,60 +142,65 @@ func (AppModule) Name() string {
 }
 
 // RegisterServices registers module services.
-func (am AppModule) RegisterServices(cfg module.Configurator) {
-	clienttypes.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	connectiontypes.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	channeltypes.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	types.RegisterQueryService(cfg.QueryServer(), am.keeper)
+func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
+	clienttypes.RegisterMsgServer(registrar, am.keeper)
+	connectiontypes.RegisterMsgServer(registrar, am.keeper)
+	channeltypes.RegisterMsgServer(registrar, am.keeper)
+	ibcclient.RegisterQueryService(registrar, am.keeper)
+	connection.RegisterQueryService(registrar, am.keeper)
+	channel.RegisterQueryService(registrar, am.keeper)
 
+	return nil
+}
+
+func (am AppModule) RegisterMigrations(mr appmodule.MigrationRegistrar) error {
 	clientMigrator := clientkeeper.NewMigrator(am.keeper.ClientKeeper)
-	if err := cfg.RegisterMigration(exported.ModuleName, 2, clientMigrator.Migrate2to3); err != nil {
+	if err := mr.Register(exported.ModuleName, 2, clientMigrator.Migrate2to3); err != nil {
 		panic(err)
 	}
 
 	connectionMigrator := connectionkeeper.NewMigrator(am.keeper.ConnectionKeeper)
-	if err := cfg.RegisterMigration(exported.ModuleName, 3, func(ctx sdk.Context) error {
-		if err := connectionMigrator.Migrate3to4(ctx); err != nil {
-			return err
-		}
-
-		return clientMigrator.Migrate3to4(ctx)
-	}); err != nil {
+	if err := mr.Register(exported.ModuleName, 3, connectionMigrator.Migrate3to4); err != nil {
 		panic(err)
 	}
 
-	if err := cfg.RegisterMigration(exported.ModuleName, 4, func(ctx sdk.Context) error {
+	if err := mr.Register(exported.ModuleName, 4, func(bareCtx context.Context) error {
+		ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
 		if err := clientMigrator.MigrateParams(ctx); err != nil {
 			return err
 		}
-
 		return connectionMigrator.MigrateParams(ctx)
 	}); err != nil {
 		panic(err)
 	}
 
 	channelMigrator := channelkeeper.NewMigrator(am.keeper.ChannelKeeper)
-	err := cfg.RegisterMigration(exported.ModuleName, 5, channelMigrator.MigrateParams)
+	err := mr.Register(exported.ModuleName, 5, channelMigrator.MigrateParams)
 	if err != nil {
 		panic(err)
 	}
+	return nil
 }
 
 // InitGenesis performs genesis initialization for the ibc module. It returns
 // no validator updates.
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, bz json.RawMessage) {
+func (am AppModule) InitGenesis(ctx context.Context, bz json.RawMessage) error {
 	var gs types.GenesisState
-	err := cdc.UnmarshalJSON(bz, &gs)
+	err := am.cdc.UnmarshalJSON(bz, &gs)
 	if err != nil {
 		panic(fmt.Errorf("failed to unmarshal %s genesis state: %s", exported.ModuleName, err))
 	}
-	InitGenesis(ctx, *am.keeper, &gs)
+	return InitGenesis(ctx, *am.keeper, &gs)
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the ibc
 // module.
-func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(ExportGenesis(ctx, *am.keeper))
+func (am AppModule) ExportGenesis(ctx context.Context) (json.RawMessage, error) {
+	gs, err := ExportGenesis(ctx, *am.keeper)
+	if err != nil {
+		return nil, err
+	}
+	return am.cdc.MarshalJSON(gs)
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.

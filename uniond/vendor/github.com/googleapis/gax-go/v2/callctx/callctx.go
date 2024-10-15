@@ -38,6 +38,14 @@ import (
 )
 
 const (
+	// XGoogFieldMaskHeader is the canonical header key for the [System Parameter]
+	// that specifies the response read mask. The value(s) for this header
+	// must adhere to format described in [fieldmaskpb].
+	//
+	// [System Parameter]: https://cloud.google.com/apis/docs/system-parameters
+	// [fieldmaskpb]: https://google.golang.org/protobuf/types/known/fieldmaskpb
+	XGoogFieldMaskHeader = "x-goog-fieldmask"
+
 	headerKey = contextKey("header")
 )
 
@@ -66,9 +74,27 @@ func SetHeaders(ctx context.Context, keyvals ...string) context.Context {
 	h, ok := ctx.Value(headerKey).(map[string][]string)
 	if !ok {
 		h = make(map[string][]string)
+	} else {
+		h = cloneHeaders(h)
 	}
+
 	for i := 0; i < len(keyvals); i = i + 2 {
 		h[keyvals[i]] = append(h[keyvals[i]], keyvals[i+1])
 	}
 	return context.WithValue(ctx, headerKey, h)
+}
+
+// cloneHeaders makes a new key-value map while reusing the value slices.
+// As such, new values should be appended to the value slice, and modifying
+// indexed values is not thread safe.
+//
+// TODO: Replace this with maps.Clone when Go 1.21 is the minimum version.
+func cloneHeaders(h map[string][]string) map[string][]string {
+	c := make(map[string][]string, len(h))
+	for k, v := range h {
+		vc := make([]string, len(v))
+		copy(vc, v)
+		c[k] = vc
+	}
+	return c
 }

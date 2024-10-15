@@ -442,6 +442,17 @@ func (c *Config) WithUseDualStack(enable bool) *Config {
 	return c
 }
 
+// WithUseFIPSEndpoint sets a config UseFIPSEndpoint value returning a Config
+// pointer for chaining.
+func (c *Config) WithUseFIPSEndpoint(enable bool) *Config {
+	if enable {
+		c.UseFIPSEndpoint = endpoints.FIPSEndpointStateEnabled
+	} else {
+		c.UseFIPSEndpoint = endpoints.FIPSEndpointStateDisabled
+	}
+	return c
+}
+
 // WithEC2MetadataDisableTimeoutOverride sets a config EC2MetadataDisableTimeoutOverride value
 // returning a Config pointer for chaining.
 func (c *Config) WithEC2MetadataDisableTimeoutOverride(enable bool) *Config {

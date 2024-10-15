@@ -3,7 +3,7 @@ package keeper
 import (
 	"fmt"
 
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	banktypes "cosmossdk.io/x/bank/types"
 
 	"union/x/tokenfactory/exported"
 )

@@ -1,73 +1,40 @@
 package msgservice
 
 import (
-	"bytes"
-	"compress/gzip"
-	"fmt"
-	"io"
 	"reflect"
 
 	"github.com/cosmos/gogoproto/proto"
 	"google.golang.org/grpc"
-	proto2 "google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/descriptorpb"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"cosmossdk.io/core/registry"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 )
 
 // RegisterMsgServiceDesc registers all type_urls from Msg services described
-// in `sd` into the registry.
-func RegisterMsgServiceDesc(registry codectypes.InterfaceRegistry, sd *grpc.ServiceDesc) {
-	fdBytesUnzipped := unzip(proto.FileDescriptor(sd.Metadata.(string)))
-	if fdBytesUnzipped == nil {
-		panic(fmt.Errorf("error unzipping file description for MsgService %s", sd.ServiceName))
+// in `sd` into the registry. The ServiceDesc must be a standard gRPC ServiceDesc
+// from a generated file as this function will use reflection to extract the
+// concrete types and expects the HandlerType to follow the normal
+// generated type conventions.
+func RegisterMsgServiceDesc(registrar registry.InterfaceRegistrar, sd *grpc.ServiceDesc) {
+	handlerType := reflect.TypeOf(sd.HandlerType).Elem()
+	msgType := reflect.TypeOf((*proto.Message)(nil)).Elem()
+	numMethods := handlerType.NumMethod()
+	for i := 0; i < numMethods; i++ {
+		method := handlerType.Method(i)
+		numIn := method.Type.NumIn()
+		numOut := method.Type.NumOut()
+		if numIn != 2 || numOut != 2 {
+			continue
+		}
+		reqType := method.Type.In(1)
+		resType := method.Type.Out(0)
+		if reqType.AssignableTo(msgType) && resType.AssignableTo(msgType) {
+			req := reflect.New(reqType.Elem()).Interface()
+			registrar.RegisterImplementations((*sdk.Msg)(nil), req.(proto.Message))
+			res := reflect.New(resType.Elem()).Interface()
+			registrar.RegisterImplementations((*tx.MsgResponse)(nil), res.(proto.Message))
+		}
 	}
-
-	fdRaw := &descriptorpb.FileDescriptorProto{}
-	err := proto2.Unmarshal(fdBytesUnzipped, fdRaw)
-	if err != nil {
-		panic(err)
-	}
-
-	fd, err := protodesc.FileOptions{
-		AllowUnresolvable: true,
-	}.New(fdRaw, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	prefSd := fd.Services().ByName(protoreflect.FullName(sd.ServiceName).Name())
-	for i := 0; i < prefSd.Methods().Len(); i++ {
-		md := prefSd.Methods().Get(i)
-		requestDesc := md.Input()
-		responseDesc := md.Output()
-
-		reqTyp := proto.MessageType(string(requestDesc.FullName()))
-		respTyp := proto.MessageType(string(responseDesc.FullName()))
-
-		// Register sdk.Msg and sdk.MsgResponse to the registry.
-		registry.RegisterImplementations((*sdk.Msg)(nil), reflect.New(reqTyp).Elem().Interface().(proto.Message))
-		registry.RegisterImplementations((*tx.MsgResponse)(nil), reflect.New(respTyp).Elem().Interface().(proto.Message))
-	}
-}
-
-func unzip(b []byte) []byte {
-	if b == nil {
-		return nil
-	}
-	r, err := gzip.NewReader(bytes.NewReader(b))
-	if err != nil {
-		panic(err)
-	}
-
-	unzipped, err := io.ReadAll(r)
-	if err != nil {
-		panic(err)
-	}
-
-	return unzipped
 }

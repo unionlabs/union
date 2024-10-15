@@ -6,7 +6,6 @@ import (
 	"cosmossdk.io/errors"
 	"cosmossdk.io/x/evidence/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
@@ -23,7 +22,7 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 var _ types.MsgServer = msgServer{}
 
 // SubmitEvidence implements the MsgServer.SubmitEvidence method.
-func (ms msgServer) SubmitEvidence(goCtx context.Context, msg *types.MsgSubmitEvidence) (*types.MsgSubmitEvidenceResponse, error) {
+func (ms msgServer) SubmitEvidence(ctx context.Context, msg *types.MsgSubmitEvidence) (*types.MsgSubmitEvidenceResponse, error) {
 	if _, err := ms.addressCodec.StringToBytes(msg.Submitter); err != nil {
 		return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid submitter address: %s", err)
 	}
@@ -37,7 +36,6 @@ func (ms msgServer) SubmitEvidence(goCtx context.Context, msg *types.MsgSubmitEv
 		return nil, errors.Wrapf(types.ErrInvalidEvidence, "failed basic validation: %s", err)
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
 	if err := ms.Keeper.SubmitEvidence(ctx, evidence); err != nil {
 		return nil, err
 	}

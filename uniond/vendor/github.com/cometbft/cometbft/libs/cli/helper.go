@@ -18,11 +18,11 @@ func WriteConfigVals(dir string, vals map[string]string) error {
 		data += fmt.Sprintf("%s = \"%s\"\n", k, v)
 	}
 	cfile := filepath.Join(dir, "config.toml")
-	return os.WriteFile(cfile, []byte(data), 0600)
+	return os.WriteFile(cfile, []byte(data), 0o600)
 }
 
 // RunWithArgs executes the given command with the specified command line args
-// and environmental variables set. It returns any error returned from cmd.Execute()
+// and environmental variables set. It returns any error returned from cmd.Execute().
 func RunWithArgs(cmd Executable, args []string, env map[string]string) error {
 	oargs := os.Args
 	oenv := map[string]string{}
@@ -52,7 +52,7 @@ func RunWithArgs(cmd Executable, args []string, env map[string]string) error {
 // RunCaptureWithArgs executes the given command with the specified command
 // line args and environmental variables set. It returns string fields
 // representing output written to stdout and stderr, additionally any error
-// from cmd.Execute() is also returned
+// from cmd.Execute() is also returned.
 func RunCaptureWithArgs(cmd Executable, args []string, env map[string]string) (stdout, stderr string, err error) {
 	oldout, olderr := os.Stdout, os.Stderr // keep backup of the real stdout
 	rOut, wOut, _ := os.Pipe()

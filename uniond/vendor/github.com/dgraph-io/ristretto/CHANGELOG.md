@@ -172,7 +172,7 @@ improve performance and reduce memory requirements.
 ### Fixed
 
 - Fix the way metrics are handled for deletions. ([#111][])
-- Support nil `*Cache` values in `Clear` and `Close`. ([#119][]) 
+- Support nil `*Cache` values in `Clear` and `Close`. ([#119][])
 - Delete item immediately. ([#113][])
 - Remove key from policy after TTL eviction. ([#130][])
 

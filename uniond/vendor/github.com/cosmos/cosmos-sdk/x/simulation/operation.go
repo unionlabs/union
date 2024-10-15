@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math/rand"
 	"sort"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 )
@@ -22,36 +23,38 @@ type OperationEntry struct {
 	Height    int64           `json:"height" yaml:"height"`
 	Order     int64           `json:"order" yaml:"order"`
 	Operation json.RawMessage `json:"operation" yaml:"operation"`
+	BlockTime int64           `json:"block_time" yaml:"block_time"`
 }
 
 // NewOperationEntry creates a new OperationEntry instance
-func NewOperationEntry(entry string, height, order int64, op json.RawMessage) OperationEntry {
+func NewOperationEntry(entry string, blockTime time.Time, height, order int64, op json.RawMessage) OperationEntry {
 	return OperationEntry{
 		EntryKind: entry,
 		Height:    height,
 		Order:     order,
+		BlockTime: blockTime.UnixNano(),
 		Operation: op,
 	}
 }
 
 // BeginBlockEntry - operation entry for begin block
-func BeginBlockEntry(height int64) OperationEntry {
-	return NewOperationEntry(BeginBlockEntryKind, height, -1, nil)
+func BeginBlockEntry(blockTime time.Time, height int64) OperationEntry {
+	return NewOperationEntry(BeginBlockEntryKind, blockTime, height, -1, nil)
 }
 
 // EndBlockEntry - operation entry for end block
-func EndBlockEntry(height int64) OperationEntry {
-	return NewOperationEntry(EndBlockEntryKind, height, -1, nil)
+func EndBlockEntry(blockTime time.Time, height int64) OperationEntry {
+	return NewOperationEntry(EndBlockEntryKind, blockTime, height, -1, nil)
 }
 
 // MsgEntry - operation entry for standard msg
-func MsgEntry(height, order int64, opMsg simulation.OperationMsg) OperationEntry {
-	return NewOperationEntry(MsgEntryKind, height, order, opMsg.MustMarshal())
+func MsgEntry(blockTime time.Time, height, order int64, opMsg simulation.OperationMsg) OperationEntry {
+	return NewOperationEntry(MsgEntryKind, blockTime, height, order, opMsg.MustMarshal())
 }
 
 // QueuedMsgEntry creates an operation entry for a given queued message.
-func QueuedMsgEntry(height int64, opMsg simulation.OperationMsg) OperationEntry {
-	return NewOperationEntry(QueuedMsgEntryKind, height, -1, opMsg.MustMarshal())
+func QueuedMsgEntry(blockTime time.Time, height int64, opMsg simulation.OperationMsg) OperationEntry {
+	return NewOperationEntry(QueuedMsgEntryKind, blockTime, height, -1, opMsg.MustMarshal())
 }
 
 // MustMarshal marshals the operation entry, panic on error.
@@ -73,13 +76,12 @@ func NewOperationQueue() OperationQueue {
 }
 
 // queueOperations adds all future operations into the operation queue.
-func queueOperations(queuedOps OperationQueue, queuedTimeOps, futureOps []simulation.FutureOperation) {
+func queueOperations(queuedOps OperationQueue, queuedTimeOps *[]simulation.FutureOperation, futureOps []simulation.FutureOperation) {
 	if futureOps == nil {
 		return
 	}
 
 	for _, futureOp := range futureOps {
-		futureOp := futureOp
 		if futureOp.BlockHeight != 0 {
 			if val, ok := queuedOps[futureOp.BlockHeight]; ok {
 				queuedOps[futureOp.BlockHeight] = append(val, futureOp.Op)
@@ -93,15 +95,15 @@ func queueOperations(queuedOps OperationQueue, queuedTimeOps, futureOps []simula
 		// TODO: Replace with proper sorted data structure, so don't have the
 		// copy entire slice
 		index := sort.Search(
-			len(queuedTimeOps),
+			len(*queuedTimeOps),
 			func(i int) bool {
-				return queuedTimeOps[i].BlockTime.After(futureOp.BlockTime)
+				return (*queuedTimeOps)[i].BlockTime.After(futureOp.BlockTime)
 			},
 		)
 
-		queuedTimeOps = append(queuedTimeOps, simulation.FutureOperation{})
-		copy(queuedTimeOps[index+1:], queuedTimeOps[index:])
-		queuedTimeOps[index] = futureOp
+		*queuedTimeOps = append(*queuedTimeOps, simulation.FutureOperation{})
+		copy((*queuedTimeOps)[index+1:], (*queuedTimeOps)[index:])
+		(*queuedTimeOps)[index] = futureOp
 	}
 }
 

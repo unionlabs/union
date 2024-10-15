@@ -19,13 +19,26 @@ This package represents the Cosmos SDK implementation of the `client.TxConfig`, 
 
 ## Contents
 
-* [Transactions](#transactions)
+* [`x/auth/tx`](#xauthtx)
+  * [Abstract](#abstract)
+  * [Contents](#contents)
+  * [Transactions](#transactions)
     * [`TxConfig`](#txconfig)
     * [`TxBuilder`](#txbuilder)
     * [`TxEncoder`/ `TxDecoder`](#txencoder-txdecoder)
-* [Client](#client)
+  * [`x/auth/tx/config`](#xauthtxconfig)
+    * [Storage](#storage)
+  * [Client](#client)
     * [CLI](#cli)
+      * [Query](#query)
+      * [Transactions](#transactions-1)
+      * [`encode`](#encode)
+      * [`decode`](#decode)
     * [gRPC](#grpc)
+      * [`TxDecode`](#txdecode)
+      * [`TxEncode`](#txencode)
+      * [`TxDecodeAmino`](#txdecodeamino)
+      * [`TxEncodeAmino`](#txencodeamino)
 
 ## Transactions
 
@@ -56,6 +69,22 @@ A `client.TxBuilder` can be accessed with `TxConfig.NewTxBuilder()`.
 ### `TxEncoder`/ `TxDecoder`
 
 More information about `TxEncoder` and `TxDecoder` can be found [here](https://docs.cosmos.network/main/core/encoding#transaction-encoding).
+
+## `x/auth/tx/config`
+
+The `x/auth/tx/config` contains a depinject module.
+The depinject module is to outputs the `TxConfig` and `TxConfigOptions` for the app.
+
+### Storage
+
+This module has no store key. Do not forget to add the module name in the `SkipStoreKeys` runtime config present in the app config.
+
+```go
+SkipStoreKeys: []string{
+	authtxconfig.DepinjectModuleName,
+	validate.ModuleName,
+},
+```
 
 ## Client
 
@@ -111,12 +140,12 @@ simd query blocks --query 'message.sender=cosmos...' --page 1 --limit 30
 
 #### Transactions
 
-The `x/auth/tx` module provides a convinient CLI command for decoding and encoding transactions.
+The `x/auth/tx` module provides a convenient CLI command for decoding and encoding transactions.
 
 #### `encode`
 
 The `encode` command encodes a transaction created with the `--generate-only` flag or signed with the sign command.
-The transaction is seralized it to Protobuf and returned as base64.
+The transaction is serialized it to Protobuf and returned as base64.
 
 ```bash
 $ simd tx encode tx.json

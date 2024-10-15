@@ -56,7 +56,6 @@ func (itr *rocksDBIterator) Domain() ([]byte, []byte) {
 
 // Valid implements Iterator.
 func (itr *rocksDBIterator) Valid() bool {
-
 	// Once invalid, forever invalid.
 	if itr.isInvalid {
 		return false
@@ -75,9 +74,9 @@ func (itr *rocksDBIterator) Valid() bool {
 	}
 
 	// If key is end or past it, invalid.
-	var start = itr.start
-	var end = itr.end
-	var key = moveSliceToBytes(itr.source.Key())
+	start := itr.start
+	end := itr.end
+	key := moveSliceToBytes(itr.source.Key())
 	if itr.isReverse {
 		if start != nil && bytes.Compare(key, start) < 0 {
 			itr.isInvalid = true
@@ -95,12 +94,14 @@ func (itr *rocksDBIterator) Valid() bool {
 }
 
 // Key implements Iterator.
+// The returned slice is a copy of the original data, therefore it is safe to modify.
 func (itr *rocksDBIterator) Key() []byte {
 	itr.assertIsValid()
 	return moveSliceToBytes(itr.source.Key())
 }
 
 // Value implements Iterator.
+// The returned slice is a copy of the original data, therefore it is safe to modify.
 func (itr *rocksDBIterator) Value() []byte {
 	itr.assertIsValid()
 	return moveSliceToBytes(itr.source.Value())

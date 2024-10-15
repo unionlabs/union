@@ -7,7 +7,7 @@ import (
 )
 
 // Cmd returns the snapshots group command
-func Cmd(appCreator servertypes.AppCreator) *cobra.Command {
+func Cmd[T servertypes.Application](appCreator servertypes.AppCreator[T]) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "snapshots",
 		Short: "Manage local snapshots",

@@ -32,8 +32,12 @@ func NewIndexerService(
 	eventBus *types.EventBus,
 	terminateOnError bool,
 ) *IndexerService {
-
-	is := &IndexerService{txIdxr: txIdxr, blockIdxr: blockIdxr, eventBus: eventBus, terminateOnError: terminateOnError}
+	is := &IndexerService{
+		txIdxr:           txIdxr,
+		blockIdxr:        blockIdxr,
+		eventBus:         eventBus,
+		terminateOnError: terminateOnError,
+	}
 	is.BaseService = *service.NewBaseService(nil, "IndexerService", is)
 	return is
 }
@@ -82,7 +86,7 @@ func (is *IndexerService) OnStart() error {
 						)
 
 						if is.terminateOnError {
-							if err := is.Stop(); err != nil {
+							if err := is.Stop(); err != nil { //nolint:revive // suppress max-control-nesting linter
 								is.Logger.Error("failed to stop", "err", err)
 							}
 							return

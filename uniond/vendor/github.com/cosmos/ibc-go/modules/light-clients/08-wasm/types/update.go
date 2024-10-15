@@ -1,13 +1,13 @@
 package types
 
 import (
+	"context"
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -19,7 +19,7 @@ var _ exported.ClientState = (*ClientState)(nil)
 // It must handle each type of ClientMessage appropriately. Calls to CheckForMisbehaviour, UpdateState, and UpdateStateOnMisbehaviour
 // will assume that the content of the ClientMessage has been verified and can be trusted. An error should be returned
 // if the ClientMessage fails to verify.
-func (cs ClientState) VerifyClientMessage(ctx sdk.Context, _ codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg exported.ClientMessage) error {
+func (cs ClientState) VerifyClientMessage(ctx context.Context, _ codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg exported.ClientMessage) error {
 	clientMessage, ok := clientMsg.(*ClientMessage)
 	if !ok {
 		return errorsmod.Wrapf(ibcerrors.ErrInvalidType, "expected type: %T, got: %T", &ClientMessage{}, clientMsg)
@@ -33,7 +33,7 @@ func (cs ClientState) VerifyClientMessage(ctx sdk.Context, _ codec.BinaryCodec, 
 }
 
 // Client state and new consensus states are updated in the store by the contract
-func (cs ClientState) UpdateState(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg exported.ClientMessage) []exported.Height {
+func (cs ClientState) UpdateState(ctx context.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg exported.ClientMessage) []exported.Height {
 	clientMessage, ok := clientMsg.(*ClientMessage)
 	if !ok {
 		panic(fmt.Errorf("expected type %T, got %T", &ClientMessage{}, clientMsg))
@@ -58,7 +58,7 @@ func (cs ClientState) UpdateState(ctx sdk.Context, cdc codec.BinaryCodec, client
 
 // UpdateStateOnMisbehaviour should perform appropriate state changes on a client state given that misbehaviour has been detected and verified
 // Client state is updated in the store by contract.
-func (cs ClientState) UpdateStateOnMisbehaviour(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg exported.ClientMessage) {
+func (cs ClientState) UpdateStateOnMisbehaviour(ctx context.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, clientMsg exported.ClientMessage) {
 	clientMessage, ok := clientMsg.(*ClientMessage)
 	if !ok {
 		panic(fmt.Errorf("expected type %T, got %T", &ClientMessage{}, clientMsg))

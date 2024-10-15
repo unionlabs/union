@@ -27,13 +27,13 @@ type projP2 struct {
 //
 // The zero value is NOT valid, and it may be used only as a receiver.
 type Point struct {
-	// The point is internally represented in extended coordinates (X, Y, Z, T)
-	// where x = X/Z, y = Y/Z, and xy = T/Z per https://eprint.iacr.org/2008/522.
-	x, y, z, t field.Element
-
 	// Make the type not comparable (i.e. used with == or as a map key), as
 	// equivalent points can be represented by different Go values.
 	_ incomparable
+
+	// The point is internally represented in extended coordinates (X, Y, Z, T)
+	// where x = X/Z, y = Y/Z, and xy = T/Z per https://eprint.iacr.org/2008/522.
+	x, y, z, t field.Element
 }
 
 type incomparable [0]func()
@@ -148,9 +148,8 @@ func (v *Point) SetBytes(x []byte) (*Point, error) {
 	//      (*field.Element).SetBytes docs) and
 	//   2) the ones where the x-coordinate is zero and the sign bit is set.
 	//
-	// This is consistent with crypto/ed25519/internal/edwards25519. Read more
-	// at https://hdevalence.ca/blog/2020-10-04-its-25519am, specifically the
-	// "Canonical A, R" section.
+	// Read more at https://hdevalence.ca/blog/2020-10-04-its-25519am,
+	// specifically the "Canonical A, R" section.
 
 	y, err := new(field.Element).SetBytes(x)
 	if err != nil {

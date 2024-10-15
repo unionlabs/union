@@ -6,15 +6,19 @@ import (
 	"fmt"
 	"strings"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/internal/keytypes"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
+
+// ErrUnsupportedPubKeyType is returned when a public key type is not supported.
+var ErrUnsupportedPubKeyType = errors.New("unsupported pubkey type, must be one of: " + keytypes.SupportedKeyTypesStr())
 
 // Volatile state for each Validator
 // NOTE: The ProposerPriority is not included in Validator.Hash();
-// make sure to update that method if changes are made here
+// make sure to update that method if changes are made here.
 type Validator struct {
 	Address     Address       `json:"address"`
 	PubKey      crypto.PubKey `json:"pub_key"`
@@ -46,21 +50,26 @@ func (v *Validator) ValidateBasic() error {
 		return errors.New("validator has negative voting power")
 	}
 
-	if len(v.Address) != crypto.AddressSize {
-		return fmt.Errorf("validator address is the wrong size: %v", v.Address)
+	addr := v.PubKey.Address()
+	if !bytes.Equal(v.Address, addr) {
+		return fmt.Errorf("validator address is incorrectly derived from pubkey. Exp: %v, got %v", addr, v.Address)
+	}
+
+	if !keytypes.IsSupported(v.PubKey.Type()) {
+		return ErrUnsupportedPubKeyType
 	}
 
 	return nil
 }
 
-// Creates a new copy of the validator so we can mutate ProposerPriority.
+// Copy creates a new copy of the validator so we can mutate ProposerPriority.
 // Panics if the validator is nil.
 func (v *Validator) Copy() *Validator {
 	vCopy := *v
 	return &vCopy
 }
 
-// Returns the one with higher ProposerPriority.
+// CompareProposerPriority returns the one with higher ProposerPriority.
 func (v *Validator) CompareProposerPriority(other *Validator) *Validator {
 	if v == nil {
 		return other
@@ -88,7 +97,7 @@ func (v *Validator) CompareProposerPriority(other *Validator) *Validator {
 // 1. address
 // 2. public key
 // 3. voting power
-// 4. proposer priority
+// 4. proposer priority.
 func (v *Validator) String() string {
 	if v == nil {
 		return "nil-Validator"
@@ -132,20 +141,20 @@ func (v *Validator) Bytes() []byte {
 	return bz
 }
 
-// ToProto converts Valiator to protobuf
+// ToProto converts Validator to protobuf.
 func (v *Validator) ToProto() (*cmtproto.Validator, error) {
 	if v == nil {
 		return nil, errors.New("nil validator")
 	}
 
-	pk, err := ce.PubKeyToProto(v.PubKey)
-	if err != nil {
-		return nil, err
+	if v.PubKey == nil {
+		return nil, errors.New("nil pubkey")
 	}
 
 	vp := cmtproto.Validator{
 		Address:          v.Address,
-		PubKey:           pk,
+		PubKeyType:       v.PubKey.Type(),
+		PubKeyBytes:      v.PubKey.Bytes(),
 		VotingPower:      v.VotingPower,
 		ProposerPriority: v.ProposerPriority,
 	}
@@ -153,16 +162,19 @@ func (v *Validator) ToProto() (*cmtproto.Validator, error) {
 	return &vp, nil
 }
 
-// FromProto sets a protobuf Validator to the given pointer.
+// ValidatorFromProto sets a protobuf Validator to the given pointer.
 // It returns an error if the public key is invalid.
 func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 	if vp == nil {
 		return nil, errors.New("nil validator")
 	}
 
-	pk, err := ce.PubKeyFromProto(vp.PubKey)
+	pk, err := ce.PubKeyFromTypeAndBytes(vp.PubKeyType, vp.PubKeyBytes)
 	if err != nil {
-		return nil, err
+		pk, err = ce.PubKeyFromProto(*vp.PubKey)
+		if err != nil {
+			return nil, err
+		}
 	}
 	v := new(Validator)
 	v.Address = vp.GetAddress()
@@ -173,11 +185,11 @@ func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 	return v, nil
 }
 
-//----------------------------------------
+// ----------------------------------------
 // RandValidator
 
 // RandValidator returns a randomized validator, useful for testing.
-// UNSTABLE
+// UNSTABLE.
 func RandValidator(randPower bool, minPower int64) (*Validator, PrivValidator) {
 	privVal := NewMockPV()
 	votePower := minPower

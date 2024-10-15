@@ -93,19 +93,19 @@ func (itr *goLevelDBIterator) Valid() bool {
 }
 
 // Key implements Iterator.
+// The caller should not modify the contents of the returned slice.
+// Instead, the caller should make a copy and work on the copy.
 func (itr *goLevelDBIterator) Key() []byte {
-	// Key returns a copy of the current key.
-	// See https://github.com/syndtr/goleveldb/blob/52c212e6c196a1404ea59592d3f1c227c9f034b2/leveldb/iterator/iter.go#L88
 	itr.assertIsValid()
-	return cp(itr.source.Key())
+	return itr.source.Key()
 }
 
 // Value implements Iterator.
+// The caller should not modify the contents of the returned slice.
+// Instead, the caller should make a copy and work on the copy.
 func (itr *goLevelDBIterator) Value() []byte {
-	// Value returns a copy of the current value.
-	// See https://github.com/syndtr/goleveldb/blob/52c212e6c196a1404ea59592d3f1c227c9f034b2/leveldb/iterator/iter.go#L88
 	itr.assertIsValid()
-	return cp(itr.source.Value())
+	return itr.source.Value()
 }
 
 // Next implements Iterator.

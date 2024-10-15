@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"errors"
 
-	dbm "github.com/cosmos/cosmos-db"
+	"cosmossdk.io/core/store"
 )
 
 type traversal struct {
@@ -181,10 +181,10 @@ type Iterator struct {
 	t *traversal
 }
 
-var _ dbm.Iterator = (*Iterator)(nil)
+var _ store.Iterator = (*Iterator)(nil)
 
 // Returns a new iterator over the immutable tree. If the tree is nil, the iterator will be invalid.
-func NewIterator(start, end []byte, ascending bool, tree *ImmutableTree) dbm.Iterator {
+func NewIterator(start, end []byte, ascending bool, tree *ImmutableTree) store.Iterator {
 	iter := &Iterator{
 		start: start,
 		end:   end,

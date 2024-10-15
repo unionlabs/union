@@ -8,8 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-var _ WasmEngine = (*wasmvm.VM)(nil)
-
 type WasmEngine interface {
 	// StoreCode will compile the Wasm code, and store the resulting compiled module
 	// as well as the original code. Both can be referenced later via Checksum.

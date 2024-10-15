@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,7 +12,7 @@ import (
 
 // emitIncentivizedPacketEvent emits an event containing information on the total amount of fees incentivizing
 // a specific packet. It should be emitted on every fee escrowed for the given packetID.
-func emitIncentivizedPacketEvent(ctx sdk.Context, packetID channeltypes.PacketId, packetFees types.PacketFees) {
+func emitIncentivizedPacketEvent(ctx context.Context, packetID channeltypes.PacketId, packetFees types.PacketFees) {
 	var (
 		totalRecvFees    sdk.Coins
 		totalAckFees     sdk.Coins
@@ -27,7 +28,8 @@ func emitIncentivizedPacketEvent(ctx sdk.Context, packetID channeltypes.PacketId
 		}
 	}
 
-	ctx.EventManager().EmitEvents(sdk.Events{
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeIncentivizedPacket,
 			sdk.NewAttribute(channeltypes.AttributeKeyPortID, packetID.PortId),
@@ -45,8 +47,9 @@ func emitIncentivizedPacketEvent(ctx sdk.Context, packetID channeltypes.PacketId
 }
 
 // emitRegisterPayeeEvent emits an event containing information of a registered payee for a relayer on a particular channel
-func emitRegisterPayeeEvent(ctx sdk.Context, relayer, payee, channelID string) {
-	ctx.EventManager().EmitEvents(sdk.Events{
+func emitRegisterPayeeEvent(ctx context.Context, relayer, payee, channelID string) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeRegisterPayee,
 			sdk.NewAttribute(types.AttributeKeyRelayer, relayer),
@@ -61,8 +64,9 @@ func emitRegisterPayeeEvent(ctx sdk.Context, relayer, payee, channelID string) {
 }
 
 // emitRegisterCounterpartyPayeeEvent emits an event containing information of a registered counterparty payee for a relayer on a particular channel
-func emitRegisterCounterpartyPayeeEvent(ctx sdk.Context, relayer, counterpartyPayee, channelID string) {
-	ctx.EventManager().EmitEvents(sdk.Events{
+func emitRegisterCounterpartyPayeeEvent(ctx context.Context, relayer, counterpartyPayee, channelID string) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeRegisterCounterpartyPayee,
 			sdk.NewAttribute(types.AttributeKeyRelayer, relayer),
@@ -77,8 +81,9 @@ func emitRegisterCounterpartyPayeeEvent(ctx sdk.Context, relayer, counterpartyPa
 }
 
 // emitDistributeFeeEvent emits an event containing a distribution fee and receiver address
-func emitDistributeFeeEvent(ctx sdk.Context, receiver string, fee sdk.Coins) {
-	ctx.EventManager().EmitEvents(sdk.Events{
+func emitDistributeFeeEvent(ctx context.Context, receiver string, fee sdk.Coins) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeDistributeFee,
 			sdk.NewAttribute(types.AttributeKeyReceiver, receiver),

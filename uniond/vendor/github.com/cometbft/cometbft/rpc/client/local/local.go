@@ -18,15 +18,15 @@ import (
 )
 
 /*
-Local is a Client implementation that directly executes the rpc
-functions on a given node, without going through HTTP or GRPC.
+Local is a Client implementation that directly executes the RPC
+functions on a given node, without going through HTTP.
 
 This implementation is useful for:
 
-* Running tests against a node in-process without the overhead
-of going through an http server
-* Communication between an ABCI app and CometBFT when they
-are compiled in process.
+  - Running tests against a node in-process without the overhead
+    of going through an HTTP server
+  - Communication between an ABCI app and CometBFT when they
+    are compiled in process.
 
 For real clients, you probably want to use client.HTTP.  For more
 powerful control during testing, you probably want the "client/mock" package.

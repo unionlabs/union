@@ -66,54 +66,6 @@ func (s *StdTxBuilder) AddAuxSignerData(_ tx.AuxSignerData) error {
 	return sdkerrors.ErrLogic.Wrap("cannot use AuxSignerData with StdTxBuilder")
 }
 
-// StdTxConfig is a context.TxConfig for StdTx
-type StdTxConfig struct {
-	Cdc *codec.LegacyAmino
-}
-
-// MarshalTx implements TxConfig.MarshalTx
-func (s StdTxConfig) TxEncoder() sdk.TxEncoder {
-	return DefaultTxEncoder(s.Cdc)
-}
-
-func (s StdTxConfig) TxJSONEncoder() sdk.TxEncoder {
-	return func(tx sdk.Tx) ([]byte, error) {
-		return s.Cdc.MarshalJSON(tx)
-	}
-}
-
-func (s StdTxConfig) MarshalSignatureJSON(sigs []signing.SignatureV2) ([]byte, error) {
-	stdSigs := make([]StdSignature, len(sigs))
-	for i, sig := range sigs {
-		stdSig, err := SignatureV2ToStdSignature(s.Cdc, sig)
-		if err != nil {
-			return nil, err
-		}
-
-		stdSigs[i] = stdSig
-	}
-	return s.Cdc.MarshalJSON(stdSigs)
-}
-
-func (s StdTxConfig) UnmarshalSignatureJSON(bz []byte) ([]signing.SignatureV2, error) {
-	var stdSigs []StdSignature
-	err := s.Cdc.UnmarshalJSON(bz, &stdSigs)
-	if err != nil {
-		return nil, err
-	}
-
-	sigs := make([]signing.SignatureV2, len(stdSigs))
-	for i, stdSig := range stdSigs {
-		sig, err := StdSignatureToSignatureV2(s.Cdc, stdSig)
-		if err != nil {
-			return nil, err
-		}
-		sigs[i] = sig
-	}
-
-	return sigs, nil
-}
-
 // SignatureV2ToStdSignature converts a SignatureV2 to a StdSignature
 // [Deprecated]
 func SignatureV2ToStdSignature(cdc *codec.LegacyAmino, sig signing.SignatureV2) (StdSignature, error) {

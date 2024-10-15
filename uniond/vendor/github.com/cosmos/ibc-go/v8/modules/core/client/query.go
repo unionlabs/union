@@ -39,7 +39,7 @@ func QueryTendermintProof(clientCtx client.Context, key []byte) ([]byte, []byte,
 		height--
 	}
 
-	req := abci.RequestQuery{
+	req := abci.QueryRequest{
 		Path:   fmt.Sprintf("store/%s/key", ibcexported.StoreKey),
 		Height: height,
 		Data:   key,

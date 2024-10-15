@@ -2,6 +2,7 @@
 // of this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 
+//go:build !jemalloc || !cgo
 // +build !jemalloc !cgo
 
 package z
@@ -34,4 +35,4 @@ func StatsPrint() {
 
 // ReadMemStats doesn't do anything since all the memory is being managed
 // by the Go runtime.
-func ReadMemStats(_ *MemStats) { return }
+func ReadMemStats(_ *MemStats) {}

@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"context"
+	"strings"
 
-	cmtcli "github.com/cometbft/cometbft/libs/cli"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -26,12 +27,17 @@ func Execute(rootCmd *cobra.Command, envPrefix, defaultHome string) error {
 	ctx := CreateExecuteContext(context.Background())
 
 	rootCmd.PersistentFlags().String(flags.FlagLogLevel, zerolog.InfoLevel.String(), "The logging level (trace|debug|info|warn|error|fatal|panic|disabled or '*:<level>,<key>:<level>')")
-	// NOTE: The default logger is only checking for the "json" value, any other value will default to plain text.
 	rootCmd.PersistentFlags().String(flags.FlagLogFormat, "plain", "The logging format (json|plain)")
 	rootCmd.PersistentFlags().Bool(flags.FlagLogNoColor, false, "Disable colored logs")
+	rootCmd.PersistentFlags().StringP(flags.FlagHome, "", defaultHome, "directory for config and data")
+	rootCmd.PersistentFlags().Bool(server.FlagTrace, false, "print out full stack trace on errors")
 
-	executor := cmtcli.PrepareBaseCmd(rootCmd, envPrefix, defaultHome)
-	return executor.ExecuteContext(ctx)
+	// update the global viper with the root command's configuration
+	viper.SetEnvPrefix(envPrefix)
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+	viper.AutomaticEnv()
+
+	return rootCmd.ExecuteContext(ctx)
 }
 
 // CreateExecuteContext returns a base Context with server and client context

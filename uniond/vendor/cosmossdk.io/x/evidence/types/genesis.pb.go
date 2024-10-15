@@ -5,8 +5,8 @@ package types
 
 import (
 	fmt "fmt"
-	types "github.com/cosmos/cosmos-sdk/codec/types"
 	proto "github.com/cosmos/gogoproto/proto"
+	any "github.com/cosmos/gogoproto/types/any"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -26,7 +26,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // GenesisState defines the evidence module's genesis state.
 type GenesisState struct {
 	// evidence defines all the evidence at genesis.
-	Evidence []*types.Any `protobuf:"bytes,1,rep,name=evidence,proto3" json:"evidence,omitempty"`
+	Evidence []*any.Any `protobuf:"bytes,1,rep,name=evidence,proto3" json:"evidence,omitempty"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
@@ -62,7 +62,7 @@ func (m *GenesisState) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GenesisState proto.InternalMessageInfo
 
-func (m *GenesisState) GetEvidence() []*types.Any {
+func (m *GenesisState) GetEvidence() []*any.Any {
 	if m != nil {
 		return m.Evidence
 	}
@@ -220,7 +220,7 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Evidence = append(m.Evidence, &types.Any{})
+			m.Evidence = append(m.Evidence, &any.Any{})
 			if err := m.Evidence[len(m.Evidence)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

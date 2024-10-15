@@ -3,6 +3,7 @@ package client
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -15,7 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 )
 
@@ -53,7 +54,7 @@ func SignTx(txFactory tx.Factory, clientCtx client.Context, name string, txBuild
 		return err
 	}
 	if !isTxSigner(addr, signers) {
-		return fmt.Errorf("%s: %s", errors.ErrorInvalidSigner, name)
+		return fmt.Errorf("%w: %s", sdkerrors.ErrorInvalidSigner, name)
 	}
 	if !offline {
 		txFactory, err = populateAccountFromState(txFactory, clientCtx, addr)
@@ -62,7 +63,7 @@ func SignTx(txFactory tx.Factory, clientCtx client.Context, name string, txBuild
 		}
 	}
 
-	return tx.Sign(clientCtx.CmdContext, txFactory, name, txBuilder, overwriteSig)
+	return tx.Sign(clientCtx, txFactory, name, txBuilder, overwriteSig)
 }
 
 // SignTxWithSignerAddress attaches a signature to a transaction.
@@ -78,16 +79,6 @@ func SignTxWithSignerAddress(txFactory tx.Factory, clientCtx client.Context, add
 		txFactory = txFactory.WithSignMode(signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON)
 	}
 
-	// check whether the address is a signer
-	signers, err := txBuilder.GetTx().GetSigners()
-	if err != nil {
-		return err
-	}
-
-	if !isTxSigner(addr, signers) {
-		return fmt.Errorf("%s: %s", errors.ErrorInvalidSigner, name)
-	}
-
 	if !offline {
 		txFactory, err = populateAccountFromState(txFactory, clientCtx, addr)
 		if err != nil {
@@ -95,10 +86,10 @@ func SignTxWithSignerAddress(txFactory tx.Factory, clientCtx client.Context, add
 		}
 	}
 
-	return tx.Sign(clientCtx.CmdContext, txFactory, name, txBuilder, overwrite)
+	return tx.Sign(clientCtx, txFactory, name, txBuilder, overwrite)
 }
 
-// Read and decode a StdTx from the given filename. Can pass "-" to read from stdin.
+// ReadTxFromFile read and decode a StdTx from the given filename. Can pass "-" to read from stdin.
 func ReadTxFromFile(ctx client.Context, filename string) (tx sdk.Tx, err error) {
 	var bytes []byte
 
@@ -115,11 +106,44 @@ func ReadTxFromFile(ctx client.Context, filename string) (tx sdk.Tx, err error) 
 	return ctx.TxConfig.TxJSONDecoder()(bytes)
 }
 
+// ReadTxsFromFile read and decode a multi transactions (must be in Txs format) from the given filename.
+// Can pass "-" to read from stdin.
+func ReadTxsFromFile(ctx client.Context, filename string) (txs []sdk.Tx, err error) {
+	var fileBuff []byte
+
+	if filename == "-" {
+		fileBuff, err = io.ReadAll(os.Stdin)
+	} else {
+		fileBuff, err = os.ReadFile(filename)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to read batch txs from file %s: %w", filename, err)
+	}
+
+	// In SignBatchCmd, the output prints each tx line by line separated by "\n".
+	// So we split the output bytes to slice of tx bytes,
+	// last element always be empty bytes.
+	txsBytes := bytes.Split(fileBuff, []byte("\n"))
+	txDecoder := ctx.TxConfig.TxJSONDecoder()
+	for _, txBytes := range txsBytes {
+		if len(txBytes) == 0 {
+			continue
+		}
+		tx, err := txDecoder(txBytes)
+		if err != nil {
+			return nil, err
+		}
+		txs = append(txs, tx)
+	}
+	return txs, nil
+}
+
 // ReadTxsFromInput reads multiples txs from the given filename(s). Can pass "-" to read from stdin.
 // Unlike ReadTxFromFile, this function does not decode the txs.
 func ReadTxsFromInput(txCfg client.TxConfig, filenames ...string) (scanner *BatchScanner, err error) {
 	if len(filenames) == 0 {
-		return nil, fmt.Errorf("no file name provided")
+		return nil, errors.New("no file name provided")
 	}
 
 	var infile io.Reader = os.Stdin

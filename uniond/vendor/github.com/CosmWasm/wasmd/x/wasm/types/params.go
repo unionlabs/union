@@ -29,7 +29,7 @@ func (a AccessType) With(addrs ...sdk.AccAddress) AccessConfig {
 		for i, v := range addrs {
 			bech32Addrs[i] = v.String()
 		}
-		if err := assertValidAddresses(bech32Addrs); err != nil {
+		if err := validateBech32Addresses(bech32Addrs); err != nil {
 			panic(errorsmod.Wrap(err, "addresses"))
 		}
 		return AccessConfig{Permission: AccessTypeAnyOfAddresses, Addresses: bech32Addrs}
@@ -129,26 +129,9 @@ func (a AccessConfig) ValidateBasic() error {
 	case AccessTypeNobody, AccessTypeEverybody:
 		return nil
 	case AccessTypeAnyOfAddresses:
-		return errorsmod.Wrap(assertValidAddresses(a.Addresses), "addresses")
+		return errorsmod.Wrap(validateBech32Addresses(a.Addresses), "addresses")
 	}
 	return errorsmod.Wrapf(ErrInvalid, "unknown type: %q", a.Permission)
-}
-
-func assertValidAddresses(addrs []string) error {
-	if len(addrs) == 0 {
-		return ErrEmpty
-	}
-	idx := make(map[string]struct{}, len(addrs))
-	for _, a := range addrs {
-		if _, err := sdk.AccAddressFromBech32(a); err != nil {
-			return errorsmod.Wrapf(err, "address: %s", a)
-		}
-		if _, exists := idx[a]; exists {
-			return ErrDuplicate.Wrapf("address: %s", a)
-		}
-		idx[a] = struct{}{}
-	}
-	return nil
 }
 
 // Allowed returns if permission includes the actor.

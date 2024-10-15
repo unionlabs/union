@@ -19,7 +19,7 @@ var (
 	_ Iterator = (*senderNonceMempoolIterator)(nil)
 )
 
-var DefaultMaxTx = 0
+var DefaultMaxTx = -1
 
 // SenderNonceMempool is a mempool that prioritizes transactions within a sender
 // by nonce, the lowest first, but selects a random sender on each iteration.
@@ -145,6 +145,15 @@ func (snm *SenderNonceMempool) Insert(_ context.Context, tx sdk.Tx) error {
 		snm.senders[sender] = senderTxs
 	}
 
+	// if it's an unordered tx, we use the gas instead of the nonce
+	if unordered, ok := tx.(sdk.TxWithUnordered); ok && unordered.GetUnordered() {
+		gasLimit, err := unordered.GetGasLimit()
+		nonce = gasLimit
+		if err != nil {
+			return err
+		}
+	}
+
 	senderTxs.Set(nonce, tx)
 
 	key := txKey{nonce: nonce, address: sender}
@@ -158,9 +167,13 @@ func (snm *SenderNonceMempool) Insert(_ context.Context, tx sdk.Tx) error {
 //
 // NOTE: It is not safe to use this iterator while removing transactions from
 // the underlying mempool.
-func (snm *SenderNonceMempool) Select(_ context.Context, _ [][]byte) Iterator {
+func (snm *SenderNonceMempool) Select(ctx context.Context, txs []sdk.Tx) Iterator {
 	snm.mtx.Lock()
 	defer snm.mtx.Unlock()
+	return snm.doSelect(ctx, txs)
+}
+
+func (snm *SenderNonceMempool) doSelect(_ context.Context, _ []sdk.Tx) Iterator {
 	var senders []string
 
 	senderCursors := make(map[string]*skiplist.Element)
@@ -188,6 +201,17 @@ func (snm *SenderNonceMempool) Select(_ context.Context, _ [][]byte) Iterator {
 	return iter.Next()
 }
 
+// SelectBy will hold the mutex during the iteration, callback returns if continue.
+func (snm *SenderNonceMempool) SelectBy(ctx context.Context, txs []sdk.Tx, callback func(sdk.Tx) bool) {
+	snm.mtx.Lock()
+	defer snm.mtx.Unlock()
+
+	iter := snm.doSelect(ctx, txs)
+	for iter != nil && callback(iter.Tx()) {
+		iter = iter.Next()
+	}
+}
+
 // CountTx returns the total count of txs in the mempool.
 func (snm *SenderNonceMempool) CountTx() int {
 	snm.mtx.Lock()
@@ -211,6 +235,15 @@ func (snm *SenderNonceMempool) Remove(tx sdk.Tx) error {
 	sig := sigs[0]
 	sender := sdk.AccAddress(sig.PubKey.Address()).String()
 	nonce := sig.Sequence
+
+	// if it's an unordered tx, we use the gas instead of the nonce
+	if unordered, ok := tx.(sdk.TxWithUnordered); ok && unordered.GetUnordered() {
+		gasLimit, err := unordered.GetGasLimit()
+		nonce = gasLimit
+		if err != nil {
+			return err
+		}
+	}
 
 	senderTxs, found := snm.senders[sender]
 	if !found {

@@ -22,8 +22,8 @@ func (k Keeper) ClassicAddressGenerator() AddressGenerator {
 	}
 }
 
-// PredicableAddressGenerator generates a predictable contract address
-func PredicableAddressGenerator(creator sdk.AccAddress, salt, msg []byte, fixMsg bool) AddressGenerator {
+// PredictableAddressGenerator generates a predictable contract address
+func PredictableAddressGenerator(creator sdk.AccAddress, salt, msg []byte, fixMsg bool) AddressGenerator {
 	return func(_ context.Context, _ uint64, checksum []byte) sdk.AccAddress {
 		if !fixMsg { // clear msg to not be included in the address generation
 			msg = []byte{}
@@ -49,9 +49,6 @@ func BuildContractAddressClassic(codeID, instanceID uint64) sdk.AccAddress {
 func BuildContractAddressPredictable(checksum []byte, creator sdk.AccAddress, salt, initMsg types.RawContractMessage) sdk.AccAddress {
 	if len(checksum) != 32 {
 		panic("invalid checksum")
-	}
-	if err := sdk.VerifyAddressFormat(creator); err != nil {
-		panic(fmt.Sprintf("creator: %s", err))
 	}
 	if err := types.ValidateSalt(salt); err != nil {
 		panic(fmt.Sprintf("salt: %s", err))

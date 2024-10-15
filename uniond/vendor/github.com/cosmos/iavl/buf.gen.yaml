@@ -4,6 +4,6 @@ managed:
   go_package_prefix:
     default: github.com/cosmos/iavl/proto
 plugins:
-  - plugin: buf.build/protocolbuffers/go
+  - name: gogofaster
     out: proto
     opt: paths=source_relative

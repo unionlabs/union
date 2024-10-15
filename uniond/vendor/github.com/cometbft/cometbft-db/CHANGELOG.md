@@ -1,5 +1,110 @@
 # CHANGELOG
 
+## v1.0.1
+
+*September 23, 2024*
+
+This release reverts the addition of the `goleveldb` flag, which was deemed as
+too disruptive to users.
+
+## v1.0.0
+
+*September 20, 2024*
+
+This release swaps the "default" DB from goleveldb to pebbledb. There's now a
+`goleveldb` build flag that must be used when using goleveldb. If you're using
+`pebbledb`, you don't need a build flag anymore.
+
+### BREAKING
+
+- Add `goleveldb` build flag.
+  ([\#202](https://github.com/cometbft/cometbft-db/pull/202))
+
+## v0.15.0
+
+*September 9, 2024*
+
+This release bumps the Go version to 1.23.
+
+### BREAKING CHANGES
+
+- `[go/runtime]` Bump minimum Go version to v1.23
+  ([\#4039](https://github.com/cometbft/cometbft/issues/4039))
+
+## v0.14.0
+
+*Aug 9, 2024*
+
+This release reinstates boltdb and cleveldb as deprecated backend types.
+Please note that we discourage the use of them, as we plan to discontinue support in a future release.
+
+### DEPENDENCIES
+
+- reinstate BoltDB and ClevelDB as backend DBs
+  ([\#177](https://github.com/cometbft/cometbft-db/pull/177))
+
+## v0.13.0
+
+*Aug 2, 2024*
+
+This release:
+- changes the contract of the Iterator Key() and Value() APIs. Namely, the caller is now responsible for creating a copy of their returned value if they want to modify it.
+- removes support for boltDB and clevelDB, which were marked as deprecated in release v0.12.0.
+
+### BREAKING CHANGES
+
+- removed deprecated boltdb and cleveldb ([\#155](https://github.com/cometbft/cometbft-db/pull/155))
+
+### FEATURES
+
+- Iterator Key and Value APIs now return an object that must be copied before
+  use ([\#168](https://github.com/cometbft/cometbft-db/pull/168))
+
+## v0.12.0
+
+*Apr 10, 2024*
+
+This release deprecates boltdb and cleveldb. Also, Go MSRV is bumped to 1.22.
+
+### FEATURES
+
+- Deprecate boltdb and cleveldb. If you're using either of those, please reach
+  out ([\#153](https://github.com/cometbft/cometbft-db/pull/153))
+
+## v0.11.0
+
+*Feb 7, 2024*
+
+This release adds support for explicit compaction. Please note that badger and
+bolt do not support this.
+
+### BREAKING CHANGES
+
+- Expanded db interface to support compaction ([\#111](https://github.com/cometbft/cometbft-db/pull/111))
+
+### FEATURES
+
+- Add compaction support to the databases ([\#111](https://github.com/cometbft/cometbft-db/pull/111))
+
+## v0.10.0
+
+*Jan 26, 2024*
+
+This release adds experimental support for
+[pebble](https://github.com/cockroachdb/pebble) and drops `remotedb`. If you
+experience any issues with pebble, please open an issue on Github.
+
+Special thanks to @faddat and @baabeetaa for their contributions to this
+release!
+
+### BREAKING CHANGES
+
+- Remove remotedb ([\#121](https://github.com/cometbft/cometbft-db/pull/121))
+
+### FEATURES
+
+- Add [pebbledb](https://github.com/cockroachdb/pebble) ([\#112](https://github.com/cometbft/cometbft-db/pull/112))
+
 ## v0.9.1
 
 *December 4, 2023*

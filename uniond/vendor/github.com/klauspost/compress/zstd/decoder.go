@@ -82,7 +82,7 @@ var (
 // can run multiple concurrent stateless decodes. It is even possible to
 // use stateless decodes while a stream is being decoded.
 //
-// The Reset function can be used to initiate a new stream, which is will considerably
+// The Reset function can be used to initiate a new stream, which will considerably
 // reduce the allocations normally caused by NewReader.
 func NewReader(r io.Reader, opts ...DOption) (*Decoder, error) {
 	initPredefined()

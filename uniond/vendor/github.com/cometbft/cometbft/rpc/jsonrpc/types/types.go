@@ -17,19 +17,19 @@ type jsonrpcid interface {
 	isJSONRPCID()
 }
 
-// JSONRPCStringID a wrapper for JSON-RPC string IDs
+// JSONRPCStringID a wrapper for JSON-RPC string IDs.
 type JSONRPCStringID string
 
 func (JSONRPCStringID) isJSONRPCID()      {}
 func (id JSONRPCStringID) String() string { return string(id) }
 
-// JSONRPCIntID a wrapper for JSON-RPC integer IDs
+// JSONRPCIntID a wrapper for JSON-RPC integer IDs.
 type JSONRPCIntID int
 
 func (JSONRPCIntID) isJSONRPCID()      {}
 func (id JSONRPCIntID) String() string { return fmt.Sprintf("%d", id) }
 
-func idFromInterface(idInterface interface{}) (jsonrpcid, error) {
+func idFromInterface(idInterface any) (jsonrpcid, error) {
 	switch id := idInterface.(type) {
 	case string:
 		return JSONRPCStringID(id), nil
@@ -45,23 +45,23 @@ func idFromInterface(idInterface interface{}) (jsonrpcid, error) {
 	}
 }
 
-//----------------------------------------
+// ----------------------------------------
 // REQUEST
 
 type RPCRequest struct {
 	JSONRPC string          `json:"jsonrpc"`
 	ID      jsonrpcid       `json:"id,omitempty"`
 	Method  string          `json:"method"`
-	Params  json.RawMessage `json:"params"` // must be map[string]interface{} or []interface{}
+	Params  json.RawMessage `json:"params"` // must be map[string]any or []any
 }
 
-// UnmarshalJSON custom JSON unmarshalling due to jsonrpcid being string or int
+// UnmarshalJSON custom JSON unmarshalling due to jsonrpcid being string or int.
 func (req *RPCRequest) UnmarshalJSON(data []byte) error {
 	unsafeReq := struct {
 		JSONRPC string          `json:"jsonrpc"`
-		ID      interface{}     `json:"id,omitempty"`
+		ID      any             `json:"id,omitempty"`
 		Method  string          `json:"method"`
-		Params  json.RawMessage `json:"params"` // must be map[string]interface{} or []interface{}
+		Params  json.RawMessage `json:"params"` // must be map[string]any or []any
 	}{}
 
 	err := json.Unmarshal(data, &unsafeReq)
@@ -98,8 +98,8 @@ func (req RPCRequest) String() string {
 	return fmt.Sprintf("RPCRequest{%s %s/%X}", req.ID, req.Method, req.Params)
 }
 
-func MapToRequest(id jsonrpcid, method string, params map[string]interface{}) (RPCRequest, error) {
-	var paramsMap = make(map[string]json.RawMessage, len(params))
+func MapToRequest(id jsonrpcid, method string, params map[string]any) (RPCRequest, error) {
+	paramsMap := make(map[string]json.RawMessage, len(params))
 	for name, value := range params {
 		valueJSON, err := cmtjson.Marshal(value)
 		if err != nil {
@@ -116,8 +116,8 @@ func MapToRequest(id jsonrpcid, method string, params map[string]interface{}) (R
 	return NewRPCRequest(id, method, payload), nil
 }
 
-func ArrayToRequest(id jsonrpcid, method string, params []interface{}) (RPCRequest, error) {
-	var paramsMap = make([]json.RawMessage, len(params))
+func ArrayToRequest(id jsonrpcid, method string, params []any) (RPCRequest, error) {
+	paramsMap := make([]json.RawMessage, len(params))
 	for i, value := range params {
 		valueJSON, err := cmtjson.Marshal(value)
 		if err != nil {
@@ -134,7 +134,7 @@ func ArrayToRequest(id jsonrpcid, method string, params []interface{}) (RPCReque
 	return NewRPCRequest(id, method, payload), nil
 }
 
-//----------------------------------------
+// ----------------------------------------
 // RESPONSE
 
 type RPCError struct {
@@ -158,11 +158,11 @@ type RPCResponse struct {
 	Error   *RPCError       `json:"error,omitempty"`
 }
 
-// UnmarshalJSON custom JSON unmarshalling due to jsonrpcid being string or int
+// UnmarshalJSON custom JSON unmarshalling due to jsonrpcid being string or int.
 func (resp *RPCResponse) UnmarshalJSON(data []byte) error {
 	unsafeResp := &struct {
 		JSONRPC string          `json:"jsonrpc"`
-		ID      interface{}     `json:"id,omitempty"`
+		ID      any             `json:"id,omitempty"`
 		Result  json.RawMessage `json:"result,omitempty"`
 		Error   *RPCError       `json:"error,omitempty"`
 	}{}
@@ -184,7 +184,7 @@ func (resp *RPCResponse) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func NewRPCSuccessResponse(id jsonrpcid, res interface{}) RPCResponse {
+func NewRPCSuccessResponse(id jsonrpcid, res any) RPCResponse {
 	var rawMsg json.RawMessage
 
 	if res != nil {
@@ -246,16 +246,16 @@ func RPCServerError(id jsonrpcid, err error) RPCResponse {
 	return NewRPCErrorResponse(id, -32000, "Server error", err.Error())
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 // WSRPCConnection represents a websocket connection.
 type WSRPCConnection interface {
 	// GetRemoteAddr returns a remote address of the connection.
 	GetRemoteAddr() string
 	// WriteRPCResponse writes the response onto connection (BLOCKING).
-	WriteRPCResponse(context.Context, RPCResponse) error
+	WriteRPCResponse(ctx context.Context, res RPCResponse) error
 	// TryWriteRPCResponse tries to write the response onto connection (NON-BLOCKING).
-	TryWriteRPCResponse(RPCResponse) bool
+	TryWriteRPCResponse(res RPCResponse) bool
 	// Context returns the connection's context.
 	Context() context.Context
 }
@@ -312,12 +312,12 @@ func (ctx *Context) Context() context.Context {
 	return context.Background()
 }
 
-//----------------------------------------
+// ----------------------------------------
 // SOCKETS
 
 // Determine if its a unix or tcp socket.
 // If tcp, must specify the port; `0.0.0.0` will return incorrectly as "unix" since there's no port
-// TODO: deprecate
+// TODO: deprecate.
 func SocketType(listenAddr string) string {
 	socketType := "unix"
 	if len(strings.Split(listenAddr, ":")) >= 2 {

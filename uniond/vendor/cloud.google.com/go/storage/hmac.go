@@ -272,7 +272,6 @@ func (it *HMACKeysIterator) fetch(pageSize int, pageToken string) (token string,
 	// TODO: Remove fetch method upon integration. This method is internalized into
 	// httpStorageClient.ListHMACKeys() as it is the only caller.
 	call := it.raw.List(it.projectID)
-	setClientHeader(call.Header())
 	if pageToken != "" {
 		call = call.PageToken(pageToken)
 	}

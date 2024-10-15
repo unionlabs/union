@@ -1,3 +1,6 @@
+//go:build !js
+// +build !js
+
 /*
  * Copyright 2020 Dgraph Labs, Inc. and Contributors
  *

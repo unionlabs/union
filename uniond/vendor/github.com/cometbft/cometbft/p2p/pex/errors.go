@@ -42,7 +42,7 @@ func (err ErrAddrBookPrivate) Error() string {
 	return fmt.Sprintf("Cannot add private peer with address %v", err.Addr)
 }
 
-func (err ErrAddrBookPrivate) PrivateAddr() bool {
+func (ErrAddrBookPrivate) PrivateAddr() bool {
 	return true
 }
 
@@ -54,7 +54,7 @@ func (err ErrAddrBookPrivateSrc) Error() string {
 	return fmt.Sprintf("Cannot add peer coming from private peer with address %v", err.Src)
 }
 
-func (err ErrAddrBookPrivateSrc) PrivateAddr() bool {
+func (ErrAddrBookPrivateSrc) PrivateAddr() bool {
 	return true
 }
 
@@ -76,7 +76,7 @@ func (err ErrAddrBookInvalidAddr) Error() string {
 	return fmt.Sprintf("Cannot add invalid address %v: %v", err.Addr, err.AddrErr)
 }
 
-// ErrAddressBanned is thrown when the address has been banned and therefore cannot be used
+// ErrAddressBanned is thrown when the address has been banned and therefore cannot be used.
 type ErrAddressBanned struct {
 	Addr *p2p.NetAddress
 }

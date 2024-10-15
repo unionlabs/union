@@ -61,7 +61,9 @@ func OpenMmapFileUsing(fd *os.File, sz int, writable bool) (*MmapFile, error) {
 
 	if fileSize == 0 {
 		dir, _ := filepath.Split(filename)
-		go SyncDir(dir)
+		if err := SyncDir(dir); err != nil {
+			return nil, err
+		}
 	}
 	return &MmapFile{
 		Data: buf,

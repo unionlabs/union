@@ -37,7 +37,7 @@ func (i Item[V]) Set(ctx context.Context, value V) error {
 }
 
 // Has reports whether the item exists in the store or not.
-// Returns an error in case
+// Returns an error in case encoding fails.
 func (i Item[V]) Has(ctx context.Context) (bool, error) {
 	return (Map[noKey, V])(i).Has(ctx, noKey{})
 }

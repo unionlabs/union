@@ -5,6 +5,7 @@
 package sstable
 
 import (
+	"github.com/cockroachdb/fifo"
 	"github.com/cockroachdb/pebble/internal/base"
 	"github.com/cockroachdb/pebble/internal/cache"
 )
@@ -110,6 +111,11 @@ type ReaderOptions struct {
 	//
 	// The default cache size is a zero-size cache.
 	Cache *cache.Cache
+
+	// LoadBlockSema, if set, is used to limit the number of blocks that can be
+	// loaded (i.e. read from the filesystem) in parallel. Each load acquires one
+	// unit from the semaphore for the duration of the read.
+	LoadBlockSema *fifo.Semaphore
 
 	// User properties specified in this map will not be added to sst.Properties.UserProperties.
 	DeniedUserProperties map[string]struct{}

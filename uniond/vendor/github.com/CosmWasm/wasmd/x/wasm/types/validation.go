@@ -9,6 +9,9 @@ import (
 	"github.com/distribution/reference"
 
 	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // MaxSaltSize is the longest salt that can be used when instantiating a contract
@@ -23,6 +26,9 @@ var (
 
 	// MaxProposalWasmSize is the largest a gov proposal compiled contract code can be when storing code on chain
 	MaxProposalWasmSize = 3 * 1024 * 1024 // extension point for chains to customize via compile flag.
+
+	// MaxAddressCount is the maximum number of addresses allowed within a message
+	MaxAddressCount = 50
 )
 
 func validateWasmCode(s []byte, maxSize int) error {
@@ -89,6 +95,32 @@ func ValidateVerificationInfo(source, builder string, codeHash []byte) error {
 			return fmt.Errorf("code hash is required")
 		}
 		// code hash checksum match validation is done in the keeper, ungzipping consumes gas
+	}
+	return nil
+}
+
+// validateBech32Addresses ensures the list is not empty, has no duplicates
+// and does not exceed the max number of addresses
+func validateBech32Addresses(addresses []string) error {
+	switch n := len(addresses); {
+	case n == 0:
+		return errorsmod.Wrap(ErrEmpty, "addresses")
+	case n > MaxAddressCount:
+		return errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "total number of addresses is greater than %d", MaxAddressCount)
+	}
+
+	index := map[string]struct{}{}
+	for _, addr := range addresses {
+		if _, err := sdk.AccAddressFromBech32(addr); err != nil {
+			return errorsmod.Wrapf(err, "address: %s", addr)
+		}
+		// Bech32 addresses are case-insensitive, i.e. the same address can have multiple representations,
+		// so we normalize here to avoid duplicates.
+		addr = strings.ToUpper(addr)
+		if _, found := index[addr]; found {
+			return errorsmod.Wrap(ErrDuplicate, "duplicate addresses")
+		}
+		index[addr] = struct{}{}
 	}
 	return nil
 }

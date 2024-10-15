@@ -9,17 +9,16 @@ import (
 type EndpointTimeoutError struct{}
 
 // Implement the net.Error interface.
-func (e EndpointTimeoutError) Error() string   { return "endpoint connection timed out" }
-func (e EndpointTimeoutError) Timeout() bool   { return true }
-func (e EndpointTimeoutError) Temporary() bool { return true }
+func (EndpointTimeoutError) Error() string   { return "endpoint connection timed out" }
+func (EndpointTimeoutError) Timeout() bool   { return true }
+func (EndpointTimeoutError) Temporary() bool { return true }
 
 // Socket errors.
 var (
-	ErrConnectionTimeout  = EndpointTimeoutError{}
-	ErrNoConnection       = errors.New("endpoint is not connected")
-	ErrReadTimeout        = errors.New("endpoint read timed out")
-	ErrUnexpectedResponse = errors.New("empty response")
-	ErrWriteTimeout       = errors.New("endpoint write timed out")
+	ErrConnectionTimeout = EndpointTimeoutError{}
+	ErrNoConnection      = errors.New("endpoint is not connected")
+	ErrReadTimeout       = errors.New("endpoint read timed out")
+	ErrWriteTimeout      = errors.New("endpoint write timed out")
 )
 
 // RemoteSignerError allows (remote) validators to include meaningful error

@@ -6,16 +6,12 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/x/upgrade/types"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var _ types.QueryServer = Keeper{}
 
 // CurrentPlan implements the Query/CurrentPlan gRPC method
-func (k Keeper) CurrentPlan(c context.Context, req *types.QueryCurrentPlanRequest) (*types.QueryCurrentPlanResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
-
+func (k Keeper) CurrentPlan(ctx context.Context, req *types.QueryCurrentPlanRequest) (*types.QueryCurrentPlanResponse, error) {
 	plan, err := k.GetUpgradePlan(ctx)
 	if err != nil {
 		if errors.Is(err, types.ErrNoUpgradePlanFound) {
@@ -29,18 +25,14 @@ func (k Keeper) CurrentPlan(c context.Context, req *types.QueryCurrentPlanReques
 }
 
 // AppliedPlan implements the Query/AppliedPlan gRPC method
-func (k Keeper) AppliedPlan(c context.Context, req *types.QueryAppliedPlanRequest) (*types.QueryAppliedPlanResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
-
+func (k Keeper) AppliedPlan(ctx context.Context, req *types.QueryAppliedPlanRequest) (*types.QueryAppliedPlanResponse, error) {
 	applied, err := k.GetDoneHeight(ctx, req.Name)
 
 	return &types.QueryAppliedPlanResponse{Height: applied}, err
 }
 
 // UpgradedConsensusState implements the Query/UpgradedConsensusState gRPC method
-func (k Keeper) UpgradedConsensusState(c context.Context, req *types.QueryUpgradedConsensusStateRequest) (*types.QueryUpgradedConsensusStateResponse, error) { //nolint:staticcheck // we're using a deprecated call for compatibility
-	ctx := sdk.UnwrapSDKContext(c)
-
+func (k Keeper) UpgradedConsensusState(ctx context.Context, req *types.QueryUpgradedConsensusStateRequest) (*types.QueryUpgradedConsensusStateResponse, error) { //nolint:staticcheck // we're using a deprecated call for compatibility
 	consState, err := k.GetUpgradedConsensusState(ctx, req.LastHeight)
 	if err != nil {
 		if errors.Is(err, types.ErrNoUpgradedConsensusStateFound) {
@@ -56,9 +48,7 @@ func (k Keeper) UpgradedConsensusState(c context.Context, req *types.QueryUpgrad
 }
 
 // ModuleVersions implements the Query/QueryModuleVersions gRPC method
-func (k Keeper) ModuleVersions(c context.Context, req *types.QueryModuleVersionsRequest) (*types.QueryModuleVersionsResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
-
+func (k Keeper) ModuleVersions(ctx context.Context, req *types.QueryModuleVersionsRequest) (*types.QueryModuleVersionsResponse, error) {
 	// check if a specific module was requested
 	if len(req.ModuleName) > 0 {
 		version, err := k.getModuleVersion(ctx, req.ModuleName)

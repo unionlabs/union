@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
+	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtlog "github.com/cometbft/cometbft/libs/log"
-	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/libs/service"
 )
 
@@ -40,7 +40,7 @@ func NewAppConns(clientCreator ClientCreator, metrics *Metrics) AppConns {
 //
 // A multiAppConn is made of a few appConns and manages their underlying abci
 // clients.
-// TODO: on app restart, clients must reboot together
+// TODO: on app restart, clients must reboot together.
 type multiAppConn struct {
 	service.BaseService
 
@@ -85,40 +85,74 @@ func (app *multiAppConn) Snapshot() AppConnSnapshot {
 }
 
 func (app *multiAppConn) OnStart() error {
-	c, err := app.abciClientFor(connQuery)
-	if err != nil {
+	if err := app.startQueryClient(); err != nil {
 		return err
 	}
-	app.queryConnClient = c
-	app.queryConn = NewAppConnQuery(c, app.metrics)
-
-	c, err = app.abciClientFor(connSnapshot)
-	if err != nil {
+	if err := app.startSnapshotClient(); err != nil {
 		app.stopAllClients()
 		return err
 	}
-	app.snapshotConnClient = c
-	app.snapshotConn = NewAppConnSnapshot(c, app.metrics)
-
-	c, err = app.abciClientFor(connMempool)
-	if err != nil {
+	if err := app.startMempoolClient(); err != nil {
 		app.stopAllClients()
 		return err
 	}
-	app.mempoolConnClient = c
-	app.mempoolConn = NewAppConnMempool(c, app.metrics)
-
-	c, err = app.abciClientFor(connConsensus)
-	if err != nil {
+	if err := app.startConsensusClient(); err != nil {
 		app.stopAllClients()
 		return err
 	}
-	app.consensusConnClient = c
-	app.consensusConn = NewAppConnConsensus(c, app.metrics)
 
 	// Kill CometBFT if the ABCI application crashes.
 	go app.killTMOnClientError()
 
+	return nil
+}
+
+func (app *multiAppConn) startQueryClient() error {
+	c, err := app.clientCreator.NewABCIQueryClient()
+	if err != nil {
+		return fmt.Errorf("error creating ABCI client (query client): %w", err)
+	}
+	app.queryConnClient = c
+	app.queryConn = NewAppConnQuery(c, app.metrics)
+	return app.startClient(c, "query")
+}
+
+func (app *multiAppConn) startSnapshotClient() error {
+	c, err := app.clientCreator.NewABCISnapshotClient()
+	if err != nil {
+		return fmt.Errorf("error creating ABCI client (snapshot client): %w", err)
+	}
+	app.snapshotConnClient = c
+	app.snapshotConn = NewAppConnSnapshot(c, app.metrics)
+	return app.startClient(c, "snapshot")
+}
+
+func (app *multiAppConn) startMempoolClient() error {
+	c, err := app.clientCreator.NewABCIMempoolClient()
+	if err != nil {
+		return fmt.Errorf("error creating ABCI client (mempool client): %w", err)
+	}
+	app.mempoolConnClient = c
+	app.mempoolConn = NewAppConnMempool(c, app.metrics)
+	return app.startClient(c, "mempool")
+}
+
+func (app *multiAppConn) startConsensusClient() error {
+	c, err := app.clientCreator.NewABCIConsensusClient()
+	if err != nil {
+		app.stopAllClients()
+		return fmt.Errorf("error creating ABCI client (consensus client): %w", err)
+	}
+	app.consensusConnClient = c
+	app.consensusConn = NewAppConnConsensus(c, app.metrics)
+	return app.startClient(c, "consensus")
+}
+
+func (app *multiAppConn) startClient(c abcicli.Client, conn string) error {
+	c.SetLogger(app.Logger.With("module", "abci-client", "connection", conn))
+	if err := c.Start(); err != nil {
+		return fmt.Errorf("error starting ABCI client (%s client): %w", conn, err)
+	}
 	return nil
 }
 
@@ -129,7 +163,7 @@ func (app *multiAppConn) OnStop() {
 func (app *multiAppConn) killTMOnClientError() {
 	killFn := func(conn string, err error, logger cmtlog.Logger) {
 		logger.Error(
-			fmt.Sprintf("%s connection terminated. Did the application crash? Please restart CometBFT", conn),
+			conn+" connection terminated. Did the application crash? Please restart CometBFT",
 			"err", err)
 		killErr := cmtos.Kill()
 		if killErr != nil {
@@ -178,16 +212,4 @@ func (app *multiAppConn) stopAllClients() {
 			app.Logger.Error("error while stopping snapshot client", "error", err)
 		}
 	}
-}
-
-func (app *multiAppConn) abciClientFor(conn string) (abcicli.Client, error) {
-	c, err := app.clientCreator.NewABCIClient()
-	if err != nil {
-		return nil, fmt.Errorf("error creating ABCI client (%s connection): %w", conn, err)
-	}
-	c.SetLogger(app.Logger.With("module", "abci-client", "connection", conn))
-	if err := c.Start(); err != nil {
-		return nil, fmt.Errorf("error starting ABCI client (%s connection): %w", conn, err)
-	}
-	return c, nil
 }

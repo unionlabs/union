@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"strconv"
@@ -16,8 +17,9 @@ import (
 )
 
 // emitCreateClientEvent emits a create client event
-func emitCreateClientEvent(ctx sdk.Context, clientID string, clientState exported.ClientState) {
-	ctx.EventManager().EmitEvents(sdk.Events{
+func emitCreateClientEvent(ctx context.Context, clientID string, clientState exported.ClientState) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeCreateClient,
 			sdk.NewAttribute(types.AttributeKeyClientID, clientID),
@@ -32,7 +34,7 @@ func emitCreateClientEvent(ctx sdk.Context, clientID string, clientState exporte
 }
 
 // emitUpdateClientEvent emits an update client event
-func emitUpdateClientEvent(ctx sdk.Context, clientID string, clientType string, consensusHeights []exported.Height, cdc codec.BinaryCodec, clientMsg exported.ClientMessage) {
+func emitUpdateClientEvent(ctx context.Context, clientID string, clientType string, consensusHeights []exported.Height, cdc codec.BinaryCodec, clientMsg exported.ClientMessage) {
 	// Marshal the ClientMessage as an Any and encode the resulting bytes to hex.
 	// This prevents the event value from containing invalid UTF-8 characters
 	// which may cause data to be lost when JSON encoding/decoding.
@@ -48,7 +50,8 @@ func emitUpdateClientEvent(ctx sdk.Context, clientID string, clientType string, 
 		consensusHeightsAttr[i] = height.String()
 	}
 
-	ctx.EventManager().EmitEvents(sdk.Events{
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeUpdateClient,
 			sdk.NewAttribute(types.AttributeKeyClientID, clientID),
@@ -67,8 +70,9 @@ func emitUpdateClientEvent(ctx sdk.Context, clientID string, clientType string, 
 }
 
 // emitUpgradeClientEvent emits an upgrade client event
-func emitUpgradeClientEvent(ctx sdk.Context, clientID string, clientState exported.ClientState) {
-	ctx.EventManager().EmitEvents(sdk.Events{
+func emitUpgradeClientEvent(ctx context.Context, clientID string, clientState exported.ClientState) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeUpgradeClient,
 			sdk.NewAttribute(types.AttributeKeyClientID, clientID),
@@ -83,8 +87,9 @@ func emitUpgradeClientEvent(ctx sdk.Context, clientID string, clientState export
 }
 
 // emitSubmitMisbehaviourEvent emits a client misbehaviour event
-func emitSubmitMisbehaviourEvent(ctx sdk.Context, clientID string, clientState exported.ClientState) {
-	ctx.EventManager().EmitEvents(sdk.Events{
+func emitSubmitMisbehaviourEvent(ctx context.Context, clientID string, clientState exported.ClientState) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeSubmitMisbehaviour,
 			sdk.NewAttribute(types.AttributeKeyClientID, clientID),
@@ -98,8 +103,9 @@ func emitSubmitMisbehaviourEvent(ctx sdk.Context, clientID string, clientState e
 }
 
 // emitRecoverClientEvent emits a recover client event
-func emitRecoverClientEvent(ctx sdk.Context, clientID, clientType string) {
-	ctx.EventManager().EmitEvents(sdk.Events{
+func emitRecoverClientEvent(ctx context.Context, clientID, clientType string) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeRecoverClient,
 			sdk.NewAttribute(types.AttributeKeySubjectClientID, clientID),
@@ -113,8 +119,9 @@ func emitRecoverClientEvent(ctx sdk.Context, clientID, clientType string) {
 }
 
 // emitScheduleIBCSoftwareUpgradeEvent emits a schedule IBC software upgrade event
-func emitScheduleIBCSoftwareUpgradeEvent(ctx sdk.Context, title string, height int64) {
-	ctx.EventManager().EmitEvents(sdk.Events{
+func emitScheduleIBCSoftwareUpgradeEvent(ctx context.Context, title string, height int64) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeScheduleIBCSoftwareUpgrade,
 			sdk.NewAttribute(types.AttributeKeyUpgradePlanTitle, title),
@@ -128,8 +135,9 @@ func emitScheduleIBCSoftwareUpgradeEvent(ctx sdk.Context, title string, height i
 }
 
 // EmitUpgradeChainEvent emits an upgrade chain event.
-func EmitUpgradeChainEvent(ctx sdk.Context, height int64) {
-	ctx.EventManager().EmitEvents(sdk.Events{
+func EmitUpgradeChainEvent(ctx context.Context, height int64) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeUpgradeChain,
 			sdk.NewAttribute(types.AttributeKeyUpgradePlanHeight, strconv.FormatInt(height, 10)),

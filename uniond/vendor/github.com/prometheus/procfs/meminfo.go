@@ -202,7 +202,7 @@ func (fs FS) Meminfo() (Meminfo, error) {
 
 	m, err := parseMemInfo(bytes.NewReader(b))
 	if err != nil {
-		return Meminfo{}, fmt.Errorf("%s: %w", ErrFileParse, err)
+		return Meminfo{}, fmt.Errorf("%w: %w", ErrFileParse, err)
 	}
 
 	return *m, nil

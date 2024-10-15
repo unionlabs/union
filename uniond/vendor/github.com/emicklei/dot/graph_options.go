@@ -11,7 +11,7 @@ func (o ClusterOption) Apply(g *Graph) {
 }
 
 var (
-	Strict     = GraphTypeOption{"strict"}
+	Strict     = GraphTypeOption{"strict"} // only for graph and digraph, not for subgraph
 	Undirected = GraphTypeOption{"graph"}
 	Directed   = GraphTypeOption{"digraph"}
 	Sub        = GraphTypeOption{"subgraph"}
@@ -22,5 +22,9 @@ type GraphTypeOption struct {
 }
 
 func (o GraphTypeOption) Apply(g *Graph) {
+	if o.Name == Strict.Name {
+		g.isStrict = true
+		return
+	}
 	g.graphType = o.Name
 }

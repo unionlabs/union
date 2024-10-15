@@ -2,6 +2,7 @@ package localhost
 
 import (
 	"bytes"
+	"context"
 
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
@@ -36,7 +37,7 @@ func (cs ClientState) GetLatestHeight() exported.Height {
 }
 
 // Status always returns Active. The 09-localhost status cannot be changed.
-func (ClientState) Status(_ sdk.Context, _ storetypes.KVStore, _ codec.BinaryCodec) exported.Status {
+func (ClientState) Status(_ context.Context, _ storetypes.KVStore, _ codec.BinaryCodec) exported.Status {
 	return exported.Active
 }
 
@@ -55,7 +56,7 @@ func (cs ClientState) ZeroCustomFields() exported.ClientState {
 }
 
 // Initialize ensures that initial consensus state for localhost is nil.
-func (ClientState) Initialize(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, consState exported.ConsensusState) error {
+func (ClientState) Initialize(ctx context.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, consState exported.ConsensusState) error {
 	if consState != nil {
 		return errorsmod.Wrap(clienttypes.ErrInvalidConsensus, "initial consensus state for localhost must be nil.")
 	}
@@ -71,15 +72,16 @@ func (ClientState) Initialize(ctx sdk.Context, cdc codec.BinaryCodec, clientStor
 
 // GetTimestampAtHeight returns the current block time retrieved from the application context. The localhost client does not store consensus states and thus
 // cannot provide a timestamp for the provided height.
-func (ClientState) GetTimestampAtHeight(ctx sdk.Context, _ storetypes.KVStore, _ codec.BinaryCodec, _ exported.Height) (uint64, error) {
-	return uint64(ctx.BlockTime().UnixNano()), nil
+func (ClientState) GetTimestampAtHeight(ctx context.Context, _ storetypes.KVStore, _ codec.BinaryCodec, _ exported.Height) (uint64, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx) // TODO: https://github.com/cosmos/ibc-go/issues/5917
+	return uint64(sdkCtx.BlockTime().UnixNano()), nil
 }
 
 // VerifyMembership is a generic proof verification method which verifies the existence of a given key and value within the IBC store.
 // The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
 // The caller must provide the full IBC store.
 func (ClientState) VerifyMembership(
-	ctx sdk.Context,
+	ctx context.Context,
 	store storetypes.KVStore,
 	_ codec.BinaryCodec,
 	_ exported.Height,
@@ -120,7 +122,7 @@ func (ClientState) VerifyMembership(
 // The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
 // The caller must provide the full IBC store.
 func (ClientState) VerifyNonMembership(
-	ctx sdk.Context,
+	ctx context.Context,
 	store storetypes.KVStore,
 	_ codec.BinaryCodec,
 	_ exported.Height,
@@ -152,22 +154,22 @@ func (ClientState) VerifyNonMembership(
 }
 
 // VerifyClientMessage is unsupported by the 09-localhost client type and returns an error.
-func (ClientState) VerifyClientMessage(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) error {
+func (ClientState) VerifyClientMessage(_ context.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) error {
 	return errorsmod.Wrap(clienttypes.ErrUpdateClientFailed, "client message verification is unsupported by the localhost client")
 }
 
 // CheckForMisbehaviour is unsupported by the 09-localhost client type and performs a no-op, returning false.
-func (ClientState) CheckForMisbehaviour(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) bool {
+func (ClientState) CheckForMisbehaviour(_ context.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) bool {
 	return false
 }
 
 // UpdateStateOnMisbehaviour is unsupported by the 09-localhost client type and performs a no-op.
-func (ClientState) UpdateStateOnMisbehaviour(_ sdk.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) {
+func (ClientState) UpdateStateOnMisbehaviour(_ context.Context, _ codec.BinaryCodec, _ storetypes.KVStore, _ exported.ClientMessage) {
 }
 
 // UpdateState updates and stores as necessary any associated information for an IBC client, such as the ClientState and corresponding ConsensusState.
 // Upon successful update, a list of consensus heights is returned. It assumes the ClientMessage has already been verified.
-func (cs ClientState) UpdateState(ctx sdk.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, _ exported.ClientMessage) []exported.Height {
+func (cs ClientState) UpdateState(ctx context.Context, cdc codec.BinaryCodec, clientStore storetypes.KVStore, _ exported.ClientMessage) []exported.Height {
 	height := clienttypes.GetSelfHeight(ctx)
 	cs.LatestHeight = height
 
@@ -183,13 +185,13 @@ func (ClientState) ExportMetadata(_ storetypes.KVStore) []exported.GenesisMetada
 
 // CheckSubstituteAndUpdateState returns an error. The localhost cannot be modified by
 // proposals.
-func (ClientState) CheckSubstituteAndUpdateState(_ sdk.Context, _ codec.BinaryCodec, _, _ storetypes.KVStore, _ exported.ClientState) error {
+func (ClientState) CheckSubstituteAndUpdateState(_ context.Context, _ codec.BinaryCodec, _, _ storetypes.KVStore, _ exported.ClientState) error {
 	return errorsmod.Wrap(clienttypes.ErrUpdateClientFailed, "cannot update localhost client with a proposal")
 }
 
 // VerifyUpgradeAndUpdateState returns an error since localhost cannot be upgraded
 func (ClientState) VerifyUpgradeAndUpdateState(
-	_ sdk.Context,
+	_ context.Context,
 	_ codec.BinaryCodec,
 	_ storetypes.KVStore,
 	_ exported.ClientState,

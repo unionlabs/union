@@ -16,7 +16,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
 					RpcMethod: "Allowance",
-					Use:       "grant [granter] [grantee]",
+					Use:       "grant <granter> <grantee>",
 					Short:     "Query details of a single grant",
 					Long:      "Query details for a grant. You can find the fee-grant of a granter and grantee.",
 					Example:   fmt.Sprintf(`$ %s query feegrant grant [granter] [grantee]`, version.AppName),
@@ -27,7 +27,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 				{
 					RpcMethod: "Allowances",
-					Use:       "grants-by-grantee [grantee]",
+					Use:       "grants-by-grantee <grantee>",
 					Short:     "Query all grants of a grantee",
 					Long:      "Queries all the grants for a grantee address.",
 					Example:   fmt.Sprintf(`$ %s query feegrant grants-by-grantee [grantee]`, version.AppName),
@@ -37,7 +37,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 				{
 					RpcMethod: "AllowancesByGranter",
-					Use:       "grants-by-granter [granter]",
+					Use:       "grants-by-granter <granter>",
 					Short:     "Query all grants by a granter",
 					Example:   fmt.Sprintf(`$ %s query feegrant grants-by-granter [granter]`, version.AppName),
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
@@ -51,7 +51,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
 					RpcMethod: "RevokeAllowance",
-					Use:       "revoke [granter] [grantee]",
+					Use:       "revoke <granter> <grantee>",
 					Short:     "Revoke a fee grant",
 					Long:      "Revoke fee grant from a granter to a grantee. Note, the '--from' flag is ignored as it is implied from [granter]",
 					Example:   fmt.Sprintf(`$ %s tx feegrant revoke [granter] [grantee]`, version.AppName),

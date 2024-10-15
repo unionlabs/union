@@ -195,6 +195,14 @@ typedef struct UnmanagedVector {
 } UnmanagedVector;
 
 /**
+ * A version of `Option<u64>` that can be used safely in FFI.
+ */
+typedef struct OptionalU64 {
+  bool is_some;
+  uint64_t value;
+} OptionalU64;
+
+/**
  * The result type of the FFI function analyze_code.
  *
  * Please note that the unmanaged vector in `required_capabilities`
@@ -217,6 +225,13 @@ typedef struct AnalysisReport {
    * This is never None/nil.
    */
   struct UnmanagedVector required_capabilities;
+  /**
+   * The migrate version of the contract.
+   * This is None if the contract does not have a migrate version and the `migrate` entrypoint
+   * needs to be called for every migration (if present).
+   * If it is `Some(version)`, it only needs to be called if the `version` increased.
+   */
+  struct OptionalU64 contract_migrate_version;
 } AnalysisReport;
 
 typedef struct Metrics {
@@ -255,27 +270,34 @@ typedef struct U8SliceView {
   uintptr_t len;
 } U8SliceView;
 
-typedef struct iterator_t {
+/**
+ * A reference to some tables on the Go side which allow accessing
+ * the actual iterator instance.
+ */
+typedef struct IteratorReference {
   /**
    * An ID assigned to this contract call
    */
   uint64_t call_id;
-  uint64_t iterator_index;
-} iterator_t;
+  /**
+   * An ID assigned to this iterator
+   */
+  uint64_t iterator_id;
+} IteratorReference;
 
 typedef struct IteratorVtable {
-  int32_t (*next)(struct iterator_t iterator,
+  int32_t (*next)(struct IteratorReference iterator,
                   struct gas_meter_t *gas_meter,
                   uint64_t *gas_used,
                   struct UnmanagedVector *key_out,
                   struct UnmanagedVector *value_out,
                   struct UnmanagedVector *err_msg_out);
-  int32_t (*next_key)(struct iterator_t iterator,
+  int32_t (*next_key)(struct IteratorReference iterator,
                       struct gas_meter_t *gas_meter,
                       uint64_t *gas_used,
                       struct UnmanagedVector *key_out,
                       struct UnmanagedVector *err_msg_out);
-  int32_t (*next_value)(struct iterator_t iterator,
+  int32_t (*next_value)(struct IteratorReference iterator,
                         struct gas_meter_t *gas_meter,
                         uint64_t *gas_used,
                         struct UnmanagedVector *value_out,
@@ -284,7 +306,11 @@ typedef struct IteratorVtable {
 
 typedef struct GoIter {
   struct gas_meter_t *gas_meter;
-  struct iterator_t state;
+  /**
+   * A reference which identifies the iterator and allows finding and accessing the
+   * actual iterator instance in Go. Once fully initalized, this is immutable.
+   */
+  struct IteratorReference reference;
   struct IteratorVtable vtable;
 } GoIter;
 
@@ -414,6 +440,8 @@ struct AnalysisReport analyze_code(struct cache_t *cache,
                                    struct UnmanagedVector *error_msg);
 
 struct Metrics get_metrics(struct cache_t *cache, struct UnmanagedVector *error_msg);
+
+struct UnmanagedVector get_pinned_metrics(struct cache_t *cache, struct UnmanagedVector *error_msg);
 
 /**
  * frees a cache reference
@@ -570,6 +598,30 @@ struct UnmanagedVector ibc_packet_timeout(struct cache_t *cache,
                                           bool print_debug,
                                           struct GasReport *gas_report,
                                           struct UnmanagedVector *error_msg);
+
+struct UnmanagedVector ibc_source_callback(struct cache_t *cache,
+                                           struct ByteSliceView checksum,
+                                           struct ByteSliceView env,
+                                           struct ByteSliceView msg,
+                                           struct Db db,
+                                           struct GoApi api,
+                                           struct GoQuerier querier,
+                                           uint64_t gas_limit,
+                                           bool print_debug,
+                                           struct GasReport *gas_report,
+                                           struct UnmanagedVector *error_msg);
+
+struct UnmanagedVector ibc_destination_callback(struct cache_t *cache,
+                                                struct ByteSliceView checksum,
+                                                struct ByteSliceView env,
+                                                struct ByteSliceView msg,
+                                                struct Db db,
+                                                struct GoApi api,
+                                                struct GoQuerier querier,
+                                                uint64_t gas_limit,
+                                                bool print_debug,
+                                                struct GasReport *gas_report,
+                                                struct UnmanagedVector *error_msg);
 
 struct UnmanagedVector new_unmanaged_vector(bool nil, const uint8_t *ptr, uintptr_t length);
 

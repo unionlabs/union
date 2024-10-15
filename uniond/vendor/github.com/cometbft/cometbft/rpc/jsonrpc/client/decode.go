@@ -6,15 +6,14 @@ import (
 	"fmt"
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 func unmarshalResponseBytes(
 	responseBytes []byte,
 	expectedID types.JSONRPCIntID,
-	result interface{},
-) (interface{}, error) {
-
+	result any,
+) (any, error) {
 	// Read response.  If rpc/core/types is imported, the result will unmarshal
 	// into the correct type.
 	response := &types.RPCResponse{}
@@ -38,51 +37,76 @@ func unmarshalResponseBytes(
 	return result, nil
 }
 
+// Separate the unmarshalling actions using different functions to improve readability and maintainability.
+func unmarshalIndividualResponse(responseBytes []byte) (types.RPCResponse, error) {
+	var singleResponse types.RPCResponse
+	err := json.Unmarshal(responseBytes, &singleResponse)
+	return singleResponse, err
+}
+
+func unmarshalMultipleResponses(responseBytes []byte) ([]types.RPCResponse, error) {
+	var responses []types.RPCResponse
+	err := json.Unmarshal(responseBytes, &responses)
+	return responses, err
+}
+
 func unmarshalResponseBytesArray(
 	responseBytes []byte,
 	expectedIDs []types.JSONRPCIntID,
-	results []interface{},
-) ([]interface{}, error) {
+	results []any,
+) ([]any, error) {
+	var responses []types.RPCResponse
 
-	var (
-		responses []types.RPCResponse
-	)
+	// Try to unmarshal as multiple responses
+	responses, err := unmarshalMultipleResponses(responseBytes)
+	// if err == nil it could unmarshal in multiple responses
+	if err == nil {
+		// No response error checking here as there may be a mixture of successful
+		// and unsuccessful responses.
 
-	if err := json.Unmarshal(responseBytes, &responses); err != nil {
+		if len(results) != len(responses) {
+			return nil, fmt.Errorf(
+				"expected %d result objects into which to inject responses, but got %d",
+				len(responses),
+				len(results),
+			)
+		}
+
+		// Intersect IDs from responses with expectedIDs.
+		ids := make([]types.JSONRPCIntID, len(responses))
+		var ok bool
+		for i, resp := range responses {
+			ids[i], ok = resp.ID.(types.JSONRPCIntID)
+			if !ok {
+				return nil, fmt.Errorf("expected JSONRPCIntID, got %T", resp.ID)
+			}
+		}
+		if err := validateResponseIDs(ids, expectedIDs); err != nil {
+			return nil, fmt.Errorf("wrong IDs: %w", err)
+		}
+
+		for i := 0; i < len(responses); i++ {
+			if err := cmtjson.Unmarshal(responses[i].Result, results[i]); err != nil {
+				return nil, fmt.Errorf("error unmarshalling #%d result: %w", i, err)
+			}
+		}
+
+		return results, nil
+	}
+	// check if it's a single response that should be an error
+	singleResponse, err := unmarshalIndividualResponse(responseBytes)
+	if err != nil {
+		// Here, an error means that even single response unmarshalling failed,
+		// so return the error.
 		return nil, fmt.Errorf("error unmarshalling: %w", err)
 	}
-
-	// No response error checking here as there may be a mixture of successful
-	// and unsuccessful responses.
-
-	if len(results) != len(responses) {
-		return nil, fmt.Errorf(
-			"expected %d result objects into which to inject responses, but got %d",
-			len(responses),
-			len(results),
-		)
+	singleResult := make([]any, 0)
+	if singleResponse.Error != nil {
+		singleResult = append(singleResult, singleResponse.Error)
+	} else {
+		singleResult = append(singleResult, singleResponse.Result)
 	}
-
-	// Intersect IDs from responses with expectedIDs.
-	ids := make([]types.JSONRPCIntID, len(responses))
-	var ok bool
-	for i, resp := range responses {
-		ids[i], ok = resp.ID.(types.JSONRPCIntID)
-		if !ok {
-			return nil, fmt.Errorf("expected JSONRPCIntID, got %T", resp.ID)
-		}
-	}
-	if err := validateResponseIDs(ids, expectedIDs); err != nil {
-		return nil, fmt.Errorf("wrong IDs: %w", err)
-	}
-
-	for i := 0; i < len(responses); i++ {
-		if err := cmtjson.Unmarshal(responses[i].Result, results[i]); err != nil {
-			return nil, fmt.Errorf("error unmarshalling #%d result: %w", i, err)
-		}
-	}
-
-	return results, nil
+	return singleResult, nil
 }
 
 func validateResponseIDs(ids, expectedIDs []types.JSONRPCIntID) error {
@@ -92,11 +116,10 @@ func validateResponseIDs(ids, expectedIDs []types.JSONRPCIntID) error {
 	}
 
 	for i, id := range ids {
-		if m[id] {
-			delete(m, id)
-		} else {
+		if !m[id] {
 			return fmt.Errorf("unsolicited ID #%d: %v", i, id)
 		}
+		delete(m, id)
 	}
 
 	return nil
@@ -114,7 +137,7 @@ func validateAndVerifyID(res *types.RPCResponse, expectedID types.JSONRPCIntID) 
 	return nil
 }
 
-func validateResponseID(id interface{}) error {
+func validateResponseID(id any) error {
 	if id == nil {
 		return errors.New("no ID")
 	}

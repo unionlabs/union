@@ -4,13 +4,13 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/auth/bearer"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -55,6 +55,19 @@ type Provider struct {
 
 	// The URL that points to the organization's AWS Single Sign-On (AWS SSO) user portal.
 	StartURL string
+
+	// The filepath the cached token will be retrieved from. If unset Provider will
+	// use the startURL to determine the filepath at.
+	//
+	//    ~/.aws/sso/cache/<sha1-hex-encoded-startURL>.json
+	//
+	// If custom cached token filepath is used, the Provider's startUrl
+	// parameter will be ignored.
+	CachedTokenFilepath string
+
+	// Used by the SSOCredentialProvider if a token configuration
+	// profile is used in the shared config
+	TokenProvider bearer.TokenProvider
 }
 
 // NewCredentials returns a new AWS Single Sign-On (AWS SSO) credential provider. The ConfigProvider is expected to be configured
@@ -89,13 +102,31 @@ func (p *Provider) Retrieve() (credentials.Value, error) {
 // RetrieveWithContext retrieves temporary AWS credentials from the configured Amazon Single Sign-On (AWS SSO) user portal
 // by exchanging the accessToken present in ~/.aws/sso/cache.
 func (p *Provider) RetrieveWithContext(ctx credentials.Context) (credentials.Value, error) {
-	tokenFile, err := loadTokenFile(p.StartURL)
-	if err != nil {
-		return credentials.Value{}, err
+	var accessToken *string
+	if p.TokenProvider != nil {
+		token, err := p.TokenProvider.RetrieveBearerToken(ctx)
+		if err != nil {
+			return credentials.Value{}, err
+		}
+		accessToken = &token.Value
+	} else {
+		if p.CachedTokenFilepath == "" {
+			cachedTokenFilePath, err := getCachedFilePath(p.StartURL)
+			if err != nil {
+				return credentials.Value{}, err
+			}
+			p.CachedTokenFilepath = cachedTokenFilePath
+		}
+
+		tokenFile, err := loadTokenFile(p.CachedTokenFilepath)
+		if err != nil {
+			return credentials.Value{}, err
+		}
+		accessToken = &tokenFile.AccessToken
 	}
 
 	output, err := p.Client.GetRoleCredentialsWithContext(ctx, &sso.GetRoleCredentialsInput{
-		AccessToken: &tokenFile.AccessToken,
+		AccessToken: accessToken,
 		AccountId:   &p.AccountID,
 		RoleName:    &p.RoleName,
 	})
@@ -114,32 +145,13 @@ func (p *Provider) RetrieveWithContext(ctx credentials.Context) (credentials.Val
 	}, nil
 }
 
-func getCacheFileName(url string) (string, error) {
+func getCachedFilePath(startUrl string) (string, error) {
 	hash := sha1.New()
-	_, err := hash.Write([]byte(url))
+	_, err := hash.Write([]byte(startUrl))
 	if err != nil {
 		return "", err
 	}
-	return strings.ToLower(hex.EncodeToString(hash.Sum(nil))) + ".json", nil
-}
-
-type rfc3339 time.Time
-
-func (r *rfc3339) UnmarshalJSON(bytes []byte) error {
-	var value string
-
-	if err := json.Unmarshal(bytes, &value); err != nil {
-		return err
-	}
-
-	parse, err := time.Parse(time.RFC3339, value)
-	if err != nil {
-		return fmt.Errorf("expected RFC3339 timestamp: %v", err)
-	}
-
-	*r = rfc3339(parse)
-
-	return nil
+	return filepath.Join(defaultCacheLocation(), strings.ToLower(hex.EncodeToString(hash.Sum(nil)))+".json"), nil
 }
 
 type token struct {
@@ -153,13 +165,8 @@ func (t token) Expired() bool {
 	return nowTime().Round(0).After(time.Time(t.ExpiresAt))
 }
 
-func loadTokenFile(startURL string) (t token, err error) {
-	key, err := getCacheFileName(startURL)
-	if err != nil {
-		return token{}, awserr.New(ErrCodeSSOProviderInvalidToken, invalidTokenMessage, err)
-	}
-
-	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultCacheLocation(), key))
+func loadTokenFile(cachedTokenPath string) (t token, err error) {
+	fileBytes, err := ioutil.ReadFile(cachedTokenPath)
 	if err != nil {
 		return token{}, awserr.New(ErrCodeSSOProviderInvalidToken, invalidTokenMessage, err)
 	}

@@ -1,7 +1,6 @@
 package types
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -11,11 +10,12 @@ import (
 	"path/filepath"
 	"time"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
 
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 )
 
@@ -68,7 +68,7 @@ func (ag *AppGenesis) ValidateAndComplete() error {
 	}
 
 	if ag.GenesisTime.IsZero() {
-		ag.GenesisTime = cmttime.Now()
+		ag.GenesisTime = time.Now().Round(0).UTC()
 	}
 
 	if err := ag.Consensus.ValidateAndComplete(); err != nil {
@@ -90,35 +90,70 @@ func (ag *AppGenesis) SaveAs(file string) error {
 
 // AppGenesisFromReader reads the AppGenesis from the reader.
 func AppGenesisFromReader(reader io.Reader) (*AppGenesis, error) {
-	jsonBlob, err := io.ReadAll(reader)
-	if err != nil {
+	var ag AppGenesis
+	var err error
+	// check if io.ReadSeeker is implemented
+	if rs, ok := reader.(io.ReadSeeker); ok {
+		err = json.NewDecoder(rs).Decode(&ag)
+		if err == nil {
+			return &ag, nil
+		}
+
+		err = fmt.Errorf("error unmarshalling AppGenesis: %w", err)
+		if _, serr := rs.Seek(0, io.SeekStart); serr != nil {
+			err = errors.Join(err, fmt.Errorf("error seeking back to the front: %w", serr))
+			return nil, err
+		}
+	}
+
+	// TODO: once cmtjson implements incremental parsing, we can avoid storing the entire file in memory
+	jsonBlob, ioerr := io.ReadAll(reader)
+	if ioerr != nil {
+		err = errors.Join(err, fmt.Errorf("failed to read file completely: %w", ioerr))
 		return nil, err
 	}
 
-	var appGenesis AppGenesis
-	if err := json.Unmarshal(jsonBlob, &appGenesis); err != nil {
-		// fallback to CometBFT genesis
-		var ctmGenesis cmttypes.GenesisDoc
-		if err2 := cmtjson.Unmarshal(jsonBlob, &ctmGenesis); err2 != nil {
-			return nil, fmt.Errorf("error unmarshalling AppGenesis: %w\n failed fallback to CometBFT GenDoc: %w", err, err2)
-		}
-
-		appGenesis = AppGenesis{
-			AppName: version.AppName,
-			// AppVersion is not filled as we do not know it from a CometBFT genesis
-			GenesisTime:   ctmGenesis.GenesisTime,
-			ChainID:       ctmGenesis.ChainID,
-			InitialHeight: ctmGenesis.InitialHeight,
-			AppHash:       ctmGenesis.AppHash,
-			AppState:      ctmGenesis.AppState,
-			Consensus: &ConsensusGenesis{
-				Validators: ctmGenesis.Validators,
-				Params:     ctmGenesis.ConsensusParams,
-			},
-		}
+	// fallback to comet genesis parsing
+	var ctmGenesis cmttypes.GenesisDoc
+	if uerr := cmtjson.Unmarshal(jsonBlob, &ctmGenesis); uerr != nil {
+		err = errors.Join(err, fmt.Errorf("failed fallback to CometBFT GenDoc: %w", uerr))
+		return nil, err
 	}
 
-	return &appGenesis, nil
+	vals := []sdk.GenesisValidator{}
+	for _, cmtVal := range ctmGenesis.Validators {
+		pk, err := cryptocodec.FromCmtPubKeyInterface(cmtVal.PubKey)
+		if err != nil {
+			return nil, err
+		}
+		jsonPk, err := cryptocodec.PubKeyFromProto(pk)
+		if err != nil {
+			return nil, err
+		}
+		val := sdk.GenesisValidator{
+			Address: cmtVal.Address.Bytes(),
+			PubKey:  jsonPk,
+			Power:   cmtVal.Power,
+			Name:    cmtVal.Name,
+		}
+
+		vals = append(vals, val)
+	}
+
+	ag = AppGenesis{
+		AppName: version.AppName,
+		// AppVersion is not filled as we do not know it from a CometBFT genesis
+		GenesisTime:   ctmGenesis.GenesisTime,
+		ChainID:       ctmGenesis.ChainID,
+		InitialHeight: ctmGenesis.InitialHeight,
+		AppHash:       ctmGenesis.AppHash,
+		AppState:      ctmGenesis.AppState,
+		Consensus: &ConsensusGenesis{
+			Validators: vals,
+			Params:     ctmGenesis.ConsensusParams,
+		},
+	}
+	return &ag, nil
 }
 
 // AppGenesisFromFile reads the AppGenesis from the provided file.
@@ -128,13 +163,14 @@ func AppGenesisFromFile(genFile string) (*AppGenesis, error) {
 		return nil, err
 	}
 
-	appGenesis, err := AppGenesisFromReader(bufio.NewReader(file))
+	appGenesis, err := AppGenesisFromReader(file)
+	ferr := file.Close()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read genesis from file %s: %w", genFile, err)
 	}
 
-	if err := file.Close(); err != nil {
-		return nil, err
+	if ferr != nil {
+		return nil, ferr
 	}
 
 	return appGenesis, nil
@@ -146,13 +182,36 @@ func AppGenesisFromFile(genFile string) (*AppGenesis, error) {
 
 // ToGenesisDoc converts the AppGenesis to a CometBFT GenesisDoc.
 func (ag *AppGenesis) ToGenesisDoc() (*cmttypes.GenesisDoc, error) {
+	cmtValidators := []cmttypes.GenesisValidator{}
+	for _, val := range ag.Consensus.Validators {
+		pk, err := cryptocodec.PubKeyToProto(val.PubKey)
+		if err != nil {
+			return nil, err
+		}
+		cmtPk, err := cryptocodec.ToCmtPubKeyInterface(pk)
+		if err != nil {
+			return nil, err
+		}
+		cmtVal := cmttypes.GenesisValidator{
+			Address: val.Address.Bytes(),
+			PubKey:  cmtPk,
+			Power:   val.Power,
+			Name:    val.Name,
+		}
+
+		cmtValidators = append(cmtValidators, cmtVal)
+	}
+	// assert nil value for empty validators set
+	if len(cmtValidators) == 0 {
+		cmtValidators = nil
+	}
 	return &cmttypes.GenesisDoc{
 		GenesisTime:     ag.GenesisTime,
 		ChainID:         ag.ChainID,
 		InitialHeight:   ag.InitialHeight,
 		AppHash:         ag.AppHash,
 		AppState:        ag.AppState,
-		Validators:      ag.Consensus.Validators,
+		Validators:      cmtValidators,
 		ConsensusParams: ag.Consensus.Params,
 	}, nil
 }
@@ -160,13 +219,13 @@ func (ag *AppGenesis) ToGenesisDoc() (*cmttypes.GenesisDoc, error) {
 // ConsensusGenesis defines the consensus layer's genesis.
 // TODO(@julienrbrt) eventually abstract from CometBFT types
 type ConsensusGenesis struct {
-	Validators []cmttypes.GenesisValidator `json:"validators,omitempty"`
-	Params     *cmttypes.ConsensusParams   `json:"params,omitempty"`
+	Validators []sdk.GenesisValidator    `json:"validators,omitempty"`
+	Params     *cmttypes.ConsensusParams `json:"params,omitempty"`
 }
 
 // NewConsensusGenesis returns a ConsensusGenesis with given values.
 // It takes a proto consensus params so it can called from server export command.
-func NewConsensusGenesis(params cmtproto.ConsensusParams, validators []cmttypes.GenesisValidator) *ConsensusGenesis {
+func NewConsensusGenesis(params cmtproto.ConsensusParams, validators []sdk.GenesisValidator) *ConsensusGenesis {
 	return &ConsensusGenesis{
 		Params: &cmttypes.ConsensusParams{
 			Block: cmttypes.BlockParams{
@@ -197,7 +256,7 @@ func (cs *ConsensusGenesis) MarshalJSON() ([]byte, error) {
 func (cs *ConsensusGenesis) UnmarshalJSON(b []byte) error {
 	type Alias ConsensusGenesis
 
-	result := Alias{}
+	var result Alias
 	if err := cmtjson.Unmarshal(b, &result); err != nil {
 		return err
 	}
@@ -210,7 +269,7 @@ func (cs *ConsensusGenesis) UnmarshalJSON(b []byte) error {
 
 func (cs *ConsensusGenesis) ValidateAndComplete() error {
 	if cs == nil {
-		return fmt.Errorf("consensus genesis cannot be nil")
+		return errors.New("consensus genesis cannot be nil")
 	}
 
 	if cs.Params == nil {
@@ -227,7 +286,7 @@ func (cs *ConsensusGenesis) ValidateAndComplete() error {
 			return fmt.Errorf("incorrect address for validator %v in the genesis file, should be %v", v, v.PubKey.Address())
 		}
 		if len(v.Address) == 0 {
-			cs.Validators[i].Address = v.PubKey.Address()
+			cs.Validators[i].Address = v.PubKey.Address().Bytes()
 		}
 	}
 

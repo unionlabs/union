@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/cosmos/iavl"
-	idb "github.com/cosmos/iavl/db"
+
+	corestore "cosmossdk.io/core/store"
 )
 
 var (
@@ -22,6 +23,8 @@ type (
 		Get(key []byte) ([]byte, error)
 		Set(key, value []byte) (bool, error)
 		Remove(key []byte) ([]byte, bool, error)
+		SetCommitting()
+		UnsetCommitting()
 		SaveVersion() ([]byte, int64, error)
 		Version() int64
 		Hash() []byte
@@ -31,7 +34,7 @@ type (
 		GetVersioned(key []byte, version int64) ([]byte, error)
 		GetImmutable(version int64) (*iavl.ImmutableTree, error)
 		SetInitialVersion(version uint64)
-		Iterator(start, end []byte, ascending bool) (idb.Iterator, error)
+		Iterator(start, end []byte, ascending bool) (corestore.Iterator, error)
 		AvailableVersions() []int
 		LoadVersionForOverwriting(targetVersion int64) error
 		TraverseStateChanges(startVersion, endVersion int64, fn func(version int64, changeSet *iavl.ChangeSet) error) error
@@ -51,6 +54,14 @@ func (it *immutableTree) Set(_, _ []byte) (bool, error) {
 
 func (it *immutableTree) Remove(_ []byte) ([]byte, bool, error) {
 	panic("cannot call 'Remove' on an immutable IAVL tree")
+}
+
+func (it *immutableTree) SetCommitting() {
+	panic("cannot call 'SetCommitting' on an immutable IAVL tree")
+}
+
+func (it *immutableTree) UnsetCommitting() {
+	panic("cannot call 'UnsetCommitting' on an immutable IAVL tree")
 }
 
 func (it *immutableTree) SaveVersion() ([]byte, int64, error) {

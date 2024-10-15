@@ -1,14 +1,14 @@
 package tendermint
 
 import (
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"cosmossdk.io/core/registry"
 
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 // RegisterInterfaces registers the tendermint concrete client-related
 // implementations and interfaces.
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func RegisterInterfaces(registry registry.InterfaceRegistrar) {
 	registry.RegisterImplementations(
 		(*exported.ClientState)(nil),
 		&ClientState{},

@@ -252,20 +252,17 @@ func GetCmdQueryCodeInfo() *cobra.Command {
 			}
 
 			queryClient := types.NewQueryClient(clientCtx)
-			res, err := queryClient.Code(
+			res, err := queryClient.CodeInfo(
 				context.Background(),
-				&types.QueryCodeRequest{
+				&types.QueryCodeInfoRequest{
 					CodeId: codeID,
 				},
 			)
 			if err != nil {
 				return err
 			}
-			if res.CodeInfoResponse == nil {
-				return fmt.Errorf("contract not found")
-			}
 
-			return clientCtx.PrintProto(res.CodeInfoResponse)
+			return clientCtx.PrintProto(res)
 		},
 		SilenceUsage: true,
 	}

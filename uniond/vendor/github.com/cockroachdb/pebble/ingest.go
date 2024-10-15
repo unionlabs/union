@@ -1223,7 +1223,12 @@ func (d *DB) handleIngestAsFlushable(meta []*fileMetadata, seqNum uint64) error 
 		// We create a new WAL for the flushable instead of reusing the end of
 		// the previous WAL. This simplifies the increment of the minimum
 		// unflushed log number, and also simplifies WAL replay.
-		logNum, _ = d.recycleWAL()
+		var prevLogSize uint64
+		logNum, prevLogSize = d.rotateWAL()
+		// As the rotator of the WAL, we're responsible for updating the
+		// previous flushable queue tail's log size.
+		d.mu.mem.queue[len(d.mu.mem.queue)-1].logSize = prevLogSize
+
 		d.mu.Unlock()
 		err := d.commit.directWrite(b)
 		if err != nil {
@@ -1243,13 +1248,14 @@ func (d *DB) handleIngestAsFlushable(meta []*fileMetadata, seqNum uint64) error 
 	// the appropriate value below.
 	newLogNum := d.mu.mem.queue[len(d.mu.mem.queue)-1].logNum
 	if !d.opts.DisableWAL {
-		// This is WAL num of the next mutable memtable which comes after the
-		// ingestedFlushable in the flushable queue. The mutable memtable
-		// will be created below.
-		newLogNum, _ = d.recycleWAL()
-		if err != nil {
-			return err
-		}
+		// newLogNum will be the WAL num of the next mutable memtable which
+		// comes after the ingestedFlushable in the flushable queue. The mutable
+		// memtable will be created below.
+		//
+		// The prevLogSize returned by rotateWAL is the WAL to which the
+		// flushable ingest keys were appended. This intermediary WAL is only
+		// used to record the flushable ingest and nothing else.
+		newLogNum, entry.logSize = d.rotateWAL()
 	}
 
 	currMem := d.mu.mem.mutable

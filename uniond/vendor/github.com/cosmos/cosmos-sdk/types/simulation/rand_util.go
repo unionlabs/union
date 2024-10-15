@@ -147,31 +147,8 @@ func RandSubsetCoins(r *rand.Rand, coins sdk.Coins) sdk.Coins {
 }
 
 // DeriveRand derives a new Rand deterministically from another random source.
-// Unlike rand.New(rand.NewSource(seed)), the result is "more random"
-// depending on the source and state of r.
 //
 // NOTE: not crypto safe.
 func DeriveRand(r *rand.Rand) *rand.Rand {
-	const num = 8 // TODO what's a good number?  Too large is too slow.
-	ms := multiSource(make([]rand.Source, num))
-
-	for i := 0; i < num; i++ {
-		ms[i] = rand.NewSource(r.Int63())
-	}
-
-	return rand.New(ms)
-}
-
-type multiSource []rand.Source
-
-func (ms multiSource) Int63() (r int64) {
-	for _, source := range ms {
-		r ^= source.Int63()
-	}
-
-	return r
-}
-
-func (ms multiSource) Seed(_ int64) {
-	panic("multiSource Seed should not be called")
+	return rand.New(rand.NewSource(r.Int63()))
 }

@@ -588,6 +588,9 @@ func MessageName(x Message) string {
 	if m, ok := x.(xname); ok {
 		return m.XXX_MessageName()
 	}
+	if m, ok := x.(protov2.Message); ok {
+		return string(m.ProtoReflect().Descriptor().FullName())
+	}
 	return revProtoTypes[reflect.TypeOf(x)]
 }
 

@@ -1,0 +1,28 @@
+language: go
+
+services:
+  - docker
+
+go:
+  - "1.9.x"
+  - "1.10.x"
+  - "1.11.x"
+  - "1.12.x"
+  - "1.13.x"
+  - "1.14.x"
+  - "1.15.x"
+  - tip
+
+before_install:
+  - go get github.com/axw/gocov/gocov
+  - go get github.com/mattn/goveralls
+  - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
+  - docker pull i386/golang:1.12-alpine
+  - docker run -dit --name test i386/golang:1.12-alpine sh
+  - docker exec test sh -c "apk add --no-cache git"
+  - docker exec test sh -c "go get github.com/shamaton/msgpack"
+  - docker exec test sh -c "cd /go/src/github.com/shamaton/msgpack && git checkout `git rev-parse --abbrev-ref HEAD`"
+
+script:
+  - docker exec test sh -c "cd /go/src/github.com/shamaton/msgpack && go test -v ."
+  - $GOPATH/bin/goveralls -service=travis-ci

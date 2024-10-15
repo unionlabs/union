@@ -546,7 +546,7 @@ FASTCOVER_convertToFastCoverParams(ZDICT_cover_params_t coverParams,
 }
 
 
-ZDICTLIB_API size_t
+ZDICTLIB_STATIC_API size_t
 ZDICT_trainFromBuffer_fastCover(void* dictBuffer, size_t dictBufferCapacity,
                                 const void* samplesBuffer,
                                 const size_t* samplesSizes, unsigned nbSamples,
@@ -615,7 +615,7 @@ ZDICT_trainFromBuffer_fastCover(void* dictBuffer, size_t dictBufferCapacity,
 }
 
 
-ZDICTLIB_API size_t
+ZDICTLIB_STATIC_API size_t
 ZDICT_optimizeTrainFromBuffer_fastCover(
                     void* dictBuffer, size_t dictBufferCapacity,
                     const void* samplesBuffer,

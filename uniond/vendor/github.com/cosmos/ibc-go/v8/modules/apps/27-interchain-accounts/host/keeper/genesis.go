@@ -1,9 +1,8 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	genesistypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/genesis/types"
 	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
@@ -11,7 +10,7 @@ import (
 )
 
 // InitGenesis initializes the interchain accounts host application state from a provided genesis state
-func InitGenesis(ctx sdk.Context, keeper Keeper, state genesistypes.HostGenesisState) {
+func InitGenesis(ctx context.Context, keeper Keeper, state genesistypes.HostGenesisState) {
 	keeper.setPort(ctx, state.Port)
 
 	// generate port capability if it does not already exist
@@ -40,7 +39,7 @@ func InitGenesis(ctx sdk.Context, keeper Keeper, state genesistypes.HostGenesisS
 }
 
 // ExportGenesis returns the interchain accounts host exported genesis
-func ExportGenesis(ctx sdk.Context, keeper Keeper) genesistypes.HostGenesisState {
+func ExportGenesis(ctx context.Context, keeper Keeper) genesistypes.HostGenesisState {
 	return genesistypes.NewHostGenesisState(
 		keeper.GetAllActiveChannels(ctx),
 		keeper.GetAllInterchainAccounts(ctx),

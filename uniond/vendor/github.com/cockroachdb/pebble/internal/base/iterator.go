@@ -7,6 +7,9 @@ package base
 import (
 	"fmt"
 	"time"
+
+	"github.com/cockroachdb/pebble/internal/humanize"
+	"github.com/cockroachdb/redact"
 )
 
 // InternalIterator iterates over a DB's key/value pairs in key order. Unlike
@@ -406,4 +409,36 @@ func (s *InternalIteratorStats) Merge(from InternalIteratorStats) {
 	s.SeparatedPointValue.Count += from.SeparatedPointValue.Count
 	s.SeparatedPointValue.ValueBytes += from.SeparatedPointValue.ValueBytes
 	s.SeparatedPointValue.ValueBytesFetched += from.SeparatedPointValue.ValueBytesFetched
+}
+
+func (s *InternalIteratorStats) String() string {
+	return redact.StringWithoutMarkers(s)
+}
+
+// SafeFormat implements the redact.SafeFormatter interface.
+func (s *InternalIteratorStats) SafeFormat(p redact.SafePrinter, verb rune) {
+	p.Printf("blocks: %s cached",
+		humanize.Bytes.Uint64(s.BlockBytesInCache),
+	)
+	if s.BlockBytes != s.BlockBytesInCache || s.BlockReadDuration != 0 {
+		p.Printf(", %s not cached (read time: %s)",
+			humanize.Bytes.Uint64(s.BlockBytes-s.BlockBytesInCache),
+			humanize.FormattedString(s.BlockReadDuration.String()),
+		)
+	}
+	p.Printf("; points: %s", humanize.Count.Uint64(s.PointCount))
+
+	if s.PointsCoveredByRangeTombstones != 0 {
+		p.Printf("(%s tombstoned)", humanize.Count.Uint64(s.PointsCoveredByRangeTombstones))
+	}
+	p.Printf(" (%s keys, %s values)",
+		humanize.Bytes.Uint64(s.KeyBytes),
+		humanize.Bytes.Uint64(s.ValueBytes),
+	)
+	if s.SeparatedPointValue.Count != 0 {
+		p.Printf("; separated: %s (%s, %s fetched)",
+			humanize.Count.Uint64(s.SeparatedPointValue.Count),
+			humanize.Bytes.Uint64(s.SeparatedPointValue.ValueBytes),
+			humanize.Bytes.Uint64(s.SeparatedPointValue.ValueBytesFetched))
+	}
 }

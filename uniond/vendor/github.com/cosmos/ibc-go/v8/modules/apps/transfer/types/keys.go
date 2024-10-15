@@ -30,7 +30,7 @@ const (
 	// DenomPrefix is the prefix used for internal SDK coin representation.
 	DenomPrefix = "ibc"
 
-	// AllowAllPacketDataKeys holds the string key that allows all packet data keys in authz transfer messages
+	// AllowAllPacketDataKeys holds the string key that allows all memo strings in authz transfer messages
 	AllowAllPacketDataKeys = "*"
 
 	KeyTotalEscrowPrefix = "totalEscrowForDenom"

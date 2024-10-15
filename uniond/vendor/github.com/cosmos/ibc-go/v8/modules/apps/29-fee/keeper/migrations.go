@@ -1,11 +1,14 @@
 package keeper
 
 import (
+	"context"
 	storetypes "cosmossdk.io/store/types"
 
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/ibc-go/v8/modules/apps/29-fee/types"
+	coretypes "github.com/cosmos/ibc-go/v8/modules/core/types"
 )
 
 // Migrator is a struct for handling in-place store migrations.
@@ -22,10 +25,11 @@ func NewMigrator(keeper Keeper) Migrator {
 
 // Migrate1to2 migrates ibc-fee module from ConsensusVersion 1 to 2
 // by refunding leftover fees to the refund address.
-func (m Migrator) Migrate1to2(ctx sdk.Context) error {
-	store := ctx.KVStore(m.keeper.storeKey)
-	iterator := storetypes.KVStorePrefixIterator(store, []byte(types.FeesInEscrowPrefix))
-	defer sdk.LogDeferred(ctx.Logger(), func() error { return iterator.Close() })
+func (m Migrator) Migrate1to2(bareCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(bareCtx) // TODO: https://github.com/cosmos/ibc-go/issues/7223
+	store := m.keeper.storeService.OpenKVStore(ctx)
+	iterator := storetypes.KVStorePrefixIterator(runtime.KVStoreAdapter(store), []byte(types.FeesInEscrowPrefix))
+	defer coretypes.LogDeferred(ctx.Logger(), func() error { return iterator.Close() })
 
 	for ; iterator.Valid(); iterator.Next() {
 		feesInEscrow := m.keeper.MustUnmarshalFees(iterator.Value())

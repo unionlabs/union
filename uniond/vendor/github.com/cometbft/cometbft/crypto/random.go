@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-// This only uses the OS's randomness
+// This only uses the OS's randomness.
 func randBytes(numBytes int) []byte {
 	b := make([]byte, numBytes)
 	_, err := crand.Read(b)
@@ -16,7 +16,7 @@ func randBytes(numBytes int) []byte {
 	return b
 }
 
-// This only uses the OS's randomness
+// This only uses the OS's randomness.
 func CRandBytes(numBytes int) []byte {
 	return randBytes(numBytes)
 }
