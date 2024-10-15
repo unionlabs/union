@@ -36,7 +36,7 @@
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/addon-webgl": "^0.18.0",
     "@xterm/xterm": "^5.5.0",
-    "astro": "^4.16.0",
+    "astro": "^4.16.3",
     "astro-live-code": "^0.0.3",
     "graphiql": "^3.7.1",
     "graphql": "^16.9.0",
@@ -62,8 +62,8 @@
     "starlight-heading-badges": "^0.3.0",
     "starlight-theme-rapide": "^0.2.1",
     "svelte": "^4.2.19",
-    "viem": "^2.21.22",
-    "vue": "^3.5.11"
+    "viem": "^2.21.25",
+    "vue": "^3.5.12"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
@@ -81,7 +81,7 @@
     "@types/node": "^22.7.5",
     "@types/postcss-import": "^14.0.3",
     "@types/react": "^18.3.11",
-    "@types/react-dom": "^18.3.0",
+    "@types/react-dom": "^18.3.1",
     "@typescript/twoslash": "^3.2.8",
     "autoprefixer": "^10.4.20",
     "patch-package": "^8.0.0",
@@ -95,7 +95,7 @@
     "typed-query-selector": "^2.12.0",
     "typescript": "^5.6.3",
     "unist-util-visit": "^5.0.0",
-    "vite": "^5.4.8"
+    "vite": "^5.4.9"
   },
   "overrides": {
     "is-core-module": "npm:@nolyfill/is-core-module@^1",

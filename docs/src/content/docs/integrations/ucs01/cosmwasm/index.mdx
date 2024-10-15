@@ -29,7 +29,7 @@ ___
 
 :::caution
 
-This example requries a Linux environment. No Windows or MacOS support
+This example requires a Linux environment. No Windows or MacOS support
 
 :::
 
@@ -257,7 +257,7 @@ uniond -- tx wasm instantiate 269 '{}' --label foobar --no-admin --from lorem --
 Query the transaction to get the `_contract_address`:
 
 ```sh title="Query the transaction"
-query tx $INSTANIATE_HASH --node https://rpc.testnet-8.union.build:443 | rg "_contract_address"
+query tx $INSTANTIATE_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg "_contract_address"
 ```
 
 ```sh title="Execute cross-chain transfer"

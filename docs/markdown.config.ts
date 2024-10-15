@@ -24,7 +24,7 @@ import { rehypeHeadingIds, type RemarkPlugin, type ShikiConfig } from "@astrojs/
 type Markdown = AstroUserConfig["markdown"]
 
 export const shikiConfig = {
-  theme: 'houston',
+  theme: "houston",
   defaultColor: "dark",
   transformers: [
     transformerTwoslash({
