@@ -7,7 +7,7 @@ use ics008_wasm_client::{
         read_substitute_client_state, read_substitute_consensus_state, save_client_state,
         save_consensus_state, save_subject_client_state, save_subject_consensus_state,
     },
-    IbcClient, IbcClientError, Status, StorageState, ZERO_HEIGHT,
+    IbcClient, IbcClientError, Status, StorageState, FROZEN_HEIGHT, ZERO_HEIGHT,
 };
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
@@ -22,6 +22,7 @@ use unionlabs::{
         },
         lightclients::cometbls::{
             client_state::ClientState, consensus_state::ConsensusState, header::Header,
+            misbehaviour::Misbehaviour,
         },
     },
 };
@@ -48,8 +49,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
 
     type Header = Header;
 
-    // TODO(aeryz): Change this to appropriate misbehavior type when it is implemented
-    type Misbehaviour = Header;
+    type Misbehaviour = Misbehaviour;
 
     type ClientState = ClientState;
 
@@ -179,11 +179,31 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
     }
 
     fn verify_misbehaviour(
-        _deps: Deps<Self::CustomQuery>,
-        _env: Env,
-        _misbehaviour: Self::Misbehaviour,
+        deps: Deps<Self::CustomQuery>,
+        env: Env,
+        misbehaviour: Self::Misbehaviour,
     ) -> Result<(), IbcClientError<Self>> {
-        Err(Error::Unimplemented.into())
+        if misbehaviour.header_a.signed_header.height < misbehaviour.header_b.signed_header.height {
+            return Err(Error::InvalidMisbehaviourHeaderSequence.into());
+        }
+
+        Self::verify_header(deps, env.clone(), misbehaviour.header_a.clone())?;
+        Self::verify_header(deps, env.clone(), misbehaviour.header_b.clone())?;
+
+        if misbehaviour.header_a.signed_header.height == misbehaviour.header_b.signed_header.height
+        {
+            if misbehaviour.header_a.signed_header == misbehaviour.header_b.signed_header {
+                return Ok(());
+            }
+        } else {
+            if misbehaviour.header_a.signed_header.time.as_unix_nanos()
+                <= misbehaviour.header_b.signed_header.time.as_unix_nanos()
+            {
+                return Ok(());
+            }
+        }
+
+        Err(Error::MisbehaviourNotFound.into())
     }
 
     fn update_state(
@@ -226,11 +246,16 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
     }
 
     fn update_state_on_misbehaviour(
-        _deps: DepsMut<Self::CustomQuery>,
+        deps: DepsMut<Self::CustomQuery>,
         _env: Env,
         _client_message: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
-        Err(Error::Unimplemented.into())
+        let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
+
+        client_state.data.frozen_height = FROZEN_HEIGHT;
+        save_client_state::<Self>(deps, client_state);
+
+        Ok(())
     }
 
     fn check_for_misbehaviour_on_header(
@@ -291,7 +316,9 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
         _deps: Deps<Self::CustomQuery>,
         _misbehaviour: Self::Misbehaviour,
     ) -> Result<bool, IbcClientError<Self>> {
-        Err(Error::Unimplemented.into())
+        // NOTE(aeryz): This is chosen to be implemented in `verify_misbehaviour` since it improves code
+        // readability. Which means if `verify_misbehaviour` didn't raise an error, it means there is a misbehaviour.
+        Ok(true)
     }
 
     fn verify_upgrade_and_update_state(

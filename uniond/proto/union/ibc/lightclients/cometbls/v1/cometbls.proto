@@ -35,8 +35,8 @@ message ConsensusState {
 }
 
 message Misbehaviour {
-  Header header_1  = 1;
-  Header header_2  = 2;
+  Header header_a  = 1;
+  Header header_b  = 2;
 }
 
 message LightHeader {
