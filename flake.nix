@@ -87,6 +87,10 @@
       flake = false;
     };
     wasmvm-2_0_1 = {
+      url = "github:CosmWasm/wasmvm/v2.0.1";
+      flake = false;
+    };
+    wasmvm-2_1_3 = {
       url = "github:CosmWasm/wasmvm/v2.1.3";
       flake = false;
     };
