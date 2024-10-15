@@ -344,6 +344,37 @@ module IBC::LightClient {
         return (data1, data2)
     }
 
+    public fun check_for_misbehaviour(client_id: String, header: vector<u8>): bool acquires State {
+        let state = borrow_global_mut<State>(get_client_address(&client_id));
+
+        let header = decode_header(header);
+
+        let height = height_from_header(&header);
+
+        let expected_timestamp = header.signed_header.time.seconds * 1_000_000_000 + (header.signed_header.time.nanos as u64);
+
+        if (smart_table::contains(&state.consensus_states, height)) {
+            let ConsensusState {        
+                timestamp,
+                app_hash: MerkleRoot {
+                    hash
+                },
+                next_validators_hash
+            } = smart_table::borrow(&state.consensus_states, height);
+
+            if (timestamp != &expected_timestamp || hash != &header.signed_header.app_hash || next_validators_hash != &header.signed_header.next_validators_hash) {
+                state.client_state.frozen_height = height::new(0, 1);
+            };
+        };
+
+        // TODO(aeryz): implement consensus state metadata tracking here
+        false
+    }
+
+    fun height_from_header(header: &Header): Height {
+        height::new(height::get_revision_height(&header.trusted_height), header.signed_header.height)
+    }
+
     fun decode_client_state(buf: vector<u8>): ClientState {
         let buf = bcs_utils::new(buf);
 
@@ -417,7 +448,7 @@ module IBC::LightClient {
 
         Misbehaviour {
             header_a: peel_header(&mut buf),
-            header_b: peel_header(&mut buf),            
+            header_b: peel_header(&mut buf),
         }
     }
 

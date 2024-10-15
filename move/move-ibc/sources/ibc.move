@@ -565,6 +565,14 @@ module IBC::ibc {
             abort E_CLIENT_NOT_FOUND
         };
 
+        if (LightClient::check_for_misbehaviour(client_id, client_message)) {
+            event::emit(SubmitMisbehaviour {
+                client_id,
+                client_type: string::utf8(CLIENT_TYPE_COMETBLS),
+            });
+            return
+        };
+
         let (client_state, consensus_states, heights) = LightClient::update_client(
             client_id,
             client_message
