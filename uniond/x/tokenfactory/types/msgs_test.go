@@ -10,8 +10,8 @@ import (
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "cosmossdk.io/x/bank/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"union/x/tokenfactory/testhelpers"
 	"union/x/tokenfactory/types"
