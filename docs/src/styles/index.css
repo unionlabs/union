@@ -1,6 +1,5 @@
-pre.astro-code,
-.not-content > pre {
-  border-radius: 0.3em !important;
+figure:not(.has-title) > pre:nth-child(2) {
+  border-radius: 8px !important;
 }
 
 input,

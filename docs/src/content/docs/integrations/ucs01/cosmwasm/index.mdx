@@ -23,7 +23,11 @@ Summary of the steps:
     8. Execute the contract to transfer assets 🎉
 
 </Steps>
-___
+
+____
+
+Source code for this entire example can be found [here](https://github.com/unionlabs/example-ucs01-cosmwasm)
+____
 
 ## Prerequisites
 
@@ -33,16 +37,35 @@ This example requires a Linux environment. No Windows or MacOS support
 
 :::
 
+Install the `uniond` binary which you will use to publish the contract and execute transfer
+
+<Code
+    code={
+`
+# determine your system architecture
+RELEASE="uniond-release-$(uname -m)-linux"
+# get version we want to install
+VERSION="${chainVersion({chainId: 'union-testnet-8'}).current}"
+
+curl --location \\
+        https://github.com/unionlabs/union/releases/download/$VERSION/$RELEASE \\
+        --output uniond
+`
+    }
+    lang='sh'
+    title='Install uniond'
+/>
+
 Install Rust
 
 ```sh frame="none"
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-Install CLI packages: `ripgrep` and `jq` <Badge text="Optional" type="warning" class='ml-2' />
+Install CLI packages: `ripgrep` and `jaq` <Badge text="Optional" type="warning" class='ml-2' />
 
 ```sh frame="none"
-cargo add ripgrep jq
+cargo add ripgrep jaq
 ```
 
 Create a new directory and initialize a git repository
@@ -278,7 +301,7 @@ Save the mnemonic in a safe place.
 To fund the wallet, we will use the faucet. You can find the faucet [here](https://app.union.build/faucet).
 
 ```sh title="Ensure the wallet is funded"
-curl https://rest.testnet-8.union.build/cosmos/bank/v1beta1/balances/$WALLET_ADDRESS | jq '.balances'[0]
+curl https://rest.testnet-8.union.build/cosmos/bank/v1beta1/balances/$WALLET_ADDRESS | jaq '.balances'[0]
 ```
 
 ```sh title="Deploy the contract"
@@ -345,7 +368,7 @@ Execute the contract:
 
 ```sh frame="none"
 uniond \
-    tx wasm execute $CONTRACT_ADDRESS "$(jq -c '.' payload.json)" \
+    tx wasm execute $CONTRACT_ADDRESS "$(jaq -c '.' payload.json)" \
         --from $WALLET_NAME \
         --gas auto \
         --gas-adjustment 1.4 \
@@ -359,4 +382,3 @@ To see the result of your cross chain transfer, go to this query and replace the
 
 ___
 
-Source code for this example can be found [here](https://github.com/unionlabs/example-ucs01-cosmwasm)
