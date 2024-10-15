@@ -1,6 +1,9 @@
 use std::convert::Into;
 
-use aptos_rest_client::{aptos_api_types::Block, Transaction};
+use aptos_rest_client::{
+    aptos_api_types::{Block, TransactionPayload},
+    Transaction,
+};
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::{stream::FuturesOrdered, Stream};
@@ -94,33 +97,36 @@ impl BlockHandle for AptosBlockHandle {
 
         let active_contracts =
             active_contracts(tx, self.internal_chain_id, block.block_height.into()).await?;
-        trace!(
-            "{}: active contracts: {}",
-            reference,
-            active_contracts.len()
-        );
+        trace!("{reference}: active contracts: {}", active_contracts.len());
 
-        let mut event_index = 0;
+        let mut event_index_iter = 0..;
 
         let transactions = transactions
             .into_iter()
             .enumerate()
-            .filter_map(|(transaction_index, transaction)| match transaction {
-                Transaction::UserTransaction(transaction) => {
-                    let events = transaction
-                        .events
-                        .into_iter()
-                        .enumerate()
-                        .filter_map(|(transaction_event_index, event)| {
-                            match active_contracts
-                                .contains(&event.guid.account_address.to_standard_string())
-                            {
-                                true => {
-                                    let event = PgEvent {
+            .filter_map(|(transaction_index, transaction)| {
+                if let Transaction::UserTransaction(transaction) = transaction {
+                    if let TransactionPayload::EntryFunctionPayload(entry_function_payload) =
+                        transaction.request.payload
+                    {
+                        let account_address = entry_function_payload.function.module.address;
+
+                        if active_contracts.contains(&account_address.to_standard_string()) {
+                            Some(PgTransaction {
+                                internal_chain_id: self.internal_chain_id,
+                                height: self.reference.height as i64,
+                                version: transaction.info.version.0 as i64,
+                                transaction_hash: transaction.info.hash.to_string(),
+                                transaction_index: transaction_index as i64,
+                                events: transaction
+                                    .events
+                                    .into_iter()
+                                    .enumerate()
+                                    .map(|(transaction_event_index, event)| PgEvent {
                                         internal_chain_id: self.internal_chain_id,
                                         height: self.reference.height as i64,
                                         version: transaction.info.version.0 as i64,
-                                        index: event_index as i64,
+                                        index: event_index_iter.next().unwrap() as i64,
                                         transaction_event_index: transaction_event_index as i64,
                                         sequence_number: event.sequence_number.0 as i64,
                                         creation_number: event.guid.creation_number.0 as i64,
@@ -130,31 +136,21 @@ impl BlockHandle for AptosBlockHandle {
                                             .to_standard_string(),
                                         typ: event.typ.to_string(),
                                         data: event.data,
-                                    };
-
-                                    // TODO: can this be less verbose?
-                                    event_index += 1;
-
-                                    Some(event)
-                                }
-                                false => None,
-                            }
-                        })
-                        .collect_vec();
-
-                    match events.is_empty() {
-                        true => None,
-                        false => Some(PgTransaction {
-                            internal_chain_id: self.internal_chain_id,
-                            height: self.reference.height as i64,
-                            version: transaction.info.version.0 as i64,
-                            transaction_hash: transaction.info.hash.to_string(),
-                            transaction_index: transaction_index as i64,
-                            events,
-                        }),
+                                    })
+                                    .collect_vec(),
+                            })
+                        } else {
+                            trace!("{reference}: contract not configured: {account_address}");
+                            None
+                        }
+                    } else {
+                        trace!("{reference}: payload is not a function");
+                        None
                     }
+                } else {
+                    trace!("{reference}: not a user transaction");
+                    None
                 }
-                _ => None,
             })
             .collect_vec();
 

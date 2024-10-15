@@ -119,6 +119,26 @@ impl Provider {
             result,
         ))
     }
+
+    pub async fn get_transaction_by_version(
+        &self,
+        version: u64,
+        provider_id: Option<RpcProviderId>,
+    ) -> Result<RpcResult<Response<Transaction>>, RestError> {
+        let result = self
+            .rpc_client(provider_id)
+            .get_transaction_by_version(version)
+            .await?;
+
+        // TODO: improve race client to return index with result
+        Ok(RpcResult::new(
+            provider_id.map_or_else(
+                || self.rpc_client.fastest_index(),
+                |provider_id| provider_id.index,
+            ),
+            result,
+        ))
+    }
 }
 
 impl RaceClient<Client> {
@@ -140,5 +160,12 @@ impl RaceClient<Client> {
     ) -> Result<Response<Vec<Transaction>>, RestError> {
         self.race(|c| c.get_transactions(Some(start), Some(limit)))
             .await
+    }
+
+    pub async fn get_transaction_by_version(
+        &self,
+        version: u64,
+    ) -> Result<Response<Transaction>, RestError> {
+        self.race(|c| c.get_transaction_by_version(version)).await
     }
 }
