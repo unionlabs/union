@@ -39,10 +39,45 @@ Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-Create a new Rust project
+Instsll CLI packages: `ripgrep` and `jq` <Badge text="Optional" type="warning" class='ml-2' />
 
 ```sh frame="none"
-cargo new --lib "example-ucs01-cosmwasm
+cargo add ripgrep jq cowsay
+```
+
+Create a new directory and initialize a git repository
+
+```sh frame="none"
+mkdir example-ucs01-cosmwasm && cd example-ucs01-cosmwasm
+git init .
+```
+
+Set up a new Rust project
+
+```sh frame="none"
+cargo new --lib example_ucs01_cosmwasm
+```
+
+Add the required dependencies to the `Cargo.toml` file
+
+```toml title="Cargo.toml"
+[package]
+name = "example-ucs01-cosmwasm" # name of the project
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", 'rlib']
+
+[dependencies]
+cosmwasm-schema = { version = "2.1.4" }
+cosmwasm-std = { version = "2.1.4", default-features = false, features = ["std", "staking", "stargate"] }
+serde = { version = "1.0.210", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0.64", default-features = false }
+
+[profile.release]
+opt-level = "z"
+strip = true
 ```
 
 Install `uniond`
@@ -71,13 +106,13 @@ Our end directory structure will look like this:
   - lib.rs
 - Cargo.toml
 - Cargo.lock
-- justfile
+- .gitignore
 </FileTree>
 
 ___
 
 ```sh frame="none"
-UCS01_RELAY="union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
+export UCS01_RELAY="union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
 ```
 
 ## Basic Contract
@@ -203,7 +238,7 @@ The build is two steps; first we compile the Rust code to WASM, and then we opti
 
 <Steps>
     1. 
-        ```sh title="Compile the contract to wasm"
+        ```sh frame="none"
         RUSTFLAGS='-C target-cpu=mvp -C opt-level=z' cargo build \
             --target wasm32-unknown-unknown \
             --no-default-features \
@@ -213,7 +248,7 @@ The build is two steps; first we compile the Rust code to WASM, and then we opti
             -Z build-std-features=panic_immediate_abort
         ```
     2. 
-        ```sh title="Optimize the wasm"
+        ```sh frame="none"
         mkdir -p build
         wasm-opt target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.wasm \
             -o build/contract.wasm \
@@ -223,10 +258,18 @@ The build is two steps; first we compile the Rust code to WASM, and then we opti
 
 ## Deploying the Contract
 
-we need a wallet with some gas money in it to deploy the contract. Let's create a new wallet and fund it.
+we need a wallet with some gas money in it to deploy the contract
 
-```sh title="Create a new wallet"
-uniond -- keys add throwaway \
+Pick a name for the wallet and create it
+
+```sh frame="none"
+export WALLET_NAME="throwaway"
+```
+
+Let's create a new wallet and fund it
+
+```sh frame="none"
+uniond keys add $WALLET_NAME \
     --home /home/$USER/.union \
     --keyring-backend test
 ```
@@ -234,37 +277,80 @@ Save the mnemonic in a safe place.
 
 To fund the wallet, we will use the faucet. You can find the faucet [here](https://app.union.build/faucet).
 
-```sh title="Check the balance"
+```sh title="Ensure the wallet is funded"
 curl https://rest.testnet-8.union.build/cosmos/bank/v1beta1/balances/$WALLET_ADDRESS | jq '.balances'[0]
 ```
 
 ```sh title="Deploy the contract"
-tx wasm store ./target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.wasm --from throwaway --gas auto --gas-adjustment 1.4 --chain-id union-testnet-8 --keyring-backend test --home /home/$USER/.union --node https://rpc.testnet-8.union.build:443 --yes
+tx wasm store ./target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.wasm \
+    --from $WALLET_NAME \
+    --gas auto \
+    --gas-adjustment 1.4 \
+    --chain-id union-testnet-8 \
+    --keyring-backend test \
+    --home /home/$USER/.union \
+    --node $RPC_URL --yes
 ```
 
-Query the transaction to get the `code_id`:
+The above will returun a transaction hash at the end, use it t query the transaction to get the `code_id`:
 
-```sh title="Query the transaction"
-uniond -- query tx $DEPLOY_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg "_id"
+```sh frame="none"
+uniond query tx $DEPLOY_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg "_id"
 ```
 
 Instantiate the contract:
 
-```sh title="Instantiate the contract"
-uniond -- tx wasm instantiate 269 '{}' --label foobar --no-admin --from lorem --gas auto --gas-adjustment 1.4 --chain-id union-testnet-8 --keyring-backend test --home /home/$USER/.union --node https://rpc.testnet-8.union.build:443
+```sh frame="none"
+uniond \
+    tx wasm instantiate 269 '{}' \
+    --label foobar \
+    --no-admin \
+    --from $WALLET_NAME \
+    --gas auto \
+    --gas-adjustment 1.4 \
+    --chain-id union-testnet-8 \
+    --keyring-backend test \
+    --home /home/$USER/.union \
+    --node $RPC_URL --yes
 ```
 
-Query the transaction to get the `_contract_address`:
+The above will returun a transaction hash at the end, use it t query the transaction to get the `_contract_address`:
 
-```sh title="Query the transaction"
+```sh frame="none" 
 query tx $INSTANTIATE_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg "_contract_address"
 ```
 
-```sh title="Execute cross-chain transfer"
-uniond -- tx wasm execute union1ekc5agfsj2mhp2em4a9gxz8hag8uh74fwwzfa752lp2f52w3rrsqvdcxcs '{ "transfer": { "receiver": "6053a7794e8aCe9be62808828003fFFE2710BBBC", "amount": "1", "denom": "muno", "contract_address": "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h", "channel": "channel-86" }}' --from lorem --gas auto --gas-adjustment 1.4 --chain-id union-testnet-8 --keyring-backend test --home /home/$USER/.union --node https://rpc.testnet-8.union.build:443 --amount 2muno
+Now you can execute the contract to transfer assets:
+
+Let's construct the JSON payload for the contract execution. For the `receiver` field we are using Vitalik's address:
+
+```json title="payload.json"
+{
+  "transfer": {
+    "receiver": "6053a7794e8aCe9be62808828003fFFE2710BBBC",
+    "amount": "1",
+    "denom": "muno",
+    "contract_address": "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h",
+    "channel": "channel-86"
+  }
+}
 ```
 
-See the result of your labor [here](https://docs.union.build/reference/graphql/?query=query%20ContractTransfers%20%7B%0A%20%20v1_transfers(%0A%20%20%20%20where%3A%20%7B%0A%20%20%20%20%20%20sender%3A%20%7B%0A%20%20%20%20%20%20%20%20_like%3A%20%22union1ekc5agfsj2mhp2em4a9gxz8hag8uh74fwwzfa752lp2f52w3rrsqvdcxcs%22%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20)%20%7B%0A%20%20%20%20sender%0A%20%20%20%20source_chain_id%0A%20%20%20%20source_timestamp%0A%20%20%20%20source_port_id%0A%20%20%20%20source_channel_id%0A%20%20%20%20source_block_hash%0A%20%20%20%20source_connection_id%0A%20%20%20%20source_transaction_hash%0A%0A%20%20%20%20receiver%0A%20%20%20%20destination_chain_id%0A%20%20%20%20destination_timestamp%0A%20%20%20%20destination_port_id%0A%20%20%20%20destination_channel_id%0A%20%20%20%20destination_block_hash%0A%20%20%20%20destination_connection_id%0A%20%20%20%20destination_transaction_hash%0A%20%20%7D%0A%7D)
+Execute the contract:
+
+```sh frame="none"
+uniond \
+    tx wasm execute $CONTRACT_ADDRESS "$(jq -c '.' payload.json)" \
+        --from $WALLET_NAME \
+        --gas auto \
+        --gas-adjustment 1.4 \
+        --chain-id union-testnet-8 \
+        --keyring-backend test \
+        --home /home/$USER/.union \
+        --node $RPC_URL --amount 2muno
+```
+
+To see the result of your cross chain tranasfer, go to this query and replace the sender with yours: [here](https://docs.union.build/reference/graphql/?query=query%20ContractTransfers%20%7B%0A%20%20v1_transfers(%0A%20%20%20%20where%3A%20%7B%0A%20%20%20%20%20%20sender%3A%20%7B%0A%20%20%20%20%20%20%20%20_like%3A%20%22union1ekc5agfsj2mhp2em4a9gxz8hag8uh74fwwzfa752lp2f52w3rrsqvdcxcs%22%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20)%20%7B%0A%20%20%20%20sender%0A%20%20%20%20source_chain_id%0A%20%20%20%20source_timestamp%0A%20%20%20%20source_port_id%0A%20%20%20%20source_channel_id%0A%20%20%20%20source_block_hash%0A%20%20%20%20source_connection_id%0A%20%20%20%20source_transaction_hash%0A%0A%20%20%20%20receiver%0A%20%20%20%20destination_chain_id%0A%20%20%20%20destination_timestamp%0A%20%20%20%20destination_port_id%0A%20%20%20%20destination_channel_id%0A%20%20%20%20destination_block_hash%0A%20%20%20%20destination_connection_id%0A%20%20%20%20destination_transaction_hash%0A%20%20%7D%0A%7D)
 
 ___
 
