@@ -1,10 +1,6 @@
 use macros::model;
 
-use crate::{
-    errors::{required, InvalidLength, MissingField},
-    hash::H256,
-    ibc::core::commitment::merkle_root::{MerkleRoot, TryFromMerkleRootError},
-};
+use crate::{hash::H256, ibc::core::commitment::merkle_root::MerkleRoot};
 
 #[model(
     proto(
@@ -20,41 +16,52 @@ pub struct ConsensusState {
     pub next_validators_hash: H256,
 }
 
-#[derive(Debug, PartialEq, Clone, thiserror::Error)]
-pub enum TryFromConsensusStateError {
-    #[error(transparent)]
-    MissingField(MissingField),
-    #[error("invalid root")]
-    Root(#[from] TryFromMerkleRootError),
-    #[error("invalid next validators hash")]
-    NextValidatorsHash(#[from] InvalidLength),
-}
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        errors::{required, InvalidLength, MissingField},
+        ibc::{
+            core::commitment::merkle_root::proto::TryFromMerkleRootError,
+            lightclients::cometbls::consensus_state::ConsensusState,
+        },
+    };
 
-impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ConsensusState> for ConsensusState {
-    type Error = TryFromConsensusStateError;
-
-    fn try_from(
-        value: protos::union::ibc::lightclients::cometbls::v1::ConsensusState,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            timestamp: value.timestamp,
-            app_hash: required!(value.root)?
-                .try_into()
-                .map_err(TryFromConsensusStateError::Root)?,
-            next_validators_hash: value
-                .next_validators_hash
-                .try_into()
-                .map_err(TryFromConsensusStateError::NextValidatorsHash)?,
-        })
+    #[derive(Debug, PartialEq, Clone, thiserror::Error)]
+    pub enum TryFromConsensusStateError {
+        #[error(transparent)]
+        MissingField(MissingField),
+        #[error("invalid root")]
+        Root(#[from] TryFromMerkleRootError),
+        #[error("invalid next validators hash")]
+        NextValidatorsHash(#[from] InvalidLength),
     }
-}
 
-impl From<ConsensusState> for protos::union::ibc::lightclients::cometbls::v1::ConsensusState {
-    fn from(value: ConsensusState) -> Self {
-        Self {
-            timestamp: value.timestamp,
-            root: Some(value.app_hash.into()),
-            next_validators_hash: value.next_validators_hash.into(),
+    impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ConsensusState> for ConsensusState {
+        type Error = TryFromConsensusStateError;
+
+        fn try_from(
+            value: protos::union::ibc::lightclients::cometbls::v1::ConsensusState,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                timestamp: value.timestamp,
+                app_hash: required!(value.root)?
+                    .try_into()
+                    .map_err(TryFromConsensusStateError::Root)?,
+                next_validators_hash: value
+                    .next_validators_hash
+                    .try_into()
+                    .map_err(TryFromConsensusStateError::NextValidatorsHash)?,
+            })
+        }
+    }
+
+    impl From<ConsensusState> for protos::union::ibc::lightclients::cometbls::v1::ConsensusState {
+        fn from(value: ConsensusState) -> Self {
+            Self {
+                timestamp: value.timestamp,
+                root: Some(value.app_hash.into()),
+                next_validators_hash: value.next_validators_hash.into(),
+            }
         }
     }
 }
@@ -72,7 +79,7 @@ impl From<ConsensusState> for ibc_solidity::cometbls::ConsensusState {
 
 #[cfg(feature = "ethabi")]
 impl TryFrom<ibc_solidity::cometbls::ConsensusState> for ConsensusState {
-    type Error = TryFromConsensusStateError;
+    type Error = proto::TryFromConsensusStateError;
 
     fn try_from(value: ibc_solidity::cometbls::ConsensusState) -> Result<Self, Self::Error> {
         Ok(Self {

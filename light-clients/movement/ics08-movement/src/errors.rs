@@ -1,6 +1,6 @@
 use ics008_wasm_client::IbcClientError;
 use unionlabs::{
-    aptos::storage_proof::TryFromStorageProofError,
+    aptos::storage_proof::proto::TryFromStorageProofError,
     encoding::{DecodeErrorOf, Proto},
     google::protobuf::any::Any,
     ibc::{

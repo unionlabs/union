@@ -1,17 +1,10 @@
 use macros::model;
-use prost::Message;
-use protos::google::protobuf::{BytesValue, Int64Value, StringValue};
-use rs_merkle::{algorithms::Sha256, Hasher};
 
 use crate::{
-    bounded::{BoundedI64, BoundedIntError},
-    errors::{required, InvalidLength, MissingField},
-    google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
+    bounded::BoundedI64,
+    google::protobuf::timestamp::Timestamp,
     hash::{H160, H256},
-    tendermint::{
-        types::block_id::{BlockId, TryFromBlockIdError},
-        version::consensus::Consensus,
-    },
+    tendermint::{types::block_id::BlockId, version::consensus::Consensus},
 };
 
 #[model(proto(raw(protos::tendermint::types::Header), into, from))]
@@ -19,7 +12,7 @@ pub struct Header {
     /// basic block info
     pub version: Consensus,
     pub chain_id: String,
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub height: BoundedI64<0, { i64::MAX }>,
     pub time: Timestamp,
     /// prev block info
@@ -51,9 +44,14 @@ pub struct Header {
 }
 
 impl Header {
+    #[cfg(feature = "proto")]
     #[must_use]
     #[allow(clippy::too_many_lines)]
     pub fn calculate_merkle_root(&self) -> Option<H256> {
+        use prost::Message;
+        use protos::google::protobuf::{BytesValue, Int64Value, StringValue};
+        use rs_merkle::{algorithms::Sha256, Hasher};
+
         const LEAF_PREFIX: u8 = 0;
         const INNER_PREFIX: u8 = 1;
 
@@ -168,110 +166,121 @@ impl Header {
     }
 }
 
-impl From<Header> for protos::tendermint::types::Header {
-    fn from(value: Header) -> Self {
-        Self {
-            version: Some(value.version.into()),
-            chain_id: value.chain_id,
-            height: value.height.into(),
-            time: Some(value.time.into()),
-            last_block_id: Some(value.last_block_id.into()),
-            last_commit_hash: value.last_commit_hash.into(),
-            data_hash: value.data_hash.into(),
-            validators_hash: value.validators_hash.into(),
-            next_validators_hash: value.next_validators_hash.into(),
-            consensus_hash: value.consensus_hash.into(),
-            app_hash: value.app_hash.into(),
-            last_results_hash: value.last_results_hash.into(),
-            evidence_hash: value.evidence_hash.into(),
-            proposer_address: value.proposer_address.into(),
+#[cfg(feature = "proto")]
+pub mod proto {
+    use super::Header;
+    use crate::{
+        bounded::BoundedIntError,
+        errors::{required, InvalidLength, MissingField},
+        google::protobuf::timestamp::proto::TryFromTimestampError,
+        tendermint::types::block_id::proto::TryFromBlockIdError,
+    };
+
+    impl From<Header> for protos::tendermint::types::Header {
+        fn from(value: Header) -> Self {
+            Self {
+                version: Some(value.version.into()),
+                chain_id: value.chain_id,
+                height: value.height.into(),
+                time: Some(value.time.into()),
+                last_block_id: Some(value.last_block_id.into()),
+                last_commit_hash: value.last_commit_hash.into(),
+                data_hash: value.data_hash.into(),
+                validators_hash: value.validators_hash.into(),
+                next_validators_hash: value.next_validators_hash.into(),
+                consensus_hash: value.consensus_hash.into(),
+                app_hash: value.app_hash.into(),
+                last_results_hash: value.last_results_hash.into(),
+                evidence_hash: value.evidence_hash.into(),
+                proposer_address: value.proposer_address.into(),
+            }
         }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromHeaderError {
-    #[error(transparent)]
-    MissingField(#[from] MissingField),
-    #[error("invalid last block id")]
-    LastBlockId(#[source] TryFromBlockIdError),
-    #[error("invalid height")]
-    Height(#[source] BoundedIntError<i64>),
-    #[error("invalid timestamp")]
-    Timestamp(#[source] TryFromTimestampError),
-    #[error("invalid last commit hash")]
-    LastCommitHash(#[source] InvalidLength),
-    #[error("invalid data hash")]
-    DataHash(#[source] InvalidLength),
-    #[error("invalid validators hash")]
-    ValidatorsHash(#[source] InvalidLength),
-    #[error("invalid next validators hash")]
-    NextValidatorsHash(#[source] InvalidLength),
-    #[error("invalid consensus hash")]
-    ConsensusHash(#[source] InvalidLength),
-    #[error("invalid app hash")]
-    AppHash(#[source] InvalidLength),
-    #[error("invalid last results hash")]
-    LastResultsHash(#[source] InvalidLength),
-    #[error("invalid evidence hash")]
-    EvidenceHash(#[source] InvalidLength),
-    #[error("invalid proposer address")]
-    ProposerAddress(#[source] InvalidLength),
-}
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromHeaderError {
+        #[error(transparent)]
+        MissingField(#[from] MissingField),
+        #[error("invalid last block id")]
+        LastBlockId(#[source] TryFromBlockIdError),
+        #[error("invalid height")]
+        Height(#[source] BoundedIntError<i64>),
+        #[error("invalid timestamp")]
+        Timestamp(#[source] TryFromTimestampError),
+        #[error("invalid last commit hash")]
+        LastCommitHash(#[source] InvalidLength),
+        #[error("invalid data hash")]
+        DataHash(#[source] InvalidLength),
+        #[error("invalid validators hash")]
+        ValidatorsHash(#[source] InvalidLength),
+        #[error("invalid next validators hash")]
+        NextValidatorsHash(#[source] InvalidLength),
+        #[error("invalid consensus hash")]
+        ConsensusHash(#[source] InvalidLength),
+        #[error("invalid app hash")]
+        AppHash(#[source] InvalidLength),
+        #[error("invalid last results hash")]
+        LastResultsHash(#[source] InvalidLength),
+        #[error("invalid evidence hash")]
+        EvidenceHash(#[source] InvalidLength),
+        #[error("invalid proposer address")]
+        ProposerAddress(#[source] InvalidLength),
+    }
 
-impl TryFrom<protos::tendermint::types::Header> for Header {
-    type Error = TryFromHeaderError;
+    impl TryFrom<protos::tendermint::types::Header> for Header {
+        type Error = TryFromHeaderError;
 
-    fn try_from(value: protos::tendermint::types::Header) -> Result<Self, Self::Error> {
-        Ok(Self {
-            version: required!(value.version)?.into(),
-            chain_id: value.chain_id,
-            height: value
-                .height
-                .try_into()
-                .map_err(TryFromHeaderError::Height)?,
-            time: required!(value.time)?
-                .try_into()
-                .map_err(TryFromHeaderError::Timestamp)?,
-            last_block_id: required!(value.last_block_id)?
-                .try_into()
-                .map_err(TryFromHeaderError::LastBlockId)?,
-            last_commit_hash: value
-                .last_commit_hash
-                .try_into()
-                .map_err(TryFromHeaderError::LastCommitHash)?,
-            data_hash: value
-                .data_hash
-                .try_into()
-                .map_err(TryFromHeaderError::DataHash)?,
-            validators_hash: value
-                .validators_hash
-                .try_into()
-                .map_err(TryFromHeaderError::ValidatorsHash)?,
-            next_validators_hash: value
-                .next_validators_hash
-                .try_into()
-                .map_err(TryFromHeaderError::NextValidatorsHash)?,
-            consensus_hash: value
-                .consensus_hash
-                .try_into()
-                .map_err(TryFromHeaderError::ConsensusHash)?,
-            app_hash: value
-                .app_hash
-                .try_into()
-                .map_err(TryFromHeaderError::AppHash)?,
-            last_results_hash: value
-                .last_results_hash
-                .try_into()
-                .map_err(TryFromHeaderError::LastResultsHash)?,
-            evidence_hash: value
-                .evidence_hash
-                .try_into()
-                .map_err(TryFromHeaderError::EvidenceHash)?,
-            proposer_address: value
-                .proposer_address
-                .try_into()
-                .map_err(TryFromHeaderError::ProposerAddress)?,
-        })
+        fn try_from(value: protos::tendermint::types::Header) -> Result<Self, Self::Error> {
+            Ok(Self {
+                version: required!(value.version)?.into(),
+                chain_id: value.chain_id,
+                height: value
+                    .height
+                    .try_into()
+                    .map_err(TryFromHeaderError::Height)?,
+                time: required!(value.time)?
+                    .try_into()
+                    .map_err(TryFromHeaderError::Timestamp)?,
+                last_block_id: required!(value.last_block_id)?
+                    .try_into()
+                    .map_err(TryFromHeaderError::LastBlockId)?,
+                last_commit_hash: value
+                    .last_commit_hash
+                    .try_into()
+                    .map_err(TryFromHeaderError::LastCommitHash)?,
+                data_hash: value
+                    .data_hash
+                    .try_into()
+                    .map_err(TryFromHeaderError::DataHash)?,
+                validators_hash: value
+                    .validators_hash
+                    .try_into()
+                    .map_err(TryFromHeaderError::ValidatorsHash)?,
+                next_validators_hash: value
+                    .next_validators_hash
+                    .try_into()
+                    .map_err(TryFromHeaderError::NextValidatorsHash)?,
+                consensus_hash: value
+                    .consensus_hash
+                    .try_into()
+                    .map_err(TryFromHeaderError::ConsensusHash)?,
+                app_hash: value
+                    .app_hash
+                    .try_into()
+                    .map_err(TryFromHeaderError::AppHash)?,
+                last_results_hash: value
+                    .last_results_hash
+                    .try_into()
+                    .map_err(TryFromHeaderError::LastResultsHash)?,
+                evidence_hash: value
+                    .evidence_hash
+                    .try_into()
+                    .map_err(TryFromHeaderError::EvidenceHash)?,
+                proposer_address: value
+                    .proposer_address
+                    .try_into()
+                    .map_err(TryFromHeaderError::ProposerAddress)?,
+            })
+        }
     }
 }

@@ -1,5 +1,5 @@
 use cosmwasm_std::{Deps, DepsMut, Env};
-use ethereum_light_client::client::{canonicalize_stored_value, check_commitment_key};
+use ethereum_light_client::client::check_commitment_key;
 use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, read_subject_client_state,
@@ -276,7 +276,7 @@ fn do_verify_membership(
     check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
 
     // we store the hash of the data, not the data itself to the commitments map
-    let expected_value_hash = keccak256(canonicalize_stored_value(path, raw_value)?);
+    let expected_value_hash = keccak256(raw_value);
 
     let proof_value = H256::from(storage_proof.value.to_be_bytes());
 

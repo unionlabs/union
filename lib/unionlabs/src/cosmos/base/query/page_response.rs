@@ -11,20 +11,25 @@ pub struct PageResponse {
     pub total: u64,
 }
 
-impl From<protos::cosmos::base::query::v1beta1::PageResponse> for PageResponse {
-    fn from(value: protos::cosmos::base::query::v1beta1::PageResponse) -> Self {
-        Self {
-            next_key: value.next_key,
-            total: value.total,
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::cosmos::base::query::page_response::PageResponse;
+
+    impl From<protos::cosmos::base::query::v1beta1::PageResponse> for PageResponse {
+        fn from(value: protos::cosmos::base::query::v1beta1::PageResponse) -> Self {
+            Self {
+                next_key: value.next_key,
+                total: value.total,
+            }
         }
     }
-}
 
-impl From<PageResponse> for protos::cosmos::base::query::v1beta1::PageResponse {
-    fn from(value: PageResponse) -> Self {
-        Self {
-            next_key: value.next_key,
-            total: value.total,
+    impl From<PageResponse> for protos::cosmos::base::query::v1beta1::PageResponse {
+        fn from(value: PageResponse) -> Self {
+            Self {
+                next_key: value.next_key,
+                total: value.total,
+            }
         }
     }
 }

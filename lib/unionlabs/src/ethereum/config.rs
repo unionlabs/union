@@ -3,7 +3,6 @@ use core::{
     str::FromStr,
 };
 
-use serde::{Deserialize, Serialize};
 use typenum::{NonZero, Unsigned};
 
 use crate::{
@@ -19,8 +18,12 @@ pub struct Minimal;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Mainnet;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum PresetBaseKind {
     Minimal,
     Mainnet,
@@ -167,7 +170,8 @@ pub mod consts {
 
 pub mod preset {
     #[allow(non_snake_case)]
-    #[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+    #[derive(Debug, Default, Clone, PartialEq, Eq)]
+    #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
     pub struct Preset {
         /// Misc
         /// ---------------------------------------------------------------
@@ -264,7 +268,12 @@ pub mod preset {
     };
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub struct Config {
     pub preset: preset::Preset,
     pub fork_parameters: ForkParameters,

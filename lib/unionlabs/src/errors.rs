@@ -16,14 +16,14 @@ macro_rules! required {
     ($struct_var:ident.$field:ident) => {
         $struct_var
             .$field
-            .ok_or(<Self::Error>::MissingField(MissingField(stringify!(
-                $field
-            ))))
+            .ok_or(<Self::Error>::MissingField(crate::errors::MissingField(
+                stringify!($field),
+            )))
     };
     ($field:ident) => {
-        $field.ok_or(<Self::Error>::MissingField(MissingField(stringify!(
-            $field
-        ))))
+        $field.ok_or(<Self::Error>::MissingField(crate::errors::MissingField(
+            stringify!($field),
+        )))
     };
 }
 

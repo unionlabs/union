@@ -9,7 +9,7 @@ use crate::{
 pub struct MsgChannelOpenConfirm {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub proof_ack: Vec<u8>,
     pub proof_height: Height,

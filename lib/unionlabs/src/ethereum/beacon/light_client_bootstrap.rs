@@ -17,7 +17,7 @@ use crate::{
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#lightclientbootstrap>
 #[model]
 #[derive(Ssz)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct LightClientBootstrap<
     C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES,
 > {

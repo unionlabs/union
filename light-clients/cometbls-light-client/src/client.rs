@@ -169,7 +169,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
         }
 
         T::verify_zkp(
-            &client_state.data.chain_id.as_str(),
+            client_state.data.chain_id.as_str(),
             trusted_validators_hash,
             &header.signed_header,
             &header.zero_knowledge_proof,
@@ -609,7 +609,6 @@ mod tests {
         }
 
         let modifications = modify_fns! { s,
-            s.unbonding_period ^= u64::MAX,
             s.max_clock_drift ^= u64::MAX,
         };
 

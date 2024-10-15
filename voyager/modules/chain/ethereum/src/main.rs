@@ -2,6 +2,10 @@
 
 use std::sync::Arc;
 
+use alloy::{
+    providers::{Provider, ProviderBuilder, RootProvider},
+    transports::BoxTransport,
+};
 use beacon_api::client::BeaconApiClient;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -40,7 +44,7 @@ pub struct Module {
 
     pub ibc_handler_address: H160,
 
-    pub provider: Provider<Ws>,
+    pub provider: RootProvider<BoxTransport>,
     pub beacon_api_client: BeaconApiClient,
 }
 
@@ -60,14 +64,16 @@ impl ChainModule for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ChainModuleInfo) -> Result<Self, BoxDynError> {
-        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
+        let provider = ProviderBuilder::new()
+            .on_builtin(&config.eth_rpc_api)
+            .await?;
 
-        let chain_id = provider.get_chainid().await?;
+        let chain_id = provider.get_chain_id().await?;
 
-        info.ensure_chain_id(U256(chain_id).to_string())?;
+        info.ensure_chain_id(chain_id.to_string())?;
 
         Ok(Module {
-            chain_id: ChainId::new(U256(chain_id).to_string()),
+            chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
             provider,
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
@@ -76,19 +82,6 @@ impl ChainModule for Module {
 }
 
 impl Module {
-    pub async fn new(config: Config) -> Result<Self, BoxDynError> {
-        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
-
-        let chain_id = provider.get_chainid().await?;
-
-        Ok(Self {
-            chain_id: ChainId::new(U256(chain_id).to_string()),
-            ibc_handler_address: config.ibc_handler_address,
-            provider,
-            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
-        })
-    }
-
     #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
         Height::new(height)
@@ -305,10 +298,10 @@ impl ChainModuleServer for Module {
         let proof = self
             .provider
             .get_proof(
-                ethers::types::H160::from(self.ibc_handler_address),
+                self.ibc_handler_address.into(),
                 vec![location.to_be_bytes().into()],
-                Some(execution_height.into()),
             )
+            .block_id(execution_height.into())
             .await
             .unwrap();
 
@@ -320,7 +313,7 @@ impl ChainModuleServer for Module {
         };
 
         let proof = StorageProof {
-            key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
+            key: proof.key.0.into(),
             value: proof.value.into(),
             proof: proof
                 .proof

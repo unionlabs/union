@@ -29,6 +29,7 @@ use unionlabs::{
     traits::Member,
     QueryHeight, DELAY_PERIOD,
 };
+use valuable::Valuable;
 use voyager_core::ClientType;
 use voyager_vm::{call, data, defer, noop, now, seq, CallT, Op, QueueError};
 
@@ -489,7 +490,7 @@ impl CallT<VoyagerMessage> for Call {
                             .ordering,
                         counterparty: channel::counterparty::Counterparty {
                             port_id: event.port_id,
-                            channel_id: event.channel_id.to_string(),
+                            channel_id: Some(event.channel_id),
                         },
                         connection_hops: vec![event.connection.counterparty.connection_id.unwrap()],
                         version: event.version.clone(),
@@ -1131,9 +1132,7 @@ async fn mk_connection_handshake_state_and_proofs(
 
     debug!(
         %counterparty_client_id,
-        %target_client_info.client_type,
-        %target_client_info.ibc_interface,
-        %target_client_info.metadata,
+        target_client_info = target_client_info.as_value()
     );
 
     // info of the client on the origin chain, this is used to decode the stored
@@ -1146,9 +1145,7 @@ async fn mk_connection_handshake_state_and_proofs(
 
     debug!(
         %client_id,
-        %origin_client_info.client_type,
-        %origin_client_info.ibc_interface,
-        %origin_client_info.metadata,
+        origin_client_info = origin_client_info.as_value()
     );
 
     // client state of the destination on the source
@@ -1180,10 +1177,7 @@ async fn mk_connection_handshake_state_and_proofs(
         )
         .await?;
 
-    debug!(
-        %client_meta.height,
-        %client_meta.chain_id,
-    );
+    debug!(client_meta = client_meta.as_value());
 
     let reencoded_client_state = ctx
         .rpc_server
@@ -1216,9 +1210,7 @@ async fn mk_connection_handshake_state_and_proofs(
             "connection must exist",
             None::<()>,
         ))?;
-    debug!(
-        connection_state = %serde_json::to_string(&connection_state).unwrap(),
-    );
+    debug!(connection_state = connection_state.as_value());
 
     // proof of connection_state, encoded for the client on the target chain
     let connection_proof = ctx

@@ -1,13 +1,7 @@
 use macros::model;
 
-#[cfg(feature = "ethabi")]
-use crate::ibc::lightclients::cometbls::signed_header::TryFromEthAbiSignedHeaderError;
-use crate::{
-    errors::{required, MissingField},
-    ibc::{
-        core::client::height::Height,
-        lightclients::cometbls::signed_header::{SignedHeader, TryFromLightHeaderError},
-    },
+use crate::ibc::{
+    core::client::height::Height, lightclients::cometbls::signed_header::SignedHeader,
 };
 
 #[model(
@@ -21,76 +15,94 @@ use crate::{
 pub struct Header {
     pub signed_header: SignedHeader,
     pub trusted_height: Height,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     #[debug("{}", ::serde_utils::to_hex(&zero_knowledge_proof))]
     pub zero_knowledge_proof: Vec<u8>,
 }
 
-impl From<Header> for protos::union::ibc::lightclients::cometbls::v1::Header {
-    fn from(value: Header) -> Self {
-        Self {
-            signed_header: Some(value.signed_header.into()),
-            trusted_height: Some(value.trusted_height.into()),
-            zero_knowledge_proof: value.zero_knowledge_proof,
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        errors::{required, MissingField},
+        ibc::lightclients::cometbls::{
+            header::Header, signed_header::proto::TryFromLightHeaderError,
+        },
+    };
+
+    impl From<Header> for protos::union::ibc::lightclients::cometbls::v1::Header {
+        fn from(value: Header) -> Self {
+            Self {
+                signed_header: Some(value.signed_header.into()),
+                trusted_height: Some(value.trusted_height.into()),
+                zero_knowledge_proof: value.zero_knowledge_proof,
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromHeaderError {
+        #[error(transparent)]
+        MissingField(MissingField),
+        #[error("invalid signed header")]
+        SignedHeader(#[from] TryFromLightHeaderError),
+    }
+
+    impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header {
+        type Error = TryFromHeaderError;
+
+        fn try_from(
+            value: protos::union::ibc::lightclients::cometbls::v1::Header,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                signed_header: required!(value.signed_header)?.try_into()?,
+                trusted_height: required!(value.trusted_height)?.into(),
+                zero_knowledge_proof: value.zero_knowledge_proof,
+            })
         }
     }
 }
 
 #[cfg(feature = "ethabi")]
-impl From<Header> for ibc_solidity::cometbls::Header {
-    fn from(value: Header) -> Self {
-        Self {
-            signedHeader: value.signed_header.into(),
-            trustedHeight: value.trusted_height.revision(),
-            zeroKnowledgeProof: value.zero_knowledge_proof.into(),
+pub mod ethabi {
+    use crate::ibc::{
+        core::client::height::Height,
+        lightclients::cometbls::{
+            header::Header, signed_header::ethabi::TryFromEthAbiSignedHeaderError,
+        },
+    };
+
+    impl From<Header> for ibc_solidity::cometbls::Header {
+        fn from(value: Header) -> Self {
+            Self {
+                signedHeader: value.signed_header.into(),
+                trustedHeight: value.trusted_height.revision(),
+                zeroKnowledgeProof: value.zero_knowledge_proof.into(),
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum TryFromEthAbiHeaderError {
+        SignedHeader(TryFromEthAbiSignedHeaderError),
+    }
+
+    impl TryFrom<ibc_solidity::cometbls::Header> for Header {
+        type Error = TryFromEthAbiHeaderError;
+
+        fn try_from(value: ibc_solidity::cometbls::Header) -> Result<Self, Self::Error> {
+            Ok(Self {
+                signed_header: value
+                    .signedHeader
+                    .try_into()
+                    .map_err(TryFromEthAbiHeaderError::SignedHeader)?,
+                trusted_height: Height::new(value.trustedHeight),
+                zero_knowledge_proof: value.zeroKnowledgeProof.to_vec(),
+            })
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromHeaderError {
-    #[error(transparent)]
-    MissingField(MissingField),
-    #[error("invalid signed header")]
-    SignedHeader(#[from] TryFromLightHeaderError),
-}
-
-impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header {
-    type Error = TryFromHeaderError;
-
-    fn try_from(
-        value: protos::union::ibc::lightclients::cometbls::v1::Header,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            signed_header: required!(value.signed_header)?.try_into()?,
-            trusted_height: required!(value.trusted_height)?.into(),
-            zero_knowledge_proof: value.zero_knowledge_proof,
-        })
-    }
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug, Clone, PartialEq)]
-pub enum TryFromEthAbiHeaderError {
-    SignedHeader(TryFromEthAbiSignedHeaderError),
-}
-
-#[cfg(feature = "ethabi")]
-impl TryFrom<ibc_solidity::cometbls::Header> for Header {
-    type Error = TryFromEthAbiHeaderError;
-
-    fn try_from(value: ibc_solidity::cometbls::Header) -> Result<Self, Self::Error> {
-        Ok(Self {
-            signed_header: value
-                .signedHeader
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::SignedHeader)?,
-            trusted_height: Height::new(value.trustedHeight),
-            zero_knowledge_proof: value.zeroKnowledgeProof.to_vec(),
-        })
-    }
-}
-
+#[cfg(feature = "bcs")]
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;

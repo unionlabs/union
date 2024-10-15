@@ -16,7 +16,6 @@ alloy-core               = { workspace = true, optional = true }
 bip32                    = { workspace = true, features = ["secp256k1"] }
 bitvec                   = { workspace = true }
 chrono                   = { workspace = true, features = ["alloc"] }
-clap                     = { workspace = true, features = ["derive"] }
 cosmwasm-std             = { workspace = true, optional = true }
 derive_more              = { workspace = true, features = ["display"] }
 either                   = { workspace = true }
@@ -25,27 +24,25 @@ frame-support-procedural = { workspace = true }
 generic-array            = "0.14.7"
 hex                      = { workspace = true }
 hex-literal              = { workspace = true }
-ibc-solidity             = { workspace = true }
+ibc-solidity             = { workspace = true, optional = true, features = ["rpc"] }                # TODO: Remove this feature flag
 k256                     = { version = "0.13.1", default-features = false, features = ["schnorr"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
 macros                   = { workspace = true }
 milagro_bls              = { workspace = true }
 paste                    = { version = "1.0" }
-primitive-types          = { workspace = true, features = ["serde_no_std", "impl-rlp"] }
-prost                    = { workspace = true, features = ["std"] }
+prost                    = { workspace = true, optional = true, features = ["std"] }
 protos                   = { workspace = true, features = ["proto_full"], optional = true }
 ripemd                   = { workspace = true }
 rlp                      = { workspace = true, features = ["derive"], optional = true }
 rs_merkle                = "1.4.1"
-serde                    = { workspace = true, features = ["derive"] }
+serde                    = { workspace = true, optional = true, features = ["derive"] }
 serde-utils              = { workspace = true }
-serde_json               = { workspace = true }
+serde_json               = { workspace = true, optional = true }
 sha2                     = { workspace = true }
 sha3                     = { workspace = true }
-ssz                      = { workspace = true }
+ssz                      = { workspace = true, optional = true }
 static_assertions        = { workspace = true }
 subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
 thiserror                = { workspace = true }
-tracing                  = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 wasmparser               = { version = "0.113" }
 
@@ -58,14 +55,17 @@ near-sdk             = { workspace = true, optional = true }
 ruint                = { version = "1.12.3" }
 schemars             = { workspace = true, features = ["derive"], optional = true }
 serde_bytes          = "0.11.6"
+valuable             = { workspace = true, features = ["derive"], optional = true }
 
 [dev-dependencies]
 rand       = "0.8.5"
 serde_json = { workspace = true }
 
 [features]
-# TODO: Remove "full" from default features
-default = ["std", "full"]
+default = [
+  "ssz", # the ethereum light client & beacon types are a mess, clean it all up later
+  "std",
+]
 
 full = [
   "cosmwasm",
@@ -78,22 +78,30 @@ full = [
   "schemars",
   "stargate",
   "rlp",
+  "valuable",
+  "beacon",
+  "json"
 ]
 
-cosmwasm = ["dep:cosmwasm-std"]
+cosmwasm = ["dep:cosmwasm-std", "dep:serde"]
 
-std = ["alloy-core/std", "ruint/std"]
+std = ["alloy-core/std", "ruint/std", "base64/std"]
 
 # encodings
 bcs    = ["dep:bcs", "protos?/serde"]
-ethabi = ["dep:alloy-core"]
-proto  = ["dep:protos"]
+ethabi = ["dep:alloy-core", "dep:ibc-solidity"]
+json   = ["dep:serde_json"]
+proto  = ["dep:protos", "dep:prost"]
 rlp    = ["dep:rlp", "ruint/rlp"]
-serde  = ["protos?/serde", "ruint/serde"]
+serde  = ["dep:serde", "protos?/serde", "ruint/serde"]
+ssz    = ["dep:ssz"]
 
 near = ["dep:borsh", "dep:near-sdk", "dep:near-primitives-core"]
 
-test_utils = []
+beacon = ["dep:ssz"]
 
 schemars = ["dep:schemars"]
-stargate = ["cosmwasm", "cosmwasm-std?/stargate"]
+stargate = ["cosmwasm", "proto", "cosmwasm-std?/stargate"]
+valuable = ["dep:valuable"]
+
+test_utils = ["full"]

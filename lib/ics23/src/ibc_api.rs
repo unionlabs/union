@@ -169,6 +169,7 @@ mod tests {
             merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
         },
         ics24::ConnectionPath,
+        id::ConnectionId,
     };
 
     use super::{verify_membership, verify_non_membership, VerifyMembershipError, SDK_SPECS};
@@ -344,9 +345,26 @@ mod tests {
         verify_membership(
             &proof,
             &SDK_SPECS,
-            &MerkleRoot { hash: hex!("F7ED1D182E325EA21817DC6048C7043056F76AB044642504CE57DDC5C1B47CD3").into() },
-            &[b"ibc".to_vec(), ConnectionPath { connection_id: "connection-2".parse().unwrap() }.to_string().into_bytes()],
-            hex!("0a0930382d7761736d2d3112140a0131120f4f524445525f554e4f524445524544180122130a0a636f6d6574626c732d301a050a03696263").into()
-        ).unwrap();
+            &MerkleRoot {
+                hash: hex!("F7ED1D182E325EA21817DC6048C7043056F76AB044642504CE57DDC5C1B47CD3")
+                    .into(),
+            },
+            &[
+                b"ibc".to_vec(),
+                ConnectionPath {
+                    connection_id: ConnectionId::new(2),
+                }
+                .ics24_commitment_path()
+                .into_bytes(),
+            ],
+            hex!(
+                "0a0930382d7761736d2d3112140a0131
+                120f4f524445525f554e4f52444552454
+                4180122130a0a636f6d6574626c732d30
+                1a050a03696263"
+            )
+            .into(),
+        )
+        .unwrap();
     }
 }

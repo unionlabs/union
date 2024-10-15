@@ -7,6 +7,7 @@ pub struct DefaultNodeInfoOther {
     pub rpc_address: String,
 }
 
+#[cfg(feature = "proto")]
 impl From<protos::tendermint::p2p::DefaultNodeInfoOther> for DefaultNodeInfoOther {
     fn from(value: protos::tendermint::p2p::DefaultNodeInfoOther) -> Self {
         Self {

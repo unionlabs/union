@@ -7,7 +7,7 @@ use crate::hash::H256;
 #[model]
 #[derive(Ssz)]
 pub struct Checkpoint {
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub epoch: u64,
     pub root: H256,
 }

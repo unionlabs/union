@@ -9,6 +9,7 @@ use crate::{
     uint::U256,
 };
 
+#[cfg(feature = "beacon")]
 pub mod beacon;
 pub mod config;
 pub mod slot;
@@ -37,20 +38,8 @@ hex_string_array_wrapper! {
     pub struct Domain(pub [u8; 32]);
 }
 
-#[rustfmt::skip]
 impl DomainType {
-    pub const BEACON_PROPOSER: Self                = Self(hex!("00000000"));
-    pub const BEACON_ATTESTER: Self                = Self(hex!("01000000"));
-    pub const RANDAO: Self                         = Self(hex!("02000000"));
-    pub const DEPOSIT: Self                        = Self(hex!("03000000"));
-    pub const VOLUNTARY_EXIT: Self                 = Self(hex!("04000000"));
-    pub const SELECTION_PROOF: Self                = Self(hex!("05000000"));
-    pub const AGGREGATE_AND_PROOF: Self            = Self(hex!("06000000"));
-    pub const SYNC_COMMITTEE: Self                 = Self(hex!("07000000"));
-    pub const SYNC_COMMITTEE_SELECTION_PROOF: Self = Self(hex!("08000000"));
-    pub const CONTRIBUTION_AND_PROOF: Self         = Self(hex!("09000000"));
-    pub const BLS_TO_EXECUTION_CHANGE: Self        = Self(hex!("0A000000"));
-    pub const APPLICATION_MASK: Self               = Self(hex!("00000001"));
+    pub const SYNC_COMMITTEE: Self = Self(hex!("07000000"));
 }
 
 #[cfg(test)]
@@ -58,7 +47,7 @@ mod tests {
     use hex_literal::hex;
 
     use super::*;
-    use crate::{ics24::ConnectionPath, validated::ValidateT};
+    use crate::{ics24::ConnectionPath, id::ConnectionId};
 
     #[test]
     fn commitment_key() {
@@ -67,14 +56,14 @@ mod tests {
                 U256::from_be_bytes(hex!(
                     "55c4893838cf8a468bfdb0c63e25a4c924d9b7ad283fc335d5f527d29b2fcfc7"
                 )),
-                "connection-100",
+                ConnectionId::new(100),
                 0,
             ),
             (
                 U256::from_be_bytes(hex!(
                     "f39538e1f0ca1c5f5ecdf1bb05f67c173f2d0f75b41fbb5be884f6aab2ebae91"
                 )),
-                "connection-1",
+                ConnectionId::new(1),
                 5,
             ),
         ];
@@ -82,10 +71,7 @@ mod tests {
         for (expected, connection_id, slot) in commitments {
             assert_eq!(
                 ibc_commitment_key(
-                    &ConnectionPath {
-                        connection_id: connection_id.to_owned().validate().unwrap()
-                    }
-                    .to_string(),
+                    &ConnectionPath { connection_id }.ics24_commitment_path(),
                     U256::from(slot),
                 ),
                 expected

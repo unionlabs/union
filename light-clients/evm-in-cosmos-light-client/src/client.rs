@@ -108,13 +108,15 @@ impl IbcClient for EvmInCosmosLightClient {
             deps,
             &env,
             client_state.data.l1_client_id.clone(),
+            todo!(),
             header.l1_height,
         )
         .map_err(Error::CustomQuery)?;
-        let client_consensus_state_path = Path::ClientConsensusState(ClientConsensusStatePath {
-            client_id: client_state.data.l2_client_id.parse().unwrap(),
-            height: Height::new(header.l2_slot),
-        });
+        let client_consensus_state_path = format!(
+            "clients/{}/consensusStates/{}",
+            client_state.data.l2_client_id,
+            Height::new(header.l2_slot)
+        );
         // The ethereum consensus state is stored in proto-encoded wasm-wrapped form.
         let normalized_l2_consensus_state = WasmL2ConsensusState {
             data: header.l2_consensus_state,
@@ -124,10 +126,7 @@ impl IbcClient for EvmInCosmosLightClient {
             &header.l2_inclusion_proof,
             &SDK_SPECS,
             &l1_consensus_state.data.app_hash,
-            &[
-                b"ibc".to_vec(),
-                client_consensus_state_path.to_string().into_bytes(),
-            ],
+            &[b"ibc".to_vec(), client_consensus_state_path.into_bytes()],
             normalized_l2_consensus_state.encode_as::<Proto>(),
         )
         .map_err(Error::VerifyL2Membership)?;

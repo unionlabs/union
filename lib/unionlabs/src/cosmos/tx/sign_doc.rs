@@ -16,24 +16,29 @@ pub struct SignDoc {
     pub account_number: u64,
 }
 
-impl From<SignDoc> for protos::cosmos::tx::v1beta1::SignDoc {
-    fn from(value: SignDoc) -> Self {
-        Self {
-            body_bytes: value.body_bytes,
-            auth_info_bytes: value.auth_info_bytes,
-            chain_id: value.chain_id,
-            account_number: value.account_number,
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::cosmos::tx::sign_doc::SignDoc;
+
+    impl From<SignDoc> for protos::cosmos::tx::v1beta1::SignDoc {
+        fn from(value: SignDoc) -> Self {
+            Self {
+                body_bytes: value.body_bytes,
+                auth_info_bytes: value.auth_info_bytes,
+                chain_id: value.chain_id,
+                account_number: value.account_number,
+            }
         }
     }
-}
 
-impl From<protos::cosmos::tx::v1beta1::SignDoc> for SignDoc {
-    fn from(value: protos::cosmos::tx::v1beta1::SignDoc) -> Self {
-        Self {
-            body_bytes: value.body_bytes,
-            auth_info_bytes: value.auth_info_bytes,
-            chain_id: value.chain_id,
-            account_number: value.account_number,
+    impl From<protos::cosmos::tx::v1beta1::SignDoc> for SignDoc {
+        fn from(value: protos::cosmos::tx::v1beta1::SignDoc) -> Self {
+            Self {
+                body_bytes: value.body_bytes,
+                auth_info_bytes: value.auth_info_bytes,
+                chain_id: value.chain_id,
+                account_number: value.account_number,
+            }
         }
     }
 }

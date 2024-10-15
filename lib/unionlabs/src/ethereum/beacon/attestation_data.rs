@@ -7,9 +7,9 @@ use crate::{ethereum::beacon::checkpoint::Checkpoint, hash::H256};
 #[model]
 #[derive(Ssz)]
 pub struct AttestationData {
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub slot: u64,
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub index: u64,
     /// LMD GHOST vote
     pub beacon_block_root: H256,

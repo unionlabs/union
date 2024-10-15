@@ -1,5 +1,5 @@
 use cosmwasm_std::{Deps, DepsMut, Env};
-use ethereum_light_client::client::{canonicalize_stored_value, check_commitment_key};
+use ethereum_light_client::client::check_commitment_key;
 use gnark_mimc::new_mimc_constants_bls12_377;
 use ics008_wasm_client::{
     storage_utils::{
@@ -170,7 +170,7 @@ impl IbcClient for LineaLightClient {
     ) -> Result<(), IbcClientError<Self>> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
         client_state.data.frozen_height =
-            Height::new_with_revision(client_state.latest_height.revision_number, env.block.height);
+            Height::new_with_revision(client_state.latest_height.revision(), env.block.height);
         save_client_state::<Self>(deps, client_state);
         Ok(())
     }
@@ -248,7 +248,7 @@ fn do_verify_membership(
     check_commitment_key(&path, ibc_commitment_slot, key)?;
 
     // we store the hash of the data, not the data itself to the commitments map
-    let expected_value_hash = keccak256(canonicalize_stored_value(path, raw_value)?);
+    let expected_value_hash = keccak256(raw_value);
 
     // TODO: handle error
     let proof_value = H256::new(storage_proof.proof.value.clone().try_into().unwrap());

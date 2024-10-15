@@ -1,39 +1,47 @@
 use macros::model;
 
-use crate::cosmos::ics23::commitment_proof::{CommitmentProof, TryFromCommitmentProofError};
+use crate::cosmos::ics23::commitment_proof::CommitmentProof;
 
 #[model(proto(raw(protos::ibc::core::commitment::v1::MerkleProof), into, from))]
 pub struct MerkleProof {
     pub proofs: Vec<CommitmentProof>,
 }
 
-#[derive(Debug, PartialEq, Clone, thiserror::Error)]
-pub enum TryFromMerkleProofError {
-    #[error("invalid proofs")]
-    Proofs(#[from] TryFromCommitmentProofError),
-}
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        cosmos::ics23::commitment_proof::proto::TryFromCommitmentProofError,
+        ibc::core::commitment::merkle_proof::MerkleProof,
+    };
 
-impl TryFrom<protos::ibc::core::commitment::v1::MerkleProof> for MerkleProof {
-    type Error = TryFromMerkleProofError;
-
-    fn try_from(
-        value: protos::ibc::core::commitment::v1::MerkleProof,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            proofs: value
-                .proofs
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(TryFromMerkleProofError::Proofs)?,
-        })
+    #[derive(Debug, PartialEq, Clone, thiserror::Error)]
+    pub enum TryFromMerkleProofError {
+        #[error("invalid proofs")]
+        Proofs(#[from] TryFromCommitmentProofError),
     }
-}
 
-impl From<MerkleProof> for protos::ibc::core::commitment::v1::MerkleProof {
-    fn from(value: MerkleProof) -> Self {
-        Self {
-            proofs: value.proofs.into_iter().map(Into::into).collect(),
+    impl TryFrom<protos::ibc::core::commitment::v1::MerkleProof> for MerkleProof {
+        type Error = TryFromMerkleProofError;
+
+        fn try_from(
+            value: protos::ibc::core::commitment::v1::MerkleProof,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                proofs: value
+                    .proofs
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(TryFromMerkleProofError::Proofs)?,
+            })
+        }
+    }
+
+    impl From<MerkleProof> for protos::ibc::core::commitment::v1::MerkleProof {
+        fn from(value: MerkleProof) -> Self {
+            Self {
+                proofs: value.proofs.into_iter().map(Into::into).collect(),
+            }
         }
     }
 }

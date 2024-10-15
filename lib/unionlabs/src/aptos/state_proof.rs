@@ -1,18 +1,16 @@
 // Copyright © Aptos Foundation
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
-
 use macros::model;
 use sha2::Digest;
 
-use super::{
-    block_info::BlockInfo,
-    epoch_change::{EpochChangeProof, TryFromEpochChangeProof},
-    ledger_info::{LedgerInfo, LedgerInfoWithSignatures, TryFromLedgerInfoWithSignatures},
-    signature::AggregateSignature,
-};
 use crate::{
-    errors::{required, MissingField},
+    aptos::{
+        block_info::BlockInfo,
+        epoch_change::EpochChangeProof,
+        ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
+        signature::AggregateSignature,
+    },
     hash::hash_v2::Hash,
 };
 
@@ -64,6 +62,7 @@ impl Default for StateProof {
 }
 
 impl StateProof {
+    // TODO: Remove
     #[must_use]
     pub fn new(
         latest_li_w_sigs: LedgerInfoWithSignatures,
@@ -75,6 +74,7 @@ impl StateProof {
         }
     }
 
+    #[cfg(feature = "bcs")]
     #[must_use]
     #[allow(clippy::missing_panics_doc)] // panics are impossible
     pub fn hash(&self) -> [u8; 32] {
@@ -90,34 +90,45 @@ impl StateProof {
     }
 }
 
-impl From<StateProof> for protos::union::ibc::lightclients::movement::v1::StateProof {
-    fn from(value: StateProof) -> Self {
-        Self {
-            latest_li_w_sigs: Some(value.latest_li_w_sigs.into()),
-            epoch_changes: Some(value.epoch_changes.into()),
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        aptos::{
+            epoch_change::proto::TryFromEpochChangeProof,
+            ledger_info::proto::TryFromLedgerInfoWithSignatures, state_proof::StateProof,
+        },
+        errors::{required, MissingField},
+    };
+
+    impl From<StateProof> for protos::union::ibc::lightclients::movement::v1::StateProof {
+        fn from(value: StateProof) -> Self {
+            Self {
+                latest_li_w_sigs: Some(value.latest_li_w_sigs.into()),
+                epoch_changes: Some(value.epoch_changes.into()),
+            }
         }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromStateProofError {
-    #[error(transparent)]
-    MissingField(#[from] MissingField),
-    #[error("invalid latest ledger info with sigs")]
-    LatestLiWSigs(#[from] TryFromLedgerInfoWithSignatures),
-    #[error("invalid epoch changes")]
-    EpochChanges(#[from] TryFromEpochChangeProof),
-}
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromStateProofError {
+        #[error(transparent)]
+        MissingField(#[from] MissingField),
+        #[error("invalid latest ledger info with sigs")]
+        LatestLiWSigs(#[from] TryFromLedgerInfoWithSignatures),
+        #[error("invalid epoch changes")]
+        EpochChanges(#[from] TryFromEpochChangeProof),
+    }
 
-impl TryFrom<protos::union::ibc::lightclients::movement::v1::StateProof> for StateProof {
-    type Error = TryFromStateProofError;
+    impl TryFrom<protos::union::ibc::lightclients::movement::v1::StateProof> for StateProof {
+        type Error = TryFromStateProofError;
 
-    fn try_from(
-        value: protos::union::ibc::lightclients::movement::v1::StateProof,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            latest_li_w_sigs: required!(value.latest_li_w_sigs)?.try_into()?,
-            epoch_changes: required!(value.epoch_changes)?.try_into()?,
-        })
+        fn try_from(
+            value: protos::union::ibc::lightclients::movement::v1::StateProof,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                latest_li_w_sigs: required!(value.latest_li_w_sigs)?.try_into()?,
+                epoch_changes: required!(value.epoch_changes)?.try_into()?,
+            })
+        }
     }
 }

@@ -1,10 +1,6 @@
 use macros::model;
 
-use crate::{
-    errors::{required, InvalidLength, MissingField},
-    hash::H256,
-    tendermint::types::part_set_header::{PartSetHeader, TryFromPartSetHeaderError},
-};
+use crate::{hash::H256, tendermint::types::part_set_header::PartSetHeader};
 
 #[derive(Default)]
 #[model(proto(raw(protos::tendermint::types::BlockId), into, from))]
@@ -14,47 +10,56 @@ pub struct BlockId {
     pub part_set_header: PartSetHeader,
 }
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromBlockIdError {
-    #[error(transparent)]
-    MissingField(#[from] MissingField),
-    #[error("invalid hash")]
-    Hash(#[source] InvalidLength),
-    #[error("invalid part set header")]
-    PartSetHeader(#[from] TryFromPartSetHeaderError),
-}
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        errors::{required, InvalidLength, MissingField},
+        hash::H256,
+        tendermint::types::{block_id::BlockId, part_set_header::proto::TryFromPartSetHeaderError},
+    };
 
-impl TryFrom<protos::tendermint::types::BlockId> for BlockId {
-    type Error = TryFromBlockIdError;
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromBlockIdError {
+        #[error(transparent)]
+        MissingField(#[from] MissingField),
+        #[error("invalid hash")]
+        Hash(#[source] InvalidLength),
+        #[error("invalid part set header")]
+        PartSetHeader(#[from] TryFromPartSetHeaderError),
+    }
 
-    fn try_from(value: protos::tendermint::types::BlockId) -> Result<Self, Self::Error> {
-        Ok(Self {
-            hash: maybe_empty_h256(&value.hash).map_err(TryFromBlockIdError::Hash)?,
-            part_set_header: required!(value.part_set_header)?.try_into()?,
+    impl TryFrom<protos::tendermint::types::BlockId> for BlockId {
+        type Error = TryFromBlockIdError;
+
+        fn try_from(value: protos::tendermint::types::BlockId) -> Result<Self, Self::Error> {
+            Ok(Self {
+                hash: maybe_empty_h256(&value.hash).map_err(TryFromBlockIdError::Hash)?,
+                part_set_header: required!(value.part_set_header)?.try_into()?,
+            })
+        }
+    }
+
+    pub(crate) fn maybe_empty_h256(value: &[u8]) -> Result<Option<H256>, InvalidLength> {
+        Ok(if value.is_empty() {
+            None
+        } else {
+            Some(
+                value
+                    .try_into()
+                    .map_err(|err: InvalidLength| InvalidLength {
+                        expected: crate::errors::ExpectedLength::Either(0, 32),
+                        found: err.found,
+                    })?,
+            )
         })
     }
-}
 
-pub(crate) fn maybe_empty_h256(value: &[u8]) -> Result<Option<H256>, InvalidLength> {
-    Ok(if value.is_empty() {
-        None
-    } else {
-        Some(
-            value
-                .try_into()
-                .map_err(|err: InvalidLength| InvalidLength {
-                    expected: crate::errors::ExpectedLength::Either(0, 32),
-                    found: err.found,
-                })?,
-        )
-    })
-}
-
-impl From<BlockId> for protos::tendermint::types::BlockId {
-    fn from(value: BlockId) -> Self {
-        Self {
-            hash: value.hash.map(Into::into).unwrap_or_default(),
-            part_set_header: Some(value.part_set_header.into()),
+    impl From<BlockId> for protos::tendermint::types::BlockId {
+        fn from(value: BlockId) -> Self {
+            Self {
+                hash: value.hash.map(Into::into).unwrap_or_default(),
+                part_set_header: Some(value.part_set_header.into()),
+            }
         }
     }
 }

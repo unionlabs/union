@@ -273,35 +273,13 @@ fn do_verify_membership(
 ) -> Result<(), IbcClientError<MovementLightClient>> {
     let proof = StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
-    let value = match path
-        .parse::<Path>()
-        .map_err(|_| Error::InvalidIbcPath(path.clone()))?
-    {
-        // proto(any<cometbls>) -> bcs(cometbls)
-        Path::ClientState(_) => {
-            Any::<cometbls::client_state::ClientState>::decode_as::<Proto>(&value)
-                .map_err(Error::CometblsClientStateDecode)?
-                .0
-                .encode_as::<Bcs>()
-        }
-        // proto(any<wasm<cometbls>>) -> bcs(cometbls)
-        Path::ClientConsensusState(_) => Any::<
-            wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
-        >::decode_as::<Proto>(&value)
-        .map_err(Error::CometblsConsensusStateDecode)?
-        .0
-        .data
-        .encode_as::<Bcs>(),
-        _ => value,
-    };
-
     let Some(proof_value) = &proof.state_value else {
         return Err(Error::MembershipProofWithoutValue.into());
     };
 
     // `aptos_std::table` stores the value as bcs encoded
     let given_value = bcs::to_bytes(&value).expect("cannot fail");
-    if proof_value.data() != &given_value {
+    if proof_value.data() != given_value {
         return Err(Error::ProofValueMismatch(proof_value.data().to_vec(), given_value).into());
     }
 

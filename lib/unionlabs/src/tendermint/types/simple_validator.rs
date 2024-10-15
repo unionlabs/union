@@ -9,6 +9,7 @@ pub struct SimpleValidator {
     pub voting_power: i64,
 }
 
+#[cfg(feature = "proto")]
 impl From<SimpleValidator> for protos::tendermint::types::SimpleValidator {
     fn from(value: SimpleValidator) -> Self {
         Self {

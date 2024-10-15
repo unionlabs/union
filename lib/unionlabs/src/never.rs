@@ -1,9 +1,8 @@
 use core::fmt::Display;
 
-use serde::{Deserialize, Serialize};
-
 /// The empty/ "bottom" type.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub enum Never {}
 
 impl Display for Never {

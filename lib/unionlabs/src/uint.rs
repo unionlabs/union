@@ -3,35 +3,18 @@
 use core::{
     fmt::{self, Display},
     iter::Sum,
-    num::NonZeroUsize,
     ops::{Add, AddAssign, Div, Rem},
     str::FromStr,
 };
 
-use serde::{Deserialize, Serialize};
 use serde_utils::HEX_ENCODING_PREFIX;
 
-use crate::{
-    encoding::{Decode, Encode, Proto},
-    errors::{ExpectedLength, InvalidLength},
-    option_unwrap,
-};
+use crate::errors::{ExpectedLength, InvalidLength};
 
 /// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
-#[derive(
-    ::macros::Debug,
-    Clone,
-    Copy,
-    Hash,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Default,
-    Serialize,
-    Deserialize,
-)]
+#[derive(::macros::Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
 #[repr(transparent)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, serde::Deserialize))]
 #[debug("U256({:?})", self.0)]
 pub struct U256(pub ruint::Uint<256, 4>);
 
@@ -197,6 +180,7 @@ pub enum TryFromHexError {
     FromBytes(#[from] InvalidLength),
 }
 
+#[cfg(feature = "serde")]
 pub mod u256_big_endian_hex {
     use serde::de::{self, Deserialize};
 
@@ -219,22 +203,10 @@ pub mod u256_big_endian_hex {
     }
 }
 
-impl Encode<Proto> for U256 {
-    fn encode(self) -> Vec<u8> {
-        self.to_be_bytes().into()
-    }
-}
-
-impl Decode<Proto> for U256 {
-    type Error = InvalidLength;
-
-    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-        Self::try_from_be_bytes(bytes)
-    }
-}
-
+#[cfg(feature = "ssz")]
 impl ssz::Ssz for U256 {
-    const SSZ_FIXED_LEN: Option<NonZeroUsize> = Some(option_unwrap!(NonZeroUsize::new(32)));
+    const SSZ_FIXED_LEN: Option<core::num::NonZeroUsize> =
+        Some(crate::option_unwrap!(core::num::NonZeroUsize::new(32)));
 
     const TREE_HASH_TYPE: ssz::tree_hash::TreeHashType =
         ssz::tree_hash::TreeHashType::Basic { size: 32 };
@@ -243,8 +215,8 @@ impl ssz::Ssz for U256 {
         self.0.to_le_bytes()
     }
 
-    fn ssz_bytes_len(&self) -> NonZeroUsize {
-        option_unwrap!(NonZeroUsize::new(32))
+    fn ssz_bytes_len(&self) -> core::num::NonZeroUsize {
+        crate::option_unwrap!(core::num::NonZeroUsize::new(32))
     }
 
     fn ssz_append(&self, buf: &mut Vec<u8>) {
@@ -400,7 +372,6 @@ mod u256_tests {
     #[test]
     fn roundtrip() {
         assert_json_roundtrip(&U256::from_str("123456").unwrap());
-        assert_proto_roundtrip(&U256::from_str("123456").unwrap());
         assert_string_roundtrip(&U256::from_str("123456").unwrap());
     }
 

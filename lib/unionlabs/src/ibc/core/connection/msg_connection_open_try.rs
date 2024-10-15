@@ -11,20 +11,20 @@ use crate::{
 #[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenTry)))]
 pub struct MsgConnectionOpenTry {
     pub client_id: ClientId,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub client_state: Vec<u8>,
     pub counterparty: Counterparty,
     pub delay_period: u64,
     pub counterparty_versions: Vec<Version>,
     pub proof_height: Height,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub proof_init: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub proof_client: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub proof_consensus: Vec<u8>,
     /// The height the counterparty trusts of the chain this is being sent to.

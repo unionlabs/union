@@ -2,7 +2,7 @@ use std::{fmt::Debug, sync::Arc};
 
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{WebSocketClient, WebSocketClientUrl};
-use unionlabs::{hash::H256, signer::CosmosSigner, WasmClientType};
+use unionlabs::{hash::H256, signer::CosmosSigner};
 
 use crate::{
     cosmos_sdk::{CosmosKeyring, GasConfig},

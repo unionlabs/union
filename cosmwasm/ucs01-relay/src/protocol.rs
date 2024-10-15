@@ -157,8 +157,8 @@ pub trait TransferProtocolExt<'a>:
         };
 
         let transfer_msg = TransferMsg {
-            channel: forward.channel.clone().value(),
-            receiver: forward.receiver.value(),
+            channel: forward.channel.to_string_prefixed(),
+            receiver: forward.receiver.into(),
             timeout: Some(timeout),
             memo,
             fees: forward.fees,
@@ -177,8 +177,8 @@ pub trait TransferProtocolExt<'a>:
             origin_sender_addr: self.common().info.sender.clone(),
             origin_packet: original_packet,
             forward_timeout: timeout,
-            forward_src_channel_id: forward.channel.value(),
-            forward_src_port_id: forward.port.value(),
+            forward_src_channel_id: forward.channel.to_string_prefixed(),
+            forward_src_port_id: forward.port.to_string(),
             origin_protocol_version: Self::VERSION.to_string(),
         };
 

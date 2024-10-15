@@ -414,7 +414,7 @@ mod tests {
             commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
             connection::{connection_end::ConnectionEnd, version::Version},
         },
-        validated::ValidateT,
+        id::{ClientId, ConnectionId},
     };
 
     use super::*;
@@ -523,15 +523,17 @@ mod tests {
             },
             &[b"ibc".to_vec(), key.to_vec()],
             ConnectionEnd {
-                client_id: String::from("08-wasm-0").validate().unwrap(),
+                client_id: ClientId::new(0),
+                client_type: "08-wasm".to_owned(),
                 versions: vec![Version {
                     identifier: "1".to_string(),
                     features: vec![Order::Unordered],
                 }],
                 state: unionlabs::ibc::core::connection::state::State::Tryopen,
                 counterparty: unionlabs::ibc::core::connection::counterparty::Counterparty {
-                    client_id: "cometbls-0".to_string().validate().unwrap(),
-                    connection_id: Some("connection-0".to_string().validate().unwrap()),
+                    client_id: ClientId::new(0),
+                    client_type: "cometbls".to_owned(),
+                    connection_id: Some(ConnectionId::new(0)),
                     prefix: unionlabs::ibc::core::commitment::merkle_prefix::MerklePrefix {
                         key_prefix: b"ibc".to_vec(),
                     },

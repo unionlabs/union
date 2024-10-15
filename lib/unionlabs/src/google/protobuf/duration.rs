@@ -6,10 +6,6 @@ use core::{
 };
 
 use macros::model;
-use serde::{
-    de::{self, Unexpected},
-    Deserialize, Serialize,
-};
 
 use crate::{
     bounded::{BoundedI128, BoundedI32, BoundedI64, BoundedIntError},
@@ -68,15 +64,16 @@ impl Neg for Duration {
     }
 }
 
-impl<'de> Deserialize<'de> for Duration {
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Duration {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         String::deserialize(deserializer).and_then(|str| {
             str.parse().map_err(|_| {
-                de::Error::invalid_value(
-                    Unexpected::Str(&str),
+                serde::de::Error::invalid_value(
+                    serde::de::Unexpected::Str(&str),
                     &"a valid protobuf duration string (`<seconds>[.<nanos>]s`)",
                 )
             })
@@ -84,7 +81,8 @@ impl<'de> Deserialize<'de> for Duration {
     }
 }
 
-impl Serialize for Duration {
+#[cfg(feature = "serde")]
+impl serde::Serialize for Duration {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -315,20 +313,25 @@ impl Duration {
     }
 }
 
-impl From<Duration> for protos::google::protobuf::Duration {
-    fn from(value: Duration) -> Self {
-        Self {
-            seconds: value.seconds().inner(),
-            nanos: value.nanos().inner(),
+#[cfg(feature = "cosmwasm")]
+pub mod proto {
+    use crate::google::protobuf::duration::{Duration, DurationError};
+
+    impl From<Duration> for protos::google::protobuf::Duration {
+        fn from(value: Duration) -> Self {
+            Self {
+                seconds: value.seconds().inner(),
+                nanos: value.nanos().inner(),
+            }
         }
     }
-}
 
-impl TryFrom<protos::google::protobuf::Duration> for Duration {
-    type Error = DurationError;
+    impl TryFrom<protos::google::protobuf::Duration> for Duration {
+        type Error = DurationError;
 
-    fn try_from(value: protos::google::protobuf::Duration) -> Result<Self, Self::Error> {
-        Self::new(value.seconds, value.nanos)
+        fn try_from(value: protos::google::protobuf::Duration) -> Result<Self, Self::Error> {
+            Self::new(value.seconds, value.nanos)
+        }
     }
 }
 

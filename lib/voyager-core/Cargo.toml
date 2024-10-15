@@ -18,7 +18,8 @@ serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }
 thiserror          = { workspace = true }
 tracing            = { workspace = true }
-unionlabs          = { workspace = true }
+unionlabs          = { workspace = true, features = ["serde", "valuable"] }
+valuable           = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

@@ -12,7 +12,6 @@ use unionlabs::{
         ReceiptPath,
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    validated::ValidateT,
 };
 
 use crate::{
@@ -84,10 +83,10 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     .into());
                 }
 
-                if packet.source_channel.to_string() != channel.counterparty.channel_id {
+                if &packet.destination_channel != channel.counterparty.channel_id.as_ref().unwrap() {
                     return Err(IbcError::SourceChannelMismatch(
                         packet.source_channel,
-                        channel.counterparty.channel_id.validate().unwrap(),
+                        channel.counterparty.channel_id.unwrap(),
                     )
                     .into());
                 }
@@ -100,7 +99,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                         .into(),
                     )
                     .ok_or(IbcError::ConnectionNotFound(
-                        channel.connection_hops[0].to_string(),
+                        channel.connection_hops[0].to_string_prefixed(),
                     ))?;
 
                 if connection.state != connection::state::State::Open {
@@ -176,7 +175,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                                                 channel_id: packet.source_channel.clone(),
                                                 sequence: packet.sequence,
                                             }
-                                            .to_string(),
+                                            .ics24_commitment_path(),
                                         ],
                                     },
                                     value: host.sha256(packet_commitment),
@@ -374,7 +373,7 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                         .into(),
                     )
                     .ok_or(IbcError::ConnectionNotFound(
-                        channel.connection_hops[0].to_string(),
+                        channel.connection_hops[0].to_string_prefixed(),
                     ))?;
 
                 if connection.state != connection::state::State::Open {
@@ -393,7 +392,7 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                         timeout_height,
                         timeout_timestamp,
                         destination_port: channel.counterparty.port_id,
-                        destination_channel: channel.counterparty.channel_id.validate().unwrap(),
+                        destination_channel: channel.counterparty.channel_id.unwrap(),
                         data,
                         connection_id: channel.connection_hops[0].clone(),
                     },
@@ -595,11 +594,10 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                     .into());
                 }
 
-                if packet.destination_channel.to_string() != channel.counterparty.channel_id {
+                if &packet.destination_channel != channel.counterparty.channel_id.as_ref().unwrap() {
                     return Err(IbcError::DestinationChannelMismatch(
                         packet.destination_channel,
-                        // TODO(aeryz): make the error String so that we don't need to validate
-                        channel.counterparty.channel_id.validate().unwrap(),
+                        channel.counterparty.channel_id.unwrap(),
                     )
                     .into());
                 }
@@ -612,7 +610,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                         .into(),
                     )
                     .ok_or(IbcError::ConnectionNotFound(
-                        channel.connection_hops[0].to_string(),
+                        channel.connection_hops[0].to_string_prefixed(),
                     ))?;
 
                 if connection.state != connection::state::State::Open {
@@ -676,7 +674,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                                         channel_id: packet.destination_channel,
                                         sequence: packet.sequence,
                                     }
-                                    .to_string(),
+                                    .ics24_commitment_path(),
                                 ],
                             },
                             value: host.sha256(ack),

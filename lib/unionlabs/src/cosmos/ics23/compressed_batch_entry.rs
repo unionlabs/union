@@ -1,15 +1,8 @@
 use macros::model;
 
-use crate::{
-    cosmos::ics23::{
-        compressed_existence_proof::{
-            CompressedExistenceProof, TryFromCompressedExistenceProofError,
-        },
-        compressed_non_existence_proof::{
-            CompressedNonExistenceProof, TryFromCompressedNonExistenceProofError,
-        },
-    },
-    errors::{required, MissingField},
+use crate::cosmos::ics23::{
+    compressed_existence_proof::CompressedExistenceProof,
+    compressed_non_existence_proof::CompressedNonExistenceProof,
 };
 
 #[model(proto(raw(protos::cosmos::ics23::v1::CompressedBatchEntry), into, from))]
@@ -18,52 +11,68 @@ pub enum CompressedBatchEntry {
     Nonexist(CompressedNonExistenceProof),
 }
 
-impl From<CompressedBatchEntry> for protos::cosmos::ics23::v1::CompressedBatchEntry {
-    fn from(value: CompressedBatchEntry) -> Self {
-        Self {
-            proof: Some(match value {
-                CompressedBatchEntry::Exist(exist) => {
-                    protos::cosmos::ics23::v1::compressed_batch_entry::Proof::Exist(exist.into())
-                }
-                CompressedBatchEntry::Nonexist(nonexist) => {
-                    protos::cosmos::ics23::v1::compressed_batch_entry::Proof::Nonexist(
-                        nonexist.into(),
-                    )
-                }
-            }),
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        cosmos::ics23::{
+            compressed_batch_entry::CompressedBatchEntry,
+            compressed_existence_proof::proto::TryFromCompressedExistenceProofError,
+            compressed_non_existence_proof::proto::TryFromCompressedNonExistenceProofError,
+        },
+        errors::{required, MissingField},
+    };
+
+    impl From<CompressedBatchEntry> for protos::cosmos::ics23::v1::CompressedBatchEntry {
+        fn from(value: CompressedBatchEntry) -> Self {
+            Self {
+                proof: Some(match value {
+                    CompressedBatchEntry::Exist(exist) => {
+                        protos::cosmos::ics23::v1::compressed_batch_entry::Proof::Exist(
+                            exist.into(),
+                        )
+                    }
+                    CompressedBatchEntry::Nonexist(nonexist) => {
+                        protos::cosmos::ics23::v1::compressed_batch_entry::Proof::Nonexist(
+                            nonexist.into(),
+                        )
+                    }
+                }),
+            }
         }
     }
-}
 
-#[derive(Debug, PartialEq, Clone, thiserror::Error)]
-pub enum TryFromCompressedBatchEntryProofError {
-    #[error(transparent)]
-    MissingField(MissingField),
-    #[error("invalid compressed existence proof")]
-    Exist(#[from] TryFromCompressedExistenceProofError),
-    #[error("invalid compressed non existence proof")]
-    Nonexist(#[from] TryFromCompressedNonExistenceProofError),
-}
+    #[derive(Debug, PartialEq, Clone, thiserror::Error)]
+    pub enum TryFromCompressedBatchEntryProofError {
+        #[error(transparent)]
+        MissingField(MissingField),
+        #[error("invalid compressed existence proof")]
+        Exist(#[from] TryFromCompressedExistenceProofError),
+        #[error("invalid compressed non existence proof")]
+        Nonexist(#[from] TryFromCompressedNonExistenceProofError),
+    }
 
-impl TryFrom<protos::cosmos::ics23::v1::CompressedBatchEntry> for CompressedBatchEntry {
-    type Error = TryFromCompressedBatchEntryProofError;
+    impl TryFrom<protos::cosmos::ics23::v1::CompressedBatchEntry> for CompressedBatchEntry {
+        type Error = TryFromCompressedBatchEntryProofError;
 
-    fn try_from(
-        value: protos::cosmos::ics23::v1::CompressedBatchEntry,
-    ) -> Result<Self, Self::Error> {
-        Ok(match required!(value.proof)? {
-            protos::cosmos::ics23::v1::compressed_batch_entry::Proof::Exist(exist) => Self::Exist(
-                exist
-                    .try_into()
-                    .map_err(TryFromCompressedBatchEntryProofError::Exist)?,
-            ),
-            protos::cosmos::ics23::v1::compressed_batch_entry::Proof::Nonexist(nonexist) => {
-                Self::Nonexist(
-                    nonexist
-                        .try_into()
-                        .map_err(TryFromCompressedBatchEntryProofError::Nonexist)?,
-                )
-            }
-        })
+        fn try_from(
+            value: protos::cosmos::ics23::v1::CompressedBatchEntry,
+        ) -> Result<Self, Self::Error> {
+            Ok(match required!(value.proof)? {
+                protos::cosmos::ics23::v1::compressed_batch_entry::Proof::Exist(exist) => {
+                    Self::Exist(
+                        exist
+                            .try_into()
+                            .map_err(TryFromCompressedBatchEntryProofError::Exist)?,
+                    )
+                }
+                protos::cosmos::ics23::v1::compressed_batch_entry::Proof::Nonexist(nonexist) => {
+                    Self::Nonexist(
+                        nonexist
+                            .try_into()
+                            .map_err(TryFromCompressedBatchEntryProofError::Nonexist)?,
+                    )
+                }
+            })
+        }
     }
 }

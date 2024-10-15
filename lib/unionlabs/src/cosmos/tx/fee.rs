@@ -1,6 +1,6 @@
 use macros::model;
 
-use crate::cosmos::base::coin::{Coin, TryFromCoinError};
+use crate::cosmos::base::coin::Coin;
 
 #[model(proto(raw(protos::cosmos::tx::v1beta1::Fee), into, from))]
 pub struct Fee {
@@ -19,36 +19,41 @@ pub struct Fee {
     pub granter: String,
 }
 
-impl From<Fee> for protos::cosmos::tx::v1beta1::Fee {
-    fn from(value: Fee) -> Self {
-        Self {
-            amount: value.amount.into_iter().map(Into::into).collect(),
-            gas_limit: value.gas_limit,
-            payer: value.payer,
-            granter: value.granter,
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::cosmos::{base::coin::proto::TryFromCoinError, tx::fee::Fee};
+
+    impl From<Fee> for protos::cosmos::tx::v1beta1::Fee {
+        fn from(value: Fee) -> Self {
+            Self {
+                amount: value.amount.into_iter().map(Into::into).collect(),
+                gas_limit: value.gas_limit,
+                payer: value.payer,
+                granter: value.granter,
+            }
         }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromFeeError {
-    #[error("invalid amount")]
-    Amount(#[from] TryFromCoinError),
-}
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromFeeError {
+        #[error("invalid amount")]
+        Amount(#[from] TryFromCoinError),
+    }
 
-impl TryFrom<protos::cosmos::tx::v1beta1::Fee> for Fee {
-    type Error = TryFromFeeError;
+    impl TryFrom<protos::cosmos::tx::v1beta1::Fee> for Fee {
+        type Error = TryFromFeeError;
 
-    fn try_from(value: protos::cosmos::tx::v1beta1::Fee) -> Result<Self, Self::Error> {
-        Ok(Self {
-            amount: value
-                .amount
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
-            gas_limit: value.gas_limit,
-            payer: value.payer,
-            granter: value.granter,
-        })
+        fn try_from(value: protos::cosmos::tx::v1beta1::Fee) -> Result<Self, Self::Error> {
+            Ok(Self {
+                amount: value
+                    .amount
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+                gas_limit: value.gas_limit,
+                payer: value.payer,
+                granter: value.granter,
+            })
+        }
     }
 }

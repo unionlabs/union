@@ -14,22 +14,27 @@ pub struct TxRaw {
     pub signatures: Vec<Vec<u8>>,
 }
 
-impl From<TxRaw> for protos::cosmos::tx::v1beta1::TxRaw {
-    fn from(value: TxRaw) -> Self {
-        Self {
-            body_bytes: value.body_bytes,
-            auth_info_bytes: value.auth_info_bytes,
-            signatures: value.signatures,
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::cosmos::tx::tx_raw::TxRaw;
+
+    impl From<TxRaw> for protos::cosmos::tx::v1beta1::TxRaw {
+        fn from(value: TxRaw) -> Self {
+            Self {
+                body_bytes: value.body_bytes,
+                auth_info_bytes: value.auth_info_bytes,
+                signatures: value.signatures,
+            }
         }
     }
-}
 
-impl From<protos::cosmos::tx::v1beta1::TxRaw> for TxRaw {
-    fn from(value: protos::cosmos::tx::v1beta1::TxRaw) -> Self {
-        Self {
-            body_bytes: value.body_bytes,
-            auth_info_bytes: value.auth_info_bytes,
-            signatures: value.signatures,
+    impl From<protos::cosmos::tx::v1beta1::TxRaw> for TxRaw {
+        fn from(value: protos::cosmos::tx::v1beta1::TxRaw) -> Self {
+            Self {
+                body_bytes: value.body_bytes,
+                auth_info_bytes: value.auth_info_bytes,
+                signatures: value.signatures,
+            }
         }
     }
 }

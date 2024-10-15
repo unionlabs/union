@@ -18,8 +18,8 @@ use crate::{
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblock>
 #[model]
-#[derive(Ssz)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[cfg_attr(feature = "ssz", derive(Ssz))]
+#[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct BeaconBlock<
     C: MAX_PROPOSER_SLASHINGS
         + MAX_VALIDATORS_PER_COMMITTEE
@@ -37,9 +37,9 @@ pub struct BeaconBlock<
         + MAX_BLOB_COMMITMENTS_PER_BLOCK
         + SYNC_COMMITTEE_SIZE,
 > {
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub slot: u64,
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub proposer_index: u64,
     pub parent_root: H256,
     pub state_root: H256,
@@ -78,9 +78,9 @@ impl<
 
 #[model]
 pub struct UnboundedBeaconBlock {
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub slot: u64,
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub proposer_index: u64,
     pub parent_root: H256,
     pub state_root: H256,

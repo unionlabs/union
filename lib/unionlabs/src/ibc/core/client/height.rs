@@ -7,16 +7,133 @@ use core::{
 
 use macros::model;
 
-#[derive(Default, Copy)]
 #[model(
     proto(raw(protos::ibc::core::client::v1::Height), into, from),
     no_serde
 )]
+#[derive(Default, Copy)]
 #[debug("Height({self})")]
 #[derive(Hash)]
+// TODO: Implement Valuable via Display once https://github.com/tokio-rs/valuable/pull/133 is merged
 pub struct Height {
     revision: Option<NonZeroU64>,
     height: u64,
+}
+
+#[cfg(feature = "valuable")]
+impl valuable::Valuable for Height {
+    fn as_value(&self) -> valuable::Value<'_> {
+        valuable::Value::Renderable(valuable::Renderable::Display(self))
+    }
+
+    fn visit(&self, visit: &mut dyn valuable::Visit) {
+        visit.visit_value(self.as_value());
+    }
+}
+
+impl Height {
+    #[must_use]
+    pub const fn new(height: u64) -> Self {
+        Self {
+            revision: None,
+            height,
+        }
+    }
+
+    #[must_use]
+    pub const fn new_with_revision(revision: u64, height: u64) -> Self {
+        Self {
+            revision: NonZeroU64::new(revision),
+            height,
+        }
+    }
+
+    #[must_use]
+    pub const fn height(&self) -> u64 {
+        self.height
+    }
+
+    #[must_use]
+    pub const fn height_mut(&mut self) -> &mut u64 {
+        &mut self.height
+    }
+
+    #[must_use]
+    pub const fn revision(&self) -> u64 {
+        match self.revision {
+            Some(revision) => revision.get(),
+            None => 0,
+        }
+    }
+
+    #[must_use]
+    pub const fn increment(self) -> Self {
+        Self {
+            revision: self.revision,
+            height: self.height + 1,
+        }
+    }
+
+    pub fn from_str_allow_zero_revision(s: &str) -> Result<Self, HeightFromStrError> {
+        match s.split_once('-') {
+            Some((n, h)) => Ok(Self::new_with_revision(n.parse()?, h.parse()?)),
+            None => Err(HeightFromStrError::Invalid),
+        }
+    }
+}
+
+impl FromStr for Height {
+    type Err = HeightFromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.split_once('-') {
+            Some((n, h)) => Ok(Self {
+                revision: Some(n.parse().map_err(HeightFromStrError::ParseIntError)?),
+                height: h.parse().map_err(HeightFromStrError::ParseIntError)?,
+            }),
+            None => Ok(Self {
+                revision: None,
+                height: s.parse().map_err(HeightFromStrError::ParseIntError)?,
+            }),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
+pub enum HeightFromStrError {
+    #[error("invalid numeric value in height string")]
+    ParseIntError(#[from] ParseIntError),
+    #[error("invalid height string")]
+    Invalid,
+}
+
+impl PartialOrd for Height {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Height {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.revision.cmp(&other.revision) {
+            Ordering::Less => Ordering::Less,
+            Ordering::Equal => self.height.cmp(&other.height),
+            Ordering::Greater => Ordering::Greater,
+        }
+    }
+}
+
+impl fmt::Display for Height {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.revision {
+            Some(revision_number) => {
+                write!(f, "{}-{}", revision_number, self.height)
+            }
+            None => {
+                write!(f, "{}", self.height)
+            }
+        }
+    }
 }
 
 #[cfg(feature = "serde")]
@@ -76,57 +193,6 @@ impl<'de> serde::Deserialize<'de> for Height {
     }
 }
 
-impl Height {
-    #[must_use]
-    pub const fn new(height: u64) -> Self {
-        Self {
-            revision: None,
-            height,
-        }
-    }
-
-    #[must_use]
-    pub const fn new_with_revision(revision: u64, height: u64) -> Self {
-        Self {
-            revision: NonZeroU64::new(revision),
-            height,
-        }
-    }
-
-    #[must_use]
-    pub const fn height(&self) -> u64 {
-        self.height
-    }
-
-    #[must_use]
-    pub const fn height_mut(&mut self) -> &mut u64 {
-        &mut self.height
-    }
-
-    #[must_use]
-    pub const fn revision(&self) -> u64 {
-        match self.revision {
-            Some(revision) => revision.get(),
-            None => 0,
-        }
-    }
-
-    #[must_use]
-    pub const fn increment(self) -> Self {
-        Self {
-            revision: self.revision,
-            height: self.height + 1,
-        }
-    }
-
-    pub fn from_str_allow_zero_revision(s: &str) -> Result<Self, HeightFromStrError> {
-        match s.split_once('-') {
-            Some((n, h)) => Ok(Self::new_with_revision(n.parse()?, h.parse()?)),
-            None => Err(HeightFromStrError::Invalid),
-        }
-    }
-}
-
 #[cfg(feature = "schemars")]
 impl ::schemars::JsonSchema for Height {
     fn schema_name() -> String {
@@ -164,73 +230,25 @@ impl ::schemars::JsonSchema for Height {
     }
 }
 
-impl FromStr for Height {
-    type Err = HeightFromStrError;
+#[cfg(feature = "proto")]
+pub mod proto {
+    use core::num::NonZeroU64;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.split_once('-') {
-            Some((n, h)) => Ok(Self {
-                revision: Some(n.parse().map_err(HeightFromStrError::ParseIntError)?),
-                height: h.parse().map_err(HeightFromStrError::ParseIntError)?,
-            }),
-            None => Ok(Self {
-                revision: None,
-                height: s.parse().map_err(HeightFromStrError::ParseIntError)?,
-            }),
-        }
-    }
-}
+    use crate::ibc::core::client::height::Height;
 
-#[derive(Debug, PartialEq, Eq, thiserror::Error)]
-pub enum HeightFromStrError {
-    #[error("invalid numeric value in height string")]
-    ParseIntError(#[from] ParseIntError),
-    #[error("invalid height string")]
-    Invalid,
-}
-
-impl From<protos::ibc::core::client::v1::Height> for Height {
-    fn from(proto: protos::ibc::core::client::v1::Height) -> Self {
-        Self {
-            revision: NonZeroU64::new(proto.revision_number),
-            height: proto.revision_height,
-        }
-    }
-}
-
-impl From<Height> for protos::ibc::core::client::v1::Height {
-    fn from(value: Height) -> Self {
-        Self {
-            revision_number: value.revision.map_or_else(|| 0, NonZeroU64::get),
-            revision_height: value.height,
-        }
-    }
-}
-
-impl PartialOrd for Height {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Height {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match self.revision.cmp(&other.revision) {
-            Ordering::Less => Ordering::Less,
-            Ordering::Equal => self.height.cmp(&other.height),
-            Ordering::Greater => Ordering::Greater,
-        }
-    }
-}
-
-impl fmt::Display for Height {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.revision {
-            Some(revision_number) => {
-                write!(f, "{}-{}", revision_number, self.height)
+    impl From<protos::ibc::core::client::v1::Height> for Height {
+        fn from(proto: protos::ibc::core::client::v1::Height) -> Self {
+            Self {
+                revision: NonZeroU64::new(proto.revision_number),
+                height: proto.revision_height,
             }
-            None => {
-                write!(f, "{}", self.height)
+        }
+    }
+    impl From<Height> for protos::ibc::core::client::v1::Height {
+        fn from(value: Height) -> Self {
+            Self {
+                revision_number: value.revision.map_or_else(|| 0, NonZeroU64::get),
+                revision_height: value.height,
             }
         }
     }

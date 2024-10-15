@@ -22,7 +22,7 @@ members = [
   "lib/chain-utils",
   "lib/gnark-key-parser",
   "lib/gnark-mimc",
-  "lib/ibc-vm-rs",
+  # "lib/ibc-vm-rs",
   "lib/ics-008-wasm-client",
   "lib/ics23",
   "lib/linea-verifier",
@@ -47,9 +47,9 @@ members = [
 
   "lib/ibc-solidity",
 
-  "lib/near/near-ibc",
-  "lib/near/near-light-client",
-  "lib/near/dummy-ibc-app",
+  # "lib/near/near-ibc",
+  # "lib/near/near-light-client",
+  # "lib/near/dummy-ibc-app",
   # "lib/near/near-ibc-tests",
 
   "lib/arbitrum-verifier",
@@ -113,6 +113,7 @@ members = [
 
   "lib/reconnecting-jsonrpc-ws-client",
   "lib/subset-of",
+  "lib/unionlabs-tracing",
 ]
 
 [workspace.package]
@@ -133,19 +134,20 @@ lto       = "thin"
 opt-level = 3
 
 [workspace.dependencies]
-aptos-move-ibc                 = { path = "generated/rust/aptos-move-ibc", default-features = false }
-aptos-verifier                 = { path = "lib/aptos-verifier", default-features = false }
-arbitrum-verifier              = { path = "lib/arbitrum-verifier", default-features = false }
-beacon-api                     = { path = "lib/beacon-api", default-features = false }
-chain-utils                    = { path = "lib/chain-utils", default-features = false }
-cometbft-rpc                   = { path = "lib/cometbft-rpc", default-features = false }
-cometbls-groth16-verifier      = { path = "lib/cometbls-groth16-verifier", default-features = false }
-ethereum-light-client          = { path = "light-clients/ethereum-light-client", default-features = false }
-ethereum-verifier              = { path = "lib/ethereum-verifier", default-features = false }
-gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
-gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }
-ibc-solidity                   = { path = "lib/ibc-solidity", default-features = false }
-ibc-vm-rs                      = { path = "lib/ibc-vm-rs", default-features = false }
+aptos-move-ibc            = { path = "generated/rust/aptos-move-ibc", default-features = false }
+aptos-verifier            = { path = "lib/aptos-verifier", default-features = false }
+arbitrum-verifier         = { path = "lib/arbitrum-verifier", default-features = false }
+beacon-api                = { path = "lib/beacon-api", default-features = false }
+chain-utils               = { path = "lib/chain-utils", default-features = false }
+cometbft-rpc              = { path = "lib/cometbft-rpc", default-features = false }
+cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-features = false }
+ethereum-light-client     = { path = "light-clients/ethereum-light-client", default-features = false }
+ethereum-verifier         = { path = "lib/ethereum-verifier", default-features = false }
+gnark-key-parser          = { path = "lib/gnark-key-parser", default-features = false }
+gnark-mimc                = { path = "lib/gnark-mimc", default-features = false }
+ibc-solidity              = { path = "lib/ibc-solidity", default-features = false }
+unionlabs-tracing         = { path = "lib/unionlabs-tracing", default-features = false }
+# ibc-vm-rs                      = { path = "lib/ibc-vm-rs", default-features = false }
 ics008-wasm-client             = { path = "lib/ics-008-wasm-client", default-features = false }
 ics23                          = { path = "lib/ics23", default-features = false }
 linea-verifier                 = { path = "lib/linea-verifier", default-features = false }
@@ -245,6 +247,7 @@ tonic                    = { version = "0.10", default-features = false }
 tracing                  = { version = "0.1.40", default-features = false }
 tracing-subscriber       = { version = "0.3", default-features = false, features = ["fmt", "ansi"] }
 typenum                  = { version = "1.17.0", default-features = false }
+valuable                 = { version = "0.1.0", default-features = false }
 
 [patch."crates-io"]
 arbitrary = { git = "https://github.com/unionlabs/arbitrary" }
@@ -253,3 +256,5 @@ arbitrary = { git = "https://github.com/unionlabs/arbitrary" }
 # https://aptos.dev/en/build/sdks/rust-sdk
 merlin       = { git = "https://github.com/aptos-labs/merlin" }
 x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
+
+valuable = { git = "https://github.com/benluelo/valuable", branch = "johnhurt/renderable" }

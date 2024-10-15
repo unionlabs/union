@@ -1,9 +1,6 @@
 use macros::model;
-use rlp::Encodable;
 
 use crate::{
-    errors::InvalidLength,
-    ethereum::keccak256,
     hash::{H160, H2048, H256, H64},
     uint::U256,
 };
@@ -13,7 +10,7 @@ use crate::{
     into,
     from
 ))]
-#[derive(rlp::RlpEncodable)]
+#[cfg_attr(feature = "rlp", derive(rlp::RlpEncodable))]
 pub struct L2Header {
     pub parent_hash: H256,
     pub sha3_uncles: H256,
@@ -35,133 +32,145 @@ pub struct L2Header {
 }
 
 impl L2Header {
+    #[cfg(feature = "rlp")]
     #[must_use]
     pub fn hash(&self) -> H256 {
-        keccak256(self.rlp_bytes())
+        use rlp::Encodable;
+
+        crate::ethereum::keccak256(self.rlp_bytes())
     }
 }
 
-impl TryFrom<protos::union::ibc::lightclients::arbitrum::v1::L2Header> for L2Header {
-    type Error = TryFromL2HeaderError;
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        errors::InvalidLength, ibc::lightclients::arbitrum::l2_header::L2Header, uint::U256,
+    };
 
-    fn try_from(
-        value: protos::union::ibc::lightclients::arbitrum::v1::L2Header,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            parent_hash: value
-                .parent_hash
-                .try_into()
-                .map_err(TryFromL2HeaderError::ParentHash)?,
-            sha3_uncles: value
-                .sha3_uncles
-                .try_into()
-                .map_err(TryFromL2HeaderError::Sha3Uncles)?,
-            miner: value
-                .miner
-                .try_into()
-                .map_err(TryFromL2HeaderError::Miner)?,
-            state_root: value
-                .state_root
-                .try_into()
-                .map_err(TryFromL2HeaderError::StateRoot)?,
-            transactions_root: value
-                .transactions_root
-                .try_into()
-                .map_err(TryFromL2HeaderError::TransactionsRoot)?,
-            receipts_root: value
-                .receipts_root
-                .try_into()
-                .map_err(TryFromL2HeaderError::ReceiptRoot)?,
-            logs_bloom: value
-                .logs_bloom
-                .try_into()
-                .map(Box::new)
-                .map_err(TryFromL2HeaderError::LogsBloom)?,
-            difficulty: U256::try_from_be_bytes(&value.difficulty)
-                .map_err(TryFromL2HeaderError::Difficulty)?,
-            number: U256::try_from_be_bytes(&value.number).map_err(TryFromL2HeaderError::Number)?,
-            gas_limit: value.gas_limit,
-            gas_used: value.gas_used,
-            timestamp: value.timestamp,
-            extra_data: value
-                .extra_data
-                .try_into()
-                .map_err(TryFromL2HeaderError::ExtraData)?,
-            mix_hash: value
-                .mix_hash
-                .try_into()
-                .map_err(TryFromL2HeaderError::MixHash)?,
-            nonce: value
-                .nonce
-                .try_into()
-                .map_err(TryFromL2HeaderError::Nonce)?,
-            base_fee_per_gas: U256::try_from_be_bytes(&value.base_fee_per_gas)
-                .map_err(TryFromL2HeaderError::BaseFeePerGas)?,
-        })
+    impl TryFrom<protos::union::ibc::lightclients::arbitrum::v1::L2Header> for L2Header {
+        type Error = TryFromL2HeaderError;
+
+        fn try_from(
+            value: protos::union::ibc::lightclients::arbitrum::v1::L2Header,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                parent_hash: value
+                    .parent_hash
+                    .try_into()
+                    .map_err(TryFromL2HeaderError::ParentHash)?,
+                sha3_uncles: value
+                    .sha3_uncles
+                    .try_into()
+                    .map_err(TryFromL2HeaderError::Sha3Uncles)?,
+                miner: value
+                    .miner
+                    .try_into()
+                    .map_err(TryFromL2HeaderError::Miner)?,
+                state_root: value
+                    .state_root
+                    .try_into()
+                    .map_err(TryFromL2HeaderError::StateRoot)?,
+                transactions_root: value
+                    .transactions_root
+                    .try_into()
+                    .map_err(TryFromL2HeaderError::TransactionsRoot)?,
+                receipts_root: value
+                    .receipts_root
+                    .try_into()
+                    .map_err(TryFromL2HeaderError::ReceiptRoot)?,
+                logs_bloom: value
+                    .logs_bloom
+                    .try_into()
+                    .map(Box::new)
+                    .map_err(TryFromL2HeaderError::LogsBloom)?,
+                difficulty: U256::try_from_be_bytes(&value.difficulty)
+                    .map_err(TryFromL2HeaderError::Difficulty)?,
+                number: U256::try_from_be_bytes(&value.number)
+                    .map_err(TryFromL2HeaderError::Number)?,
+                gas_limit: value.gas_limit,
+                gas_used: value.gas_used,
+                timestamp: value.timestamp,
+                extra_data: value
+                    .extra_data
+                    .try_into()
+                    .map_err(TryFromL2HeaderError::ExtraData)?,
+                mix_hash: value
+                    .mix_hash
+                    .try_into()
+                    .map_err(TryFromL2HeaderError::MixHash)?,
+                nonce: value
+                    .nonce
+                    .try_into()
+                    .map_err(TryFromL2HeaderError::Nonce)?,
+                base_fee_per_gas: U256::try_from_be_bytes(&value.base_fee_per_gas)
+                    .map_err(TryFromL2HeaderError::BaseFeePerGas)?,
+            })
+        }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromL2HeaderError {
-    #[error("invalid parent hash")]
-    ParentHash(#[source] InvalidLength),
-    #[error("invalid sha3 uncles")]
-    Sha3Uncles(#[source] InvalidLength),
-    #[error("invalid miner")]
-    Miner(#[source] InvalidLength),
-    #[error("invalid state root")]
-    StateRoot(#[source] InvalidLength),
-    #[error("invalid transactions root")]
-    TransactionsRoot(#[source] InvalidLength),
-    #[error("invalid receipt root")]
-    ReceiptRoot(#[source] InvalidLength),
-    #[error("invalid logs bloom")]
-    LogsBloom(#[source] InvalidLength),
-    #[error("invalid difficulty")]
-    Difficulty(#[source] InvalidLength),
-    #[error("invalid number")]
-    Number(#[source] InvalidLength),
-    #[error("invalid extra data")]
-    ExtraData(#[source] InvalidLength),
-    #[error("invalid mix hash")]
-    MixHash(#[source] InvalidLength),
-    #[error("invalid nonce")]
-    Nonce(#[source] InvalidLength),
-    #[error("invalid base fee per gas")]
-    BaseFeePerGas(#[source] InvalidLength),
-}
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromL2HeaderError {
+        #[error("invalid parent hash")]
+        ParentHash(#[source] InvalidLength),
+        #[error("invalid sha3 uncles")]
+        Sha3Uncles(#[source] InvalidLength),
+        #[error("invalid miner")]
+        Miner(#[source] InvalidLength),
+        #[error("invalid state root")]
+        StateRoot(#[source] InvalidLength),
+        #[error("invalid transactions root")]
+        TransactionsRoot(#[source] InvalidLength),
+        #[error("invalid receipt root")]
+        ReceiptRoot(#[source] InvalidLength),
+        #[error("invalid logs bloom")]
+        LogsBloom(#[source] InvalidLength),
+        #[error("invalid difficulty")]
+        Difficulty(#[source] InvalidLength),
+        #[error("invalid number")]
+        Number(#[source] InvalidLength),
+        #[error("invalid extra data")]
+        ExtraData(#[source] InvalidLength),
+        #[error("invalid mix hash")]
+        MixHash(#[source] InvalidLength),
+        #[error("invalid nonce")]
+        Nonce(#[source] InvalidLength),
+        #[error("invalid base fee per gas")]
+        BaseFeePerGas(#[source] InvalidLength),
+    }
 
-impl From<L2Header> for protos::union::ibc::lightclients::arbitrum::v1::L2Header {
-    fn from(value: L2Header) -> Self {
-        Self {
-            parent_hash: value.parent_hash.into(),
-            sha3_uncles: value.sha3_uncles.into(),
-            miner: value.miner.into(),
-            state_root: value.state_root.into(),
-            transactions_root: value.transactions_root.into(),
-            receipts_root: value.receipts_root.into(),
-            logs_bloom: (*value.logs_bloom).into(),
-            difficulty: value.difficulty.to_be_bytes().to_vec(),
-            number: value.number.to_be_bytes().to_vec(),
-            gas_limit: value.gas_limit,
-            gas_used: value.gas_used,
-            timestamp: value.timestamp,
-            extra_data: value.extra_data.into(),
-            mix_hash: value.mix_hash.into(),
-            nonce: value.nonce.into(),
-            base_fee_per_gas: value.base_fee_per_gas.to_be_bytes().to_vec(),
+    impl From<L2Header> for protos::union::ibc::lightclients::arbitrum::v1::L2Header {
+        fn from(value: L2Header) -> Self {
+            Self {
+                parent_hash: value.parent_hash.into(),
+                sha3_uncles: value.sha3_uncles.into(),
+                miner: value.miner.into(),
+                state_root: value.state_root.into(),
+                transactions_root: value.transactions_root.into(),
+                receipts_root: value.receipts_root.into(),
+                logs_bloom: (*value.logs_bloom).into(),
+                difficulty: value.difficulty.to_be_bytes().to_vec(),
+                number: value.number.to_be_bytes().to_vec(),
+                gas_limit: value.gas_limit,
+                gas_used: value.gas_used,
+                timestamp: value.timestamp,
+                extra_data: value.extra_data.into(),
+                mix_hash: value.mix_hash.into(),
+                nonce: value.nonce.into(),
+                base_fee_per_gas: value.base_fee_per_gas.to_be_bytes().to_vec(),
+            }
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use hex_literal::hex;
-
     use super::*;
 
+    #[cfg(feature = "rlp")]
     #[test]
     fn rlp() {
+        use hex_literal::hex;
+
         let header = L2Header {
             difficulty: U256::try_from_be_bytes(&hex!("01")).unwrap(),
             extra_data: H256::new(hex!(

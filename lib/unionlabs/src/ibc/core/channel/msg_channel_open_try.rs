@@ -10,7 +10,7 @@ pub struct MsgChannelOpenTry {
     pub port_id: PortId,
     pub channel: Channel,
     pub counterparty_version: String,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub proof_init: Vec<u8>,
     pub proof_height: Height,

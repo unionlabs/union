@@ -5,7 +5,6 @@ use unionlabs::{
     google::protobuf::any::Any,
     hash::H256,
     ibc::{core::client::height::Height, lightclients::wasm},
-    ics24::PathParseError,
 };
 
 use crate::client::ArbitrumLightClient;
@@ -69,9 +68,6 @@ pub enum Error {
 
     #[error("expected value ({expected}) and stored value ({stored}) don't match")]
     StoredValueMismatch { expected: H256, stored: H256 },
-
-    #[error("unable to parse ics24 path")]
-    PathParse(#[from] PathParseError),
 
     #[error("failed to verify arbitrum header: {0}")]
     HeaderVerify(#[from] arbitrum_verifier::Error),

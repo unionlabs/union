@@ -1,7 +1,7 @@
 use macros::model;
 
 use crate::{
-    errors::{required, ExpectedLength, InvalidLength, MissingField},
+    errors::{ExpectedLength, InvalidLength, MissingField},
     ibc::core::client::height::Height,
 };
 
@@ -23,7 +23,7 @@ pub struct ClientState {
 
 // TODO: Generalize this to a reusable type? Also see https://github.com/cometbft/cometbft/blob/54098b0c19099a38d2ce43aa30e6aee4c3f90978/types/genesis.go#L21
 #[model]
-#[serde(transparent)]
+#[cfg_attr(feature = "serde", serde(transparent))]
 pub struct CometblsChainId(String);
 
 impl CometblsChainId {
@@ -65,39 +65,47 @@ impl CometblsChainId {
     }
 }
 
-impl From<ClientState> for protos::union::ibc::lightclients::cometbls::v1::ClientState {
-    fn from(value: ClientState) -> Self {
-        Self {
-            chain_id: value.chain_id.0,
-            trusting_period: value.trusting_period,
-            max_clock_drift: value.max_clock_drift,
-            frozen_height: Some(value.frozen_height.into()),
-            latest_height: Some(value.latest_height.into()),
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        errors::{required, InvalidLength, MissingField},
+        ibc::lightclients::cometbls::client_state::{ClientState, CometblsChainId},
+    };
+
+    impl From<ClientState> for protos::union::ibc::lightclients::cometbls::v1::ClientState {
+        fn from(value: ClientState) -> Self {
+            Self {
+                chain_id: value.chain_id.0,
+                trusting_period: value.trusting_period,
+                max_clock_drift: value.max_clock_drift,
+                frozen_height: Some(value.frozen_height.into()),
+                latest_height: Some(value.latest_height.into()),
+            }
         }
     }
-}
 
-#[derive(Debug, PartialEq, Clone, thiserror::Error)]
-pub enum TryFromClientStateError {
-    #[error(transparent)]
-    MissingField(#[from] MissingField),
-    #[error("invalid chain id")]
-    ChainId(#[from] InvalidLength),
-}
+    #[derive(Debug, PartialEq, Clone, thiserror::Error)]
+    pub enum TryFromClientStateError {
+        #[error(transparent)]
+        MissingField(#[from] MissingField),
+        #[error("invalid chain id")]
+        ChainId(#[from] InvalidLength),
+    }
 
-impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ClientState> for ClientState {
-    type Error = TryFromClientStateError;
+    impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ClientState> for ClientState {
+        type Error = TryFromClientStateError;
 
-    fn try_from(
-        value: protos::union::ibc::lightclients::cometbls::v1::ClientState,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            chain_id: CometblsChainId::from_string(value.chain_id)?,
-            trusting_period: value.trusting_period,
-            max_clock_drift: value.max_clock_drift,
-            frozen_height: required!(value.frozen_height)?.into(),
-            latest_height: required!(value.latest_height)?.into(),
-        })
+        fn try_from(
+            value: protos::union::ibc::lightclients::cometbls::v1::ClientState,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                chain_id: CometblsChainId::from_string(value.chain_id)?,
+                trusting_period: value.trusting_period,
+                max_clock_drift: value.max_clock_drift,
+                frozen_height: required!(value.frozen_height)?.into(),
+                latest_height: required!(value.latest_height)?.into(),
+            })
+        }
     }
 }
 

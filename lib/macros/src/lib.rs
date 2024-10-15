@@ -1,8 +1,8 @@
-use std::{collections::HashMap, convert};
+use std::convert;
 
 use proc_macro::{Delimiter, Group, Punct, Spacing, TokenStream, TokenTree};
 use proc_macro2::{Literal, Span};
-use quote::{format_ident, quote, quote_spanned, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use syn::{
     fold::Fold,
     parenthesized,
@@ -10,9 +10,9 @@ use syn::{
     parse_macro_input, parse_quote, parse_quote_spanned,
     punctuated::Punctuated,
     spanned::Spanned,
-    Attribute, Data, DeriveInput, Expr, ExprParen, ExprPath, Field, Fields, GenericParam, Generics,
-    Ident, Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Type,
-    Variant, WhereClause, WherePredicate,
+    Attribute, Data, DeriveInput, Expr, ExprPath, Field, Fields, GenericParam, Generics, Ident,
+    Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Variant,
+    WhereClause, WherePredicate,
 };
 
 #[proc_macro_attribute]
@@ -664,7 +664,12 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
             let proto = proto.map(|from_raw| mk_proto(from_raw, ident, generics));
             let ethabi = ethabi.map(|from_raw| mk_ethabi(from_raw, ident, generics));
 
-            quote! { #proto #ethabi }
+            quote! {
+               #[cfg(feature = "proto")]
+               const _: () = { #proto };
+               #[cfg(feature = "ethabi")]
+               const _: () = { #ethabi };
+            }
         }
         _ => panic!(),
     };
@@ -684,12 +689,18 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
             let serde = (!no_serde).then(|| {
                 quote! {
-                    #[derive(::serde::Serialize, ::serde::Deserialize)]
-                    #[serde(
-                        deny_unknown_fields,
-                        tag = "@type",
-                        content = "@value",
-                        rename_all = "snake_case"
+                    #[cfg_attr(
+                        feature = "serde",
+                        derive(::serde::Serialize, ::serde::Deserialize)
+                    )]
+                    #[cfg_attr(
+                        feature = "serde",
+                        serde(
+                            deny_unknown_fields,
+                            tag = "@type",
+                            content = "@value",
+                            rename_all = "snake_case"
+                        )
                     )]
                 }
             });
@@ -701,6 +712,7 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                     ::core::cmp::PartialEq,
                     ::core::cmp::Eq,
                 )]
+                // #[cfg_attr(feature = "valuable", derive(::valuable::Valuable))]
                 #serde
             }
         }
@@ -715,10 +727,16 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
             let serde = (!no_serde).then(|| {
                 quote! {
-                    #[derive(::serde::Serialize, ::serde::Deserialize)]
-                    #[serde(
-                        deny_unknown_fields,
-                        rename_all = "snake_case"
+                    #[cfg_attr(
+                        feature = "serde",
+                        derive(::serde::Serialize, ::serde::Deserialize)
+                    )]
+                    #[cfg_attr(
+                        feature = "serde",
+                        serde(
+                            deny_unknown_fields,
+                            rename_all = "snake_case"
+                        )
                     )]
                 }
             });
@@ -730,6 +748,7 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                     ::core::cmp::PartialEq,
                     ::core::cmp::Eq,
                 )]
+                // #[cfg_attr(feature = "valuable", derive(::valuable::Valuable))]
                 #serde
             }
         }
@@ -910,230 +929,5 @@ impl Parse for FromRawAttrs {
         } else {
             Err(syn::Error::new(meta_span, "`raw(...)` is required"))
         }
-    }
-}
-
-/// NOTE: Doesn't support generics. Generics this low in the stack is a dark path I do not wish to explore again
-#[proc_macro_attribute]
-pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
-    let mut item_struct = parse_macro_input!(ts as ItemStruct);
-    let IbcPathMeta { path, ty, .. } = parse_macro_input!(meta as IbcPathMeta);
-
-    let segments = parse_ibc_path(path.clone());
-
-    let Fields::Named(fields) = item_struct.fields.clone() else {
-        panic!("expected named fields")
-    };
-
-    assert_eq!(
-        fields
-            .named
-            .iter()
-            .map(|x| x.ident.as_ref().unwrap())
-            .collect::<Vec<_>>(),
-        segments
-            .iter()
-            .filter_map(|x| match x {
-                Segment::Static(_) => None,
-                Segment::Variable(x) => Some(x),
-            })
-            .collect::<Vec<_>>()
-    );
-
-    let fields_map = fields
-        .named
-        .iter()
-        .map(|f| {
-            (
-                f.ident.as_ref().unwrap(),
-                (
-                    f.attrs.iter().find_map(|a| {
-                        a.path()
-                            .is_ident("ibc_path")
-                            .then(|| a.parse_args::<IbcPathFieldAttr>().unwrap())
-                    }),
-                    &f.ty,
-                ),
-            )
-        })
-        .collect::<HashMap<_, _>>();
-
-    let parse_body = segments
-        .iter()
-        .map(|x| match x {
-            Segment::Static(static_seg) => quote! {
-                match it.next() {
-                    Some(segment) => {
-                        if segment != #static_seg {
-                            return Err(PathParseError::InvalidStaticSegment {
-                                expected: #static_seg,
-                                found: segment.to_string(),
-                            })
-                        }
-                    }
-                    None => return Err(PathParseError::MissingStaticSegment(#static_seg)),
-                }
-            },
-            Segment::Variable(variable_seg) => {
-                let (maybe_attr, ty) = &fields_map[variable_seg];
-
-                let expr = match maybe_attr {
-                    Some(IbcPathFieldAttr { from_str, .. }) => quote!((#from_str)(segment)),
-                    None => quote! {
-                        segment.parse()
-                    },
-                };
-
-                quote! {
-                    let #variable_seg = match it.next() {
-                        Some(segment) => (#expr)
-                            .map_err(|e: <#ty as ::core::str::FromStr>::Err| PathParseError::Parse(e.to_string()))?,
-                        None => return Err(PathParseError::MissingSegment),
-                    };
-                }
-            }
-        })
-        .collect::<proc_macro2::TokenStream>();
-
-    let display_body = segments
-        .iter()
-        .map(|x| match x {
-            Segment::Static(_) => quote! {},
-            Segment::Variable(variable_seg) => match &fields_map[variable_seg].0 {
-                Some(IbcPathFieldAttr { display, .. }) => {
-                    quote_spanned! {display.span()=>
-                        #[allow(clippy::redundant_closure_call)]
-                        let #variable_seg = (#display)(&self.#variable_seg);
-                    }
-                }
-                None => quote_spanned! {fields_map[variable_seg].1.span()=>
-                    let #variable_seg = &self.#variable_seg;
-                },
-            },
-        })
-        .collect::<proc_macro2::TokenStream>();
-
-    let field_pat = segments.iter().filter_map(|seg| match seg {
-        Segment::Static(_) => None,
-        // use the span of the input tokens
-        Segment::Variable(variable_seg) => Some(fields_map.get_key_value(variable_seg).unwrap().0),
-    });
-
-    let ident = &item_struct.ident;
-
-    item_struct
-        .fields
-        .iter_mut()
-        .for_each(|f| f.attrs.retain(|a| !a.path().is_ident("ibc_path")));
-
-    quote! {
-        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, ::clap::Args)]
-        #[serde(deny_unknown_fields)]
-        #item_struct
-
-        const _: () = {
-            #[automatically_derived]
-            impl ::core::fmt::Display for #ident {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    #display_body
-
-                    write!(f, #path)
-                }
-            }
-        };
-
-        const _: () = {
-            #[automatically_derived]
-            impl ::core::str::FromStr for #ident {
-                type Err = PathParseError;
-
-                fn from_str(s: &str) -> ::core::result::Result<Self, Self::Err> {
-                    let mut it = s.split('/');
-
-                    #parse_body
-
-                    if it.next().is_some() {
-                        return Err(PathParseError::TooManySegments);
-                    }
-
-                    Ok(Self { #(#field_pat),* })
-                }
-            }
-        };
-
-        const _: () = {
-            impl IbcPath for #ident {
-                type Value = #ty;
-            }
-        };
-    }
-    .into()
-}
-
-struct IbcPathMeta {
-    path: LitStr,
-    _comma: Token![,],
-    ty: Type,
-}
-
-impl Parse for IbcPathMeta {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        Ok(Self {
-            path: input.parse()?,
-            _comma: input.parse()?,
-            ty: input.parse()?,
-        })
-    }
-}
-
-enum Segment {
-    Static(String),
-    Variable(syn::Ident),
-}
-
-fn parse_ibc_path(path: LitStr) -> Vec<Segment> {
-    path.value()
-        .split('/')
-        .map(|segment| {
-            segment
-                .strip_prefix('{')
-                .map(|s| {
-                    s.strip_suffix('}')
-                        .expect("unclosed `{` in variable interpolation")
-                })
-                .map_or_else(
-                    || Segment::Static(segment.to_string()),
-                    |s| Segment::Variable(Ident::new(s, path.span())),
-                )
-        })
-        .collect()
-}
-
-mod kw {
-    syn::custom_keyword!(from_str);
-    syn::custom_keyword!(display);
-}
-
-struct IbcPathFieldAttr {
-    _from_str: kw::from_str,
-    from_str: Expr,
-    _comma: Token![,],
-    _display: kw::display,
-    display: Expr,
-}
-
-impl Parse for IbcPathFieldAttr {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let ibc_path_field_attr = Self {
-            _from_str: input.parse()?,
-            from_str: *input.parse::<ExprParen>()?.expr,
-            _comma: input.parse()?,
-            _display: input.parse()?,
-            display: *input.parse::<ExprParen>()?.expr,
-        };
-
-        input.parse::<Option<Token![,]>>()?;
-
-        Ok(ibc_path_field_attr)
     }
 }

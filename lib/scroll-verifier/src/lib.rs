@@ -180,10 +180,7 @@ mod tests {
             chain_id: 534351.into(),
             latest_slot: 65327,
             latest_batch_index_slot: 156.into(),
-            frozen_height: Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
+            frozen_height: Height::default(),
             l2_contract_address: H160::new(hex!("2d567ece699eabe5afcd141edb7a4f2d0d6ce8a0")),
             l2_finalized_state_roots_slot: 158.into(),
             l2_committed_batches_slot: 157.into(),

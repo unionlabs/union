@@ -1,6 +1,6 @@
 use macros::model;
 
-use crate::{errors::InvalidLength, hash::H256};
+use crate::hash::H256;
 
 #[model(proto(
     raw(protos::union::ibc::lightclients::arbitrum::v1::ConsensusState),
@@ -12,33 +12,40 @@ pub struct ConsensusState {
     pub timestamp: u64,
 }
 
-impl TryFrom<protos::union::ibc::lightclients::arbitrum::v1::ConsensusState> for ConsensusState {
-    type Error = TryFromConsensusStateError;
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        errors::InvalidLength, ibc::lightclients::arbitrum::consensus_state::ConsensusState,
+    };
 
-    fn try_from(
-        value: protos::union::ibc::lightclients::arbitrum::v1::ConsensusState,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            ibc_storage_root: value
-                .ibc_storage_root
-                .try_into()
-                .map_err(TryFromConsensusStateError::IbcStorageRoot)?,
-            timestamp: value.timestamp,
-        })
+    impl TryFrom<protos::union::ibc::lightclients::arbitrum::v1::ConsensusState> for ConsensusState {
+        type Error = TryFromConsensusStateError;
+
+        fn try_from(
+            value: protos::union::ibc::lightclients::arbitrum::v1::ConsensusState,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                ibc_storage_root: value
+                    .ibc_storage_root
+                    .try_into()
+                    .map_err(TryFromConsensusStateError::IbcStorageRoot)?,
+                timestamp: value.timestamp,
+            })
+        }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromConsensusStateError {
-    #[error("invalid ibc storage root")]
-    IbcStorageRoot(#[source] InvalidLength),
-}
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromConsensusStateError {
+        #[error("invalid ibc storage root")]
+        IbcStorageRoot(#[source] InvalidLength),
+    }
 
-impl From<ConsensusState> for protos::union::ibc::lightclients::arbitrum::v1::ConsensusState {
-    fn from(value: ConsensusState) -> Self {
-        Self {
-            ibc_storage_root: value.ibc_storage_root.into(),
-            timestamp: value.timestamp,
+    impl From<ConsensusState> for protos::union::ibc::lightclients::arbitrum::v1::ConsensusState {
+        fn from(value: ConsensusState) -> Self {
+            Self {
+                ibc_storage_root: value.ibc_storage_root.into(),
+                timestamp: value.timestamp,
+            }
         }
     }
 }

@@ -250,7 +250,7 @@ _: {
 
           # jsonschema = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), derive(::schemars::JsonSchema))]'';
           # jsonschema_str = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]'';
-          serde_alias = alias: ''#[serde(alias = "${alias}")]'';
+          serde_alias = alias: ''#[#[cfg_attr(feature = "serde", serde(alias = "${alias}"))]'';
         in
         {
           type_attribute = {
@@ -444,9 +444,10 @@ _: {
             ".tendermint.types.CommitSig.timestamp" = [
               ''
                 #[cfg_attr(
-                                  feature = "serde",
-                                  serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
-                              )]''
+                    feature = "serde",
+                    serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
+                )]
+              ''
             ];
 
             ".tendermint.version.Consensus.block" = [ serde_string ];

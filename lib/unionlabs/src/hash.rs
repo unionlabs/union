@@ -3,40 +3,8 @@ pub type H160<E = hash_v2::HexPrefixed> = hash_v2::Hash<20, E>;
 pub type H256<E = hash_v2::HexPrefixed> = hash_v2::Hash<32, E>;
 pub type H384<E = hash_v2::HexPrefixed> = hash_v2::Hash<48, E>;
 pub type H512<E = hash_v2::HexPrefixed> = hash_v2::Hash<64, E>;
+pub type H768<E = hash_v2::HexPrefixed> = hash_v2::Hash<96, E>;
 pub type H2048<E = hash_v2::HexPrefixed> = hash_v2::Hash<256, E>;
-
-// impl H256 {
-//     #[must_use]
-//     pub fn into_bytes(self) -> Vec<u8> {
-//         // use this if we ever swap out the inner value for primitive_types::H256
-//         // self.0.into_iter().flat_map(|n| n.to_le_bytes()).collect()
-//         self.0.to_vec()
-//     }
-// }
-
-impl From<H256> for primitive_types::H256 {
-    fn from(value: H256) -> Self {
-        Self(*value.get())
-    }
-}
-
-impl From<primitive_types::H256> for H256 {
-    fn from(value: primitive_types::H256) -> Self {
-        Self::new(value.0)
-    }
-}
-
-impl From<H160> for primitive_types::H160 {
-    fn from(value: H160) -> Self {
-        Self(*value.get())
-    }
-}
-
-impl From<primitive_types::H160> for H160 {
-    fn from(value: primitive_types::H160) -> Self {
-        Self::new(value.0)
-    }
-}
 
 #[must_use = "constructing an iterator has no effect"]
 pub struct BytesBitIterator<'a> {
@@ -90,7 +58,6 @@ pub mod hash_v2 {
     };
 
     use generic_array::{ArrayLength, GenericArray};
-    use serde::{ser::SerializeTupleStruct, Deserialize, Deserializer, Serialize, Serializer};
 
     use crate::{
         errors::{ExpectedLength, InvalidLength},
@@ -108,6 +75,10 @@ pub mod hash_v2 {
         fn decode<T: AsRef<[u8]>>(data: T) -> Result<Vec<u8>, Self::Error>;
 
         fn decode_to_slice<T: AsRef<[u8]>>(data: T, out: &mut [u8]) -> Result<(), Self::Error>;
+
+        #[cfg(feature = "schemars")]
+        // (description, pattern)
+        fn jsonschema_info(len: Option<usize>) -> (String, String);
     }
 
     pub struct HexPrefixed;
@@ -136,6 +107,13 @@ pub mod hash_v2 {
 
             hex::decode_to_slice(data, out).map_err(HexPrefixedFromStrError::InvalidHex)
         }
+
+        #[cfg(feature = "schemars")]
+        fn jsonschema_info(len: Option<usize>) -> (String, String) {
+            let (_, regex) = HexUnprefixed::jsonschema_info(len);
+
+            ("0x-prefixed hex".to_owned(), format!("0x{regex}"))
+        }
     }
 
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
@@ -162,6 +140,19 @@ pub mod hash_v2 {
         fn decode_to_slice<T: AsRef<[u8]>>(data: T, out: &mut [u8]) -> Result<(), Self::Error> {
             hex::decode_to_slice(data, out)
         }
+
+        #[cfg(feature = "schemars")]
+        fn jsonschema_info(len: Option<usize>) -> (String, String) {
+            let hex_byte_regex = "[a-fA-F0-9]{2}";
+
+            (
+                "hex".to_owned(),
+                len.map_or_else(
+                    || format!("^(?:{hex_byte_regex})*$"),
+                    |len| format!("^(?:{hex_byte_regex}){{{len}}}$"),
+                ),
+            )
+        }
     }
 
     pub struct Base64;
@@ -186,7 +177,9 @@ pub mod hash_v2 {
         fn decode_to_slice<T: AsRef<[u8]>>(data: T, out: &mut [u8]) -> Result<(), Base64Error> {
             use base64::prelude::*;
 
-            let vec = BASE64_STANDARD.decode(data)?;
+            let vec = BASE64_STANDARD
+                .decode(data)
+                .map_err(Base64Error::InvalidEncoding)?;
 
             if vec.len() == out.len() {
                 out.copy_from_slice(&vec);
@@ -199,12 +192,36 @@ pub mod hash_v2 {
                 }))
             }
         }
+
+        #[cfg(feature = "schemars")]
+        fn jsonschema_info(len: Option<usize>) -> (String, String) {
+            let full_chunk = "(?:[A-Za-z0-9+/]{4})";
+            // TODO: I think we can be smarter here with the padding for fixed size?
+            let padding = "(?:[A-Za-z0-9+/][AQgw]==|[A-Za-z0-9+/]{2}[AEIMQUYcgkosw048]=)?";
+
+            (
+                "base64".to_owned(),
+                len.map_or_else(
+                    || format!(r"^{full_chunk}*{padding}$"),
+                    |len| {
+                        let chunks = len / 3;
+
+                        format!(
+                            r"^{full_chunk}{{{chunks}}}{}$",
+                            if len % 3 == 0 { padding } else { "" }
+                        )
+                    },
+                ),
+            )
+        }
     }
 
     #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
     pub enum Base64Error {
-        #[error("invalid encoding")]
-        InvalidEncoding(#[from] base64::DecodeError),
+        // REVIEW: I'm undecided as to whether or not this is cursed
+        #[cfg_attr(feature = "std", error("invalid encoding"))]
+        #[cfg_attr(not(feature = "std"), error("invalid encoding: {0}"))]
+        InvalidEncoding(#[cfg_attr(feature = "std", source)] base64::DecodeError),
         #[error("invalid encoding")]
         InvalidLength(#[from] InvalidLength),
     }
@@ -214,6 +231,52 @@ pub mod hash_v2 {
         #[deprecated = "this field should never be used directly, use Hash::new() to construct this type and .get{_mut}() to access the data"]
         arr: [u8; BYTES],
         __marker: PhantomData<fn() -> E>,
+    }
+
+    #[cfg(feature = "schemars")]
+    impl<const BYTES: usize, E: Encoding> schemars::JsonSchema for Hash<BYTES, E> {
+        fn schema_name() -> String {
+            todo!()
+        }
+
+        fn schema_id() -> alloc::borrow::Cow<'static, str> {
+            concat!(module_path!(), "::Hash").into()
+        }
+
+        fn json_schema(_gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+            use schemars::schema::{
+                InstanceType, Metadata, SchemaObject, SingleOrVec, StringValidation,
+            };
+
+            let (description, pattern) = E::jsonschema_info(Some(BYTES));
+
+            SchemaObject {
+                metadata: Some(Box::new(Metadata {
+                    description: Some(format!(
+                        "A fixed-length {BYTES}-byte sequence, encoded as {description}.",
+                    )),
+                    ..Default::default()
+                })),
+                instance_type: Some(SingleOrVec::Single(Box::new(InstanceType::String))),
+                string: Some(Box::new(StringValidation {
+                    pattern: Some(pattern),
+                    ..Default::default()
+                })),
+                ..Default::default()
+            }
+            .into()
+        }
+    }
+
+    #[cfg(feature = "valuable")]
+    impl<const BYTES: usize, E: Encoding> valuable::Valuable for Hash<BYTES, E> {
+        fn as_value(&self) -> valuable::Value<'_> {
+            valuable::Value::Renderable(valuable::Renderable::Display(self as &dyn Display))
+        }
+
+        fn visit(&self, visit: &mut dyn valuable::Visit) {
+            visit.visit_value(valuable::Valuable::as_value(self));
+        }
     }
 
     #[cfg(feature = "ethabi")]
@@ -248,6 +311,7 @@ pub mod hash_v2 {
         }
     }
 
+    #[cfg(feature = "ssz")]
     impl<const BYTES: usize, E: Encoding> ssz::Ssz for Hash<BYTES, E>
     where
         typenum::Const<BYTES>: typenum::ToUInt,
@@ -279,6 +343,12 @@ pub mod hash_v2 {
     impl<const BYTES: usize, E: Encoding> AsRef<[u8]> for Hash<BYTES, E> {
         fn as_ref(&self) -> &[u8] {
             self.get()
+        }
+    }
+
+    impl<const BYTES: usize, E: Encoding> AsMut<[u8]> for Hash<BYTES, E> {
+        fn as_mut(&mut self) -> &mut [u8] {
+            self.get_mut()
         }
     }
 
@@ -381,11 +451,14 @@ pub mod hash_v2 {
         }
     }
 
-    impl<const BYTES: usize, E: Encoding> Serialize for Hash<BYTES, E> {
+    #[cfg(feature = "serde")]
+    impl<const BYTES: usize, E: Encoding> serde::Serialize for Hash<BYTES, E> {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
-            S: Serializer,
+            S: serde::Serializer,
         {
+            use serde::ser::SerializeTupleStruct;
+
             if serializer.is_human_readable() {
                 serializer.collect_str(self)
             } else {
@@ -398,10 +471,11 @@ pub mod hash_v2 {
         }
     }
 
-    impl<'de, const BYTES: usize, E: Encoding> Deserialize<'de> for Hash<BYTES, E> {
+    #[cfg(feature = "serde")]
+    impl<'de, const BYTES: usize, E: Encoding> serde::Deserialize<'de> for Hash<BYTES, E> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
-            D: Deserializer<'de>,
+            D: serde::Deserializer<'de>,
         {
             if deserializer.is_human_readable() {
                 String::deserialize(deserializer)
@@ -419,7 +493,10 @@ pub mod hash_v2 {
                         write!(formatter, "an array of length {N}")
                     }
 
-                    fn visit_seq<A>(self, mut seq: A) -> ::core::result::Result<[u8; N], A::Error>
+                    fn visit_seq<A>(
+                        self,
+                        mut seq: A,
+                    ) -> ::core::result::Result<[u8; N], <A as serde::de::SeqAccess<'de>>::Error>
                     where
                         A: serde::de::SeqAccess<'de>,
                     {
@@ -573,7 +650,7 @@ pub mod hash_v2 {
     }
 
     // TODO: Feature gate rlp across the crate
-    // #[cfg(feature = "rlp")]
+    #[cfg(feature = "rlp")]
     impl<E: Encoding, const BYTES: usize> rlp::Decodable for Hash<BYTES, E> {
         fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
             rlp.decoder()
@@ -587,15 +664,14 @@ pub mod hash_v2 {
         }
     }
 
-    // TODO: Feature gate rlp across the crate
-    // #[cfg(feature = "rlp")]
+    #[cfg(feature = "rlp")]
     impl<E: Encoding, const BYTES: usize> rlp::Encodable for Hash<BYTES, E> {
         fn rlp_append(&self, s: &mut ::rlp::RlpStream) {
             s.encoder().encode_value(self.as_ref());
         }
     }
 
-    #[cfg(feature = "ethabi")]
+    #[cfg(feature = "ethabi")] // TODO: Maybe if_alloy?
     impl<E: Encoding, const BYTES: usize> TryFrom<::alloy_core::primitives::Bytes> for Hash<BYTES, E> {
         type Error = <Self as TryFrom<Vec<u8>>>::Error;
 
@@ -604,7 +680,7 @@ pub mod hash_v2 {
         }
     }
 
-    #[cfg(feature = "ethabi")]
+    #[cfg(feature = "ethabi")] // TODO: Maybe if_alloy?
     impl<E: Encoding, const BYTES: usize> TryFrom<&'_ ::alloy_core::primitives::Bytes>
         for Hash<BYTES, E>
     {
@@ -614,11 +690,6 @@ pub mod hash_v2 {
             Self::try_from(&value.0[..])
         }
     }
-
-    // #[cfg(feature = "ethabi")]
-    // impl<E: Encoding, const BYTES: usize> ::alloy_core::sol_types::SolValue for Hash<BYTES, E> {
-    //     type SolType = Self;
-    // }
 
     #[cfg(test)]
     mod tests {

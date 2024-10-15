@@ -35,7 +35,7 @@ use unionlabs::{
 };
 use voyager_message::{
     core::ChainId,
-    data::{log_msg, Data, IbcMessage, MsgCreateClientData, WithChainId},
+    data::{Data, IbcMessage, MsgCreateClientData, WithChainId},
     module::{PluginInfo, PluginServer},
     run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -383,8 +383,8 @@ impl Module {
                                 "evm tx",
                                 msg = msg_name,
                                 %idx,
-                            )
-                            .in_scope(|| log_msg(&self.chain_id.to_string(), &msg));
+                                data = msg.as_value(),
+                            );
                         } else if let Ok(known_revert) =
                             IbcErrors::abi_decode(&result.returnData, true)
                         {
@@ -394,8 +394,8 @@ impl Module {
                                 %idx,
                                 revert = ?known_revert,
                                 well_known = true,
-                            )
-                            .in_scope(|| log_msg(&self.chain_id.to_string(), &msg));
+                                data = msg.as_value(),
+                            );
                         } else if result.returnData.is_empty() {
                             error_span!(
                                 "evm message failed",
@@ -403,8 +403,8 @@ impl Module {
                                 %idx,
                                 revert = %result.returnData,
                                 well_known = false,
-                            )
-                            .in_scope(|| log_msg(&self.chain_id.to_string(), &msg));
+                                data = msg.as_value(),
+                            );
 
                             retry_msgs.push((true, msg));
                         } else {
@@ -414,8 +414,8 @@ impl Module {
                                 %idx,
                                 revert = %result.returnData,
                                 well_known = false,
-                            )
-                            .in_scope(|| log_msg(&self.chain_id.to_string(), &msg));
+                                data = msg.as_value(),
+                            );
 
                             retry_msgs.push((false, msg));
                         }

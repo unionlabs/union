@@ -25,6 +25,7 @@ pub mod voluntary_exit;
 pub mod withdrawal;
 
 #[cfg(test)]
+// #[cfg(feature = "ssz")]
 mod tests {
     use core::str::FromStr;
 

@@ -9,7 +9,7 @@ use crate::ethereum::{
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#attesterslashing>
 #[model]
 #[derive(Ssz)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct AttesterSlashing<C: MAX_VALIDATORS_PER_COMMITTEE> {
     pub attestation_1: IndexedAttestation<C>,
     pub attestation_2: IndexedAttestation<C>,

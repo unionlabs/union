@@ -145,6 +145,33 @@ pub mod ibc {
                 0x0100000000000000000000000000000000000000000000000000000000000000;
             bytes32 public constant COMMITMENT_NULL = bytes32(uint256(0));
 
+            event ChannelOpenInit(
+                address portId, uint32 channelId, uint32 connectionId, bytes32 version
+            );
+            event ChannelOpenTry(
+                address portId,
+                uint32 channelId,
+                uint32 counterpartyChannelId,
+                uint32 connectionId,
+                bytes32 version
+            );
+            event ChannelOpenAck(
+                address portId,
+                uint32 channelId,
+                uint32 counterpartyChannelId,
+                uint32 connectionId
+            );
+            event ChannelOpenConfirm(
+                address portId,
+                uint32 channelId,
+                uint32 counterpartyChannelId,
+                uint32 connectionId
+            );
+            event ChannelCloseInit(address portId, uint32 channelId);
+            event ChannelCloseConfirm(address portId, uint32 channelId);
+
+            // IBC PACKET
+
             event SendPacket(Packet packet);
             event RecvPacket(Packet packets, address relayer, bytes relayerMsg);
             event RecvIntentPacket(

@@ -6,20 +6,25 @@ pub struct GasInfo {
     pub gas_used: u64,
 }
 
-impl From<protos::cosmos::base::abci::v1beta1::GasInfo> for GasInfo {
-    fn from(value: protos::cosmos::base::abci::v1beta1::GasInfo) -> Self {
-        Self {
-            gas_wanted: value.gas_wanted,
-            gas_used: value.gas_used,
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::cosmos::base::abci::gas_info::GasInfo;
+
+    impl From<protos::cosmos::base::abci::v1beta1::GasInfo> for GasInfo {
+        fn from(value: protos::cosmos::base::abci::v1beta1::GasInfo) -> Self {
+            Self {
+                gas_wanted: value.gas_wanted,
+                gas_used: value.gas_used,
+            }
         }
     }
-}
 
-impl From<GasInfo> for protos::cosmos::base::abci::v1beta1::GasInfo {
-    fn from(value: GasInfo) -> Self {
-        Self {
-            gas_wanted: value.gas_wanted,
-            gas_used: value.gas_used,
+    impl From<GasInfo> for protos::cosmos::base::abci::v1beta1::GasInfo {
+        fn from(value: GasInfo) -> Self {
+            Self {
+                gas_wanted: value.gas_wanted,
+                gas_used: value.gas_used,
+            }
         }
     }
 }

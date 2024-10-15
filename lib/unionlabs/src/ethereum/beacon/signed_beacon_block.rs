@@ -2,7 +2,6 @@ use macros::model;
 use ssz::Ssz;
 
 use crate::{
-    bls::BlsSignature,
     ethereum::{
         beacon::beacon_block::{BeaconBlock, UnboundedBeaconBlock},
         config::{
@@ -13,12 +12,13 @@ use crate::{
             MAX_WITHDRAWALS_PER_PAYLOAD, SYNC_COMMITTEE_SIZE,
         },
     },
+    hash::H768,
 };
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#signedbeaconblock>
 #[model]
 #[derive(Ssz)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct SignedBeaconBlock<
     C: MAX_PROPOSER_SLASHINGS
         + MAX_VALIDATORS_PER_COMMITTEE
@@ -37,11 +37,11 @@ pub struct SignedBeaconBlock<
         + SYNC_COMMITTEE_SIZE,
 > {
     pub message: BeaconBlock<C>,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }
 
 #[model]
 pub struct UnboundedSignedBeaconBlock {
     pub message: UnboundedBeaconBlock,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }

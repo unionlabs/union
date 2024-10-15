@@ -21,14 +21,9 @@ use core::{
     str::FromStr,
 };
 
-use serde::{Deserialize, Serialize};
 pub use typenum;
 
-use crate::{
-    ibc::core::client::height::{Height, HeightFromStrError},
-    id::Bounded,
-    validated::Validated,
-};
+use crate::ibc::core::client::height::{Height, HeightFromStrError};
 
 pub const DELAY_PERIOD: u64 = 0;
 
@@ -70,9 +65,6 @@ pub mod berachain;
 /// Types specific to aptos.
 pub mod aptos;
 
-/// Wrapper types around [`milagro_bls`] types, providing more conversions and a simpler signing interface.
-pub mod bls;
-
 /// Well-known events emitted by ibc-enabled chains.
 pub mod events;
 
@@ -81,8 +73,6 @@ pub mod bounded;
 pub mod constants;
 
 pub mod ics24;
-
-pub mod validated;
 
 pub mod hash;
 
@@ -109,6 +99,7 @@ pub mod errors;
 #[allow(clippy::missing_panics_doc)]
 pub mod test_utils;
 
+#[cfg(feature = "proto")]
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromProtoBytesError<E> {
     #[error("unable to convert from the raw prost type")]
@@ -117,6 +108,7 @@ pub enum TryFromProtoBytesError<E> {
     Decode(#[source] prost::DecodeError),
 }
 
+#[cfg(feature = "proto")]
 pub trait TypeUrl {
     fn type_url() -> String;
 }
@@ -129,10 +121,6 @@ pub enum TryFromEthAbiBytesError<E> {
     #[error("unable to decode from raw ethabi bytes")]
     Decode(alloy_core::sol_types::Error),
 }
-
-/// An empty string. Will only parse/serialize to/from `""`.
-pub type EmptyString<S = String> = Validated<S, EmptyStringValidator>;
-pub type EmptyStringValidator = Bounded<0, 0>;
 
 #[doc(hidden)]
 pub use paste::paste;
@@ -153,8 +141,7 @@ macro_rules! export_wasm_client_type {
 ///
 /// We need to be able to determine the light client from the light client code itself (not instantiated yet).
 /// Light clients supported by voyager must export a `#[no_mangle] static WASM_CLIENT_TYPE_<TYPE>: u8 = 0` variable.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WasmClientType {
     EthereumMinimal,
     EthereumMainnet,
@@ -169,87 +156,8 @@ pub enum WasmClientType {
     Movement,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ClientType {
-    Wasm(WasmClientType),
-    Tendermint,
-    Cometbls,
-    _11Cometbls,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn wasm_client_type_serde() {
-        assert_eq!(
-            r#"{"wasm":"ethereum_minimal"}"#,
-            serde_json::to_string(&ClientType::Wasm(WasmClientType::EthereumMinimal)).unwrap()
-        );
-    }
-}
-
-impl ClientType {
-    #[must_use]
-    pub const fn identifier_prefix(self) -> &'static str {
-        match self {
-            ClientType::Wasm(_) => "08-wasm",
-            ClientType::Tendermint => "07-tendermint",
-            ClientType::Cometbls => "cometbls",
-            ClientType::_11Cometbls => "11-cometbls",
-        }
-    }
-}
-
-impl FromStr for WasmClientType {
-    type Err = WasmClientTypeParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "EthereumMinimal" => Ok(WasmClientType::EthereumMinimal),
-            "EthereumMainnet" => Ok(WasmClientType::EthereumMainnet),
-            "Cometbls" => Ok(WasmClientType::Cometbls),
-            "Tendermint" => Ok(WasmClientType::Tendermint),
-            "Scroll" => Ok(WasmClientType::Scroll),
-            "Arbitrum" => Ok(WasmClientType::Arbitrum),
-            "Linea" => Ok(WasmClientType::Linea),
-            "Berachain" => Ok(WasmClientType::Berachain),
-            "EvmInCosmos" => Ok(WasmClientType::EvmInCosmos),
-            "Movement" => Ok(WasmClientType::Movement),
-            _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
-        }
-    }
-}
-
-impl Display for WasmClientType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::EthereumMinimal => write!(f, "EthereumMinimal"),
-            Self::EthereumMainnet => write!(f, "EthereumMainnet"),
-            Self::Cometbls => write!(f, "Cometbls"),
-            Self::Tendermint => write!(f, "Tendermint"),
-            Self::Scroll => write!(f, "Scroll"),
-            Self::Arbitrum => write!(f, "Arbitrum"),
-            Self::Linea => write!(f, "Linea"),
-            Self::Berachain => write!(f, "Berachain"),
-            Self::EvmInCosmos => write!(f, "EvmInCosmos"),
-            Self::Movement => write!(f, "Movement"),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, thiserror::Error)]
-pub enum WasmClientTypeParseError {
-    #[error("unknown wasm client type `{0}`")]
-    UnknownType(String),
-}
-
 // TODO: Move this and the above types into tools/parse-wasm-client-type, and make it into a library with an optional `parse` feature (so as to not bring in the very heavy wasmparser stack where it's not needed)
-pub fn parse_wasm_client_type(
-    bz: impl AsRef<[u8]>,
-) -> Result<Option<WasmClientType>, WasmClientTypeParseError> {
+pub fn parse_wasm_client_type(bz: impl AsRef<[u8]>) -> Option<String> {
     wasmparser::Parser::new(0)
         .parse_all(bz.as_ref())
         .find_map(|payload| {
@@ -265,16 +173,16 @@ pub fn parse_wasm_client_type(
                     .and_then(|export| export.name.strip_prefix("WASM_CLIENT_TYPE_"))
             })
         })
-        .map(str::parse)
-        .transpose()
+        .map(Into::into)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 // REVIEW: Add a variant "greater than" to indicate that any height >= H is valid? Might help with optimization passes
 pub enum QueryHeight {
-    #[serde(rename = "latest")]
+    #[cfg_attr(feature = "serde", serde(rename = "latest"))]
     Latest,
-    #[serde(untagged)]
+    #[cfg_attr(feature = "serde", serde(untagged))]
     Specific(Height),
 }
 

@@ -7,6 +7,7 @@ pub struct ProtocolVersion {
     pub app: u64,
 }
 
+#[cfg(feature = "proto")]
 impl From<protos::tendermint::p2p::ProtocolVersion> for ProtocolVersion {
     fn from(value: protos::tendermint::p2p::ProtocolVersion) -> Self {
         Self {

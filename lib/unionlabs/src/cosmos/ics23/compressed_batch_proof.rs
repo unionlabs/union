@@ -1,9 +1,6 @@
 use macros::model;
 
-use crate::cosmos::ics23::{
-    compressed_batch_entry::{CompressedBatchEntry, TryFromCompressedBatchEntryProofError},
-    inner_op::{InnerOp, TryFromInnerOpError},
-};
+use crate::cosmos::ics23::{compressed_batch_entry::CompressedBatchEntry, inner_op::InnerOp};
 
 #[model(proto(raw(protos::cosmos::ics23::v1::CompressedBatchProof), into, from))]
 pub struct CompressedBatchProof {
@@ -11,50 +8,58 @@ pub struct CompressedBatchProof {
     pub lookup_inners: Vec<InnerOp>,
 }
 
-#[derive(Debug, PartialEq, Clone, thiserror::Error)]
-pub enum TryFromCompressedBatchProofProofError {
-    #[error("invalid entries")]
-    Entries(#[from] TryFromCompressedBatchEntryProofError),
-    #[error("invalid lookup inners")]
-    LookupInners(#[from] TryFromInnerOpError),
-}
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::cosmos::ics23::{
+        compressed_batch_entry::proto::TryFromCompressedBatchEntryProofError,
+        compressed_batch_proof::CompressedBatchProof, inner_op::proto::TryFromInnerOpError,
+    };
 
-impl TryFrom<protos::cosmos::ics23::v1::CompressedBatchProof> for CompressedBatchProof {
-    type Error = TryFromCompressedBatchProofProofError;
-
-    fn try_from(
-        value: protos::cosmos::ics23::v1::CompressedBatchProof,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            entries: value
-                .entries
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(TryFromCompressedBatchProofProofError::Entries)?,
-            lookup_inners: value
-                .lookup_inners
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(TryFromCompressedBatchProofProofError::LookupInners)?,
-        })
+    #[derive(Debug, PartialEq, Clone, thiserror::Error)]
+    pub enum TryFromCompressedBatchProofProofError {
+        #[error("invalid entries")]
+        Entries(#[from] TryFromCompressedBatchEntryProofError),
+        #[error("invalid lookup inners")]
+        LookupInners(#[from] TryFromInnerOpError),
     }
-}
 
-impl From<CompressedBatchProof> for protos::cosmos::ics23::v1::CompressedBatchProof {
-    fn from(value: CompressedBatchProof) -> Self {
-        Self {
-            entries: value
-                .entries
-                .into_iter()
-                .map(Into::into)
-                .collect::<Vec<_>>(),
-            lookup_inners: value
-                .lookup_inners
-                .into_iter()
-                .map(Into::into)
-                .collect::<Vec<_>>(),
+    impl TryFrom<protos::cosmos::ics23::v1::CompressedBatchProof> for CompressedBatchProof {
+        type Error = TryFromCompressedBatchProofProofError;
+
+        fn try_from(
+            value: protos::cosmos::ics23::v1::CompressedBatchProof,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                entries: value
+                    .entries
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(TryFromCompressedBatchProofProofError::Entries)?,
+                lookup_inners: value
+                    .lookup_inners
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(TryFromCompressedBatchProofProofError::LookupInners)?,
+            })
+        }
+    }
+
+    impl From<CompressedBatchProof> for protos::cosmos::ics23::v1::CompressedBatchProof {
+        fn from(value: CompressedBatchProof) -> Self {
+            Self {
+                entries: value
+                    .entries
+                    .into_iter()
+                    .map(Into::into)
+                    .collect::<Vec<_>>(),
+                lookup_inners: value
+                    .lookup_inners
+                    .into_iter()
+                    .map(Into::into)
+                    .collect::<Vec<_>>(),
+            }
         }
     }
 }

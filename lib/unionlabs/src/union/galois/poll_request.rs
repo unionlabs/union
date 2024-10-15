@@ -7,6 +7,7 @@ pub struct PollRequest {
     pub request: ProveRequest,
 }
 
+#[cfg(feature = "proto")]
 impl From<PollRequest> for protos::union::galois::api::v3::PollRequest {
     fn from(value: PollRequest) -> Self {
         Self {

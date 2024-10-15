@@ -10,18 +10,17 @@ pub struct MsgConnectionOpenAck {
     pub connection_id: ConnectionId,
     pub counterparty_connection_id: ConnectionId,
     pub version: Version,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub client_state: Vec<u8>,
-    // TODO: Make this type generic
     pub proof_height: Height,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub proof_try: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub proof_client: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub proof_consensus: Vec<u8>,
     // TODO: Make this type generic

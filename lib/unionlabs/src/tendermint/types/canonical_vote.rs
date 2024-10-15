@@ -19,6 +19,7 @@ pub struct CanonicalVote {
     pub timestamp: Timestamp,
 }
 
+#[cfg(feature = "proto")]
 impl From<CanonicalVote> for protos::tendermint::types::LegacyCanonicalVote {
     fn from(value: CanonicalVote) -> Self {
         Self {

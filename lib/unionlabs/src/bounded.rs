@@ -25,6 +25,7 @@ macro_rules! bounded_int {
                 }
             }
 
+            #[cfg(feature = "serde")]
             impl<const MIN: $ty, const MAX: $ty> serde::Serialize for $Struct<MIN, MAX> {
                 fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
                 where
@@ -34,6 +35,7 @@ macro_rules! bounded_int {
                 }
             }
 
+            #[cfg(feature = "serde")]
             impl<'de, const MIN: $ty, const MAX: $ty> serde::Deserialize<'de> for $Struct<MIN, MAX> {
                 fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
                 where

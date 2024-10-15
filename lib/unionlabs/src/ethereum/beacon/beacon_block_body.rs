@@ -2,7 +2,6 @@ use macros::model;
 use ssz::{types::List, Ssz};
 
 use crate::{
-    bls::BlsSignature,
     ethereum::{
         beacon::{
             attestation::{Attestation, UnboundedAttestation},
@@ -23,14 +22,14 @@ use crate::{
             MAX_WITHDRAWALS_PER_PAYLOAD, SYNC_COMMITTEE_SIZE,
         },
     },
-    hash::H256,
+    hash::{H256, H768},
     ibc::lightclients::ethereum::sync_aggregate::{SyncAggregate, UnboundedSyncAggregate},
 };
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#beaconblockbody>
 #[model]
 #[derive(Ssz)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct BeaconBlockBody<
     C: MAX_PROPOSER_SLASHINGS
         + MAX_VALIDATORS_PER_COMMITTEE
@@ -48,7 +47,7 @@ pub struct BeaconBlockBody<
         + MAX_BLOB_COMMITMENTS_PER_BLOCK
         + SYNC_COMMITTEE_SIZE,
 > {
-    pub randao_reveal: BlsSignature,
+    pub randao_reveal: H768,
     pub eth1_data: Eth1Data,
     pub graffiti: H256,
     pub proposer_slashings: List<ProposerSlashing, C::MAX_PROPOSER_SLASHINGS>,
@@ -64,7 +63,7 @@ pub struct BeaconBlockBody<
 
 #[model]
 pub struct UnboundedBeaconBlockBody {
-    pub randao_reveal: BlsSignature,
+    pub randao_reveal: H768,
     pub eth1_data: Eth1Data,
     pub graffiti: H256,
     pub proposer_slashings: Vec<ProposerSlashing>,

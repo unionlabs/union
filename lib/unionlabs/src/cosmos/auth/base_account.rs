@@ -1,9 +1,6 @@
 use macros::model;
 
-use crate::{
-    cosmos::crypto::{AnyPubKey, TryFromAnyPubKeyError},
-    errors::MissingField,
-};
+use crate::cosmos::crypto::AnyPubKey;
 
 #[model(proto(raw(protos::cosmos::auth::v1beta1::BaseAccount), into, from))]
 pub struct BaseAccount {
@@ -16,34 +13,44 @@ pub struct BaseAccount {
     pub sequence: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromBaseAccountError {
-    #[error(transparent)]
-    MissingField(MissingField),
-    #[error("unable to decode pub key")]
-    PubKey(#[from] TryFromAnyPubKeyError),
-}
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        cosmos::{auth::base_account::BaseAccount, crypto::proto::TryFromAnyPubKeyError},
+        errors::MissingField,
+    };
 
-impl TryFrom<protos::cosmos::auth::v1beta1::BaseAccount> for BaseAccount {
-    type Error = TryFromBaseAccountError;
-
-    fn try_from(value: protos::cosmos::auth::v1beta1::BaseAccount) -> Result<Self, Self::Error> {
-        Ok(Self {
-            address: value.address,
-            pub_key: value.pub_key.map(TryInto::try_into).transpose()?,
-            account_number: value.account_number,
-            sequence: value.sequence,
-        })
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromBaseAccountError {
+        #[error(transparent)]
+        MissingField(MissingField),
+        #[error("unable to decode pub key")]
+        PubKey(#[from] TryFromAnyPubKeyError),
     }
-}
 
-impl From<BaseAccount> for protos::cosmos::auth::v1beta1::BaseAccount {
-    fn from(value: BaseAccount) -> Self {
-        Self {
-            address: value.address,
-            pub_key: value.pub_key.map(Into::into),
-            account_number: value.account_number,
-            sequence: value.sequence,
+    impl TryFrom<protos::cosmos::auth::v1beta1::BaseAccount> for BaseAccount {
+        type Error = TryFromBaseAccountError;
+
+        fn try_from(
+            value: protos::cosmos::auth::v1beta1::BaseAccount,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                address: value.address,
+                pub_key: value.pub_key.map(TryInto::try_into).transpose()?,
+                account_number: value.account_number,
+                sequence: value.sequence,
+            })
+        }
+    }
+
+    impl From<BaseAccount> for protos::cosmos::auth::v1beta1::BaseAccount {
+        fn from(value: BaseAccount) -> Self {
+            Self {
+                address: value.address,
+                pub_key: value.pub_key.map(Into::into),
+                account_number: value.account_number,
+                sequence: value.sequence,
+            }
         }
     }
 }

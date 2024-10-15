@@ -2,7 +2,7 @@ use core::fmt::Debug;
 
 use cosmwasm_std::{Binary, Deps, QueryRequest};
 
-use crate::{bls::BlsPublicKey, ibc::core::client::height::Height, ics24::Path};
+use crate::{hash::H384, ibc::core::client::height::Height};
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum Error {
@@ -13,11 +13,11 @@ pub enum Error {
     AggregatePublicKeys(String),
     #[error("invalid public key is returned from `aggregate_public_key`")]
     InvalidAggregatePublicKey,
-    #[error("abci query for {path} failed: {err}")]
-    ABCI { path: Path, err: String },
+    #[error("abci query for `{path}` failed: {err}")]
+    Abci { path: String, err: String },
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum UnionCustomQuery {
     AggregateVerify {
@@ -51,8 +51,8 @@ pub fn query_fast_aggregate_verify(
 
 pub fn query_aggregate_public_keys(
     deps: Deps<UnionCustomQuery>,
-    public_keys: Vec<BlsPublicKey>,
-) -> Result<BlsPublicKey, Error> {
+    public_keys: Vec<H384>,
+) -> Result<H384, Error> {
     let request: QueryRequest<UnionCustomQuery> =
         QueryRequest::Custom(UnionCustomQuery::Aggregate {
             public_keys: public_keys.into_iter().map(|x| Binary(x.into())).collect(),
@@ -82,12 +82,12 @@ use {
 
 #[allow(clippy::missing_panics_doc)]
 #[cfg(feature = "stargate")]
-pub fn query_ibc_abci<T>(deps: Deps<UnionCustomQuery>, env: &Env, path: Path) -> Result<T, Error>
+pub fn query_ibc_abci<T>(deps: Deps<UnionCustomQuery>, env: &Env, path: String) -> Result<T, Error>
 where
     Any<T>: Decode<Proto>,
 {
     let query = protos::cosmos::base::tendermint::v1beta1::AbciQueryRequest {
-        data: path.clone().to_string().into_bytes(),
+        data: path.clone().into_bytes(),
         path: "store/ibc/key".to_string(),
         height: env
             .block
@@ -101,28 +101,28 @@ where
         path: "/cosmos.base.tendermint.v1beta1.Service/ABCIQuery".into(),
         data: query.encode_to_vec().into(),
     })
-    .map_err(|e| Error::ABCI {
+    .map_err(|e| Error::Abci {
         path: path.clone(),
         err: format!("{e:?}"),
     })?;
     let abci_response_data = match deps.querier.raw_query(&raw) {
-        SystemResult::Err(system_err) => Err(Error::ABCI {
+        SystemResult::Err(system_err) => Err(Error::Abci {
             path: path.clone(),
             err: format!("Querier system error: {system_err}"),
         }),
-        SystemResult::Ok(ContractResult::Err(contract_err)) => Err(Error::ABCI {
+        SystemResult::Ok(ContractResult::Err(contract_err)) => Err(Error::Abci {
             path: path.clone(),
             err: format!("Querier contract error: {contract_err}"),
         }),
         SystemResult::Ok(ContractResult::Ok(value)) => Ok(value),
     }?;
     let abci_response =
-        AbciQueryResponse::decode(abci_response_data.as_ref()).map_err(|e| Error::ABCI {
+        AbciQueryResponse::decode(abci_response_data.as_ref()).map_err(|e| Error::Abci {
             path: path.clone(),
             err: format!("AbciQueryResponse decoding: {e:?}"),
         })?;
     let Any(value) =
-        Any::<T>::decode_as::<Proto>(&abci_response.value).map_err(|e| Error::ABCI {
+        Any::<T>::decode_as::<Proto>(&abci_response.value).map_err(|e| Error::Abci {
             path,
             err: format!("AnyProto decoding: {e:?}"),
         })?;
@@ -134,22 +134,17 @@ where
 pub fn query_consensus_state<T>(
     deps: Deps<UnionCustomQuery>,
     env: &Env,
-    // TODO: Use ClientId here
-    client_id: String,
+    client_id: crate::id::ClientId,
+    client_type: &str,
     height: Height,
 ) -> Result<T, Error>
 where
     Any<T>: Decode<Proto>,
 {
-    use crate::validated::ValidateT;
-
     query_ibc_abci::<T>(
         deps,
         env,
-        Path::ClientConsensusState(ClientConsensusStatePath {
-            client_id: client_id.validate().expect("invalid client id"),
-            height,
-        }),
+        ClientConsensusStatePath { client_id, height }.ics24_commitment_path(client_type),
     )
 }
 
@@ -158,19 +153,15 @@ where
 pub fn query_client_state<T>(
     deps: Deps<UnionCustomQuery>,
     env: &Env,
-    // TODO: Use ClientId here
-    client_id: String,
+    client_id: crate::id::ClientId,
+    client_type: &str,
 ) -> Result<T, Error>
 where
     Any<T>: Decode<Proto>,
 {
-    use crate::validated::ValidateT;
-
     query_ibc_abci::<T>(
         deps,
         env,
-        Path::ClientState(ClientStatePath {
-            client_id: client_id.validate().expect("invalid client id"),
-        }),
+        ClientStatePath { client_id }.ics24_commitment_path(client_type),
     )
 }
