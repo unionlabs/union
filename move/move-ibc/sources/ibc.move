@@ -193,8 +193,13 @@ module IBC::ibc {
     struct AcknowledgePacket has drop, store {
         packet: Packet,
         acknowledgement: vector<u8>
-    }    
-    
+    }
+
+    #[event]
+    struct SubmitMisbehaviour has drop, store {
+        client_id: String,
+        client_type: String
+    }
 
     struct ChannelPort has copy, drop, store {
         port_id: String,
@@ -595,6 +600,21 @@ module IBC::ibc {
 
             i = i + 1;
         };
+    }
+
+    public entry fun submit_misbehaviour(client_id: String, misbehaviour: vector<u8>) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());   
+
+        if (!table::contains(&store.commitments, IBCCommitment::client_state_key(client_id))) {
+            abort E_CLIENT_NOT_FOUND
+        };
+
+        LightClient::report_misbehaviour(client_id, misbehaviour);
+
+        event::emit(SubmitMisbehaviour {
+            client_id,
+            client_type: string::utf8(CLIENT_TYPE_COMETBLS),
+        });
     }
 
     public fun channel_open_init(

@@ -19,6 +19,7 @@ module IBC::LightClient {
     const E_VALIDATORS_HASH_MISMATCH: u64 = 35106;
     const E_INVALID_ZKP: u64 = 35107;
     const E_FROZEN_CLIENT: u64 = 35108;
+    const E_UNIMPLEMENTED: u64 = 35199;
 
     struct State has key, store {
         client_state: ClientState,
@@ -177,6 +178,14 @@ module IBC::LightClient {
                 new_height
             ],
         )
+    }
+
+    // Checks whether `misbehaviour` is valid and freezes the client
+    public fun report_misbehaviour(
+        client_id: String,
+        misbehaviour: vector<u8>
+    ) {
+        abort E_UNIMPLEMENTED
     }
 
     public fun verify_membership(
