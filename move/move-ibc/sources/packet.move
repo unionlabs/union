@@ -7,7 +7,7 @@ module IBC::packet {
 
     use IBC::height::{Self, Height};
     use IBC::proto_utils;
-    
+
     struct Packet has copy, store, drop, key {
         sequence: u64,
         source_port: String,
@@ -16,7 +16,7 @@ module IBC::packet {
         destination_channel: String,
         data: vector<u8>,
         timeout_height: Height,
-        timeout_timestamp: u64,
+        timeout_timestamp: u64
     }
 
     public fun sequence(packet: &Packet): u64 {
@@ -52,10 +52,14 @@ module IBC::packet {
     }
 
     public fun commitment(packet: &Packet): vector<u8> {
-        commitment_from_parts(packet.timeout_timestamp, packet.timeout_height, packet.data)
+        commitment_from_parts(
+            packet.timeout_timestamp, packet.timeout_height, packet.data
+        )
     }
 
-    public fun commitment_from_parts(timeout_timestamp: u64, timeout_height: Height, data: vector<u8>): vector<u8> {
+    public fun commitment_from_parts(
+        timeout_timestamp: u64, timeout_height: Height, data: vector<u8>
+    ): vector<u8> {
         let buf = bcs::to_bytes(&timeout_timestamp);
         // bcs encodes little endian by default but we want big endian
         vector::reverse(&mut buf);
@@ -71,7 +75,7 @@ module IBC::packet {
         vector::append(&mut buf, hash::sha2_256(data));
 
         hash::sha2_256(buf)
-    } 
+    }
 
     public fun new(
         sequence: u64,
@@ -81,9 +85,9 @@ module IBC::packet {
         destination_channel: String,
         data: vector<u8>,
         timeout_height: Height,
-        timeout_timestamp: u64,
+        timeout_timestamp: u64
     ): Packet {
-        Packet {            
+        Packet {
             sequence,
             source_port,
             source_channel,
@@ -91,13 +95,20 @@ module IBC::packet {
             destination_channel,
             data,
             timeout_height,
-            timeout_timestamp,
+            timeout_timestamp
         }
     }
 
     public fun default(): Packet {
         new(
-            0, utf8(b""), utf8(b""), utf8(b""), utf8(b""), vector::empty(), height::default(), 0
+            0,
+            utf8(b""),
+            utf8(b""),
+            utf8(b""),
+            utf8(b""),
+            vector::empty(),
+            height::default(),
+            0
         )
     }
 
@@ -113,15 +124,21 @@ module IBC::packet {
         };
 
         if (!string::is_empty(&packet.source_channel)) {
-            vector::append(&mut buf, proto_utils::encode_string(3, packet.source_channel));
+            vector::append(
+                &mut buf, proto_utils::encode_string(3, packet.source_channel)
+            );
         };
 
         if (!string::is_empty(&packet.destination_port)) {
-            vector::append(&mut buf, proto_utils::encode_string(4, packet.destination_port));
+            vector::append(
+                &mut buf, proto_utils::encode_string(4, packet.destination_port)
+            );
         };
 
         if (!string::is_empty(&packet.destination_channel)) {
-            vector::append(&mut buf, proto_utils::encode_string(5, packet.destination_channel));
+            vector::append(
+                &mut buf, proto_utils::encode_string(5, packet.destination_channel)
+            );
         };
 
         if (!vector::is_empty(&packet.data)) {
@@ -131,14 +148,18 @@ module IBC::packet {
         let height = height::encode_proto(packet.timeout_height);
         if (!vector::is_empty(&height)) {
             vector::append(&mut buf, proto_utils::encode_prefix(7, 2));
-            vector::append(&mut buf, proto_utils::encode_varint(vector::length(&height)));
+            vector::append(
+                &mut buf, proto_utils::encode_varint(vector::length(&height))
+            );
             vector::append(&mut buf, height);
         };
 
         if (packet.timeout_timestamp != 0) {
-            vector::append(&mut buf, proto_utils::encode_u64(8, packet.timeout_timestamp));
+            vector::append(
+                &mut buf, proto_utils::encode_u64(8, packet.timeout_timestamp)
+            );
         };
-        
+
         buf
     }
 
@@ -149,74 +170,86 @@ module IBC::packet {
         let cursor = 0;
         let packet = default();
         while (cursor < vector::length(&buf)) {
-            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(&buf, cursor);
+            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(
+                &buf, cursor
+            );
             if (err != 0) {
                 return option::none()
             };
             cursor = cursor + advance;
-            let n_read = if (tag == 1) {
-                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
-                if (err != 0) {
+            let n_read =
+                if (tag == 1) {
+                    let (num, advance, err) =
+                        proto_utils::decode_varint(wire_type, &buf, cursor);
+                    if (err != 0) {
+                        return option::none()
+                    };
+                    packet.sequence = num;
+                    advance
+                } else if (tag == 2) {
+                    let (str, advance) =
+                        proto_utils::decode_string(wire_type, &buf, cursor);
+                    if (option::is_none(&str)) {
+                        return option::none()
+                    };
+                    packet.source_port = option::extract(&mut str);
+                    advance
+                } else if (tag == 3) {
+                    let (str, advance) =
+                        proto_utils::decode_string(wire_type, &buf, cursor);
+                    if (option::is_none(&str)) {
+                        return option::none()
+                    };
+                    packet.source_channel = option::extract(&mut str);
+                    advance
+                } else if (tag == 4) {
+                    let (str, advance) =
+                        proto_utils::decode_string(wire_type, &buf, cursor);
+                    if (option::is_none(&str)) {
+                        return option::none()
+                    };
+                    packet.destination_port = option::extract(&mut str);
+                    advance
+                } else if (tag == 5) {
+                    let (str, advance) =
+                        proto_utils::decode_string(wire_type, &buf, cursor);
+                    if (option::is_none(&str)) {
+                        return option::none()
+                    };
+                    packet.destination_channel = option::extract(&mut str);
+                    advance
+                } else if (tag == 6) {
+                    let (bytes, advance) =
+                        proto_utils::decode_bytes(wire_type, &buf, cursor);
+                    if (option::is_none(&bytes)) {
+                        return option::none()
+                    };
+                    packet.data = option::extract(&mut bytes);
+                    advance
+                } else if (tag == 7) {
+                    let (len, advance, err) =
+                        proto_utils::decode_nested_len(wire_type, &buf, cursor);
+                    if (err != 0) {
+                        return option::none()
+                    };
+                    cursor = cursor + advance;
+                    let (n_read, err) =
+                        height::decode_proto(&buf, cursor, len, &mut packet.timeout_height);
+                    if (err != 0 || n_read != len) {
+                        return option::none()
+                    };
+                    len
+                } else if (tag == 8) {
+                    let (num, advance, err) =
+                        proto_utils::decode_varint(wire_type, &buf, cursor);
+                    if (err != 0) {
+                        return option::none()
+                    };
+                    packet.timeout_timestamp = num;
+                    advance
+                } else {
                     return option::none()
                 };
-                packet.sequence = num;
-                advance
-            } else if (tag == 2) {
-                let (str, advance) = proto_utils::decode_string(wire_type, &buf, cursor);
-                if (option::is_none(&str)) {
-                    return option::none()
-                };
-                packet.source_port = option::extract(&mut str);
-                advance
-            } else if (tag == 3) {
-                let (str, advance) = proto_utils::decode_string(wire_type, &buf, cursor);
-                if (option::is_none(&str)) {
-                    return option::none()
-                };
-                packet.source_channel = option::extract(&mut str);
-                advance
-            } else if (tag == 4) {
-                let (str, advance) = proto_utils::decode_string(wire_type, &buf, cursor);
-                if (option::is_none(&str)) {
-                    return option::none()
-                };
-                packet.destination_port = option::extract(&mut str);
-                advance
-            } else if (tag == 5) {
-                let (str, advance) = proto_utils::decode_string(wire_type, &buf, cursor);
-                if (option::is_none(&str)) {
-                    return option::none()
-                };
-                packet.destination_channel = option::extract(&mut str);
-                advance
-            } else if (tag == 6) {
-                let (bytes, advance) = proto_utils::decode_bytes(wire_type, &buf, cursor);
-                if (option::is_none(&bytes)) {
-                    return option::none()
-                };
-                packet.data = option::extract(&mut bytes);
-                advance
-            } else if (tag == 7) {        
-                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
-                if (err != 0) {
-                    return option::none()
-                };
-                cursor = cursor + advance;
-                let (n_read, err) = height::decode_proto(&buf, cursor, len, &mut packet.timeout_height);
-                if (err != 0 || n_read != len) {
-                    return option::none()
-                };
-                len
-            } else if (tag == 8) {      
-                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
-                if (err != 0) {
-                    return option::none()
-                };
-                packet.timeout_timestamp = num;
-                advance
-            } else {
-                return option::none()
-            };
             cursor = cursor + n_read;
         };
 
@@ -225,17 +258,18 @@ module IBC::packet {
 
     #[test]
     fun test_packet_proto_complete() {
-        let encoded_packet = x"08011206706f72742d311a096368616e6e656c2d312206706f72742d322a096368616e6e656c2d323204010203043a040801100a4064";
+        let encoded_packet =
+            x"08011206706f72742d311a096368616e6e656c2d312206706f72742d322a096368616e6e656c2d323204010203043a040801100a4064";
 
         let packet = Packet {
-              sequence: 1,
-              source_port: utf8(b"port-1"),
-              source_channel: utf8(b"channel-1"),
-              destination_port: utf8(b"port-2"),
-              destination_channel: utf8(b"channel-2"),
-              data: x"01020304",
-              timeout_height: height::new(1, 10),
-              timeout_timestamp: 100
+            sequence: 1,
+            source_port: utf8(b"port-1"),
+            source_channel: utf8(b"channel-1"),
+            destination_port: utf8(b"port-2"),
+            destination_channel: utf8(b"channel-2"),
+            data: x"01020304",
+            timeout_height: height::new(1, 10),
+            timeout_timestamp: 100
         };
 
         let res = encode_proto(packet);
@@ -249,17 +283,18 @@ module IBC::packet {
 
     #[test]
     fun test_packet_proto_incomplete() {
-        let encoded_packet = x"1206706f72742d312206706f72742d322a096368616e6e656c2d323204010203043a02100a";
+        let encoded_packet =
+            x"1206706f72742d312206706f72742d322a096368616e6e656c2d323204010203043a02100a";
 
         let packet = Packet {
-              sequence: 0,
-              source_port: utf8(b"port-1"),
-              source_channel: utf8(b""),
-              destination_port: utf8(b"port-2"),
-              destination_channel: utf8(b"channel-2"),
-              data: x"01020304",
-              timeout_height: height::new(0, 10),
-              timeout_timestamp: 0
+            sequence: 0,
+            source_port: utf8(b"port-1"),
+            source_channel: utf8(b""),
+            destination_port: utf8(b"port-2"),
+            destination_channel: utf8(b"channel-2"),
+            data: x"01020304",
+            timeout_height: height::new(0, 10),
+            timeout_timestamp: 0
         };
 
         let res = encode_proto(packet);

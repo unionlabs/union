@@ -33,19 +33,22 @@ module IBC::proto_utils {
         buf
     }
 
-    public fun decode_string(wire_type: u64, buf: &vector<u8>, cursor: u64): (Option<String>, u64) {
+    public fun decode_string(
+        wire_type: u64, buf: &vector<u8>, cursor: u64
+    ): (Option<String>, u64) {
         if (wire_type != 2) {
-            return (option::none(), 0)  
+            return (option::none(), 0)
         };
-        
+
         decode_untagged_string(buf, cursor)
     }
 
-    public fun decode_bytes(wire_type: u64, buf: &vector<u8>, cursor: u64): (Option<vector<u8>>, u64) {
+    public fun decode_bytes(wire_type: u64, buf: &vector<u8>, cursor: u64):
+        (Option<vector<u8>>, u64) {
         if (wire_type != 2) {
-            return (option::none(), 0)  
+            return (option::none(), 0)
         };
-        
+
         decode_untagged_bytes(buf, cursor)
     }
 
@@ -55,7 +58,10 @@ module IBC::proto_utils {
         if (err != 0) {
             return (option::none(), 0)
         };
-        (option::some(vector::slice(buf, cursor, cursor + bytes_len)), advance + bytes_len)
+        (
+            option::some(vector::slice(buf, cursor, cursor + bytes_len)),
+            advance + bytes_len
+        )
     }
 
     public fun decode_untagged_string(buf: &vector<u8>, cursor: u64): (Option<String>, u64) {
@@ -64,7 +70,8 @@ module IBC::proto_utils {
         if (err != 0) {
             return (option::none(), 0)
         };
-        (string::try_utf8(vector::slice(buf, cursor, cursor + strlen)), advance + strlen)
+        (string::try_utf8(vector::slice(buf, cursor, cursor + strlen)), advance
+            + strlen)
     }
 
     public fun decode_prefix(buf: &vector<u8>, cursor: u64): (u64, u64, u64, u64) {
@@ -85,19 +92,23 @@ module IBC::proto_utils {
 
     }
 
-    public fun decode_nested_len(wire_type: u64, buf: &vector<u8>, cursor: u64): (u64, u64, u64) {
+    public fun decode_nested_len(
+        wire_type: u64, buf: &vector<u8>, cursor: u64
+    ): (u64, u64, u64) {
         if (wire_type != 2) {
-            return (0, 0, 1)  
+            return (0, 0, 1)
         };
-        
+
         decode_varint_raw(buf, cursor)
     }
 
-    public fun decode_varint(wire_type: u64, buf: &vector<u8>, cursor: u64): (u64, u64, u64) {
+    public fun decode_varint(
+        wire_type: u64, buf: &vector<u8>, cursor: u64
+    ): (u64, u64, u64) {
         if (wire_type != 0) {
-            return (0, 0, 1)  
+            return (0, 0, 1)
         };
-        
+
         decode_varint_raw(buf, cursor)
     }
 
@@ -128,11 +139,11 @@ module IBC::proto_utils {
         if (b < 0x80) {
             return ((part0 as u64), 1, 0)
         };
-        
+
         part0 = part0 - 0x80;
         let b = *vector::borrow(buf, cursor + 1);
         part0 = part0 + ((b as u32) << 7);
-       if (b < 0x80) {
+        if (b < 0x80) {
             return ((part0 as u64), 2, 0)
         };
 
@@ -140,14 +151,14 @@ module IBC::proto_utils {
         let b = *vector::borrow(buf, cursor + 2);
         part0 = part0 + ((b as u32) << 14);
         if (b < 0x80) {
-            return ((part0 as u64), 3, 0)  
+            return ((part0 as u64), 3, 0)
         };
 
         part0 = part0 - (0x80 << 14);
         let b = *vector::borrow(buf, cursor + 3);
         part0 = part0 + ((b as u32) << 21);
         if (b < 0x80) {
-            return ((part0 as u64), 4, 0)  
+            return ((part0 as u64), 4, 0)
         };
 
         part0 = part0 - (0x80 << 21);
@@ -173,7 +184,6 @@ module IBC::proto_utils {
             return (value + ((part1 as u64) << 28), 7, 0)
         };
 
-        
         part1 = part1 - (0x80 << 14);
         let b = *vector::borrow(buf, cursor + 7);
         let part1 = part1 + ((b as u32) << 21);
@@ -241,11 +251,16 @@ module IBC::proto_utils {
 
     #[test]
     public fun test_varint() {
-        let exp = vector<u64> [
-            100, 10000, 100000, 
-            100000000, 10000000000, 
-            1000000000000, 10000000000000,  
-            1000000000000000, 100000000000000000, 
+        let exp = vector<u64>[
+            100,
+            10000,
+            100000,
+            100000000,
+            10000000000,
+            1000000000000,
+            10000000000000,
+            1000000000000000,
+            100000000000000000,
             10000000000000000000
         ];
 
@@ -261,10 +276,10 @@ module IBC::proto_utils {
 
     #[test]
     public fun test_str() {
-        let exp = vector<String> [
+        let exp = vector<String>[
             string::utf8(b"h"),
             string::utf8(b"hello world"),
-            string::utf8(b"hello world hello again"),
+            string::utf8(b"hello world hello again")
         ];
 
         let i = 0;

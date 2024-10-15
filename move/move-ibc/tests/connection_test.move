@@ -54,9 +54,8 @@
 
 //         vector::push_back(&mut supported_versions, version);
 
-        
 //         let (found_version, found) = ibc::find_supported_version(&supported_versions, &version);
-        
+
 //         assert!(found, 4001);
 //         assert!(connection_end::version_identifier(&found_version) == connection_end::version_identifier(&version), 4002);
 
@@ -351,7 +350,6 @@
 //             b"",
 //         );
 
-
 //         let proof_init2 = any::pack(vector::empty<u8>());
 //         let proof_client2 = any::pack(vector::empty<u8>());
 
@@ -378,8 +376,7 @@
 //         assert!(connection_end::delay_period(&new_connection) == delay_period, 1011);
 //     }
 
-
-//     #[test(alice = @IBC)]   
+//     #[test(alice = @IBC)]
 //     public fun test_connection_open_ack_success(alice: &signer) {
 //         // Initialize the IBC store
 //         ibc::create_ibc_store(alice);
@@ -485,9 +482,8 @@
 //         assert!(*connection_end::conn_counterparty_client_id(&new_connection) == string::utf8(b"counterparty-client-1"), 2006);
 //         assert!(*connection_end::conn_counterparty_connection_id(&new_connection) == string::utf8(b"connection-1"), 2007);
 //     }
-   
 
-//     #[test(alice = @IBC)]   
+//     #[test(alice = @IBC)]
 //     public fun test_connection_open_confirm_success(alice: &signer) {
 //         ibc::create_ibc_store(alice);
 
@@ -544,7 +540,7 @@
 //         assert!(*connection_end::conn_counterparty_connection_id(&updated_connection) == string::utf8(b"connection-0"), 1007);
 //     }
 
-//     #[test(alice = @IBC)]   
+//     #[test(alice = @IBC)]
 //     #[expected_failure(abort_code = 1008)] // E_INVALID_CONNECTION_STATE
 //     public fun test_connection_open_confirm_failure_invalid_state(alice: &signer) {
 //         ibc::create_ibc_store(alice);
@@ -579,7 +575,7 @@
 
 //     // TODO: Uncomment this test when light client is implemented
 
-//     // #[test(alice = @IBC)]   
+//     // #[test(alice = @IBC)]
 //     // #[expected_failure(abort_code = 1010)] // E_INVALID_PROOF
 //     // public fun test_connection_open_confirm_failure_invalid_proof(alice: &signer, relayer:address) {
 //     //     ibc::create_ibc_store(alice);
@@ -597,7 +593,6 @@
 //     //     let proof_init = any::pack(vector::empty<u8>());
 //     //     let proof_client = any::pack(vector::empty<u8>());
 //     //     let client_state_bytes = vector::empty<u8>();
-
 
 //     //     // Call connection_open_try
 //     //     let connection_id_try = ibc::connection_open_try(

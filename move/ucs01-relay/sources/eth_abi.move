@@ -3,17 +3,19 @@ module UCS01::EthABI {
     use std::vector;
     use std::string::{Self, String};
     use std::from_bcs;
-    const ZERO_32_BYTES: vector<u8> = vector[0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0];
-
+    const ZERO_32_BYTES: vector<u8> = vector[
+        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0
+    ];
 
     public fun encode_string(buf: &mut vector<u8>, str: String) {
-        let str_bytes = string::bytes(&str); 
-        let str_len = vector::length(str_bytes); 
+        let str_bytes = string::bytes(&str);
+        let str_len = vector::length(str_bytes);
         let len_bytes = bcs::to_bytes(&(str_len as u256));
         vector::reverse(&mut len_bytes); // Reverse the bytes to big-endian
-        
+
         vector::append(buf, len_bytes);
-        vector::append(buf, *str_bytes); 
+        vector::append(buf, *str_bytes);
 
         // Calculate padding to align to 32 bytes
         let padding_len = (32 - (str_len % 32)) % 32;
@@ -26,24 +28,30 @@ module UCS01::EthABI {
         // Append the padding
         vector::append(buf, padding);
     }
+
     //movement improvements-4
-    
+
     public fun encode_address(buf: &mut vector<u8>, addr: address) {
         let sender_bytes = bcs::to_bytes(&addr);
         vector::append(buf, sender_bytes);
-    }   
+    }
 
-    public fun encode_uint<T: copy + store + drop>(buf: &mut vector<u8>, data: T) {
+    public fun encode_uint<T: copy + store + drop>(
+        buf: &mut vector<u8>, data: T
+    ) {
         // Create a 32-byte vector filled with zeros (u256 is 32 bytes)
-        let padded_bytes = vector[0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0];
-        
+        let padded_bytes = vector[
+            0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0
+        ];
+
         let data_bytes = bcs::to_bytes(&data);
 
         let data_len = vector::length(&data_bytes);
 
         // Copy the data bytes into the last part of the 32-byte padded vector
         let i = 0;
-        while(i < data_len) {
+        while (i < data_len) {
             *vector::borrow_mut(&mut padded_bytes, i) = *vector::borrow(&data_bytes, i);
             i = i + 1;
         };
@@ -63,13 +71,12 @@ module UCS01::EthABI {
         let reversed_bytes = padded_bytes;
         vector::reverse(&mut reversed_bytes);
 
-
         // Move the index forward after reading 32 bytes
         *index = *index + 32;
 
         // TODO: Can't convert to T directly because of the endianness we get problems.
         let result = from_bcs::to_u256(reversed_bytes);
-        
+
         result
     }
 
@@ -80,28 +87,30 @@ module UCS01::EthABI {
 
     public fun decode_u8(buf: vector<u8>, index: &mut u64): u8 {
         let padded_bytes = vector::slice(&buf, *index, *index + 1);
-        
+
         *index = *index + 1;
 
         from_bcs::to_u8(padded_bytes)
-    }    
+    }
 
-    public inline fun encode_vector<T: copy>(buf: &mut vector<u8>, vec: vector<T>, encode_fn: |&mut vector<u8>, T|) {
+    public inline fun encode_vector<T: copy>(
+        buf: &mut vector<u8>,
+        vec: vector<T>,
+        encode_fn: |&mut vector<u8>, T|
+    ) {
         let len = vector::length(&vec);
-        encode_uint<u64>(buf, len); 
+        encode_uint<u64>(buf, len);
 
         let i = 0;
         while (i < len) {
             let item = *vector::borrow(&vec, i);
-            encode_fn(buf, item); 
+            encode_fn(buf, item);
             i = i + 1;
         };
 
-
-
         // Calculate padding to align to 32 bytes
         let padding_len = (32 - (len % 32)) % 32;
-        if (padding_len > 0 ){
+        if (padding_len > 0) {
             let padding = vector::empty<u8>();
             let j = 0;
             while (j < padding_len) {
@@ -113,9 +122,13 @@ module UCS01::EthABI {
         }
     }
 
-    public inline fun decode_vector<T>(buf: vector<u8>, index: &mut u64, decode_fn: |vector<u8>, &mut u64|T): vector<T> {
+    public inline fun decode_vector<T>(
+        buf: vector<u8>,
+        index: &mut u64,
+        decode_fn: |vector<u8>, &mut u64| T
+    ): vector<T> {
         let vec_len = (decode_uint(buf, index) as u64); // Decode the length of the vector
-        
+
         let result = vector::empty<T>();
         let i = 0;
         while (i < vec_len) {
@@ -130,16 +143,14 @@ module UCS01::EthABI {
         result
     }
 
-
     public fun decode_string(buf: vector<u8>, index: &mut u64): String {
         // Read the first 32 bytes to get the length of the string
-        let len_bytes = vector::slice(&buf, *index, *index + 32); 
+        let len_bytes = vector::slice(&buf, *index, *index + 32);
 
         vector::reverse(&mut len_bytes); // Reverse the bytes to big-endian
-        let str_len: u256 = from_bcs::to_u256(len_bytes); 
+        let str_len: u256 = from_bcs::to_u256(len_bytes);
         *index = *index + 32; // Move the index forward after reading the length
 
-        
         // // Read the actual string bytes
         let str_bytes = vector::slice(&buf, *index, *index + (str_len as u64));
         *index = *index + (str_len as u64); // Move the index forward after reading the string
@@ -168,7 +179,7 @@ module UCS01::EthABI {
         let some_str = string::utf8(b"encode string encode string");
 
         encode_string(&mut some_variable, some_str);
-        
+
         let decoded_str = decode_string(some_variable, &mut 4); // idx is 4, first 4 byte is garbage
 
         assert!(decoded_str == some_str, 1);
@@ -185,8 +196,8 @@ module UCS01::EthABI {
         encode_address(&mut some_variable, addr2);
 
         let idx = 4;
-        let decoded_addr1 = decode_address(some_variable, &mut idx); 
-        let decoded_addr2 = decode_address(some_variable, &mut idx); 
+        let decoded_addr1 = decode_address(some_variable, &mut idx);
+        let decoded_addr2 = decode_address(some_variable, &mut idx);
 
         assert!(decoded_addr1 == addr1, 1);
         assert!(decoded_addr2 == addr2, 1);
@@ -205,10 +216,10 @@ module UCS01::EthABI {
         encode_uint<u128>(&mut some_variable, data3);
 
         let idx = 4;
-        let decoded_data:  u8   = (decode_uint(some_variable, &mut idx) as u8);
-        let decoded_data2: u32  = (decode_uint(some_variable, &mut idx) as u32);
+        let decoded_data: u8 = (decode_uint(some_variable, &mut idx) as u8);
+        let decoded_data2: u32 = (decode_uint(some_variable, &mut idx) as u32);
         let decoded_data3: u128 = (decode_uint(some_variable, &mut idx) as u128);
-        
+
         assert!(decoded_data == data, 1);
         assert!(decoded_data2 == data2, 1);
         assert!(decoded_data3 == data3, 1);
@@ -220,40 +231,62 @@ module UCS01::EthABI {
 
         let vector_test_variable: vector<u8> = vector[0x41, 0x51, 0x61];
 
-        let vector_test_variable2: vector<address> = vector[@0x1111111111111111111111111111111111111111, @0x0000000000000000000000000000000000000033];
+        let vector_test_variable2: vector<address> = vector[
+            @0x1111111111111111111111111111111111111111,
+            @0x0000000000000000000000000000000000000033
+        ];
 
+        encode_vector<u8>(
+            &mut some_variable,
+            vector_test_variable,
+            |some_variable, data| {
+                encode_uint<u8>(some_variable, data);
+            }
+        );
 
-        encode_vector<u8>(&mut some_variable, vector_test_variable, |some_variable, data| {
-            encode_uint<u8>(some_variable, data);
-        });
-
-        encode_vector<address>(&mut some_variable, vector_test_variable2, |some_variable, data| {
-            encode_address(some_variable, data);
-        });
+        encode_vector<address>(
+            &mut some_variable,
+            vector_test_variable2,
+            |some_variable, data| {
+                encode_address(some_variable, data);
+            }
+        );
 
         // Now, let's decode the vectors and verify correctness
         let idx: u64 = 4; // Start index (skip the first 4 bytes of garbage)
 
         // Decode the u8 vector
-        let decoded_u8_vector = decode_vector<u8>(some_variable, &mut idx, |buf, index| {
-            (decode_uint(buf, index) as u8)
-        });
+        let decoded_u8_vector =
+            decode_vector<u8>(
+                some_variable,
+                &mut idx,
+                |buf, index| {
+                    (decode_uint(buf, index) as u8)
+                }
+            );
 
         // Decode the address vector
-        let decoded_address_vector = decode_vector<address>(some_variable, &mut idx, |buf, index| {
-            decode_address(buf, index)
-        });
+        let decoded_address_vector =
+            decode_vector<address>(
+                some_variable,
+                &mut idx,
+                |buf, index| { decode_address(buf, index) }
+            );
 
         assert!(*vector::borrow(&decoded_u8_vector, 0) == 0x41, 1);
         assert!(*vector::borrow(&decoded_u8_vector, 1) == 0x51, 1);
         assert!(*vector::borrow(&decoded_u8_vector, 2) == 0x61, 1);
 
-        assert!(*vector::borrow(&decoded_address_vector, 0) == @0x1111111111111111111111111111111111111111, 1);
-        assert!(*vector::borrow(&decoded_address_vector, 1) == @0x0000000000000000000000000000000000000033, 1);
-
-
-
+        assert!(
+            *vector::borrow(&decoded_address_vector, 0)
+                == @0x1111111111111111111111111111111111111111,
+            1
+        );
+        assert!(
+            *vector::borrow(&decoded_address_vector, 1) ==
+            @0x0000000000000000000000000000000000000033,
+            1
+        );
 
     }
 }
-

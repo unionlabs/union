@@ -91,10 +91,22 @@ _: {
         '';
       };
 
+      movefmt = craneLib.buildPackage rec {
+        pname = "movefmt";
+        version = "3201309e4cce72205994e32a4d45d1447db705e5";
+
+        src = builtins.fetchGit {
+          url = "https://github.com/movebit/movefmt";
+          rev = version;
+        };
+
+        doCheck = false;
+      };
+
     in
     {
       packages = {
-        inherit movement;
+        inherit movement movefmt;
       };
 
     };

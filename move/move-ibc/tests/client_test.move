@@ -11,7 +11,6 @@
 //     const E_GET_CLIENT_IMPL: u64 = 3002;
 //     const E_CREATE_CLIENT: u64 = 3003;
 
-
 //     #[test(alice = @IBC)]
 //     public fun test_generate_client_identifier(alice: &signer) {
 //         ibc::create_ibc_store(alice);
@@ -20,7 +19,7 @@
 
 //         // Generate the first identifier
 //         let identifier1 = ibc::generate_client_identifier(client_type);
-//         let expected_identifier1 = string::utf8(b"test_client-0"); 
+//         let expected_identifier1 = string::utf8(b"test_client-0");
 //         assert!(identifier1 == expected_identifier1, E_GENERATE_CLIENT_IDENTIFIER);
 
 //         // Generate the second identifier
@@ -53,14 +52,12 @@
 //             vector<u8>[]
 //         ));
 
-
 //         let client_id = ibc::create_client(
 //             client_type,
 //             client_state,
 //             consensus_state,
 //         );
 //         assert!(client_id == expected_client_id, E_CREATE_CLIENT);
-
 
 //         // Register the mock client type and address
 //         let client_type2 = string::utf8(b"another_client");
@@ -81,7 +78,6 @@
 //             LightClient::new_merkle_root(vector<u8>[]),
 //             vector<u8>[]
 //         ));
-
 
 //         let client_id2 = ibc::create_client(
 //             client_type2,

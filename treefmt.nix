@@ -5,6 +5,7 @@
   biome,
   goPkgs,
   unstablePkgs,
+  movefmt,
 }:
 
 {
@@ -116,6 +117,11 @@
           "${forge}/bin/forge";
         options = [ "fmt" ];
         includes = [ "*.sol" ];
+      };
+      movefmt = {
+        command = "${movefmt}/bin/movefmt";
+        options = [ ];
+        includes = [ "*.move" ];
       };
     };
     global = {

@@ -22,7 +22,7 @@ module ping_pong::ibc {
 
     #[event]
     struct RingEvent has copy, drop, store {
-        ping: bool,
+        ping: bool
     }
 
     #[event]
@@ -32,13 +32,13 @@ module ping_pong::ibc {
     struct AcknowledgedEvent has copy, drop, store {}
 
     struct PingPongPacket has copy, store, drop {
-        ping: bool,
+        ping: bool
         // counterparty_timeout: u64,
     }
 
     struct PingPong has key {
         channel_id: String,
-        seconds_before_timeout: u64,
+        seconds_before_timeout: u64
     }
 
     struct SignerRef has key {
@@ -51,23 +51,26 @@ module ping_pong::ibc {
         let vault_constructor_ref = &object::create_named_object(deployer, IBC_APP_SEED);
         let vault_signer = &object::generate_signer(vault_constructor_ref);
 
-        let pp = PingPong {
-            channel_id: string::utf8(b""),
-            seconds_before_timeout: 100000, 
-        };
+        let pp = PingPong { channel_id: string::utf8(b""), seconds_before_timeout: 100000 };
         move_to(vault_signer, pp);
 
-        move_to(vault_signer, SignerRef {
-            self_ref: object::generate_extend_ref(vault_constructor_ref),
-            self_address: signer::address_of(deployer),
-        });
+        move_to(
+            vault_signer,
+            SignerRef {
+                self_ref: object::generate_extend_ref(vault_constructor_ref),
+                self_address: signer::address_of(deployer)
+            }
+        );
     }
 
     public fun encode_packet(packet: &PingPongPacket): vector<u8> {
         let buf = vector::empty<u8>();
 
         // 31 bytes of left padding
-        vector::append(&mut buf, x"00000000000000000000000000000000000000000000000000000000000000");
+        vector::append(
+            &mut buf,
+            x"00000000000000000000000000000000000000000000000000000000000000"
+        );
         if (packet.ping) {
             vector::push_back(&mut buf, 1);
         } else {
@@ -84,7 +87,6 @@ module ping_pong::ibc {
         buf
     }
 
-
     public fun decode_packet(data: &vector<u8>): PingPongPacket {
         // bool is left padded [0u8; 32], so we check the last element
         let ping = *vector::borrow(data, 31) == 1;
@@ -96,14 +98,13 @@ module ping_pong::ibc {
         // let counterparty_timeout = from_bcs::to_u64(counterparty_timeout_bytes);
 
         PingPongPacket {
-            ping,
+            ping
             // counterparty_timeout,
         }
     }
 
-
     public entry fun initiate(
-        ping: bool,
+        ping: bool
         // counterparty_timeout: u64,
         // local_timeout: u64
     ) acquires PingPong, SignerRef {
@@ -112,16 +113,18 @@ module ping_pong::ibc {
             abort ERR_NO_CHANNEL
         };
 
-        ibc::send_packet(  
+        ibc::send_packet(
             &get_signer(),
             get_self_address(),
             pp.channel_id,
             height::default(), // no height timeout
             (std::timestamp::now_seconds() + pp.seconds_before_timeout) * 1_000_000_000,
-            encode_packet(&PingPongPacket {
-                ping,
-                // counterparty_timeout,
-            })
+            encode_packet(
+                &PingPongPacket {
+                    ping
+                    // counterparty_timeout,
+                }
+            )
         );
     }
 
@@ -137,7 +140,7 @@ module ping_pong::ibc {
         packet_timeout_timestamp: u64,
         proof: vector<u8>,
         proof_height_revision_num: u64,
-        proof_height_revision_height: u64,
+        proof_height_revision_height: u64
     ) acquires PingPong, SignerRef {
         let pp_packet = decode_packet(&packet_data);
         event::emit(RingEvent { ping: pp_packet.ping });
@@ -161,16 +164,15 @@ module ping_pong::ibc {
                 packet_data,
                 height::new(
                     packet_timeout_revision_num,
-                    packet_timeout_revision_height,
+                    packet_timeout_revision_height
                 ),
-                packet_timeout_timestamp,
+                packet_timeout_timestamp
             ),
             proof,
             height::new(proof_height_revision_num, proof_height_revision_height),
             vector[1]
         );
     }
-
 
     public entry fun acknowledge_packet(
         packet_sequence: u64,
@@ -185,7 +187,7 @@ module ping_pong::ibc {
         acknowledgement: vector<u8>,
         proof: vector<u8>,
         proof_height_revision_num: u64,
-        proof_height_revision_height: u64,
+        proof_height_revision_height: u64
     ) acquires SignerRef {
         ibc::acknowledge_packet(
             &get_signer(),
@@ -199,20 +201,18 @@ module ping_pong::ibc {
                 packet_data,
                 height::new(
                     packet_timeout_revision_num,
-                    packet_timeout_revision_height,
+                    packet_timeout_revision_height
                 ),
-                packet_timeout_timestamp,
+                packet_timeout_timestamp
             ),
             acknowledgement,
             proof,
-            height::new(proof_height_revision_num, proof_height_revision_height),
+            height::new(proof_height_revision_num, proof_height_revision_height)
         );
         event::emit(AcknowledgedEvent {});
     }
 
-    public fun timeout_packet(
-        _packet: Packet
-    )  {
+    public fun timeout_packet(_packet: Packet) {
         event::emit(TimedOutEvent {});
     }
 
@@ -221,7 +221,7 @@ module ping_pong::ibc {
         ordering: u8,
         counterparty_port_id: String,
         counterparty_channel_id: String,
-        version: String,
+        version: String
     ) acquires PingPong, SignerRef {
         // TODO(aeryz): save the channel here
         ibc::channel_open_init(
@@ -230,9 +230,11 @@ module ping_pong::ibc {
             connection_hops,
             ordering,
             channel::new_counterparty(counterparty_port_id, counterparty_channel_id),
-            version,
+            version
         );
-        if (string::length(&borrow_global<PingPong>(get_vault_addr()).channel_id) != 0) {
+        if (string::length(
+            &borrow_global<PingPong>(get_vault_addr()).channel_id
+        ) != 0) {
             abort ERR_ONLY_ONE_CHANNEL
         };
     }
@@ -246,7 +248,7 @@ module ping_pong::ibc {
         version: String,
         proof_init: vector<u8>,
         proof_height_revision_num: u64,
-        proof_height_revision_height: u64,
+        proof_height_revision_height: u64
     ) acquires PingPong, SignerRef {
         // TODO(aeryz): save the channel here
         ibc::channel_open_try(
@@ -258,10 +260,12 @@ module ping_pong::ibc {
             counterparty_version,
             version,
             proof_init,
-            height::new(proof_height_revision_num, proof_height_revision_height),
+            height::new(proof_height_revision_num, proof_height_revision_height)
         );
 
-        if (string::length(&borrow_global<PingPong>(get_vault_addr()).channel_id) != 0) {
+        if (string::length(
+            &borrow_global<PingPong>(get_vault_addr()).channel_id
+        ) != 0) {
             abort ERR_ONLY_ONE_CHANNEL
         };
     }
@@ -272,7 +276,7 @@ module ping_pong::ibc {
         counterparty_version: String,
         proof_try: vector<u8>,
         proof_height_revision_num: u64,
-        proof_height_revision_height: u64,
+        proof_height_revision_height: u64
     ) acquires PingPong, SignerRef {
         // Store the channel_id
         ibc::channel_open_ack(
@@ -282,7 +286,7 @@ module ping_pong::ibc {
             counterparty_channel_id,
             counterparty_version,
             proof_try,
-            height::new(proof_height_revision_num, proof_height_revision_height),
+            height::new(proof_height_revision_num, proof_height_revision_height)
         );
         borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
     }
@@ -291,29 +295,27 @@ module ping_pong::ibc {
         channel_id: String,
         proof_ack: vector<u8>,
         proof_height_revision_num: u64,
-        proof_height_revision_height: u64,
+        proof_height_revision_height: u64
     ) acquires PingPong, SignerRef {
         ibc::channel_open_confirm(
             &get_signer(),
             get_self_address(),
             channel_id,
             proof_ack,
-            height::new(proof_height_revision_num, proof_height_revision_height),
+            height::new(proof_height_revision_num, proof_height_revision_height)
         );
 
         borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
     }
 
     public entry fun channel_close_init(
-        _port_id: String,
-        _channel_id: String
+        _port_id: String, _channel_id: String
     ) {
         abort ERR_INFINITE_GAME
     }
 
     public entry fun channel_close_confirm(
-        _port_id: String,
-        _channel_id: String
+        _port_id: String, _channel_id: String
     ) {
         abort ERR_INFINITE_GAME
     }
@@ -335,13 +337,10 @@ module ping_pong::ibc {
 
     #[test]
     public fun test_encode() {
-        let packet = PingPongPacket {
-            ping: true,
-            counterparty_timeout: 1000,
-        };
+        let packet = PingPongPacket { ping: true, counterparty_timeout: 1000 };
         let encoded = encode_packet(&packet);
         let decoded = decode_packet(&encoded);
-        
+
         assert!(decoded.ping == packet.ping, 1);
         assert!(decoded.counterparty_timeout == packet.counterparty_timeout, 2);
     }
@@ -355,8 +354,9 @@ module ping_pong::ibc {
 
     #[test(framework = @0x1)]
     public fun test_decode(framework: &signer) {
-        std::timestamp::set_time_has_started_for_testing(framework);   
-        let encoded = x"000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000003e8";
+        std::timestamp::set_time_has_started_for_testing(framework);
+        let encoded =
+            x"000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000003e8";
 
         let decoded = decode_packet(&encoded);
     }

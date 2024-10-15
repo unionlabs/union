@@ -19,12 +19,12 @@ module IBC::channel {
         ordering: u8,
         counterparty: Counterparty,
         connection_hops: vector<String>,
-        version: String,
+        version: String
     }
 
     struct Counterparty has copy, store, drop {
         port_id: String,
-        channel_id: String,
+        channel_id: String
     }
 
     public fun state(channel: &Channel): u8 {
@@ -71,7 +71,9 @@ module IBC::channel {
         channel.ordering = ordering;
     }
 
-    public fun set_chan_counterparty_channel_id(channel: &mut Channel, channel_id: String) {
+    public fun set_chan_counterparty_channel_id(
+        channel: &mut Channel, channel_id: String
+    ) {
         channel.counterparty.channel_id = channel_id;
     }
 
@@ -80,17 +82,10 @@ module IBC::channel {
         ordering: u8,
         counterparty: Counterparty,
         connection_hops: vector<String>,
-        version: String,
+        version: String
     ): Channel {
-        Channel {
-            state,
-            ordering,
-            counterparty,
-            connection_hops,
-            version,
-        }
+        Channel { state, ordering, counterparty, connection_hops, version }
     }
-
 
     public fun default(): Channel {
         Channel {
@@ -98,24 +93,18 @@ module IBC::channel {
             ordering: CHAN_ORDERING_NONE,
             counterparty: default_counterparty(),
             connection_hops: vector::empty(),
-            version: utf8(b""),
+            version: utf8(b"")
         }
     }
 
-    public fun new_counterparty(
-        port_id: String,
-        channel_id: String,
-    ): Counterparty {
-        Counterparty {
-            port_id,
-            channel_id,
-        }
+    public fun new_counterparty(port_id: String, channel_id: String): Counterparty {
+        Counterparty { port_id, channel_id }
     }
 
     public fun default_counterparty(): Counterparty {
         Counterparty {
             port_id: utf8(b""),
-            channel_id: utf8(b""),
+            channel_id: utf8(b"")
         }
     }
 
@@ -127,20 +116,27 @@ module IBC::channel {
         };
 
         if (chan.ordering != 0) {
-            vector::append(&mut buf, proto_utils::encode_u32(2, (chan.ordering as u32)));  
+            vector::append(&mut buf, proto_utils::encode_u32(2, (chan.ordering as u32)));
         };
 
         let counterparty = encode_proto_counterparty(chan.counterparty);
         if (!vector::is_empty(&counterparty)) {
             vector::append(&mut buf, proto_utils::encode_prefix(3, 2));
-            vector::append(&mut buf, proto_utils::encode_varint(vector::length(&counterparty)));  
+            vector::append(
+                &mut buf, proto_utils::encode_varint(vector::length(&counterparty))
+            );
             vector::append(&mut buf, counterparty);
         };
 
         if (!vector::is_empty(&chan.connection_hops)) {
             let i = 0;
             while (i < vector::length(&chan.connection_hops)) {
-                vector::append(&mut buf, proto_utils::encode_string(4, *vector::borrow(&chan.connection_hops, i)));
+                vector::append(
+                    &mut buf,
+                    proto_utils::encode_string(
+                        4, *vector::borrow(&chan.connection_hops, i)
+                    )
+                );
                 i = i + 1;
             };
         };
@@ -154,7 +150,7 @@ module IBC::channel {
 
     public fun encode_proto_counterparty(value: Counterparty): vector<u8> {
         let buf = vector::empty();
-        
+
         if (!string::is_empty(&value.port_id)) {
             vector::append(&mut buf, proto_utils::encode_string(1, value.port_id));
         };
@@ -173,60 +169,76 @@ module IBC::channel {
         let cursor = 0;
         let channel = default();
         while (cursor < vector::length(&buf)) {
-            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(&buf, cursor);
+            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(
+                &buf, cursor
+            );
             if (err != 0) {
                 return option::none()
             };
             cursor = cursor + advance;
-            let n_read = if (tag == 1) {
-                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
-                if (err != 0) {
+            let n_read =
+                if (tag == 1) {
+                    let (num, advance, err) =
+                        proto_utils::decode_varint(wire_type, &buf, cursor);
+                    if (err != 0) {
+                        return option::none()
+                    };
+                    channel.state = (num as u8);
+                    advance
+                } else if (tag == 2) {
+                    let (num, advance, err) =
+                        proto_utils::decode_varint(wire_type, &buf, cursor);
+                    if (err != 0) {
+                        return option::none()
+                    };
+                    channel.ordering = (num as u8);
+                    advance
+                } else if (tag == 3) {
+                    let (len, advance, err) =
+                        proto_utils::decode_nested_len(wire_type, &buf, cursor);
+                    if (err != 0) {
+                        return option::none()
+                    };
+                    cursor = cursor + advance;
+                    let (n_read, err) =
+                        decode_counterparty(&buf, cursor, len, &mut channel.counterparty);
+                    if (err != 0 || n_read != len) {
+                        return option::none()
+                    };
+                    len
+                } else if (tag == 4) {
+                    let (str, advance) =
+                        proto_utils::decode_string(wire_type, &buf, cursor);
+                    if (option::is_none(&str)) {
+                        return option::none()
+                    };
+                    vector::push_back(
+                        &mut channel.connection_hops, option::extract(&mut str)
+                    );
+                    advance
+                } else if (tag == 5) {
+                    let (str, advance) =
+                        proto_utils::decode_string(wire_type, &buf, cursor);
+                    if (option::is_none(&str)) {
+                        return option::none()
+                    };
+                    channel.version = option::extract(&mut str);
+                    advance
+                } else {
                     return option::none()
                 };
-                channel.state = (num as u8);
-                advance
-            } else if (tag == 2) {
-                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
-                if (err != 0) {
-                    return option::none()
-                };
-                channel.ordering = (num as u8);
-                advance
-            } else if (tag == 3) {
-                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
-                if (err != 0) {
-                    return option::none()
-                };
-                cursor = cursor + advance;
-                let (n_read, err) = decode_counterparty(&buf, cursor, len, &mut channel.counterparty);
-                if (err != 0 || n_read != len) {
-                    return option::none()
-                };
-                len
-            } else if (tag == 4) {                
-                let (str, advance) = proto_utils::decode_string(wire_type, &buf, cursor);
-                if (option::is_none(&str)) {
-                    return option::none()
-                };
-                vector::push_back(&mut channel.connection_hops, option::extract(&mut str));
-                advance
-            } else if (tag == 5) {
-                let (str, advance) = proto_utils::decode_string(wire_type, &buf, cursor);
-                if (option::is_none(&str)) {
-                    return option::none()
-                };
-                channel.version = option::extract(&mut str);
-                advance
-            } else {
-                return option::none()
-            };
             cursor = cursor + n_read;
         };
 
         option::some(channel)
     }
 
-    fun decode_counterparty(buf: &vector<u8>, cursor: u64, len: u64, counterparty: &mut Counterparty): (u64, u64) {
+    fun decode_counterparty(
+        buf: &vector<u8>,
+        cursor: u64,
+        len: u64,
+        counterparty: &mut Counterparty
+    ): (u64, u64) {
         let first_pos = cursor;
         while (cursor - first_pos < len) {
             let (tag, wire_type, advance, err) = proto_utils::decode_prefix(buf, cursor);
@@ -234,24 +246,29 @@ module IBC::channel {
                 return (0, err)
             };
             cursor = cursor + advance;
-            let advance = if (tag == 1) {
-                let (str, advance) = proto_utils::decode_string(wire_type, buf, cursor);
-                if (option::is_none(&str)) {
+            let advance =
+                if (tag == 1) {
+                    let (str, advance) = proto_utils::decode_string(
+                        wire_type, buf, cursor
+                    );
+                    if (option::is_none(&str)) {
+                        return (0, 1)
+                    };
+                    counterparty.port_id = option::extract(&mut str);
+                    advance
+
+                } else if (tag == 2) {
+                    let (str, advance) = proto_utils::decode_string(
+                        wire_type, buf, cursor
+                    );
+                    if (option::is_none(&str)) {
+                        return (0, 1)
+                    };
+                    counterparty.channel_id = option::extract(&mut str);
+                    advance
+                } else {
                     return (0, 1)
                 };
-                counterparty.port_id = option::extract(&mut str);
-                advance
-                
-            } else if (tag == 2) {
-                let (str, advance) = proto_utils::decode_string(wire_type, buf, cursor);
-                if (option::is_none(&str)) {
-                    return (0, 1)
-                };
-                counterparty.channel_id = option::extract(&mut str);
-                advance
-            } else {
-                return (0, 1)
-            };
             cursor = cursor + advance;
         };
 
@@ -260,20 +277,18 @@ module IBC::channel {
 
     #[test]
     fun test_channel_proto() {
-        let encoded_channel = x"080110011a130a06706f72742d3012096368616e6e656c2d30220c636f6e6e656374696f6e2d30220c636f6e6e656374696f6e2d312a0769637332302d31";
+        let encoded_channel =
+            x"080110011a130a06706f72742d3012096368616e6e656c2d30220c636f6e6e656374696f6e2d30220c636f6e6e656374696f6e2d312a0769637332302d31";
 
         let channel = Channel {
             state: CHAN_STATE_INIT,
             ordering: CHAN_ORDERING_UNORDERED,
             counterparty: Counterparty {
                 port_id: utf8(b"port-0"),
-                channel_id: utf8(b"channel-0"),
+                channel_id: utf8(b"channel-0")
             },
-            connection_hops: vector<String> [
-                utf8(b"connection-0"),
-                utf8(b"connection-1"),
-            ],
-            version: utf8(b"ics20-1"),
+            connection_hops: vector<String>[utf8(b"connection-0"), utf8(b"connection-1")],
+            version: utf8(b"ics20-1")
         };
 
         let res = encode_proto(channel);
@@ -287,20 +302,18 @@ module IBC::channel {
 
     #[test]
     fun test_channel_proto_with_defaults() {
-        let encoded_channel = x"080110011a0d0a0012096368616e6e656c2d30220c636f6e6e656374696f6e2d30220c636f6e6e656374696f6e2d312a00";
+        let encoded_channel =
+            x"080110011a0d0a0012096368616e6e656c2d30220c636f6e6e656374696f6e2d30220c636f6e6e656374696f6e2d312a00";
 
         let channel = Channel {
             state: CHAN_STATE_INIT,
             ordering: CHAN_ORDERING_UNORDERED,
             counterparty: Counterparty {
                 port_id: utf8(b""),
-                channel_id: utf8(b"channel-0"),
+                channel_id: utf8(b"channel-0")
             },
-            connection_hops: vector<String> [
-                utf8(b"connection-0"),
-                utf8(b"connection-1"),
-            ],
-            version: utf8(b""),
+            connection_hops: vector<String>[utf8(b"connection-0"), utf8(b"connection-1")],
+            version: utf8(b"")
         };
 
         let res = encode_proto(channel);
@@ -311,5 +324,4 @@ module IBC::channel {
 
         assert!(option::extract(&mut decoded) == channel, 1);
     }
-    
 }
