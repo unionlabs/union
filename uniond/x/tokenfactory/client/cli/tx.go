@@ -7,11 +7,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	banktypes "cosmossdk.io/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "cosmossdk.io/x/bank/types"
 
 	"union/x/tokenfactory/types"
 )

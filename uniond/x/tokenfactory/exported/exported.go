@@ -1,8 +1,8 @@
 package exported
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "cosmossdk.io/x/params/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type (

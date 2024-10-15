@@ -6,14 +6,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	"cosmossdk.io/x/tx/signing"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 
-	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"cosmossdk.io/client/v2/autocli"
 	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
+	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
