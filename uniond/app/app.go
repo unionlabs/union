@@ -165,20 +165,20 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:     nil,
-		distrtypes.ModuleName:          nil,
+		authtypes.FeeCollectorName:         nil,
+		distrtypes.ModuleName:              nil,
 		pooltypes.ModuleName:               nil,
 		pooltypes.StreamAccount:            nil,
 		pooltypes.ProtocolPoolDistrAccount: nil,
-		icatypes.ModuleName:            nil,
-		minttypes.ModuleName:           {authtypes.Minter},
-		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},
-		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-		ibcfeetypes.ModuleName:         nil,
-		wasmtypes.ModuleName:           {authtypes.Burner}, // TODO(aeryz): is this necessary?
-		tftypes.ModuleName:             {authtypes.Minter, authtypes.Burner},
+		icatypes.ModuleName:                nil,
+		minttypes.ModuleName:               {authtypes.Minter},
+		stakingtypes.BondedPoolName:        {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:     {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                {authtypes.Burner},
+		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
+		ibcfeetypes.ModuleName:             nil,
+		wasmtypes.ModuleName:               {authtypes.Burner}, // TODO(aeryz): is this necessary?
+		tftypes.ModuleName:                 {authtypes.Minter, authtypes.Burner},
 	}
 )
 

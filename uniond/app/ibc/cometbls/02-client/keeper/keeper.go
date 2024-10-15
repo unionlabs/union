@@ -41,7 +41,7 @@ func (k ConsensusHost) GetSelfConsensusState(ctx context.Context, height exporte
 		return nil, errorsmod.Wrapf(clienttypes.ErrInvalidHeight, "chainID revision number does not match height revision number: expected %d, got %d", revision, height.GetRevisionNumber())
 	}
 
-	header := sdk.UnwrapSDKContext(ctx).WithBlockHeight(int64(selfHeight.RevisionHeight)).BlockHeader();
+	header := sdk.UnwrapSDKContext(ctx).WithBlockHeight(int64(selfHeight.RevisionHeight)).BlockHeader()
 
 	timestamp := uint64(header.GetTime().UnixNano())
 
