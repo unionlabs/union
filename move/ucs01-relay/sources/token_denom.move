@@ -1,5 +1,13 @@
 module UCS01::fa_coin {
-    use aptos_framework::fungible_asset::{Self, MintRef, TransferRef, MutateMetadataRef, BurnRef, Metadata, FungibleAsset};
+    use aptos_framework::fungible_asset::{
+        Self,
+        MintRef,
+        TransferRef,
+        MutateMetadataRef,
+        BurnRef,
+        Metadata,
+        FungibleAsset
+    };
     use aptos_framework::object::{Self, Object};
     use aptos_framework::primary_fungible_store;
     use std::error;
@@ -9,7 +17,7 @@ module UCS01::fa_coin {
 
     /// Only fungible asset metadata owner can make changes.
     const E_NOT_OWNER: u64 = 1;
-    
+
     const ASSET_SYMBOL: vector<u8> = b"FA";
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
 
@@ -26,7 +34,7 @@ module UCS01::fa_coin {
     /// Global state to pause the FA coin.
     /// OPTIONAL
     struct State has key {
-        paused: bool,
+        paused: bool
     }
 
     /// Initialize metadata object and store the refs.
@@ -34,7 +42,7 @@ module UCS01::fa_coin {
         admin: &signer,
         name: string::String,
         symbol: string::String,
-        decimals: u8, 
+        decimals: u8,
         icon: string::String,
         project: string::String,
         asset_seed: vector<u8>
@@ -47,25 +55,23 @@ module UCS01::fa_coin {
             symbol,
             decimals,
             icon,
-            project,
+            project
         );
 
         // Create mint/burn/transfer refs to allow creator to manage the fungible asset.
         let mint_ref = fungible_asset::generate_mint_ref(constructor_ref);
         let burn_ref = fungible_asset::generate_burn_ref(constructor_ref);
         let transfer_ref = fungible_asset::generate_transfer_ref(constructor_ref);
-        let mutate_metadata_ref = fungible_asset::generate_mutate_metadata_ref(constructor_ref);
+        let mutate_metadata_ref =
+            fungible_asset::generate_mutate_metadata_ref(constructor_ref);
         let metadata_object_signer = object::generate_signer(constructor_ref);
         move_to(
             &metadata_object_signer,
-            ManagedFungibleAsset { mint_ref, transfer_ref, burn_ref, mutate_metadata_ref}
+            ManagedFungibleAsset { mint_ref, transfer_ref, burn_ref, mutate_metadata_ref }
         );
 
         // Create a global state to pause the FA coin and move to Metadata object.
-        move_to(
-            &metadata_object_signer,
-            State { paused: false, }
-        );
+        move_to(&metadata_object_signer, State { paused: false });
     }
 
     #[view]
@@ -107,44 +113,68 @@ module UCS01::fa_coin {
     /// Deposit function override to ensure that the account is not denylisted and the FA coin is not paused.
     /// OPTIONAL
     public fun deposit<T: key>(
-        store: Object<T>,
-        fa: FungibleAsset,
-        transfer_ref: &TransferRef,
-    )  {
+        store: Object<T>, fa: FungibleAsset, transfer_ref: &TransferRef
+    ) {
         fungible_asset::deposit_with_ref(transfer_ref, store, fa);
     }
 
     /// Withdraw function override to ensure that the account is not denylisted and the FA coin is not paused.
     /// OPTIONAL
     public fun withdraw<T: key>(
-        store: Object<T>,
-        amount: u64,
-        transfer_ref: &TransferRef,
+        store: Object<T>, amount: u64, transfer_ref: &TransferRef
     ): FungibleAsset {
         fungible_asset::withdraw_with_ref(transfer_ref, store, amount)
     }
 
     /// Mint as the owner of metadata object.
-    public entry fun mint_with_metadata(admin: &signer, to: address, amount: u64, asset: Object<Metadata>) acquires ManagedFungibleAsset {
+    public entry fun mint_with_metadata(
+        admin: &signer,
+        to: address,
+        amount: u64,
+        asset: Object<Metadata>
+    ) acquires ManagedFungibleAsset {
         let managed_fungible_asset = authorized_borrow_refs(admin, asset);
         let to_wallet = primary_fungible_store::ensure_primary_store_exists(to, asset);
         let fa = fungible_asset::mint(&managed_fungible_asset.mint_ref, amount);
-        fungible_asset::deposit_with_ref(&managed_fungible_asset.transfer_ref, to_wallet, fa);
+        fungible_asset::deposit_with_ref(
+            &managed_fungible_asset.transfer_ref, to_wallet, fa
+        );
     }
 
     /// Mint as the owner of metadata object.
-    public entry fun mint(admin: &signer, to: address, amount: u64, asset_seed: vector<u8>) acquires ManagedFungibleAsset {
+    public entry fun mint(
+        admin: &signer,
+        to: address,
+        amount: u64,
+        asset_seed: vector<u8>
+    ) acquires ManagedFungibleAsset {
         let asset = get_metadata(asset_seed);
         let managed_fungible_asset = authorized_borrow_refs(admin, asset);
         let to_wallet = primary_fungible_store::ensure_primary_store_exists(to, asset);
         let fa = fungible_asset::mint(&managed_fungible_asset.mint_ref, amount);
-        fungible_asset::deposit_with_ref(&managed_fungible_asset.transfer_ref, to_wallet, fa);
+        fungible_asset::deposit_with_ref(
+            &managed_fungible_asset.transfer_ref, to_wallet, fa
+        );
     }
 
-    public entry fun update_with_metadata(admin: &signer, name: option::Option<string::String>, symbol: option::Option<string::String>, decimals: option::Option<u8>, 
-                        icon_uri: option::Option<string::String>, project_uri: option::Option<string::String>, asset: Object<Metadata>) acquires ManagedFungibleAsset {
+    public entry fun update_with_metadata(
+        admin: &signer,
+        name: option::Option<string::String>,
+        symbol: option::Option<string::String>,
+        decimals: option::Option<u8>,
+        icon_uri: option::Option<string::String>,
+        project_uri: option::Option<string::String>,
+        asset: Object<Metadata>
+    ) acquires ManagedFungibleAsset {
         let managed_fungible_asset = authorized_borrow_refs(admin, asset);
-        fungible_asset::mutate_metadata(&managed_fungible_asset.mutate_metadata_ref, name, symbol, decimals, icon_uri, project_uri);
+        fungible_asset::mutate_metadata(
+            &managed_fungible_asset.mutate_metadata_ref,
+            name,
+            symbol,
+            decimals,
+            icon_uri,
+            project_uri
+        );
     }
 
     /// Transfer as the owner of metadata object.
@@ -163,21 +193,33 @@ module UCS01::fa_coin {
         deposit(to_wallet, fa, transfer_ref);
     }
 
-    public entry fun burn(admin: &signer, from: address, amount: u64, asset_seed: vector<u8>) acquires ManagedFungibleAsset {
+    public entry fun burn(
+        admin: &signer,
+        from: address,
+        amount: u64,
+        asset_seed: vector<u8>
+    ) acquires ManagedFungibleAsset {
         let asset = get_metadata(asset_seed);
         let burn_ref = &authorized_borrow_refs(admin, asset).burn_ref;
         let from_wallet = primary_fungible_store::primary_store(from, asset);
         fungible_asset::burn_from(burn_ref, from_wallet, amount);
     }
 
-    public entry fun burn_with_metadata(admin: &signer, from: address, amount: u64, asset: Object<Metadata>) acquires ManagedFungibleAsset {
+    public entry fun burn_with_metadata(
+        admin: &signer,
+        from: address,
+        amount: u64,
+        asset: Object<Metadata>
+    ) acquires ManagedFungibleAsset {
         let burn_ref = &authorized_borrow_refs(admin, asset).burn_ref;
         let from_wallet = primary_fungible_store::primary_store(from, asset);
         fungible_asset::burn_from(burn_ref, from_wallet, amount);
     }
 
     /// Freeze an account so it cannot transfer or receive fungible assets.
-    public entry fun freeze_account(admin: &signer, account: address, asset_seed: vector<u8>) acquires ManagedFungibleAsset {
+    public entry fun freeze_account(
+        admin: &signer, account: address, asset_seed: vector<u8>
+    ) acquires ManagedFungibleAsset {
         let asset = get_metadata(asset_seed);
         let transfer_ref = &authorized_borrow_refs(admin, asset).transfer_ref;
         let wallet = primary_fungible_store::ensure_primary_store_exists(account, asset);
@@ -185,7 +227,9 @@ module UCS01::fa_coin {
     }
 
     /// Unfreeze an account so it can transfer or receive fungible assets.
-    public entry fun unfreeze_account(admin: &signer, account: address, asset_seed: vector<u8>) acquires ManagedFungibleAsset {
+    public entry fun unfreeze_account(
+        admin: &signer, account: address, asset_seed: vector<u8>
+    ) acquires ManagedFungibleAsset {
         let asset = get_metadata(asset_seed);
         let transfer_ref = &authorized_borrow_refs(admin, asset).transfer_ref;
         let wallet = primary_fungible_store::ensure_primary_store_exists(account, asset);
@@ -193,10 +237,12 @@ module UCS01::fa_coin {
     }
 
     inline fun authorized_borrow_refs(
-        owner: &signer,
-        asset: Object<Metadata>,
+        owner: &signer, asset: Object<Metadata>
     ): &ManagedFungibleAsset acquires ManagedFungibleAsset {
-        assert!(object::is_owner(asset, signer::address_of(owner)), error::permission_denied(E_NOT_OWNER));
+        assert!(
+            object::is_owner(asset, signer::address_of(owner)),
+            error::permission_denied(E_NOT_OWNER)
+        );
         borrow_global<ManagedFungibleAsset>(object::object_address(&asset))
     }
 
@@ -206,8 +252,8 @@ module UCS01::fa_coin {
     const TEST_ICON: vector<u8> = b"https://example.com/icon.png";
     const TEST_PROJECT: vector<u8> = b"Test Project";
 
-     #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57)]
-    public fun test_burn_with_metadata(creator: &signer) acquires ManagedFungibleAsset{
+    #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57)]
+    public fun test_burn_with_metadata(creator: &signer) acquires ManagedFungibleAsset {
         initialize(
             creator,
             string::utf8(TEST_NAME),
@@ -220,18 +266,20 @@ module UCS01::fa_coin {
 
         let asset_metadata = get_metadata(ASSET_SYMBOL);
 
-        let balance_of_face_before = primary_fungible_store::balance(@0xface, asset_metadata);
+        let balance_of_face_before =
+            primary_fungible_store::balance(@0xface, asset_metadata);
         assert!(balance_of_face_before == 0, 101);
         mint_with_metadata(creator, @0xface, 1000, asset_metadata);
         let balance_of_face = primary_fungible_store::balance(@0xface, asset_metadata);
         assert!(balance_of_face == 1000, 102);
-        
+
         burn_with_metadata(creator, @0xface, 500, asset_metadata);
-        let balance_of_face_after = primary_fungible_store::balance(@0xface, asset_metadata);
+        let balance_of_face_after =
+            primary_fungible_store::balance(@0xface, asset_metadata);
         assert!(balance_of_face_after == 500, 103);
-        
 
     }
+
     #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57)]
     public fun test_initialize(creator: &signer) {
         initialize(
@@ -316,17 +364,23 @@ module UCS01::fa_coin {
         mint(creator, recipient, 1000, ASSET_SYMBOL);
 
         let asset_metadata = get_metadata(ASSET_SYMBOL);
-        
-        let recipient_balance = primary_fungible_store::balance(recipient, asset_metadata);
+
+        let recipient_balance = primary_fungible_store::balance(
+            recipient, asset_metadata
+        );
 
         assert!(recipient_balance == 1000, 201);
     }
 
-    #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57, aaron = @0xface)]
+    #[
+        test(
+            creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57,
+            aaron = @0xface
+        )
+    ]
     #[expected_failure(abort_code = 0x50001, location = Self)]
     fun test_mint_with_unauthorized_user(
-        creator: &signer,
-        aaron: &signer
+        creator: &signer, aaron: &signer
     ) acquires ManagedFungibleAsset {
         initialize(
             creator,
@@ -362,8 +416,10 @@ module UCS01::fa_coin {
         burn(creator, recipient, 500, ASSET_SYMBOL);
 
         let asset_metadata = get_metadata(ASSET_SYMBOL);
-        
-        let recipient_balance = primary_fungible_store::balance(recipient, asset_metadata);
+
+        let recipient_balance = primary_fungible_store::balance(
+            recipient, asset_metadata
+        );
 
         assert!(recipient_balance == 500, 301);
     }
@@ -387,19 +443,25 @@ module UCS01::fa_coin {
         transfer(creator, sender, recipient, 500, ASSET_SYMBOL);
 
         let asset_metadata = get_metadata(ASSET_SYMBOL);
-        
+
         let sender_balance = primary_fungible_store::balance(sender, asset_metadata);
-        let recipient_balance = primary_fungible_store::balance(recipient, asset_metadata);
+        let recipient_balance = primary_fungible_store::balance(
+            recipient, asset_metadata
+        );
 
         assert!(sender_balance == 500, 401);
         assert!(recipient_balance == 500, 402);
     }
 
-    #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57, aaron = @0xface)]
+    #[
+        test(
+            creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57,
+            aaron = @0xface
+        )
+    ]
     #[expected_failure(abort_code = 0x50001, location = Self)]
     public fun test_transfer_with_unauthorized_user(
-        creator: &signer,
-        aaron: &signer
+        creator: &signer, aaron: &signer
     ) acquires ManagedFungibleAsset {
         initialize(
             creator,
@@ -421,8 +483,16 @@ module UCS01::fa_coin {
         transfer(aaron, sender, recipient, 500, ASSET_SYMBOL);
     }
 
-    #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57, alice=@0x1234, bob=@0x5678)]
-    public fun test_to_relay(creator: &signer, alice: &signer, bob: address) acquires ManagedFungibleAsset {
+    #[
+        test(
+            creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57,
+            alice = @0x1234,
+            bob = @0x5678
+        )
+    ]
+    public fun test_to_relay(
+        creator: &signer, alice: &signer, bob: address
+    ) acquires ManagedFungibleAsset {
         initialize(
             creator,
             string::utf8(TEST_NAME),
@@ -446,17 +516,17 @@ module UCS01::fa_coin {
         let alice_balance = primary_fungible_store::balance(alice_addr, asset);
 
         assert!(alice_balance == 1000, 402);
-        
+
         let _to_wallet = primary_fungible_store::primary_store(bob, asset);
 
         // UCS01::Relay::tx(alice, bob, 10, asset);
 
         let fa = primary_fungible_store::withdraw(alice, asset, 10);
         primary_fungible_store::deposit(bob, fa);
-        
+
         let alice_balance_after = primary_fungible_store::balance(alice_addr, asset);
         let bob_balance = primary_fungible_store::balance(bob, asset);
-        
+
         assert!(alice_balance_after == 990, 402);
         assert!(bob_balance == 10, 402);
     }

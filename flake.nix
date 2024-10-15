@@ -573,6 +573,7 @@
           };
           # https://flake.parts/options/treefmt-nix#opt-perSystem.treefmt
           treefmt = import ./treefmt.nix {
+            inherit (self'.packages) movefmt;
             inherit
               pkgs
               unstablePkgs

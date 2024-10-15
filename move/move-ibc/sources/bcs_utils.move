@@ -7,14 +7,11 @@ module IBC::bcs_utils {
 
     struct BcsBuf has drop {
         inner: vector<u8>,
-        cursor: u64,
+        cursor: u64
     }
 
     public fun new(buf: vector<u8>): BcsBuf {
-        BcsBuf {
-            inner: buf,
-            cursor: 0
-        }
+        BcsBuf { inner: buf, cursor: 0 }
     }
 
     public fun remaining(buf: &BcsBuf): vector<u8> {
@@ -30,7 +27,7 @@ module IBC::bcs_utils {
         let i = buf.cursor;
         let first_pos = i;
         while (shift < 32) {
-            let byte = vector::borrow(&buf.inner, i);  
+            let byte = vector::borrow(&buf.inner, i);
             let digit = *byte & 0x7f;
             value = value | ((digit as u64) << shift);
             if (digit == *byte) {
@@ -71,14 +68,26 @@ module IBC::bcs_utils {
     public fun peel_string(buf: &mut BcsBuf): String {
         let (length, n_read) = parse_length_prefix(buf);
         buf.cursor = buf.cursor + n_read + (length as u64);
-        from_bcs::to_string(vector::slice(&buf.inner, buf.cursor - (length as u64) - n_read, buf.cursor))
+        from_bcs::to_string(
+            vector::slice(
+                &buf.inner,
+                buf.cursor - (length as u64) - n_read,
+                buf.cursor
+            )
+        )
     }
 
     /// Peel a vector<u8>
     public fun peel_bytes(buf: &mut BcsBuf): vector<u8> {
         let (length, n_read) = parse_length_prefix(buf);
         buf.cursor = buf.cursor + n_read + (length as u64);
-        from_bcs::to_bytes(vector::slice(&buf.inner, buf.cursor - (length as u64) - n_read, buf.cursor))
+        from_bcs::to_bytes(
+            vector::slice(
+                &buf.inner,
+                buf.cursor - (length as u64) - n_read,
+                buf.cursor
+            )
+        )
     }
 
     /// Peel an array of `length` bytes
@@ -88,7 +97,9 @@ module IBC::bcs_utils {
     }
 
     /// Peel a vector of T
-    public inline fun peel_vector<T>(buf: &mut BcsBuf, parse_fn: |&mut BcsBuf|T): vector<T> {
+    public inline fun peel_vector<T>(
+        buf: &mut BcsBuf, parse_fn: |&mut BcsBuf| T
+    ): vector<T> {
         let length = peel_length_prefix(buf);
         let i = 0;
         let vec: vector<T> = vector::empty();
@@ -97,5 +108,5 @@ module IBC::bcs_utils {
             i = i + 1;
         };
         vec
-    } 
+    }
 }
