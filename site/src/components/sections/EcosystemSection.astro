@@ -4,13 +4,14 @@ import H1 from "../typography/h1.astro"
 import QuoteSubTitle from "../typography/QuoteSubTitle.astro"
 import H3 from "../typography/h3.astro"
 import { contentfulClient } from "../../lib/contentful/client.ts"
+import { CategoryFields, EcosystemFields, EcosystemSkeleton } from "../../lib/contentful/types.ts"
 
-let ecosystemData = null
-let ecosystemCategories: string[] | null = null
+let ecosystemData: Array<EcosystemFields> | null = null
+let ecosystemCategories: Array<CategoryFields> | null = null
 let error: string | null = null
 
 try {
-  const ecosystemEntries = await contentfulClient.getEntries({
+  const ecosystemEntries = await contentfulClient.getEntries<EcosystemSkeleton>({
     content_type: "ecosystem"
   })
 
@@ -22,6 +23,7 @@ try {
     const allCategories = ecosystemData.flatMap(item => {
       if (Array.isArray(item.category)) {
         return item.category.map(cat => {
+          console.log(item)
           return cat.fields.category
         })
       }
