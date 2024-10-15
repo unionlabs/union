@@ -29,6 +29,7 @@ assert (
   pkgs.lib.assertOneOf "sdkVersion" sdkVersion [
     47
     50
+    52
   ]
 );
 assert (builtins.isBool has08Wasm);
@@ -52,7 +53,9 @@ let
     idx:
     assert (builtins.isInt idx);
     pkgs.runCommand "${chainName}-mnemonic_${toString idx}" { buildInputs = [ pkgs.devnet-utils ]; } ''
+      echo "keygen start"
       devnet-utils keygen mnemonic $(echo ${toString idx} | sha256sum - | cut -d' ' -f1) > $out
+      echo "Keygen done"
 
       echo "validator ${toString idx} mnemonic: $(cat $out)"
     '';
@@ -127,10 +130,11 @@ let
       export HOME=$(pwd)
       mkdir -p $out
 
+      echo "${toString sdkVersion}"
       cat ${mkNodeMnemonic (if idx == null then 0 else idx)} | ${nodeBin} \
         init \
         testnet ${pkgs.lib.optionalString (sdkVersion >= 50) ''--default-denom ${denom}''} \
-        --consensus-key-algo ${keyType} \
+        ${pkgs.lib.optionalString (sdkVersion >= 52) ''--consensus-key-algo ${keyType}''} \
         --chain-id ${chainId} \
         --home $out \
         --recover 2>/dev/null
