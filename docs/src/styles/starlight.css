@@ -23,8 +23,6 @@
   --logo-text-color: #000000;
   --anchor-icon-filter: invert(0);
   --nav-selected-color: theme("colors.accent.950");
-  --ec-frm-edBg: #17191e !important;
-  /* --code-background: #17191e !important; */
 }
 
 :root[data-theme="dark"] {
@@ -43,11 +41,6 @@
   --anchor-icon-filter: invert(1);
   --nav-selected-color: #374151;
   --ec-frm-edBg: #17191e !important;
-  /* --code-background: #17191e !important; */
-}
-
-.starlight-aside {
-  /* border-radius: 0.5rem; */
 }
 
 .sidebar-content {
@@ -139,7 +132,7 @@ figure figcaption span {
 }
 
 .site-title span {
-  color: var(--logo-text-color);
+  /* color: var(--logo-text-color); */
 }
 
 h1 > a {

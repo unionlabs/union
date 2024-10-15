@@ -62,10 +62,10 @@ Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-Install CLI packages: `ripgrep` and `jaq` <Badge text="Optional" type="warning" class='ml-2' />
+Install CLI packages: `ripgrep` and `jaq` 
 
 ```sh frame="none"
-cargo add ripgrep jaq
+cargo install ripgrep jaq
 ```
 
 Create a new directory and initialize a git repository
@@ -83,7 +83,7 @@ cargo new --lib example_ucs01_cosmwasm
 
 Add the required dependencies to the `Cargo.toml` file
 
-```toml title="Cargo.toml"
+```toml frame="code" title="Cargo.toml"
 [package]
 name = "example-ucs01-cosmwasm" # name of the project
 version = "0.1.0"

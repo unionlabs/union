@@ -72,7 +72,6 @@ export default defineConfig({
       defaultLocale: "root",
       expressiveCode: {
         frames: {
-          extractFileNameFromCode: true,
           showCopyToClipboardButton: true,
           removeCommentsWhenCopyingTerminalFrames: true
         },
@@ -80,7 +79,8 @@ export default defineConfig({
           // @ts-expect-error
           showLineNumbers: false
         },
-        themes: ["houston"],
+
+        themes: ["min-light", "houston"],
         useStarlightDarkModeSwitch: true,
         // @ts-expect-error
         plugins: [pluginCollapsibleSections(), pluginLineNumbers()]

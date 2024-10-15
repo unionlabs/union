@@ -17,15 +17,16 @@ import remarkSmartypants from "remark-smartypants"
 import type { AstroUserConfig } from "astro/config"
 import { escapeHTML } from "astro/runtime/server/escape.js"
 import rehypeAutolinkHeadings from "rehype-autolink-headings"
-// import { transformerCopyButton } from "@rehype-pretty/transformers"
 import { rendererRich, transformerTwoslash } from "@shikijs/twoslash"
 import { rehypeHeadingIds, type RemarkPlugin, type ShikiConfig } from "@astrojs/markdown-remark"
 
 type Markdown = AstroUserConfig["markdown"]
 
 export const shikiConfig = {
-  theme: "houston",
-  defaultColor: "dark",
+  themes: {
+    light: "min-light",
+    dark: "houston"
+  },
   transformers: [
     transformerTwoslash({
       explicitTrigger: /\btwoslash\b/,
@@ -38,7 +39,6 @@ export const shikiConfig = {
     transformerNotationHighlight(),
     transformerNotationErrorLevel(),
     transformerNotationWordHighlight()
-    // transformerCopyButton({ visibility: "hover", feedbackDuration: 3_000 })
   ]
 } satisfies ShikiConfig
 
