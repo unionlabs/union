@@ -1,8 +1,10 @@
 use std::{borrow::Cow, collections::VecDeque};
 
+use ::serde::{Deserialize, Serialize};
 use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject};
 use macros::model;
 use schemars::JsonSchema;
+use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 use serde_utils::Hex;
 use tracing::debug;
@@ -10,7 +12,6 @@ use unionlabs::{
     ibc::core::client::height::Height,
     ics24::{IbcPath, Path},
     id::ClientId,
-    traits::Member,
     ErrorReporter,
 };
 use voyager_core::ConsensusType;
@@ -27,8 +28,7 @@ use crate::{
     VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
-#[model]
-#[derive(clap::Args, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, clap::Args, JsonSchema)]
 pub struct ChainModuleInfo {
     #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
     pub chain_id: ChainId<'static>,
@@ -55,8 +55,7 @@ fn ok<T>(t: T) -> Result<T, BoxDynError> {
     Ok(t)
 }
 
-#[model]
-#[derive(clap::Args, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, clap::Args, JsonSchema)]
 pub struct ConsensusModuleInfo {
     #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
     pub chain_id: ChainId<'static>,
@@ -127,8 +126,7 @@ pub struct UnexpectedIbcInterfaceError {
     pub found: String,
 }
 
-#[model]
-#[derive(clap::Args, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, clap::Args, JsonSchema)]
 pub struct ClientModuleInfo {
     /// The client type that this client module provides functionality for.
     #[arg(value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
@@ -194,8 +192,7 @@ impl ClientModuleInfo {
     }
 }
 
-#[model]
-#[derive(clap::Args, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, clap::Args, JsonSchema)]
 pub struct PluginInfo {
     /// The name of this plugin. Any plugin messages with this name will be
     /// routed to this plugin.

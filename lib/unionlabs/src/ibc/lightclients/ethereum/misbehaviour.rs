@@ -7,7 +7,6 @@ use crate::{
     },
 };
 
-// trait alias would be nice
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::Misbehaviour),
     into,

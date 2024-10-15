@@ -10,15 +10,12 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{error, instrument};
-use unionlabs::{
-    ibc::{
-        core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-        lightclients::cometbls::{
-            client_state::{ClientState, CometblsChainId},
-            consensus_state::ConsensusState,
-        },
+use unionlabs::ibc::{
+    core::{client::height::Height, commitment::merkle_root::MerkleRoot},
+    lightclients::cometbls::{
+        client_state::{ClientState, CometblsChainId},
+        consensus_state::ConsensusState,
     },
-    traits::Member,
 };
 use voyager_message::{
     core::{ChainId, ConsensusType},

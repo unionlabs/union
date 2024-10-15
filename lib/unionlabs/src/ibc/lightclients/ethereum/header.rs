@@ -1,14 +1,18 @@
 use macros::model;
 
+use crate::ibc::lightclients::ethereum::{
+    account_update::AccountUpdate, light_client_update::UnboundedLightClientUpdate,
+    trusted_sync_committee::UnboundedTrustedSyncCommittee,
+};
+#[cfg(feature = "ssz")]
 use crate::{
     ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
     ibc::lightclients::ethereum::{
-        account_update::AccountUpdate,
-        light_client_update::{LightClientUpdate, UnboundedLightClientUpdate},
-        trusted_sync_committee::{TrustedSyncCommittee, UnboundedTrustedSyncCommittee},
+        light_client_update::LightClientUpdate, trusted_sync_committee::TrustedSyncCommittee,
     },
 };
 
+#[cfg(feature = "ssz")]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::Header),
     into,
@@ -30,17 +34,19 @@ pub struct UnboundedHeader {
 
 #[cfg(feature = "proto")]
 pub mod proto {
+    use crate::ibc::lightclients::ethereum::header::UnboundedHeader;
+    #[cfg(feature = "ssz")]
     use crate::{
         errors::{required, MissingField},
         ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
         ibc::lightclients::ethereum::{
-            account_update::proto::TryFromAccountUpdateError,
-            header::{Header, UnboundedHeader},
+            account_update::proto::TryFromAccountUpdateError, header::Header,
             light_client_update::proto::TryFromLightClientUpdateError,
             trusted_sync_committee::proto::TryFromTrustedSyncCommitteeError,
         },
     };
 
+    #[cfg(feature = "ssz")]
     impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<Header<C>>
         for protos::union::ibc::lightclients::ethereum::v1::Header
     {
@@ -53,6 +59,7 @@ pub mod proto {
         }
     }
 
+    #[cfg(feature = "ssz")]
     #[derive(Debug, PartialEq, Clone, thiserror::Error)]
     pub enum TryFromHeaderError {
         #[error(transparent)]
@@ -65,6 +72,7 @@ pub mod proto {
         AccountUpdate(#[from] TryFromAccountUpdateError),
     }
 
+    #[cfg(feature = "ssz")]
     impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
         TryFrom<protos::union::ibc::lightclients::ethereum::v1::Header> for Header<C>
     {

@@ -1,12 +1,11 @@
 use macros::model;
-use ssz::Ssz;
+
 
 use crate::hash::H256;
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#eth1data>
 #[model]
-#[derive(Ssz)]
-#[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
+#[cfg_attr(feature = "ssz", derive(::ssz::Ssz))]
 pub struct Eth1Data {
     pub deposit_root: H256,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]

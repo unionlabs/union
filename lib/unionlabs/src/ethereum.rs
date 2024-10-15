@@ -9,7 +9,6 @@ use crate::{
     uint::U256,
 };
 
-#[cfg(feature = "beacon")]
 pub mod beacon;
 pub mod config;
 pub mod slot;

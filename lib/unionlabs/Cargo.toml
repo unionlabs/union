@@ -55,17 +55,14 @@ near-sdk             = { workspace = true, optional = true }
 ruint                = { version = "1.12.3" }
 schemars             = { workspace = true, features = ["derive"], optional = true }
 serde_bytes          = "0.11.6"
-valuable             = { workspace = true, features = ["derive"], optional = true }
+valuable             = { workspace = true, features = ["derive", "alloc"], optional = true }
 
 [dev-dependencies]
 rand       = "0.8.5"
 serde_json = { workspace = true }
 
 [features]
-default = [
-  "ssz", # the ethereum light client & beacon types are a mess, clean it all up later
-  "std",
-]
+default = ["std"]
 
 full = [
   "cosmwasm",
@@ -79,8 +76,8 @@ full = [
   "stargate",
   "rlp",
   "valuable",
-  "beacon",
   "json",
+  "ssz"
 ]
 
 cosmwasm = ["dep:cosmwasm-std", "dep:serde"]
@@ -88,17 +85,15 @@ cosmwasm = ["dep:cosmwasm-std", "dep:serde"]
 std = ["alloy-core/std", "ruint/std", "base64/std"]
 
 # encodings
-bcs    = ["dep:bcs", "protos?/serde"]
+bcs    = ["dep:bcs", "protos?/serde", "serde"]
 ethabi = ["dep:alloy-core", "dep:ibc-solidity"]
-json   = ["dep:serde_json"]
+json   = ["dep:serde_json", "dep:serde"]
 proto  = ["dep:protos", "dep:prost"]
 rlp    = ["dep:rlp", "ruint/rlp"]
 serde  = ["dep:serde", "protos?/serde", "ruint/serde"]
 ssz    = ["dep:ssz"]
 
 near = ["dep:borsh", "dep:near-sdk", "dep:near-primitives-core"]
-
-beacon = ["dep:ssz"]
 
 schemars = ["dep:schemars"]
 stargate = ["cosmwasm", "proto", "cosmwasm-std?/stargate"]

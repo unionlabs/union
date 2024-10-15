@@ -1,10 +1,9 @@
 use macros::model;
-use ssz::Ssz;
 
 use crate::hash::H160;
 
 #[model]
-#[derive(Ssz)]
+#[cfg_attr(feature = "ssz", derive(::ssz::Ssz))]
 pub struct Withdrawal {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub index: u64,

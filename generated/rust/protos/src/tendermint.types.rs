@@ -541,10 +541,10 @@ pub mod evidence {
     #[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
     pub enum Sum {
         #[prost(message, tag = "1")]
-        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
+        #[cfg_attr(feature = "serde", serde(rename = "tendermint/DuplicateVoteEvidence"))]
         DuplicateVoteEvidence(super::DuplicateVoteEvidence),
         #[prost(message, tag = "2")]
-        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
+        #[cfg_attr(feature = "serde", serde(rename = "tendermint/DuplicateVoteEvidence"))]
         LightClientAttackEvidence(super::LightClientAttackEvidence),
     }
 }

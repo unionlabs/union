@@ -2,9 +2,11 @@
 
 use std::{env::VarError, fmt::Debug, future::Future, time::Duration};
 
-use chain_utils::BoxDynError;
 use jsonrpsee::{
-    core::{client::BatchResponse, params::BatchRequestBuilder, traits::ToRpcParams, RpcResult},
+    core::{
+        async_trait, client::BatchResponse, params::BatchRequestBuilder, traits::ToRpcParams,
+        RpcResult,
+    },
     server::middleware::rpc::RpcServiceT,
     types::{
         error::{INVALID_PARAMS_CODE, METHOD_NOT_FOUND_CODE},
@@ -16,10 +18,9 @@ use macros::model;
 use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
-use tonic::async_trait;
 use tracing::{debug, debug_span, error, info, trace, Instrument};
-use unionlabs::{traits::Member, ErrorReporter};
-use voyager_vm::{QueueError, QueueMessage};
+use unionlabs::ErrorReporter;
+use voyager_vm::{BoxDynError, QueueError, QueueMessage};
 
 use crate::{
     call::Call,
@@ -49,6 +50,7 @@ pub mod rpc;
 pub use reconnecting_jsonrpc_ws_client;
 pub use reth_ipc;
 pub use voyager_core as core;
+pub use voyager_macros as macros;
 
 pub enum VoyagerMessage {}
 
@@ -548,3 +550,7 @@ pub fn into_value<T: Debug + Serialize>(t: T) -> Value {
         }
     }
 }
+
+/// Trait alias for traits commonly used together throughout this crate.
+pub trait Member =
+    Debug + Clone + PartialEq + Serialize + DeserializeOwned + Send + Sync + Unpin + 'static;

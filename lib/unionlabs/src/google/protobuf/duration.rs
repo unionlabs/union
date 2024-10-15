@@ -313,7 +313,7 @@ impl Duration {
     }
 }
 
-#[cfg(feature = "cosmwasm")]
+#[cfg(feature = "proto")]
 pub mod proto {
     use crate::google::protobuf::duration::{Duration, DurationError};
 

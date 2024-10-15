@@ -1,6 +1,5 @@
 use enumorph::Enumorph;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
-use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use serde_utils::Hex;
@@ -26,11 +25,11 @@ use unionlabs::{
         CommitmentPath, ConnectionPath, ReceiptPath,
     },
     id::{ClientId, ConnectionId},
-    traits::Member,
     QueryHeight, DELAY_PERIOD,
 };
 use valuable::Valuable;
 use voyager_core::ClientType;
+use voyager_macros::model;
 use voyager_vm::{call, data, defer, noop, now, seq, CallT, Op, QueueError};
 
 #[cfg(doc)]

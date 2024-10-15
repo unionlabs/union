@@ -1,24 +1,29 @@
 use macros::model;
-use ssz::Ssz;
-
-use crate::{
-    ethereum::{
-        beacon::beacon_block_body::{BeaconBlockBody, UnboundedBeaconBlockBody},
-        config::{
-            BYTES_PER_LOGS_BLOOM, DEPOSIT_CONTRACT_TREE_DEPTH, MAX_ATTESTATIONS,
-            MAX_ATTESTER_SLASHINGS, MAX_BLOB_COMMITMENTS_PER_BLOCK, MAX_BLS_TO_EXECUTION_CHANGES,
-            MAX_BYTES_PER_TRANSACTION, MAX_DEPOSITS, MAX_EXTRA_DATA_BYTES, MAX_PROPOSER_SLASHINGS,
-            MAX_TRANSACTIONS_PER_PAYLOAD, MAX_VALIDATORS_PER_COMMITTEE, MAX_VOLUNTARY_EXITS,
-            MAX_WITHDRAWALS_PER_PAYLOAD, SYNC_COMMITTEE_SIZE,
+#[cfg(feature = "ssz")]
+use {
+    crate::{
+        ethereum::{
+            beacon::beacon_block_body::BeaconBlockBody,
+            config::{
+                BYTES_PER_LOGS_BLOOM, DEPOSIT_CONTRACT_TREE_DEPTH, MAX_ATTESTATIONS,
+                MAX_ATTESTER_SLASHINGS, MAX_BLOB_COMMITMENTS_PER_BLOCK,
+                MAX_BLS_TO_EXECUTION_CHANGES, MAX_BYTES_PER_TRANSACTION, MAX_DEPOSITS,
+                MAX_EXTRA_DATA_BYTES, MAX_PROPOSER_SLASHINGS, MAX_TRANSACTIONS_PER_PAYLOAD,
+                MAX_VALIDATORS_PER_COMMITTEE, MAX_VOLUNTARY_EXITS, MAX_WITHDRAWALS_PER_PAYLOAD,
+                SYNC_COMMITTEE_SIZE,
+            },
         },
+        ibc::lightclients::ethereum::beacon_block_header::BeaconBlockHeader,
     },
-    hash::H256,
-    ibc::lightclients::ethereum::beacon_block_header::BeaconBlockHeader,
+    ssz::Ssz,
 };
 
+use crate::{ethereum::beacon::beacon_block_body::UnboundedBeaconBlockBody, hash::H256};
+
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblock>
+#[cfg(feature = "ssz")]
 #[model]
-#[cfg_attr(feature = "ssz", derive(Ssz))]
+#[derive(Ssz)]
 #[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct BeaconBlock<
     C: MAX_PROPOSER_SLASHINGS
@@ -46,6 +51,7 @@ pub struct BeaconBlock<
     pub body: BeaconBlockBody<C>,
 }
 
+#[cfg(feature = "ssz")]
 impl<
         C: MAX_PROPOSER_SLASHINGS
             + MAX_VALIDATORS_PER_COMMITTEE

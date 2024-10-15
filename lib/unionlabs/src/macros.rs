@@ -14,10 +14,9 @@ macro_rules! hex_string_array_wrapper {
                 Eq,
                 PartialOrd,
                 Ord,
-                ::ssz::Ssz,
                 Hash
             )]
-            #[ssz(transparent)]
+            #[cfg_attr(feature = "ssz", derive(::ssz::Ssz), ssz(transparent))]
             pub struct $Struct(pub [u8; $N]);
 
             #[cfg(feature = "serde")]
@@ -255,7 +254,7 @@ macro_rules! wrapper_enum {
     ) => {
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
         $(#[$meta])*
-        #[cfg_attr(feature = "schemars", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "snake_case"))]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "snake_case"))]
         #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
         #[cfg_attr(feature = "valuable", derive(::valuable::Valuable))]
         pub enum $Enum {

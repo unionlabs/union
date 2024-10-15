@@ -4,10 +4,8 @@ use enumorph::Enumorph;
 use futures::{stream, StreamExt, TryFutureExt, TryStreamExt};
 use itertools::Itertools;
 use macros::model;
-use serde::de::DeserializeOwned;
-use unionlabs::{
-    ibc::core::client::msg_update_client::MsgUpdateClient, id::ClientId, traits::Member,
-};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use unionlabs::{ibc::core::client::msg_update_client::MsgUpdateClient, id::ClientId};
 use voyager_core::ClientInfo;
 use voyager_vm::{CallbackT, Op, QueueError};
 
@@ -19,8 +17,13 @@ use crate::{
     Context, PluginMessage, VoyagerMessage,
 };
 
-#[model]
-#[derive(Enumorph)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Enumorph)]
+#[serde(
+    deny_unknown_fields,
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case"
+)]
 pub enum Callback {
     AggregateMsgUpdateClientsFromOrderedHeaders(AggregateMsgUpdateClientsFromOrderedHeaders),
 

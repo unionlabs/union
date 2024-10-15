@@ -2,7 +2,7 @@ use core::fmt::Debug;
 
 use cosmwasm_std::{Binary, Deps, QueryRequest};
 
-use crate::{hash::H384, ibc::core::client::height::Height};
+use crate::hash::H384;
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum Error {
@@ -70,6 +70,7 @@ pub fn query_aggregate_public_keys(
 
 #[cfg(feature = "stargate")]
 use {
+    crate::ibc::core::client::height::Height,
     crate::{
         encoding::{Decode, DecodeAs, Proto},
         google::protobuf::any::Any,

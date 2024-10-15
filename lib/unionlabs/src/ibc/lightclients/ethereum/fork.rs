@@ -1,9 +1,8 @@
 use macros::model;
-use ssz::Ssz;
 
 use crate::ethereum::Version;
 
-#[derive(Ssz)]
+#[cfg_attr(feature = "ssz", derive(::ssz::Ssz))]
 #[model(proto(raw(protos::union::ibc::lightclients::ethereum::v1::Fork), into, from))]
 pub struct Fork {
     pub version: Version,

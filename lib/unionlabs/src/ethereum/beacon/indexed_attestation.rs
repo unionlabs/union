@@ -1,12 +1,11 @@
 use macros::model;
-use ssz::{types::List, Ssz};
+#[cfg(feature = "ssz")]
+use {crate::ethereum::config::MAX_VALIDATORS_PER_COMMITTEE, ssz::types::List, ssz::Ssz};
 
-use crate::{
-    ethereum::{beacon::attestation_data::AttestationData, config::MAX_VALIDATORS_PER_COMMITTEE},
-    hash::H768,
-};
+use crate::{ethereum::beacon::attestation_data::AttestationData, hash::H768};
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#indexedattestation>
+#[cfg(feature = "ssz")]
 #[model]
 #[derive(Ssz)]
 #[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]

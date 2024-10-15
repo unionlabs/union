@@ -5,6 +5,7 @@ use core::fmt::Debug;
 pub struct UnknownEnumVariant<T>(pub T);
 
 /// A protobuf field was none unexpectedly.
+#[cfg(feature = "proto")]
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("missing field `{0}`")]
 pub struct MissingField(pub &'static str);
@@ -12,6 +13,7 @@ pub struct MissingField(pub &'static str);
 /// For fields that are "fake options" from prost, for use in `TryFrom<<Self as Proto>::Proto>`.
 ///
 /// `Self::Error` is expected to have a `MissingField(`[`MissingField`]`)` variant.
+#[cfg(feature = "proto")]
 macro_rules! required {
     ($struct_var:ident.$field:ident) => {
         $struct_var
@@ -27,7 +29,7 @@ macro_rules! required {
     };
 }
 
-// https://stackoverflow.com/questions/26731243/how-do-i-use-a-macro-across-module-files
+#[cfg(feature = "proto")]
 pub(crate) use required;
 
 // Expected one length, but found another.

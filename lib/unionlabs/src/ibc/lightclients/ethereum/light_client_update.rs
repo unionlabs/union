@@ -1,22 +1,26 @@
 use macros::model;
 
 use crate::{
-    ethereum::config::{
-        consts::{floorlog2, FINALIZED_ROOT_INDEX, NEXT_SYNC_COMMITTEE_INDEX},
-        BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE,
-    },
+    ethereum::config::consts::{floorlog2, FINALIZED_ROOT_INDEX, NEXT_SYNC_COMMITTEE_INDEX},
     hash::H256,
     ibc::lightclients::ethereum::{
-        light_client_header::{LightClientHeader, UnboundedLightClientHeader},
-        sync_aggregate::{SyncAggregate, UnboundedSyncAggregate},
-        sync_committee::{SyncCommittee, UnboundedSyncCommittee},
+        light_client_header::UnboundedLightClientHeader, sync_aggregate::UnboundedSyncAggregate,
+        sync_committee::UnboundedSyncCommittee,
+    },
+};
+#[cfg(feature = "ssz")]
+use crate::{
+    ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
+    ibc::lightclients::ethereum::{
+        light_client_header::LightClientHeader, sync_aggregate::SyncAggregate,
+        sync_committee::SyncCommittee,
     },
 };
 
-/// TODO: Move these to a more central location
 pub type NextSyncCommitteeBranch = [H256; floorlog2(NEXT_SYNC_COMMITTEE_INDEX)];
 pub type FinalityBranch = [H256; floorlog2(FINALIZED_ROOT_INDEX)];
 
+#[cfg(feature = "ssz")]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate),
     into,
@@ -45,23 +49,22 @@ pub struct LightClientUpdate<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use core::fmt::Debug;
-
+    #[cfg(feature = "ssz")]
     use crate::{
         errors::{required, InvalidLength, MissingField},
         ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
-        hash::H256,
         ibc::lightclients::ethereum::{
             light_client_header::proto::TryFromLightClientHeaderError,
-            light_client_update::{
-                FinalityBranch, LightClientUpdate, NextSyncCommitteeBranch,
-                UnboundedLightClientUpdate,
-            },
+            light_client_update::{FinalityBranch, LightClientUpdate, NextSyncCommitteeBranch},
             sync_aggregate::proto::TryFromSyncAggregateError,
             sync_committee::proto::TryFromSyncCommitteeError,
         },
     };
+    use crate::{
+        hash::H256, ibc::lightclients::ethereum::light_client_update::UnboundedLightClientUpdate,
+    };
 
+    #[cfg(feature = "ssz")]
     impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
         From<LightClientUpdate<C>>
         for protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate
@@ -90,6 +93,7 @@ pub mod proto {
         }
     }
 
+    #[cfg(feature = "ssz")]
     #[derive(Debug, PartialEq, Clone, thiserror::Error)]
     pub enum TryFromLightClientUpdateError {
         #[error(transparent)]
@@ -108,6 +112,7 @@ pub mod proto {
         FinalizedHeader(#[source] TryFromLightClientHeaderError),
     }
 
+    #[cfg(feature = "ssz")]
     impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
         TryFrom<protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate>
         for LightClientUpdate<C>
@@ -147,9 +152,10 @@ pub mod proto {
         }
     }
 
+    #[cfg(feature = "ssz")]
     fn try_from_proto_branch<T>(proto: Vec<Vec<u8>>) -> Result<T, TryFromBranchError<T>>
     where
-        T: TryFrom<Vec<H256>, Error: Debug + PartialEq + Eq + Clone>,
+        T: TryFrom<Vec<H256>, Error: core::fmt::Debug + PartialEq + Eq + Clone>,
     {
         proto
             .into_iter()
@@ -161,10 +167,11 @@ pub mod proto {
     }
 
     // TODO: Remove the bounds on T::Error and only require said bounds when implementing the respective traits, will clean up try_from_proto_branch as well
+    #[cfg(feature = "ssz")]
     #[derive(Debug, PartialEq, Eq, Clone, thiserror::Error)]
     pub enum TryFromBranchError<T>
     where
-        T: TryFrom<Vec<H256>, Error: Debug + PartialEq + Eq + Clone>,
+        T: TryFrom<Vec<H256>, Error: core::fmt::Debug + PartialEq + Eq + Clone>,
     {
         #[error("error decoding branch: {0:?}")]
         Branch(<T as TryFrom<Vec<H256>>>::Error),

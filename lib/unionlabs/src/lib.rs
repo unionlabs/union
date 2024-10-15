@@ -86,8 +86,6 @@ pub mod id;
 
 pub mod signer;
 
-pub mod traits;
-
 // TODO: Replace with something like <https://github.com/recmo/uint>
 pub mod uint;
 

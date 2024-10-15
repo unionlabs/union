@@ -114,6 +114,7 @@ members = [
   "lib/reconnecting-jsonrpc-ws-client",
   "lib/subset-of",
   "lib/unionlabs-tracing",
+  "lib/voyager-macros",
 ]
 
 [workspace.package]
@@ -174,6 +175,7 @@ token-factory-api              = { path = "cosmwasm/token-factory-api", default-
 ucs01-relay-api                = { path = "cosmwasm/ucs01-relay-api", default-features = false }
 unionlabs                      = { path = "lib/unionlabs", default-features = false }
 voyager-core                   = { path = "lib/voyager-core", default-features = false }
+voyager-macros                 = { path = "lib/voyager-macros", default-features = false }
 voyager-message                = { path = "lib/voyager-message", default-features = false }
 voyager-vm                     = { path = "lib/voyager-vm", default-features = false }
 zktrie                         = { path = "lib/zktrie-rs", default-features = false }

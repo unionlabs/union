@@ -25,7 +25,7 @@ pub mod proto {
     use crate::{
         errors::{required, MissingField},
         ibc::lightclients::cometbls::{
-            header::Header, signed_header::proto::TryFromLightHeaderError,
+            header::Header, signed_header::proto::TryFromSignedHeaderError,
         },
     };
 
@@ -44,7 +44,7 @@ pub mod proto {
         #[error(transparent)]
         MissingField(MissingField),
         #[error("invalid signed header")]
-        SignedHeader(#[from] TryFromLightHeaderError),
+        SignedHeader(#[from] TryFromSignedHeaderError),
     }
 
     impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Header> for Header {

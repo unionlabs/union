@@ -19,7 +19,7 @@ use serde_json::{Map, Value};
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, debug_span, error, info, instrument, trace, warn, Instrument};
-use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
+use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, ErrorReporter};
 use voyager_core::ConsensusType;
 use voyager_vm::{BoxDynError, QueueError};
 

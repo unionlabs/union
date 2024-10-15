@@ -1,14 +1,13 @@
 use macros::model;
-use ssz::{types::Vector, Ssz};
+#[cfg(feature = "ssz")]
+use {crate::ethereum::config::DEPOSIT_CONTRACT_TREE_DEPTH, ssz::types::Vector};
 
-use crate::{
-    ethereum::{beacon::deposit_data::DepositData, config::DEPOSIT_CONTRACT_TREE_DEPTH},
-    hash::H256,
-};
+use crate::{ethereum::beacon::deposit_data::DepositData, hash::H256};
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#deposit>
+#[cfg(feature = "ssz")]
 #[model]
-#[derive(Ssz)]
+#[derive(::ssz::Ssz)]
 #[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct Deposit<C: DEPOSIT_CONTRACT_TREE_DEPTH> {
     /// Merkle path to deposit root

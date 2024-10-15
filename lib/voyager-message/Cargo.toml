@@ -11,12 +11,9 @@ workspace = true
 
 [dependencies]
 alloy                          = { workspace = true }
-beacon-api                     = { workspace = true }
-chain-utils                    = { workspace = true }
 clap                           = { workspace = true, features = ["derive"] }
 dashmap                        = { workspace = true }
 enumorph                       = { workspace = true }
-frame-support-procedural       = { workspace = true }
 futures                        = { workspace = true }
 hex                            = { workspace = true }
 itertools                      = "0.13.0"
@@ -25,33 +22,26 @@ jaq-interpret                  = "1.5.0"
 jaq-std                        = "1.6.0"
 jaq-syn                        = "1.6.0"
 jsonrpsee                      = { workspace = true, features = ["server", "client", "async-client", "macros", "tracing"] }
-macros                         = { workspace = true }
 moka                           = { version = "0.12.8", features = ["future", "sync"] }
-num-bigint                     = { workspace = true }
 prost                          = { workspace = true }
 protos                         = { workspace = true, features = ["proto_full", "client"] }
 reconnecting-jsonrpc-ws-client = { workspace = true }
 reth-ipc                       = { git = "https://github.com/paradigmxyz/reth" }
-schemars.workspace             = true
+schemars                       = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde-utils                    = { workspace = true }
 serde_json                     = { workspace = true }
-soketto                        = "0.8.0"
 subset-of                      = { workspace = true }
-tendermint                     = { workspace = true }
-tendermint-proto               = { workspace = true }
-tendermint-rpc                 = { workspace = true, features = ["http-client", "websocket-client"] }
 thiserror                      = { workspace = true }
 tokio                          = { workspace = true, features = ["time", "process", "fs"] }
 tokio-util                     = "0.7.11"
-tonic                          = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
 tracing                        = { workspace = true }
 tracing-subscriber             = { workspace = true, features = ["json"] }
-typenum                        = { workspace = true }
-unionlabs                      = { workspace = true, features = ["ethabi"] }
-unionlabs-tracing.workspace    = true
+unionlabs                      = { workspace = true, features = ["std", "serde", "valuable"] }
+unionlabs-tracing              = { workspace = true }
 valuable                       = { workspace = true, features = ["derive"] }
 voyager-core                   = { workspace = true }
+voyager-macros.workspace = true
 voyager-vm                     = { workspace = true }
 
 [dev-dependencies]

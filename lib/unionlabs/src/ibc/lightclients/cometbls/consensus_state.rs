@@ -67,27 +67,31 @@ pub mod proto {
 }
 
 #[cfg(feature = "ethabi")]
-impl From<ConsensusState> for ibc_solidity::cometbls::ConsensusState {
-    fn from(value: ConsensusState) -> Self {
-        Self {
-            timestamp: value.timestamp,
-            appHash: value.app_hash.hash.into(),
-            nextValidatorsHash: value.next_validators_hash.into(),
+pub mod ethabi {
+    use crate::ibc::{
+        core::commitment::merkle_root::MerkleRoot,
+        lightclients::cometbls::consensus_state::ConsensusState,
+    };
+
+    impl From<ConsensusState> for ibc_solidity::cometbls::ConsensusState {
+        fn from(value: ConsensusState) -> Self {
+            Self {
+                timestamp: value.timestamp,
+                appHash: value.app_hash.hash.into(),
+                nextValidatorsHash: value.next_validators_hash.into(),
+            }
         }
     }
-}
 
-#[cfg(feature = "ethabi")]
-impl TryFrom<ibc_solidity::cometbls::ConsensusState> for ConsensusState {
-    type Error = proto::TryFromConsensusStateError;
-
-    fn try_from(value: ibc_solidity::cometbls::ConsensusState) -> Result<Self, Self::Error> {
-        Ok(Self {
-            timestamp: value.timestamp,
-            app_hash: MerkleRoot {
-                hash: value.appHash.into(),
-            },
-            next_validators_hash: value.nextValidatorsHash.into(),
-        })
+    impl From<ibc_solidity::cometbls::ConsensusState> for ConsensusState {
+        fn from(value: ibc_solidity::cometbls::ConsensusState) -> Self {
+            Self {
+                timestamp: value.timestamp,
+                app_hash: MerkleRoot {
+                    hash: value.appHash.into(),
+                },
+                next_validators_hash: value.nextValidatorsHash.into(),
+            }
+        }
     }
 }

@@ -1,9 +1,6 @@
 use macros::model;
 
-use crate::{
-    cosmos::ics23::{hash_op::HashOp, length_op::LengthOp},
-    union::ics23::inner_op::InnerOp,
-};
+use crate::union::ics23::inner_op::InnerOp;
 
 #[model(
     proto(raw(protos::cosmos::ics23::v1::ExistenceProof), into, from),
@@ -46,24 +43,18 @@ impl From<ibc_solidity::ics23::ExistenceProof> for ExistenceProof {
     }
 }
 
-const EXPECTED_PREHASH_KEY: HashOp = HashOp::NoHash;
-const EXPECTED_PREHASH_VALUE: HashOp = HashOp::Sha256;
-const EXPECTED_HASH: HashOp = HashOp::Sha256;
-const EXPECTED_LENGTH: LengthOp = LengthOp::VarProto;
-
 #[cfg(feature = "proto")]
 pub mod proto {
     use crate::{
         cosmos::ics23::{hash_op::HashOp, length_op::LengthOp},
         ensure,
-        union::ics23::{
-            existence_proof::{
-                ExistenceProof, EXPECTED_HASH, EXPECTED_LENGTH, EXPECTED_PREHASH_KEY,
-                EXPECTED_PREHASH_VALUE,
-            },
-            inner_op::InnerOp,
-        },
+        union::ics23::{existence_proof::ExistenceProof, inner_op::InnerOp},
     };
+
+    const EXPECTED_PREHASH_KEY: HashOp = HashOp::NoHash;
+    const EXPECTED_PREHASH_VALUE: HashOp = HashOp::Sha256;
+    const EXPECTED_HASH: HashOp = HashOp::Sha256;
+    const EXPECTED_LENGTH: LengthOp = LengthOp::VarProto;
 
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum TryFromExistenceProofError {

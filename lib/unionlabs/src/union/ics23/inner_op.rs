@@ -1,7 +1,5 @@
 use macros::model;
 
-use crate::cosmos::ics23::hash_op::HashOp;
-
 #[model(
     proto(raw(protos::cosmos::ics23::v1::InnerOp), into, from),
     ethabi(raw(ibc_solidity::ics23::InnerOp), into, from)
@@ -15,12 +13,11 @@ pub struct InnerOp {
     pub suffix: Vec<u8>,
 }
 
-const EXPECTED_HASH_OP: HashOp = HashOp::Sha256;
-
 #[cfg(feature = "proto")]
 pub mod proto {
-    use super::EXPECTED_HASH_OP;
     use crate::{cosmos::ics23::hash_op::HashOp, ensure, union::ics23::inner_op::InnerOp};
+
+    const EXPECTED_HASH_OP: HashOp = HashOp::Sha256;
 
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum TryFromInnerOpError {

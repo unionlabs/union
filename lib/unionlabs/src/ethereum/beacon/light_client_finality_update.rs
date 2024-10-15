@@ -1,20 +1,23 @@
 use macros::model;
-use ssz::Ssz;
 
 use crate::{
-    ethereum::config::{
-        consts::{floorlog2, FINALIZED_ROOT_INDEX},
-        BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE,
-    },
+    ethereum::config::consts::{floorlog2, FINALIZED_ROOT_INDEX},
     hash::H256,
     ibc::lightclients::ethereum::{
-        light_client_header::{LightClientHeader, UnboundedLightClientHeader},
-        sync_aggregate::{SyncAggregate, UnboundedSyncAggregate},
+        light_client_header::UnboundedLightClientHeader, sync_aggregate::UnboundedSyncAggregate,
+    },
+};
+#[cfg(feature = "ssz")]
+use crate::{
+    ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
+    ibc::lightclients::ethereum::{
+        light_client_header::LightClientHeader, sync_aggregate::SyncAggregate,
     },
 };
 
+#[cfg(feature = "ssz")]
 #[model]
-#[derive(Ssz)]
+#[derive(::ssz::Ssz)]
 #[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct LightClientFinalityUpdate<
     C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES,

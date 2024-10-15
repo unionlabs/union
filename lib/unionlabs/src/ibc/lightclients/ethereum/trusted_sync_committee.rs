@@ -1,20 +1,21 @@
 use macros::model;
-use ssz::Ssz;
 
+use crate::ibc::{
+    core::client::height::Height, lightclients::ethereum::sync_committee::UnboundedSyncCommittee,
+};
+#[cfg(feature = "ssz")]
 use crate::{
     ethereum::config::SYNC_COMMITTEE_SIZE,
-    ibc::{
-        core::client::height::Height,
-        lightclients::ethereum::sync_committee::{SyncCommittee, UnboundedSyncCommittee},
-    },
+    ibc::lightclients::ethereum::sync_committee::SyncCommittee,
 };
 
 /// Sync committee that is going to be used to verify the update
 ///
 /// Note that the verifier uses one of them based on whether the signature slot
 /// is equal to the current slot or current slot + 1
+#[cfg(feature = "ssz")]
 #[model]
-#[derive(Ssz)]
+#[derive(::ssz::Ssz)]
 #[ssz(union)]
 #[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub enum ActiveSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
@@ -22,6 +23,7 @@ pub enum ActiveSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     Next(SyncCommittee<C>),
 }
 
+#[cfg(feature = "ssz")]
 impl<C: SYNC_COMMITTEE_SIZE> ActiveSyncCommittee<C> {
     #[must_use]
     pub fn get(&self) -> &SyncCommittee<C> {
@@ -42,32 +44,49 @@ impl<C: SYNC_COMMITTEE_SIZE> ActiveSyncCommittee<C> {
     }
 }
 
+#[cfg(feature = "ssz")]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee),
     into,
     from
 ))]
-// #[derive(Ssz)]
 #[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct TrustedSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     pub trusted_height: Height,
     pub sync_committee: ActiveSyncCommittee<C>,
 }
 
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee),
+    from
+))]
+pub struct UnboundedTrustedSyncCommittee {
+    pub trusted_height: Height,
+    pub sync_committee: UnboundedActiveSyncCommittee,
+}
+
+#[model]
+pub enum UnboundedActiveSyncCommittee {
+    Current(UnboundedSyncCommittee),
+    Next(UnboundedSyncCommittee),
+}
+
 #[cfg(feature = "proto")]
 pub mod proto {
+    use crate::ibc::lightclients::ethereum::trusted_sync_committee::{
+        UnboundedActiveSyncCommittee, UnboundedTrustedSyncCommittee,
+    };
+    #[cfg(feature = "ssz")]
     use crate::{
         errors::{required, MissingField},
         ethereum::config::SYNC_COMMITTEE_SIZE,
         ibc::lightclients::ethereum::{
             sync_committee::proto::TryFromSyncCommitteeError,
-            trusted_sync_committee::{
-                ActiveSyncCommittee, TrustedSyncCommittee, UnboundedActiveSyncCommittee,
-                UnboundedTrustedSyncCommittee,
-            },
+            trusted_sync_committee::{ActiveSyncCommittee, TrustedSyncCommittee},
         },
     };
 
+    #[cfg(feature = "ssz")]
     impl<C: SYNC_COMMITTEE_SIZE> From<TrustedSyncCommittee<C>>
         for protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee
     {
@@ -88,6 +107,7 @@ pub mod proto {
     }
 
     #[derive(Debug, PartialEq, Clone, thiserror::Error)]
+    #[cfg(feature = "ssz")]
     pub enum TryFromTrustedSyncCommitteeError {
         #[error(transparent)]
         MissingField(MissingField),
@@ -95,6 +115,7 @@ pub mod proto {
         SyncCommittee(TryFromSyncCommitteeError),
     }
 
+    #[cfg(feature = "ssz")]
     impl<C: SYNC_COMMITTEE_SIZE>
         TryFrom<protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee>
         for TrustedSyncCommittee<C>
@@ -145,19 +166,4 @@ pub mod proto {
             }
         }
     }
-}
-
-#[model(proto(
-    raw(protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee),
-    from
-))]
-pub struct UnboundedTrustedSyncCommittee {
-    pub trusted_height: Height,
-    pub sync_committee: UnboundedActiveSyncCommittee,
-}
-
-#[model]
-pub enum UnboundedActiveSyncCommittee {
-    Current(UnboundedSyncCommittee),
-    Next(UnboundedSyncCommittee),
 }

@@ -2,7 +2,7 @@ use std::num::NonZeroU64;
 
 use enumorph::Enumorph;
 use macros::model;
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use subset_of::SubsetOf;
 use tracing::info;
@@ -29,7 +29,6 @@ use unionlabs::{
     },
     ics24::{ClientConsensusStatePath, ClientStatePath, IbcPath, Path},
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    traits::Member,
 };
 use valuable::Valuable;
 
@@ -38,8 +37,13 @@ use crate::{
     PluginMessage,
 };
 
-#[model]
-#[derive(Enumorph, SubsetOf)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Enumorph, SubsetOf)]
+#[serde(
+    deny_unknown_fields,
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case"
+)]
 #[allow(clippy::large_enum_variant)]
 pub enum Data {
     IbcEvent(ChainEvent),

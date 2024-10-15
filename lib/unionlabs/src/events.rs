@@ -1,4 +1,4 @@
-use core::{num::NonZeroU64, str::FromStr};
+use core::num::NonZeroU64;
 
 use macros::apply;
 
@@ -90,6 +90,9 @@ macro_rules! event {
                 type Error = TryFromTendermintEventError;
 
                 fn try_from(value: crate::tendermint::abci::event::Event) -> Result<Self, Self::Error> {
+                    #[allow(unused, reason = "used in some of the implementations but not all")]
+                    use core::str::FromStr;
+
                     const DEPRECATED: &[&'static str] = &[$($($dep),+)?];
 
                     if value.ty != $tag {

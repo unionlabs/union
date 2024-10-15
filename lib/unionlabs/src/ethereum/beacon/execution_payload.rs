@@ -1,23 +1,27 @@
 use macros::model;
-use ssz::{
-    types::{List, Vector},
-    Ssz,
-};
-
-use crate::{
-    ethereum::{
-        beacon::withdrawal::Withdrawal,
-        config::{
+#[cfg(feature = "ssz")]
+use {
+    crate::{
+        ethereum::config::{
             BYTES_PER_LOGS_BLOOM, MAX_BYTES_PER_TRANSACTION, MAX_EXTRA_DATA_BYTES,
             MAX_TRANSACTIONS_PER_PAYLOAD, MAX_WITHDRAWALS_PER_PAYLOAD,
         },
+        ibc::lightclients::ethereum::execution_payload_header::ExecutionPayloadHeader,
     },
+    ssz::{
+        types::{List, Vector},
+        Ssz,
+    },
+};
+
+use crate::{
+    ethereum::beacon::withdrawal::Withdrawal,
     hash::{H160, H256},
-    ibc::lightclients::ethereum::execution_payload_header::ExecutionPayloadHeader,
     uint::U256,
 };
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#executionpayload>
+#[cfg(feature = "ssz")]
 #[model]
 #[derive(Ssz)]
 pub struct ExecutionPayload<
@@ -62,6 +66,7 @@ pub struct ExecutionPayload<
     pub excess_blob_gas: u64,
 }
 
+#[cfg(feature = "ssz")]
 impl<
         C: BYTES_PER_LOGS_BLOOM
             + MAX_EXTRA_DATA_BYTES

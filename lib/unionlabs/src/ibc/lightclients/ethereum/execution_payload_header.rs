@@ -1,15 +1,19 @@
 use macros::model;
-use ssz::{
-    types::{List, Vector},
-    Ssz,
+#[cfg(feature = "ssz")]
+use {
+    crate::ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
+    ssz::{
+        types::{List, Vector},
+        Ssz,
+    },
 };
 
 use crate::{
-    ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
     hash::{H160, H256},
     uint::U256,
 };
 
+#[cfg(feature = "ssz")]
 #[model]
 #[derive(Ssz)]
 pub struct CapellaExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
@@ -40,6 +44,7 @@ pub struct CapellaExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DAT
     pub withdrawals_root: H256,
 }
 
+#[cfg(feature = "ssz")]
 impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader<C>>
     for CapellaExecutionPayloadHeader<C>
 {
@@ -64,12 +69,13 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader
     }
 }
 
+#[cfg(feature = "ssz")]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::ExecutionPayloadHeader),
     into,
     from
 ))]
-#[derive(Ssz)]
+#[derive(::ssz::Ssz)]
 #[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct ExecutionPayloadHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub parent_hash: H256,
@@ -130,17 +136,20 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> crate::encoding::Encode<cra
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use typenum::Unsigned;
-
-    use crate::{
-        errors::{ExpectedLength, InvalidLength},
-        ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
-        ibc::lightclients::ethereum::execution_payload_header::{
-            ExecutionPayloadHeader, UnboundedExecutionPayloadHeader,
+    #[cfg(feature = "ssz")]
+    use {
+        crate::{
+            errors::{ExpectedLength, InvalidLength},
+            ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
+            ibc::lightclients::ethereum::execution_payload_header::ExecutionPayloadHeader,
+            uint::U256,
         },
-        uint::U256,
+        typenum::Unsigned,
     };
 
+    use crate::ibc::lightclients::ethereum::execution_payload_header::UnboundedExecutionPayloadHeader;
+
+    #[cfg(feature = "ssz")]
     impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeader<C>>
         for protos::union::ibc::lightclients::ethereum::v1::ExecutionPayloadHeader
     {
@@ -167,6 +176,7 @@ pub mod proto {
         }
     }
 
+    #[cfg(feature = "ssz")]
     impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
         TryFrom<protos::union::ibc::lightclients::ethereum::v1::ExecutionPayloadHeader>
         for ExecutionPayloadHeader<C>
@@ -233,6 +243,7 @@ pub mod proto {
         }
     }
 
+    #[cfg(feature = "ssz")]
     #[derive(Debug, PartialEq, Clone, thiserror::Error)]
     pub enum TryFromExecutionPayloadHeaderError {
         #[error("invalid parent hash")]

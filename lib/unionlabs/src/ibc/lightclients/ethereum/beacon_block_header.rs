@@ -1,9 +1,8 @@
 use macros::model;
-use ssz::Ssz;
 
 use crate::hash::H256;
 
-#[derive(Ssz)]
+#[cfg_attr(feature = "ssz", derive(::ssz::Ssz))]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader),
     into,
@@ -21,6 +20,7 @@ pub struct BeaconBlockHeader {
 
 // TODO: Ssz encoding doesn't need to take ownership, impl for &T as well as T
 // TODO: Impl this via #[model]
+#[cfg(feature = "ssz")]
 impl crate::encoding::Decode<crate::encoding::Ssz> for BeaconBlockHeader {
     type Error = ssz::decode::DecodeError;
 
@@ -29,9 +29,12 @@ impl crate::encoding::Decode<crate::encoding::Ssz> for BeaconBlockHeader {
     }
 }
 
+#[cfg(feature = "ssz")]
 // TODO: Impl this via #[model]
 impl crate::encoding::Encode<crate::encoding::Ssz> for BeaconBlockHeader {
     fn encode(self) -> Vec<u8> {
+        use ssz::Ssz;
+
         self.as_ssz_bytes()
     }
 }

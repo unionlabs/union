@@ -1,24 +1,26 @@
 use macros::model;
-use ssz::Ssz;
 
 use crate::{
-    ethereum::config::{
-        consts::{floorlog2, EXECUTION_PAYLOAD_INDEX},
-        BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES,
-    },
+    ethereum::config::consts::{floorlog2, EXECUTION_PAYLOAD_INDEX},
     hash::H256,
     ibc::lightclients::ethereum::{
         beacon_block_header::BeaconBlockHeader,
-        execution_payload_header::{ExecutionPayloadHeader, UnboundedExecutionPayloadHeader},
+        execution_payload_header::UnboundedExecutionPayloadHeader,
     },
 };
+#[cfg(feature = "ssz")]
+use crate::{
+    ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
+    ibc::lightclients::ethereum::execution_payload_header::ExecutionPayloadHeader,
+};
 
+#[cfg(feature = "ssz")]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::LightClientHeader),
     into,
     from
 ))]
-#[derive(Ssz)]
+#[derive(::ssz::Ssz)]
 #[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct LightClientHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub beacon: BeaconBlockHeader,
@@ -26,21 +28,37 @@ pub struct LightClientHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub execution_branch: [H256; floorlog2(EXECUTION_PAYLOAD_INDEX)],
 }
 
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::LightClientHeader),
+    from
+))]
+pub struct UnboundedLightClientHeader {
+    pub beacon: BeaconBlockHeader,
+    pub execution: UnboundedExecutionPayloadHeader,
+    pub execution_branch: [H256; floorlog2(EXECUTION_PAYLOAD_INDEX)],
+}
+
 #[cfg(feature = "proto")]
 pub mod proto {
-    use typenum::Unsigned;
-
-    use crate::{
-        errors::{ExpectedLength, InvalidLength, MissingField},
-        ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
-        hash::H256,
-        ibc::lightclients::ethereum::{
-            beacon_block_header::proto::TryFromBeaconBlockHeaderError,
-            execution_payload_header::proto::TryFromExecutionPayloadHeaderError,
-            light_client_header::{LightClientHeader, UnboundedLightClientHeader},
+    #[cfg(feature = "ssz")]
+    use {
+        crate::{
+            errors::{required, ExpectedLength, InvalidLength, MissingField},
+            ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
+            ibc::lightclients::ethereum::{
+                beacon_block_header::proto::TryFromBeaconBlockHeaderError,
+                execution_payload_header::proto::TryFromExecutionPayloadHeaderError,
+                light_client_header::LightClientHeader,
+            },
         },
+        typenum::Unsigned,
     };
 
+    use crate::{
+        hash::H256, ibc::lightclients::ethereum::light_client_header::UnboundedLightClientHeader,
+    };
+
+    #[cfg(feature = "ssz")]
     impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<LightClientHeader<C>>
         for protos::union::ibc::lightclients::ethereum::v1::LightClientHeader
     {
@@ -56,6 +74,7 @@ pub mod proto {
         }
     }
 
+    #[cfg(feature = "ssz")]
     #[derive(Debug, PartialEq, Clone, thiserror::Error)]
     pub enum TryFromLightClientHeaderError {
         #[error(transparent)]
@@ -70,6 +89,7 @@ pub mod proto {
         ExecutionBranchNode(#[source] InvalidLength),
     }
 
+    #[cfg(feature = "ssz")]
     impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
         TryFrom<protos::union::ibc::lightclients::ethereum::v1::LightClientHeader>
         for LightClientHeader<C>
@@ -80,18 +100,10 @@ pub mod proto {
             value: protos::union::ibc::lightclients::ethereum::v1::LightClientHeader,
         ) -> Result<Self, Self::Error> {
             Ok(Self {
-                beacon: value
-                    .beacon
-                    .ok_or(TryFromLightClientHeaderError::MissingField(MissingField(
-                        "beacon",
-                    )))?
+                beacon: required!(value.beacon)?
                     .try_into()
                     .map_err(TryFromLightClientHeaderError::BeaconBlockHeader)?,
-                execution: value
-                    .execution
-                    .ok_or(TryFromLightClientHeaderError::MissingField(MissingField(
-                        "execution",
-                    )))?
+                execution: required!(value.execution)?
                     .try_into()
                     .map_err(TryFromLightClientHeaderError::ExecutionPayloadHeader)?,
                 execution_branch: value
@@ -125,14 +137,4 @@ pub mod proto {
             }
         }
     }
-}
-
-#[model(proto(
-    raw(protos::union::ibc::lightclients::ethereum::v1::LightClientHeader),
-    from
-))]
-pub struct UnboundedLightClientHeader {
-    pub beacon: BeaconBlockHeader,
-    pub execution: UnboundedExecutionPayloadHeader,
-    pub execution_branch: [H256; floorlog2(EXECUTION_PAYLOAD_INDEX)],
 }

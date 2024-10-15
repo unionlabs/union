@@ -20,7 +20,7 @@ serde-utils                    = { workspace = true }
 thiserror                      = { workspace = true }
 tracing                        = { workspace = true }
 tracing-subscriber             = { workspace = true, features = ["env-filter", "fmt"] }
-unionlabs                      = { workspace = true }
+unionlabs                      = { workspace = true, features = ["proto", "serde"] }
 
 [dev-dependencies]
 hex-literal = "0.4.1"

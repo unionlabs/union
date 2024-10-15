@@ -147,7 +147,7 @@ pub mod proto {
 }
 
 /// TODO(unionlabs/union#876): Properly implement google.protobuf.Any json serde
-#[cfg(feature = "serde")]
+#[cfg(all(feature = "serde", feature = "proto"))] // needs TypeUrl so gate behind proto as well as serde
 mod serde {
     use core::marker::PhantomData;
 

@@ -1,9 +1,8 @@
 use macros::model;
-use ssz::Ssz;
 
 use crate::{ethereum::Version, ibc::lightclients::ethereum::fork::Fork};
 
-#[derive(Ssz)]
+#[cfg_attr(feature = "ssz", derive(::ssz::Ssz))]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::ForkParameters),
     into,

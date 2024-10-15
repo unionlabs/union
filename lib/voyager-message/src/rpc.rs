@@ -160,7 +160,7 @@ pub trait VoyagerRpcClientExt: VoyagerRpcClient {
         at: QueryHeight,
         path: P,
     ) -> Result<IbcState<P::Value, P>, jsonrpsee::core::client::Error> {
-        debug!(%path, %at, "querying ibc state");
+        debug!(path, %at, "querying ibc state");
 
         let ibc_state = self
             .query_ibc_state(chain_id.clone(), at, path.clone().into())

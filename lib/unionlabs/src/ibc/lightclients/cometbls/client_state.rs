@@ -1,7 +1,7 @@
 use macros::model;
 
 use crate::{
-    errors::{ExpectedLength, InvalidLength, MissingField},
+    errors::{ExpectedLength, InvalidLength},
     ibc::core::client::height::Height,
 };
 
@@ -110,37 +110,41 @@ pub mod proto {
 }
 
 #[cfg(feature = "ethabi")]
-impl From<ClientState> for ibc_solidity::cometbls::ClientState {
-    fn from(value: ClientState) -> Self {
-        Self {
-            chainId: value.chain_id.into_fixed_bytes(),
-            trustingPeriod: value.trusting_period,
-            maxClockDrift: value.max_clock_drift,
-            frozenHeight: value.frozen_height.revision(),
-            latestHeight: value.latest_height.revision(),
+pub mod ethabi {
+    use crate::ibc::{
+        core::client::height::Height,
+        lightclients::cometbls::client_state::{ClientState, CometblsChainId},
+    };
+
+    impl From<ClientState> for ibc_solidity::cometbls::ClientState {
+        fn from(value: ClientState) -> Self {
+            Self {
+                chainId: value.chain_id.into_fixed_bytes(),
+                trustingPeriod: value.trusting_period,
+                maxClockDrift: value.max_clock_drift,
+                frozenHeight: value.frozen_height.revision(),
+                latestHeight: value.latest_height.revision(),
+            }
         }
     }
-}
 
-#[derive(Debug, PartialEq, Clone, thiserror::Error)]
-pub enum TryFromEthAbiClientStateError {
-    #[error(transparent)]
-    MissingField(#[from] MissingField),
-    #[error("invalid chain id")]
-    ChainId(#[from] alloc::string::FromUtf8Error),
-}
+    #[derive(Debug, PartialEq, Clone, thiserror::Error)]
+    pub enum TryFromEthAbiClientStateError {
+        #[error("invalid chain id")]
+        ChainId(#[from] alloc::string::FromUtf8Error),
+    }
 
-#[cfg(feature = "ethabi")]
-impl TryFrom<ibc_solidity::cometbls::ClientState> for ClientState {
-    type Error = TryFromEthAbiClientStateError;
+    impl TryFrom<ibc_solidity::cometbls::ClientState> for ClientState {
+        type Error = TryFromEthAbiClientStateError;
 
-    fn try_from(value: ibc_solidity::cometbls::ClientState) -> Result<Self, Self::Error> {
-        Ok(Self {
-            chain_id: CometblsChainId::try_from_fixed_bytes(value.chainId)?,
-            trusting_period: value.trustingPeriod,
-            max_clock_drift: value.maxClockDrift,
-            frozen_height: Height::new(value.frozenHeight),
-            latest_height: Height::new(value.latestHeight),
-        })
+        fn try_from(value: ibc_solidity::cometbls::ClientState) -> Result<Self, Self::Error> {
+            Ok(Self {
+                chain_id: CometblsChainId::try_from_fixed_bytes(value.chainId)?,
+                trusting_period: value.trustingPeriod,
+                max_clock_drift: value.maxClockDrift,
+                frozen_height: Height::new(value.frozenHeight),
+                latest_height: Height::new(value.latestHeight),
+            })
+        }
     }
 }

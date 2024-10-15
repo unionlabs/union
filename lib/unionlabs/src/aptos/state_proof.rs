@@ -2,7 +2,6 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 use macros::model;
-use sha2::Digest;
 
 use crate::{
     aptos::{
@@ -62,22 +61,12 @@ impl Default for StateProof {
 }
 
 impl StateProof {
-    // TODO: Remove
-    #[must_use]
-    pub fn new(
-        latest_li_w_sigs: LedgerInfoWithSignatures,
-        epoch_changes: EpochChangeProof,
-    ) -> Self {
-        Self {
-            latest_li_w_sigs,
-            epoch_changes,
-        }
-    }
-
     #[cfg(feature = "bcs")]
     #[must_use]
     #[allow(clippy::missing_panics_doc)] // panics are impossible
     pub fn hash(&self) -> [u8; 32] {
+        use sha2::Digest;
+
         let mut hasher = sha2::Sha256::new();
         bcs::serialize_into(&mut hasher, self).expect("unexpected serialization error");
         hasher.finalize().into()

@@ -4,7 +4,7 @@ use crate::{bounded::BoundedI64, google::protobuf::timestamp::Timestamp, hash::H
 
 #[model(
     proto(
-        raw(protos::union::ibc::lightclients::cometbls::v1::LightHeader),
+        raw(protos::union::ibc::lightclients::cometbls::v1::SignedHeader),
         into,
         from
     ),
@@ -28,7 +28,7 @@ pub mod proto {
         ibc::lightclients::cometbls::signed_header::SignedHeader,
     };
 
-    impl From<SignedHeader> for protos::union::ibc::lightclients::cometbls::v1::LightHeader {
+    impl From<SignedHeader> for protos::union::ibc::lightclients::cometbls::v1::SignedHeader {
         fn from(value: SignedHeader) -> Self {
             Self {
                 height: value.height.into(),
@@ -41,7 +41,7 @@ pub mod proto {
     }
 
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum TryFromLightHeaderError {
+    pub enum TryFromSignedHeaderError {
         #[error(transparent)]
         MissingField(MissingField),
         #[error("invalid height")]
@@ -56,30 +56,30 @@ pub mod proto {
         AppHash(#[source] InvalidLength),
     }
 
-    impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::LightHeader> for SignedHeader {
-        type Error = TryFromLightHeaderError;
+    impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::SignedHeader> for SignedHeader {
+        type Error = TryFromSignedHeaderError;
 
         fn try_from(
-            value: protos::union::ibc::lightclients::cometbls::v1::LightHeader,
+            value: protos::union::ibc::lightclients::cometbls::v1::SignedHeader,
         ) -> Result<Self, Self::Error> {
             Ok(Self {
                 height: value
                     .height
                     .try_into()
-                    .map_err(TryFromLightHeaderError::Height)?,
+                    .map_err(TryFromSignedHeaderError::Height)?,
                 time: required!(value.time)?.try_into()?,
                 validators_hash: value
                     .validators_hash
                     .try_into()
-                    .map_err(TryFromLightHeaderError::ValidatorsHash)?,
+                    .map_err(TryFromSignedHeaderError::ValidatorsHash)?,
                 next_validators_hash: value
                     .next_validators_hash
                     .try_into()
-                    .map_err(TryFromLightHeaderError::NextValidatorsHash)?,
+                    .map_err(TryFromSignedHeaderError::NextValidatorsHash)?,
                 app_hash: value
                     .app_hash
                     .try_into()
-                    .map_err(TryFromLightHeaderError::AppHash)?,
+                    .map_err(TryFromSignedHeaderError::AppHash)?,
             })
         }
     }

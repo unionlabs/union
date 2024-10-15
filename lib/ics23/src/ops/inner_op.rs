@@ -2,9 +2,11 @@ use unionlabs::cosmos::ics23::{
     hash_op::HashOp, inner_op::InnerOp, inner_spec::PositiveI32AsUsize, proof_spec::ProofSpec,
 };
 
-use super::{hash_op, validate_iavl_ops};
 use crate::{
-    ops::hash_op::HashError,
+    ops::{
+        hash_op::{self, HashError},
+        validate_iavl_ops,
+    },
     proof_specs::{self, IAVL_PROOF_SPEC},
 };
 

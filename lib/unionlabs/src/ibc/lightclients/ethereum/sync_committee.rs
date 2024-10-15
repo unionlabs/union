@@ -1,14 +1,16 @@
 use macros::model;
-use ssz::{types::Vector, Ssz};
+#[cfg(feature = "ssz")]
+use {crate::ethereum::config::SYNC_COMMITTEE_SIZE, ssz::types::Vector};
 
-use crate::{ethereum::config::SYNC_COMMITTEE_SIZE, hash::H384};
+use crate::hash::H384;
 
+#[cfg(feature = "ssz")]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::SyncCommittee),
     into,
     from
 ))]
-#[derive(Ssz)]
+#[derive(::ssz::Ssz)]
 #[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct SyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     pub pubkeys: Vector<H384, C::SYNC_COMMITTEE_SIZE>,
@@ -26,14 +28,18 @@ pub struct UnboundedSyncCommittee {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use typenum::Unsigned;
-
-    use crate::{
-        errors::InvalidLength,
-        ethereum::config::SYNC_COMMITTEE_SIZE,
-        ibc::lightclients::ethereum::sync_committee::{SyncCommittee, UnboundedSyncCommittee},
+    #[cfg(feature = "ssz")]
+    use {
+        crate::{
+            errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE,
+            ibc::lightclients::ethereum::sync_committee::SyncCommittee,
+        },
+        typenum::Unsigned,
     };
 
+    use crate::ibc::lightclients::ethereum::sync_committee::UnboundedSyncCommittee;
+
+    #[cfg(feature = "ssz")]
     impl<C: SYNC_COMMITTEE_SIZE> From<SyncCommittee<C>>
         for protos::union::ibc::lightclients::ethereum::v1::SyncCommittee
     {
@@ -45,6 +51,7 @@ pub mod proto {
         }
     }
 
+    #[cfg(feature = "ssz")]
     #[derive(Debug, PartialEq, Clone, thiserror::Error)]
     pub enum TryFromSyncCommitteeError {
         #[error("invalid `pubkeys`")]
@@ -55,6 +62,7 @@ pub mod proto {
         AggregatePubKey(#[source] InvalidLength),
     }
 
+    #[cfg(feature = "ssz")]
     impl<C: SYNC_COMMITTEE_SIZE>
         TryFrom<protos::union::ibc::lightclients::ethereum::v1::SyncCommittee>
         for SyncCommittee<C>

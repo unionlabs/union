@@ -1,8 +1,13 @@
 use macros::model;
-use ssz::{types::BitVector, Ssz};
+#[cfg(feature = "ssz")]
+use {
+    crate::ethereum::config::SYNC_COMMITTEE_SIZE,
+    ssz::{types::BitVector, Ssz},
+};
 
-use crate::{ethereum::config::SYNC_COMMITTEE_SIZE, hash::H768};
+use crate::hash::H768;
 
+#[cfg(feature = "ssz")]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::SyncAggregate),
     into,
@@ -19,14 +24,18 @@ pub struct SyncAggregate<C: SYNC_COMMITTEE_SIZE> {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use ssz::types::BitVector;
-
-    use crate::{
-        errors::InvalidLength,
-        ethereum::config::SYNC_COMMITTEE_SIZE,
-        ibc::lightclients::ethereum::sync_aggregate::{SyncAggregate, UnboundedSyncAggregate},
+    #[cfg(feature = "ssz")]
+    use {
+        crate::{
+            errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE,
+            ibc::lightclients::ethereum::sync_aggregate::SyncAggregate,
+        },
+        ssz::types::BitVector,
     };
 
+    use crate::ibc::lightclients::ethereum::sync_aggregate::UnboundedSyncAggregate;
+
+    #[cfg(feature = "ssz")]
     impl<C: SYNC_COMMITTEE_SIZE> From<SyncAggregate<C>>
         for protos::union::ibc::lightclients::ethereum::v1::SyncAggregate
     {
@@ -38,6 +47,7 @@ pub mod proto {
         }
     }
 
+    #[cfg(feature = "ssz")]
     #[derive(Debug, PartialEq, Clone, thiserror::Error)]
     pub enum TryFromSyncAggregateError {
         #[error("invalid `sync_committee_bits`")]
@@ -46,6 +56,7 @@ pub mod proto {
         SyncCommitteeSignature(#[from] InvalidLength),
     }
 
+    #[cfg(feature = "ssz")]
     impl<C: SYNC_COMMITTEE_SIZE>
         TryFrom<protos::union::ibc::lightclients::ethereum::v1::SyncAggregate>
         for SyncAggregate<C>
