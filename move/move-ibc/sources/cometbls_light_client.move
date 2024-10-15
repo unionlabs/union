@@ -19,6 +19,7 @@ module IBC::LightClient {
     const E_VALIDATORS_HASH_MISMATCH: u64 = 35106;
     const E_INVALID_ZKP: u64 = 35107;
     const E_FROZEN_CLIENT: u64 = 35108;
+    const E_INVALID_MISBEHAVIOUR: u64 = 35109;
     const E_UNIMPLEMENTED: u64 = 35199;
 
     struct State has key, store {
@@ -31,7 +32,7 @@ module IBC::LightClient {
         nanos: u32,
     }
 
-    struct LightHeader has drop {
+    struct LightHeader has drop, copy {
         height: u64,
         time: Timestamp,
         validators_hash: vector<u8>,
@@ -43,6 +44,11 @@ module IBC::LightClient {
         signed_header: LightHeader,
         trusted_height: height::Height,
         zero_knowledge_proof: ZKP,
+    }
+
+    struct Misbehaviour has drop {
+        header_a: Header,
+        header_b: Header,
     }
 
     struct ClientState has copy, drop, store {
@@ -184,8 +190,31 @@ module IBC::LightClient {
     public fun report_misbehaviour(
         client_id: String,
         misbehaviour: vector<u8>
-    ) {
-        abort E_UNIMPLEMENTED
+    ) acquires State {
+        let Misbehaviour { 
+            header_a,
+            header_b,
+        } = decode_misbehaviour(misbehaviour);
+
+        assert!(header_a.signed_header.height >= header_b.signed_header.height, E_INVALID_MISBEHAVIOUR);
+
+        let state = borrow_global_mut<State>(get_client_address(&client_id));
+
+        let consensus_state_a = smart_table::borrow(&state.consensus_states, header_a.trusted_height);
+        let consensus_state_b = smart_table::borrow(&state.consensus_states, header_b.trusted_height);
+
+        // verify both updates would have been accepted by the light client
+        verify_header(&header_a, state, consensus_state_a);
+        verify_header(&header_b, state, consensus_state_b);
+
+        if (header_a.signed_header.height == header_b.signed_header.height) {
+            // misbehaviour is only valid if
+            assert!(header_a.signed_header == header_b.signed_header, E_INVALID_MISBEHAVIOUR);
+        } else {
+            assert!(consensus_state_a.timestamp > consensus_state_b.timestamp, E_INVALID_MISBEHAVIOUR);
+        };
+
+        state.client_state.frozen_height = height::new(0, 1);
     }
 
     public fun verify_membership(
@@ -352,39 +381,43 @@ module IBC::LightClient {
 
     fun decode_header(buf: vector<u8>): Header {
         let buf = bcs_utils::new(buf);
+        peel_header(&mut buf)
+    }
 
-        std::debug::print(&1);
-
-        let height = bcs_utils::peel_u64(&mut buf);
-        std::debug::print(&2);
+    fun peel_header(buf: &mut bcs_utils::BcsBuf): Header {
+        let height = bcs_utils::peel_u64(buf);
 
         let time = Timestamp {
-            seconds: bcs_utils::peel_u64(&mut buf),
-            nanos: bcs_utils::peel_u32(&mut buf),
+            seconds: bcs_utils::peel_u64(buf),
+            nanos: bcs_utils::peel_u32(buf),
         };
-        std::debug::print(&3);
 
         let signed_header = LightHeader {
             height,
             time,
-            validators_hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
-            next_validators_hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
-            app_hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
+            validators_hash: bcs_utils::peel_fixed_bytes(buf, 32),
+            next_validators_hash: bcs_utils::peel_fixed_bytes(buf, 32),
+            app_hash: bcs_utils::peel_fixed_bytes(buf, 32),
         };
-        std::debug::print(&4);
 
-        let trusted_height = height::decode_bcs(&mut buf);
-        std::debug::print(&5);
+        let trusted_height = height::decode_bcs(buf);
 
-        let proof_bz = bcs_utils::peel_bytes(&mut buf);
-        std::debug::print(&6);
+        let proof_bz = bcs_utils::peel_bytes(buf);
         let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);
-        std::debug::print(&7);
 
         Header {
             signed_header,
             trusted_height,
             zero_knowledge_proof,
+        }
+    }
+
+    fun decode_misbehaviour(buf: vector<u8>): Misbehaviour {
+        let buf = bcs_utils::new(buf);
+
+        Misbehaviour {
+            header_a: peel_header(&mut buf),
+            header_b: peel_header(&mut buf),            
         }
     }
 
