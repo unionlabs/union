@@ -986,9 +986,18 @@ github.com/dvsekhvalnov/jose2go/padding
 github.com/emicklei/dot
 # github.com/ethereum/go-ethereum v1.13.5-0.20231027145059-2d7dba024d76
 ## explicit; go 1.20
+github.com/ethereum/go-ethereum/accounts/abi
 github.com/ethereum/go-ethereum/common
 github.com/ethereum/go-ethereum/common/hexutil
+github.com/ethereum/go-ethereum/common/math
+github.com/ethereum/go-ethereum/crypto
+github.com/ethereum/go-ethereum/crypto/secp256k1
+github.com/ethereum/go-ethereum/crypto/secp256k1/libsecp256k1/include
+github.com/ethereum/go-ethereum/crypto/secp256k1/libsecp256k1/src
+github.com/ethereum/go-ethereum/crypto/secp256k1/libsecp256k1/src/modules/recovery
 github.com/ethereum/go-ethereum/params
+github.com/ethereum/go-ethereum/rlp
+github.com/ethereum/go-ethereum/rlp/internal/rlpstruct
 # github.com/fatih/color v1.17.0
 ## explicit; go 1.17
 github.com/fatih/color
