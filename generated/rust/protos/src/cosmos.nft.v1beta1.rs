@@ -1,70 +1,4 @@
 // @generated
-/// EventSend is emitted on Msg/Send
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventSend {
-    /// class_id associated with the nft
-    #[prost(string, tag = "1")]
-    pub class_id: ::prost::alloc::string::String,
-    /// id is a unique identifier of the nft
-    #[prost(string, tag = "2")]
-    pub id: ::prost::alloc::string::String,
-    /// sender is the address of the owner of nft
-    #[prost(string, tag = "3")]
-    pub sender: ::prost::alloc::string::String,
-    /// receiver is the receiver address of nft
-    #[prost(string, tag = "4")]
-    pub receiver: ::prost::alloc::string::String,
-}
-impl ::prost::Name for EventSend {
-    const NAME: &'static str = "EventSend";
-    const PACKAGE: &'static str = "cosmos.nft.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.nft.v1beta1.{}", Self::NAME)
-    }
-}
-/// EventMint is emitted on Mint
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventMint {
-    /// class_id associated with the nft
-    #[prost(string, tag = "1")]
-    pub class_id: ::prost::alloc::string::String,
-    /// id is a unique identifier of the nft
-    #[prost(string, tag = "2")]
-    pub id: ::prost::alloc::string::String,
-    /// owner is the owner address of the nft
-    #[prost(string, tag = "3")]
-    pub owner: ::prost::alloc::string::String,
-}
-impl ::prost::Name for EventMint {
-    const NAME: &'static str = "EventMint";
-    const PACKAGE: &'static str = "cosmos.nft.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.nft.v1beta1.{}", Self::NAME)
-    }
-}
-/// EventBurn is emitted on Burn
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventBurn {
-    /// class_id associated with the nft
-    #[prost(string, tag = "1")]
-    pub class_id: ::prost::alloc::string::String,
-    /// id is a unique identifier of the nft
-    #[prost(string, tag = "2")]
-    pub id: ::prost::alloc::string::String,
-    /// owner is the owner address of the nft
-    #[prost(string, tag = "3")]
-    pub owner: ::prost::alloc::string::String,
-}
-impl ::prost::Name for EventBurn {
-    const NAME: &'static str = "EventBurn";
-    const PACKAGE: &'static str = "cosmos.nft.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.nft.v1beta1.{}", Self::NAME)
-    }
-}
 /// Class defines the class of the nft type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -156,6 +90,41 @@ pub struct Entry {
 }
 impl ::prost::Name for Entry {
     const NAME: &'static str = "Entry";
+    const PACKAGE: &'static str = "cosmos.nft.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.nft.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgSend represents a message to send a nft from one account to another account.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSend {
+    /// class_id defines the unique identifier of the nft classification, similar to the contract address of ERC721
+    #[prost(string, tag = "1")]
+    pub class_id: ::prost::alloc::string::String,
+    /// id defines the unique identification of nft
+    #[prost(string, tag = "2")]
+    pub id: ::prost::alloc::string::String,
+    /// sender is the address of the owner of nft
+    #[prost(string, tag = "3")]
+    pub sender: ::prost::alloc::string::String,
+    /// receiver is the receiver address of nft
+    #[prost(string, tag = "4")]
+    pub receiver: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgSend {
+    const NAME: &'static str = "MsgSend";
+    const PACKAGE: &'static str = "cosmos.nft.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.nft.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgSendResponse defines the Msg/Send response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSendResponse {}
+impl ::prost::Name for MsgSendResponse {
+    const NAME: &'static str = "MsgSendResponse";
     const PACKAGE: &'static str = "cosmos.nft.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.nft.v1beta1.{}", Self::NAME)
@@ -392,14 +361,14 @@ impl ::prost::Name for QueryClassesResponse {
         ::prost::alloc::format!("cosmos.nft.v1beta1.{}", Self::NAME)
     }
 }
-/// MsgSend represents a message to send a nft from one account to another account.
+/// EventSend is emitted on Msg/Send
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSend {
-    /// class_id defines the unique identifier of the nft classification, similar to the contract address of ERC721
+pub struct EventSend {
+    /// class_id associated with the nft
     #[prost(string, tag = "1")]
     pub class_id: ::prost::alloc::string::String,
-    /// id defines the unique identification of nft
+    /// id is a unique identifier of the nft
     #[prost(string, tag = "2")]
     pub id: ::prost::alloc::string::String,
     /// sender is the address of the owner of nft
@@ -409,19 +378,50 @@ pub struct MsgSend {
     #[prost(string, tag = "4")]
     pub receiver: ::prost::alloc::string::String,
 }
-impl ::prost::Name for MsgSend {
-    const NAME: &'static str = "MsgSend";
+impl ::prost::Name for EventSend {
+    const NAME: &'static str = "EventSend";
     const PACKAGE: &'static str = "cosmos.nft.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.nft.v1beta1.{}", Self::NAME)
     }
 }
-/// MsgSendResponse defines the Msg/Send response type.
+/// EventMint is emitted on Mint
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSendResponse {}
-impl ::prost::Name for MsgSendResponse {
-    const NAME: &'static str = "MsgSendResponse";
+pub struct EventMint {
+    /// class_id associated with the nft
+    #[prost(string, tag = "1")]
+    pub class_id: ::prost::alloc::string::String,
+    /// id is a unique identifier of the nft
+    #[prost(string, tag = "2")]
+    pub id: ::prost::alloc::string::String,
+    /// owner is the owner address of the nft
+    #[prost(string, tag = "3")]
+    pub owner: ::prost::alloc::string::String,
+}
+impl ::prost::Name for EventMint {
+    const NAME: &'static str = "EventMint";
+    const PACKAGE: &'static str = "cosmos.nft.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.nft.v1beta1.{}", Self::NAME)
+    }
+}
+/// EventBurn is emitted on Burn
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventBurn {
+    /// class_id associated with the nft
+    #[prost(string, tag = "1")]
+    pub class_id: ::prost::alloc::string::String,
+    /// id is a unique identifier of the nft
+    #[prost(string, tag = "2")]
+    pub id: ::prost::alloc::string::String,
+    /// owner is the owner address of the nft
+    #[prost(string, tag = "3")]
+    pub owner: ::prost::alloc::string::String,
+}
+impl ::prost::Name for EventBurn {
+    const NAME: &'static str = "EventBurn";
     const PACKAGE: &'static str = "cosmos.nft.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.nft.v1beta1.{}", Self::NAME)

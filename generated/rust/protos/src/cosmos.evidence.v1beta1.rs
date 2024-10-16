@@ -39,6 +39,40 @@ impl ::prost::Name for GenesisState {
         ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
     }
 }
+/// MsgSubmitEvidence represents a message that supports submitting arbitrary
+/// Evidence of misbehavior such as equivocation or counterfactual signing.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSubmitEvidence {
+    /// submitter is the signer account address of evidence.
+    #[prost(string, tag = "1")]
+    pub submitter: ::prost::alloc::string::String,
+    /// evidence defines the evidence of misbehavior.
+    #[prost(message, optional, tag = "2")]
+    pub evidence: ::core::option::Option<::pbjson_types::Any>,
+}
+impl ::prost::Name for MsgSubmitEvidence {
+    const NAME: &'static str = "MsgSubmitEvidence";
+    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgSubmitEvidenceResponse defines the Msg/SubmitEvidence response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSubmitEvidenceResponse {
+    /// hash defines the hash of the evidence.
+    #[prost(bytes = "vec", tag = "4")]
+    pub hash: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for MsgSubmitEvidenceResponse {
+    const NAME: &'static str = "MsgSubmitEvidenceResponse";
+    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryEvidenceRequest is the request type for the Query/Evidence RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -106,40 +140,6 @@ pub struct QueryAllEvidenceResponse {
 }
 impl ::prost::Name for QueryAllEvidenceResponse {
     const NAME: &'static str = "QueryAllEvidenceResponse";
-    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgSubmitEvidence represents a message that supports submitting arbitrary
-/// Evidence of misbehavior such as equivocation or counterfactual signing.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitEvidence {
-    /// submitter is the signer account address of evidence.
-    #[prost(string, tag = "1")]
-    pub submitter: ::prost::alloc::string::String,
-    /// evidence defines the evidence of misbehavior.
-    #[prost(message, optional, tag = "2")]
-    pub evidence: ::core::option::Option<::pbjson_types::Any>,
-}
-impl ::prost::Name for MsgSubmitEvidence {
-    const NAME: &'static str = "MsgSubmitEvidence";
-    const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgSubmitEvidenceResponse defines the Msg/SubmitEvidence response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitEvidenceResponse {
-    /// hash defines the hash of the evidence.
-    #[prost(bytes = "vec", tag = "4")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for MsgSubmitEvidenceResponse {
-    const NAME: &'static str = "MsgSubmitEvidenceResponse";
     const PACKAGE: &'static str = "cosmos.evidence.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.evidence.v1beta1.{}", Self::NAME)

@@ -422,6 +422,235 @@ impl ::prost::Name for GenesisState {
         ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
     }
 }
+/// MsgSetWithdrawAddress sets the withdraw address for
+/// a delegator (or validator self-delegation).
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSetWithdrawAddress {
+    #[prost(string, tag = "1")]
+    pub delegator_address: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub withdraw_address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgSetWithdrawAddress {
+    const NAME: &'static str = "MsgSetWithdrawAddress";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgSetWithdrawAddressResponse defines the Msg/SetWithdrawAddress response
+/// type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSetWithdrawAddressResponse {}
+impl ::prost::Name for MsgSetWithdrawAddressResponse {
+    const NAME: &'static str = "MsgSetWithdrawAddressResponse";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgWithdrawDelegatorReward represents delegation withdrawal to a delegator
+/// from a single validator.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgWithdrawDelegatorReward {
+    #[prost(string, tag = "1")]
+    pub delegator_address: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub validator_address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgWithdrawDelegatorReward {
+    const NAME: &'static str = "MsgWithdrawDelegatorReward";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgWithdrawDelegatorRewardResponse defines the Msg/WithdrawDelegatorReward
+/// response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgWithdrawDelegatorRewardResponse {
+    /// Since: cosmos-sdk 0.46
+    #[prost(message, repeated, tag = "1")]
+    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+}
+impl ::prost::Name for MsgWithdrawDelegatorRewardResponse {
+    const NAME: &'static str = "MsgWithdrawDelegatorRewardResponse";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgWithdrawValidatorCommission withdraws the full commission to the validator
+/// address.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgWithdrawValidatorCommission {
+    #[prost(string, tag = "1")]
+    pub validator_address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgWithdrawValidatorCommission {
+    const NAME: &'static str = "MsgWithdrawValidatorCommission";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgWithdrawValidatorCommissionResponse defines the
+/// Msg/WithdrawValidatorCommission response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgWithdrawValidatorCommissionResponse {
+    /// Since: cosmos-sdk 0.46
+    #[prost(message, repeated, tag = "1")]
+    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+}
+impl ::prost::Name for MsgWithdrawValidatorCommissionResponse {
+    const NAME: &'static str = "MsgWithdrawValidatorCommissionResponse";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgFundCommunityPool allows an account to directly
+/// fund the community pool.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgFundCommunityPool {
+    #[prost(message, repeated, tag = "1")]
+    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+    #[prost(string, tag = "2")]
+    pub depositor: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgFundCommunityPool {
+    const NAME: &'static str = "MsgFundCommunityPool";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgFundCommunityPoolResponse defines the Msg/FundCommunityPool response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgFundCommunityPoolResponse {}
+impl ::prost::Name for MsgFundCommunityPoolResponse {
+    const NAME: &'static str = "MsgFundCommunityPoolResponse";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateParams is the Msg/UpdateParams request type.
+///
+/// Since: cosmos-sdk 0.47
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParams {
+    /// authority is the address that controls the module (defaults to x/gov unless overwritten).
+    #[prost(string, tag = "1")]
+    pub authority: ::prost::alloc::string::String,
+    /// params defines the x/distribution parameters to update.
+    ///
+    /// NOTE: All parameters must be supplied.
+    #[prost(message, optional, tag = "2")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for MsgUpdateParams {
+    const NAME: &'static str = "MsgUpdateParams";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateParamsResponse defines the response structure for executing a
+/// MsgUpdateParams message.
+///
+/// Since: cosmos-sdk 0.47
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParamsResponse {}
+impl ::prost::Name for MsgUpdateParamsResponse {
+    const NAME: &'static str = "MsgUpdateParamsResponse";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgCommunityPoolSpend defines a message for sending tokens from the community
+/// pool to another account. This message is typically executed via a governance
+/// proposal with the governance module being the executing authority.
+///
+/// Since: cosmos-sdk 0.47
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCommunityPoolSpend {
+    /// authority is the address that controls the module (defaults to x/gov unless overwritten).
+    #[prost(string, tag = "1")]
+    pub authority: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub recipient: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "3")]
+    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+}
+impl ::prost::Name for MsgCommunityPoolSpend {
+    const NAME: &'static str = "MsgCommunityPoolSpend";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgCommunityPoolSpendResponse defines the response to executing a
+/// MsgCommunityPoolSpend message.
+///
+/// Since: cosmos-sdk 0.47
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCommunityPoolSpendResponse {}
+impl ::prost::Name for MsgCommunityPoolSpendResponse {
+    const NAME: &'static str = "MsgCommunityPoolSpendResponse";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// DepositValidatorRewardsPool defines the request structure to provide
+/// additional rewards to delegators from a specific validator.
+///
+/// Since: cosmos-sdk 0.50
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgDepositValidatorRewardsPool {
+    #[prost(string, tag = "1")]
+    pub depositor: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub validator_address: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "3")]
+    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+}
+impl ::prost::Name for MsgDepositValidatorRewardsPool {
+    const NAME: &'static str = "MsgDepositValidatorRewardsPool";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgDepositValidatorRewardsPoolResponse defines the response to executing a
+/// MsgDepositValidatorRewardsPool message.
+///
+/// Since: cosmos-sdk 0.50
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgDepositValidatorRewardsPoolResponse {}
+impl ::prost::Name for MsgDepositValidatorRewardsPoolResponse {
+    const NAME: &'static str = "MsgDepositValidatorRewardsPoolResponse";
+    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryParamsRequest is the request type for the Query/Params RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -748,235 +977,6 @@ pub struct QueryCommunityPoolResponse {
 }
 impl ::prost::Name for QueryCommunityPoolResponse {
     const NAME: &'static str = "QueryCommunityPoolResponse";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgSetWithdrawAddress sets the withdraw address for
-/// a delegator (or validator self-delegation).
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSetWithdrawAddress {
-    #[prost(string, tag = "1")]
-    pub delegator_address: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub withdraw_address: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgSetWithdrawAddress {
-    const NAME: &'static str = "MsgSetWithdrawAddress";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgSetWithdrawAddressResponse defines the Msg/SetWithdrawAddress response
-/// type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSetWithdrawAddressResponse {}
-impl ::prost::Name for MsgSetWithdrawAddressResponse {
-    const NAME: &'static str = "MsgSetWithdrawAddressResponse";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgWithdrawDelegatorReward represents delegation withdrawal to a delegator
-/// from a single validator.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgWithdrawDelegatorReward {
-    #[prost(string, tag = "1")]
-    pub delegator_address: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub validator_address: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgWithdrawDelegatorReward {
-    const NAME: &'static str = "MsgWithdrawDelegatorReward";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgWithdrawDelegatorRewardResponse defines the Msg/WithdrawDelegatorReward
-/// response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgWithdrawDelegatorRewardResponse {
-    /// Since: cosmos-sdk 0.46
-    #[prost(message, repeated, tag = "1")]
-    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-}
-impl ::prost::Name for MsgWithdrawDelegatorRewardResponse {
-    const NAME: &'static str = "MsgWithdrawDelegatorRewardResponse";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgWithdrawValidatorCommission withdraws the full commission to the validator
-/// address.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgWithdrawValidatorCommission {
-    #[prost(string, tag = "1")]
-    pub validator_address: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgWithdrawValidatorCommission {
-    const NAME: &'static str = "MsgWithdrawValidatorCommission";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgWithdrawValidatorCommissionResponse defines the
-/// Msg/WithdrawValidatorCommission response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgWithdrawValidatorCommissionResponse {
-    /// Since: cosmos-sdk 0.46
-    #[prost(message, repeated, tag = "1")]
-    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-}
-impl ::prost::Name for MsgWithdrawValidatorCommissionResponse {
-    const NAME: &'static str = "MsgWithdrawValidatorCommissionResponse";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgFundCommunityPool allows an account to directly
-/// fund the community pool.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgFundCommunityPool {
-    #[prost(message, repeated, tag = "1")]
-    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-    #[prost(string, tag = "2")]
-    pub depositor: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgFundCommunityPool {
-    const NAME: &'static str = "MsgFundCommunityPool";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgFundCommunityPoolResponse defines the Msg/FundCommunityPool response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgFundCommunityPoolResponse {}
-impl ::prost::Name for MsgFundCommunityPoolResponse {
-    const NAME: &'static str = "MsgFundCommunityPoolResponse";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateParams is the Msg/UpdateParams request type.
-///
-/// Since: cosmos-sdk 0.47
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateParams {
-    /// authority is the address that controls the module (defaults to x/gov unless overwritten).
-    #[prost(string, tag = "1")]
-    pub authority: ::prost::alloc::string::String,
-    /// params defines the x/distribution parameters to update.
-    ///
-    /// NOTE: All parameters must be supplied.
-    #[prost(message, optional, tag = "2")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for MsgUpdateParams {
-    const NAME: &'static str = "MsgUpdateParams";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateParamsResponse defines the response structure for executing a
-/// MsgUpdateParams message.
-///
-/// Since: cosmos-sdk 0.47
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateParamsResponse {}
-impl ::prost::Name for MsgUpdateParamsResponse {
-    const NAME: &'static str = "MsgUpdateParamsResponse";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgCommunityPoolSpend defines a message for sending tokens from the community
-/// pool to another account. This message is typically executed via a governance
-/// proposal with the governance module being the executing authority.
-///
-/// Since: cosmos-sdk 0.47
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCommunityPoolSpend {
-    /// authority is the address that controls the module (defaults to x/gov unless overwritten).
-    #[prost(string, tag = "1")]
-    pub authority: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub recipient: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "3")]
-    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-}
-impl ::prost::Name for MsgCommunityPoolSpend {
-    const NAME: &'static str = "MsgCommunityPoolSpend";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgCommunityPoolSpendResponse defines the response to executing a
-/// MsgCommunityPoolSpend message.
-///
-/// Since: cosmos-sdk 0.47
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCommunityPoolSpendResponse {}
-impl ::prost::Name for MsgCommunityPoolSpendResponse {
-    const NAME: &'static str = "MsgCommunityPoolSpendResponse";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// DepositValidatorRewardsPool defines the request structure to provide
-/// additional rewards to delegators from a specific validator.
-///
-/// Since: cosmos-sdk 0.50
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgDepositValidatorRewardsPool {
-    #[prost(string, tag = "1")]
-    pub depositor: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub validator_address: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "3")]
-    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-}
-impl ::prost::Name for MsgDepositValidatorRewardsPool {
-    const NAME: &'static str = "MsgDepositValidatorRewardsPool";
-    const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgDepositValidatorRewardsPoolResponse defines the response to executing a
-/// MsgDepositValidatorRewardsPool message.
-///
-/// Since: cosmos-sdk 0.50
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgDepositValidatorRewardsPoolResponse {}
-impl ::prost::Name for MsgDepositValidatorRewardsPoolResponse {
-    const NAME: &'static str = "MsgDepositValidatorRewardsPoolResponse";
     const PACKAGE: &'static str = "cosmos.distribution.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)

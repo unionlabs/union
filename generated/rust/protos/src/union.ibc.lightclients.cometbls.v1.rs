@@ -56,13 +56,9 @@ impl ::prost::Name for ConsensusState {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Misbehaviour {
     #[prost(message, optional, tag = "1")]
-    pub header_1: ::core::option::Option<LightHeader>,
+    pub header_1: ::core::option::Option<Header>,
     #[prost(message, optional, tag = "2")]
-    pub header_2: ::core::option::Option<LightHeader>,
-    #[prost(bytes = "vec", tag = "3")]
-    pub header_1_zkp: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "4")]
-    pub header_2_zkp: ::prost::alloc::vec::Vec<u8>,
+    pub header_2: ::core::option::Option<Header>,
 }
 impl ::prost::Name for Misbehaviour {
     const NAME: &'static str = "Misbehaviour";
