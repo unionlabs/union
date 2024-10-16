@@ -1,6 +1,6 @@
 use enumorph::Enumorph;
-use macros::model;
 use unionlabs::hash::H256;
+use voyager_message::macros::model;
 
 #[model]
 #[derive(Enumorph)]

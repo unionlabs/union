@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use unionlabs::ibc::core::client::height::Height;
+use unionlabs::{ibc::core::client::height::Height, id::ClientId};
 use voyager_message::{
     call::FetchBlocks, callback::AggregateMsgUpdateClientsFromOrderedHeaders, core::ChainId,
     PluginMessage, VoyagerMessage,
@@ -22,47 +22,35 @@ fn mk_msg() -> Op<VoyagerMessage> {
                 data(PluginMessage::new("", "")),
                 call(FetchBlocks {
                     chain_id: ChainId::new("chain"),
-                    start_height: Height {
-                        revision_number: 1,
-                        revision_height: 1,
-                    },
+                    start_height: Height::new(1),
                 }),
                 conc([
                     noop(),
                     data(PluginMessage::new("", "")),
                     call(FetchBlocks {
                         chain_id: ChainId::new("chain"),
-                        start_height: Height {
-                            revision_number: 1,
-                            revision_height: 1,
-                        },
+                        start_height: Height::new(1),
                     }),
                 ]),
             ],
             [],
             AggregateMsgUpdateClientsFromOrderedHeaders {
                 chain_id: ChainId::new("chain"),
-                counterparty_client_id: "counterparty_chain".parse().unwrap(),
+                counterparty_client_id: ClientId::new(0),
             },
         ),
         seq([
             data(PluginMessage::new("", "")),
             call(FetchBlocks {
                 chain_id: ChainId::new("chain"),
-                start_height: Height {
-                    revision_number: 1,
-                    revision_height: 1,
-                },
+                start_height: Height::new(1),
             }),
             conc([
                 noop(),
                 data(PluginMessage::new("", "")),
                 call(FetchBlocks {
                     chain_id: ChainId::new("chain"),
-                    start_height: Height {
-                        revision_number: 1,
-                        revision_height: 1,
-                    },
+                    start_height: Height::new(1),
                 }),
             ]),
         ]),

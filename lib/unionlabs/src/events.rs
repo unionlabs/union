@@ -1,4 +1,4 @@
-use core::{num::NonZeroU64, str::FromStr};
+use core::num::NonZeroU64;
 
 use macros::apply;
 
@@ -24,8 +24,18 @@ macro_rules! event {
             )+
         }
     ) => {
-        #[derive(::macros::Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, enumorph::Enumorph)]
-        #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
+        #[derive(
+            ::macros::Debug,
+            Clone,
+            PartialEq,
+            Eq,
+            enumorph::Enumorph
+        )]
+        #[cfg_attr(
+            feature = "serde",
+            derive(serde::Serialize, serde::Deserialize),
+            serde(tag = "@type", content = "@value", rename_all = "snake_case")
+        )]
         pub enum $Enum {
             $(
                 $Struct($Struct),
@@ -33,6 +43,7 @@ macro_rules! event {
         }
 
         impl IbcEvent {
+            #[cfg(feature = "proto")]
             #[must_use]
             pub fn try_from_tendermint_event(
                 event: crate::tendermint::abci::event::Event,
@@ -55,22 +66,33 @@ macro_rules! event {
         }
 
         $(
-            #[derive(::macros::Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-            #[serde(deny_unknown_fields)]
+            #[derive(::macros::Debug, Clone, PartialEq, Eq)]
+            #[cfg_attr(
+                feature = "serde",
+                derive(serde::Serialize, serde::Deserialize),
+                serde(deny_unknown_fields)
+            )]
             pub struct $Struct {
                 $(
                     $(#[doc = $doc])*
-                    $(#[serde($serde)])?
+                    $(#[cfg_attr(
+                        feature = "serde",
+                        serde($serde)
+                    )])?
                     $(#[debug($debug)])?
                     pub $field: $field_ty,
                 )+
             }
 
 
+            #[cfg(feature = "proto")]
             impl TryFrom<crate::tendermint::abci::event::Event> for $Struct {
                 type Error = TryFromTendermintEventError;
 
                 fn try_from(value: crate::tendermint::abci::event::Event) -> Result<Self, Self::Error> {
+                    #[allow(unused, reason = "used in some of the implementations but not all")]
+                    use core::str::FromStr;
+
                     const DEPRECATED: &[&'static str] = &[$($($dep),+)?];
 
                     if value.ty != $tag {
@@ -112,8 +134,9 @@ macro_rules! event {
                                     ))
                                 },
                             )+
-                            // TODO(aeryz): this is newly added to cosmos-sdk, until we understand what to do with this, ignore
+                            // auto injected by the cosmos sdk
                             "msg_index" => {}
+                            "authz_msg_index" => {}
                             key => {
                                 if !DEPRECATED.contains(&key) {
                                     return Err(TryFromTendermintEventError::UnknownAttribute(attr.key))
@@ -169,29 +192,29 @@ pub enum TryFromTendermintEventError {
 pub enum IbcEvent {
     #[event(tag = "create_client")]
     CreateClient {
-        #[parse(ClientId::from_str)]
+        #[parse(|s| ClientId::parse_prefixed(s).map(|(_ty, id)| id))]
         client_id: ClientId,
         // TODO: Figure out if there's a better type we can use than string
         client_type: String,
-        #[parse(Height::from_str)]
+        #[parse(Height::from_str_allow_zero_revision)]
         consensus_height: Height,
     },
 
     #[event(tag = "update_client", deprecated("consensus_height", "header"))]
     UpdateClient {
-        #[parse(ClientId::from_str)]
+        #[parse(|s| ClientId::parse_prefixed(s).map(|(_ty, id)| id))]
         client_id: ClientId,
         client_type: String,
-        #[parse(|s: &str| s.split(',').map(Height::from_str).collect::<Result<_, _>>())]
+        #[parse(|s: &str| s.split(',').map(Height::from_str_allow_zero_revision).collect::<Result<_, _>>())]
         consensus_heights: Vec<Height>,
     },
 
     #[event(tag = "client_misbehaviour")]
     ClientMisbehaviour {
-        #[parse(ClientId::from_str)]
+        #[parse(|s| ClientId::parse_prefixed(s).map(|(_ty, id)| id))]
         client_id: ClientId,
         client_type: String,
-        #[parse(Height::from_str)]
+        #[parse(Height::from_str_allow_zero_revision)]
         consensus_height: Height,
     },
 
@@ -200,47 +223,47 @@ pub enum IbcEvent {
 
     #[event(tag = "connection_open_init", deprecated("counterparty_connection_id"))]
     ConnectionOpenInit {
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
-        #[parse(ClientId::from_str)]
+        #[parse(|s| ClientId::parse_prefixed(s).map(|(_ty, id)| id))]
         client_id: ClientId,
-        #[parse(ClientId::from_str)]
+        #[parse(|s| ClientId::parse_prefixed(s).map(|(_ty, id)| id))]
         counterparty_client_id: ClientId,
     },
 
     #[event(tag = "connection_open_try")]
     ConnectionOpenTry {
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
-        #[parse(ClientId::from_str)]
+        #[parse(|s| ClientId::parse_prefixed(s).map(|(_ty, id)| id))]
         client_id: ClientId,
-        #[parse(ClientId::from_str)]
+        #[parse(|s| ClientId::parse_prefixed(s).map(|(_ty, id)| id))]
         counterparty_client_id: ClientId,
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         counterparty_connection_id: ConnectionId,
     },
 
     #[event(tag = "connection_open_ack")]
     ConnectionOpenAck {
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
-        #[parse(ClientId::from_str)]
+        #[parse(|s| ClientId::parse_prefixed(s).map(|(_ty, id)| id))]
         client_id: ClientId,
-        #[parse(ClientId::from_str)]
+        #[parse(|s| ClientId::parse_prefixed(s).map(|(_ty, id)| id))]
         counterparty_client_id: ClientId,
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         counterparty_connection_id: ConnectionId,
     },
 
     #[event(tag = "connection_open_confirm")]
     ConnectionOpenConfirm {
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
-        #[parse(ClientId::from_str)]
+        #[parse(|s| ClientId::parse_prefixed(s).map(|(_ty, id)| id))]
         client_id: ClientId,
-        #[parse(ClientId::from_str)]
+        #[parse(|s| ClientId::parse_prefixed(s).map(|(_ty, id)| id))]
         counterparty_client_id: ClientId,
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         counterparty_connection_id: ConnectionId,
     },
 
@@ -248,11 +271,11 @@ pub enum IbcEvent {
     ChannelOpenInit {
         #[parse(PortId::from_str)]
         port_id: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         channel_id: ChannelId,
         #[parse(PortId::from_str)]
         counterparty_port_id: PortId,
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
         version: String,
     },
@@ -261,13 +284,13 @@ pub enum IbcEvent {
     ChannelOpenTry {
         #[parse(PortId::from_str)]
         port_id: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         channel_id: ChannelId,
         #[parse(PortId::from_str)]
         counterparty_port_id: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         counterparty_channel_id: ChannelId,
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
         version: String,
     },
@@ -276,13 +299,13 @@ pub enum IbcEvent {
     ChannelOpenAck {
         #[parse(PortId::from_str)]
         port_id: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         channel_id: ChannelId,
         #[parse(PortId::from_str)]
         counterparty_port_id: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         counterparty_channel_id: ChannelId,
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
     },
 
@@ -290,13 +313,13 @@ pub enum IbcEvent {
     ChannelOpenConfirm {
         #[parse(PortId::from_str)]
         port_id: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         channel_id: ChannelId,
         #[parse(PortId::from_str)]
         counterparty_port_id: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         counterparty_channel_id: ChannelId,
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
     },
 
@@ -309,7 +332,7 @@ pub enum IbcEvent {
         #[serde(with = "::serde_utils::hex_string")]
         #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         packet_data_hex: Vec<u8>,
-        #[parse(Height::from_str)]
+        #[parse(Height::from_str_allow_zero_revision)]
         packet_timeout_height: Height,
         #[parse(u64::from_str)]
         packet_timeout_timestamp: u64,
@@ -317,17 +340,17 @@ pub enum IbcEvent {
         packet_sequence: NonZeroU64,
         #[parse(PortId::from_str)]
         packet_src_port: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         packet_src_channel: ChannelId,
         #[parse(PortId::from_str)]
         packet_dst_port: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         packet_dst_channel: ChannelId,
         #[parse(hex::decode)]
         #[serde(with = "::serde_utils::hex_string")]
         #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         packet_ack_hex: Vec<u8>,
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
     },
 
@@ -337,7 +360,7 @@ pub enum IbcEvent {
         #[serde(with = "::serde_utils::hex_string")]
         #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         packet_data_hex: Vec<u8>,
-        #[parse(Height::from_str)]
+        #[parse(Height::from_str_allow_zero_revision)]
         packet_timeout_height: Height,
         #[parse(u64::from_str)]
         packet_timeout_timestamp: u64,
@@ -345,15 +368,15 @@ pub enum IbcEvent {
         packet_sequence: NonZeroU64,
         #[parse(PortId::from_str)]
         packet_src_port: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         packet_src_channel: ChannelId,
         #[parse(PortId::from_str)]
         packet_dst_port: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         packet_dst_channel: ChannelId,
         #[parse(Order::from_str)]
         packet_channel_ordering: Order,
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
     },
 
@@ -363,8 +386,7 @@ pub enum IbcEvent {
         #[serde(with = "::serde_utils::hex_string")]
         #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         packet_data_hex: Vec<u8>,
-        #[parse(Height::from_str)]
-        // TODO: Make this generic height instead of concrete
+        #[parse(Height::from_str_allow_zero_revision)]
         packet_timeout_height: Height,
         #[parse(u64::from_str)]
         packet_timeout_timestamp: u64,
@@ -372,21 +394,21 @@ pub enum IbcEvent {
         packet_sequence: NonZeroU64,
         #[parse(PortId::from_str)]
         packet_src_port: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         packet_src_channel: ChannelId,
         #[parse(PortId::from_str)]
         packet_dst_port: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         packet_dst_channel: ChannelId,
         #[parse(Order::from_str)]
         packet_channel_ordering: Order,
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
     },
 
     #[event(tag = "acknowledge_packet", deprecated("packet_connection"))]
     AcknowledgePacket {
-        #[parse(Height::from_str)]
+        #[parse(Height::from_str_allow_zero_revision)]
         packet_timeout_height: Height,
         #[parse(u64::from_str)]
         packet_timeout_timestamp: u64,
@@ -394,21 +416,21 @@ pub enum IbcEvent {
         packet_sequence: NonZeroU64,
         #[parse(PortId::from_str)]
         packet_src_port: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         packet_src_channel: ChannelId,
         #[parse(PortId::from_str)]
         packet_dst_port: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         packet_dst_channel: ChannelId,
         #[parse(Order::from_str)]
         packet_channel_ordering: Order,
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
     },
 
     #[event(tag = "timeout_packet")]
     TimeoutPacket {
-        #[parse(Height::from_str)]
+        #[parse(Height::from_str_allow_zero_revision)]
         packet_timeout_height: Height,
         #[parse(u64::from_str)]
         packet_timeout_timestamp: u64,
@@ -416,15 +438,15 @@ pub enum IbcEvent {
         packet_sequence: NonZeroU64,
         #[parse(PortId::from_str)]
         packet_src_port: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         packet_src_channel: ChannelId,
         #[parse(PortId::from_str)]
         packet_dst_port: PortId,
-        #[parse(ChannelId::from_str)]
+        #[parse(ChannelId::parse_prefixed)]
         packet_dst_channel: ChannelId,
         #[parse(Order::from_str)]
         packet_channel_ordering: Order,
-        #[parse(ConnectionId::from_str)]
+        #[parse(ConnectionId::parse_prefixed)]
         connection_id: ConnectionId,
     },
 }
@@ -462,6 +484,7 @@ mod tests {
                 ConnectionOpenConfirm, CreateClient, TryFromTendermintEventError, UpdateClient,
             },
             ibc::core::client::height::{Height, HeightFromStrError},
+            id::{ClientId, ConnectionId},
             tendermint::abci::{event::Event, event_attribute::EventAttribute},
         };
 
@@ -494,10 +517,10 @@ mod tests {
                     ],
                 }),
                 Ok(ConnectionOpenConfirm {
-                    connection_id: "connection-11".parse().unwrap(),
-                    client_id: "08-wasm-1".parse().unwrap(),
-                    counterparty_client_id: "cometbls-new-0".parse().unwrap(),
-                    counterparty_connection_id: "connection-6".parse().unwrap(),
+                    connection_id: ConnectionId::new(11),
+                    client_id: ClientId::new(1),
+                    counterparty_client_id: ClientId::new(0),
+                    counterparty_connection_id: ConnectionId::new(6),
                 })
             );
         }
@@ -507,7 +530,7 @@ mod tests {
             let attributes = vec![
                 EventAttribute {
                     key: "client_id".to_string(),
-                    value: "client_id".to_string(),
+                    value: "client_id-1".to_string(),
                     index: true,
                 },
                 EventAttribute {
@@ -534,12 +557,9 @@ mod tests {
             };
 
             let expected_event = UpdateClient {
-                client_id: "client_id".parse().unwrap(),
+                client_id: ClientId::new(1),
                 client_type: "client_type".to_string(),
-                consensus_heights: vec![Height {
-                    revision_number: 1,
-                    revision_height: 1,
-                }],
+                consensus_heights: vec![Height::new_with_revision(1, 1)],
             };
 
             assert_eq!(
@@ -690,7 +710,7 @@ mod tests {
             assert_eq!(
                 CreateClient::try_from(create_client_event).unwrap(),
                 CreateClient {
-                    client_id: client_id.parse().unwrap(),
+                    client_id: ClientId::new(0),
                     client_type: client_type.to_owned(),
                     consensus_height: consensus_height.parse().unwrap(),
                 }

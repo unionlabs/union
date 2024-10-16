@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenInit)))]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct MsgConnectionOpenInit {
     pub client_id: ClientId,
     pub counterparty: Counterparty,

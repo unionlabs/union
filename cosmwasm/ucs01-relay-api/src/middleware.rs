@@ -1,10 +1,7 @@
 use cosmwasm_std::{Addr, Event, IbcPacket};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use unionlabs::{
-    id::{ChannelId, PortId},
-    validated::{Validate, Validated},
-};
+use unionlabs::id::{ChannelId, PortId};
 
 use crate::{protocol::ProtocolError, types::Fees};
 
@@ -138,29 +135,38 @@ impl PacketForward {
     }
 }
 
-pub type PfmReceiverValidator = NotEmptyString;
-pub type PfmReceiver = Validated<String, PfmReceiverValidator>;
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct PfmReceiver(String);
 
-pub struct NotEmptyString;
+impl PfmReceiver {
+    pub fn new(s: String) -> Result<Self, EmptyStringError> {
+        if s.is_empty() {
+            Err(EmptyStringError)
+        } else {
+            Ok(Self(s))
+        }
+    }
+}
+
+impl From<PfmReceiver> for String {
+    fn from(value: PfmReceiver) -> Self {
+        value.0
+    }
+}
+
+impl TryFrom<String> for PfmReceiver {
+    type Error = EmptyStringError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
 
 // TODO: Not specific to receiver
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("failed to validate metadata. receiver cannot be empty")]
 pub struct EmptyStringError;
-
-impl<T: Into<String> + From<String>> Validate<T> for NotEmptyString {
-    type Error = EmptyStringError;
-
-    fn validate(t: T) -> Result<T, Self::Error> {
-        let s = t.into();
-
-        if s.is_empty() {
-            Err(EmptyStringError)
-        } else {
-            Ok(s.into())
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {

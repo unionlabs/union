@@ -9,18 +9,17 @@ workspace = true
 
 [dependencies]
 beacon-api  = { workspace = true }
-contracts   = { workspace = true, features = ["providers"] }
 protos      = { workspace = true, features = ["default", "client"] }
 serde-utils = { workspace = true }
 unionlabs   = { workspace = true, features = ["default"] }
 
+alloy                    = { workspace = true }
 bip32                    = { workspace = true, features = ["secp256k1"] }
 chrono                   = { workspace = true, features = ["alloc"] }
 cometbft-rpc             = { workspace = true }
 crossbeam-queue          = { workspace = true, features = ["std"] }
 dashmap                  = { workspace = true }
 enumorph                 = { workspace = true }
-ethers                   = { workspace = true, features = ["rustls", "ws"] }
 frame-support-procedural = { workspace = true }
 futures                  = { workspace = true }
 hex                      = { workspace = true }

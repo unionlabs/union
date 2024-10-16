@@ -1,17 +1,8 @@
 use macros::model;
 
-use crate::{
-    errors::{required, MissingField},
-    ibc::{
-        core::{
-            client::height::Height,
-            commitment::merkle_proof::{MerkleProof, TryFromMerkleProofError},
-        },
-        lightclients::ethereum::{
-            account_proof::{AccountProof, TryFromAccountProofError},
-            consensus_state::TryFromConsensusStateError,
-        },
-    },
+use crate::ibc::{
+    core::{client::height::Height, commitment::merkle_proof::MerkleProof},
+    lightclients::ethereum::account_proof::AccountProof,
 };
 
 #[model(proto(
@@ -27,44 +18,61 @@ pub struct Header {
     pub account_proof: AccountProof,
 }
 
-impl From<Header> for protos::union::ibc::lightclients::evmincosmos::v1::Header {
-    fn from(value: Header) -> Self {
-        Self {
-            l1_height: Some(value.l1_height.into()),
-            l2_slot: value.l2_slot,
-            l2_consensus_state: Some(value.l2_consensus_state.into()),
-            l2_inclusion_proof: Some(value.l2_inclusion_proof.into()),
-            account_proof: Some(value.account_proof.into()),
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        errors::{required, MissingField},
+        ibc::{
+            core::commitment::merkle_proof::proto::TryFromMerkleProofError,
+            lightclients::{
+                ethereum::{
+                    account_proof::proto::TryFromAccountProofError,
+                    consensus_state::proto::TryFromConsensusStateError,
+                },
+                evm_in_cosmos::header::Header,
+            },
+        },
+    };
+
+    impl From<Header> for protos::union::ibc::lightclients::evmincosmos::v1::Header {
+        fn from(value: Header) -> Self {
+            Self {
+                l1_height: Some(value.l1_height.into()),
+                l2_slot: value.l2_slot,
+                l2_consensus_state: Some(value.l2_consensus_state.into()),
+                l2_inclusion_proof: Some(value.l2_inclusion_proof.into()),
+                account_proof: Some(value.account_proof.into()),
+            }
         }
     }
-}
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum TryFromHeaderError {
-    MissingField(MissingField),
-    L2ConsensusState(TryFromConsensusStateError),
-    L2InclusionProof(TryFromMerkleProofError),
-    AccountProof(TryFromAccountProofError),
-}
+    #[derive(Debug, PartialEq, Clone)]
+    pub enum TryFromHeaderError {
+        MissingField(MissingField),
+        L2ConsensusState(TryFromConsensusStateError),
+        L2InclusionProof(TryFromMerkleProofError),
+        AccountProof(TryFromAccountProofError),
+    }
 
-impl TryFrom<protos::union::ibc::lightclients::evmincosmos::v1::Header> for Header {
-    type Error = TryFromHeaderError;
+    impl TryFrom<protos::union::ibc::lightclients::evmincosmos::v1::Header> for Header {
+        type Error = TryFromHeaderError;
 
-    fn try_from(
-        value: protos::union::ibc::lightclients::evmincosmos::v1::Header,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            l1_height: required!(value.l1_height)?.into(),
-            l2_slot: value.l2_slot,
-            l2_consensus_state: required!(value.l2_consensus_state)?
-                .try_into()
-                .map_err(TryFromHeaderError::L2ConsensusState)?,
-            l2_inclusion_proof: required!(value.l2_inclusion_proof)?
-                .try_into()
-                .map_err(TryFromHeaderError::L2InclusionProof)?,
-            account_proof: required!(value.account_proof)?
-                .try_into()
-                .map_err(TryFromHeaderError::AccountProof)?,
-        })
+        fn try_from(
+            value: protos::union::ibc::lightclients::evmincosmos::v1::Header,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                l1_height: required!(value.l1_height)?.into(),
+                l2_slot: value.l2_slot,
+                l2_consensus_state: required!(value.l2_consensus_state)?
+                    .try_into()
+                    .map_err(TryFromHeaderError::L2ConsensusState)?,
+                l2_inclusion_proof: required!(value.l2_inclusion_proof)?
+                    .try_into()
+                    .map_err(TryFromHeaderError::L2InclusionProof)?,
+                account_proof: required!(value.account_proof)?
+                    .try_into()
+                    .map_err(TryFromHeaderError::AccountProof)?,
+            })
+        }
     }
 }

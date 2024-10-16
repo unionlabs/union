@@ -12,7 +12,7 @@ use hex_literal::hex;
 use sha3::Digest;
 use substrate_bn::G1;
 use unionlabs::{
-    hash::H256, ibc::lightclients::cometbls::light_header::LightHeader, uint::U256, ByteArrayExt,
+    hash::H256, ibc::lightclients::cometbls::signed_header::SignedHeader, uint::U256, ByteArrayExt,
 };
 
 mod constants;
@@ -206,7 +206,7 @@ pub enum Error {
 pub fn verify_zkp(
     chain_id: &str,
     trusted_validators_hash: H256,
-    header: &LightHeader,
+    header: &SignedHeader,
     zkp: impl Into<Vec<u8>>,
 ) -> Result<(), Error> {
     verify_generic_zkp_2(
@@ -222,7 +222,7 @@ pub fn verify_zkp(
 fn verify_generic_zkp_2(
     chain_id: &str,
     trusted_validators_hash: H256,
-    header: &LightHeader,
+    header: &SignedHeader,
     g: substrate_bn::AffineG2,
     g_root_sigma_neg: substrate_bn::AffineG2,
     zkp: ZKP<BigEndian>,
@@ -232,7 +232,7 @@ fn verify_generic_zkp_2(
     }
     // Constant + public inputs
     let decode_scalar = move |x: U256| -> Result<substrate_bn::Fr, Error> {
-        substrate_bn::Fr::new(x.0 .0.into()).ok_or(Error::InvalidPublicInput)
+        substrate_bn::Fr::new(x.as_limbs().into()).ok_or(Error::InvalidPublicInput)
     };
     let commitment_hash = hash_commitment(&zkp.proof_commitment)?;
     let mut inputs_hash = <[u8; 32]>::from(
@@ -318,7 +318,7 @@ mod tests {
             verify_zkp(
                 "union-devnet-1337",
                 hex!("1B7EA0F1B3E574F8D50A12827CCEA43CFF858C2716AE05370CC40AE8EC521FD8").into(),
-                &LightHeader {
+                &SignedHeader {
                     height: 3405691582.try_into().unwrap(),
                     time: Timestamp {
                         seconds: 1710783278.try_into().unwrap(),
@@ -345,7 +345,7 @@ mod tests {
             verify_zkp(
                 "union-testnet-8",
                 hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
-                &LightHeader {
+                &SignedHeader {
                     height: 969006.try_into().unwrap(),
                     time: Timestamp::from_str("2024-06-18T13:21:28.026113925Z").unwrap(),
                     validators_hash: hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
@@ -364,7 +364,7 @@ mod tests {
             verify_zkp(
                 "union-testnet-8",
                 hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
-                &LightHeader {
+                &SignedHeader {
                     height: 969002.try_into().unwrap(),
                     time: Timestamp::from_str("2024-06-18T13:21:02.868708953Z").unwrap(),
                     validators_hash: hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
@@ -383,7 +383,7 @@ mod tests {
             verify_zkp(
                 "union-testnet-8",
                 hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
-                &LightHeader {
+                &SignedHeader {
                     height: 969002.try_into().unwrap(),
                     time: Timestamp::from_str("2024-06-18T13:21:02.868708953Z").unwrap(),
                     validators_hash: hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
@@ -402,7 +402,7 @@ mod tests {
             verify_zkp(
                 "union-testnet-8",
                 hex!("1deda64b1cc1319718f168b5aa8ed904b7d5b0ab932acdf6deae0ad9bd565a53").into(),
-                &LightHeader {
+                &SignedHeader {
                     height: 969001.try_into().unwrap(),
                     time: Timestamp::from_str("2024-06-18T13:20:56.784169335Z").unwrap(),
                     validators_hash: hex!("1deda64b1cc1319718f168b5aa8ed904b7d5b0ab932acdf6deae0ad9bd565a53").into(),
@@ -421,7 +421,7 @@ mod tests {
             verify_zkp(
                 "union-devnet-1337",
                 hex!("1B7EA0F1B3E574F8D50A12827CCEA43CFF858C2716AE05370CC40AE8EC521FD8").into(),
-                &LightHeader {
+                &SignedHeader {
                     height: 3405691583.try_into().unwrap(),
                     time: Timestamp {
                         seconds: 1710783278.try_into().unwrap(),
@@ -443,7 +443,7 @@ mod tests {
             verify_zkp(
                 "union-devnet-1",
                 hex!("2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d").into(),
-                &LightHeader {
+                &SignedHeader {
                     height: 905.try_into().unwrap(),
                     time: Timestamp::from_str("2024-09-23T20:48:00.739712762Z").unwrap(),
                     validators_hash: hex!("2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d").into(),

@@ -27,10 +27,6 @@ pub fn instantiate(
     let client_state =
         ClientState::decode_as::<Proto>(&msg.client_state).map_err(Error::ClientStateDecode)?;
 
-    if client_state.chain_id.len() > 31 {
-        return Err(Error::InvalidChainId);
-    }
-
     save_proto_consensus_state::<CometblsLightClient>(
         deps.branch(),
         ProtoConsensusState {

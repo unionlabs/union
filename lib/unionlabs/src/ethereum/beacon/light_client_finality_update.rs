@@ -1,21 +1,24 @@
 use macros::model;
-use ssz::Ssz;
 
 use crate::{
-    ethereum::config::{
-        consts::{floorlog2, FINALIZED_ROOT_INDEX},
-        BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE,
-    },
+    ethereum::config::consts::{floorlog2, FINALIZED_ROOT_INDEX},
     hash::H256,
     ibc::lightclients::ethereum::{
-        light_client_header::{LightClientHeader, UnboundedLightClientHeader},
-        sync_aggregate::{SyncAggregate, UnboundedSyncAggregate},
+        light_client_header::UnboundedLightClientHeader, sync_aggregate::UnboundedSyncAggregate,
+    },
+};
+#[cfg(feature = "ssz")]
+use crate::{
+    ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
+    ibc::lightclients::ethereum::{
+        light_client_header::LightClientHeader, sync_aggregate::SyncAggregate,
     },
 };
 
+#[cfg(feature = "ssz")]
 #[model]
-#[derive(Ssz)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[derive(::ssz::Ssz)]
+#[cfg_attr(feature = "serde", serde(bound(serialize = "", deserialize = "")))]
 pub struct LightClientFinalityUpdate<
     C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES,
 > {
@@ -27,7 +30,7 @@ pub struct LightClientFinalityUpdate<
     /// Sync committee aggregate signature
     pub sync_aggregate: SyncAggregate<C>,
     /// Slot at which the aggregate signature was created (untrusted)
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub signature_slot: u64,
 }
 
@@ -41,6 +44,6 @@ pub struct UnboundedLightClientFinalityUpdate {
     /// Sync committee aggregate signature
     pub sync_aggregate: UnboundedSyncAggregate,
     /// Slot at which the aggregate signature was created (untrusted)
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub signature_slot: u64,
 }

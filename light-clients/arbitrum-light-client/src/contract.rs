@@ -29,23 +29,14 @@ pub fn instantiate(
         ProtoConsensusState {
             data: msg.consensus_state.into(),
         },
-        &Height {
-            revision_number: 0,
-            revision_height: client_state.l1_latest_slot,
-        },
+        &Height::new(client_state.l1_latest_slot),
     );
     save_proto_client_state::<ArbitrumLightClient>(
         deps,
         ProtoClientState {
             data: msg.client_state.into(),
             checksum: msg.checksum.into(),
-            latest_height: Some(
-                Height {
-                    revision_number: 0,
-                    revision_height: client_state.l1_latest_slot,
-                }
-                .into(),
-            ),
+            latest_height: Some(Height::new(client_state.l1_latest_slot).into()),
         },
     );
     Ok(Response::default())

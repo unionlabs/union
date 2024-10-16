@@ -18,7 +18,6 @@ use std::{
     process::ExitCode,
 };
 
-use chain_utils::BoxDynError;
 use clap::Parser;
 use pg_queue::PgQueueConfig;
 use schemars::gen::{SchemaGenerator, SchemaSettings};
@@ -28,20 +27,27 @@ use serde_utils::Hex;
 use tikv_jemallocator::Jemalloc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
-use unionlabs::{ethereum::ibc_commitment_key, ics24, QueryHeight};
+use unionlabs::{
+    ethereum::ibc_commitment_key,
+    ics24::{
+        self, AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, ReceiptPath,
+    },
+    QueryHeight,
+};
 use voyager_message::{
     call::FetchBlocks,
     context::{get_plugin_info, Context, ModulesConfig},
     filter::{make_filter, run_filter},
     VoyagerMessage,
 };
-use voyager_vm::{call, filter::FilterResult, Op, Queue};
+use voyager_vm::{call, filter::FilterResult, BoxDynError, Op, Queue};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
-    cli::{AppArgs, Command, ConfigCmd, ModuleCmd, PluginCmd, QueueCmd, UtilCmd},
+    cli::{AppArgs, Command, CommitmentsPath, ConfigCmd, ModuleCmd, PluginCmd, QueueCmd, UtilCmd},
     config::{default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig},
     queue::{QueueConfig, Voyager, VoyagerInitError},
 };
@@ -256,6 +262,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
             ModuleCmd::Client(_) => todo!(),
         },
         Command::Query { on, height, path } => {
+            let path = ics24::Path::from(path);
+
             let voyager = Voyager::new(get_voyager_config()?).await?;
 
             let height = voyager.context.rpc_server.query_height(&on, height).await?;
@@ -263,7 +271,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
             let state = voyager
                 .context
                 .rpc_server
-                .query_ibc_state(&on, height, path.clone())
+                .query_state(&on, height, path.clone())
                 .await?
                 .state;
 
@@ -308,7 +316,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
             voyager.shutdown().await;
 
             print_json(&json!({
-               "path": path.to_string(),
+               "path": path,
                "state": state,
             }));
         }
@@ -362,7 +370,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 }
             }
         }
-        Command::Handshake(_) => todo!(),
         // Command::Handshake(HandshakeCmd {
         //     chain_a,
         //     chain_b,
@@ -480,7 +487,50 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
             UtilCmd::IbcCommitmentKey {
                 path,
                 commitment_slot,
-            } => print_json(&ibc_commitment_key(&path.to_string(), commitment_slot).to_be_hex()),
+            } => print_json(
+                &ibc_commitment_key(
+                    match path {
+                        CommitmentsPath::ClientState { client_id } => {
+                            ClientStatePath { client_id }.commitments_key()
+                        }
+                        CommitmentsPath::ClientConsensusState { client_id, height } => {
+                            ClientConsensusStatePath { client_id, height }.commitments_key()
+                        }
+                        CommitmentsPath::Connection { connection_id } => {
+                            ConnectionPath { connection_id }.commitments_key()
+                        }
+                        CommitmentsPath::ChannelEnd { channel_id } => {
+                            ChannelEndPath { channel_id }.commitments_key()
+                        }
+                        CommitmentsPath::Commitment {
+                            channel_id,
+                            sequence,
+                        } => CommitmentPath {
+                            channel_id,
+                            sequence,
+                        }
+                        .commitments_key(),
+                        CommitmentsPath::Acknowledgement {
+                            channel_id,
+                            sequence,
+                        } => AcknowledgementPath {
+                            channel_id,
+                            sequence,
+                        }
+                        .commitments_key(),
+                        CommitmentsPath::Receipt {
+                            channel_id,
+                            sequence,
+                        } => ReceiptPath {
+                            channel_id,
+                            sequence,
+                        }
+                        .commitments_key(),
+                    },
+                    commitment_slot,
+                )
+                .to_be_hex(),
+            ),
         },
     }
 

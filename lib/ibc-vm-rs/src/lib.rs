@@ -33,7 +33,7 @@ lazy_static::lazy_static! {
 
 #[derive(thiserror::Error, PartialEqNoBound, Debug)]
 pub enum IbcError {
-    #[error("client {0} is not active ({1})")]
+    #[error("client {0:?} is not active ({1})")]
     NotActive(ClientId, Status),
 
     // TODO(aeryz): this needs context
@@ -76,10 +76,10 @@ pub enum IbcError {
     #[error("the proposed version contains an unsupported feature ({0})")]
     UnsupportedFeatureInVersion(Order),
 
-    #[error("the client state is not found for client {0}")]
+    #[error("the client state is not found for client {0:?}")]
     ClientStateNotFound(ClientId),
 
-    #[error("channel ({1}) with port {0} is not found")]
+    #[error("channel ({1:?}) with port {0:?} is not found")]
     ChannelNotFound(PortId, ChannelId),
 
     #[error("channel state is {0} while {1} is expected")]
@@ -92,12 +92,12 @@ pub enum IbcError {
     DestinationPortMismatch(PortId, PortId),
 
     #[error(
-        "source channel ({0}) does not match the received packet's counterparty channel ({1})"
+        "source channel ({0:?}) does not match the received packet's counterparty channel ({1:?})"
     )]
     SourceChannelMismatch(ChannelId, ChannelId),
 
     #[error(
-        "source channel ({0}) does not match the received packet's counterparty channel ({1})"
+        "source channel ({0:?}) does not match the received packet's counterparty channel ({1:?})"
     )]
     DestinationChannelMismatch(ChannelId, ChannelId),
 

@@ -18,11 +18,11 @@ use cw_multi_test::{
 use serde::de::DeserializeOwned;
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
-    middleware::{Memo, PacketForward},
+    middleware::{Memo, PacketForward, PfmReceiver},
     protocol::TransferProtocol,
     types::make_foreign_denom,
 };
-use unionlabs::validated::Validated;
+use unionlabs::id::{ChannelId, PortId};
 
 use crate::{
     contract::{execute, instantiate, query},
@@ -616,9 +616,9 @@ fn test_pfm_valid_memo() {
     let memo = serde_json_wasm::to_string(
         &(Memo::Forward {
             forward: PacketForward {
-                receiver: Validated::new(fwd_contract_addr.to_string()).unwrap(),
-                port: Validated::new(fwd_dst_port.clone()).unwrap(),
-                channel: Validated::new(fwd_dst_channel.clone()).unwrap(),
+                receiver: PfmReceiver::new(fwd_contract_addr.to_string()).unwrap(),
+                port: PortId::new(fwd_dst_port.clone()).unwrap(),
+                channel: ChannelId::parse_prefixed(&fwd_dst_channel).unwrap(),
                 next: None,
                 retries: 1,
                 return_info: None,

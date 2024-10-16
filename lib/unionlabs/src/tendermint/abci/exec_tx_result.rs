@@ -1,14 +1,11 @@
 use macros::model;
 
-use crate::{
-    bounded::{BoundedI64, BoundedIntError},
-    tendermint::abci::event::Event,
-};
+use crate::{bounded::BoundedI64, tendermint::abci::event::Event};
 
 #[model(proto(raw(protos::tendermint::abci::ExecTxResult), into, from))]
 pub struct ExecTxResult {
     pub code: u32,
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub data: Vec<u8>,
     /// nondeterministic
@@ -22,50 +19,55 @@ pub struct ExecTxResult {
     pub codespace: String,
 }
 
-impl From<ExecTxResult> for protos::tendermint::abci::ExecTxResult {
-    fn from(value: ExecTxResult) -> Self {
-        Self {
-            code: value.code,
-            data: value.data,
-            log: value.log,
-            info: value.info,
-            gas_wanted: value.gas_wanted.into(),
-            gas_used: value.gas_used.into(),
-            events: value.events.into_iter().map(Into::into).collect(),
-            codespace: value.codespace,
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{bounded::BoundedIntError, tendermint::abci::exec_tx_result::ExecTxResult};
+
+    impl From<ExecTxResult> for protos::tendermint::abci::ExecTxResult {
+        fn from(value: ExecTxResult) -> Self {
+            Self {
+                code: value.code,
+                data: value.data,
+                log: value.log,
+                info: value.info,
+                gas_wanted: value.gas_wanted.into(),
+                gas_used: value.gas_used.into(),
+                events: value.events.into_iter().map(Into::into).collect(),
+                codespace: value.codespace,
+            }
         }
     }
-}
 
-impl TryFrom<protos::tendermint::abci::ExecTxResult> for ExecTxResult {
-    type Error = TryFromExecTxResultError;
+    impl TryFrom<protos::tendermint::abci::ExecTxResult> for ExecTxResult {
+        type Error = TryFromExecTxResultError;
 
-    fn try_from(value: protos::tendermint::abci::ExecTxResult) -> Result<Self, Self::Error> {
-        Ok(Self {
-            code: value.code,
-            data: value.data,
-            log: value.log,
-            info: value.info,
-            gas_wanted: value
-                .gas_wanted
-                .try_into()
-                .map_err(TryFromExecTxResultError::GasWanted)?,
-            gas_used: value
-                .gas_used
-                .try_into()
-                .map_err(TryFromExecTxResultError::GasUsed)?,
-            events: value.events.into_iter().map(Into::into).collect(),
-            codespace: value.codespace,
-        })
+        fn try_from(value: protos::tendermint::abci::ExecTxResult) -> Result<Self, Self::Error> {
+            Ok(Self {
+                code: value.code,
+                data: value.data,
+                log: value.log,
+                info: value.info,
+                gas_wanted: value
+                    .gas_wanted
+                    .try_into()
+                    .map_err(TryFromExecTxResultError::GasWanted)?,
+                gas_used: value
+                    .gas_used
+                    .try_into()
+                    .map_err(TryFromExecTxResultError::GasUsed)?,
+                events: value.events.into_iter().map(Into::into).collect(),
+                codespace: value.codespace,
+            })
+        }
     }
-}
 
-#[derive(Debug, PartialEq, Clone, thiserror::Error)]
-pub enum TryFromExecTxResultError {
-    #[error("invalid gas_wanted")]
-    GasWanted(#[source] BoundedIntError<i64>),
-    #[error("invalid gas_used")]
-    GasUsed(#[source] BoundedIntError<i64>),
+    #[derive(Debug, PartialEq, Clone, thiserror::Error)]
+    pub enum TryFromExecTxResultError {
+        #[error("invalid gas_wanted")]
+        GasWanted(#[source] BoundedIntError<i64>),
+        #[error("invalid gas_used")]
+        GasUsed(#[source] BoundedIntError<i64>),
+    }
 }
 
 #[cfg(test)]

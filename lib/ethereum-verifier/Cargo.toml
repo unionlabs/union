@@ -13,7 +13,7 @@ test-include = ["lib/ethereum-verifier/src/test/"]
 ssz = { workspace = true }
 
 serde-utils = { workspace = true }
-unionlabs   = { workspace = true, features = ["cosmwasm"] }
+unionlabs   = { workspace = true, features = ["cosmwasm", "rlp", "ssz"] }
 
 bytes              = { workspace = true }
 hash-db            = { version = "0.16.0", default-features = false }

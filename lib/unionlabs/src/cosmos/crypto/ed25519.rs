@@ -1,33 +1,31 @@
 use macros::model;
 
-use crate::errors::{ExpectedLength, InvalidLength};
+use crate::hash::H256;
 
 #[model(proto(raw(protos::cosmos::crypto::ed25519::PubKey), into, from))]
 pub struct PubKey {
-    #[serde(with = "::serde_utils::base64")]
-    pub key: [u8; 32],
+    pub key: H256<crate::hash::hash_v2::Base64>,
 }
 
-impl TryFrom<protos::cosmos::crypto::ed25519::PubKey> for PubKey {
-    type Error = InvalidLength;
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{cosmos::crypto::ed25519::PubKey, errors::InvalidLength};
 
-    fn try_from(value: protos::cosmos::crypto::ed25519::PubKey) -> Result<Self, Self::Error> {
-        Ok(Self {
-            key: value
-                .key
-                .try_into()
-                .map_err(|invalid: Vec<u8>| InvalidLength {
-                    expected: ExpectedLength::Exact(32),
-                    found: invalid.len(),
-                })?,
-        })
+    impl TryFrom<protos::cosmos::crypto::ed25519::PubKey> for PubKey {
+        type Error = InvalidLength;
+
+        fn try_from(value: protos::cosmos::crypto::ed25519::PubKey) -> Result<Self, Self::Error> {
+            Ok(Self {
+                key: value.key.try_into()?,
+            })
+        }
     }
-}
 
-impl From<PubKey> for protos::cosmos::crypto::ed25519::PubKey {
-    fn from(value: PubKey) -> Self {
-        Self {
-            key: value.key.into(),
+    impl From<PubKey> for protos::cosmos::crypto::ed25519::PubKey {
+        fn from(value: PubKey) -> Self {
+            Self {
+                key: value.key.into(),
+            }
         }
     }
 }

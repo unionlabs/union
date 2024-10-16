@@ -3,7 +3,7 @@
 /// We only use the strict parsing and display functionality, and wrap our `H256` type instead of `[u8; 32]`.
 use core::{fmt, str::FromStr};
 
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use crate::{
     errors::InvalidLength,
@@ -13,9 +13,7 @@ use crate::{
     },
 };
 
-#[derive(
-    macros::Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
-)]
+#[model]
 #[debug("AccountAddress({})", self)]
 pub struct AccountAddress(pub H256<HexUnprefixed>);
 

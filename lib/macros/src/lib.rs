@@ -1,8 +1,8 @@
-use std::{collections::HashMap, convert};
+use std::convert;
 
 use proc_macro::{Delimiter, Group, Punct, Spacing, TokenStream, TokenTree};
 use proc_macro2::{Literal, Span};
-use quote::{format_ident, quote, quote_spanned, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use syn::{
     fold::Fold,
     parenthesized,
@@ -11,7 +11,7 @@ use syn::{
     punctuated::Punctuated,
     spanned::Spanned,
     Attribute, Data, DeriveInput, Expr, ExprPath, Field, Fields, GenericParam, Generics, Ident,
-    Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Type, Variant,
+    Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Variant,
     WhereClause, WherePredicate,
 };
 
@@ -616,7 +616,7 @@ fn mk_ethabi(
                 type Error = crate::TryFromEthAbiBytesError<<#ident #ty_generics as TryFrom<#raw>>::Error>;
 
                 fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-                    <#raw as ethers_core::abi::AbiDecode>::decode(bytes)
+                    <#raw as alloy_core::sol_types::SolValue>::abi_decode(bytes, cfg!(debug_assertions))
                         .map_err(crate::TryFromEthAbiBytesError::Decode)
                         .and_then(|proto| {
                             proto
@@ -634,7 +634,7 @@ fn mk_ethabi(
             #[automatically_derived]
             impl #impl_generics crate::encoding::Encode<crate::encoding::EthAbi> for #ident #ty_generics #into_where_clause {
                 fn encode(self) -> Vec<u8> {
-                    ethers_core::abi::AbiEncode::encode(Into::<#raw>::into(self))
+                    alloy_core::sol_types::SolValue::abi_encode(&Into::<#raw>::into(self))
                 }
             }
         });
@@ -664,7 +664,12 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
             let proto = proto.map(|from_raw| mk_proto(from_raw, ident, generics));
             let ethabi = ethabi.map(|from_raw| mk_ethabi(from_raw, ident, generics));
 
-            quote! { #proto #ethabi }
+            quote! {
+               #[cfg(feature = "proto")]
+               const _: () = { #proto };
+               #[cfg(feature = "ethabi")]
+               const _: () = { #ethabi };
+            }
         }
         _ => panic!(),
     };
@@ -684,12 +689,18 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
             let serde = (!no_serde).then(|| {
                 quote! {
-                    #[derive(::serde::Serialize, ::serde::Deserialize)]
-                    #[serde(
-                        deny_unknown_fields,
-                        tag = "@type",
-                        content = "@value",
-                        rename_all = "snake_case"
+                    #[cfg_attr(
+                        feature = "serde",
+                        derive(::serde::Serialize, ::serde::Deserialize)
+                    )]
+                    #[cfg_attr(
+                        feature = "serde",
+                        serde(
+                            deny_unknown_fields,
+                            tag = "@type",
+                            content = "@value",
+                            rename_all = "snake_case"
+                        )
                     )]
                 }
             });
@@ -701,6 +712,7 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                     ::core::cmp::PartialEq,
                     ::core::cmp::Eq,
                 )]
+                // #[cfg_attr(feature = "valuable", derive(::valuable::Valuable))]
                 #serde
             }
         }
@@ -715,10 +727,16 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
             let serde = (!no_serde).then(|| {
                 quote! {
-                    #[derive(::serde::Serialize, ::serde::Deserialize)]
-                    #[serde(
-                        deny_unknown_fields,
-                        rename_all = "snake_case"
+                    #[cfg_attr(
+                        feature = "serde",
+                        derive(::serde::Serialize, ::serde::Deserialize)
+                    )]
+                    #[cfg_attr(
+                        feature = "serde",
+                        serde(
+                            deny_unknown_fields,
+                            rename_all = "snake_case"
+                        )
                     )]
                 }
             });
@@ -730,6 +748,7 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                     ::core::cmp::PartialEq,
                     ::core::cmp::Eq,
                 )]
+                // #[cfg_attr(feature = "valuable", derive(::valuable::Valuable))]
                 #serde
             }
         }
@@ -911,169 +930,4 @@ impl Parse for FromRawAttrs {
             Err(syn::Error::new(meta_span, "`raw(...)` is required"))
         }
     }
-}
-
-/// NOTE: Doesn't support generics. Generics this low in the stack is a dark path I do not wish to explore again
-#[proc_macro_attribute]
-pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
-    let item_struct = parse_macro_input!(ts as ItemStruct);
-    let IbcPathMeta { path, comma: _, ty } = parse_macro_input!(meta as IbcPathMeta);
-
-    let segments = parse_ibc_path(path.clone());
-
-    let Fields::Named(ref fields) = item_struct.fields else {
-        panic!("expected named fields")
-    };
-
-    assert_eq!(
-        fields
-            .named
-            .iter()
-            .map(|x| x.ident.as_ref().unwrap())
-            .collect::<Vec<_>>(),
-        segments
-            .iter()
-            .filter_map(|x| match x {
-                Segment::Static(_) => None,
-                Segment::Variable(x) => Some(x),
-            })
-            .collect::<Vec<_>>()
-    );
-
-    let fields_map = fields
-        .named
-        .iter()
-        .map(|f| (f.ident.as_ref().unwrap(), &f.ty))
-        .collect::<HashMap<_, _>>();
-
-    let parse_body = segments
-        .iter()
-        .map(|x| match x {
-            Segment::Static(static_seg) => quote! {
-                match it.next() {
-                    Some(segment) => {
-                        if segment != #static_seg {
-                            return Err(PathParseError::InvalidStaticSegment {
-                                expected: #static_seg,
-                                found: segment.to_string(),
-                            })
-                        }
-                    }
-                    None => return Err(PathParseError::MissingStaticSegment(#static_seg)),
-                }
-            },
-            Segment::Variable(variable_seg) => {
-                let ty = fields_map[variable_seg];
-                quote! {
-                    let #variable_seg = match it.next() {
-                        Some(segment) => segment
-                            .parse()
-                            .map_err(|e: <#ty as ::core::str::FromStr>::Err| PathParseError::Parse(e.to_string()))?,
-                        None => return Err(PathParseError::MissingSegment),
-                    };
-                }
-            }
-        })
-        .collect::<proc_macro2::TokenStream>();
-
-    let display_body = segments
-        .iter()
-        .map(|x| match x {
-            Segment::Static(_) => quote! {},
-            Segment::Variable(variable_seg) => quote_spanned! {fields_map[variable_seg].span()=>
-                let #variable_seg = &self.#variable_seg;
-            },
-        })
-        .collect::<proc_macro2::TokenStream>();
-
-    let field_pat = segments.iter().filter_map(|seg| match seg {
-        Segment::Static(_) => None,
-        // use the span of the input tokens
-        Segment::Variable(variable_seg) => Some(fields_map.get_key_value(variable_seg).unwrap().0),
-    });
-
-    let ident = &item_struct.ident;
-
-    quote! {
-        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, ::clap::Args)]
-        #[serde(deny_unknown_fields)]
-        #item_struct
-
-        const _: () = {
-            #[automatically_derived]
-            impl ::core::fmt::Display for #ident {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    #display_body
-
-                    write!(f, #path)
-                }
-            }
-        };
-
-        const _: () = {
-            #[automatically_derived]
-            impl ::core::str::FromStr for #ident {
-                type Err = PathParseError;
-
-                fn from_str(s: &str) -> ::core::result::Result<Self, Self::Err> {
-                    let mut it = s.split('/');
-
-                    #parse_body
-
-                    if it.next().is_some() {
-                        return Err(PathParseError::TooManySegments);
-                    }
-
-                    Ok(Self { #(#field_pat),* })
-                }
-            }
-        };
-
-        const _: () = {
-            impl IbcPath for #ident {
-                type Value = #ty;
-            }
-        };
-    }
-    .into()
-}
-
-struct IbcPathMeta {
-    path: LitStr,
-    #[allow(unused)]
-    comma: Token![,],
-    ty: Type,
-}
-
-impl Parse for IbcPathMeta {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        Ok(Self {
-            path: input.parse()?,
-            comma: input.parse()?,
-            ty: input.parse()?,
-        })
-    }
-}
-
-enum Segment {
-    Static(String),
-    Variable(syn::Ident),
-}
-
-fn parse_ibc_path(path: LitStr) -> Vec<Segment> {
-    path.value()
-        .split('/')
-        .map(|segment| {
-            segment
-                .strip_prefix('{')
-                .map(|s| {
-                    s.strip_suffix('}')
-                        .expect("unclosed `{` in variable interpolation")
-                })
-                .map_or_else(
-                    || Segment::Static(segment.to_string()),
-                    |s| Segment::Variable(Ident::new(s, path.span())),
-                )
-        })
-        .collect()
 }

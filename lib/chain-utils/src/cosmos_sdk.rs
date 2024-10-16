@@ -19,10 +19,10 @@ use unionlabs::{
     encoding::{EncodeAs, Proto},
     google::protobuf::any::Any,
     hash::{hash_v2::HexUnprefixed, H256},
-    id::{ClientId, ConnectionId},
+    id::ClientId,
     parse_wasm_client_type,
     signer::CosmosSigner,
-    ErrorReporter, MaybeRecoverableError, WasmClientType,
+    ErrorReporter, MaybeRecoverableError,
 };
 
 use crate::{
@@ -109,7 +109,7 @@ pub trait CosmosSdkChainIbcExt: CosmosSdkChain + CosmosSdkChainRpcs {
         .data;
 
         match parse_wasm_client_type(bz) {
-            Ok(Some(ty)) => {
+            Some(ty) => {
                 info!(
                     %checksum,
                     ?ty,
@@ -120,16 +120,7 @@ pub trait CosmosSdkChainIbcExt: CosmosSdkChain + CosmosSdkChainRpcs {
 
                 Some(ty)
             }
-            Ok(None) => None,
-            Err(err) => {
-                error!(
-                    %checksum,
-                    %err,
-                    "unable to parse wasm client type"
-                );
-
-                None
-            }
+            None => None,
         }
     }
 
@@ -140,7 +131,7 @@ pub trait CosmosSdkChainIbcExt: CosmosSdkChain + CosmosSdkChainRpcs {
         .await
         .unwrap()
         .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
-            client_id: client_id.to_string(),
+            client_id: client_id.to_string_prefixed("08-wasm"), // we assume that this client is an 08-wasm client if we're querying the checksum
         })
         .await
         .unwrap()
@@ -158,25 +149,6 @@ pub trait CosmosSdkChainIbcExt: CosmosSdkChain + CosmosSdkChainRpcs {
             .checksum
             .try_into()
             .unwrap()
-    }
-
-    async fn client_id_of_connection(&self, connection_id: ConnectionId) -> ClientId {
-        protos::ibc::core::connection::v1::query_client::QueryClient::connect(
-            self.grpc_url().clone(),
-        )
-        .await
-        .unwrap()
-        .connection(protos::ibc::core::connection::v1::QueryConnectionRequest {
-            connection_id: connection_id.to_string(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .connection
-        .unwrap()
-        .client_id
-        .parse()
-        .unwrap()
     }
 }
 
@@ -380,7 +352,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
         let auth_info = AuthInfo {
             signer_infos: [SignerInfo {
                 public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
-                    key: signer.public_key(),
+                    key: signer.public_key().into(),
                 })),
                 mode_info: ModeInfo::Single {
                     mode: SignMode::Direct,

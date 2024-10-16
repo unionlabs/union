@@ -8,11 +8,10 @@ edition = { workspace = true }
 workspace = true
 
 [dependencies]
+derive-where = "1.2.7"
 either                   = { workspace = true }
-frame-support-procedural = { workspace = true }
 futures                  = { workspace = true, features = ["alloc", "std"] }
 itertools                = { version = "0.12.1", default-features = false }
-macros                   = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
 static_assertions        = { workspace = true }
@@ -22,6 +21,7 @@ thiserror.workspace      = true
 tokio                    = { workspace = true, features = ["time", "rt"] }
 tracing                  = { workspace = true }
 unionlabs                = { workspace = true }
+voyager-macros           = { workspace = true }
 
 [dev-dependencies]
 criterion                 = { version = "0.5.1", features = ["html_reports"] }

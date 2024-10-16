@@ -36,7 +36,9 @@ pub const SUBSTITUTE_CLIENT_STORE_PREFIX: &str = "substitute/";
 pub fn consensus_db_key(height: &Height) -> String {
     format!(
         "{}/{}-{}",
-        HOST_CONSENSUS_STATES_KEY, height.revision_number, height.revision_height
+        HOST_CONSENSUS_STATES_KEY,
+        height.revision(),
+        height.height()
     )
 }
 
@@ -109,10 +111,8 @@ pub fn update_client_state<T: IbcClient>(
     latest_height: u64,
 ) {
     // TODO: this may be wrong, why reuse the same revision number, must be passed?
-    wasm_client_state.latest_height = Height {
-        revision_number: wasm_client_state.latest_height.revision_number,
-        revision_height: latest_height,
-    };
+    wasm_client_state.latest_height =
+        Height::new_with_revision(wasm_client_state.latest_height.revision(), latest_height);
 
     save_client_state::<T>(deps, wasm_client_state);
 }

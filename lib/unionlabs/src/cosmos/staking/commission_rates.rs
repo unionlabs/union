@@ -10,22 +10,27 @@ pub struct CommissionRates {
     pub max_change_rate: String,
 }
 
-impl From<protos::cosmos::staking::v1beta1::CommissionRates> for CommissionRates {
-    fn from(value: protos::cosmos::staking::v1beta1::CommissionRates) -> Self {
-        Self {
-            rate: value.rate,
-            max_rate: value.max_rate,
-            max_change_rate: value.max_change_rate,
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::cosmos::staking::commission_rates::CommissionRates;
+
+    impl From<protos::cosmos::staking::v1beta1::CommissionRates> for CommissionRates {
+        fn from(value: protos::cosmos::staking::v1beta1::CommissionRates) -> Self {
+            Self {
+                rate: value.rate,
+                max_rate: value.max_rate,
+                max_change_rate: value.max_change_rate,
+            }
         }
     }
-}
 
-impl From<CommissionRates> for protos::cosmos::staking::v1beta1::CommissionRates {
-    fn from(value: CommissionRates) -> Self {
-        Self {
-            rate: value.rate,
-            max_rate: value.max_rate,
-            max_change_rate: value.max_change_rate,
+    impl From<CommissionRates> for protos::cosmos::staking::v1beta1::CommissionRates {
+        fn from(value: CommissionRates) -> Self {
+            Self {
+                rate: value.rate,
+                max_rate: value.max_rate,
+                max_change_rate: value.max_change_rate,
+            }
         }
     }
 }

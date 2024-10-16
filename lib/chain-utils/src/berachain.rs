@@ -138,7 +138,7 @@ impl Berachain {
     async fn self_client_state(&self, height: Height) -> berachain::client_state::ClientState {
         let commit = self
             .tm_client
-            .commit(Some(height.revision_height.try_into().unwrap()))
+            .commit(Some(height.height().try_into().unwrap()))
             .await
             .unwrap();
 
@@ -176,13 +176,11 @@ impl Berachain {
         &self,
         height: Height,
     ) -> berachain::consensus_state::ConsensusState {
-        let execution_header = self
-            .execution_header_at_beacon_slot(height.revision_height)
-            .await;
+        let execution_header = self.execution_header_at_beacon_slot(height.height()).await;
 
         let commit = self
             .tm_client
-            .commit(Some(height.revision_height.try_into().unwrap()))
+            .commit(Some(height.height().try_into().unwrap()))
             .await
             .unwrap();
 

@@ -112,17 +112,29 @@ pub mod public_key {
     #[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
     pub enum Sum {
         #[prost(bytes, tag = "1")]
-        #[serde(rename = "tendermint/PubKeyEd25519")]
-        Ed25519(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>),
+        #[cfg_attr(feature = "serde", serde(rename = "tendermint/PubKeyEd25519"))]
+        Ed25519(
+            #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+            ::prost::alloc::vec::Vec<u8>,
+        ),
         #[prost(bytes, tag = "2")]
-        #[serde(rename = "tendermint/PubKeySecp256k1")]
-        Secp256k1(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>),
+        #[cfg_attr(feature = "serde", serde(rename = "tendermint/PubKeySecp256k1"))]
+        Secp256k1(
+            #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+            ::prost::alloc::vec::Vec<u8>,
+        ),
         #[prost(bytes, tag = "3")]
-        #[serde(rename = "tendermint/PubKeyBn254")]
-        Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>),
+        #[cfg_attr(feature = "serde", serde(rename = "tendermint/PubKeyBn254"))]
+        Bn254(
+            #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+            ::prost::alloc::vec::Vec<u8>,
+        ),
         #[prost(bytes, tag = "4")]
-        #[serde(rename = "cometbft/PubKeyBls12_381")]
-        Bls12_381(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>),
+        #[cfg_attr(feature = "serde", serde(rename = "cometbft/PubKeyBls12_381"))]
+        Bls12_381(
+            #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+            ::prost::alloc::vec::Vec<u8>,
+        ),
     }
 }
 impl ::prost::Name for PublicKey {

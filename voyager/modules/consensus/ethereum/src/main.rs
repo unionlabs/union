@@ -1,7 +1,10 @@
 use std::ops::Div;
 
+use alloy::{
+    providers::{Provider, ProviderBuilder, RootProvider},
+    transports::BoxTransport,
+};
 use beacon_api::client::BeaconApiClient;
-use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
@@ -40,7 +43,7 @@ pub struct Module {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
-    pub provider: Provider<Ws>,
+    pub provider: RootProvider<BoxTransport>,
     pub beacon_api_client: BeaconApiClient,
 }
 
@@ -67,11 +70,10 @@ impl Module {
 
         let account_update = self
             .provider
-            .get_proof(
-                ethers::types::H160::from(self.ibc_handler_address),
-                vec![],
+            .get_proof(self.ibc_handler_address.into(), vec![])
+            .block_id(
                 // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
-                Some(execution_height.into()),
+                execution_height.into(),
             )
             .await
             .unwrap();
@@ -93,9 +95,11 @@ impl ConsensusModule for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError> {
-        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
+        let provider = ProviderBuilder::new()
+            .on_builtin(&config.eth_rpc_api)
+            .await?;
 
-        let chain_id = ChainId::new(provider.get_chainid().await?.to_string());
+        let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 
         info.ensure_chain_id(chain_id.to_string())?;
         info.ensure_consensus_type(match config.chain_spec {
@@ -125,16 +129,6 @@ impl ConsensusModule for Module {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum ModuleInitError {
-    #[error("unable to connect to websocket")]
-    Ws(#[from] WsClientError),
-    #[error("provider error")]
-    Provider(#[from] ProviderError),
-    #[error("beacon error")]
-    Beacon(#[from] beacon_api::client::NewError),
-}
-
 #[async_trait]
 impl ConsensusModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
@@ -155,12 +149,9 @@ impl ConsensusModuleServer for Module {
             seconds_per_slot: spec.seconds_per_slot,
             slots_per_epoch: spec.slots_per_epoch,
             epochs_per_sync_committee_period: spec.epochs_per_sync_committee_period,
-            latest_slot: height.revision_height,
+            latest_slot: height.height(),
             min_sync_committee_participants: 0,
-            frozen_height: Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
+            frozen_height: Height::default(),
             ibc_commitment_slot: IBC_HANDLER_COMMITMENTS_SLOT,
             ibc_contract_address: self.ibc_handler_address,
         })
@@ -173,7 +164,7 @@ impl ConsensusModuleServer for Module {
         let beacon_api_client = &self.beacon_api_client;
 
         let trusted_header = beacon_api_client
-            .header(beacon_api::client::BlockId::Slot(height.revision_height))
+            .header(beacon_api::client::BlockId::Slot(height.height()))
             .await
             .unwrap()
             .data;
@@ -186,10 +177,10 @@ impl ConsensusModuleServer for Module {
 
         let spec = self.beacon_api_client.spec().await.unwrap().data;
 
-        assert!(bootstrap.header.beacon.slot == height.revision_height);
+        assert!(bootstrap.header.beacon.slot == height.height());
 
         let light_client_update = {
-            let current_period = height.revision_height.div(spec.period());
+            let current_period = height.height().div(spec.period());
 
             debug!(%current_period);
 
@@ -214,15 +205,11 @@ impl ConsensusModuleServer for Module {
                 state_root: bootstrap.header.execution.state_root,
                 storage_root: self
                     .provider
-                    .get_proof(
-                        ethers::types::H160::from(*self.ibc_handler_address.get()),
-                        vec![],
-                        Some(bootstrap.header.execution.block_number.into()),
-                    )
+                    .get_proof(self.ibc_handler_address.into(), vec![])
+                    .block_id(bootstrap.header.execution.block_number.into())
                     .await
                     .unwrap()
                     .storage_hash
-                    .0
                     .into(),
                 timestamp,
                 current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,

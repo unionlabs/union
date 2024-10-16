@@ -1,5 +1,3 @@
-use serde::{Deserialize, Serialize};
-
 use crate::{
     errors::{ExpectedLength, InvalidLength},
     hash::H256,
@@ -10,7 +8,8 @@ use crate::{
 pub const ZKACCOUNT_BYTES_LEN: usize = 32 * 6;
 
 // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/core/src/main/java/net/consensys/shomei/ZkAccount.java
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct ZkAccount {
     pub nonce: U256,
     pub balance: U256,
@@ -57,7 +56,8 @@ impl From<ZkAccount> for Vec<u8> {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct MimcSafeBytes {
     pub lsb: H256,
     pub msb: H256,

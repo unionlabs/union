@@ -14,12 +14,12 @@ macro_rules! hex_string_array_wrapper {
                 Eq,
                 PartialOrd,
                 Ord,
-                ::ssz::Ssz,
                 Hash
             )]
-            #[ssz(transparent)]
+            #[cfg_attr(feature = "ssz", derive(::ssz::Ssz), ssz(transparent))]
             pub struct $Struct(pub [u8; $N]);
 
+            #[cfg(feature = "serde")]
             impl ::serde::Serialize for $Struct {
                 fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
                 where
@@ -39,6 +39,7 @@ macro_rules! hex_string_array_wrapper {
                 }
             }
 
+            #[cfg(feature = "serde")]
             impl<'de> ::serde::Deserialize<'de> for $Struct {
                 fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
                 where
@@ -227,91 +228,9 @@ macro_rules! hex_string_array_wrapper {
                 }
             }
 
-            #[cfg(feature = "ethabi")]
-            impl From<$Struct> for ::ethers_core::types::Bytes {
-                fn from(value: $Struct) -> Self {
-                    ::ethers_core::types::Bytes::from(value.0)
-                }
-            }
-
-            #[cfg(feature = "ethabi")]
-            impl TryFrom<::ethers_core::types::Bytes> for $Struct {
-                type Error = <Self as TryFrom<Vec<u8>>>::Error;
-
-                fn try_from(value: ::ethers_core::types::Bytes) -> Result<Self, Self::Error> {
-                    Self::try_from(&value.0[..])
-                }
-            }
-
-            #[cfg(feature = "ethabi")]
-            impl TryFrom<&'_ ::ethers_core::types::Bytes> for $Struct {
-                type Error = <Self as TryFrom<Vec<u8>>>::Error;
-
-                fn try_from(value: &::ethers_core::types::Bytes) -> Result<Self, Self::Error> {
-                    Self::try_from(&value.0[..])
-                }
-            }
-
-            #[cfg(feature = "ethabi")]
-            impl ::ethers_core::abi::AbiType for $Struct {
-                fn param_type() -> ::ethers_core::abi::ParamType {
-                    ::ethers_core::abi::ParamType::FixedBytes($N)
-                }
-            }
-
-            #[cfg(feature = "ethabi")]
-            impl ::ethers_core::abi::AbiArrayType for $Struct {}
-
-            #[cfg(feature = "ethabi")]
-            impl ::ethers_core::abi::AbiEncode for $Struct {
-                fn encode(self) -> Vec<u8> {
-                    self.0.encode()
-                }
-            }
-
-            #[cfg(feature = "ethabi")]
-            impl ::ethers_core::abi::AbiDecode for $Struct {
-                fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ::ethers_core::abi::AbiError> {
-                    <[u8; $N]>::decode(bytes).map(Self)
-                }
-            }
-
-            #[cfg(feature = "ethabi")]
-            impl ::ethers_core::abi::Tokenizable for $Struct {
-                fn from_token(token: ::ethers_core::abi::Token) -> Result<Self, ::ethers_core::abi::InvalidOutputType> {
-                    <[u8; $N]>::from_token(token).map(Self)
-                }
-
-                fn into_token(self) -> ::ethers_core::abi::Token {
-                    self.0.into_token()
-                }
-            }
-
-            #[cfg(feature = "ethabi")]
-            impl ::ethers_core::abi::TokenizableItem for $Struct {}
-
             impl AsRef<[u8]> for $Struct {
                 fn as_ref(&self) -> &[u8] {
                     &self.0
-                }
-            }
-
-            impl ::rlp::Encodable for $Struct {
-                fn rlp_append(&self, s: &mut ::rlp::RlpStream) {
-                    s.encoder().encode_value(self.as_ref());
-                }
-            }
-
-            impl ::rlp::Decodable for $Struct {
-                fn decode(rlp: &rlp::Rlp) -> Result<Self, ::rlp::DecoderError> {
-                    rlp.decoder()
-                        .decode_value(|bytes| match bytes.len().cmp(&$N) {
-                            ::core::cmp::Ordering::Less => Err(::rlp::DecoderError::RlpIsTooShort),
-                            ::core::cmp::Ordering::Greater => Err(::rlp::DecoderError::RlpIsTooBig),
-                            ::core::cmp::Ordering::Equal => {
-                                Ok($Struct(bytes.try_into().expect("size is checked; qed;")))
-                            }
-                        })
                 }
             }
         )+
@@ -333,10 +252,11 @@ macro_rules! wrapper_enum {
             )+
         }
     ) => {
-        #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
-        #[serde(rename_all = "snake_case")]
+        #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
         $(#[$meta])*
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(rename_all = "snake_case"))]
         #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
+        #[cfg_attr(feature = "valuable", derive(::valuable::Valuable))]
         pub enum $Enum {
             $(
                 $(#[$inner_meta])*
@@ -344,104 +264,109 @@ macro_rules! wrapper_enum {
             )+
         }
 
-        mod ensure_enum_values_are_same_as_proto {
-            $(
-                #[allow(non_upper_case_globals, dead_code)]
-                const $Variant: () = assert!(
-                    super::$Enum::$Variant as i32 == <$Proto>::$Variant as i32,
-                );
-            )+
-        }
+        #[cfg(feature = "proto")]
+        mod proto {
+            use super::$Enum;
 
-        impl $Enum {
-            pub fn from_proto_str(s: &str) -> Option<Self> {
-                <$Proto>::from_str_name(s).map(Into::into)
-            }
-        }
-
-        impl core::str::FromStr for $Enum {
-            type Err = crate::errors::UnknownEnumVariant<String>;
-
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
+            mod ensure_enum_values_are_same_as_proto {
                 $(
-                    if s == <$Proto>::$Variant.as_str_name() {
-                        Ok($Enum::$Variant)
-                    } else
+                    #[allow(non_upper_case_globals, dead_code)]
+                    const $Variant: () = assert!(
+                        super::super::$Enum::$Variant as i32 == <$Proto>::$Variant as i32,
+                    );
                 )+
-                {
-                    Err(crate::errors::UnknownEnumVariant(s.to_string()))
+            }
+
+            impl $Enum {
+                pub fn from_proto_str(s: &str) -> Option<Self> {
+                    <$Proto>::from_str_name(s).map(Into::into)
                 }
             }
-        }
 
-        impl From<$Enum> for &'static str {
-            fn from(value: $Enum) -> Self {
-                match value {
+            impl core::str::FromStr for $Enum {
+                type Err = crate::errors::UnknownEnumVariant<String>;
+
+                fn from_str(s: &str) -> Result<Self, Self::Err> {
                     $(
-                        $Enum::$Variant => <$Proto>::$Variant.as_str_name(),
+                        if s == <$Proto>::$Variant.as_str_name() {
+                            Ok($Enum::$Variant)
+                        } else
                     )+
+                    {
+                        Err(crate::errors::UnknownEnumVariant(s.to_string()))
+                    }
                 }
             }
-        }
 
-        impl core::fmt::Display for $Enum {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.write_str(<&'static str>::from(*self))
-            }
-        }
-
-        impl From<$Enum> for u8 {
-            fn from(value: $Enum) -> Self {
-                match value {
-                    $(
-                        $Enum::$Variant => $discriminant as u8,
-                    )+
+            impl From<$Enum> for &'static str {
+                fn from(value: $Enum) -> Self {
+                    match value {
+                        $(
+                            $Enum::$Variant => <$Proto>::$Variant.as_str_name(),
+                        )+
+                    }
                 }
             }
-        }
 
-        impl From<$Enum> for i32 {
-            fn from(value: $Enum) -> Self {
-                u8::from(value).into()
-            }
-        }
-
-        impl TryFrom<u8> for $Enum {
-            type Error = crate::errors::UnknownEnumVariant<u8>;
-
-            fn try_from(value: u8) -> Result<Self, Self::Error> {
-                i32::from(value)
-                    .try_into()
-                    .map_err(|_| crate::errors::UnknownEnumVariant(value))
-            }
-        }
-
-        impl TryFrom<i32> for $Enum {
-            type Error = crate::errors::UnknownEnumVariant<i32>;
-
-            fn try_from(value: i32) -> Result<Self, Self::Error> {
-                <$Proto>::try_from(value)
-                    .map_err(|_| crate::errors::UnknownEnumVariant(value))
-                    .map(Into::into)
-            }
-        }
-
-        impl From<$Proto> for $Enum {
-            fn from(value: $Proto) -> Self {
-                match value {
-                    $(
-                        <$Proto>::$Variant => $Enum::$Variant,
-                    )+
+            impl core::fmt::Display for $Enum {
+                fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                    f.write_str(<&'static str>::from(*self))
                 }
             }
-        }
 
-        impl From<$Enum> for $Proto {
-            fn from(value: $Enum) -> Self {
-                match value {
-                    $(
-                        $Enum::$Variant => Self::$Variant,
-                    )+
+            impl From<$Enum> for u8 {
+                fn from(value: $Enum) -> Self {
+                    match value {
+                        $(
+                            $Enum::$Variant => $discriminant as u8,
+                        )+
+                    }
+                }
+            }
+
+            impl From<$Enum> for i32 {
+                fn from(value: $Enum) -> Self {
+                    u8::from(value).into()
+                }
+            }
+
+            impl TryFrom<u8> for $Enum {
+                type Error = crate::errors::UnknownEnumVariant<u8>;
+
+                fn try_from(value: u8) -> Result<Self, Self::Error> {
+                    i32::from(value)
+                        .try_into()
+                        .map_err(|_| crate::errors::UnknownEnumVariant(value))
+                }
+            }
+
+            impl TryFrom<i32> for $Enum {
+                type Error = crate::errors::UnknownEnumVariant<i32>;
+
+                fn try_from(value: i32) -> Result<Self, Self::Error> {
+                    <$Proto>::try_from(value)
+                        .map_err(|_| crate::errors::UnknownEnumVariant(value))
+                        .map(Into::into)
+                }
+            }
+
+            impl From<$Proto> for $Enum {
+                fn from(value: $Proto) -> Self {
+                    match value {
+                        $(
+                            <$Proto>::$Variant => $Enum::$Variant,
+                        )+
+                    }
+                }
+            }
+
+            impl From<$Enum> for $Proto {
+                fn from(value: $Enum) -> Self {
+                    match value {
+                        $(
+                            $Enum::$Variant => Self::$Variant,
+                        )+
+                    }
                 }
             }
         }
@@ -508,7 +433,7 @@ macro_rules! option_unwrap {
 }
 
 #[macro_export]
-macro_rules! assert_all_eq (
+macro_rules! assert_all_eq {
     ($a:expr, $b:expr) => {
         assert_eq!($a, $b);
     };
@@ -519,5 +444,5 @@ macro_rules! assert_all_eq (
     ($a:expr, $b:expr, $c:expr, $($rest:expr),*$(,)?) => {
         assert_eq!($a, $b);
         assert_all_eq!($b, $c, $($rest),*);
-    }
-);
+    };
+}

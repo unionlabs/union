@@ -5,6 +5,7 @@ use core::fmt::Debug;
 pub struct UnknownEnumVariant<T>(pub T);
 
 /// A protobuf field was none unexpectedly.
+#[cfg(feature = "proto")]
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("missing field `{0}`")]
 pub struct MissingField(pub &'static str);
@@ -12,22 +13,23 @@ pub struct MissingField(pub &'static str);
 /// For fields that are "fake options" from prost, for use in `TryFrom<<Self as Proto>::Proto>`.
 ///
 /// `Self::Error` is expected to have a `MissingField(`[`MissingField`]`)` variant.
+#[cfg(feature = "proto")]
 macro_rules! required {
     ($struct_var:ident.$field:ident) => {
         $struct_var
             .$field
-            .ok_or(<Self::Error>::MissingField(MissingField(stringify!(
-                $field
-            ))))
+            .ok_or(<Self::Error>::MissingField(crate::errors::MissingField(
+                stringify!($field),
+            )))
     };
     ($field:ident) => {
-        $field.ok_or(<Self::Error>::MissingField(MissingField(stringify!(
-            $field
-        ))))
+        $field.ok_or(<Self::Error>::MissingField(crate::errors::MissingField(
+            stringify!($field),
+        )))
     };
 }
 
-// https://stackoverflow.com/questions/26731243/how-do-i-use-a-macro-across-module-files
+#[cfg(feature = "proto")]
 pub(crate) use required;
 
 // Expected one length, but found another.
@@ -41,15 +43,15 @@ pub struct InvalidLength {
 
 #[derive(Debug, Clone, PartialEq, Eq, derive_more::Display)]
 pub enum ExpectedLength {
-    #[display(fmt = "exactly {_0}")]
+    #[display("exactly {_0}")]
     Exact(usize),
-    #[display(fmt = "less than {_0}")]
+    #[display("less than {_0}")]
     LessThan(usize),
-    #[display(fmt = "between ({_0}, {_1})")]
+    #[display("between ({_0}, {_1})")]
     Between(usize, usize),
-    #[display(fmt = "greater than or equal to ({_0})")]
+    #[display("greater than or equal to ({_0})")]
     Gte(usize),
-    #[display(fmt = "either {_0} or {_1}")]
+    #[display("either {_0} or {_1}")]
     Either(usize, usize),
 }
 

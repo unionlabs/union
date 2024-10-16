@@ -4,12 +4,11 @@ name    = "voyager-event-source-plugin-ethereum"
 version = "0.1.0"
 
 [dependencies]
+alloy              = { workspace = true, features = ["rpc", "rpc-types"] }
 beacon-api         = { workspace = true }
-chain-utils        = { workspace = true }
-contracts          = { workspace = true, features = ["providers"] }
 enumorph           = { workspace = true }
-ethers             = { workspace = true, features = ["rustls", "ws"] }
 futures            = { workspace = true }
+ibc-solidity       = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
@@ -21,6 +20,6 @@ thiserror          = { workspace = true }
 tokio              = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
-unionlabs          = { workspace = true }
+unionlabs          = { workspace = true, features = ["serde", "valuable", "ethabi"] }
 voyager-message    = { workspace = true }
 voyager-vm         = { workspace = true }

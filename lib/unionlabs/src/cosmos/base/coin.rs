@@ -1,5 +1,3 @@
-use core::num::ParseIntError;
-
 use macros::model;
 
 #[model(proto(raw(protos::cosmos::base::v1beta1::Coin), into, from))]
@@ -11,28 +9,35 @@ pub struct Coin {
     pub amount: u128,
 }
 
-impl From<Coin> for protos::cosmos::base::v1beta1::Coin {
-    fn from(value: Coin) -> Self {
-        Self {
-            denom: value.denom,
-            amount: value.amount.to_string(),
+#[cfg(feature = "proto")]
+pub mod proto {
+    use core::num::ParseIntError;
+
+    use crate::cosmos::base::coin::Coin;
+
+    impl From<Coin> for protos::cosmos::base::v1beta1::Coin {
+        fn from(value: Coin) -> Self {
+            Self {
+                denom: value.denom,
+                amount: value.amount.to_string(),
+            }
         }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromCoinError {
-    #[error("invalid amount")]
-    Amount(#[from] ParseIntError),
-}
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromCoinError {
+        #[error("invalid amount")]
+        Amount(#[from] ParseIntError),
+    }
 
-impl TryFrom<protos::cosmos::base::v1beta1::Coin> for Coin {
-    type Error = TryFromCoinError;
+    impl TryFrom<protos::cosmos::base::v1beta1::Coin> for Coin {
+        type Error = TryFromCoinError;
 
-    fn try_from(value: protos::cosmos::base::v1beta1::Coin) -> Result<Self, Self::Error> {
-        Ok(Self {
-            denom: value.denom,
-            amount: value.amount.parse()?,
-        })
+        fn try_from(value: protos::cosmos::base::v1beta1::Coin) -> Result<Self, Self::Error> {
+            Ok(Self {
+                denom: value.denom,
+                amount: value.amount.parse()?,
+            })
+        }
     }
 }
