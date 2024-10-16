@@ -335,6 +335,7 @@ behaviours
 benluelo
 berachain
 berachain's
+betteruptime
 bhapi
 bigdecimal
 bigtestnet
