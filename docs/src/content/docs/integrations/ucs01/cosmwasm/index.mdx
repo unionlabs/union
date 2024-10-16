@@ -37,14 +37,14 @@ This example requires a Linux environment. No Windows or MacOS support
 
 :::
 
-Install the `uniond` binary which you will use to publish the contract and execute transfer
+Install the `uniond` binary which you will use to publish the contract and execute the transfer
 
 <Code
     code={
 `
 # determine your system architecture
 RELEASE="uniond-release-$(uname -m)-linux"
-# get version we want to install
+# get the version we want to install
 VERSION="${chainVersion({chainId: 'union-testnet-8'}).current}"
 
 curl --location \\
@@ -315,7 +315,7 @@ tx wasm store ./target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.was
     --node $RPC_URL --yes
 ```
 
-The above will return a transaction hash at the end, use it t query the transaction to get the `code_id`:
+The above will return a transaction hash at the end, use it to query the transaction to get the `code_id`:
 
 ```sh frame="none"
 uniond query tx $DEPLOY_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg "_id"
