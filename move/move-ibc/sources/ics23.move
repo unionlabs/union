@@ -3,6 +3,7 @@ module IBC::ics23 {
     use std::option::Option;
     use std::hash;
     use IBC::bcs_utils::{Self, BcsBuf};
+    #[test_only]
     use IBC::connection_end;
     use IBC::proto_utils;
 
