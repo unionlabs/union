@@ -38,26 +38,27 @@ const (
 
 var (
 	_ porttypes.Middleware = &DoubleCommitMiddleware{}
+	_ store.KVStoreService = &DoubleCommitStore{}
 
 	CommitmentMagic = [32]byte{01}
 
 	EthUint32, _     = abi.NewType("uint32", "", nil)
 	EthUint8, _      = abi.NewType("uint8", "", nil)
 	EthBytes32, _    = abi.NewType("bytes32", "", nil)
-	EthConnection, _ = abi.NewType("IBCConnection", "", []abi.ArgumentMarshaling{
+	EthConnection, _ = abi.NewType("tuple", "struct ethConnection", []abi.ArgumentMarshaling{
 		{Name: "state", Type: "uint8"},
 		{Name: "clientId", Type: "uint32"},
 		{Name: "counterpartyClientId", Type: "uint32"},
 		{Name: "counterpartyConnectionId", Type: "uint32"},
 	})
-	EthChannel, _ = abi.NewType("IBCChannel", "", []abi.ArgumentMarshaling{
+	EthChannel, _ = abi.NewType("tuple", "struct ethChannel", []abi.ArgumentMarshaling{
 		{Name: "state", Type: "uint8"},
 		{Name: "ordering", Type: "uint8"},
 		{Name: "connectionId", Type: "uint32"},
 		{Name: "counterpartyChannelId", Type: "uint32"},
 		{Name: "version", Type: "bytes32"},
 	})
-	EthPacket, _ = abi.NewType("IBCPacket", "", []abi.ArgumentMarshaling{
+	EthPacket, _ = abi.NewType("tuple", "struct ethPacket", []abi.ArgumentMarshaling{
 		{Name: "sequence", Type: "uint64"},
 		{Name: "sourceChannel", Type: "uint32"},
 		{Name: "destinationChannel", Type: "uint32"},
@@ -68,62 +69,51 @@ var (
 )
 
 type ethConnection struct {
-	state                    uint8
-	clientId                 uint32
-	counterpartyClientId     uint32
-	counterpartyConnectionId uint32
+	State                    uint8
+	ClientId                 uint32
+	CounterpartyClientId     uint32
+	CounterpartyConnectionId uint32
 }
 
 type ethChannel struct {
-	state                 uint8
-	ordering              uint8
-	connectionId          uint32
-	counterpartyChannelId uint32
-	version               [32]byte
+	State                 uint8
+	Ordering              uint8
+	ConnectionId          uint32
+	CounterpartyChannelId uint32
+	Version               [32]byte
 }
 
 type ethPacket struct {
-	sequence           uint64
-	sourceChannel      uint32
-	destinationChannel uint32
-	data               []byte
-	timeoutHeight      uint64
-	timeoutTimestamp   uint64
+	Sequence           uint64
+	SourceChannel      uint32
+	DestinationChannel uint32
+	Data               []byte
+	TimeoutHeight      uint64
+	TimeoutTimestamp   uint64
 }
 
 type DoubleCommitMiddleware struct {
-	ibc               *ibckeeper.Keeper
-	app               porttypes.IBCModule
-	cdc               codec.Codec
-	commitKey         *storetypes.KVStoreKey
-	ibcKey            *storetypes.KVStoreKey
-	ics4Wrapper       porttypes.ICS4Wrapper
-	processingPackets *stack.Stack
-	processingAcks    *stack.Stack
+	ibc         *ibckeeper.Keeper
+	app         porttypes.IBCModule
+	ics4Wrapper porttypes.ICS4Wrapper
+	store       *DoubleCommitStore
 }
 
 type CommitMiddleware interface {
-	store.KVStoreService
 	porttypes.IBCModule
 }
 
 func NewDoubleCommitMiddleware(
 	ibc *ibckeeper.Keeper,
 	app porttypes.IBCModule,
-	codec codec.Codec,
 	ics4Wrapper porttypes.ICS4Wrapper,
-	commitKey *storetypes.KVStoreKey,
-	ibcKey *storetypes.KVStoreKey,
+	store       *DoubleCommitStore,
 ) CommitMiddleware {
 	return &DoubleCommitMiddleware{
-		ibc:               ibc,
-		app:               app,
-		cdc:               codec,
-		commitKey:         commitKey,
-		ibcKey:            ibcKey,
-		ics4Wrapper:       ics4Wrapper,
-		processingPackets: stack.New(),
-		processingAcks:    stack.New(),
+		ibc:         ibc,
+		app:         app,
+		ics4Wrapper: ics4Wrapper,
+		store: store,
 	}
 }
 
@@ -181,8 +171,8 @@ func (im DoubleCommitMiddleware) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) ibcexported.Acknowledgement {
-	im.processingPackets.Push(packet)
-	defer im.processingPackets.Pop()
+	im.store.processingPackets.Push(packet)
+	defer im.store.processingPackets.Pop()
 	return im.app.OnRecvPacket(ctx, packet, relayer)
 }
 
@@ -192,8 +182,8 @@ func (im DoubleCommitMiddleware) OnAcknowledgementPacket(
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	im.processingPackets.Push(packet)
-	defer im.processingPackets.Pop()
+	im.store.processingPackets.Push(packet)
+	defer im.store.processingPackets.Pop()
 	return im.app.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
 }
 
@@ -202,8 +192,8 @@ func (im DoubleCommitMiddleware) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	im.processingPackets.Push(packet)
-	defer im.processingPackets.Pop()
+	im.store.processingPackets.Push(packet)
+	defer im.store.processingPackets.Pop()
 	return im.app.OnTimeoutPacket(ctx, packet, relayer)
 }
 
@@ -218,7 +208,7 @@ func (im DoubleCommitMiddleware) SendPacket(
 ) (sequence uint64, err error) {
 	channel, found := im.ibc.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
 	if found {
-		im.processingPackets.Push(
+		im.store.processingPackets.Push(
 			channeltypes.Packet{
 				Sequence:           0, // parsed from the callback
 				SourcePort:         sourcePort,
@@ -230,7 +220,7 @@ func (im DoubleCommitMiddleware) SendPacket(
 				Data:               data,
 			},
 		)
-		defer im.processingPackets.Pop()
+		defer im.store.processingPackets.Pop()
 	}
 	return im.ics4Wrapper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
@@ -241,10 +231,10 @@ func (im DoubleCommitMiddleware) WriteAcknowledgement(
 	packet ibcexported.PacketI,
 	ack ibcexported.Acknowledgement,
 ) error {
-	im.processingPackets.Push(packet)
-	defer im.processingPackets.Pop()
-	im.processingAcks.Push(ack)
-	defer im.processingAcks.Pop()
+	im.store.processingPackets.Push(packet)
+	defer im.store.processingPackets.Pop()
+	im.store.processingAcks.Push(ack)
+	defer im.store.processingAcks.Pop()
 	return im.ics4Wrapper.WriteAcknowledgement(ctx, chanCap, packet, ack)
 }
 
@@ -256,7 +246,29 @@ func (im DoubleCommitMiddleware) GetAppVersion(
 	return im.ics4Wrapper.GetAppVersion(ctx, portID, channelID)
 }
 
-func (t DoubleCommitMiddleware) OpenKVStore(ctx context.Context) store.KVStore {
+type DoubleCommitStore struct {
+	cdc               codec.Codec
+	commitKey         *storetypes.KVStoreKey
+	ibcKey            *storetypes.KVStoreKey
+	processingPackets *stack.Stack
+	processingAcks    *stack.Stack
+}
+
+func NewDoubleCommitStoreService(
+	cdc codec.Codec,
+	commitKey *storetypes.KVStoreKey,
+	ibcKey *storetypes.KVStoreKey,
+) *DoubleCommitStore {
+	return &DoubleCommitStore{
+		cdc: cdc,
+		commitKey: commitKey,
+		ibcKey: ibcKey,
+		processingPackets: stack.New(),
+		processingAcks: stack.New(),
+	}
+}
+
+func (t *DoubleCommitStore) OpenKVStore(ctx context.Context) store.KVStore {
 	return newKVStore(
 		t.cdc,
 		sdk.UnwrapSDKContext(ctx).KVStore(t.commitKey),
@@ -304,11 +316,11 @@ func (s coreDoubleCommitStore) Set(key, value []byte) error {
 		}
 		batchHash, err := commitPacket(sequence, packet.(ibcexported.PacketI))
 		if err != nil {
-			return err
+			return nil
 		}
 		commitmentKey, err := batchPacketsCommitmentKey(channelId, batchHash)
 		if err != nil {
-			return err
+			return nil
 		}
 		s.commitStore.Set(commitmentKey, CommitmentMagic[:])
 	}
@@ -319,11 +331,11 @@ func (s coreDoubleCommitStore) Set(key, value []byte) error {
 		}
 		batchHash, err := commitPacket(sequence, packet.(ibcexported.PacketI))
 		if err != nil {
-			return err
+			return nil
 		}
 		commitmentKey, err := batchPacketsCommitmentKey(channelId, batchHash)
 		if err != nil {
-			return err
+			return nil
 		}
 		s.commitStore.Set(commitmentKey, CommitmentMagic[:])
 
@@ -339,11 +351,11 @@ func (s coreDoubleCommitStore) Set(key, value []byte) error {
 		}
 		batchHash, err := commitPacket(sequence, packet.(ibcexported.PacketI))
 		if err != nil {
-			return err
+			return nil
 		}
 		commitmentKey, err := batchPacketsCommitmentKey(channelId, batchHash)
 		if err != nil {
-			return err
+			return nil
 		}
 		// The MSB should be a bool indicating the receipt, the 31 bytes left are the acknowledgement hash
 		ack := keccak(ackI.(ibcexported.Acknowledgement).Acknowledgement())
@@ -354,11 +366,11 @@ func (s coreDoubleCommitStore) Set(key, value []byte) error {
 	if strings.HasPrefix(keyStr, host.KeyChannelEndPrefix) {
 		_, channelId, err := host.ParseChannelPath(string(key))
 		if err != nil {
-			return err
+			return nil
 		}
 		id, err := channeltypes.ParseChannelSequence(channelId)
 		if err != nil {
-			return err
+			return nil
 		}
 		if id > math.MaxUint32 {
 			return fmt.Errorf(
@@ -382,11 +394,11 @@ func (s coreDoubleCommitStore) Set(key, value []byte) error {
 	if strings.HasPrefix(keyStr, host.KeyConnectionPrefix) {
 		connectionId, err := host.ParseConnectionPath(string(key))
 		if err != nil {
-			return err
+			return nil
 		}
 		id, err := connectiontypes.ParseConnectionSequence(connectionId)
 		if err != nil {
-			return err
+			return nil
 		}
 		if id > math.MaxUint32 {
 			return fmt.Errorf(
@@ -539,7 +551,8 @@ func commitChannel(channel channeltypes.Channel) ([]byte, error) {
 	}
 	counterpartyChannelId, err := channeltypes.ParseChannelSequence(channel.Counterparty.ChannelId)
 	if err != nil {
-		return nil, err
+		// Default to zero
+		counterpartyChannelId = 0
 	}
 	if counterpartyChannelId > math.MaxUint32 {
 		return nil, fmt.Errorf(
@@ -551,12 +564,12 @@ func commitChannel(channel channeltypes.Channel) ([]byte, error) {
 		{Name: "channel", Type: EthChannel},
 	}
 	bytes, err := arguments.Pack(
-		ethChannel{
-			state:                 uint8(channel.State),
-			ordering:              uint8(channel.Ordering),
-			connectionId:          uint32(connectionId),
-			counterpartyChannelId: uint32(counterpartyChannelId),
-			version:               keccak([]byte(channel.Version)),
+		&ethChannel{
+			State:                 uint8(channel.State),
+			Ordering:              uint8(channel.Ordering),
+			ConnectionId:          uint32(connectionId),
+			CounterpartyChannelId: uint32(counterpartyChannelId),
+			Version:               keccak([]byte(channel.Version)),
 		},
 	)
 	if err != nil {
@@ -588,6 +601,10 @@ func commitConnection(connection connectiontypes.ConnectionEnd) ([]byte, error) 
 		)
 	}
 	counterpartyConnectionId, err := connectiontypes.ParseConnectionSequence(connection.Counterparty.ConnectionId)
+	if err != nil {
+		// Default to zero
+		counterpartyConnectionId = 0
+	}
 	if counterpartyConnectionId > math.MaxUint32 {
 		return nil, fmt.Errorf(
 			"can't commit connection, counterpartyConnectionId > MaxUint32: %d",
@@ -598,11 +615,11 @@ func commitConnection(connection connectiontypes.ConnectionEnd) ([]byte, error) 
 		{Name: "connection", Type: EthConnection},
 	}
 	bytes, err := arguments.Pack(
-		ethConnection{
-			state:                    uint8(connection.State),
-			clientId:                 uint32(clientId),
-			counterpartyClientId:     uint32(counterpartyClientId),
-			counterpartyConnectionId: uint32(counterpartyConnectionId),
+		&ethConnection{
+			State:                    uint8(connection.State),
+			ClientId:                 uint32(clientId),
+			CounterpartyClientId:     uint32(counterpartyClientId),
+			CounterpartyConnectionId: uint32(counterpartyConnectionId),
 		},
 	)
 	if err != nil {
@@ -637,13 +654,13 @@ func commitPacket(sequence uint64, packet ibcexported.PacketI) ([32]byte, error)
 		{Name: "packet", Type: EthPacket},
 	}
 	bytes, err := arguments.Pack(
-		ethPacket{
-			sequence:           sequence,
-			sourceChannel:      uint32(sourceChannel),
-			destinationChannel: uint32(destinationChannel),
-			data:               packet.GetData(),
-			timeoutHeight:      packet.GetTimeoutHeight().GetRevisionHeight(),
-			timeoutTimestamp:   packet.GetTimeoutTimestamp(),
+		&ethPacket{
+			Sequence:           sequence,
+			SourceChannel:      uint32(sourceChannel),
+			DestinationChannel: uint32(destinationChannel),
+			Data:               packet.GetData(),
+			TimeoutHeight:      packet.GetTimeoutHeight().GetRevisionHeight(),
+			TimeoutTimestamp:   packet.GetTimeoutTimestamp(),
 		},
 	)
 	if err != nil {
