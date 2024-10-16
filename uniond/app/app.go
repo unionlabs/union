@@ -499,7 +499,16 @@ func NewUnionApp(
 	)
 
 	transferModule := transfer.NewAppModule(appCodec, app.TransferKeeper)
-	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
+	var transferIBCModule ibcporttypes.IBCModule
+	transferIBCModule = transfer.NewIBCModule(app.TransferKeeper)
+	transferIBCModule = ibcunion.NewDoubleCommitMiddleware(
+		app.IBCKeeper,
+		transfer.NewIBCModule(app.TransferKeeper),
+		appCodec,
+		app.IBCFeeKeeper,
+		keys[ibcunion.StoreKey],
+		keys[ibcexported.StoreKey],
+	)
 
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec,
@@ -528,7 +537,16 @@ func NewUnionApp(
 	)
 
 	icaModule := ica.NewAppModule(appCodec, &icaControllerKeeper, &app.ICAHostKeeper)
-	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
+	var icaHostIBCModule ibcporttypes.IBCModule
+	icaHostIBCModule = icahost.NewIBCModule(app.ICAHostKeeper)
+	icaHostIBCModule = ibcunion.NewDoubleCommitMiddleware(
+		app.IBCKeeper,
+		icaHostIBCModule,
+		appCodec,
+		app.IBCFeeKeeper,
+		keys[ibcunion.StoreKey],
+		keys[ibcexported.StoreKey],
+	)
 
 	// Create evidence Keeper for to register the IBC light client misbehaviour evidence route
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -640,6 +658,14 @@ func NewUnionApp(
 	var wasmStack ibcporttypes.IBCModule
 	wasmStack = wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCFeeKeeper)
 	wasmStack = ibcfee.NewIBCMiddleware(wasmStack, app.IBCFeeKeeper)
+	wasmStack = ibcunion.NewDoubleCommitMiddleware(
+		app.IBCKeeper,
+		wasmStack,
+		appCodec,
+		app.IBCFeeKeeper,
+		keys[ibcunion.StoreKey],
+		keys[ibcexported.StoreKey],
+	)
 
 	ibcRouter := ibcporttypes.NewRouter()
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
