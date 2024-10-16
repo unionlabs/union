@@ -1,0 +1,384 @@
+---
+title: "UCS01 Relay Rust Integration"
+description: "Example showcasing how to create a CosmWasm contract that leverages UCS01 Relay to execute cross-chain asset transfer."
+---
+
+import Code from '#/components/Code.astro'
+import { chainVersion } from '#/lib/constants/versions.ts'
+import FunctionResult from '#/components/FunctionResult.astro'
+import { Tabs, TabItem, FileTree, Steps, Badge } from '@astrojs/starlight/components'
+
+This example demonstrates how to create a CosmWasm contract that calls Union's UCS01 Relay to execute a cross-chain asset transfer.
+Summary of the steps:
+
+<Steps>
+    0. Install required dependencies: Rust and `uniond`.
+    1. Clone code example and install some dependencies,
+    2. Build the contract,
+    3. Create a Union account through the CLI then fund it from the faucet,
+    4. Deploy the contract to the Union Network,
+    5. Query the deployed transaction to obtain `code_id`,
+    6. Instantiate the contract with the `code_id`,
+    7. Query the instantiation transaction to obtain `_contract_address`,
+    8. Execute the contract to transfer assets 🎉
+
+</Steps>
+
+____
+
+Source code for this entire example can be found [here](https://github.com/unionlabs/example-ucs01-cosmwasm)
+____
+
+## Prerequisites
+
+:::caution
+
+This example requires a Linux environment. No Windows or MacOS support
+
+:::
+
+Install the `uniond` binary which you will use to publish the contract and execute the transfer
+
+<Code
+    code={
+`
+# determine your system architecture
+RELEASE="uniond-release-$(uname -m)-linux"
+# get the version we want to install
+VERSION="${chainVersion({chainId: 'union-testnet-8'}).current}"
+
+curl --location \\
+        https://github.com/unionlabs/union/releases/download/$VERSION/$RELEASE \\
+        --output uniond
+`
+    }
+    lang='sh'
+    title='Install uniond'
+/>
+
+Install Rust
+
+```sh frame="none"
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Install CLI packages: `ripgrep` and `jaq` 
+
+```sh frame="none"
+cargo install ripgrep jaq
+```
+
+Create a new directory and initialize a git repository
+
+```sh frame="none"
+mkdir example-ucs01-cosmwasm && cd example-ucs01-cosmwasm
+git init .
+```
+
+Set up a new Rust project
+
+```sh frame="none"
+cargo new --lib example_ucs01_cosmwasm
+```
+
+Add the required dependencies to the `Cargo.toml` file
+
+```toml frame="code" title="Cargo.toml"
+[package]
+name = "example-ucs01-cosmwasm" # name of the project
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", 'rlib']
+
+[dependencies]
+cosmwasm-schema = { version = "2.1.4" }
+cosmwasm-std = { version = "2.1.4", default-features = false, features = ["std", "staking", "stargate"] }
+serde = { version = "1.0.210", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0.64", default-features = false }
+
+[profile.release]
+opt-level = "z"
+strip = true
+```
+
+Install `uniond`
+
+<Code
+    code={
+`
+# determine your system architecture
+RELEASE="uniond-release-$(uname -m)-linux"
+# get version we want to install
+VERSION="${chainVersion({chainId: 'union-testnet-8'}).current}"
+
+curl --location \\
+        https://github.com/unionlabs/union/releases/download/$VERSION/$RELEASE \\
+        --output uniond
+`
+    }
+    lang='sh'
+    title='Install uniond'
+/>
+
+Our end directory structure will look like this:    
+
+<FileTree>
+- src
+  - lib.rs
+- Cargo.toml
+- Cargo.lock
+- .gitignore
+</FileTree>
+
+___
+
+```sh frame="none"
+export UCS01_RELAY="union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
+```
+
+## Basic Contract
+
+Let's write a dead simple contract that transfers an asset from a CosmWasm contract to an EVM contract.
+
+```rust title="src/lib.rs"
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::{
+    entry_point, to_json_binary, Coin, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+    WasmMsg,
+};
+use std::collections::BTreeMap;
+
+#[cw_serde]
+pub struct InstantiateMsg {}
+
+#[cw_serde]
+pub enum ExecuteMsg {
+    Transfer {
+        channel: String,
+        receiver: String,
+        amount: Uint128,
+        denom: String,
+        contract_address: String,
+    },
+}
+
+pub type Fees = BTreeMap<String, Uint128>;
+
+#[cw_serde]
+pub enum Ucs01ExecuteMsg {
+    Transfer(TransferMsg),
+}
+
+/// This is the message we accept via Receive
+#[cw_serde]
+pub struct TransferMsg {
+    /// The local channel to send the packets on
+    pub channel: String,
+    /// The remote address to send to.
+    pub receiver: String,
+    /// How long the packet lives in seconds. If not specified, use default_timeout
+    pub timeout: Option<u64>,
+    /// The memo
+    pub memo: String,
+}
+
+#[entry_point]
+pub fn instantiate(
+    _deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    _msg: InstantiateMsg,
+) -> StdResult<Response> {
+    Ok(Response::new().add_attribute("action", "instantiate"))
+}
+
+#[entry_point]
+pub fn execute(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
+    match msg {
+        ExecuteMsg::Transfer {
+            receiver,
+            channel,
+            amount,
+            denom,
+            contract_address,
+        } => execute_transfer(
+            deps,
+            info,
+            receiver,
+            amount,
+            denom,
+            channel,
+            contract_address,
+        ),
+    }
+}
+
+pub fn execute_transfer(
+    _deps: DepsMut,
+    _info: MessageInfo,
+    receiver: String,
+    amount: Uint128,
+    denom: String,
+    channel: String,
+    contract_address: String,
+) -> StdResult<Response> {
+    let msg = WasmMsg::Execute {
+        contract_addr: contract_address.to_string(),
+        msg: to_json_binary(&Ucs01ExecuteMsg::Transfer(TransferMsg {
+            channel,
+            receiver: receiver.clone(),
+            timeout: None,
+            memo: "".into(),
+        }))?,
+
+        funds: vec![Coin { denom, amount }],
+    };
+
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("action", "transfer")
+        .add_attribute("recipient", receiver)
+        .add_attribute("amount", amount.to_string()))
+}
+```
+
+You will be using the same RPC url across examples, so good to export it to an environment variable:
+
+```sh frame="none"
+export RPC_URL=" https://rpc.testnet-8.union.build:443"
+```
+
+### Building the Contract
+
+The build is two steps; first we compile the Rust code to WASM, and then we optimize the WASM to be smaller.
+
+<Steps>
+    1. 
+        ```sh frame="none"
+        RUSTFLAGS='-C target-cpu=mvp -C opt-level=z' cargo build \
+            --target wasm32-unknown-unknown \
+            --no-default-features \
+            --lib \
+            --release \
+            -Z build-std=std,panic_abort \
+            -Z build-std-features=panic_immediate_abort
+        ```
+    2. 
+        ```sh frame="none"
+        mkdir -p build
+        wasm-opt target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.wasm \
+            -o build/contract.wasm \
+            -O3 --converge
+        ```
+</Steps>
+
+## Deploying the Contract
+
+we need a wallet with some gas money in it to deploy the contract
+
+Pick a name for the wallet and create it
+
+```sh frame="none"
+export WALLET_NAME="throwaway"
+```
+
+Let's create a new wallet and fund it
+
+```sh frame="none"
+uniond keys add $WALLET_NAME \
+    --home /home/$USER/.union \
+    --keyring-backend test
+```
+Save the mnemonic in a safe place.
+
+To fund the wallet, we will use the faucet. You can find the faucet [here](https://app.union.build/faucet).
+
+```sh title="Ensure the wallet is funded"
+curl https://rest.testnet-8.union.build/cosmos/bank/v1beta1/balances/$WALLET_ADDRESS | jaq '.balances'[0]
+```
+
+```sh title="Deploy the contract"
+tx wasm store ./target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.wasm \
+    --from $WALLET_NAME \
+    --gas auto \
+    --gas-adjustment 1.4 \
+    --chain-id union-testnet-8 \
+    --keyring-backend test \
+    --home /home/$USER/.union \
+    --node $RPC_URL --yes
+```
+
+The above will return a transaction hash at the end, use it to query the transaction to get the `code_id`:
+
+```sh frame="none"
+uniond query tx $DEPLOY_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg "_id"
+```
+
+Instantiate the contract:
+
+```sh frame="none"
+uniond \
+    tx wasm instantiate 269 '{}' \
+    --label foobar \
+    --no-admin \
+    --from $WALLET_NAME \
+    --gas auto \
+    --gas-adjustment 1.4 \
+    --chain-id union-testnet-8 \
+    --keyring-backend test \
+    --home /home/$USER/.union \
+    --node $RPC_URL --yes
+```
+
+The above will return a transaction hash at the end, use it t query the transaction to get the `_contract_address`:
+
+```sh frame="none" 
+query tx $INSTANTIATE_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg "_contract_address"
+```
+
+Now you can execute the contract to transfer assets:
+
+Let's construct the JSON payload for the contract execution.
+- `receiver` field we are using Vitalik's address,
+- `amount` is the amount of tokens to transfer,
+- `denom` is the token's denomination. Use `muno` for this example,
+- `contract_address` is the UCS01 Relay contract address (defined at the beginning),
+- `channel` is the channel to use for the transfer.
+
+```json title="payload.json"
+{
+  "transfer": {
+    "receiver": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+    "amount": "1",
+    "denom": "muno",
+    "contract_address": "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h",
+    "channel": "channel-86"
+  }
+}
+```
+
+Execute the contract:
+
+```sh frame="none"
+uniond \
+    tx wasm execute $CONTRACT_ADDRESS "$(jaq -c '.' payload.json)" \
+        --from $WALLET_NAME \
+        --gas auto \
+        --gas-adjustment 1.4 \
+        --chain-id union-testnet-8 \
+        --keyring-backend test \
+        --home /home/$USER/.union \
+        --node $RPC_URL --amount 2muno
+```
+
+To see the result of your cross chain transfer, go to this query and replace the sender with yours: [here](https://docs.union.build/reference/graphql/?query=query%20ContractTransfers%20%7B%0A%20%20v1_transfers(%0A%20%20%20%20where%3A%20%7B%0A%20%20%20%20%20%20sender%3A%20%7B%0A%20%20%20%20%20%20%20%20_like%3A%20%22union1ekc5agfsj2mhp2em4a9gxz8hag8uh74fwwzfa752lp2f52w3rrsqvdcxcs%22%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20)%20%7B%0A%20%20%20%20sender%0A%20%20%20%20source_chain_id%0A%20%20%20%20source_timestamp%0A%20%20%20%20source_port_id%0A%20%20%20%20source_channel_id%0A%20%20%20%20source_block_hash%0A%20%20%20%20source_connection_id%0A%20%20%20%20source_transaction_hash%0A%0A%20%20%20%20receiver%0A%20%20%20%20destination_chain_id%0A%20%20%20%20destination_timestamp%0A%20%20%20%20destination_port_id%0A%20%20%20%20destination_channel_id%0A%20%20%20%20destination_block_hash%0A%20%20%20%20destination_connection_id%0A%20%20%20%20destination_transaction_hash%0A%20%20%7D%0A%7D)
+
+___
+

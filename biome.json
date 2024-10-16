@@ -252,6 +252,7 @@
         "noConsoleLog": "off",
         "noExplicitAny": "off",
         "noCatchAssign": "off",
+        "noArrayIndexKey": "off",
         "noEmptyInterface": "off",
         "noAssignInExpressions": "off"
       },

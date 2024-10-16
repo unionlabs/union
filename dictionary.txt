@@ -1,3 +1,4 @@
+
 0xbonlulu
 0xc0dejug
 0xkaiserkarel
@@ -234,6 +235,7 @@ VYPER
 Vals
 Verkle
 Viridis
+Vitalik's
 Vitarana
 WAITLIST
 Wagmi
@@ -264,6 +266,7 @@ addresscodec
 adipiscing
 aeryz
 afterend
+agfsj
 aggr
 agoric
 aitlahcen
@@ -553,6 +556,7 @@ evidencekeeper
 evidencetypes
 evmincosmos
 evmos
+exff
 extldflags
 extralight
 fastfetch
@@ -582,6 +586,7 @@ frontends
 fullscreen
 functionx
 fuzzer
+fwwzfa
 galois
 galoisd
 gapless
@@ -734,6 +739,7 @@ jsonrpsee
 jsons
 jsonschema
 jumpstart
+justfile
 justif
 jwtsecret
 karel
@@ -1065,6 +1071,7 @@ restaking
 retryable
 rgba
 ripemd
+ripgrep
 rlib
 rlig
 rlpdump
@@ -1075,6 +1082,7 @@ roundtripping
 routescan
 rpath
 rpcs
+rrsqvdcxcs
 rsplit
 ruint
 runed
@@ -1098,6 +1106,7 @@ schnorr
 scrollbars
 scrollproof
 scure
+scxnnk
 sdkerrors
 sdkmath
 searchk
@@ -1362,6 +1371,7 @@ ustars
 ustrd
 utilised
 utilising
+uusdc
 valbz
 valcons
 valconspub
@@ -1408,6 +1418,7 @@ webgl
 webkit
 webp
 webpki
+wfwapxlufzm
 wght
 whistleblower
 withdrawability

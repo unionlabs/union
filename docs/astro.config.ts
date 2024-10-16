@@ -68,7 +68,20 @@ export default defineConfig({
       description: SITE_DESCRIPTION,
       tagline: "Connecting blockchains trustlessly",
       defaultLocale: "root",
-      expressiveCode: false,
+      expressiveCode: {
+        frames: {
+          showCopyToClipboardButton: true,
+          removeCommentsWhenCopyingTerminalFrames: true
+        },
+        defaultProps: {
+          // @ts-expect-error
+          showLineNumbers: false
+        },
+
+        themes: ["min-light", "houston"],
+        useStarlightDarkModeSwitch: true
+        // plugins: [pluginCollapsibleSections(), pluginLineNumbers()]
+      },
       locales: { root: { label: "English", lang: "en" } },
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/docs/"
@@ -173,11 +186,15 @@ export default defineConfig({
                 },
                 {
                   label: "UCS01",
+                  badge: { variant: "success", text: "new" },
                   items: [
                     {
                       label: "Solidity",
-                      link: "/integrations/ucs01/solidity",
-                      badge: { variant: "success", text: "new" }
+                      link: "/integrations/ucs01/solidity"
+                    },
+                    {
+                      label: "CosmWasm",
+                      link: "/integrations/ucs01/cosmwasm"
                     }
                   ]
                 },

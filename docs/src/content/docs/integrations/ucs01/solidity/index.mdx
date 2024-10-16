@@ -1,6 +1,6 @@
 ---
 title: "UCS01 Relay Solidity Integration"
-description: "Example showcasing how to create a contract that leverages UCS01 Relay to transfer assets."
+description: "Example showcasing how to create a Solidity contract that leverages UCS01 Relay to execute cross-chain assets transfer."
 ---
 
 import Code from '#/components/Code.astro'
@@ -8,16 +8,16 @@ import { Tabs, TabItem, FileTree, Steps } from '@astrojs/starlight/components'
 
 This example demonstrates how to create a Solidity contract that calls Union's UCS01 Relay to transfer assets.
 
-```sh
+```sh frame="none"
 UCS01_RELAY=0xD0081080Ae8493cf7340458Eaf4412030df5FEEb
 ```
 
-Source code for this example can be found her: [example-ucs01-solidity](https://github.com/unionlabs/example-ucs01-solidity)
+Source code for this example can be found here: [example-ucs01-solidity](https://github.com/unionlabs/example-ucs01-solidity)
 For this example we will be using [foundry](https://book.getfoundry.sh/getting-started/installation).
 
 Install foundry
 
-```sh
+```sh frame="none"
 curl -L https://foundry.paradigm.xyz | bash
 ```
 
@@ -36,8 +36,7 @@ Let's write a dead simple contract that transfers USDC from one address to anoth
 
 ### Contract Source
 
-```solidity
-// src/Transfer.sol
+```solidity title="src/Transfer.sol"
 pragma solidity ^0.8.27;
 
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
@@ -89,8 +88,7 @@ contract Transfer {
 
 ### Contract Running Script
 
-```solidity
-// script/Transfer.s.sol
+```solidity title="script/Transfer.s.sol"
 pragma solidity ^0.8.27;
 
 import {Script, console} from "forge-std/Script.sol";
@@ -117,8 +115,8 @@ contract TransferScript is Script {
 
 You will be using the same RPC url across examples, so good to export it to an environment variable:
 
-```sh
-RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<YOUR_API_KEY>
+```sh frame="none"
+export RPC_URL="https://eth-sepolia.g.alchemy.com/v2/<YOUR_API_KEY>"
 ```
 
 :::note
@@ -149,11 +147,11 @@ The first transfer we will do against a forked network using [`anvil`](https://b
 <Steps>
     1. Grab a sepolia RPC url from [chainlist.org](https://chainlist.org). Recommended to use a premium RPC provider.
     2. Start a local [`anvil`](https://book.getfoundry.sh/anvil/) fork of Sepolia
-        ```sh
+        ```sh frame="none"
         anvil --fork-url $RPC_URL
         ```
     3. Run the script with [`forge`](https://book.getfoundry.sh/forge/)
-        ```sh
+        ```sh frame="none"
         forge script script/Transfer.s.sol:TransferScript \
             --fork-url $RPC_URL \
             --broadcast
@@ -161,7 +159,7 @@ The first transfer we will do against a forked network using [`anvil`](https://b
     
     4. we should see something like this:
 
-        ```ansi
+        ```ansi frame="none"
         [⠊] Compiling...
         No files changed, compilation skipped
         Script ran successfully.
@@ -178,13 +176,13 @@ The first transfer we will do against a forked network using [`anvil`](https://b
 <Steps>
     1. Grab a sepolia RPC url from [chainlist.org](https://chainlist.org). Recommended to use a premium RPC provider.
     2. Run the script with [`forge`](https://book.getfoundry.sh/forge/), this will also deploy the contract
-        ```sh
+        ```sh frame="none"
         forge script script/Transfer.s.sol:TransferScript \
             --rpc-url $RPC_URL \
             --private-key $PRIVATE_KEY \
             --broadcast
         ```
-        ```ansi
+        ```ansi frame="none"
         [⠊] Compiling...
         No files changed, compilation skipped
         Script ran successfully.
@@ -207,7 +205,7 @@ The first transfer we will do against a forked network using [`anvil`](https://b
         [deployment example transaction](https://eth-sepolia.blockscout.com/tx/0x462a91caf0a55bbb708fbae48e930902316a8e53d2bd1a4dbcbf0e33e8d04898)
         – [deployed contract](https://eth-sepolia.blockscout.com/address/0xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A)
     3. Optional - verify the contract
-        ```sh
+        ```sh frame="none"
         forge verify-contract 0xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A \
             src/Transfer.sol:Transfer
             --chain-id 11155111 \
