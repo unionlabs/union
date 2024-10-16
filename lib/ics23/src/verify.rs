@@ -524,7 +524,6 @@ mod tests {
             &[b"ibc".to_vec(), key.to_vec()],
             ConnectionEnd {
                 client_id: ClientId::new(0),
-                client_type: "08-wasm".to_owned(),
                 versions: vec![Version {
                     identifier: "1".to_string(),
                     features: vec![Order::Unordered],
@@ -532,7 +531,6 @@ mod tests {
                 state: unionlabs::ibc::core::connection::state::State::Tryopen,
                 counterparty: unionlabs::ibc::core::connection::counterparty::Counterparty {
                     client_id: ClientId::new(0),
-                    client_type: "cometbls".to_owned(),
                     connection_id: Some(ConnectionId::new(0)),
                     prefix: unionlabs::ibc::core::commitment::merkle_prefix::MerklePrefix {
                         key_prefix: b"ibc".to_vec(),

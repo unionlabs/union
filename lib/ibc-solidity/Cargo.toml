@@ -9,7 +9,7 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
-alloy = { workspace = true, features = ["sol-types"] }
+alloy = { workspace = true, features = ["sol-types", "contract"] } # TODO: Fix the feature gating with `sol!`
 
 [features]
 default = ["rpc"]

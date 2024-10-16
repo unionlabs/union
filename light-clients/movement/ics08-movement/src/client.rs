@@ -10,20 +10,17 @@ use unionlabs::{
         account::AccountAddress, storage_proof::StorageProof, transaction_info::TransactionInfo,
     },
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    encoding::{Bcs, DecodeAs, EncodeAs as _, Proto},
-    google::protobuf::any::Any,
+    encoding::{DecodeAs, Proto},
     hash::H256,
     ibc::{
         core::{client::height::Height, commitment::merkle_path::MerklePath},
         lightclients::{
-            cometbls,
             movement::{
                 client_state::ClientState, consensus_state::ConsensusState, header::Header,
             },
             wasm,
         },
     },
-    ics24::Path,
 };
 
 use crate::errors::Error;

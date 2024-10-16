@@ -3,6 +3,7 @@ use macros::model;
 use crate::id::{ChannelId, PortId};
 
 #[model(proto(raw(protos::ibc::core::channel::v1::Counterparty), into, from))]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct Counterparty {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,

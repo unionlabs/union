@@ -28,6 +28,12 @@ impl fmt::LowerHex for U256 {
     }
 }
 
+impl From<ruint::Uint<256, 4>> for U256 {
+    fn from(value: ruint::Uint<256, 4>) -> Self {
+        Self(value)
+    }
+}
+
 // #[cfg(feature = "ethabi")]
 // impl alloy_core::sol_types::SolValue for U256 {
 //     type SolType = <ruint::Uint<256, 4> as alloy_core::sol_types::SolValue>::SolType;
@@ -318,7 +324,7 @@ mod u256_tests {
     use serde::{Deserialize, Serialize};
 
     use crate::{
-        test_utils::{assert_json_roundtrip, assert_proto_roundtrip, assert_string_roundtrip},
+        test_utils::{assert_json_roundtrip, assert_string_roundtrip},
         uint::U256,
     };
 

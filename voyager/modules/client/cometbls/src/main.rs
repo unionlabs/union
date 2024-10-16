@@ -4,7 +4,6 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
-use voyager_message::macros::model;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
@@ -25,6 +24,7 @@ use voyager_message::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType,
         IbcGo08WasmClientMetadata, IbcInterface,
     },
+    macros::model,
     module::{ClientModuleInfo, ClientModuleServer},
     run_client_module_server, ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -35,8 +35,7 @@ async fn main() {
     run_client_module_server::<Module>().await
 }
 
-#[model(no_serde)]
-#[derive(Copy, Serialize, Deserialize)]
+#[derive(Debug, Copy, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub enum SupportedIbcInterface {
     IbcSolidity,

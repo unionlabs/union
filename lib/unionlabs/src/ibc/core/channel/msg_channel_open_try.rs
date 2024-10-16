@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[model(proto(raw(protos::ibc::core::channel::v1::MsgChannelOpenTry)))]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct MsgChannelOpenTry {
     pub port_id: PortId,
     pub channel: Channel,

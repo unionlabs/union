@@ -1,8 +1,8 @@
 use chain_utils::ethereum::IBCHandlerEvents;
 use enumorph::Enumorph;
-use voyager_message::macros::model;
 use subset_of::SubsetOf;
 use unionlabs::hash::H256;
+use voyager_message::macros::model;
 
 #[model]
 #[derive(Enumorph, SubsetOf)]
@@ -33,5 +33,5 @@ pub struct MakeFullEvent {
     pub block_number: u64,
     /// Tx hash of the transaction that emitted this event.
     pub tx_hash: H256,
-    pub event: IBCHandlerEvents,
+    pub event: ibc_solidity::ibc::Ibc::IbcEvents,
 }

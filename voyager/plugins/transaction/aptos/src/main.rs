@@ -16,11 +16,14 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
-use tracing::instrument;
-use unionlabs::hash::H256;
+use tracing::{info, instrument};
+use unionlabs::{
+    hash::H256,
+    id::{ChannelId, ConnectionId},
+};
 use voyager_message::{
     core::ChainId,
-    data::{log_msg, Data, IbcMessage, WithChainId},
+    data::{Data, IbcMessage, WithChainId},
     module::{PluginInfo, PluginServer},
     run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
@@ -220,7 +223,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let mut txs = vec![];
 
                         for (i, (msg, entry_fn)) in msgs.into_iter().enumerate() {
-                            log_msg(&self.chain_id.to_string(), &msg);
+                            info!(chain_id = %self.chain_id, msg = msg.as_value());
+                            // log_msg(&self.chain_id.to_string(), &msg);
                             // dbg!(msg);
 
                             let raw = RawTransaction::new_entry_function(
@@ -296,7 +300,10 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                 msg,
                 client.update_client(
                     ibc_handler_address,
-                    (data.client_id.to_string(), data.client_message),
+                    (
+                        data.client_id.to_string_prefixed("PREFIX"),
+                        data.client_message,
+                    ),
                 ),
             ),
             IbcMessage::ConnectionOpenInit(data) => (
@@ -304,16 +311,16 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                 client.connection_open_init(
                     ibc_handler_address,
                     (
-                        data.client_id.to_string(),
+                        data.client_id.to_string_prefixed("PREFIX"),
                         data.version.identifier,
                         data.version
                             .features
                             .into_iter()
                             .map(|f| f.to_string())
                             .collect::<Vec<String>>(),
-                        data.counterparty.client_id.to_string(),
+                        data.counterparty.client_id.to_string_prefixed("PREFIX"),
                         if let Some(conn) = data.counterparty.connection_id {
-                            conn.to_string()
+                            conn.to_string_prefixed()
                         } else {
                             String::new()
                         },
@@ -328,15 +335,17 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                 client.connection_open_try(
                     ibc_handler_address,
                     (
-                        data.counterparty.client_id.to_string(),
+                        // TODO: Figure this out
+                        data.counterparty.client_id.to_string_prefixed("PREFIX"),
                         if let Some(conn) = data.counterparty.connection_id {
-                            conn.to_string()
+                            conn.to_string_prefixed()
                         } else {
                             String::new()
                         },
                         data.counterparty.prefix.key_prefix,
                         data.delay_period,
-                        data.client_id.to_string(),
+                        // TODO: Figure this out
+                        data.client_id.to_string_prefixed("PREFIX"),
                         data.client_state,
                         data.counterparty_versions
                             .iter()
@@ -363,7 +372,7 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                 client.connection_open_ack(
                     ibc_handler_address,
                     (
-                        data.connection_id.to_string(),
+                        data.connection_id.to_string_prefixed(),
                         data.client_state,
                         data.version.identifier,
                         data.version
@@ -373,7 +382,7 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                             .collect::<Vec<String>>(),
                         data.proof_try,
                         data.proof_client,
-                        data.counterparty_connection_id.to_string(),
+                        data.counterparty_connection_id.to_string_prefixed(),
                         data.proof_height.revision(),
                         data.proof_height.height(),
                     ),
@@ -384,7 +393,7 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                 client.connection_open_confirm(
                     ibc_handler_address,
                     (
-                        data.connection_id.to_string(),
+                        data.connection_id.to_string_prefixed(),
                         data.proof_ack,
                         data.proof_height.revision(),
                         data.proof_height.height(),
@@ -399,11 +408,16 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                         data.channel
                             .connection_hops
                             .iter()
-                            .map(ToString::to_string)
+                            .map(ConnectionId::to_string_prefixed)
                             .collect::<Vec<String>>(),
                         data.channel.ordering as u8,
                         data.channel.counterparty.port_id.to_string(),
-                        data.channel.counterparty.channel_id,
+                        data.channel
+                            .counterparty
+                            .channel_id
+                            .as_ref()
+                            .map(ChannelId::to_string_prefixed)
+                            .unwrap_or_default(),
                         data.channel.version,
                     ),
                 ),
@@ -416,11 +430,16 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                         data.channel
                             .connection_hops
                             .iter()
-                            .map(ToString::to_string)
+                            .map(ConnectionId::to_string_prefixed)
                             .collect::<Vec<String>>(),
                         data.channel.ordering as u8,
                         data.channel.counterparty.port_id.to_string(),
-                        data.channel.counterparty.channel_id,
+                        data.channel
+                            .counterparty
+                            .channel_id
+                            .as_ref()
+                            .map(ChannelId::to_string_prefixed)
+                            .unwrap_or_default(),
                         data.counterparty_version,
                         data.channel.version,
                         data.proof_init,
@@ -434,8 +453,8 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                 client.channel_open_ack(
                     data.port_id.to_string().parse().unwrap(),
                     (
-                        data.channel_id.to_string(),
-                        data.counterparty_channel_id.to_string(),
+                        data.channel_id.to_string_prefixed(),
+                        data.counterparty_channel_id.to_string_prefixed(),
                         data.counterparty_version,
                         data.proof_try,
                         data.proof_height.revision(),
@@ -448,7 +467,7 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                 client.channel_open_confirm(
                     data.port_id.to_string().parse().unwrap(),
                     (
-                        data.channel_id.to_string(),
+                        data.channel_id.to_string_prefixed(),
                         data.proof_ack,
                         data.proof_height.revision(),
                         data.proof_height.height(),
@@ -462,9 +481,9 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     (
                         data.packet.sequence.get(),
                         data.packet.source_port.to_string(),
-                        data.packet.source_channel.to_string(),
+                        data.packet.source_channel.to_string_prefixed(),
                         data.packet.destination_port.to_string(),
-                        data.packet.destination_channel.to_string(),
+                        data.packet.destination_channel.to_string_prefixed(),
                         data.packet.data,
                         data.packet.timeout_height.revision(),
                         data.packet.timeout_height.height(),
@@ -482,9 +501,9 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     (
                         data.packet.sequence.get(),
                         data.packet.source_port.to_string(),
-                        data.packet.source_channel.to_string(),
+                        data.packet.source_channel.to_string_prefixed(),
                         data.packet.destination_port.to_string(),
-                        data.packet.destination_channel.to_string(),
+                        data.packet.destination_channel.to_string_prefixed(),
                         data.packet.data,
                         data.packet.timeout_height.revision(),
                         data.packet.timeout_height.height(),

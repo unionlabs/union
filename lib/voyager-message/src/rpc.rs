@@ -1,20 +1,26 @@
+use std::num::NonZeroU64;
+
 use jsonrpsee::{
     self,
     core::RpcResult,
     proc_macros::rpc,
     types::{ErrorObject, ErrorObjectOwned},
 };
-use serde::{de::DeserializeOwned, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use serde_utils::Hex;
-use tracing::debug;
 use unionlabs::{
-    ibc::core::client::height::Height,
-    ics24::{IbcPath, Path},
-    id::ClientId,
+    hash::H256,
+    ibc::core::{
+        channel::{order::Order, state::State},
+        client::height::Height,
+        connection::connection_end::ConnectionEnd,
+    },
+    ics24::Path,
+    id::{ChannelId, ClientId, ConnectionId, PortId},
     ErrorReporter, QueryHeight,
 };
 use valuable::Valuable;
+use voyager_core::IbcStoreFormat;
 
 use crate::{
     context::LoadedModulesInfo,
@@ -50,6 +56,12 @@ pub trait VoyagerRpc {
         client_id: ClientId,
     ) -> RpcResult<ClientInfo>;
 
+    #[method(name = "clientTypeIbcStoreFormat")]
+    async fn client_type_ibc_store_format(
+        &self,
+        client_id: ClientType<'static>,
+    ) -> RpcResult<IbcStoreFormat<'static>>;
+
     #[method(name = "clientMeta")]
     async fn client_meta(
         &self,
@@ -58,13 +70,103 @@ pub trait VoyagerRpc {
         client_id: ClientId,
     ) -> RpcResult<ClientStateMeta>;
 
-    #[method(name = "queryIbcState")]
-    async fn query_ibc_state(
+    #[method(name = "queryClientState")]
+    async fn query_client_state(
         &self,
         chain_id: ChainId<'static>,
         height: QueryHeight,
-        path: Path,
-    ) -> RpcResult<IbcState>;
+        client_id: ClientId,
+    ) -> RpcResult<IbcState<Hex<Vec<u8>>>>;
+
+    #[method(name = "queryClientConsensusState")]
+    async fn query_client_consensus_state(
+        &self,
+        chain_id: ChainId<'static>,
+        height: QueryHeight,
+        client_id: ClientId,
+        trusted_height: Height,
+    ) -> RpcResult<IbcState<Hex<Vec<u8>>>>;
+
+    #[method(name = "queryConnection")]
+    async fn query_connection(
+        &self,
+        chain_id: ChainId<'static>,
+        height: QueryHeight,
+        connection_id: ConnectionId,
+    ) -> RpcResult<IbcState<Option<ConnectionInfo>>>;
+
+    #[method(name = "queryChannelEnd")]
+    async fn query_channel(
+        &self,
+        chain_id: ChainId<'static>,
+        height: QueryHeight,
+        channel_id: ChannelId,
+    ) -> RpcResult<IbcState<Option<ChannelInfo>>>;
+
+    #[method(name = "queryCommitment")]
+    async fn query_commitment(
+        &self,
+        chain_id: ChainId<'static>,
+        height: QueryHeight,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<IbcState<Option<H256>>>;
+
+    #[method(name = "queryAcknowledgement")]
+    async fn query_acknowledgement(
+        &self,
+        chain_id: ChainId<'static>,
+        height: QueryHeight,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<IbcState<Option<H256>>>;
+
+    #[method(name = "queryReceipt")]
+    async fn query_receipt(
+        &self,
+        chain_id: ChainId<'static>,
+        height: QueryHeight,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<IbcState<bool>>;
+
+    #[method(name = "queryNextSequenceSend")]
+    async fn query_next_sequence_send(
+        &self,
+        chain_id: ChainId<'static>,
+        height: QueryHeight,
+        channel_id: ChannelId,
+    ) -> RpcResult<IbcState<u64>>;
+
+    #[method(name = "queryNextSequenceRecv")]
+    async fn query_next_sequence_recv(
+        &self,
+        chain_id: ChainId<'static>,
+        height: QueryHeight,
+        channel_id: ChannelId,
+    ) -> RpcResult<IbcState<u64>>;
+
+    #[method(name = "queryNextSequenceAck")]
+    async fn query_next_sequence_ack(
+        &self,
+        chain_id: ChainId<'static>,
+        height: QueryHeight,
+        channel_id: ChannelId,
+    ) -> RpcResult<IbcState<u64>>;
+
+    #[method(name = "queryNextConnectionSequence")]
+    async fn query_next_connection_sequence(
+        &self,
+        chain_id: ChainId<'static>,
+        height: QueryHeight,
+    ) -> RpcResult<IbcState<u64>>;
+
+    #[method(name = "queryNextClientSequence")]
+    async fn query_next_client_sequence(
+        &self,
+        chain_id: ChainId<'static>,
+        height: QueryHeight,
+    ) -> RpcResult<IbcState<u64>>;
 
     #[method(name = "queryIbcProof")]
     async fn query_ibc_proof(
@@ -72,6 +174,7 @@ pub trait VoyagerRpc {
         chain_id: ChainId<'static>,
         height: QueryHeight,
         path: Path,
+        ibc_store_format: IbcStoreFormat<'static>,
     ) -> RpcResult<IbcProof>;
 
     #[method(name = "selfClientState")]
@@ -123,9 +226,8 @@ pub trait VoyagerRpc {
 
 #[model]
 // TODO: Flip these parameters
-pub struct IbcState<State = Value, P = Path> {
+pub struct IbcState<State> {
     pub chain_id: ChainId<'static>,
-    pub path: P,
     /// The height that the state was read at.
     pub height: Height,
     pub state: State,
@@ -151,45 +253,45 @@ pub struct SelfConsensusState {
     pub state: Value,
 }
 
-/// Serves the same purpose as `ChainModuleClientExt`.
-pub trait VoyagerRpcClientExt: VoyagerRpcClient {
-    // TODO: Maybe rename? Cor likes "_checked"
-    // TODO: Maybe take by ref here?
-    #[allow(async_fn_in_trait)]
-    async fn query_ibc_state_typed<P: IbcPath<Value: DeserializeOwned> + Serialize + Valuable>(
-        &self,
-        chain_id: ChainId<'static>,
-        at: QueryHeight,
-        path: P,
-    ) -> Result<IbcState<P::Value, P>, jsonrpsee::core::client::Error> {
-        debug!(path = path.as_value(), %at, "querying ibc state");
+// /// Serves the same purpose as `ChainModuleClientExt`.
+// pub trait VoyagerRpcClientExt: VoyagerRpcClient {
+//     // TODO: Maybe rename? Cor likes "_checked"
+//     // TODO: Maybe take by ref here?
+//     #[allow(async_fn_in_trait)]
+//     async fn query_ibc_state_typed<P: IbcPath<Value: DeserializeOwned> + Serialize + Valuable>(
+//         &self,
+//         chain_id: ChainId<'static>,
+//         at: QueryHeight,
+//         path: P,
+//     ) -> Result<IbcState<P::Value, P>, jsonrpsee::core::client::Error> {
+//         debug!(path = path.as_value(), %at, "querying ibc state");
 
-        let ibc_state = self
-            .query_ibc_state(chain_id.clone(), at, path.clone().into())
-            .await?;
+//         let ibc_state = self
+//             .query_ibc_state(chain_id.clone(), at, path.clone().into())
+//             .await?;
 
-        Ok(serde_json::from_value::<P::Value>(ibc_state.state.clone())
-            .map(|value| IbcState {
-                chain_id: ibc_state.chain_id,
-                path: path.clone(),
-                height: ibc_state.height,
-                state: value,
-            })
-            .map_err(|e| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize state: {}", ErrorReporter(e)),
-                    Some(json!({
-                        "chain_id": chain_id,
-                        "path": path,
-                        "state": ibc_state.state
-                    })),
-                )
-            })?)
-    }
-}
+//         Ok(serde_json::from_value::<P::Value>(ibc_state.state.clone())
+//             .map(|value| IbcState {
+//                 chain_id: ibc_state.chain_id,
+//                 path: path.clone(),
+//                 height: ibc_state.height,
+//                 state: value,
+//             })
+//             .map_err(|e| {
+//                 ErrorObject::owned(
+//                     FATAL_JSONRPC_ERROR_CODE,
+//                     format!("unable to deserialize state: {}", ErrorReporter(e)),
+//                     Some(json!({
+//                         "chain_id": chain_id,
+//                         "path": path,
+//                         "state": ibc_state.state
+//                     })),
+//                 )
+//             })?)
+//     }
+// }
 
-impl<T> VoyagerRpcClientExt for T where T: VoyagerRpcClient {}
+// impl<T> VoyagerRpcClientExt for T where T: VoyagerRpcClient {}
 
 pub fn json_rpc_error_to_error_object(value: jsonrpsee::core::client::Error) -> ErrorObjectOwned {
     match value {
@@ -205,4 +307,17 @@ pub fn missing_state(
     data: Option<Value>,
 ) -> impl FnOnce() -> ErrorObjectOwned {
     move || ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, message, data)
+}
+
+pub type ConnectionInfo = ConnectionEnd;
+
+#[model]
+#[derive(Valuable)]
+pub struct ChannelInfo {
+    pub port_id: PortId,
+    pub state: State,
+    pub ordering: Order,
+    pub counterparty_channel_id: Option<ChannelId>,
+    pub connection_hops: Vec<ConnectionId>,
+    pub version: String,
 }

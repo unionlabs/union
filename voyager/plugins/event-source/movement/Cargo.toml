@@ -30,6 +30,6 @@ thiserror          = { workspace = true }
 tokio              = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
-unionlabs          = { workspace = true }
+unionlabs          = { workspace = true, features = ["serde", "valuable", "proto"] }
 voyager-message    = { workspace = true }
 voyager-vm         = { workspace = true }

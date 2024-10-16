@@ -6,9 +6,9 @@ version = "0.1.0"
 [dependencies]
 alloy              = { workspace = true }
 beacon-api         = { workspace = true }
-chain-utils        = { workspace = true }
 enumorph           = { workspace = true }
 futures            = { workspace = true }
+ibc-solidity       = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
@@ -19,6 +19,6 @@ thiserror          = { workspace = true }
 tokio              = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
-unionlabs          = { workspace = true }
+unionlabs          = { workspace = true, features = ["serde", "valuable", "ethabi"] }
 voyager-message    = { workspace = true }
 voyager-vm         = { workspace = true }

@@ -1,11 +1,15 @@
-use std::ffi::OsString;
+use std::{ffi::OsString, num::NonZeroU64};
 
-use chain_utils::BoxDynError;
-use clap::{self, Parser, Subcommand};
+use clap::{self, builder::TypedValueParser, value_parser, Parser, Subcommand};
 use unionlabs::{
     self,
     bounded::BoundedI64,
-    ics24::{self, Path},
+    ibc::core::client::height::Height,
+    ics24::{
+        self, AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, ReceiptPath,
+    },
+    id::{ChannelId, ClientId, ConnectionId},
     result_unwrap,
     uint::U256,
     QueryHeight,
@@ -15,11 +19,11 @@ use voyager_message::{
     module::{ChainModuleInfo, ClientModuleInfo, ConsensusModuleInfo},
     VoyagerMessage,
 };
-use voyager_vm::Op;
+use voyager_vm::{BoxDynError, Op};
 
-use crate::cli::handshake::HandshakeCmd;
+// use crate::cli::handshake::HandshakeCmd;
 
-pub mod handshake;
+// pub mod handshake;
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -68,7 +72,7 @@ pub enum Command {
     /// Config related subcommands.
     #[command(subcommand)]
     Config(ConfigCmd),
-    Handshake(HandshakeCmd),
+    // Handshake(HandshakeCmd),
     /// Construct a `FetchBlocks` op to send to the specified chain.
     InitFetch {
         #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
@@ -97,7 +101,7 @@ pub enum Command {
         #[arg(long, short = 'H', default_value_t = QueryHeight::Latest)]
         height: QueryHeight,
         #[command(subcommand)]
-        path: ics24::Path,
+        path: CommitmentsPath,
     },
 }
 
@@ -161,10 +165,96 @@ pub enum UtilCmd {
     /// Compute the EVM IBC commitment key for the given IBC commitment path.
     IbcCommitmentKey {
         #[command(subcommand)]
-        path: Path,
+        path: CommitmentsPath,
         #[arg(long, default_value_t = U256::ZERO)]
         commitment_slot: U256,
     },
+}
+
+macro_rules! id_value_parser {
+    ($T:ident) => {
+        value_parser!(u32).map($T::new)
+    };
+}
+
+#[derive(Debug, Subcommand)]
+pub enum CommitmentsPath {
+    ClientState {
+        #[arg(value_parser = id_value_parser!(ClientId))]
+        client_id: ClientId,
+    },
+    ClientConsensusState {
+        #[arg(value_parser = id_value_parser!(ClientId))]
+        client_id: ClientId,
+        height: Height,
+    },
+    Connection {
+        #[arg(value_parser = id_value_parser!(ConnectionId))]
+        connection_id: ConnectionId,
+    },
+    ChannelEnd {
+        #[arg(value_parser = id_value_parser!(ChannelId))]
+        channel_id: ChannelId,
+    },
+    Commitment {
+        #[arg(value_parser = id_value_parser!(ChannelId))]
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    },
+    Acknowledgement {
+        #[arg(value_parser = id_value_parser!(ChannelId))]
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    },
+    Receipt {
+        #[arg(value_parser = id_value_parser!(ChannelId))]
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    },
+    // NextSequenceSend(NextSequenceSendPath),
+    // NextSequenceRecv(NextSequenceRecvPath),
+    // NextSequenceAck(NextSequenceAckPath),
+    // NextConnectionSequence(NextConnectionSequencePath),
+    // NextClientSequence(NextClientSequencePath),
+}
+
+impl From<CommitmentsPath> for ics24::Path {
+    fn from(value: CommitmentsPath) -> Self {
+        match value {
+            CommitmentsPath::ClientState { client_id } => ClientStatePath { client_id }.into(),
+            CommitmentsPath::ClientConsensusState { client_id, height } => {
+                ClientConsensusStatePath { client_id, height }.into()
+            }
+            CommitmentsPath::Connection { connection_id } => {
+                ConnectionPath { connection_id }.into()
+            }
+            CommitmentsPath::ChannelEnd { channel_id } => ChannelEndPath { channel_id }.into(),
+            CommitmentsPath::Commitment {
+                channel_id,
+                sequence,
+            } => CommitmentPath {
+                channel_id,
+                sequence,
+            }
+            .into(),
+            CommitmentsPath::Acknowledgement {
+                channel_id,
+                sequence,
+            } => AcknowledgementPath {
+                channel_id,
+                sequence,
+            }
+            .into(),
+            CommitmentsPath::Receipt {
+                channel_id,
+                sequence,
+            } => ReceiptPath {
+                channel_id,
+                sequence,
+            }
+            .into(),
+        }
+    }
 }
 
 #[derive(Debug, Subcommand)]

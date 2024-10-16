@@ -4,7 +4,6 @@ name    = "voyager-client-module-ethereum"
 version = "0.1.0"
 
 [dependencies]
-chain-utils        = { workspace = true }
 enumorph           = { workspace = true }
 futures            = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }

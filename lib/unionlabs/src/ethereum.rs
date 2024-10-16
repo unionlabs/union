@@ -26,8 +26,8 @@ pub const IBC_HANDLER_COMMITMENTS_SLOT: U256 = U256::from_limbs([0, 0, 0, 0]);
 ///
 /// key: `keccak256(keccak256(abi.encode_packed(path)) || slot)`
 #[must_use = "calculating the commitment key has no effect"]
-pub fn ibc_commitment_key(path: &str, slot: U256) -> U256 {
-    Slot::Mapping(&Slot::Offset(slot), MappingKey::Bytes32(keccak256(path))).slot()
+pub fn ibc_commitment_key(key: H256, slot: U256) -> U256 {
+    Slot::Mapping(&Slot::Offset(slot), MappingKey::Bytes32(keccak256(key))).slot()
 }
 
 hex_string_array_wrapper! {
@@ -70,7 +70,7 @@ mod tests {
         for (expected, connection_id, slot) in commitments {
             assert_eq!(
                 ibc_commitment_key(
-                    &ConnectionPath { connection_id }.ics24_commitment_path(),
+                    ConnectionPath { connection_id }.commitments_key(),
                     U256::from(slot),
                 ),
                 expected

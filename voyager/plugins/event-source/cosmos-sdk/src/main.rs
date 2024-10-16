@@ -377,7 +377,6 @@ impl Module {
                 self.chain_id.clone(),
                 event_height.into(),
                 ChannelEndPath {
-                    port_id: self_port_id.clone(),
                     channel_id: self_channel_id.clone(),
                 },
             )
@@ -391,7 +390,6 @@ impl Module {
                 client_meta.chain_id.clone(),
                 QueryHeight::Latest,
                 ChannelEndPath {
-                    port_id: other_port_id.clone(),
                     channel_id: other_channel_id.clone(),
                 },
             )
@@ -777,7 +775,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 height.into(),
                                 ChannelEndPath {
-                                    port_id: port_id.to_owned(),
                                     channel_id: channel_id.to_owned(),
                                 },
                             )

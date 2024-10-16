@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenAck)))]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct MsgConnectionOpenAck {
     pub connection_id: ConnectionId,
     pub counterparty_connection_id: ConnectionId,

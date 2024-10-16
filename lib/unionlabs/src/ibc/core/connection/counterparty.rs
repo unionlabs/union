@@ -5,12 +5,11 @@ use crate::{
     id::{ClientId, ConnectionId},
 };
 
-#[model(proto(raw(protos::ibc::core::connection::v1::Counterparty), into, from))]
+#[model(proto(raw(protos::ibc::core::connection::v1::Counterparty), into))]
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 #[cfg_attr(feature = "valuable", derive(::valuable::Valuable))]
 pub struct Counterparty {
     pub client_id: ClientId,
-    pub client_type: String,
     // this is really `Either<ConnectionId, EmptyString>`
     pub connection_id: Option<ConnectionId>,
     pub prefix: MerklePrefix,
@@ -24,18 +23,18 @@ pub mod proto {
         id::{ClientId, ConnectionId, ParsePrefixedIdError},
     };
 
-    impl From<Counterparty> for protos::ibc::core::connection::v1::Counterparty {
-        fn from(value: Counterparty) -> Self {
-            Self {
-                client_id: value.client_id.to_string_prefixed(&value.client_type),
-                connection_id: value
-                    .connection_id
-                    .as_ref()
-                    .map_or_else(String::new, ConnectionId::to_string_prefixed),
-                prefix: Some(value.prefix.into()),
-            }
-        }
-    }
+    // impl From<Counterparty> for protos::ibc::core::connection::v1::Counterparty {
+    //     fn from(value: Counterparty) -> Self {
+    //         Self {
+    //             client_id: value.client_id.to_string_prefixed(&value.client_type),
+    //             connection_id: value
+    //                 .connection_id
+    //                 .as_ref()
+    //                 .map_or_else(String::new, ConnectionId::to_string_prefixed),
+    //             prefix: Some(value.prefix.into()),
+    //         }
+    //     }
+    // }
 
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum TryFromConnectionCounterpartyError {
@@ -53,12 +52,11 @@ pub mod proto {
         fn try_from(
             value: protos::ibc::core::connection::v1::Counterparty,
         ) -> Result<Self, Self::Error> {
-            let (client_type, client_id) = ClientId::parse_prefixed(&value.client_id)
+            let (_, client_id) = ClientId::parse_prefixed(&value.client_id)
                 .map_err(TryFromConnectionCounterpartyError::ClientId)?;
 
             Ok(Self {
                 client_id,
-                client_type: client_type.to_owned(),
                 connection_id: if value.connection_id.is_empty() {
                     None
                 } else {

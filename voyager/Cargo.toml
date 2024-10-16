@@ -19,7 +19,6 @@ axum               = { workspace = true, features = ["macros", "tokio", "json"] 
 bech32             = "0.9.1"
 bip32              = { workspace = true, features = ["secp256k1"] }
 bitvec             = { workspace = true }
-chain-utils        = { workspace = true }
 clap               = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 crossbeam-queue    = { workspace = true, features = ["std"] }
 derive_more        = { workspace = true }
@@ -35,10 +34,8 @@ pg-queue           = { workspace = true }
 pin-utils          = "0.1.0"
 prometheus         = "0.13.4"
 prost              = { workspace = true }
-protos             = { workspace = true, features = ["proto_full", "client"] }
-reqwest            = { workspace = true, features = ["tokio-rustls"] }
-ripemd             = { workspace = true }
-schemars.workspace = true
+reqwest            = { workspace = true, features = ["tokio-rustls", "json"] }
+schemars           = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
 serde_json         = { workspace = true }

@@ -1,4 +1,4 @@
-use macros::model;
+use voyager_macros::model;
 
 use crate::{
     call, conc, data, defer, noop, now, promise, seq,

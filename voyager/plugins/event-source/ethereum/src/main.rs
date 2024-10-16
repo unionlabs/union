@@ -5,10 +5,15 @@ use std::collections::VecDeque;
 use alloy::{
     network::primitives::BlockTransactionsKind,
     providers::{Provider, ProviderBuilder, RootProvider},
+    rpc::types::Filter,
+    sol_types::SolEventInterface,
     transports::BoxTransport,
 };
 use beacon_api::client::BeaconApiClient;
-use ibc_solidity::ibc::Ibc::IbcEvents;
+use ibc_solidity::ibc::{
+    self,
+    Ibc::{self, IbcEvents, IbcInstance},
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -20,8 +25,7 @@ use unionlabs::{
     hash::{H160, H256},
     ibc::core::{channel, client::height::Height},
     ics24::{ChannelEndPath, ConnectionPath},
-    id::{ChannelId, ClientId, PortId},
-    uint::U256,
+    id::{ChannelId, ClientId, ConnectionId, PortId},
     ErrorReporter, QueryHeight,
 };
 use voyager_message::{
@@ -117,6 +121,10 @@ impl Module {
         plugin_name(&self.chain_id)
     }
 
+    fn ibc_handler(&self) -> IbcInstance<BoxTransport, RootProvider<BoxTransport>> {
+        Ibc::new(self.ibc_handler_address.get().into(), self.provider.clone())
+    }
+
     pub async fn new(config: Config) -> Result<Self, BoxDynError> {
         let provider = ProviderBuilder::new()
             .on_builtin(&config.eth_rpc_api)
@@ -155,7 +163,6 @@ impl Module {
                 self.chain_id.clone(),
                 event_height.into(),
                 ChannelEndPath {
-                    port_id: self_port_id.clone(),
                     channel_id: self_channel_id.clone(),
                 },
             )
@@ -201,8 +208,7 @@ impl Module {
                 client_meta.chain_id.clone(),
                 QueryHeight::Latest,
                 ChannelEndPath {
-                    port_id: self_channel.counterparty.port_id.clone(),
-                    channel_id: self_channel.counterparty.channel_id.parse().unwrap(),
+                    channel_id: self_channel.counterparty.channel_id.unwrap(),
                 },
             )
             .await
@@ -316,423 +322,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 let voyager_client = e.try_get::<VoyagerClient>()?;
 
                 match event {
-                    IbcEvents::ChannelCloseInit(_) | IbcEvents::ChannelCloseConfirm(_) => {
-                        warn!("observed channel close message, these are not handled currently");
-
-                        Ok(noop())
-                    }
-                    IbcEvents::ChannelOpenInit(raw_event) => {
-                        let connection = voyager_client
-                            .query_ibc_state_typed(
-                                self.chain_id.clone(),
-                                height.into(),
-                                ConnectionPath {
-                                    connection_id: raw_event.connectionId.parse().unwrap(),
-                                },
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
-                            .state
-                            .ok_or_else(missing_state("connection must exist", None))?;
-
-                        let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), connection.client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let client_meta = voyager_client
-                            .client_meta(
-                                self.chain_id.clone(),
-                                height.into(),
-                                connection.client_id.clone(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let channel = voyager_client
-                            .query_ibc_state_typed(
-                                self.chain_id.clone(),
-                                height.into(),
-                                ChannelEndPath {
-                                    port_id: raw_event.port_id.parse().unwrap(),
-                                    channel_id: raw_event.channel_id.parse().unwrap(),
-                                },
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
-                            .state
-                            .ok_or_else(missing_state("connection must exist", None))?;
-
-                        Ok(data(ChainEvent {
-                            chain_id: self.chain_id.clone(),
-                            client_info,
-                            counterparty_chain_id: client_meta.chain_id,
-                            tx_hash,
-                            provable_height: height,
-                            event: ChannelOpenInit {
-                                port_id: raw_event.port_id.parse().unwrap(),
-                                channel_id: raw_event.channel_id.parse().unwrap(),
-                                counterparty_port_id: raw_event
-                                    .counterparty_port_id
-                                    .parse()
-                                    .unwrap(),
-                                connection,
-                                version: channel.version,
-                            }
-                            .into(),
-                        }))
-                    }
-                    IbcEvents::ChannelOpenTry(raw_event) => {
-                        let connection = voyager_client
-                            .query_ibc_state_typed(
-                                self.chain_id.clone(),
-                                height.into(),
-                                ConnectionPath {
-                                    connection_id: raw_event.connection_id.parse().unwrap(),
-                                },
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
-                            .state
-                            .ok_or_else(missing_state("connection must exist", None))?;
-
-                        let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), connection.client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let client_meta = voyager_client
-                            .client_meta(
-                                self.chain_id.clone(),
-                                height.into(),
-                                connection.client_id.clone(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let channel = voyager_client
-                            .query_ibc_state_typed(
-                                self.chain_id.clone(),
-                                height.into(),
-                                ChannelEndPath {
-                                    port_id: raw_event.port_id.parse().unwrap(),
-                                    channel_id: raw_event.channel_id.parse().unwrap(),
-                                },
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
-                            .state
-                            .ok_or_else(missing_state("channel must exist", None))?;
-
-                        Ok(data(ChainEvent {
-                            chain_id: self.chain_id.clone(),
-                            client_info,
-                            counterparty_chain_id: client_meta.chain_id,
-                            tx_hash,
-                            provable_height: height,
-                            event: ChannelOpenTry {
-                                port_id: raw_event.port_id.parse().unwrap(),
-                                channel_id: raw_event.channel_id.parse().unwrap(),
-                                counterparty_port_id: raw_event
-                                    .counterparty_port_id
-                                    .parse()
-                                    .unwrap(),
-                                counterparty_channel_id: raw_event
-                                    .counterparty_channel_id
-                                    .parse()
-                                    .unwrap(),
-                                connection,
-                                version: channel.version,
-                            }
-                            .into(),
-                        }))
-                    }
-                    IbcEvents::ChannelOpenAck(raw_event) => {
-                        let connection = voyager_client
-                            .query_ibc_state_typed(
-                                self.chain_id.clone(),
-                                height.into(),
-                                ConnectionPath {
-                                    connection_id: raw_event.connection_id.parse().unwrap(),
-                                },
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
-                            .state
-                            .ok_or_else(missing_state("connection must exist", None))?;
-
-                        let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), connection.client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let client_meta = voyager_client
-                            .client_meta(
-                                self.chain_id.clone(),
-                                height.into(),
-                                connection.client_id.clone(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let channel = voyager_client
-                            .query_ibc_state_typed(
-                                self.chain_id.clone(),
-                                height.into(),
-                                ChannelEndPath {
-                                    port_id: raw_event.port_id.parse().unwrap(),
-                                    channel_id: raw_event.channel_id.parse().unwrap(),
-                                },
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
-                            .state
-                            .ok_or_else(missing_state("channel must exist", None))?;
-
-                        Ok(data(ChainEvent {
-                            chain_id: self.chain_id.clone(),
-                            client_info,
-                            counterparty_chain_id: client_meta.chain_id,
-                            tx_hash,
-                            provable_height: height,
-                            event: ChannelOpenAck {
-                                port_id: raw_event.port_id.parse().unwrap(),
-                                channel_id: raw_event.channel_id.parse().unwrap(),
-                                counterparty_port_id: raw_event
-                                    .counterparty_port_id
-                                    .parse()
-                                    .unwrap(),
-                                counterparty_channel_id: raw_event
-                                    .counterparty_channel_id
-                                    .parse()
-                                    .unwrap(),
-                                connection,
-                                version: channel.version,
-                            }
-                            .into(),
-                        }))
-                    }
-                    IbcEvents::ChannelOpenConfirm(raw_event) => {
-                        let connection = voyager_client
-                            .query_ibc_state_typed(
-                                self.chain_id.clone(),
-                                height.into(),
-                                ConnectionPath {
-                                    connection_id: raw_event.connection_id.parse().unwrap(),
-                                },
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
-                            .state
-                            .ok_or_else(missing_state("connection must exist", None))?;
-
-                        let client_info = voyager_client
-                            .client_info(self.chain_id.clone(), connection.client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let client_meta = voyager_client
-                            .client_meta(
-                                self.chain_id.clone(),
-                                height.into(),
-                                connection.client_id.clone(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let channel = voyager_client
-                            .query_ibc_state_typed(
-                                self.chain_id.clone(),
-                                height.into(),
-                                ChannelEndPath {
-                                    port_id: raw_event.port_id.parse().unwrap(),
-                                    channel_id: raw_event.channel_id.parse().unwrap(),
-                                },
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?
-                            .state
-                            .ok_or_else(missing_state("channel must exist", None))?;
-
-                        Ok(data(ChainEvent {
-                            chain_id: self.chain_id.clone(),
-                            client_info,
-                            counterparty_chain_id: client_meta.chain_id,
-                            tx_hash,
-                            provable_height: height,
-                            event: ChannelOpenConfirm {
-                                port_id: raw_event.port_id.parse().unwrap(),
-                                channel_id: raw_event.channel_id.parse().unwrap(),
-                                counterparty_port_id: raw_event
-                                    .counterparty_port_id
-                                    .parse()
-                                    .unwrap(),
-                                counterparty_channel_id: raw_event
-                                    .counterparty_channel_id
-                                    .parse()
-                                    .unwrap(),
-                                connection,
-                                version: channel.version,
-                            }
-                            .into(),
-                        }))
-                    }
-
-                    IbcEvents::ConnectionOpenInit(raw_event) => {
-                        let client_info = voyager_client
-                            .client_info(
-                                self.chain_id.clone(),
-                                raw_event.client_id.parse().unwrap(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let client_meta = voyager_client
-                            .client_meta(
-                                self.chain_id.clone(),
-                                height.into(),
-                                raw_event.client_id.parse().unwrap(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        Ok(data(ChainEvent {
-                            chain_id: self.chain_id.clone(),
-                            client_info,
-                            counterparty_chain_id: client_meta.chain_id,
-                            tx_hash,
-                            provable_height: height,
-                            event: ConnectionOpenInit {
-                                client_id: raw_event.client_id.parse().unwrap(),
-                                connection_id: raw_event.connection_id.parse().unwrap(),
-                                counterparty_client_id: raw_event
-                                    .counterparty_client_id
-                                    .parse()
-                                    .unwrap(),
-                            }
-                            .into(),
-                        }))
-                    }
-                    IbcEvents::ConnectionOpenTry(raw_event) => {
-                        let client_info = voyager_client
-                            .client_info(
-                                self.chain_id.clone(),
-                                raw_event.client_id.parse().unwrap(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let client_meta = voyager_client
-                            .client_meta(
-                                self.chain_id.clone(),
-                                height.into(),
-                                raw_event.client_id.parse().unwrap(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        Ok(data(ChainEvent {
-                            chain_id: self.chain_id.clone(),
-                            client_info,
-                            counterparty_chain_id: client_meta.chain_id,
-                            tx_hash,
-                            provable_height: height,
-                            event: ConnectionOpenTry {
-                                client_id: raw_event.client_id.parse().unwrap(),
-                                connection_id: raw_event.connection_id.parse().unwrap(),
-                                counterparty_client_id: raw_event
-                                    .counterparty_client_id
-                                    .parse()
-                                    .unwrap(),
-                                counterparty_connection_id: raw_event
-                                    .counterparty_connection_id
-                                    .parse()
-                                    .unwrap(),
-                            }
-                            .into(),
-                        }))
-                    }
-                    IbcEvents::ConnectionOpenAck(raw_event) => {
-                        let client_info = voyager_client
-                            .client_info(
-                                self.chain_id.clone(),
-                                raw_event.client_id.parse().unwrap(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let client_meta = voyager_client
-                            .client_meta(
-                                self.chain_id.clone(),
-                                height.into(),
-                                raw_event.client_id.parse().unwrap(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        Ok(data(ChainEvent {
-                            chain_id: self.chain_id.clone(),
-                            client_info,
-                            counterparty_chain_id: client_meta.chain_id,
-                            tx_hash,
-                            provable_height: height,
-                            event: ConnectionOpenAck {
-                                client_id: raw_event.client_id.parse().unwrap(),
-                                connection_id: raw_event.connection_id.parse().unwrap(),
-                                counterparty_client_id: raw_event
-                                    .counterparty_client_id
-                                    .parse()
-                                    .unwrap(),
-                                counterparty_connection_id: raw_event
-                                    .counterparty_connection_id
-                                    .parse()
-                                    .unwrap(),
-                            }
-                            .into(),
-                        }))
-                    }
-                    IbcEvents::ConnectionOpenConfirm(raw_event) => {
-                        let client_info = voyager_client
-                            .client_info(
-                                self.chain_id.clone(),
-                                raw_event.client_id.parse().unwrap(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        let client_meta = voyager_client
-                            .client_meta(
-                                self.chain_id.clone(),
-                                height.into(),
-                                raw_event.client_id.parse().unwrap(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
-
-                        Ok(data(ChainEvent {
-                            chain_id: self.chain_id.clone(),
-                            client_info,
-                            counterparty_chain_id: client_meta.chain_id,
-                            tx_hash,
-                            provable_height: height,
-                            event: ConnectionOpenConfirm {
-                                client_id: raw_event.client_id.parse().unwrap(),
-                                connection_id: raw_event.connection_id.parse().unwrap(),
-                                counterparty_client_id: raw_event
-                                    .counterparty_client_id
-                                    .parse()
-                                    .unwrap(),
-                                counterparty_connection_id: raw_event
-                                    .counterparty_connection_id
-                                    .parse()
-                                    .unwrap(),
-                            }
-                            .into(),
-                        }))
-                    }
-
                     IbcEvents::ClientCreated(raw_event) => {
-                        let client_id = raw_event.client_id.parse::<ClientId>().unwrap();
+                        let client_id = ClientId::new(raw_event.clientId);
 
                         let client_info = voyager_client
                             .client_info(self.chain_id.clone(), client_id.clone())
@@ -743,7 +334,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .client_meta(
                                 self.chain_id.clone(),
                                 height.into(),
-                                raw_event.client_id.parse().unwrap(),
+                                ClientId::new(raw_event.clientId),
                             )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
@@ -768,7 +359,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         Ok(noop())
                     }
                     IbcEvents::ClientUpdated(raw_event) => {
-                        let client_id = raw_event.client_id.parse::<ClientId>().unwrap();
+                        let client_id = ClientId::new(raw_event.clientId);
 
                         let client_info = voyager_client
                             .client_info(self.chain_id.clone(), client_id.clone())
@@ -779,7 +370,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .client_meta(
                                 self.chain_id.clone(),
                                 height.into(),
-                                raw_event.client_id.parse().unwrap(),
+                                ClientId::new(raw_event.clientId),
                             )
                             .await
                             .map_err(json_rpc_error_to_error_object)?;
@@ -799,8 +390,393 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }))
                     }
 
+                    IbcEvents::ConnectionOpenInit(raw_event) => {
+                        let client_info = voyager_client
+                            .client_info(self.chain_id.clone(), ClientId::new(raw_event.clientId))
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let client_meta = voyager_client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ClientId::new(raw_event.clientId),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ConnectionOpenInit {
+                                client_id: ClientId::new(raw_event.clientId),
+                                connection_id: ConnectionId::new(raw_event.connectionId),
+                                counterparty_client_id: ClientId::new(
+                                    raw_event.counterpartyClientId,
+                                ),
+                            }
+                            .into(),
+                        }))
+                    }
+                    IbcEvents::ConnectionOpenTry(raw_event) => {
+                        let client_info = voyager_client
+                            .client_info(self.chain_id.clone(), ClientId::new(raw_event.clientId))
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let client_meta = voyager_client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ClientId::new(raw_event.clientId),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ConnectionOpenTry {
+                                client_id: ClientId::new(raw_event.clientId),
+                                connection_id: ConnectionId::new(raw_event.connectionId),
+                                counterparty_client_id: ClientId::new(
+                                    raw_event.counterpartyClientId,
+                                ),
+                                counterparty_connection_id: ConnectionId::new(
+                                    raw_event.counterpartyConnectionId,
+                                ),
+                            }
+                            .into(),
+                        }))
+                    }
+                    IbcEvents::ConnectionOpenAck(raw_event) => {
+                        let client_info = voyager_client
+                            .client_info(self.chain_id.clone(), ClientId::new(raw_event.clientId))
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let client_meta = voyager_client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ClientId::new(raw_event.clientId),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ConnectionOpenAck {
+                                client_id: ClientId::new(raw_event.clientId),
+                                connection_id: ConnectionId::new(raw_event.connectionId),
+                                counterparty_client_id: ClientId::new(
+                                    raw_event.counterpartyClientId,
+                                ),
+                                counterparty_connection_id: ConnectionId::new(
+                                    raw_event.counterpartyConnectionId,
+                                ),
+                            }
+                            .into(),
+                        }))
+                    }
+                    IbcEvents::ConnectionOpenConfirm(raw_event) => {
+                        let client_info = voyager_client
+                            .client_info(self.chain_id.clone(), ClientId::new(raw_event.clientId))
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let client_meta = voyager_client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ClientId::new(raw_event.clientId),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ConnectionOpenConfirm {
+                                client_id: ClientId::new(raw_event.clientId),
+                                connection_id: ConnectionId::new(raw_event.connectionId),
+                                counterparty_client_id: ClientId::new(
+                                    raw_event.counterpartyClientId,
+                                ),
+                                counterparty_connection_id: ConnectionId::new(
+                                    raw_event.counterpartyConnectionId,
+                                ),
+                            }
+                            .into(),
+                        }))
+                    }
+                    IbcEvents::ChannelOpenInit(raw_event) => {
+                        let connection = voyager_client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ConnectionPath {
+                                    connection_id: ConnectionId::new(raw_event.connectionId),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
+
+                        let client_info = voyager_client
+                            .client_info(self.chain_id.clone(), connection.client_id.clone())
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let client_meta = voyager_client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection.client_id.clone(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let channel = voyager_client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ChannelEndPath {
+                                    channel_id: ChannelId::new(raw_event.channelId),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ChannelOpenInit {
+                                port_id: PortId::new(raw_event.portId.to_string()).unwrap(),
+                                channel_id: ChannelId::new(raw_event.channelId),
+                                counterparty_port_id: raw_event,
+                                connection,
+                                version: channel.version,
+                            }
+                            .into(),
+                        }))
+                    }
+                    IbcEvents::ChannelOpenTry(raw_event) => {
+                        let connection = voyager_client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ConnectionPath {
+                                    connection_id: ConnectionId::new(raw_event.connectionId),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
+
+                        let client_info = voyager_client
+                            .client_info(self.chain_id.clone(), connection.client_id.clone())
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let client_meta = voyager_client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection.client_id.clone(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let channel = voyager_client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ChannelEndPath {
+                                    channel_id: ChannelId::new(raw_event.channelId),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?
+                            .state
+                            .ok_or_else(missing_state("channel must exist", None))?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ChannelOpenTry {
+                                port_id: PortId::new(raw_event.portId.to_string()).unwrap(),
+                                channel_id: ChannelId::new(raw_event.channelId),
+                                counterparty_port_id: raw_event.counterparty_port_id,
+                                counterparty_channel_id: Channelid::new(
+                                    raw_event.counterpartyChannelId,
+                                ),
+                                connection,
+                                version: channel.version,
+                            }
+                            .into(),
+                        }))
+                    }
+                    IbcEvents::ChannelOpenAck(raw_event) => {
+                        let connection = voyager_client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ConnectionPath {
+                                    connection_id: ConnectionId::new(raw_event.connectionId),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
+
+                        let client_info = voyager_client
+                            .client_info(self.chain_id.clone(), connection.client_id.clone())
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let client_meta = voyager_client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection.client_id.clone(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let channel = voyager_client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ChannelEndPath {
+                                    channel_id: ChannelId::new(raw_event.channelId),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?
+                            .state
+                            .ok_or_else(missing_state("channel must exist", None))?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ChannelOpenAck {
+                                port_id: PortId::new(raw_event.portId.to_string()).unwrap(),
+                                channel_id: ChannelId::new(raw_event.channelId),
+                                counterparty_port_id: todo!(),
+                                counterparty_channel_id: ChannelId::new(
+                                    raw_event.counterpartyChannelId,
+                                ),
+                                connection,
+                                version: channel.version,
+                            }
+                            .into(),
+                        }))
+                    }
+                    IbcEvents::ChannelOpenConfirm(raw_event) => {
+                        let connection = voyager_client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ConnectionPath {
+                                    connection_id: ConnectionId::new(raw_event.connectionId),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
+
+                        let client_info = voyager_client
+                            .client_info(self.chain_id.clone(), connection.client_id.clone())
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let client_meta = voyager_client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection.client_id.clone(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
+
+                        let channel = voyager_client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ChannelEndPath {
+                                    channel_id: ChannelId::new(raw_event.channelId),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?
+                            .state
+                            .ok_or_else(missing_state("channel must exist", None))?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ChannelOpenConfirm {
+                                port_id: PortId::new(raw_event.portId.to_string()).unwrap(),
+                                channel_id: ChannelId::new(raw_event.channelId),
+                                counterparty_port_id: channel.counterparty.port_id,
+                                counterparty_channel_id: channel.counterparty.channel_id.unwrap(),
+                                connection,
+                                version: channel.version,
+                            }
+                            .into(),
+                        }))
+                    }
+
+                    IbcEvents::ChannelCloseInit(_) | IbcEvents::ChannelCloseConfirm(_) => {
+                        warn!("observed channel close message, these are not handled currently");
+
+                        Ok(noop())
+                    }
+
                     // packet origin is this chain
                     IbcEvents::SendPacket(event) => {
+                        let self_port_id = PortId::new(
+                            self.ibc_handler()
+                                .channelOwner(event.packet.sourceChannel)
+                                .await
+                                .unwrap()
+                                ._0
+                                .to_string(),
+                        )
+                        .unwrap();
+
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -810,8 +786,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 height,
-                                event.source_port.parse().unwrap(),
-                                event.source_channel.parse().unwrap(),
+                                self_port_id,
+                                ChannelId::new(event.packet.sourceChannel),
                                 e.try_get()?,
                             )
                             .await?;
@@ -823,20 +799,30 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             tx_hash,
                             provable_height: height,
                             event: voyager_message::data::SendPacket {
-                                packet_data: event.data.to_vec(),
+                                packet_data: event.packet.data.to_vec(),
                                 packet: PacketMetadata {
-                                    sequence: event.sequence.try_into().unwrap(),
+                                    sequence: event.packet.sequence.try_into().unwrap(),
                                     source_channel,
                                     destination_channel,
                                     channel_ordering,
-                                    timeout_height: event.timeout_height.into(),
-                                    timeout_timestamp: event.timeout_timestamp,
+                                    timeout_height: Height::new(event.packet.timeoutHeight),
+                                    timeout_timestamp: event.packet.timeoutTimestamp,
                                 },
                             }
                             .into(),
                         }))
                     }
                     IbcEvents::TimeoutPacket(event) => {
+                        let self_port_id = PortId::new(
+                            self.ibc_handler()
+                                .channelOwner(event.packet.sourceChannel)
+                                .await
+                                .unwrap()
+                                ._0
+                                .to_string(),
+                        )
+                        .unwrap();
+
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -846,8 +832,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 height,
-                                event.packet.source_port.parse().unwrap(),
-                                event.packet.source_channel.parse().unwrap(),
+                                self_port_id,
+                                ChannelId::new(event.packet.sourceChannel),
                                 e.try_get()?,
                             )
                             .await?;
@@ -864,14 +850,24 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     channel_ordering,
-                                    timeout_height: event.packet.timeout_height.into(),
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_height: Height::new(event.packet.timeoutHeight),
+                                    timeout_timestamp: event.packet.timeoutTimestamp,
                                 },
                             }
                             .into(),
                         }))
                     }
                     IbcEvents::AcknowledgePacket(event) => {
+                        let self_port_id = PortId::new(
+                            self.ibc_handler()
+                                .channelOwner(event.packet.sourceChannel)
+                                .await
+                                .unwrap()
+                                ._0
+                                .to_string(),
+                        )
+                        .unwrap();
+
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -881,8 +877,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 height,
-                                event.packet.source_port.parse().unwrap(),
-                                event.packet.source_channel.parse().unwrap(),
+                                self_port_id,
+                                ChannelId::new(event.packet.sourceChannel),
                                 e.try_get()?,
                             )
                             .await?;
@@ -899,8 +895,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     channel_ordering,
-                                    timeout_height: event.packet.timeout_height.into(),
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_height: Height::new(event.packet.timeoutHeight),
+                                    timeout_timestamp: event.packet.timeoutTimestamp,
                                 },
                             }
                             .into(),
@@ -908,6 +904,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     }
                     // packet origin is the counterparty chain
                     IbcEvents::WriteAcknowledgement(event) => {
+                        let self_port_id = PortId::new(
+                            self.ibc_handler()
+                                .channelOwner(event.packet.destinationChannel)
+                                .await
+                                .unwrap()
+                                ._0
+                                .to_string(),
+                        )
+                        .unwrap();
+
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -917,8 +923,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 height,
-                                event.packet.destination_port.parse().unwrap(),
-                                event.packet.destination_channel.parse().unwrap(),
+                                self_port_id,
+                                ChannelId::new(event.packet.destinationChannel),
                                 e.try_get()?,
                             )
                             .await?;
@@ -937,14 +943,24 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     channel_ordering,
-                                    timeout_height: event.packet.timeout_height.into(),
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_height: Height::new(event.packet.timeoutHeight),
+                                    timeout_timestamp: event.packet.timeoutTimestamp,
                                 },
                             }
                             .into(),
                         }))
                     }
                     IbcEvents::RecvPacket(event) => {
+                        let self_port_id = PortId::new(
+                            self.ibc_handler()
+                                .channelOwner(event.packet.destinationChannel)
+                                .await
+                                .unwrap()
+                                ._0
+                                .to_string(),
+                        )
+                        .unwrap();
+
                         let (
                             counterparty_chain_id,
                             client_info,
@@ -954,8 +970,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 height,
-                                event.packet.destination_port.parse().unwrap(),
-                                event.packet.destination_channel.parse().unwrap(),
+                                self_port_id,
+                                ChannelId::new(event.packet.destinationChannel),
                                 e.try_get()?,
                             )
                             .await?;
@@ -973,8 +989,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     channel_ordering,
-                                    timeout_height: event.packet.timeout_height.into(),
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_height: Height::new(event.packet.timeoutHeight),
+                                    timeout_timestamp: event.packet.timeoutTimestamp,
                                 },
                             }
                             .into(),
@@ -1087,7 +1103,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .provider
                     .get_logs(
                         &Filter::new()
-                            .address(ethers::types::H160::from(self.ibc_handler_address))
+                            .address(alloy::primitives::Address::from(self.ibc_handler_address))
                             .from_block(block_number)
                             .to_block(block_number),
                     )
@@ -1111,9 +1127,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         .expect("log should have transaction_hash")
                         .into();
 
-                    match IBCHandlerEvents::decode_log(&log.clone().into()) {
+                    match ibc::Ibc::IbcEvents::decode_log(&log, true) {
                         Ok(event) => {
-                            trace!(?event, "found IBCHandler event");
+                            trace!(?event, "found IbcHandler event");
 
                             Some(call(PluginMessage::new(
                                 self.plugin_name(),
@@ -1127,7 +1143,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         Err(e) => {
                             warn!(
                                 ?log,
-                                "could not decode IBCHandler event: {}",
+                                "could not decode IbcHandler event: {}",
                                 ErrorReporter(e)
                             );
                             None

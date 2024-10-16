@@ -35,7 +35,7 @@ use voyager_message::{
     module::{ConsensusModuleServer, PluginInfo, PluginServer, UnexpectedChainIdError},
     run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
-use voyager_vm::{data, pass::PassResult, Op, Visit};
+use voyager_vm::{data, pass::PassResult, BoxDynError, Op, Visit};
 
 use crate::{call::ModuleCall, callback::ModuleCallback};
 
@@ -79,7 +79,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, chain_utils::BoxDynError> {
+    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let aptos_client = aptos_rest_client::Client::new(config.aptos_rest_api.parse().unwrap());
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id.to_string();
@@ -290,7 +290,7 @@ impl ConsensusModuleServer for Module {
             chain_id: self.chain_id.to_string(),
             l1_client_id: self.l1_client_id.clone(),
             l1_contract_address: self.l1_settlement_address,
-            l2_contract_address: self.ibc_handler_address,
+            l2_contract_address: self.ibc_handler_address.clone(),
             table_handle: AccountAddress(Hash::new(
                 U256::from_be_hex(table_handle).unwrap().to_be_bytes(),
             )),

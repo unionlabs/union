@@ -782,9 +782,11 @@ fn process_msgs(
                 IbcMessage::ChannelOpenAck(message) => {
                     mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
                         port_id: message.port_id.to_string(),
-                        channel_id: message.channel_id.to_string(),
+                        channel_id: message.channel_id.to_string_prefixed(),
                         counterparty_version: message.counterparty_version,
-                        counterparty_channel_id: message.counterparty_channel_id.to_string(),
+                        counterparty_channel_id: message
+                            .counterparty_channel_id
+                            .to_string_prefixed(),
                         proof_try: message.proof_try,
                         proof_height: Some(message.proof_height.into()),
                         signer: signer.to_string(),
@@ -793,7 +795,7 @@ fn process_msgs(
                 IbcMessage::ChannelOpenConfirm(message) => {
                     mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
                         port_id: message.port_id.to_string(),
-                        channel_id: message.channel_id.to_string(),
+                        channel_id: message.channel_id.to_string_prefixed(),
                         proof_height: Some(message.proof_height.into()),
                         signer: signer.to_string(),
                         proof_ack: message.proof_ack,

@@ -8,6 +8,7 @@ use crate::{
 };
 
 #[model(proto(raw(protos::ibc::core::channel::v1::Packet), into, from))]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct Packet {
     pub sequence: NonZeroU64,
     pub source_port: PortId,

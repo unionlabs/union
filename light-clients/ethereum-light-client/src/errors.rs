@@ -1,9 +1,8 @@
 use ics008_wasm_client::IbcClientError;
 use unionlabs::{
-    bls::BlsPublicKey,
     encoding::{DecodeErrorOf, Proto},
     google::protobuf::any::Any,
-    hash::H256,
+    hash::{H256, H384},
     ibc::{
         core::client::height::Height,
         lightclients::{
@@ -44,8 +43,8 @@ pub enum Error {
         key ({given_aggregate}) or the stored one ({stored_aggregate})"
     )]
     TrustedSyncCommitteeMismatch {
-        stored_aggregate: BlsPublicKey,
-        given_aggregate: BlsPublicKey,
+        stored_aggregate: H384,
+        given_aggregate: H384,
     },
 
     #[error("active sync committee is `next` but there is no next sync committee in the consensus state")]

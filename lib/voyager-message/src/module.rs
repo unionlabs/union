@@ -1,19 +1,17 @@
-use std::{borrow::Cow, collections::VecDeque};
+use std::{borrow::Cow, collections::VecDeque, num::NonZeroU64};
 
 use ::serde::{Deserialize, Serialize};
-use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject};
+use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use schemars::JsonSchema;
-use serde::de::DeserializeOwned;
-use serde_json::{json, Value};
+use serde_json::Value;
 use serde_utils::Hex;
-use tracing::debug;
 use unionlabs::{
+    hash::H256,
     ibc::core::client::height::Height,
-    ics24::{IbcPath, Path},
-    id::ClientId,
-    ErrorReporter,
+    ics24::Path,
+    id::{ChannelId, ClientId, ConnectionId},
 };
-use valuable::Valuable;
+use voyager_core::IbcStoreFormat;
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 #[cfg(doc)]
 use {
@@ -28,7 +26,8 @@ use crate::{
     },
     data::Data,
     macros::model,
-    Member, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{ChannelInfo, ConnectionInfo},
+    Member, VoyagerMessage,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, clap::Args, JsonSchema)]
@@ -142,6 +141,10 @@ pub struct ClientModuleInfo {
     /// The IBC interface that this client module provides functionality for.
     #[arg(value_parser(|s: &str| ok(IbcInterface::new(s.to_owned()))))]
     pub ibc_interface: IbcInterface<'static>,
+
+    #[arg(value_parser(|s: &str| ok(IbcStoreFormat::new(s.to_owned()))))]
+    /// The IBC store format that this client type verifies against.
+    pub ibc_store_format: IbcStoreFormat<'static>,
 }
 
 impl ClientModuleInfo {
@@ -254,15 +257,95 @@ pub trait ChainModule {
     #[method(name = "clientInfo", with_extensions)]
     async fn client_info(&self, client_id: ClientId) -> RpcResult<ClientInfo>;
 
-    /// Query IBC state on this chain, at the specified [`Height`], returning
-    /// the value as a JSON [`Value`].
-    #[method(name = "queryIbcState", with_extensions)]
-    async fn query_ibc_state(&self, at: Height, path: Path) -> RpcResult<Value>;
+    #[method(name = "queryClientState", with_extensions)]
+    async fn query_client_state(
+        &self,
+        height: Height,
+        client_id: ClientId,
+    ) -> RpcResult<Hex<Vec<u8>>>;
+
+    #[method(name = "queryClientConsensusState", with_extensions)]
+    async fn query_client_consensus_state(
+        &self,
+        height: Height,
+        client_id: ClientId,
+        trusted_height: Height,
+    ) -> RpcResult<Hex<Vec<u8>>>;
+
+    #[method(name = "queryConnection", with_extensions)]
+    async fn query_connection(
+        &self,
+        height: Height,
+        connection_id: ConnectionId,
+    ) -> RpcResult<Option<ConnectionInfo>>;
+
+    #[method(name = "queryChannelEnd", with_extensions)]
+    async fn query_channel(
+        &self,
+        height: Height,
+        channel_id: ChannelId,
+    ) -> RpcResult<Option<ChannelInfo>>;
+
+    #[method(name = "queryCommitment", with_extensions)]
+    async fn query_commitment(
+        &self,
+        height: Height,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<Option<H256>>;
+
+    #[method(name = "queryAcknowledgement", with_extensions)]
+    async fn query_acknowledgement(
+        &self,
+        height: Height,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<Option<H256>>;
+
+    #[method(name = "queryReceipt", with_extensions)]
+    async fn query_receipt(
+        &self,
+        height: Height,
+        channel_id: ChannelId,
+        sequence: NonZeroU64,
+    ) -> RpcResult<bool>;
+
+    #[method(name = "queryNextSequenceSend", with_extensions)]
+    async fn query_next_sequence_send(
+        &self,
+        height: Height,
+        channel_id: ChannelId,
+    ) -> RpcResult<u64>;
+
+    #[method(name = "queryNextSequenceRecv", with_extensions)]
+    async fn query_next_sequence_recv(
+        &self,
+        height: Height,
+        channel_id: ChannelId,
+    ) -> RpcResult<u64>;
+
+    #[method(name = "queryNextSequenceAck", with_extensions)]
+    async fn query_next_sequence_ack(
+        &self,
+        height: Height,
+        channel_id: ChannelId,
+    ) -> RpcResult<u64>;
+
+    #[method(name = "queryNextConnectionSequence", with_extensions)]
+    async fn query_next_connection_sequence(&self, height: Height) -> RpcResult<u64>;
+
+    #[method(name = "queryNextClientSequence", with_extensions)]
+    async fn query_next_client_sequence(&self, height: Height) -> RpcResult<u64>;
 
     /// Query a proof of IBC state on this chain, at the specified [`Height`],
     /// returning the proof as a JSON [`Value`].
     #[method(name = "queryIbcProof", with_extensions)]
-    async fn query_ibc_proof(&self, at: Height, path: Path) -> RpcResult<Value>;
+    async fn query_ibc_proof(
+        &self,
+        at: Height,
+        path: Path,
+        ibc_store_format: IbcStoreFormat<'static>,
+    ) -> RpcResult<Value>;
 }
 
 /// Raw, un-decoded client state, as queried directly from the client store.
@@ -272,36 +355,6 @@ pub struct RawClientState<'a> {
     pub ibc_interface: IbcInterface<'a>,
     pub bytes: Cow<'a, [u8]>,
 }
-
-pub trait ChainModuleClientExt: ChainModuleClient + Send + Sync {
-    // TODO: Maybe rename? Cor likes "_checked"
-    // TODO: Maybe take by ref here?
-    #[allow(async_fn_in_trait)]
-    async fn query_ibc_state_typed<P: IbcPath<Value: DeserializeOwned> + Serialize + Valuable>(
-        &self,
-        at: Height,
-        path: P,
-    ) -> Result<P::Value, jsonrpsee::core::client::Error> {
-        debug!(path = path.as_value(), %at, "querying ibc state");
-
-        let state = self.query_ibc_state(at, path.clone().into()).await?;
-
-        Ok(
-            serde_json::from_value::<P::Value>(state.clone()).map_err(|e| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize state: {}", ErrorReporter(e)),
-                    Some(json!({
-                        "path": path,
-                        "state": state
-                    })),
-                )
-            })?,
-        )
-    }
-}
-
-impl<T> ChainModuleClientExt for T where T: ChainModuleClient + Send + Sync {}
 
 /// Client modules provide functionality to interact with a single light client
 /// type, on a single IBC interface. This can also be thought of as a "client

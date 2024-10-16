@@ -4,6 +4,23 @@ pub mod ibc {
         #![sol(rpc, all_derives)]
 
         contract Ibc {
+            // STORE
+
+            mapping(bytes32 => bytes32) public commitments;
+
+            // ClientType -> Address
+            mapping(bytes32 => address) public clientRegistry;
+            // ClientId -> ClientType
+            mapping(uint32 => bytes32) public clientTypes;
+            // ClientId -> Address
+            mapping(uint32 => address) public clientImpls;
+            // ConnectionId -> Connection
+            mapping(uint32 => Connection) public connections;
+            // ChannelId -> Channel
+            mapping(uint32 => Channel) public channels;
+            // ChannelId -> PortId
+            mapping(uint32 => address) public channelOwner;
+
             function registerClient(bytes32 clientType, address client) external;
 
             function createClient(
@@ -141,10 +158,6 @@ pub mod ibc {
 
             // IBC CHANNEL
 
-            bytes32 public constant COMMITMENT_MAGIC =
-                0x0100000000000000000000000000000000000000000000000000000000000000;
-            bytes32 public constant COMMITMENT_NULL = bytes32(uint256(0));
-
             event ChannelOpenInit(
                 address portId, uint32 channelId, uint32 connectionId, bytes32 version
             );
@@ -173,7 +186,7 @@ pub mod ibc {
             // IBC PACKET
 
             event SendPacket(Packet packet);
-            event RecvPacket(Packet packets, address relayer, bytes relayerMsg);
+            event RecvPacket(Packet packet, address relayer, bytes relayerMsg);
             event RecvIntentPacket(
                 Packet packet, address marketMaker, bytes marketMakerMsg
             );

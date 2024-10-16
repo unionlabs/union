@@ -5,12 +5,11 @@ use crate::{
     id::ClientId,
 };
 
-#[model(proto(raw(protos::ibc::core::connection::v1::ConnectionEnd), into, from))]
+#[model(proto(raw(protos::ibc::core::connection::v1::ConnectionEnd), into))]
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 #[cfg_attr(feature = "valuable", derive(::valuable::Valuable))]
 pub struct ConnectionEnd {
     pub client_id: ClientId,
-    pub client_type: String,
     pub versions: Vec<Version>,
     pub state: State,
     pub counterparty: Counterparty,
@@ -47,12 +46,11 @@ pub mod proto {
         fn try_from(
             value: protos::ibc::core::connection::v1::ConnectionEnd,
         ) -> Result<Self, Self::Error> {
-            let (client_type, client_id) = ClientId::parse_prefixed(&value.client_id)
+            let (_, client_id) = ClientId::parse_prefixed(&value.client_id)
                 .map_err(TryFromConnectionEndError::ClientId)?;
 
             Ok(Self {
                 client_id,
-                client_type: client_type.to_owned(),
                 versions: value
                     .versions
                     .into_iter()
@@ -70,15 +68,15 @@ pub mod proto {
         }
     }
 
-    impl From<ConnectionEnd> for protos::ibc::core::connection::v1::ConnectionEnd {
-        fn from(value: ConnectionEnd) -> Self {
-            Self {
-                client_id: value.client_id.to_string_prefixed(&value.client_type),
-                versions: value.versions.into_iter().map(Into::into).collect(),
-                state: value.state as i32,
-                counterparty: Some(value.counterparty.into()),
-                delay_period: value.delay_period,
-            }
-        }
-    }
+    // impl From<ConnectionEnd> for protos::ibc::core::connection::v1::ConnectionEnd {
+    //     fn from(value: ConnectionEnd) -> Self {
+    //         Self {
+    //             client_id: value.client_id.to_string_prefixed(&value.client_type),
+    //             versions: value.versions.into_iter().map(Into::into).collect(),
+    //             state: value.state as i32,
+    //             counterparty: Some(value.counterparty.into()),
+    //             delay_period: value.delay_period,
+    //         }
+    //     }
+    // }
 }

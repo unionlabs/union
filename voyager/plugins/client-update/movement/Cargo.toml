@@ -9,7 +9,6 @@ aptos-move-ibc     = { workspace = true }
 aptos-rest-client  = { workspace = true }
 aptos-types        = { workspace = true }
 bitvec             = { workspace = true }
-chain-utils        = { workspace = true }
 enumorph           = { workspace = true }
 futures            = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }

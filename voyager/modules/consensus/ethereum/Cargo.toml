@@ -7,7 +7,6 @@ version = "0.1.0"
 alloy              = { workspace = true, features = ["providers"] }
 beacon-api         = { workspace = true }
 bitvec             = { workspace = true }
-chain-utils        = { workspace = true }
 enumorph           = { workspace = true }
 ethereum-verifier  = { workspace = true }
 futures            = { workspace = true }

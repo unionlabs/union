@@ -48,6 +48,23 @@ impl IbcInterface<'static> {
     // lots more to come - near, fuel - stay tuned
 }
 
+/// The format used for IBC store commitments. An IBC interface can support potentially many IBC store formats, but a client is expected to verify proofs against only one.
+#[apply(str_newtype)]
+pub struct IbcStoreFormat;
+
+/// Well-known IBC stores, defined as constants for reusability and to allow
+/// for pattern matching.
+impl IbcStoreFormat<'static> {
+    /// Standard [ICS-24 path space]. This is the store format used by IBC-go.
+    ///
+    /// [ICS-24 path space]: https://github.com/cosmos/ibc/tree/main/spec/core/ics-024-host-requirements#path-space
+    pub const ICS24: &'static str = "ics24";
+
+    /// The store format used by the union IBC specification. This is the format used by `ibc-solidity`, and is also provided by cosmos chains running the union IBC-go double commit module.
+    // TODO: Link both of those once they're done, and rename this if we get a better name
+    pub const ETHABI: &'static str = "ethabi";
+}
+
 /// Newtype for client types. Clients of the same type have the same client
 /// state, consensus state, and header (client update) types.
 #[apply(str_newtype)]
@@ -190,6 +207,7 @@ pub struct ChainId;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Valuable, JsonSchema)]
 pub struct ClientInfo {
     pub client_type: ClientType<'static>,
+    /// The IBC interface this client is on.
     pub ibc_interface: IbcInterface<'static>,
     /// Additional metadata about this client.
     ///

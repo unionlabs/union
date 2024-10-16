@@ -12,7 +12,6 @@ use crate::{
 pub struct ClientState {
     pub chain_id: String,
     pub l1_client_id: ClientId,
-    pub l1_client_type: String,
     pub l1_contract_address: H160,
     pub l2_contract_address: AccountAddress,
     pub table_handle: AccountAddress,
@@ -33,7 +32,8 @@ pub mod proto {
         fn from(value: ClientState) -> Self {
             Self {
                 chain_id: value.chain_id,
-                l1_client_id: value.l1_client_id.to_string_prefixed(&value.l1_client_type),
+                // l1_client_id: value.l1_client_id,
+                l1_client_id: todo!(),
                 l1_contract_address: value.l1_contract_address.into(),
                 l2_contract_address: value.l2_contract_address.0.into_bytes(),
                 table_handle: value.table_handle.0.into_bytes(),
@@ -61,11 +61,10 @@ pub mod proto {
         fn try_from(
             value: protos::union::ibc::lightclients::movement::v1::ClientState,
         ) -> Result<Self, Self::Error> {
-            let (l1_client_type, l1_client_id) = ClientId::parse_prefixed(&value.l1_client_id)
+            let (_, l1_client_id) = ClientId::parse_prefixed(&value.l1_client_id)
                 .map_err(TryFromClientStateError::L1ClientId)?;
             Ok(Self {
                 l1_client_id,
-                l1_client_type: l1_client_type.to_owned(),
                 l1_contract_address: value
                     .l1_contract_address
                     .try_into()

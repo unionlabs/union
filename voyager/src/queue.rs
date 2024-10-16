@@ -2,7 +2,6 @@
 
 use std::{fmt::Debug, net::SocketAddr, panic::AssertUnwindSafe};
 
-use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{future::BoxFuture, stream::FuturesUnordered, Future, FutureExt, StreamExt};
 use pg_queue::{PgQueue, PgQueueConfig};
 use schemars::JsonSchema;

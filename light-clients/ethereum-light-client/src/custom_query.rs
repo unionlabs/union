@@ -1,9 +1,9 @@
 use cosmwasm_std::{Binary, Deps};
 use ethereum_verifier::{error::InvalidSignature, verify::BlsVerify};
 use unionlabs::{
-    bls::{BlsPublicKey, BlsSignature},
     cosmwasm::wasm::union::custom_query::{query_fast_aggregate_verify, UnionCustomQuery},
     ensure,
+    hash::{H384, H768},
 };
 
 pub struct VerificationContext<'a> {
@@ -13,9 +13,9 @@ pub struct VerificationContext<'a> {
 impl<'a> BlsVerify for VerificationContext<'a> {
     fn fast_aggregate_verify<'pk>(
         &self,
-        public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
+        public_keys: impl IntoIterator<Item = &'pk H384>,
         msg: Vec<u8>,
-        signature: BlsSignature,
+        signature: H768,
     ) -> Result<(), ethereum_verifier::error::Error> {
         let public_keys: Vec<_> = public_keys.into_iter().cloned().collect();
 

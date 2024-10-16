@@ -48,7 +48,7 @@ fn __fast_aggregate_verify(
 
     let public_keys: Vec<&milagro_bls::PublicKey> = public_keys.iter().collect();
 
-    let signature: milagro_bls::Signature = signature.try_into()?;
+    let signature = milagro_bls::Signature::from_bytes(signature.as_ref())?;
 
     let aggregate_signature = milagro_bls::AggregateSignature::aggregate(&[&signature]);
     let aggregate_pubkey =
@@ -69,6 +69,6 @@ fn __eth_aggregate_public_keys(
     let public_keys: Vec<&milagro_bls::PublicKey> = public_keys.iter().collect();
 
     milagro_bls::AggregatePublicKey::aggregate(&public_keys)
-        .map(|x| x.into())
+        .map(|x| milagro_bls::PublicKey { point: x.point }.as_bytes().into())
         .map_err(Error::Bls)
 }

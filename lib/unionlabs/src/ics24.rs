@@ -2,22 +2,32 @@ use core::num::NonZeroU64;
 
 use enumorph::Enumorph;
 use macros::model;
-use serde_utils::Hex;
+use sha2::Digest;
+use sha3::Keccak256;
 
 use crate::{
     hash::H256,
-    ibc::core::{
-        channel::channel::Channel, client::height::Height,
-        connection::connection_end::ConnectionEnd,
-    },
+    ibc::core::client::height::Height,
     id::{ChannelId, ClientId, ConnectionId, PortId, CHANNEL_ID_PREFIX, CONNECTION_ID_PREFIX},
 };
 
-/// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
-/// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
-pub trait IbcPath: Clone + TryFrom<Path, Error = Path> + Into<Path> {
-    type Value;
-}
+/// 0x0100000000000000000000000000000000000000000000000000000000000000
+pub const COMMITMENT_MAGIC: H256 = {
+    let mut bz = [0; 32];
+    bz[0] = 1;
+    H256::new(bz)
+};
+pub const COMMITMENT_NULL: H256 = H256::new([0; 32]);
+
+const CLIENT_STATE: u8 = 0x00;
+const CONSENSUS_STATE: u8 = 0x01;
+const CONNECTIONS: u8 = 0x02;
+const CHANNELS: u8 = 0x03;
+const PACKETS: u8 = 0x04;
+const PACKET_ACKS: u8 = 0x05;
+const NEXT_SEQ_SEND: u8 = 0x06;
+const NEXT_SEQ_RECV: u8 = 0x07;
+const NEXT_SEQ_ACK: u8 = 0x08;
 
 #[model]
 #[derive(Hash, Enumorph)]
@@ -54,10 +64,15 @@ impl ClientStatePath {
             self.client_id.id()
         )
     }
-}
 
-impl IbcPath for ClientStatePath {
-    type Value = Hex<Vec<u8>>;
+    #[must_use]
+    pub fn commitments_key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update([CLIENT_STATE])
+            .chain_update(self.client_id.id().to_be_bytes())
+            .finalize()
+            .into()
+    }
 }
 
 /// The raw consensus state bytes as encoded by the light client.
@@ -79,10 +94,16 @@ impl ClientConsensusStatePath {
             self.height
         )
     }
-}
 
-impl IbcPath for ClientConsensusStatePath {
-    type Value = Hex<Vec<u8>>;
+    #[must_use]
+    pub fn commitments_key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update([CONSENSUS_STATE])
+            .chain_update(self.client_id.id().to_be_bytes())
+            .chain_update(self.height.height().to_be_bytes())
+            .finalize()
+            .into()
+    }
 }
 
 #[model]
@@ -100,58 +121,72 @@ impl ConnectionPath {
             self.connection_id.id(),
         )
     }
-}
 
-impl IbcPath for ConnectionPath {
-    type Value = Option<ConnectionEnd>;
+    #[must_use]
+    pub fn commitments_key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update([CONNECTIONS])
+            .chain_update(self.connection_id.id().to_be_bytes())
+            .finalize()
+            .into()
+    }
 }
 
 #[model]
 #[derive(Hash)]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct ChannelEndPath {
-    pub port_id: PortId,
     pub channel_id: ChannelId,
 }
 
 impl ChannelEndPath {
     #[must_use]
-    pub fn ics24_commitment_path(&self) -> String {
+    pub fn ics24_commitment_path(&self, port_id: &PortId) -> String {
         format!(
             "channelEnds/ports/{}/channels/{CHANNEL_ID_PREFIX}-{}",
-            self.port_id,
+            port_id,
             self.channel_id.id(),
         )
     }
-}
 
-impl IbcPath for ChannelEndPath {
-    type Value = Option<Channel>;
+    #[must_use]
+    pub fn commitments_key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update([CHANNELS])
+            .chain_update(self.channel_id.id().to_be_bytes())
+            .finalize()
+            .into()
+    }
 }
 
 #[model]
 #[derive(Hash)]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct CommitmentPath {
-    pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: NonZeroU64,
 }
 
 impl CommitmentPath {
     #[must_use]
-    pub fn ics24_commitment_path(&self) -> String {
+    pub fn ics24_commitment_path(&self, port_id: &PortId) -> String {
         format!(
             "commitments/ports/{}/channels/{CHANNEL_ID_PREFIX}-{}/sequences/{}",
-            self.port_id,
+            port_id,
             self.channel_id.id(),
             self.sequence,
         )
     }
-}
 
-impl IbcPath for CommitmentPath {
-    type Value = Option<H256>;
+    #[must_use]
+    pub fn commitments_key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update([PACKETS])
+            .chain_update(self.channel_id.id().to_be_bytes())
+            .chain_update(self.sequence.get().to_be_bytes())
+            .finalize()
+            .into()
+    }
 }
 
 /// SHA-256 of the packet acknowledgement.
@@ -161,25 +196,30 @@ impl IbcPath for CommitmentPath {
 #[derive(Hash)]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct AcknowledgementPath {
-    pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: NonZeroU64,
 }
 
 impl AcknowledgementPath {
     #[must_use]
-    pub fn ics24_commitment_path(&self) -> String {
+    pub fn ics24_commitment_path(&self, port_id: &PortId) -> String {
         format!(
             "acks/ports/{}/channels/{CHANNEL_ID_PREFIX}-{}/sequences/{}",
-            self.port_id,
+            port_id,
             self.channel_id.id(),
             self.sequence,
         )
     }
-}
 
-impl IbcPath for AcknowledgementPath {
-    type Value = Option<H256>;
+    #[must_use]
+    pub fn commitments_key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update([PACKET_ACKS])
+            .chain_update(self.channel_id.id().to_be_bytes())
+            .chain_update(self.sequence.get().to_be_bytes())
+            .finalize()
+            .into()
+    }
 }
 
 /// This defaults to `false` for packets which have not yet been received.
@@ -187,94 +227,111 @@ impl IbcPath for AcknowledgementPath {
 #[derive(Hash)]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct ReceiptPath {
-    pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: NonZeroU64,
 }
 
 impl ReceiptPath {
     #[must_use]
-    pub fn ics24_commitment_path(&self) -> String {
+    pub fn ics24_commitment_path(&self, port_id: &PortId) -> String {
         format!(
             "receipts/ports/{}/channels/{CHANNEL_ID_PREFIX}-{}/sequences/{}",
-            self.port_id,
+            port_id,
             self.channel_id.id(),
             self.sequence,
         )
     }
-}
 
-impl IbcPath for ReceiptPath {
-    type Value = bool;
+    #[must_use]
+    pub fn commitments_key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update([PACKETS])
+            .chain_update(self.channel_id.id().to_be_bytes())
+            .chain_update(self.sequence.get().to_be_bytes())
+            .finalize()
+            .into()
+    }
 }
 
 #[model]
 #[derive(Hash)]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct NextSequenceSendPath {
-    pub port_id: PortId,
     pub channel_id: ChannelId,
 }
 
 impl NextSequenceSendPath {
     #[must_use]
-    pub fn ics24_commitment_path(&self) -> String {
+    pub fn ics24_commitment_path(&self, port_id: &PortId) -> String {
         format!(
             "nextSequenceSend/ports/{}/channels/{CHANNEL_ID_PREFIX}-{}",
-            self.port_id,
+            port_id,
             self.channel_id.id(),
         )
     }
-}
 
-impl IbcPath for NextSequenceSendPath {
-    type Value = u64;
+    #[must_use]
+    pub fn commitments_key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update([NEXT_SEQ_SEND])
+            .chain_update(self.channel_id.id().to_be_bytes())
+            .finalize()
+            .into()
+    }
 }
 
 #[model]
 #[derive(Hash)]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct NextSequenceRecvPath {
-    pub port_id: PortId,
     pub channel_id: ChannelId,
 }
 
 impl NextSequenceRecvPath {
     #[must_use]
-    pub fn ics24_commitment_path(&self) -> String {
+    pub fn ics24_commitment_path(&self, port_id: &PortId) -> String {
         format!(
             "nextSequenceRecv/ports/{}/channels/{CHANNEL_ID_PREFIX}-{}",
-            self.port_id,
+            port_id,
             self.channel_id.id(),
         )
     }
-}
 
-impl IbcPath for NextSequenceRecvPath {
-    type Value = u64;
+    #[must_use]
+    pub fn commitments_key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update([NEXT_SEQ_RECV])
+            .chain_update(self.channel_id.id().to_be_bytes())
+            .finalize()
+            .into()
+    }
 }
 
 #[model]
 #[derive(Hash)]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct NextSequenceAckPath {
-    pub port_id: PortId,
     pub channel_id: ChannelId,
 }
 
 impl NextSequenceAckPath {
     #[must_use]
-    pub fn ics24_commitment_path(&self) -> String {
+    pub fn ics24_commitment_path(&self, port_id: &PortId) -> String {
         format!(
             "nextSequenceAck/ports/{}/channels/{CHANNEL_ID_PREFIX}-{}",
-            self.port_id,
+            port_id,
             self.channel_id.id(),
         )
     }
-}
 
-impl IbcPath for NextSequenceAckPath {
-    type Value = u64;
+    #[must_use]
+    pub fn commitments_key(&self) -> H256 {
+        Keccak256::new()
+            .chain_update([NEXT_SEQ_ACK])
+            .chain_update(self.channel_id.id().to_be_bytes())
+            .finalize()
+            .into()
+    }
 }
 
 #[model]
@@ -289,10 +346,6 @@ impl NextConnectionSequencePath {
     }
 }
 
-impl IbcPath for NextConnectionSequencePath {
-    type Value = u64;
-}
-
 #[model]
 #[derive(Hash)]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
@@ -303,10 +356,6 @@ impl NextClientSequencePath {
     pub fn ics24_commitment_path(&self) -> String {
         "nextClientSequence".to_owned()
     }
-}
-
-impl IbcPath for NextClientSequencePath {
-    type Value = u64;
 }
 
 #[cfg(test)]
@@ -348,28 +397,25 @@ mod tests {
         );
         assert_eq!(
             ChannelEndPath {
-                port_id: "port".parse().unwrap(),
                 channel_id: ChannelId::new(0),
             }
-            .ics24_commitment_path(),
+            .ics24_commitment_path(&"port".parse().unwrap()),
             "channelEnds/ports/port/channels/channel-0",
         );
         assert_eq!(
             CommitmentPath {
-                port_id: "port".parse().unwrap(),
                 channel_id: ChannelId::new(0),
                 sequence: 1.try_into().unwrap()
             }
-            .ics24_commitment_path(),
+            .ics24_commitment_path(&"port".parse().unwrap()),
             "commitments/ports/port/channels/channel-0/sequences/1",
         );
         assert_eq!(
             AcknowledgementPath {
-                port_id: "port".parse().unwrap(),
                 channel_id: ChannelId::new(0),
                 sequence: 1.try_into().unwrap()
             }
-            .ics24_commitment_path(),
+            .ics24_commitment_path(&"port".parse().unwrap()),
             "acks/ports/port/channels/channel-0/sequences/1",
         );
     }

@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[model(proto(raw(protos::ibc::core::channel::v1::Channel), into, from))]
+#[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 pub struct Channel {
     pub state: State,
     pub ordering: Order,

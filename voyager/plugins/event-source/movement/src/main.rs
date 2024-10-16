@@ -22,7 +22,7 @@ use unionlabs::{
         connection::{self, connection_end::ConnectionEnd},
     },
     ics24::{ChannelEndPath, ConnectionPath},
-    id::{ChannelId, ClientId, PortId},
+    id::{ChannelId, ClientId, ConnectionId, PortId},
     ErrorReporter, QueryHeight,
 };
 use voyager_message::{
@@ -225,7 +225,7 @@ impl Module {
                 QueryHeight::Latest,
                 ChannelEndPath {
                     port_id: self_channel.counterparty.port_id.clone(),
-                    channel_id: self_channel.counterparty.channel_id.parse().unwrap(),
+                    channel_id: self_channel.counterparty.channel_id.unwrap(),
                 },
             )
             .await
@@ -471,395 +471,397 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     Height::new_with_revision(h.revision_number.0, h.revision_height.0)
                 }
 
-                let (full_event, client_id): (FullIbcEvent, ClientId) = match event {
-                    events::IbcEvent::CreateClient(event) => (
-                        CreateClient {
-                            client_id: event.client_id.parse().unwrap(),
-                            client_type: ClientType::new(event.client_type),
-                            consensus_height: ibc_height(event.consensus_height),
-                        }
-                        .into(),
-                        event.client_id.parse().unwrap(),
-                    ),
-                    events::IbcEvent::UpdateClient(event) => (
-                        UpdateClient {
-                            client_id: event.client_id.parse().unwrap(),
-                            client_type: ClientType::new(event.client_type),
-                            consensus_heights: vec![ibc_height(event.height)],
-                        }
-                        .into(),
-                        event.client_id.parse().unwrap(),
-                    ),
-                    events::IbcEvent::ConnectionOpenInit(event) => (
-                        ConnectionOpenInit {
-                            client_id: event.client_id.parse().unwrap(),
-                            connection_id: event.connection_id.parse().unwrap(),
-                            counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
-                        }
-                        .into(),
-                        event.client_id.parse().unwrap(),
-                    ),
-                    events::IbcEvent::ConnectionOpenTry(event) => (
-                        ConnectionOpenTry {
-                            client_id: event.client_id.parse().unwrap(),
-                            connection_id: event.connection_id.parse().unwrap(),
-                            counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
-                            counterparty_connection_id: event
-                                .counterparty_connection_id
-                                .parse()
-                                .unwrap(),
-                        }
-                        .into(),
-                        event.client_id.parse().unwrap(),
-                    ),
-                    events::IbcEvent::ConnectionOpenAck(event) => (
-                        ConnectionOpenAck {
-                            client_id: event.client_id.parse().unwrap(),
-                            connection_id: event.connection_id.parse().unwrap(),
-                            counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
-                            counterparty_connection_id: event
-                                .counterparty_connection_id
-                                .parse()
-                                .unwrap(),
-                        }
-                        .into(),
-                        event.client_id.parse().unwrap(),
-                    ),
-                    events::IbcEvent::ConnectionOpenConfirm(e) => (
-                        ConnectionOpenConfirm {
-                            client_id: e.client_id.parse().unwrap(),
-                            connection_id: e.connection_id.parse().unwrap(),
-                            counterparty_client_id: e.counterparty_client_id.parse().unwrap(),
-                            counterparty_connection_id: e
-                                .counterparty_connection_id
-                                .parse()
-                                .unwrap(),
-                        }
-                        .into(),
-                        e.client_id.parse().unwrap(),
-                    ),
-                    events::IbcEvent::ChannelOpenInit(event) => {
-                        let ledger_version = self.ledger_version_of_height(height).await;
+                // let (full_event, client_id): (FullIbcEvent, ClientId) = match event {
+                //     events::IbcEvent::CreateClient(event) => (
+                //         CreateClient {
+                //             client_id: event.client_id.parse().unwrap(),
+                //             client_type: ClientType::new(event.client_type),
+                //             consensus_height: ibc_height(event.consensus_height),
+                //         }
+                //         .into(),
+                //         event.client_id.parse().unwrap(),
+                //     ),
+                //     events::IbcEvent::UpdateClient(event) => (
+                //         UpdateClient {
+                //             client_id: event.client_id.parse().unwrap(),
+                //             client_type: ClientType::new(event.client_type),
+                //             consensus_heights: vec![ibc_height(event.height)],
+                //         }
+                //         .into(),
+                //         event.client_id.parse().unwrap(),
+                //     ),
+                //     events::IbcEvent::ConnectionOpenInit(event) => (
+                //         ConnectionOpenInit {
+                //             client_id: event.client_id.parse().unwrap(),
+                //             connection_id: event.connection_id.parse().unwrap(),
+                //             counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
+                //         }
+                //         .into(),
+                //         event.client_id.parse().unwrap(),
+                //     ),
+                //     events::IbcEvent::ConnectionOpenTry(event) => (
+                //         ConnectionOpenTry {
+                //             client_id: event.client_id.parse().unwrap(),
+                //             connection_id: event.connection_id.parse().unwrap(),
+                //             counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
+                //             counterparty_connection_id: event
+                //                 .counterparty_connection_id
+                //                 .parse()
+                //                 .unwrap(),
+                //         }
+                //         .into(),
+                //         event.client_id.parse().unwrap(),
+                //     ),
+                //     events::IbcEvent::ConnectionOpenAck(event) => (
+                //         ConnectionOpenAck {
+                //             client_id: event.client_id.parse().unwrap(),
+                //             connection_id: event.connection_id.parse().unwrap(),
+                //             counterparty_client_id: event.counterparty_client_id.parse().unwrap(),
+                //             counterparty_connection_id: event
+                //                 .counterparty_connection_id
+                //                 .parse()
+                //                 .unwrap(),
+                //         }
+                //         .into(),
+                //         event.client_id.parse().unwrap(),
+                //     ),
+                //     events::IbcEvent::ConnectionOpenConfirm(e) => (
+                //         ConnectionOpenConfirm {
+                //             client_id: e.client_id.parse().unwrap(),
+                //             connection_id: e.connection_id.parse().unwrap(),
+                //             counterparty_client_id: e.counterparty_client_id.parse().unwrap(),
+                //             counterparty_connection_id: e
+                //                 .counterparty_connection_id
+                //                 .parse()
+                //                 .unwrap(),
+                //         }
+                //         .into(),
+                //         e.client_id.parse().unwrap(),
+                //     ),
+                //     events::IbcEvent::ChannelOpenInit(event) => {
+                //         let ledger_version = self.ledger_version_of_height(height).await;
 
-                        let connection = self
-                            .get_connection(
-                                self.ibc_handler_address.into(),
-                                (event.connection_id,),
-                                Some(ledger_version),
-                            )
-                            .await
-                            .unwrap()
-                            .into_option()
-                            .unwrap();
+                //         let connection = self
+                //             .get_connection(
+                //                 self.ibc_handler_address.into(),
+                //                 (event.connection_id,),
+                //                 Some(ledger_version),
+                //             )
+                //             .await
+                //             .unwrap()
+                //             .into_option()
+                //             .unwrap();
 
-                        let connection = convert_connection(connection);
+                //         let connection = convert_connection(connection);
 
-                        let client_id = connection.client_id.clone();
+                //         let client_id = connection.client_id.clone();
 
-                        (
-                            ChannelOpenInit {
-                                port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id.parse().unwrap(),
-                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
-                                connection,
-                                version: event.version,
-                            }
-                            .into(),
-                            client_id,
-                        )
-                    }
-                    events::IbcEvent::ChannelOpenTry(event) => {
-                        let ledger_version = self.ledger_version_of_height(height).await;
+                //         (
+                //             ChannelOpenInit {
+                //                 port_id: event.port_id.parse().unwrap(),
+                //                 channel_id: event.channel_id.parse().unwrap(),
+                //                 counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
+                //                 connection,
+                //                 version: event.version,
+                //             }
+                //             .into(),
+                //             client_id,
+                //         )
+                //     }
+                //     events::IbcEvent::ChannelOpenTry(event) => {
+                //         let ledger_version = self.ledger_version_of_height(height).await;
 
-                        let connection = self
-                            .get_connection(
-                                self.ibc_handler_address.into(),
-                                (event.connection_id,),
-                                Some(ledger_version),
-                            )
-                            .await
-                            .unwrap()
-                            .into_option()
-                            .unwrap();
+                //         let connection = self
+                //             .get_connection(
+                //                 self.ibc_handler_address.into(),
+                //                 (event.connection_id,),
+                //                 Some(ledger_version),
+                //             )
+                //             .await
+                //             .unwrap()
+                //             .into_option()
+                //             .unwrap();
 
-                        let connection = convert_connection(connection);
+                //         let connection = convert_connection(connection);
 
-                        let client_id = connection.client_id.clone();
+                //         let client_id = connection.client_id.clone();
 
-                        (
-                            ChannelOpenTry {
-                                port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id.parse().unwrap(),
-                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
-                                counterparty_channel_id: event
-                                    .counterparty_port_id
-                                    .parse()
-                                    .unwrap(),
-                                connection,
-                                version: event.version,
-                            }
-                            .into(),
-                            client_id,
-                        )
-                    }
-                    events::IbcEvent::ChannelOpenAck(event) => {
-                        let ledger_version = self.ledger_version_of_height(height).await;
+                //         (
+                //             ChannelOpenTry {
+                //                 port_id: event.port_id.parse().unwrap(),
+                //                 channel_id: event.channel_id.parse().unwrap(),
+                //                 counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
+                //                 counterparty_channel_id: event
+                //                     .counterparty_port_id
+                //                     .parse()
+                //                     .unwrap(),
+                //                 connection,
+                //                 version: event.version,
+                //             }
+                //             .into(),
+                //             client_id,
+                //         )
+                //     }
+                //     events::IbcEvent::ChannelOpenAck(event) => {
+                //         let ledger_version = self.ledger_version_of_height(height).await;
 
-                        let connection = self
-                            .get_connection(
-                                self.ibc_handler_address.into(),
-                                (event.connection_id,),
-                                Some(ledger_version),
-                            )
-                            .await
-                            .unwrap()
-                            .into_option()
-                            .unwrap();
+                //         let connection = self
+                //             .get_connection(
+                //                 self.ibc_handler_address.into(),
+                //                 (event.connection_id,),
+                //                 Some(ledger_version),
+                //             )
+                //             .await
+                //             .unwrap()
+                //             .into_option()
+                //             .unwrap();
 
-                        let channel = self
-                            .get_channel(
-                                self.ibc_handler_address.into(),
-                                (event.port_id.clone(), event.channel_id.clone()),
-                                Some(ledger_version),
-                            )
-                            .await
-                            .unwrap()
-                            .into_option()
-                            .unwrap();
+                //         let channel = self
+                //             .get_channel(
+                //                 self.ibc_handler_address.into(),
+                //                 (event.port_id.clone(), event.channel_id.clone()),
+                //                 Some(ledger_version),
+                //             )
+                //             .await
+                //             .unwrap()
+                //             .into_option()
+                //             .unwrap();
 
-                        let connection = convert_connection(connection);
+                //         let connection = convert_connection(connection);
 
-                        let channel = convert_channel(channel);
+                //         let channel = convert_channel(channel);
 
-                        let client_id = connection.client_id.clone();
+                //         let client_id = connection.client_id.clone();
 
-                        (
-                            ChannelOpenAck {
-                                port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id.parse().unwrap(),
-                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
-                                counterparty_channel_id: event
-                                    .counterparty_channel_id
-                                    .parse()
-                                    .unwrap(),
-                                connection,
-                                version: channel.version,
-                            }
-                            .into(),
-                            client_id,
-                        )
-                    }
-                    events::IbcEvent::ChannelOpenConfirm(event) => {
-                        let ledger_version = self.ledger_version_of_height(height).await;
+                //         (
+                //             ChannelOpenAck {
+                //                 port_id: event.port_id.parse().unwrap(),
+                //                 channel_id: event.channel_id.parse().unwrap(),
+                //                 counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
+                //                 counterparty_channel_id: event
+                //                     .counterparty_channel_id
+                //                     .parse()
+                //                     .unwrap(),
+                //                 connection,
+                //                 version: channel.version,
+                //             }
+                //             .into(),
+                //             client_id,
+                //         )
+                //     }
+                //     events::IbcEvent::ChannelOpenConfirm(event) => {
+                //         let ledger_version = self.ledger_version_of_height(height).await;
 
-                        let connection = self
-                            .get_connection(
-                                self.ibc_handler_address.into(),
-                                (event.connection_id,),
-                                Some(ledger_version),
-                            )
-                            .await
-                            .unwrap()
-                            .into_option()
-                            .unwrap();
+                //         let connection = self
+                //             .get_connection(
+                //                 self.ibc_handler_address.into(),
+                //                 (event.connection_id,),
+                //                 Some(ledger_version),
+                //             )
+                //             .await
+                //             .unwrap()
+                //             .into_option()
+                //             .unwrap();
 
-                        let channel = self
-                            .get_channel(
-                                self.ibc_handler_address.into(),
-                                (event.port_id.clone(), event.channel_id.clone()),
-                                Some(ledger_version),
-                            )
-                            .await
-                            .unwrap()
-                            .into_option()
-                            .unwrap();
+                //         let channel = self
+                //             .get_channel(
+                //                 self.ibc_handler_address.into(),
+                //                 (event.port_id.clone(), event.channel_id.clone()),
+                //                 Some(ledger_version),
+                //             )
+                //             .await
+                //             .unwrap()
+                //             .into_option()
+                //             .unwrap();
 
-                        let connection = convert_connection(connection);
+                //         let connection = convert_connection(connection);
 
-                        let channel = convert_channel(channel);
+                //         let channel = convert_channel(channel);
 
-                        let client_id = connection.client_id.clone();
+                //         let client_id = connection.client_id.clone();
 
-                        (
-                            ChannelOpenConfirm {
-                                port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id.parse().unwrap(),
-                                counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
-                                counterparty_channel_id: event
-                                    .counterparty_channel_id
-                                    .parse()
-                                    .unwrap(),
-                                connection,
-                                version: channel.version,
-                            }
-                            .into(),
-                            client_id,
-                        )
-                    }
-                    events::IbcEvent::WriteAcknowledgement(event) => {
-                        let (
-                            _counterparty_chain_id,
-                            _client_info,
-                            destination_channel,
-                            source_channel,
-                            channel_ordering,
-                        ) = self
-                            .make_packet_metadata(
-                                self.make_height(height),
-                                event.packet.destination_port.parse().unwrap(),
-                                event.packet.destination_channel.parse().unwrap(),
-                                e.try_get()?,
-                            )
-                            .await?;
+                //         (
+                //             ChannelOpenConfirm {
+                //                 port_id: event.port_id.parse().unwrap(),
+                //                 channel_id: event.channel_id.parse().unwrap(),
+                //                 counterparty_port_id: event.counterparty_port_id.parse().unwrap(),
+                //                 counterparty_channel_id: event
+                //                     .counterparty_channel_id
+                //                     .parse()
+                //                     .unwrap(),
+                //                 connection,
+                //                 version: channel.version,
+                //             }
+                //             .into(),
+                //             client_id,
+                //         )
+                //     }
+                //     events::IbcEvent::WriteAcknowledgement(event) => {
+                //         let (
+                //             _counterparty_chain_id,
+                //             _client_info,
+                //             destination_channel,
+                //             source_channel,
+                //             channel_ordering,
+                //         ) = self
+                //             .make_packet_metadata(
+                //                 self.make_height(height),
+                //                 event.packet.destination_port.parse().unwrap(),
+                //                 event.packet.destination_channel.parse().unwrap(),
+                //                 e.try_get()?,
+                //             )
+                //             .await?;
 
-                        let client_id = destination_channel.connection.client_id.clone();
+                //         let client_id = destination_channel.connection.client_id.clone();
 
-                        (
-                            WriteAcknowledgement {
-                                packet_data: event.packet.data.into(),
-                                packet_ack: event.acknowledgement.into(),
-                                packet: PacketMetadata {
-                                    sequence: (*event.packet.sequence.inner()).try_into().unwrap(),
-                                    source_channel,
-                                    destination_channel,
-                                    channel_ordering,
-                                    timeout_height: ibc_height(event.packet.timeout_height),
-                                    timeout_timestamp: *event.packet.timeout_timestamp.inner(),
-                                },
-                            }
-                            .into(),
-                            client_id,
-                        )
-                    }
-                    events::IbcEvent::RecvPacket(event) => {
-                        let (
-                            _counterparty_chain_id,
-                            _client_info,
-                            destination_channel,
-                            source_channel,
-                            channel_ordering,
-                        ) = self
-                            .make_packet_metadata(
-                                self.make_height(height),
-                                event.packet.destination_port.parse().unwrap(),
-                                event.packet.destination_channel.parse().unwrap(),
-                                e.try_get()?,
-                            )
-                            .await?;
+                //         (
+                //             WriteAcknowledgement {
+                //                 packet_data: event.packet.data.into(),
+                //                 packet_ack: event.acknowledgement.into(),
+                //                 packet: PacketMetadata {
+                //                     sequence: (*event.packet.sequence.inner()).try_into().unwrap(),
+                //                     source_channel,
+                //                     destination_channel,
+                //                     channel_ordering,
+                //                     timeout_height: ibc_height(event.packet.timeout_height),
+                //                     timeout_timestamp: *event.packet.timeout_timestamp.inner(),
+                //                 },
+                //             }
+                //             .into(),
+                //             client_id,
+                //         )
+                //     }
+                //     events::IbcEvent::RecvPacket(event) => {
+                //         let (
+                //             _counterparty_chain_id,
+                //             _client_info,
+                //             destination_channel,
+                //             source_channel,
+                //             channel_ordering,
+                //         ) = self
+                //             .make_packet_metadata(
+                //                 self.make_height(height),
+                //                 event.packet.destination_port.parse().unwrap(),
+                //                 event.packet.destination_channel.parse().unwrap(),
+                //                 e.try_get()?,
+                //             )
+                //             .await?;
 
-                        let client_id = destination_channel.connection.client_id.clone();
+                //         let client_id = destination_channel.connection.client_id.clone();
 
-                        (
-                            RecvPacket {
-                                packet_data: event.packet.data.into(),
-                                packet: PacketMetadata {
-                                    sequence: (*event.packet.sequence.inner()).try_into().unwrap(),
-                                    source_channel,
-                                    destination_channel,
-                                    channel_ordering,
-                                    timeout_height: ibc_height(event.packet.timeout_height),
-                                    timeout_timestamp: *event.packet.timeout_timestamp.inner(),
-                                },
-                            }
-                            .into(),
-                            client_id,
-                        )
-                    }
-                    events::IbcEvent::SendPacket(event) => {
-                        let (
-                            _counterparty_chain_id,
-                            _client_info,
-                            source_channel,
-                            destination_channel,
-                            channel_ordering,
-                        ) = self
-                            .make_packet_metadata(
-                                self.make_height(height),
-                                event.source_port.parse().unwrap(),
-                                event.source_channel.parse().unwrap(),
-                                e.try_get()?,
-                            )
-                            .await?;
+                //         (
+                //             RecvPacket {
+                //                 packet_data: event.packet.data.into(),
+                //                 packet: PacketMetadata {
+                //                     sequence: (*event.packet.sequence.inner()).try_into().unwrap(),
+                //                     source_channel,
+                //                     destination_channel,
+                //                     channel_ordering,
+                //                     timeout_height: ibc_height(event.packet.timeout_height),
+                //                     timeout_timestamp: *event.packet.timeout_timestamp.inner(),
+                //                 },
+                //             }
+                //             .into(),
+                //             client_id,
+                //         )
+                //     }
+                //     events::IbcEvent::SendPacket(event) => {
+                //         let (
+                //             _counterparty_chain_id,
+                //             _client_info,
+                //             source_channel,
+                //             destination_channel,
+                //             channel_ordering,
+                //         ) = self
+                //             .make_packet_metadata(
+                //                 self.make_height(height),
+                //                 event.source_port.parse().unwrap(),
+                //                 event.source_channel.parse().unwrap(),
+                //                 e.try_get()?,
+                //             )
+                //             .await?;
 
-                        let client_id = source_channel.connection.client_id.clone();
+                //         let client_id = source_channel.connection.client_id.clone();
 
-                        (
-                            SendPacket {
-                                packet_data: event.data.into(),
-                                packet: PacketMetadata {
-                                    sequence: (*event.sequence.inner()).try_into().unwrap(),
-                                    source_channel,
-                                    destination_channel,
-                                    channel_ordering,
-                                    timeout_height: ibc_height(event.timeout_height),
-                                    timeout_timestamp: *event.timeout_timestamp.inner(),
-                                },
-                            }
-                            .into(),
-                            client_id,
-                        )
-                    }
-                    events::IbcEvent::AcknowledgePacket(event) => {
-                        let (
-                            _counterparty_chain_id,
-                            _client_info,
-                            source_channel,
-                            destination_channel,
-                            channel_ordering,
-                        ) = self
-                            .make_packet_metadata(
-                                self.make_height(height),
-                                event.packet.source_port.parse().unwrap(),
-                                event.packet.source_channel.parse().unwrap(),
-                                e.try_get()?,
-                            )
-                            .await?;
+                //         (
+                //             SendPacket {
+                //                 packet_data: event.data.into(),
+                //                 packet: PacketMetadata {
+                //                     sequence: (*event.sequence.inner()).try_into().unwrap(),
+                //                     source_channel,
+                //                     destination_channel,
+                //                     channel_ordering,
+                //                     timeout_height: ibc_height(event.timeout_height),
+                //                     timeout_timestamp: *event.timeout_timestamp.inner(),
+                //                 },
+                //             }
+                //             .into(),
+                //             client_id,
+                //         )
+                //     }
+                //     events::IbcEvent::AcknowledgePacket(event) => {
+                //         let (
+                //             _counterparty_chain_id,
+                //             _client_info,
+                //             source_channel,
+                //             destination_channel,
+                //             channel_ordering,
+                //         ) = self
+                //             .make_packet_metadata(
+                //                 self.make_height(height),
+                //                 event.packet.source_port.parse().unwrap(),
+                //                 event.packet.source_channel.parse().unwrap(),
+                //                 e.try_get()?,
+                //             )
+                //             .await?;
 
-                        let client_id = source_channel.connection.client_id.clone();
+                //         let client_id = source_channel.connection.client_id.clone();
 
-                        (
-                            AcknowledgePacket {
-                                packet: PacketMetadata {
-                                    sequence: (*event.packet.sequence.inner()).try_into().unwrap(),
-                                    source_channel,
-                                    destination_channel,
-                                    channel_ordering,
-                                    timeout_height: ibc_height(event.packet.timeout_height),
-                                    timeout_timestamp: *event.packet.timeout_timestamp.inner(),
-                                },
-                            }
-                            .into(),
-                            client_id,
-                        )
-                    }
-                    events::IbcEvent::TimeoutPacket(_) => todo!(),
-                };
+                //         (
+                //             AcknowledgePacket {
+                //                 packet: PacketMetadata {
+                //                     sequence: (*event.packet.sequence.inner()).try_into().unwrap(),
+                //                     source_channel,
+                //                     destination_channel,
+                //                     channel_ordering,
+                //                     timeout_height: ibc_height(event.packet.timeout_height),
+                //                     timeout_timestamp: *event.packet.timeout_timestamp.inner(),
+                //                 },
+                //             }
+                //             .into(),
+                //             client_id,
+                //         )
+                //     }
+                //     events::IbcEvent::TimeoutPacket(_) => todo!(),
+                // };
 
-                let voyager_client = e.try_get::<VoyagerClient>()?;
+                // let voyager_client = e.try_get::<VoyagerClient>()?;
 
-                let client_info = voyager_client
-                    .client_info(self.chain_id.clone(), client_id.clone())
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                // let client_info = voyager_client
+                //     .client_info(self.chain_id.clone(), client_id.clone())
+                //     .await
+                //     .map_err(json_rpc_error_to_error_object)?;
 
-                let client_meta = voyager_client
-                    .client_meta(
-                        self.chain_id.clone(),
-                        self.make_height(height).into(),
-                        client_id.clone(),
-                    )
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                // let client_meta = voyager_client
+                //     .client_meta(
+                //         self.chain_id.clone(),
+                //         self.make_height(height).into(),
+                //         client_id.clone(),
+                //     )
+                //     .await
+                //     .map_err(json_rpc_error_to_error_object)?;
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
-                    client_info,
-                    counterparty_chain_id: client_meta.chain_id,
-                    tx_hash,
-                    // TODO: Review this, does it need to be +1?
-                    provable_height: self.make_height(height),
-                    event: full_event,
-                }))
+                // Ok(data(ChainEvent {
+                //     chain_id: self.chain_id.clone(),
+                //     client_info,
+                //     counterparty_chain_id: client_meta.chain_id,
+                //     tx_hash,
+                //     // TODO: Review this, does it need to be +1?
+                //     provable_height: self.make_height(height),
+                //     event: full_event,
+                // }))
+
+                todo!();
             }
         }
     }
@@ -873,7 +875,7 @@ pub fn convert_connection(
     connection: aptos_move_ibc::connection_end::ConnectionEnd,
 ) -> ConnectionEnd {
     ConnectionEnd {
-        client_id: connection.client_id.parse().unwrap(),
+        client_id: ClientId::parse_prefixed(&connection.client_id).unwrap().1,
         versions: connection
             .versions
             .into_iter()
@@ -889,11 +891,13 @@ pub fn convert_connection(
         state: connection::state::State::try_from(u8::try_from(connection.state.0).unwrap())
             .unwrap(),
         counterparty: connection::counterparty::Counterparty {
-            client_id: connection.counterparty.client_id.parse().unwrap(),
+            client_id: ClientId::parse_prefixed(&connection.counterparty.client_id)
+                .unwrap()
+                .1,
             connection_id: if connection.counterparty.connection_id.is_empty() {
                 None
             } else {
-                Some(connection.counterparty.connection_id.parse().unwrap())
+                Some(ConnectionId::parse_prefixed(&connection.counterparty.connection_id).unwrap())
             },
             prefix: MerklePrefix {
                 key_prefix: connection.counterparty.prefix.key_prefix.into(),
@@ -909,12 +913,12 @@ pub fn convert_channel(channel: aptos_move_ibc::channel::Channel) -> Channel {
         ordering: channel.ordering.try_into().unwrap(),
         counterparty: channel::counterparty::Counterparty {
             port_id: channel.counterparty.port_id.parse().unwrap(),
-            channel_id: channel.counterparty.channel_id.parse().unwrap(),
+            channel_id: Some(ChannelId::parse_prefixed(&channel.counterparty.channel_id).unwrap()),
         },
         connection_hops: channel
             .connection_hops
             .into_iter()
-            .map(|hop| hop.parse().unwrap())
+            .map(|hop| ConnectionId::parse_prefixed(&hop).unwrap())
             .collect(),
         version: channel.version,
     }
