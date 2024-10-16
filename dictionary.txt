@@ -471,6 +471,7 @@ cpufeatures
 cratedir
 crisiskeeper
 crisistypes
+crosschain
 crossorigin
 cryptocom
 cryptware
@@ -982,6 +983,8 @@ postgrespassword
 posthandler
 precommit
 precommits
+preconfirmation
+preconfirmations
 prehash
 preimage
 preimages
@@ -1174,6 +1177,8 @@ stargate
 starport
 starsd
 statedb
+statelens
+statelenses
 statemachine
 stateproof
 stateroot
@@ -1209,6 +1214,7 @@ submessages
 submsg
 subroot
 subsec
+subsecond
 subslice
 substate
 substituters
