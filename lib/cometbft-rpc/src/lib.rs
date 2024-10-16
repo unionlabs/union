@@ -293,124 +293,125 @@ impl ClientT for ClientInner {
 }
 
 // These tests are useful in testing and debugging, but should not be run in CI
-// #[cfg(test)]
-// mod tests {
-//     use std::time::Duration;
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
 
-//     use hex_literal::hex;
+    use hex_literal::hex;
 
-//     use super::*;
+    use super::*;
 
-//     const UNION_TESTNET: &str = "https://rpc.testnet-8.union.build";
-//     const BERACHAIN_DEVNET: &str = "ws://localhost:26657/websocket";
-//     const BERACHAIN_TESTNET: &str = "wss://bartio-cosmos.berachain-devnet.com/websocket";
-//     const OSMOSIS_TESTNET: &str = "wss://osmosis-rpc.publicnode.com/websocket";
+    const UNION_TESTNET: &str = "https://rpc.testnet-8.union.build";
+    const UNION_DEVNET: &str = "http://localhost:26657";
+    const BERACHAIN_DEVNET: &str = "ws://localhost:26657/websocket";
+    const BERACHAIN_TESTNET: &str = "wss://bartio-cosmos.berachain-devnet.com/websocket";
+    const OSMOSIS_TESTNET: &str = "wss://osmosis-rpc.publicnode.com/websocket";
 
-//     const TEST_URL: &str = UNION_TESTNET;
+    const TEST_URL: &str = UNION_DEVNET;
 
-//     #[tokio::test]
-//     async fn commit() {
-//         let client = Client::new(TEST_URL).await.unwrap();
+    #[tokio::test]
+    async fn commit() {
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         let result = client.commit(Some(1.try_into().unwrap())).await;
+        let result = client.commit(Some(1.try_into().unwrap())).await;
 
-//         dbg!(result);
-//     }
+        dbg!(result);
+    }
 
-//     #[tokio::test]
-//     async fn abci_query() {
-//         let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn abci_query() {
+        let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         let result = client
-//             .abci_query(
-//                 "store/beacon/key",
-//                 &[0x11],
-//                 Some(3358.try_into().unwrap()),
-//                 true,
-//             )
-//             .await;
+        let result = client
+            .abci_query(
+                "store/beacon/key",
+                &[0x11],
+                Some(3358.try_into().unwrap()),
+                true,
+            )
+            .await;
 
-//         bg!(result);
-//     }
+        dbg!(result);
+    }
 
-//     #[tokio::test]
-//     async fn validators() {
-//         let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn validators() {
+        let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         // let result = client
-//         //     .validators(
-//         //         Some(100.try_into().unwrap()),
-//         //         Some(ValidatorsPagination {
-//         //             page: 1.try_into().unwrap(),
-//         //             per_page: None,
-//         //         }),
-//         //     )
-//         //     .await;
+        // let result = client
+        //     .validators(
+        //         Some(100.try_into().unwrap()),
+        //         Some(ValidatorsPagination {
+        //             page: 1.try_into().unwrap(),
+        //             per_page: None,
+        //         }),
+        //     )
+        //     .await;
 
-//         let result = client.all_validators(None).await.unwrap();
+        let result = client.all_validators(None).await.unwrap();
 
-//         dbg!(result.validators.len(),);
+        dbg!(result.validators.len(),);
 
-//         println!(
-//             "{}",
-//             serde_json::to_string_pretty(&result.validators).unwrap()
-//         );
-//     }
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&result.validators).unwrap()
+        );
+    }
 
-//     #[tokio::test]
-//     async fn status() {
-//         let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn status() {
+        let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         let result = client.status().await.unwrap();
+        let result = client.status().await.unwrap();
 
-//         dbg!(result);
-//     }
+        dbg!(result);
+    }
 
-//     #[tokio::test]
-//     async fn block() {
-//         let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn block() {
+        let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         // let mut i = 1376377;
+        // let mut i = 1376377;
 
-//         // loop {
-//         //     dbg!(i);
+        // loop {
+        //     dbg!(i);
 
-//         let result = client
-//             // .block(Some(i.try_into().unwrap()))
-//             .block(None)
-//             .await
-//             .unwrap();
+        let result = client
+            // .block(Some(i.try_into().unwrap()))
+            .block(None)
+            .await
+            .unwrap();
 
-//         dbg!(result.block.evidence);
+        dbg!(result.block.evidence);
 
-//         //     i += 1;
+        //     i += 1;
 
-//         //     tokio::time::sleep(Duration::from_millis(100)).await;
-//         // }
-//     }
+        //     tokio::time::sleep(Duration::from_millis(100)).await;
+        // }
+    }
 
-//     #[tokio::test]
-//     async fn tx() {
-//         let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn tx() {
+        let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         let result = client
-//             .tx(
-//                 hex!("32DAD1842DF0441870B168D0C177F8EEC156B18B32D88C3658349BE07F352CCA").into(),
-//                 true,
-//             )
-//             .await
-//             .unwrap();
+        let result = client
+            .tx(
+                hex!("32DAD1842DF0441870B168D0C177F8EEC156B18B32D88C3658349BE07F352CCA").into(),
+                true,
+            )
+            .await
+            .unwrap();
 
-//         dbg!(result);
-//     }
-// }
+        dbg!(result);
+    }
+}

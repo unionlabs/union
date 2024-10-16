@@ -139,7 +139,7 @@ _: {
             # i can't figure out how to add attributes to the variants directly, possibly related to the issue linked above
             sed -i 's/Ed25519(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeyEd25519")\]Ed25519(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
             sed -i 's/Secp256k1(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeySecp256k1")\]Secp256k1(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
-            sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeyBn254")\]Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
+            sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBn254")\]Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
             sed -i 's/Bls12_381(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBls12_381")\]Bls12_381(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
 
 
@@ -149,7 +149,7 @@ _: {
             sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/tendermint.types.rs"
 
             sed -i 's/DuplicateVoteEvidence(/#\[serde(rename = "tendermint\/DuplicateVoteEvidence")\]DuplicateVoteEvidence(/' "./src/tendermint.types.rs"
-            sed -i 's/LightClientAttackEvidence(/#\[serde(rename = "tendermint\/DuplicateVoteEvidence")\]LightClientAttackEvidence(/' "./src/tendermint.types.rs"
+            sed -i 's/LightClientAttackEvidence(/#\[serde(rename = "tendermint\/LightClientAttackEvidence")\]LightClientAttackEvidence(/' "./src/tendermint.types.rs"
           '';
         };
         uniond = rec {

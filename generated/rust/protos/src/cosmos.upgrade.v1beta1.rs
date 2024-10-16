@@ -108,6 +108,73 @@ impl ::prost::Name for ModuleVersion {
         ::prost::alloc::format!("cosmos.upgrade.v1beta1.{}", Self::NAME)
     }
 }
+/// MsgSoftwareUpgrade is the Msg/SoftwareUpgrade request type.
+///
+/// Since: cosmos-sdk 0.46
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSoftwareUpgrade {
+    /// authority is the address that controls the module (defaults to x/gov unless overwritten).
+    #[prost(string, tag = "1")]
+    pub authority: ::prost::alloc::string::String,
+    /// plan is the upgrade plan.
+    #[prost(message, optional, tag = "2")]
+    pub plan: ::core::option::Option<Plan>,
+}
+impl ::prost::Name for MsgSoftwareUpgrade {
+    const NAME: &'static str = "MsgSoftwareUpgrade";
+    const PACKAGE: &'static str = "cosmos.upgrade.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.upgrade.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgSoftwareUpgradeResponse is the Msg/SoftwareUpgrade response type.
+///
+/// Since: cosmos-sdk 0.46
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSoftwareUpgradeResponse {}
+impl ::prost::Name for MsgSoftwareUpgradeResponse {
+    const NAME: &'static str = "MsgSoftwareUpgradeResponse";
+    const PACKAGE: &'static str = "cosmos.upgrade.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.upgrade.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgCancelUpgrade is the Msg/CancelUpgrade request type.
+///
+/// Since: cosmos-sdk 0.46
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCancelUpgrade {
+    /// authority is the address that controls the module (defaults to x/gov unless overwritten).
+    #[prost(string, tag = "1")]
+    pub authority: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgCancelUpgrade {
+    const NAME: &'static str = "MsgCancelUpgrade";
+    const PACKAGE: &'static str = "cosmos.upgrade.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.upgrade.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgCancelUpgradeResponse is the Msg/CancelUpgrade response type.
+///
+/// Since: cosmos-sdk 0.46
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCancelUpgradeResponse {}
+impl ::prost::Name for MsgCancelUpgradeResponse {
+    const NAME: &'static str = "MsgCancelUpgradeResponse";
+    const PACKAGE: &'static str = "cosmos.upgrade.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.upgrade.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryCurrentPlanRequest is the request type for the Query/CurrentPlan RPC
 /// method.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -273,73 +340,6 @@ pub struct QueryAuthorityResponse {
 }
 impl ::prost::Name for QueryAuthorityResponse {
     const NAME: &'static str = "QueryAuthorityResponse";
-    const PACKAGE: &'static str = "cosmos.upgrade.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.upgrade.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgSoftwareUpgrade is the Msg/SoftwareUpgrade request type.
-///
-/// Since: cosmos-sdk 0.46
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSoftwareUpgrade {
-    /// authority is the address that controls the module (defaults to x/gov unless overwritten).
-    #[prost(string, tag = "1")]
-    pub authority: ::prost::alloc::string::String,
-    /// plan is the upgrade plan.
-    #[prost(message, optional, tag = "2")]
-    pub plan: ::core::option::Option<Plan>,
-}
-impl ::prost::Name for MsgSoftwareUpgrade {
-    const NAME: &'static str = "MsgSoftwareUpgrade";
-    const PACKAGE: &'static str = "cosmos.upgrade.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.upgrade.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgSoftwareUpgradeResponse is the Msg/SoftwareUpgrade response type.
-///
-/// Since: cosmos-sdk 0.46
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSoftwareUpgradeResponse {}
-impl ::prost::Name for MsgSoftwareUpgradeResponse {
-    const NAME: &'static str = "MsgSoftwareUpgradeResponse";
-    const PACKAGE: &'static str = "cosmos.upgrade.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.upgrade.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgCancelUpgrade is the Msg/CancelUpgrade request type.
-///
-/// Since: cosmos-sdk 0.46
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCancelUpgrade {
-    /// authority is the address that controls the module (defaults to x/gov unless overwritten).
-    #[prost(string, tag = "1")]
-    pub authority: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgCancelUpgrade {
-    const NAME: &'static str = "MsgCancelUpgrade";
-    const PACKAGE: &'static str = "cosmos.upgrade.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.upgrade.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgCancelUpgradeResponse is the Msg/CancelUpgrade response type.
-///
-/// Since: cosmos-sdk 0.46
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCancelUpgradeResponse {}
-impl ::prost::Name for MsgCancelUpgradeResponse {
-    const NAME: &'static str = "MsgCancelUpgradeResponse";
     const PACKAGE: &'static str = "cosmos.upgrade.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.upgrade.v1beta1.{}", Self::NAME)
