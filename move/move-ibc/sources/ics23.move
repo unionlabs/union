@@ -211,7 +211,7 @@ module IBC::ics23 {
             key: x"303142424373615a55715146735259436c6a5767",
             value: x"76616c75655f666f725f303142424373615a55715146735259436c6a5767",
             leaf_prefix: x"00",
-            path: vector<InnerOp>[
+            path: vector[
                 InnerOp {
                     prefix: x"01",
                     suffix: x"cb3131cd98b069efcc0e8c7e68da47370adbff32266d7fcd1b0580fdf3961266"

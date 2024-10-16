@@ -208,8 +208,8 @@ module IBC::LightClient {
 
         (
             bcs::to_bytes(&state.client_state),
-            vector<vector<u8>>[encode_consensus_state(&new_consensus_state)],
-            vector<height::Height>[new_height]
+            vector[encode_consensus_state(&new_consensus_state)],
+            vector[new_height]
         )
     }
 
@@ -433,7 +433,7 @@ module IBC::LightClient {
     }
 
     fun encode_consensus_state(cs: &ConsensusState): vector<u8> {
-        let buf = vector<u8>[];
+        let buf = vector::empty();
 
         vector::append(&mut buf, bcs::to_bytes(&cs.timestamp));
         vector::append(&mut buf, cs.app_hash.hash);

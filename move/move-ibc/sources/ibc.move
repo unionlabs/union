@@ -320,11 +320,12 @@ module IBC::ibc {
         if (vector::is_empty(connection_end::version_features(&version))) {
             connection_end::set_versions(&mut connection, get_compatible_versions());
         } else {
-            assert!(is_supported_version(&get_compatible_versions(), &version), E_UNSUPPORTED_VERSION);
-
-            connection_end::set_versions(
-                &mut connection, vector[version]
+            assert!(
+                is_supported_version(&get_compatible_versions(), &version),
+                E_UNSUPPORTED_VERSION
             );
+
+            connection_end::set_versions(&mut connection, vector[version]);
         };
 
         smart_table::upsert(&mut store.connections, connection_id, connection);
@@ -459,13 +460,22 @@ module IBC::ibc {
         let proof_height =
             height::new(proof_height_revision_num, proof_height_revision_height);
 
-        assert!(smart_table::contains(&store.connections, connection_id), E_CONNECTION_DOES_NOT_EXIST);
+        assert!(
+            smart_table::contains(&store.connections, connection_id),
+            E_CONNECTION_DOES_NOT_EXIST
+        );
 
         let connection = smart_table::borrow_mut(&mut store.connections, connection_id);
 
-        assert!(connection_end::state(connection) == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
+        assert!(
+            connection_end::state(connection) == CONN_STATE_INIT,
+            E_INVALID_CONNECTION_STATE
+        );
 
-        assert!(is_supported_version(connection_end::versions(connection), &version), E_UNSUPPORTED_VERSION);
+        assert!(
+            is_supported_version(connection_end::versions(connection), &version),
+            E_UNSUPPORTED_VERSION
+        );
 
         let expected_counterparty =
             connection_end::new_counterparty(
@@ -543,7 +553,10 @@ module IBC::ibc {
 
         let connection = smart_table::borrow_mut(&mut store.connections, connection_id);
 
-        assert!(connection_end::state(connection) == CONN_STATE_TRYOPEN, E_INVALID_CONNECTION_STATE);
+        assert!(
+            connection_end::state(connection) == CONN_STATE_TRYOPEN,
+            E_INVALID_CONNECTION_STATE
+        );
 
         let expected_counterparty =
             connection_end::new_counterparty(
@@ -597,9 +610,12 @@ module IBC::ibc {
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        assert!(table::contains(
-            &store.commitments, IBCCommitment::client_state_key(client_id)
-        ), E_CLIENT_NOT_FOUND);
+        assert!(
+            table::contains(
+                &store.commitments, IBCCommitment::client_state_key(client_id)
+            ),
+            E_CLIENT_NOT_FOUND
+        );
 
         if (LightClient::check_for_misbehaviour(client_id, client_message)) {
             event::emit(
@@ -657,9 +673,12 @@ module IBC::ibc {
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        assert!(table::contains(
-            &store.commitments, IBCCommitment::client_state_key(client_id)
-        ), E_CLIENT_NOT_FOUND);
+        assert!(
+            table::contains(
+                &store.commitments, IBCCommitment::client_state_key(client_id)
+            ),
+            E_CLIENT_NOT_FOUND
+        );
 
         LightClient::report_misbehaviour(client_id, misbehaviour);
 
@@ -685,7 +704,10 @@ module IBC::ibc {
 
         let (connection_id, _) = ensure_connection_feature(connection_hops, ordering);
 
-        assert!(string::is_empty(channel::counterparty_channel_id(&counterparty)), E_COUNTERPARTY_CHANNEL_NOT_EMPTY);
+        assert!(
+            string::is_empty(channel::counterparty_channel_id(&counterparty)),
+            E_COUNTERPARTY_CHANNEL_NOT_EMPTY
+        );
 
         let channel_id = generate_channel_identifier();
 
@@ -992,17 +1014,21 @@ module IBC::ibc {
 
         let latest_height = LightClient::latest_height(client_id);
 
-        assert!(height::get_revision_height(&latest_height) != 0, E_LATEST_HEIGHT_NOT_FOUND);
+        assert!(
+            height::get_revision_height(&latest_height) != 0, E_LATEST_HEIGHT_NOT_FOUND
+        );
 
         if (!height::is_zero(&timeout_height)) {
-            assert!(height::lt(&latest_height, &timeout_height), E_INVALID_TIMEOUT_HEIGHT);
+            assert!(
+                height::lt(&latest_height, &timeout_height), E_INVALID_TIMEOUT_HEIGHT
+            );
         };
 
         let latest_timestamp =
             LightClient::get_timestamp_at_height(client_id, latest_height);
         assert!(latest_timestamp != 0, E_LATEST_TIMESTAMP_NOT_FOUND);
         if (timeout_timestamp != 0) {
-          assert!(latest_timestamp < timeout_timestamp, E_INVALID_TIMEOUT_TIMESTAMP);
+            assert!(latest_timestamp < timeout_timestamp, E_INVALID_TIMEOUT_TIMESTAMP);
         };
 
         let packet_sequence =
@@ -1061,28 +1087,42 @@ module IBC::ibc {
         let port_id = address_to_string(port_id);
         assert!(port_id == *packet::destination_port(&packet), E_UNAUTHORIZED);
 
-        assert!(packet::source_port(&packet)
-            == channel::chan_counterparty_port_id(&channel), E_SOURCE_AND_COUNTERPARTY_PORT_MISMATCH);
+        assert!(
+            packet::source_port(&packet)
+                == channel::chan_counterparty_port_id(&channel),
+            E_SOURCE_AND_COUNTERPARTY_PORT_MISMATCH
+        );
 
-        assert!(packet::source_channel(&packet)
-            == channel::chan_counterparty_channel_id(&channel), E_SOURCE_AND_COUNTERPARTY_CHANNEL_MISMATCH);
+        assert!(
+            packet::source_channel(&packet)
+                == channel::chan_counterparty_channel_id(&channel),
+            E_SOURCE_AND_COUNTERPARTY_CHANNEL_MISMATCH
+        );
 
         let connection_hop = *vector::borrow(channel::connection_hops(&channel), 0);
         let store = borrow_global<IBCStore>(get_vault_addr());
 
         let connection = smart_table::borrow(&store.connections, connection_hop);
 
-        assert!(connection_end::state(connection) == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
+        assert!(
+            connection_end::state(connection) == CONN_STATE_OPEN,
+            E_INVALID_CONNECTION_STATE
+        );
 
         if (height::get_revision_height(&packet::timeout_height(&packet)) != 0) {
             assert!(
                 block::get_current_block_height()
-                    < height::get_revision_height(&packet::timeout_height(&packet)), E_HEIGHT_TIMEOUT);            
+                    < height::get_revision_height(&packet::timeout_height(&packet)),
+                E_HEIGHT_TIMEOUT
+            );
         };
 
         let current_timestamp = timestamp::now_seconds() * 1_000_000_000; // 1e9
         if (packet::timeout_timestamp(&packet) != 0) {
-            assert!(current_timestamp < packet::timeout_timestamp(&packet), E_TIMESTAMP_TIMEOUT);            
+            assert!(
+                current_timestamp < packet::timeout_timestamp(&packet),
+                E_TIMESTAMP_TIMEOUT
+            );
         };
 
         let err =
@@ -1129,7 +1169,10 @@ module IBC::ibc {
                         &bcs::to_bytes(&0u64)
                     )
                 );
-            assert!(expected_recv_sequence == packet::sequence(&packet), E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH);
+            assert!(
+                expected_recv_sequence == packet::sequence(&packet),
+                E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH
+            );
             table::upsert(
                 &mut store.commitments,
                 IBCCommitment::next_sequence_recv_key(
@@ -1453,8 +1496,11 @@ module IBC::ibc {
     }
 
     fun authorize_app(ibc_app: &signer, port_id: address) {
-        assert!(object::create_object_address(&port_id, IBC_APP_SEED)
-            == signer::address_of(ibc_app), E_UNAUTHORIZED);
+        assert!(
+            object::create_object_address(&port_id, IBC_APP_SEED)
+                == signer::address_of(ibc_app),
+            E_UNAUTHORIZED
+        );
     }
 
     // Getter for Commitments
@@ -1890,7 +1936,10 @@ module IBC::ibc {
     fun ensure_connection_state(connection_id: String): ConnectionEnd acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
         let connection = smart_table::borrow(&store.connections, connection_id);
-        assert!(connection_end::state(connection) == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
+        assert!(
+            connection_end::state(connection) == CONN_STATE_OPEN,
+            E_INVALID_CONNECTION_STATE
+        );
         *connection
     }
 
@@ -1901,9 +1950,15 @@ module IBC::ibc {
         assert!(vector::length(&connection_hops) == 1, E_CONN_NOT_SINGLE_HOP);
         let connection_id = *vector::borrow(&connection_hops, 0);
         let connection = ensure_connection_state(connection_id);
-        assert!(vector::length(connection_end::versions(&connection)) == 1, E_CONN_NOT_SINGLE_VERSION);
+        assert!(
+            vector::length(connection_end::versions(&connection)) == 1,
+            E_CONN_NOT_SINGLE_VERSION
+        );
         let version = *vector::borrow(connection_end::versions(&connection), 0);
-        assert!(verify_supported_feature(&version, ordering_to_string(ordering)), E_UNSUPPORTED_FEATURE);
+        assert!(
+            verify_supported_feature(&version, ordering_to_string(ordering)),
+            E_UNSUPPORTED_FEATURE
+        );
         (connection_id, connection)
     }
 
