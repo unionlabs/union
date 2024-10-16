@@ -53,6 +53,7 @@ require (
 
 require (
 	cosmossdk.io/collections v0.4.1-0.20240802064046-23fac2f1b8ab
+	github.com/emirpasic/gods v1.18.1
 	github.com/ethereum/go-ethereum v1.13.5-0.20231027145059-2d7dba024d76
 	golang.org/x/crypto v0.28.0
 )

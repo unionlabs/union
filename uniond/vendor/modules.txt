@@ -984,6 +984,14 @@ github.com/dvsekhvalnov/jose2go/padding
 # github.com/emicklei/dot v1.6.2
 ## explicit; go 1.13
 github.com/emicklei/dot
+# github.com/emirpasic/gods v1.18.1
+## explicit; go 1.2
+github.com/emirpasic/gods/containers
+github.com/emirpasic/gods/lists
+github.com/emirpasic/gods/lists/singlylinkedlist
+github.com/emirpasic/gods/stacks
+github.com/emirpasic/gods/stacks/linkedliststack
+github.com/emirpasic/gods/utils
 # github.com/ethereum/go-ethereum v1.13.5-0.20231027145059-2d7dba024d76
 ## explicit; go 1.20
 github.com/ethereum/go-ethereum/accounts/abi

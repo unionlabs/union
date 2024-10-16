@@ -17,7 +17,9 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
+	stack "github.com/emirpasic/gods/stacks/linkedliststack"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"golang.org/x/crypto/sha3"
 )
@@ -27,7 +29,7 @@ const (
 
 	EthConnectionCommitmentPrefix = 0x02
 	EthChannelCommitmentPrefix    = 0x03
-	EthPacketsCommitmentPrefix     = 0x04
+	EthPacketsCommitmentPrefix    = 0x04
 	EthPacketAcksCommitmentPrefix = 0x05
 	EthNextSeqSendPrefix          = 0x06
 	EthNextSeqRecvPrefix          = 0x07
@@ -35,20 +37,13 @@ const (
 )
 
 var (
-	_ porttypes.ICS4Wrapper = IBCDoubleCommitService{}
+	_ porttypes.Middleware = &DoubleCommitMiddleware{}
 
-	EthUint256, _    = abi.NewType("uint256", "", nil)
+	CommitmentMagic = [32]byte{01}
+
 	EthUint32, _     = abi.NewType("uint32", "", nil)
-	EthUint16, _     = abi.NewType("uint16", "", nil)
 	EthUint8, _      = abi.NewType("uint8", "", nil)
-	EthString, _     = abi.NewType("string", "", nil)
-	EthBool, _       = abi.NewType("bool", "", nil)
-	EthBytes, _      = abi.NewType("bytes", "", nil)
 	EthBytes32, _    = abi.NewType("bytes32", "", nil)
-	EthAddress, _    = abi.NewType("address", "", nil)
-	EthUint64Arr, _  = abi.NewType("uint64[]", "", nil)
-	EthAddressArr, _ = abi.NewType("address[]", "", nil)
-	EthInt8, _       = abi.NewType("int8", "", nil)
 	EthConnection, _ = abi.NewType("IBCConnection", "", []abi.ArgumentMarshaling{
 		{Name: "state", Type: "uint8"},
 		{Name: "clientId", Type: "uint32"},
@@ -87,30 +82,123 @@ type ethChannel struct {
 	version               [32]byte
 }
 
-type IBCDoubleCommitService struct {
-	cdc           codec.Codec
-	commitKey     *storetypes.KVStoreKey
-	ibcKey        *storetypes.KVStoreKey
-	ics4Wrapper   porttypes.ICS4Wrapper
-	sendingPacket *channeltypes.Packet
+type ethPacket struct {
+	sequence           uint64
+	sourceChannel      uint32
+	destinationChannel uint32
+	data               []byte
+	timeoutHeight      uint64
+	timeoutTimestamp   uint64
 }
 
-func NewIBCDoubleCommitService(
+type DoubleCommitMiddleware struct {
+	ibc               ibckeeper.Keeper
+	app               porttypes.IBCModule
+	cdc               codec.Codec
+	commitKey         *storetypes.KVStoreKey
+	ibcKey            *storetypes.KVStoreKey
+	ics4Wrapper       porttypes.ICS4Wrapper
+	processingPackets *stack.Stack
+	processingAcks    *stack.Stack
+}
+
+func NewDoubleCommitMiddleware(
 	codec codec.Codec,
 	ics4Wrapper porttypes.ICS4Wrapper,
 	commitKey *storetypes.KVStoreKey,
 	ibcKey *storetypes.KVStoreKey,
 ) store.KVStoreService {
-	return &IBCDoubleCommitService{
-		cdc:           codec,
-		commitKey:     commitKey,
-		ibcKey:        ibcKey,
-		ics4Wrapper:   ics4Wrapper,
-		sendingPacket: nil,
+	return &DoubleCommitMiddleware{
+		cdc:               codec,
+		commitKey:         commitKey,
+		ibcKey:            ibcKey,
+		ics4Wrapper:       ics4Wrapper,
+		processingPackets: stack.New(),
+		processingAcks:    stack.New(),
 	}
 }
 
-func (t IBCDoubleCommitService) SendPacket(
+// OnChanOpenInit implements the IBCModule interface.
+func (im DoubleCommitMiddleware) OnChanOpenInit(
+	ctx context.Context,
+	order channeltypes.Order,
+	connectionHops []string,
+	portID string,
+	channelID string,
+	chanCap *capabilitytypes.Capability,
+	counterparty channeltypes.Counterparty,
+	version string,
+) (string, error) {
+	return im.app.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, version)
+}
+
+// OnChanOpenTry implements the IBCModule interface.
+func (im DoubleCommitMiddleware) OnChanOpenTry(
+	ctx context.Context,
+	order channeltypes.Order,
+	connectionHops []string,
+	portID, channelID string,
+	chanCap *capabilitytypes.Capability,
+	counterparty channeltypes.Counterparty,
+	counterpartyVersion string,
+) (version string, err error) {
+	return im.app.OnChanOpenTry(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, counterpartyVersion)
+}
+
+// OnChanOpenAck implements the IBCModule interface.
+func (im DoubleCommitMiddleware) OnChanOpenAck(
+	ctx context.Context,
+	portID, channelID string,
+	counterpartyChannelID string,
+	counterpartyVersion string,
+) error {
+	return im.app.OnChanOpenAck(ctx, portID, channelID, counterpartyChannelID, counterpartyVersion)
+}
+
+func (im DoubleCommitMiddleware) OnChanOpenConfirm(ctx context.Context, portID, channelID string) error {
+	return im.app.OnChanOpenConfirm(ctx, portID, channelID)
+}
+
+func (im DoubleCommitMiddleware) OnChanCloseInit(ctx context.Context, portID, channelID string) error {
+	return im.app.OnChanCloseInit(ctx, portID, channelID)
+}
+
+func (im DoubleCommitMiddleware) OnChanCloseConfirm(ctx context.Context, portID, channelID string) error {
+	return im.app.OnChanCloseConfirm(ctx, portID, channelID)
+}
+
+func (im DoubleCommitMiddleware) OnRecvPacket(
+	ctx context.Context,
+	packet channeltypes.Packet,
+	relayer sdk.AccAddress,
+) ibcexported.Acknowledgement {
+	im.processingPackets.Push(packet)
+	defer im.processingPackets.Pop()
+	return im.app.OnRecvPacket(ctx, packet, relayer)
+}
+
+func (im DoubleCommitMiddleware) OnAcknowledgementPacket(
+	ctx context.Context,
+	packet channeltypes.Packet,
+	acknowledgement []byte,
+	relayer sdk.AccAddress,
+) error {
+	im.processingPackets.Push(packet)
+	defer im.processingPackets.Pop()
+	return im.app.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
+}
+
+func (im DoubleCommitMiddleware) OnTimeoutPacket(
+	ctx context.Context,
+	packet channeltypes.Packet,
+	relayer sdk.AccAddress,
+) error {
+	im.processingPackets.Push(packet)
+	defer im.processingPackets.Pop()
+	return im.app.OnTimeoutPacket(ctx, packet, relayer)
+}
+
+func (im DoubleCommitMiddleware) SendPacket(
 	ctx context.Context,
 	chanCap *capabilitytypes.Capability,
 	sourcePort string,
@@ -119,54 +207,71 @@ func (t IBCDoubleCommitService) SendPacket(
 	timeoutTimestamp uint64,
 	data []byte,
 ) (sequence uint64, err error) {
-	t.sendingPacket = &channeltypes.Packet{
-		Sequence:           0,          // parsed from the callback
-		SourcePort:         sourcePort, // not needed
-		SourceChannel:      sourceChannel,
-		DestinationPort:    "", // not needed
-		DestinationChannel: "", // not needed
-		TimeoutHeight:      timeoutHeight,
-		TimeoutTimestamp:   timeoutTimestamp,
-		Data:               data,
+	channel, found := im.ibc.ChannelKeeper.GetChannel(ctx, sourcePort, sourceChannel)
+	if found {
+		im.processingPackets.Push(
+			channeltypes.Packet{
+				Sequence:           0, // parsed from the callback
+				SourcePort:         sourcePort,
+				SourceChannel:      sourceChannel,
+				DestinationPort:    channel.Counterparty.PortId,
+				DestinationChannel: channel.Counterparty.ChannelId,
+				TimeoutHeight:      timeoutHeight,
+				TimeoutTimestamp:   timeoutTimestamp,
+				Data:               data,
+			},
+		)
+		defer im.processingPackets.Pop()
 	}
-	seq, err := t.ics4Wrapper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
-	t.sendingPacket = nil
-	return seq, err
+	return im.ics4Wrapper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
-func (t IBCDoubleCommitService) WriteAcknowledgement(
+func (im DoubleCommitMiddleware) WriteAcknowledgement(
 	ctx context.Context,
 	chanCap *capabilitytypes.Capability,
-	packet exported.PacketI,
-	ack exported.Acknowledgement,
+	packet ibcexported.PacketI,
+	ack ibcexported.Acknowledgement,
 ) error {
-	return t.ics4Wrapper.WriteAcknowledgement(ctx, chanCap, packet, ack)
+	im.processingPackets.Push(packet)
+	defer im.processingPackets.Pop()
+	im.processingAcks.Push(ack)
+	defer im.processingAcks.Pop()
+	return im.ics4Wrapper.WriteAcknowledgement(ctx, chanCap, packet, ack)
 }
 
-func (t IBCDoubleCommitService) GetAppVersion(
+func (im DoubleCommitMiddleware) GetAppVersion(
 	ctx context.Context,
 	portID,
 	channelID string,
 ) (string, bool) {
-	return t.ics4Wrapper.GetAppVersion(ctx, portID, channelID)
+	return im.ics4Wrapper.GetAppVersion(ctx, portID, channelID)
 }
 
-func (t IBCDoubleCommitService) OpenKVStore(ctx context.Context) store.KVStore {
-	return newKVStore(t.cdc, sdk.UnwrapSDKContext(ctx).KVStore(t.commitKey), sdk.UnwrapSDKContext(ctx).KVStore(t.ibcKey))
+func (t DoubleCommitMiddleware) OpenKVStore(ctx context.Context) store.KVStore {
+	return newKVStore(
+		t.cdc,
+		sdk.UnwrapSDKContext(ctx).KVStore(t.commitKey),
+		sdk.UnwrapSDKContext(ctx).KVStore(t.ibcKey),
+		t.processingPackets,
+		t.processingAcks,
+	)
 }
 
 type coreDoubleCommitStore struct {
-	cdc           codec.Codec
-	commitStore   storetypes.KVStore
-	ibcStore      storetypes.KVStore
-	sendingPacket *channeltypes.Packet
+	cdc               codec.Codec
+	commitStore       storetypes.KVStore
+	ibcStore          storetypes.KVStore
+	processingPackets *stack.Stack
+	processingAcks    *stack.Stack
 }
 
-func newKVStore(cdc codec.Codec, commitStore storetypes.KVStore, ibcStore storetypes.KVStore) store.KVStore {
+func newKVStore(cdc codec.Codec, commitStore storetypes.KVStore, ibcStore storetypes.KVStore, processingPackets *stack.Stack, processingAcks *stack.Stack) store.KVStore {
 	return coreDoubleCommitStore{
-		cdc:         cdc,
-		commitStore: commitStore,
-		ibcStore:    ibcStore,
+		cdc:               cdc,
+		commitStore:       commitStore,
+		ibcStore:          ibcStore,
+		processingPackets: processingPackets,
+		processingAcks:    processingAcks,
 	}
 }
 
@@ -183,13 +288,58 @@ func (s coreDoubleCommitStore) Set(key, value []byte) error {
 	// double commit depending on the path, ordered by hotest to coldest path
 	keyStr := string(key)
 	// packet commitment
-	if sequence, err := parsePacketCommitmentPath(string(key)); err == nil {
+	if sequence, channelId, err := parsePacketCommitmentPath(string(key)); err == nil {
+		packet, found := s.processingPackets.Peek()
+		if !found {
+			return fmt.Errorf("the impossible happened")
+		}
+		batchHash, err := commitPacket(sequence, packet.(ibcexported.PacketI))
+		if err != nil {
+			return err
+		}
+		commitmentKey, err := batchPacketsCommitmentKey(channelId, batchHash)
+		if err != nil {
+			return err
+		}
+		s.commitStore.Set(commitmentKey, CommitmentMagic[:])
 	}
-	if sequence, err := parsePacketReceiptPath(string(key)); err == nil {
+	if sequence, channelId, err := parsePacketReceiptPath(string(key)); err == nil {
+		packet, found := s.processingPackets.Peek()
+		if !found {
+			return fmt.Errorf("the impossible happened")
+		}
+		batchHash, err := commitPacket(sequence, packet.(ibcexported.PacketI))
+		if err != nil {
+			return err
+		}
+		commitmentKey, err := batchPacketsCommitmentKey(channelId, batchHash)
+		if err != nil {
+			return err
+		}
+		s.commitStore.Set(commitmentKey, CommitmentMagic[:])
 
 	}
-	if sequence, err := parsePacketAckPath(string(key)); err == nil {
-
+	if sequence, channelId, err := parsePacketAckPath(string(key)); err == nil {
+		packet, found := s.processingPackets.Peek()
+		if !found {
+			return fmt.Errorf("the impossible happened")
+		}
+		ackI, ackFound := s.processingAcks.Peek()
+		if !ackFound {
+			return fmt.Errorf("the impossible happened")
+		}
+		batchHash, err := commitPacket(sequence, packet.(ibcexported.PacketI))
+		if err != nil {
+			return err
+		}
+		commitmentKey, err := batchPacketsCommitmentKey(channelId, batchHash)
+		if err != nil {
+			return err
+		}
+		// The MSB should be a bool indicating the receipt, the 31 bytes left are the acknowledgement hash
+		ack := keccak(ackI.(ibcexported.Acknowledgement).Acknowledgement())
+		ack[0] = 01
+		s.commitStore.Set(commitmentKey, ack[:])
 	}
 	// channel commitment
 	if strings.HasPrefix(keyStr, host.KeyChannelEndPrefix) {
@@ -264,60 +414,93 @@ func (s coreDoubleCommitStore) ReverseIterator(start, end []byte) (store.Iterato
 }
 
 // "commitments/ports/{identifier}/channels/{identifier}/sequences/{sequence}"
-func parsePacketCommitmentPath(path string) (uint64, error) {
+func parsePacketCommitmentPath(path string) (uint64, uint32, error) {
 	split := strings.Split(path, "/")
 	if len(split) < 7 {
-		return 0, fmt.Errorf("cannot parse packet commitment path")
+		return 0, 0, fmt.Errorf("cannot parse packet commitment path, invalid fragments")
 	}
 	if split[0] != host.KeyPacketCommitmentPrefix ||
 		split[1] != host.KeyPortPrefix ||
 		split[3] != host.KeyChannelPrefix ||
 		split[5] != host.KeySequencePrefix {
-		return 0, fmt.Errorf("cannot parse packet commitment path")
+		return 0, 0, fmt.Errorf("cannot parse packet commitment path, invalid prefixes")
 	}
 	sequence, err := strconv.ParseUint(split[6], 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("cannot parse packet commitment path")
+		return 0, 0, fmt.Errorf("cannot parse packet commitment path, invalid sequence")
 	}
-	return sequence, nil
+	channel := split[4]
+	channelId, err := channeltypes.ParseChannelSequence(channel)
+	if err != nil {
+		return 0, 0, err
+	}
+	if channelId > math.MaxUint32 {
+		return 0, 0, fmt.Errorf(
+			"can't parse packet commitment, channel id > MaxUint32: %d",
+			channelId,
+		)
+	}
+	return sequence, uint32(channelId), nil
 }
 
 // "acks/ports/{identifier}/channels/{identifier}/sequences/{sequence}"
-func parsePacketAckPath(path string) (uint64, error) {
+func parsePacketAckPath(path string) (uint64, uint32, error) {
 	split := strings.Split(path, "/")
 	if len(split) < 7 {
-		return 0, fmt.Errorf("cannot parse packet ack path")
+		return 0, 0, fmt.Errorf("cannot parse packet ack path, invalid fragments")
 	}
 	if split[0] != host.KeyPacketAckPrefix ||
 		split[1] != host.KeyPortPrefix ||
 		split[3] != host.KeyChannelPrefix ||
 		split[5] != host.KeySequencePrefix {
-		return 0, fmt.Errorf("cannot parse packet ack path")
+		return 0, 0, fmt.Errorf("cannot parse packet ack path, invalid prefixes")
 	}
 	sequence, err := strconv.ParseUint(split[6], 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("cannot parse packet ack path")
+		return 0, 0, fmt.Errorf("cannot parse packet ack path, invalid sequence")
 	}
-	return sequence, nil
+	channel := split[4]
+	channelId, err := channeltypes.ParseChannelSequence(channel)
+	if err != nil {
+		return 0, 0, err
+	}
+	if channelId > math.MaxUint32 {
+		return 0, 0, fmt.Errorf(
+			"can't parse packet commitment, channel id > MaxUint32: %d",
+			channelId,
+		)
+	}
+	return sequence, uint32(channelId), nil
 }
 
 // "receipts/ports/{identifier}/channels/{identifier}/sequences/{sequence}"
-func parsePacketReceiptPath(path string) (uint64, error) {
+func parsePacketReceiptPath(path string) (uint64, uint32, error) {
 	split := strings.Split(path, "/")
 	if len(split) < 7 {
-		return 0, fmt.Errorf("cannot parse packet receipt path")
+		return 0, 0, fmt.Errorf("cannot parse packet receipt path, invalid fragments")
 	}
 	if split[0] != host.KeyPacketReceiptPrefix ||
 		split[1] != host.KeyPortPrefix ||
 		split[3] != host.KeyChannelPrefix ||
 		split[5] != host.KeySequencePrefix {
-		return 0, fmt.Errorf("cannot parse packet receipt path")
+		return 0, 0, fmt.Errorf("cannot parse packet receipt path, invalid prefixes")
 	}
 	sequence, err := strconv.ParseUint(split[6], 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("cannot parse packet receipt path")
+		return 0, 0, fmt.Errorf("cannot parse packet receipt path, invalid sequence")
 	}
-	return sequence, nil
+	channel := split[4]
+	channelId, err := channeltypes.ParseChannelSequence(channel)
+	if err != nil {
+		return 0, 0, err
+	}
+	if channelId > math.MaxUint32 {
+		return 0, 0, fmt.Errorf(
+			"can't parse packet commitment, channel id > MaxUint32: %d",
+			channelId,
+		)
+	}
+	return sequence, uint32(channelId), nil
 }
 
 func keccak(bz []byte) [32]byte {
@@ -418,6 +601,46 @@ func commitConnection(connection connectiontypes.ConnectionEnd) ([]byte, error) 
 	}
 	hash := keccak(bytes)
 	return hash[:], nil
+}
+
+func commitPacket(sequence uint64, packet ibcexported.PacketI) ([32]byte, error) {
+	sourceChannel, err := channeltypes.ParseChannelSequence(packet.GetSourceChannel())
+	if err != nil {
+		return [32]byte{}, err
+	}
+	if sourceChannel > math.MaxUint32 {
+		return [32]byte{}, fmt.Errorf(
+			"can't parse channel, sourceChannel > MaxUint32: %d",
+			sourceChannel,
+		)
+	}
+	destinationChannel, err := channeltypes.ParseChannelSequence(packet.GetDestChannel())
+	if err != nil {
+		return [32]byte{}, err
+	}
+	if destinationChannel > math.MaxUint32 {
+		return [32]byte{}, fmt.Errorf(
+			"can't parse channel, destinationChannel > MaxUint32: %d",
+			destinationChannel,
+		)
+	}
+	arguments := abi.Arguments{
+		{Name: "packet", Type: EthPacket},
+	}
+	bytes, err := arguments.Pack(
+		ethPacket{
+			sequence:           sequence,
+			sourceChannel:      uint32(sourceChannel),
+			destinationChannel: uint32(destinationChannel),
+			data:               packet.GetData(),
+			timeoutHeight:      packet.GetTimeoutHeight().GetRevisionHeight(),
+			timeoutTimestamp:   packet.GetTimeoutTimestamp(),
+		},
+	)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return keccak(bytes), nil
 }
 
 func connectionCommitmentKey(connectionId uint32) ([]byte, error) {
