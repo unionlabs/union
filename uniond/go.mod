@@ -51,7 +51,11 @@ require (
 	google.golang.org/grpc v1.67.1
 )
 
-require cosmossdk.io/collections v0.4.1-0.20240802064046-23fac2f1b8ab
+require (
+	cosmossdk.io/collections v0.4.1-0.20240802064046-23fac2f1b8ab
+	github.com/ethereum/go-ethereum v1.13.5-0.20231027145059-2d7dba024d76
+	golang.org/x/crypto v0.28.0
+)
 
 require (
 	buf.build/gen/go/cometbft/cometbft/protocolbuffers/go v1.34.2-20240701160653-fedbb9acfd2f.2 // indirect
@@ -109,7 +113,6 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/emicklei/dot v1.6.2 // indirect
-	github.com/ethereum/go-ethereum v1.13.5-0.20231027145059-2d7dba024d76 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -229,7 +232,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.27.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
 	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/net v0.29.0 // indirect

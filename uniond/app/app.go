@@ -137,6 +137,7 @@ import (
 	"github.com/spf13/cast"
 
 	unioncustomquery "union/app/custom_query"
+	ibcunion "union/app/ibc"
 	ibccometblsclient "union/app/ibc/cometbls/02-client/keeper"
 	"union/docs"
 	unionstaking "union/x/staking"
@@ -309,10 +310,10 @@ func NewUnionApp(
 		authtypes.StoreKey, authz.ModuleName, banktypes.StoreKey, stakingtypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibcexported.StoreKey, upgradetypes.StoreKey,
-		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcwasmtypes.StoreKey, icahosttypes.StoreKey,
-		capabilitytypes.StoreKey, group.StoreKey, icacontrollertypes.StoreKey, consensusparamtypes.StoreKey,
-		ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey, pooltypes.StoreKey, accounts.StoreKey,
-		// this line is used by starport scaffolding # stargate/app/storeKey
+		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcwasmtypes.StoreKey,
+		icahosttypes.StoreKey, capabilitytypes.StoreKey, group.StoreKey, icacontrollertypes.StoreKey,
+		consensusparamtypes.StoreKey, ibcfeetypes.StoreKey, wasmtypes.StoreKey, tftypes.StoreKey,
+		pooltypes.StoreKey, accounts.StoreKey, ibcunion.StoreKey,
 	)
 
 	// register streaming services
@@ -447,7 +448,9 @@ func NewUnionApp(
 	}
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
 
-	app.UpgradeKeeper = upgradekeeper.NewKeeper(runtime.NewEnvironment(runtime.NewKVStoreService(keys[upgradetypes.StoreKey]), logger.With(log.ModuleKey, "x/upgrade"), runtime.EnvWithMsgRouterService(app.MsgServiceRouter()), runtime.EnvWithQueryRouterService(app.GRPCQueryRouter())), skipUpgradeHeights, appCodec, homePath, app.BaseApp, govModuleAddr, app.ConsensusParamsKeeper)
+	app.UpgradeKeeper = upgradekeeper.NewKeeper(
+		runtime.NewEnvironment(runtime.NewKVStoreService(keys[upgradetypes.StoreKey]), logger.With(log.ModuleKey, "x/upgrade"), runtime.EnvWithMsgRouterService(app.MsgServiceRouter()), runtime.EnvWithQueryRouterService(app.GRPCQueryRouter())),
+		skipUpgradeHeights, appCodec, homePath, app.BaseApp, govModuleAddr, app.ConsensusParamsKeeper)
 
 	// Create IBC Keeper
 	ibcKeeper := ibckeeper.NewKeeper(
