@@ -42,6 +42,24 @@ export interface TeamPageFields {
   position: EntryFields.Number
 }
 
+export interface EcosystemFields {
+  name: EntryFields.Text
+  url: EntryFields.Text
+  background: EntryFields.AssetLink
+  logo: EntryFields.AssetLink
+  category: Array<CategoryFields>
+}
+
+export interface CategoryFields {
+  fields: {
+    category: EntryFields.Text
+  }
+}
+
+export interface EcosystemSkeleton extends EntrySkeletonType<EcosystemFields, "ecosystem"> {}
+
+export interface CategorySkeleton extends EntrySkeletonType<CategoryFields, "category"> {}
+
 export interface TeamPageSkeleton extends EntrySkeletonType<TeamPageFields, "team"> {}
 
 export interface LandingPageSkeleton extends EntrySkeletonType<LandingPageFields, "landing"> {}

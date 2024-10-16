@@ -3,245 +3,41 @@ import LanderSection from "../LanderSection.astro"
 import H1 from "../typography/h1.astro"
 import QuoteSubTitle from "../typography/QuoteSubTitle.astro"
 import H3 from "../typography/h3.astro"
+import { contentfulClient } from "../../lib/contentful/client.ts"
+import { CategoryFields, EcosystemFields, EcosystemSkeleton } from "../../lib/contentful/types.ts"
 
-// logos
-import stride_logo from "../../assets/images/fins/logos/stride.png"
-import stargaze_logo from "../../assets/images/fins/logos/stargaze.png"
-import skip_logo from "../../assets/images/fins/logos/skip.png"
-import secret_logo from "../../assets/images/fins/logos/secret.png"
-import scroll_logo from "../../assets/images/fins/logos/scroll.png"
-import polygon_logo from "../../assets/images/fins/logos/polygon.png"
-import movement_logo from "../../assets/images/fins/logos/movement.png"
-import bera_logo from "../../assets/images/fins/logos/bera.png"
-import arbitrum_logo from "../../assets/images/fins/logos/arbitrum.png"
-import landslide_logo from "../../assets/images/fins/logos/landslide.png"
-import kodiak_logo from "../../assets/images/fins/logos/kodiak.png"
-import leap_logo from "../../assets/images/fins/logos/leap.png"
-import keplr_logo from "../../assets/images/fins/logos/keplr.png"
-import aligned_logo from "../../assets/images/fins/logos/aligned.png"
-import lava_logo from "../../assets/images/fins/logos/lava.png"
-import canto_logo from "../../assets/images/fins/logos/canto.png"
-import noble_logo from "../../assets/images/fins/logos/noble.png"
-import quasar_logo from "../../assets/images/fins/logos/quasar.png"
-import abstract_logo from "../../assets/images/fins/logos/abstract.png"
-import nomos_logo from "../../assets/images/fins/logos/nomos.png"
-import celestia_logo from "../../assets/images/fins/logos/celestia.png"
-import talus_logo from "../../assets/images/fins/logos/talus.png"
+let ecosystemData: Array<EcosystemFields> | null = null
+let ecosystemCategories: Array<CategoryFields> | null = null
+let error: string | null = null
 
-// covers
-import stride_cover from "../../assets/images/fins/covers/stride.png"
-import stargaze_cover from "../../assets/images/fins/covers/stargaze.png"
-import skip_cover from "../../assets/images/fins/covers/skip.png"
-import secret_cover from "../../assets/images/fins/covers/secret.png"
-import scroll_cover from "../../assets/images/fins/covers/scroll.png"
-import polygon_cover from "../../assets/images/fins/covers/polygon.png"
-import movement_cover from "../../assets/images/fins/covers/movement.png"
-import bera_cover from "../../assets/images/fins/covers/bera.png"
-import arbitrum_cover from "../../assets/images/fins/covers/arbitrum.png"
-import landslide_cover from "../../assets/images/fins/covers/landslide.png"
-import kodiak_cover from "../../assets/images/fins/covers/kodiak.png"
-import leap_cover from "../../assets/images/fins/covers/leap.png"
-import keplr_cover from "../../assets/images/fins/covers/keplr.png"
-import aligned_cover from "../../assets/images/fins/covers/aligned.png"
-import lava_cover from "../../assets/images/fins/covers/lava.png"
-import canto_cover from "../../assets/images/fins/covers/canto.png"
-import noble_cover from "../../assets/images/fins/covers/noble.png"
-import quasar_cover from "../../assets/images/fins/covers/quasar.png"
-import abstract_cover from "../../assets/images/fins/covers/abstract.png"
-import nomos_cover from "../../assets/images/fins/covers/nomos.png"
-import celestia_cover from "../../assets/images/fins/covers/celestia.png"
-import talus_cover from "../../assets/images/fins/covers/talus.png"
+try {
+  const ecosystemEntries = await contentfulClient.getEntries<EcosystemSkeleton>({
+    content_type: "ecosystem"
+  })
 
-type Category =
-  | "defi"
-  | "infrastructure"
-  | "interchain token"
-  | "wallet"
-  | "enterprise"
-  | "rwa"
-  | "nft"
-  | "dex"
-  | "interchain native"
-  | "trading"
-  | ""
+  if (ecosystemEntries.items.length > 0) {
+    ecosystemData = ecosystemEntries.items
+      .map(item => item.fields)
+      .sort((a, b) => a.name?.localeCompare(b.name))
 
-interface ItemData {
-  name: string
-  url: string
-  logo: any
-  cover: any
-  category: Array<Category>
-}
+    const allCategories = ecosystemData.flatMap(item => {
+      if (Array.isArray(item.category)) {
+        return item.category.map(cat => {
+          console.log(item)
+          return cat.fields.category
+        })
+      }
+      return []
+    })
 
-const data: Array<ItemData> = [
-  {
-    name: "Stride",
-    url: "https://google.com",
-    logo: stride_logo,
-    cover: stride_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Stargaze",
-    url: "https://google.com",
-    logo: stargaze_logo,
-    cover: stargaze_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Skip Protocol",
-    url: "https://google.com",
-    logo: skip_logo,
-    cover: skip_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Secret",
-    url: "https://google.com",
-    logo: secret_logo,
-    cover: secret_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Scroll",
-    url: "https://google.com",
-    logo: scroll_logo,
-    cover: scroll_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Polygon",
-    url: "https://google.com",
-    logo: polygon_logo,
-    cover: polygon_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Movement",
-    url: "https://google.com",
-    logo: movement_logo,
-    cover: movement_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Bera",
-    url: "https://google.com",
-    logo: bera_logo,
-    cover: bera_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Arbitrum",
-    url: "https://google.com",
-    logo: arbitrum_logo,
-    cover: arbitrum_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Landslide",
-    url: "https://google.com",
-    logo: landslide_logo,
-    cover: landslide_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Kodiak",
-    url: "https://google.com",
-    logo: kodiak_logo,
-    cover: kodiak_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Leap",
-    url: "https://google.com",
-    logo: leap_logo,
-    cover: leap_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Keplr",
-    url: "https://google.com",
-    logo: keplr_logo,
-    cover: keplr_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Aligned Layer",
-    url: "https://google.com",
-    logo: aligned_logo,
-    cover: aligned_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Lava",
-    url: "https://google.com",
-    logo: lava_logo,
-    cover: lava_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Canto",
-    url: "https://google.com",
-    logo: canto_logo,
-    cover: canto_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Noble",
-    url: "https://google.com",
-    logo: noble_logo,
-    cover: noble_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Quasar",
-    url: "https://google.com",
-    logo: quasar_logo,
-    cover: quasar_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Abstract",
-    url: "https://google.com",
-    logo: abstract_logo,
-    cover: abstract_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Nomos",
-    url: "https://google.com",
-    logo: nomos_logo,
-    cover: nomos_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Celestia",
-    url: "https://google.com",
-    logo: celestia_logo,
-    cover: celestia_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
-  },
-  {
-    name: "Talus",
-    url: "https://google.com",
-    logo: talus_logo,
-    cover: talus_cover,
-    category: ["defi", "infrastructure", "interchain token", "rwa"]
+    ecosystemCategories = Array.from(new Set(allCategories)).sort()
+  } else {
+    error = "No ecosystem data found."
   }
-]
-
-const categories: Array<Category> = [
-  "defi",
-  "infrastructure",
-  "interchain token",
-  "wallet",
-  "enterprise",
-  "rwa",
-  "nft",
-  "dex",
-  "interchain native",
-  "trading"
-]
+} catch (err) {
+  console.error("Error fetching Contentful data:", err)
+  error = "Failed to load content. Please try again later."
+}
 ---
 
 <LanderSection>
@@ -286,7 +82,7 @@ const categories: Array<Category> = [
       </button>
 
       <div id="filterContent" class="hidden lg:block">
-        {categories.map(category => (
+        {ecosystemCategories.map(category => (
                 <div class="mb-2">
                   <label class="inline-flex items-center cursor-pointer font-mono uppercase">
                     <input
@@ -324,23 +120,30 @@ const categories: Array<Category> = [
 
     <!-- Cards Grid -->
     <div class="col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
-      {data.map(item => (
-              <div class="relative flex border-2 border-neutral-800 rounded-tl-[6rem] overflow-hidden h-96 w-[300px]">
+      {ecosystemData.map(item => (
+              <a href={item.url} target="_blank" class="relative flex border-2 border-neutral-800 rounded-tl-[6rem] overflow-hidden h-96 w-[300px]">
                 <div class="absolute z-10 bottom-0 inset-x-0 h-full bg-gradient-to-t from-black to-black/0"></div>
-                <img src={item.cover.src} alt={item.name}
-                     class="absolute w-full h-full object-fill object-center"/>
+                <img
+                        src={item.background.fields.file.url}
+                        alt={item.name}
+                        class="absolute inset-0 w-full h-full object-cover object-center"
+                />
                 <div class="p-4 z-10 flex flex-col justify-end w-full h-full">
                   <div class="flex w-full justify-between items-center">
                     <div class="flex flex-col gap-1">
                       {item.category.map(cat => (
-                              <p class="text-sm w-fit bg-white text-black uppercase text-center font-mono font-bold px-2">{cat}</p>
+                              <span class="text-sm bg-white text-black uppercase font-mono font-bold px-2 py-1" id="card-cat">{cat.fields.category}</span>
                       ))}
                     </div>
-                    <img src={item.logo.src} alt={`${item.name} logo`} class="w-24 h-24 mb-2"/>
+                    <img
+                            src={item.logo.fields.file.url}
+                            alt={`${item.name} logo`}
+                            class="w-24 h-24 object-contain"
+                    />
                   </div>
                   <H3 class="text-lg font-semibold">{item.name}</H3>
                 </div>
-              </div>
+              </a>
       ))}
     </div>
 
@@ -351,24 +154,28 @@ const categories: Array<Category> = [
 <script>
   const searchInput = document.getElementById('searchInput') as HTMLInputElement;
   const checkboxes = document.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
-  const cards = document.querySelectorAll('.col-span-3 > div') as NodeListOf<HTMLDivElement>;
+  const cards = document.querySelectorAll('.col-span-3 > a') as NodeListOf<HTMLDivElement>;
 
   function filterCards(): void {
     const searchTerm = searchInput.value.toLowerCase();
     const selectedCategories = Array.from(checkboxes)
       .filter(cb => cb.checked)
-      .map(cb => cb.value);
+      .map(cb => cb.value.toLowerCase());  // Convert to lowercase here
 
     cards.forEach(card => {
       const name = card.querySelector('h3').textContent.toLowerCase();
-      const categoryElements = card.querySelectorAll('p');
+      const categoryElements = card.querySelectorAll('#card-cat');
       const categories = Array.from(categoryElements).map(el => el.textContent.toLowerCase());
 
       const matchesSearch = name.includes(searchTerm);
       const matchesCategory = selectedCategories.length === 0 ||
-        categories.some(cat => selectedCategories.includes(cat));
+        categories.some(cardCat => selectedCategories.includes(cardCat));
 
-      matchesSearch && matchesCategory ? card.classList.remove("hidden") : card.classList.add("hidden");
+      if (matchesSearch && matchesCategory) {
+        card.classList.remove("hidden");
+      } else {
+        card.classList.add("hidden");
+      }
     });
   }
 
@@ -393,7 +200,6 @@ const categories: Array<Category> = [
     }
   });
 
-  // Show filter content on larger screens
   window.addEventListener('resize', () => {
     if (window.innerWidth >= 1024) {
       filterContent.classList.remove('hidden');
