@@ -1,4 +1,4 @@
-module UCS01::EthABI {
+module ucs01::ethabi {
     use std::bcs;
     use std::vector;
     use std::string::{Self, String};

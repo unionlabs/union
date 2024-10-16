@@ -1,4 +1,4 @@
-module IBC::proto_utils {
+module ibc::proto_utils {
     use std::string::{Self, String};
     use std::vector;
     use std::option::{Self, Option};

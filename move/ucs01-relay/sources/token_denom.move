@@ -1,4 +1,4 @@
-module UCS01::fa_coin {
+module ucs01::fa_coin {
     use aptos_framework::fungible_asset::{
         Self,
         MintRef,
@@ -89,7 +89,7 @@ module UCS01::fa_coin {
 
     #[view]
     public fun get_owner_addr(): address {
-        object::create_object_address(&@UCS01, IBC_APP_SEED)
+        object::create_object_address(&@ucs01, IBC_APP_SEED)
     }
 
     #[view]
@@ -519,7 +519,7 @@ module UCS01::fa_coin {
 
         let _to_wallet = primary_fungible_store::primary_store(bob, asset);
 
-        // UCS01::Relay::tx(alice, bob, 10, asset);
+        // ucs01::relay::tx(alice, bob, 10, asset);
 
         let fa = primary_fungible_store::withdraw(alice, asset, 10);
         primary_fungible_store::deposit(bob, fa);

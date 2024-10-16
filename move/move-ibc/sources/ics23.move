@@ -1,11 +1,11 @@
-module IBC::ics23 {
+module ibc::ics23 {
     use std::vector;
     use std::option::Option;
     use std::hash;
-    use IBC::bcs_utils::{Self, BcsBuf};
+    use ibc::bcs_utils::{Self, BcsBuf};
     #[test_only]
-    use IBC::connection_end;
-    use IBC::proto_utils;
+    use ibc::connection_end;
+    use ibc::proto_utils;
 
     const E_EMPTY_LEAF_PREFIX: u64 = 35200;
     const E_EMPTY_LEAF_KEY: u64 = 35201;

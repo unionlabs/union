@@ -1,8 +1,8 @@
-module IBC::height {
+module ibc::height {
     use std::vector;
 
-    use IBC::proto_utils;
-    use IBC::bcs_utils::{Self, BcsBuf};
+    use ibc::proto_utils;
+    use ibc::bcs_utils::{Self, BcsBuf};
 
     struct Height has key, drop, copy, store {
         revision_number: u64,

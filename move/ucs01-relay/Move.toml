@@ -4,13 +4,13 @@ name    = "ucs01-relay"
 version = "1.0.0"
 
 [addresses]
-IBC          = "_"
-UCS01        = "_"
+ibc          = "_"
+ucs01        = "_"
 zero_account = "0000000000000000000000000000000000000000000000000000000000000000"
 
 [dev-addresses]
-IBC   = "0x22222"
-UCS01 = "0x4444444444444"
+ibc   = "0x22222"
+ucs01 = "0x4444444444444"
 
 [dependencies.AptosFramework]
 git    = "https://github.com/aeryz/aptos-core.git"

@@ -1,8 +1,8 @@
-module IBC::channel {
+module ibc::channel {
     use std::option::{Self, Option};
     use std::string::{Self, String, utf8};
     use std::vector;
-    use IBC::proto_utils;
+    use ibc::proto_utils;
 
     const CHAN_STATE_UNINITIALIZED: u8 = 0;
     const CHAN_STATE_INIT: u8 = 1;

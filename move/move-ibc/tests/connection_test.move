@@ -219,7 +219,7 @@
 //         assert!(result, 9001);
 //     }
 
-//     #[test(alice = @IBC)]
+//     #[test(alice = @ibc)]
 //     public fun test_generate_connection_identifier(alice: &signer) {
 //         ibc::create_ibc_store(alice);
 //         let expected_identifier1 = string::utf8(b"connection-0");
@@ -232,7 +232,7 @@
 //         assert!(identifier2 == expected_identifier2, 10002);
 //     }
 
-//     #[test(alice = @IBC)]
+//     #[test(alice = @ibc)]
 //     public fun test_connection_open_init_success(alice: &signer) {
 //         ibc::create_ibc_store(alice);
 
@@ -291,7 +291,7 @@
 //         assert!(connection_id_1 != connection_id_2, 2006);
 //     }
 
-//     #[test(alice = @IBC)]
+//     #[test(alice = @ibc)]
 //     public fun test_connection_open_try_success(alice: &signer) {
 //         // Initialize the IBC store
 //         ibc::create_ibc_store(alice);
@@ -376,7 +376,7 @@
 //         assert!(connection_end::delay_period(&new_connection) == delay_period, 1011);
 //     }
 
-//     #[test(alice = @IBC)]
+//     #[test(alice = @ibc)]
 //     public fun test_connection_open_ack_success(alice: &signer) {
 //         // Initialize the IBC store
 //         ibc::create_ibc_store(alice);
@@ -483,7 +483,7 @@
 //         assert!(*connection_end::conn_counterparty_connection_id(&new_connection) == string::utf8(b"connection-1"), 2007);
 //     }
 
-//     #[test(alice = @IBC)]
+//     #[test(alice = @ibc)]
 //     public fun test_connection_open_confirm_success(alice: &signer) {
 //         ibc::create_ibc_store(alice);
 
@@ -540,7 +540,7 @@
 //         assert!(*connection_end::conn_counterparty_connection_id(&updated_connection) == string::utf8(b"connection-0"), 1007);
 //     }
 
-//     #[test(alice = @IBC)]
+//     #[test(alice = @ibc)]
 //     #[expected_failure(abort_code = 1008)] // E_INVALID_CONNECTION_STATE
 //     public fun test_connection_open_confirm_failure_invalid_state(alice: &signer) {
 //         ibc::create_ibc_store(alice);
@@ -575,7 +575,7 @@
 
 //     // TODO: Uncomment this test when light client is implemented
 
-//     // #[test(alice = @IBC)]
+//     // #[test(alice = @ibc)]
 //     // #[expected_failure(abort_code = 1010)] // E_INVALID_PROOF
 //     // public fun test_connection_open_confirm_failure_invalid_proof(alice: &signer, relayer:address) {
 //     //     ibc::create_ibc_store(alice);

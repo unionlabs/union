@@ -1,4 +1,4 @@
-module IBC::groth16_verifier {
+module ibc::groth16_verifier {
     use std::bn254_algebra::{
         Fr,
         FormatFrMsb,

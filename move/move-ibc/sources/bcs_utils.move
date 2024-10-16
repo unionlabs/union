@@ -1,4 +1,4 @@
-module IBC::bcs_utils {
+module ibc::bcs_utils {
     use std::string::String;
     use std::from_bcs;
     use std::vector;

@@ -1,4 +1,4 @@
-module IBC::ibc {
+module ibc::ibc {
     use std::signer;
     use std::vector;
     use aptos_std::smart_table::{Self, SmartTable};
@@ -14,12 +14,12 @@ module IBC::ibc {
     use std::option::{Self, Option};
 
     use std::string_utils;
-    use IBC::IBCCommitment;
-    use IBC::LightClient;
-    use IBC::height::{Self, Height};
-    use IBC::connection_end::{Self, ConnectionEnd};
-    use IBC::channel::{Self, Channel};
-    use IBC::packet::{Self, Packet};
+    use ibc::commitment;
+    use ibc::light_client;
+    use ibc::height::{Self, Height};
+    use ibc::connection_end::{Self, ConnectionEnd};
+    use ibc::channel::{Self, Channel};
+    use ibc::packet::{Self, Packet};
 
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
 
@@ -222,7 +222,7 @@ module IBC::ibc {
     // Initializes the IBCStore resource in the signer's account
     fun init_module(account: &signer) {
         assert!(
-            signer::address_of(account) == @IBC, E_NOT_ENOUGH_PERMISSIONS_TO_INITIALIZE
+            signer::address_of(account) == @ibc, E_NOT_ENOUGH_PERMISSIONS_TO_INITIALIZE
         );
         let vault_constructor_ref = &object::create_named_object(account, VAULT_SEED);
         let vault_signer = &object::generate_signer(vault_constructor_ref);
@@ -255,7 +255,7 @@ module IBC::ibc {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let (client_state, consensus_state) =
-            LightClient::create_client(
+            light_client::create_client(
                 &get_ibc_signer(),
                 client_id,
                 // from_bcs::to_bytes(client_state),
@@ -265,20 +265,20 @@ module IBC::ibc {
             );
 
         // TODO(aeryz): fetch these status from proper exported consts
-        assert!(LightClient::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
+        assert!(light_client::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         // Update commitments
         table::upsert(
             &mut store.commitments,
-            IBCCommitment::client_state_key(client_id),
+            commitment::client_state_key(client_id),
             client_state
         );
 
-        let latest_height = LightClient::latest_height(client_id);
+        let latest_height = light_client::latest_height(client_id);
 
         table::upsert(
             &mut store.commitments,
-            IBCCommitment::consensus_state_key(client_id, latest_height),
+            commitment::consensus_state_key(client_id, latest_height),
             consensus_state
         );
 
@@ -304,7 +304,7 @@ module IBC::ibc {
                 counterparty_prefix
             );
 
-        assert!(LightClient::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
+        assert!(light_client::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         let connection_id = generate_connection_identifier();
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
@@ -370,7 +370,7 @@ module IBC::ibc {
         let proof_height =
             height::new(proof_height_revision_num, proof_height_revision_height);
 
-        assert!(LightClient::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
+        assert!(light_client::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         // Generate a new connection identifier
         let connection_id = generate_connection_identifier();
@@ -422,7 +422,7 @@ module IBC::ibc {
             verify_client_state(
                 connection,
                 proof_height,
-                IBCCommitment::client_state_key(*counterparty_client_id),
+                commitment::client_state_key(*counterparty_client_id),
                 proof_client,
                 client_state_bytes
             );
@@ -510,7 +510,7 @@ module IBC::ibc {
             verify_client_state(
                 connection,
                 proof_height,
-                IBCCommitment::client_state_key(counterparty_client_id),
+                commitment::client_state_key(counterparty_client_id),
                 proof_client,
                 client_state_bytes
             );
@@ -612,12 +612,12 @@ module IBC::ibc {
 
         assert!(
             table::contains(
-                &store.commitments, IBCCommitment::client_state_key(client_id)
+                &store.commitments, commitment::client_state_key(client_id)
             ),
             E_CLIENT_NOT_FOUND
         );
 
-        if (LightClient::check_for_misbehaviour(client_id, client_message)) {
+        if (light_client::check_for_misbehaviour(client_id, client_message)) {
             event::emit(
                 SubmitMisbehaviour {
                     client_id,
@@ -628,7 +628,7 @@ module IBC::ibc {
         };
 
         let (client_state, consensus_states, heights) =
-            LightClient::update_client(client_id, client_message);
+            light_client::update_client(client_id, client_message);
 
         let heights_len = vector::length(&heights);
 
@@ -641,7 +641,7 @@ module IBC::ibc {
 
         table::upsert(
             &mut store.commitments,
-            IBCCommitment::client_state_key(client_id),
+            commitment::client_state_key(client_id),
             client_state
         );
 
@@ -651,7 +651,7 @@ module IBC::ibc {
 
             table::upsert(
                 &mut store.commitments,
-                IBCCommitment::consensus_state_key(client_id, height),
+                commitment::consensus_state_key(client_id, height),
                 hash::sha2_256(*vector::borrow(&consensus_states, i))
             );
 
@@ -675,12 +675,12 @@ module IBC::ibc {
 
         assert!(
             table::contains(
-                &store.commitments, IBCCommitment::client_state_key(client_id)
+                &store.commitments, commitment::client_state_key(client_id)
             ),
             E_CLIENT_NOT_FOUND
         );
 
-        LightClient::report_misbehaviour(client_id, misbehaviour);
+        light_client::report_misbehaviour(client_id, misbehaviour);
 
         event::emit(
             SubmitMisbehaviour {
@@ -726,19 +726,19 @@ module IBC::ibc {
 
         table::upsert(
             &mut store.commitments,
-            IBCCommitment::next_sequence_send_key(port_id, channel_id),
+            commitment::next_sequence_send_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
         table::upsert(
             &mut store.commitments,
-            IBCCommitment::next_sequence_recv_key(port_id, channel_id),
+            commitment::next_sequence_recv_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
         table::upsert(
             &mut store.commitments,
-            IBCCommitment::next_sequence_ack_key(port_id, channel_id),
+            commitment::next_sequence_ack_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
@@ -825,19 +825,19 @@ module IBC::ibc {
 
         table::upsert(
             &mut store.commitments,
-            IBCCommitment::next_sequence_send_key(port_id, channel_id),
+            commitment::next_sequence_send_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
         table::upsert(
             &mut store.commitments,
-            IBCCommitment::next_sequence_recv_key(port_id, channel_id),
+            commitment::next_sequence_recv_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
         table::upsert(
             &mut store.commitments,
-            IBCCommitment::next_sequence_ack_key(port_id, channel_id),
+            commitment::next_sequence_ack_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
@@ -1012,7 +1012,7 @@ module IBC::ibc {
                 smart_table::borrow(&store.connections, connection_id)
             );
 
-        let latest_height = LightClient::latest_height(client_id);
+        let latest_height = light_client::latest_height(client_id);
 
         assert!(
             height::get_revision_height(&latest_height) != 0, E_LATEST_HEIGHT_NOT_FOUND
@@ -1025,7 +1025,7 @@ module IBC::ibc {
         };
 
         let latest_timestamp =
-            LightClient::get_timestamp_at_height(client_id, latest_height);
+            light_client::get_timestamp_at_height(client_id, latest_height);
         assert!(latest_timestamp != 0, E_LATEST_TIMESTAMP_NOT_FOUND);
         if (timeout_timestamp != 0) {
             assert!(latest_timestamp < timeout_timestamp, E_INVALID_TIMEOUT_TIMESTAMP);
@@ -1035,18 +1035,18 @@ module IBC::ibc {
             from_bcs::to_u64(
                 *table::borrow(
                     &store.commitments,
-                    IBCCommitment::next_sequence_send_key(source_port, source_channel)
+                    commitment::next_sequence_send_key(source_port, source_channel)
                 )
             );
         table::upsert(
             &mut store.commitments,
-            IBCCommitment::next_sequence_send_key(source_port, source_channel),
+            commitment::next_sequence_send_key(source_port, source_channel),
             bcs::to_bytes(&(packet_sequence + 1))
         );
 
         table::upsert(
             &mut store.commitments,
-            IBCCommitment::packet_key(source_port, source_channel, packet_sequence),
+            commitment::packet_key(source_port, source_channel, packet_sequence),
             packet::commitment_from_parts(timeout_timestamp, timeout_height, data)
         );
 
@@ -1130,7 +1130,7 @@ module IBC::ibc {
                 connection,
                 proof_height,
                 proof,
-                IBCCommitment::packet_key(
+                commitment::packet_key(
                     *packet::source_port(&packet),
                     *packet::source_channel(&packet),
                     packet::sequence(&packet)
@@ -1144,7 +1144,7 @@ module IBC::ibc {
 
         if (channel::ordering(&channel) == CHAN_ORDERING_UNORDERED) {
             let receipt_commitment_key =
-                IBCCommitment::packet_receipt_key(
+                commitment::packet_receipt_key(
                     *packet::destination_port(&packet),
                     *packet::destination_channel(&packet),
                     packet::sequence(&packet)
@@ -1162,7 +1162,7 @@ module IBC::ibc {
                 from_bcs::to_u64(
                     *table::borrow_with_default(
                         &store.commitments,
-                        IBCCommitment::next_sequence_recv_key(
+                        commitment::next_sequence_recv_key(
                             *packet::destination_port(&packet),
                             *packet::destination_channel(&packet)
                         ),
@@ -1175,7 +1175,7 @@ module IBC::ibc {
             );
             table::upsert(
                 &mut store.commitments,
-                IBCCommitment::next_sequence_recv_key(
+                commitment::next_sequence_recv_key(
                     *packet::destination_port(&packet),
                     *packet::destination_channel(&packet)
                 ),
@@ -1203,7 +1203,7 @@ module IBC::ibc {
 
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let ack_commitment_key =
-            IBCCommitment::packet_acknowledgement_key(
+            commitment::packet_acknowledgement_key(
                 *packet::destination_port(&packet),
                 *packet::destination_channel(&packet),
                 packet::sequence(&packet)
@@ -1259,7 +1259,7 @@ module IBC::ibc {
             );
 
         let packet_commitment_key =
-            IBCCommitment::packet_key(
+            commitment::packet_key(
                 source_port_id, source_channel_id, packet::sequence(&packet)
             );
         let expected_packet_commitment = get_commitment(packet_commitment_key);
@@ -1279,7 +1279,7 @@ module IBC::ibc {
                 &connection,
                 proof_height,
                 proof,
-                IBCCommitment::packet_acknowledgement_key(
+                commitment::packet_acknowledgement_key(
                     destination_port_id,
                     destination_channel_id,
                     packet::sequence(&packet)
@@ -1296,7 +1296,7 @@ module IBC::ibc {
                 from_bcs::to_u64(
                     *table::borrow_with_default(
                         &borrow_global<IBCStore>(get_vault_addr()).commitments,
-                        IBCCommitment::next_sequence_ack_key(
+                        commitment::next_sequence_ack_key(
                             source_port_id, source_channel_id
                         ),
                         &bcs::to_bytes(&0u64)
@@ -1310,7 +1310,7 @@ module IBC::ibc {
 
             table::upsert(
                 &mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments,
-                IBCCommitment::next_sequence_ack_key(source_port_id, source_channel_id),
+                commitment::next_sequence_ack_key(source_port_id, source_channel_id),
                 bcs::to_bytes(&(expected_ack_sequence + 1))
             );
         };
@@ -1353,7 +1353,7 @@ module IBC::ibc {
         let connection = ensure_connection_state(connection_hop);
 
         let packet_commitment_key =
-            IBCCommitment::packet_key(
+            commitment::packet_key(
                 *packet::source_port(&packet),
                 *packet::source_channel(&packet),
                 packet::sequence(&packet)
@@ -1371,7 +1371,7 @@ module IBC::ibc {
         );
 
         let proof_timestamp =
-            LightClient::get_timestamp_at_height(
+            light_client::get_timestamp_at_height(
                 *connection_end::client_id(&connection),
                 proof_height
             );
@@ -1401,7 +1401,7 @@ module IBC::ibc {
                     &connection,
                     proof_height,
                     proof,
-                    IBCCommitment::next_sequence_recv_key(
+                    commitment::next_sequence_recv_key(
                         *packet::destination_port(&packet),
                         *packet::destination_channel(&packet)
                     ),
@@ -1415,7 +1415,7 @@ module IBC::ibc {
                     &connection,
                     proof_height,
                     proof,
-                    IBCCommitment::packet_receipt_key(
+                    commitment::packet_receipt_key(
                         *packet::destination_port(&packet),
                         *packet::destination_channel(&packet),
                         packet::sequence(&packet)
@@ -1438,21 +1438,21 @@ module IBC::ibc {
 
     #[view]
     public fun client_state(client_id: String): vector<u8> {
-        LightClient::get_client_state(client_id)
+        light_client::get_client_state(client_id)
     }
 
     #[view]
     public fun consensus_state(
         client_id: String, revision_number: u64, revision_height: u64
     ): vector<u8> {
-        LightClient::get_consensus_state(
+        light_client::get_consensus_state(
             client_id, height::new(revision_number, revision_height)
         )
     }
 
     #[view]
     public fun get_vault_addr(): address {
-        object::create_object_address(&@IBC, VAULT_SEED)
+        object::create_object_address(&@ibc, VAULT_SEED)
     }
 
     // Getter for nextChannelSequence in Commitments
@@ -1745,7 +1745,7 @@ module IBC::ibc {
         proof: vector<u8>,
         client_state_bytes: vector<u8>
     ): u64 {
-        LightClient::verify_membership(
+        light_client::verify_membership(
             *connection_end::client_id(connection),
             height,
             proof,
@@ -1762,12 +1762,12 @@ module IBC::ibc {
         connection_id: String,
         counterparty_connection: ConnectionEnd
     ): u64 {
-        LightClient::verify_membership(
+        light_client::verify_membership(
             *connection_end::client_id(connection),
             height,
             proof,
             *connection_end::conn_counterparty_key_prefix(connection),
-            IBCCommitment::connection_key(connection_id),
+            commitment::connection_key(connection_id),
             connection_end::encode_proto(counterparty_connection)
         )
     }
@@ -1779,7 +1779,7 @@ module IBC::ibc {
         path: vector<u8>,
         commitment: vector<u8>
     ): u64 {
-        LightClient::verify_membership(
+        light_client::verify_membership(
             *connection_end::client_id(connection),
             height,
             proof,
@@ -1813,7 +1813,7 @@ module IBC::ibc {
         store: &mut IBCStore, connection_id: String, connection: ConnectionEnd
     ) {
         let encoded_connection = connection_end::encode_proto(connection);
-        let key = IBCCommitment::connection_key(connection_id);
+        let key = commitment::connection_key(connection_id);
         // let hash = hash::sha2_256(encoded_connection);
         table::upsert(&mut store.commitments, key, encoded_connection);
     }
@@ -1859,7 +1859,7 @@ module IBC::ibc {
         let seq =
             table::borrow_with_default(
                 &store.commitments,
-                IBCCommitment::next_sequence_recv_key(port_id, channel_id),
+                commitment::next_sequence_recv_key(port_id, channel_id),
                 &bcs::to_bytes<u64>(&0)
             );
 
@@ -1873,7 +1873,7 @@ module IBC::ibc {
         let seq =
             table::borrow_with_default(
                 &store.commitments,
-                IBCCommitment::next_sequence_send_key(port_id, channel_id),
+                commitment::next_sequence_send_key(port_id, channel_id),
                 &bcs::to_bytes<u64>(&0)
             );
 
@@ -1968,7 +1968,7 @@ module IBC::ibc {
         let channel = smart_table::borrow(&store.channels, channel_port);
 
         let encoded = channel::encode_proto(*channel);
-        let key = IBCCommitment::channel_key(port_id, channel_id);
+        let key = commitment::channel_key(port_id, channel_id);
         table::upsert(&mut store.commitments, key, encoded);
     }
 
@@ -1985,8 +1985,8 @@ module IBC::ibc {
         std::debug::print(client_id);
         std::debug::print(&string::utf8(b"connection"));
         std::debug::print(connection);
-        let path = IBCCommitment::channel_key(port_id, channel_id);
-        LightClient::verify_membership(
+        let path = commitment::channel_key(port_id, channel_id);
+        light_client::verify_membership(
             *connection_end::client_id(connection),
             height,
             proof,
@@ -2012,7 +2012,7 @@ module IBC::ibc {
         proof: vector<u8>,
         path: vector<u8>
     ): u64 {
-        LightClient::verify_non_membership(
+        light_client::verify_non_membership(
             *connection_end::client_id(connection),
             height,
             proof,
@@ -2025,7 +2025,7 @@ module IBC::ibc {
         string_utils::to_string(&bcs::to_bytes(&addr))
     }
 
-    #[test(ibc_signer = @IBC)]
+    #[test(ibc_signer = @ibc)]
     fun test_get_ibc_signer(ibc_signer: &signer) acquires SignerRef {
         init_module(ibc_signer);
 
@@ -2059,7 +2059,7 @@ module IBC::ibc {
         assert!(order_invalid == string::utf8(b"ORDER_INVALID"), 2003);
     }
 
-    #[test(alice = @IBC)]
+    #[test(alice = @ibc)]
     public fun test_get_counterparty_hops(alice: &signer) acquires IBCStore {
         // Initialize IBCStore for testing
         init_module(alice);
@@ -2090,7 +2090,7 @@ module IBC::ibc {
         assert!(*vector::borrow(&hops, 0) == connection_id, 3002);
     }
 
-    #[test(alice = @IBC)]
+    #[test(alice = @ibc)]
     public fun test_generate_channel_identifier(alice: &signer) acquires IBCStore {
         // Initialize IBCStore for testing
         init_module(alice);
@@ -2103,7 +2103,7 @@ module IBC::ibc {
         assert!(next_sequence == 1, 4002);
     }
 
-    #[test(alice = @IBC)]
+    #[test(alice = @ibc)]
     public fun test_ensure_connection_state(alice: &signer) acquires IBCStore {
         // Initialize IBCStore for testing
         init_module(alice);
@@ -2139,7 +2139,7 @@ module IBC::ibc {
         );
     }
 
-    #[test(alice = @IBC)]
+    #[test(alice = @ibc)]
     public fun test_ensure_connection_feature(alice: &signer) acquires IBCStore {
         // Initialize IBCStore for testing
         init_module(alice);
@@ -2184,7 +2184,7 @@ module IBC::ibc {
 
     #[
         test(
-            alice = @IBC,
+            alice = @ibc,
             ibc_app = @0xfe1adf0b572c9d480624c86b65345895929a36d8f3c0f7facc67921e7e7c395c
         )
     ]
@@ -2257,7 +2257,7 @@ module IBC::ibc {
 
     #[
         test(
-            alice = @IBC,
+            alice = @ibc,
             ibc_app = @0xfe1adf0b572c9d480624c86b65345895929a36d8f3c0f7facc67921e7e7c395c
         )
     ]
@@ -2324,7 +2324,7 @@ module IBC::ibc {
         );
     }
 
-    // #[test(alice = @IBC, ibc_app = @0xfe1adf0b572c9d480624c86b65345895929a36d8f3c0f7facc67921e7e7c395c)]
+    // #[test(alice = @ibc, ibc_app = @0xfe1adf0b572c9d480624c86b65345895929a36d8f3c0f7facc67921e7e7c395c)]
     // public fun test_channel_open_ack(alice: &signer, ibc_app: &signer) acquires IBCStore, SignerRef {
     //     // Initialize IBCStore for testing
     //     init_module(alice);
@@ -2361,7 +2361,7 @@ module IBC::ibc {
     //     let proof_height = height::new(0, 1);
     //     let proof_try = vector::empty<u8>();
 
-    //     let (data1, data2) = LightClient::mock_create_client();
+    //     let (data1, data2) = light_client::mock_create_client();
 
     //     create_client(string::utf8(b"cometbls"), data1, data2);
 

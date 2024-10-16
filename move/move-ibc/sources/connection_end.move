@@ -1,7 +1,7 @@
-module IBC::connection_end {
+module ibc::connection_end {
     use std::string::{Self, String};
     use std::vector;
-    use IBC::proto_utils;
+    use ibc::proto_utils;
     use std::option::{Option, Self};
 
     struct Version has copy, store, drop, key {
