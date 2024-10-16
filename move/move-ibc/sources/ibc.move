@@ -679,9 +679,7 @@ module IBC::ibc {
         counterparty: channel::Counterparty,
         version: String
     ): (Channel, u64) acquires IBCStore {
-
-        assert!(object::create_object_address(&port_id, IBC_APP_SEED)
-            == signer::address_of(ibc_app), E_UNAUTHORIZED);
+        authorize_app(ibc_app, port_id);
 
         let port_id = address_to_string(port_id);
 
@@ -747,8 +745,7 @@ module IBC::ibc {
         proof_init: vector<u8>,
         proof_height: height::Height
     ): (Channel, u64) acquires IBCStore {
-        assert!(object::create_object_address(&port_id, IBC_APP_SEED)
-            == signer::address_of(ibc_app), E_UNAUTHORIZED);
+        authorize_app(ibc_app, port_id);
 
         let port_id = address_to_string(port_id);
 
@@ -837,8 +834,7 @@ module IBC::ibc {
         proof_try: vector<u8>,
         proof_height: height::Height
     ) acquires IBCStore {
-        assert!(object::create_object_address(&port_id, IBC_APP_SEED)
-            == signer::address_of(ibc_app), E_UNAUTHORIZED);
+        authorize_app(ibc_app, port_id);
 
         let port_id = address_to_string(port_id);
 
@@ -909,8 +905,7 @@ module IBC::ibc {
         proof_ack: vector<u8>,
         proof_height: height::Height
     ) acquires IBCStore {
-        assert!(object::create_object_address(&port_id, IBC_APP_SEED)
-            == signer::address_of(ibc_app), E_UNAUTHORIZED);
+        authorize_app(ibc_app, port_id);
 
         let port_id = address_to_string(port_id);
 
@@ -981,10 +976,7 @@ module IBC::ibc {
         timeout_timestamp: u64,
         data: vector<u8>
     ): u64 acquires IBCStore {
-        if (object::create_object_address(&source_port, IBC_APP_SEED)
-            != signer::address_of(ibc_app)) {
-            abort E_UNAUTHORIZED
-        };
+        authorize_app(ibc_app, source_port);
 
         let source_port = address_to_string(source_port);
 
@@ -1058,10 +1050,7 @@ module IBC::ibc {
         proof_height: height::Height,
         acknowledgement: vector<u8>
     ) acquires IBCStore {
-        if (object::create_object_address(&port_id, IBC_APP_SEED)
-            != signer::address_of(ibc_app)) {
-            abort E_UNAUTHORIZED
-        };
+        authorize_app(ibc_app, port_id);
 
         let channel =
             ensure_channel_state(
@@ -1198,11 +1187,7 @@ module IBC::ibc {
         proof: vector<u8>,
         proof_height: height::Height
     ) acquires IBCStore {
-        assert!(
-            object::create_object_address(&port_id, IBC_APP_SEED)
-                == signer::address_of(ibc_app),
-            E_UNAUTHORIZED
-        );
+        authorize_app(ibc_app, port_id);
 
         let source_port_id = *packet::source_port(&packet);
         let source_channel_id = *packet::source_channel(&packet);
@@ -1303,11 +1288,7 @@ module IBC::ibc {
         proof_height: height::Height,
         next_sequence_recv: u64
     ) acquires IBCStore {
-        assert!(
-            object::create_object_address(&port_id, IBC_APP_SEED)
-                == signer::address_of(ibc_app),
-            E_UNAUTHORIZED
-        );
+        authorize_app(ibc_app, port_id);
 
         let channel_id = *packet::source_channel(&packet);
 
@@ -1469,6 +1450,11 @@ module IBC::ibc {
         let commitment =
             table::borrow_with_default(&store.commitments, key, &vector::empty<u8>());
         *commitment
+    }
+
+    fun authorize_app(ibc_app: &signer, port_id: address) {
+        assert!(object::create_object_address(&port_id, IBC_APP_SEED)
+            == signer::address_of(ibc_app), E_UNAUTHORIZED);
     }
 
     // Getter for Commitments
