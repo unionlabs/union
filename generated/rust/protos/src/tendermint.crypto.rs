@@ -118,7 +118,7 @@ pub mod public_key {
         #[serde(rename = "tendermint/PubKeySecp256k1")]
         Secp256k1(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>),
         #[prost(bytes, tag = "3")]
-        #[serde(rename = "tendermint/PubKeyBn254")]
+        #[serde(rename = "cometbft/PubKeyBn254")]
         Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>),
         #[prost(bytes, tag = "4")]
         #[serde(rename = "cometbft/PubKeyBls12_381")]

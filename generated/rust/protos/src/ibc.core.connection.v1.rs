@@ -225,6 +225,224 @@ impl ::prost::Name for GenesisState {
         ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
     }
 }
+/// MsgConnectionOpenInit defines the msg sent by an account on Chain A to
+/// initialize a connection with Chain B.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenInit {
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub counterparty: ::core::option::Option<Counterparty>,
+    #[prost(message, optional, tag = "3")]
+    pub version: ::core::option::Option<Version>,
+    #[prost(uint64, tag = "4")]
+    pub delay_period: u64,
+    #[prost(string, tag = "5")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgConnectionOpenInit {
+    const NAME: &'static str = "MsgConnectionOpenInit";
+    const PACKAGE: &'static str = "ibc.core.connection.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
+    }
+}
+/// MsgConnectionOpenInitResponse defines the Msg/ConnectionOpenInit response
+/// type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenInitResponse {}
+impl ::prost::Name for MsgConnectionOpenInitResponse {
+    const NAME: &'static str = "MsgConnectionOpenInitResponse";
+    const PACKAGE: &'static str = "ibc.core.connection.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
+    }
+}
+/// MsgConnectionOpenTry defines a msg sent by a Relayer to try to open a
+/// connection on Chain B.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenTry {
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// Deprecated: this field is unused. Crossing hellos are no longer supported in core IBC.
+    #[deprecated]
+    #[prost(string, tag = "2")]
+    pub previous_connection_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub client_state: ::core::option::Option<::pbjson_types::Any>,
+    #[prost(message, optional, tag = "4")]
+    pub counterparty: ::core::option::Option<Counterparty>,
+    #[prost(uint64, tag = "5")]
+    pub delay_period: u64,
+    #[prost(message, repeated, tag = "6")]
+    pub counterparty_versions: ::prost::alloc::vec::Vec<Version>,
+    #[prost(message, optional, tag = "7")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    /// proof of the initialization the connection on Chain A: `UNITIALIZED ->
+    /// INIT`
+    #[prost(bytes = "vec", tag = "8")]
+    pub proof_init: ::prost::alloc::vec::Vec<u8>,
+    /// proof of client state included in message
+    #[prost(bytes = "vec", tag = "9")]
+    pub proof_client: ::prost::alloc::vec::Vec<u8>,
+    /// proof of client consensus state
+    #[prost(bytes = "vec", tag = "10")]
+    pub proof_consensus: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "11")]
+    pub consensus_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(string, tag = "12")]
+    pub signer: ::prost::alloc::string::String,
+    /// optional proof data for host state machines that are unable to introspect their own consensus state
+    #[prost(bytes = "vec", tag = "13")]
+    pub host_consensus_state_proof: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for MsgConnectionOpenTry {
+    const NAME: &'static str = "MsgConnectionOpenTry";
+    const PACKAGE: &'static str = "ibc.core.connection.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
+    }
+}
+/// MsgConnectionOpenTryResponse defines the Msg/ConnectionOpenTry response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenTryResponse {}
+impl ::prost::Name for MsgConnectionOpenTryResponse {
+    const NAME: &'static str = "MsgConnectionOpenTryResponse";
+    const PACKAGE: &'static str = "ibc.core.connection.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
+    }
+}
+/// MsgConnectionOpenAck defines a msg sent by a Relayer to Chain A to
+/// acknowledge the change of connection state to TRYOPEN on Chain B.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenAck {
+    #[prost(string, tag = "1")]
+    pub connection_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub counterparty_connection_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub version: ::core::option::Option<Version>,
+    #[prost(message, optional, tag = "4")]
+    pub client_state: ::core::option::Option<::pbjson_types::Any>,
+    #[prost(message, optional, tag = "5")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    /// proof of the initialization the connection on Chain B: `UNITIALIZED ->
+    /// TRYOPEN`
+    #[prost(bytes = "vec", tag = "6")]
+    pub proof_try: ::prost::alloc::vec::Vec<u8>,
+    /// proof of client state included in message
+    #[prost(bytes = "vec", tag = "7")]
+    pub proof_client: ::prost::alloc::vec::Vec<u8>,
+    /// proof of client consensus state
+    #[prost(bytes = "vec", tag = "8")]
+    pub proof_consensus: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "9")]
+    pub consensus_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(string, tag = "10")]
+    pub signer: ::prost::alloc::string::String,
+    /// optional proof data for host state machines that are unable to introspect their own consensus state
+    #[prost(bytes = "vec", tag = "11")]
+    pub host_consensus_state_proof: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for MsgConnectionOpenAck {
+    const NAME: &'static str = "MsgConnectionOpenAck";
+    const PACKAGE: &'static str = "ibc.core.connection.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
+    }
+}
+/// MsgConnectionOpenAckResponse defines the Msg/ConnectionOpenAck response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenAckResponse {}
+impl ::prost::Name for MsgConnectionOpenAckResponse {
+    const NAME: &'static str = "MsgConnectionOpenAckResponse";
+    const PACKAGE: &'static str = "ibc.core.connection.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
+    }
+}
+/// MsgConnectionOpenConfirm defines a msg sent by a Relayer to Chain B to
+/// acknowledge the change of connection state to OPEN on Chain A.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenConfirm {
+    #[prost(string, tag = "1")]
+    pub connection_id: ::prost::alloc::string::String,
+    /// proof for the change of the connection state on Chain A: `INIT -> OPEN`
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof_ack: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(string, tag = "4")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgConnectionOpenConfirm {
+    const NAME: &'static str = "MsgConnectionOpenConfirm";
+    const PACKAGE: &'static str = "ibc.core.connection.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
+    }
+}
+/// MsgConnectionOpenConfirmResponse defines the Msg/ConnectionOpenConfirm
+/// response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgConnectionOpenConfirmResponse {}
+impl ::prost::Name for MsgConnectionOpenConfirmResponse {
+    const NAME: &'static str = "MsgConnectionOpenConfirmResponse";
+    const PACKAGE: &'static str = "ibc.core.connection.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateParams defines the sdk.Msg type to update the connection parameters.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParams {
+    /// signer address
+    #[prost(string, tag = "1")]
+    pub signer: ::prost::alloc::string::String,
+    /// params defines the connection parameters to update.
+    ///
+    /// NOTE: All parameters must be supplied.
+    #[prost(message, optional, tag = "2")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for MsgUpdateParams {
+    const NAME: &'static str = "MsgUpdateParams";
+    const PACKAGE: &'static str = "ibc.core.connection.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateParamsResponse defines the MsgUpdateParams response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParamsResponse {}
+impl ::prost::Name for MsgUpdateParamsResponse {
+    const NAME: &'static str = "MsgUpdateParamsResponse";
+    const PACKAGE: &'static str = "ibc.core.connection.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
+    }
+}
 /// QueryConnectionRequest is the request type for the Query/Connection RPC
 /// method
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -460,224 +678,6 @@ pub struct QueryConnectionParamsResponse {
 }
 impl ::prost::Name for QueryConnectionParamsResponse {
     const NAME: &'static str = "QueryConnectionParamsResponse";
-    const PACKAGE: &'static str = "ibc.core.connection.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
-    }
-}
-/// MsgConnectionOpenInit defines the msg sent by an account on Chain A to
-/// initialize a connection with Chain B.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenInit {
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub counterparty: ::core::option::Option<Counterparty>,
-    #[prost(message, optional, tag = "3")]
-    pub version: ::core::option::Option<Version>,
-    #[prost(uint64, tag = "4")]
-    pub delay_period: u64,
-    #[prost(string, tag = "5")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgConnectionOpenInit {
-    const NAME: &'static str = "MsgConnectionOpenInit";
-    const PACKAGE: &'static str = "ibc.core.connection.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
-    }
-}
-/// MsgConnectionOpenInitResponse defines the Msg/ConnectionOpenInit response
-/// type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenInitResponse {}
-impl ::prost::Name for MsgConnectionOpenInitResponse {
-    const NAME: &'static str = "MsgConnectionOpenInitResponse";
-    const PACKAGE: &'static str = "ibc.core.connection.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
-    }
-}
-/// MsgConnectionOpenTry defines a msg sent by a Relayer to try to open a
-/// connection on Chain B.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenTry {
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// Deprecated: this field is unused. Crossing hellos are no longer supported in core IBC.
-    #[deprecated]
-    #[prost(string, tag = "2")]
-    pub previous_connection_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "3")]
-    pub client_state: ::core::option::Option<::pbjson_types::Any>,
-    #[prost(message, optional, tag = "4")]
-    pub counterparty: ::core::option::Option<Counterparty>,
-    #[prost(uint64, tag = "5")]
-    pub delay_period: u64,
-    #[prost(message, repeated, tag = "6")]
-    pub counterparty_versions: ::prost::alloc::vec::Vec<Version>,
-    #[prost(message, optional, tag = "7")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    /// proof of the initialization the connection on Chain A: `UNITIALIZED ->
-    /// INIT`
-    #[prost(bytes = "vec", tag = "8")]
-    pub proof_init: ::prost::alloc::vec::Vec<u8>,
-    /// proof of client state included in message
-    #[prost(bytes = "vec", tag = "9")]
-    pub proof_client: ::prost::alloc::vec::Vec<u8>,
-    /// proof of client consensus state
-    #[prost(bytes = "vec", tag = "10")]
-    pub proof_consensus: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "11")]
-    pub consensus_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "12")]
-    pub signer: ::prost::alloc::string::String,
-    /// optional proof data for host state machines that are unable to introspect their own consensus state
-    #[prost(bytes = "vec", tag = "13")]
-    pub host_consensus_state_proof: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for MsgConnectionOpenTry {
-    const NAME: &'static str = "MsgConnectionOpenTry";
-    const PACKAGE: &'static str = "ibc.core.connection.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
-    }
-}
-/// MsgConnectionOpenTryResponse defines the Msg/ConnectionOpenTry response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenTryResponse {}
-impl ::prost::Name for MsgConnectionOpenTryResponse {
-    const NAME: &'static str = "MsgConnectionOpenTryResponse";
-    const PACKAGE: &'static str = "ibc.core.connection.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
-    }
-}
-/// MsgConnectionOpenAck defines a msg sent by a Relayer to Chain A to
-/// acknowledge the change of connection state to TRYOPEN on Chain B.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenAck {
-    #[prost(string, tag = "1")]
-    pub connection_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub counterparty_connection_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "3")]
-    pub version: ::core::option::Option<Version>,
-    #[prost(message, optional, tag = "4")]
-    pub client_state: ::core::option::Option<::pbjson_types::Any>,
-    #[prost(message, optional, tag = "5")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    /// proof of the initialization the connection on Chain B: `UNITIALIZED ->
-    /// TRYOPEN`
-    #[prost(bytes = "vec", tag = "6")]
-    pub proof_try: ::prost::alloc::vec::Vec<u8>,
-    /// proof of client state included in message
-    #[prost(bytes = "vec", tag = "7")]
-    pub proof_client: ::prost::alloc::vec::Vec<u8>,
-    /// proof of client consensus state
-    #[prost(bytes = "vec", tag = "8")]
-    pub proof_consensus: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "9")]
-    pub consensus_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "10")]
-    pub signer: ::prost::alloc::string::String,
-    /// optional proof data for host state machines that are unable to introspect their own consensus state
-    #[prost(bytes = "vec", tag = "11")]
-    pub host_consensus_state_proof: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for MsgConnectionOpenAck {
-    const NAME: &'static str = "MsgConnectionOpenAck";
-    const PACKAGE: &'static str = "ibc.core.connection.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
-    }
-}
-/// MsgConnectionOpenAckResponse defines the Msg/ConnectionOpenAck response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenAckResponse {}
-impl ::prost::Name for MsgConnectionOpenAckResponse {
-    const NAME: &'static str = "MsgConnectionOpenAckResponse";
-    const PACKAGE: &'static str = "ibc.core.connection.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
-    }
-}
-/// MsgConnectionOpenConfirm defines a msg sent by a Relayer to Chain B to
-/// acknowledge the change of connection state to OPEN on Chain A.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenConfirm {
-    #[prost(string, tag = "1")]
-    pub connection_id: ::prost::alloc::string::String,
-    /// proof for the change of the connection state on Chain A: `INIT -> OPEN`
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof_ack: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "4")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgConnectionOpenConfirm {
-    const NAME: &'static str = "MsgConnectionOpenConfirm";
-    const PACKAGE: &'static str = "ibc.core.connection.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
-    }
-}
-/// MsgConnectionOpenConfirmResponse defines the Msg/ConnectionOpenConfirm
-/// response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenConfirmResponse {}
-impl ::prost::Name for MsgConnectionOpenConfirmResponse {
-    const NAME: &'static str = "MsgConnectionOpenConfirmResponse";
-    const PACKAGE: &'static str = "ibc.core.connection.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateParams defines the sdk.Msg type to update the connection parameters.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateParams {
-    /// signer address
-    #[prost(string, tag = "1")]
-    pub signer: ::prost::alloc::string::String,
-    /// params defines the connection parameters to update.
-    ///
-    /// NOTE: All parameters must be supplied.
-    #[prost(message, optional, tag = "2")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for MsgUpdateParams {
-    const NAME: &'static str = "MsgUpdateParams";
-    const PACKAGE: &'static str = "ibc.core.connection.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateParamsResponse defines the MsgUpdateParams response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateParamsResponse {}
-impl ::prost::Name for MsgUpdateParamsResponse {
-    const NAME: &'static str = "MsgUpdateParamsResponse";
     const PACKAGE: &'static str = "ibc.core.connection.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)

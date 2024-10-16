@@ -336,6 +336,143 @@ impl ::prost::Name for GenesisState {
         ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
     }
 }
+/// MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
+/// proposal Content.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSubmitProposal {
+    /// content is the proposal's content.
+    #[prost(message, optional, tag = "1")]
+    pub content: ::core::option::Option<::pbjson_types::Any>,
+    /// initial_deposit is the deposit value that must be paid at proposal submission.
+    #[prost(message, repeated, tag = "2")]
+    pub initial_deposit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+    /// proposer is the account address of the proposer.
+    #[prost(string, tag = "3")]
+    pub proposer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgSubmitProposal {
+    const NAME: &'static str = "MsgSubmitProposal";
+    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSubmitProposalResponse {
+    /// proposal_id defines the unique id of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+}
+impl ::prost::Name for MsgSubmitProposalResponse {
+    const NAME: &'static str = "MsgSubmitProposalResponse";
+    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgVote defines a message to cast a vote.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgVote {
+    /// proposal_id defines the unique id of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    /// voter is the voter address for the proposal.
+    #[prost(string, tag = "2")]
+    pub voter: ::prost::alloc::string::String,
+    /// option defines the vote option.
+    #[prost(enumeration = "VoteOption", tag = "3")]
+    pub option: i32,
+}
+impl ::prost::Name for MsgVote {
+    const NAME: &'static str = "MsgVote";
+    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgVoteResponse defines the Msg/Vote response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgVoteResponse {}
+impl ::prost::Name for MsgVoteResponse {
+    const NAME: &'static str = "MsgVoteResponse";
+    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgVoteWeighted defines a message to cast a vote.
+///
+/// Since: cosmos-sdk 0.43
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgVoteWeighted {
+    /// proposal_id defines the unique id of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    /// voter is the voter address for the proposal.
+    #[prost(string, tag = "2")]
+    pub voter: ::prost::alloc::string::String,
+    /// options defines the weighted vote options.
+    #[prost(message, repeated, tag = "3")]
+    pub options: ::prost::alloc::vec::Vec<WeightedVoteOption>,
+}
+impl ::prost::Name for MsgVoteWeighted {
+    const NAME: &'static str = "MsgVoteWeighted";
+    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
+///
+/// Since: cosmos-sdk 0.43
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgVoteWeightedResponse {}
+impl ::prost::Name for MsgVoteWeightedResponse {
+    const NAME: &'static str = "MsgVoteWeightedResponse";
+    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgDeposit defines a message to submit a deposit to an existing proposal.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgDeposit {
+    /// proposal_id defines the unique id of the proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    /// depositor defines the deposit addresses from the proposals.
+    #[prost(string, tag = "2")]
+    pub depositor: ::prost::alloc::string::String,
+    /// amount to be deposited by depositor.
+    #[prost(message, repeated, tag = "3")]
+    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+}
+impl ::prost::Name for MsgDeposit {
+    const NAME: &'static str = "MsgDeposit";
+    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgDepositResponse defines the Msg/Deposit response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgDepositResponse {}
+impl ::prost::Name for MsgDepositResponse {
+    const NAME: &'static str = "MsgDepositResponse";
+    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
+    }
+}
 /// QueryProposalRequest is the request type for the Query/Proposal RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -608,143 +745,6 @@ pub struct QueryTallyResultResponse {
 }
 impl ::prost::Name for QueryTallyResultResponse {
     const NAME: &'static str = "QueryTallyResultResponse";
-    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
-/// proposal Content.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitProposal {
-    /// content is the proposal's content.
-    #[prost(message, optional, tag = "1")]
-    pub content: ::core::option::Option<::pbjson_types::Any>,
-    /// initial_deposit is the deposit value that must be paid at proposal submission.
-    #[prost(message, repeated, tag = "2")]
-    pub initial_deposit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-    /// proposer is the account address of the proposer.
-    #[prost(string, tag = "3")]
-    pub proposer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgSubmitProposal {
-    const NAME: &'static str = "MsgSubmitProposal";
-    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitProposalResponse {
-    /// proposal_id defines the unique id of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-}
-impl ::prost::Name for MsgSubmitProposalResponse {
-    const NAME: &'static str = "MsgSubmitProposalResponse";
-    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgVote defines a message to cast a vote.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgVote {
-    /// proposal_id defines the unique id of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-    /// voter is the voter address for the proposal.
-    #[prost(string, tag = "2")]
-    pub voter: ::prost::alloc::string::String,
-    /// option defines the vote option.
-    #[prost(enumeration = "VoteOption", tag = "3")]
-    pub option: i32,
-}
-impl ::prost::Name for MsgVote {
-    const NAME: &'static str = "MsgVote";
-    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgVoteResponse defines the Msg/Vote response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgVoteResponse {}
-impl ::prost::Name for MsgVoteResponse {
-    const NAME: &'static str = "MsgVoteResponse";
-    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgVoteWeighted defines a message to cast a vote.
-///
-/// Since: cosmos-sdk 0.43
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgVoteWeighted {
-    /// proposal_id defines the unique id of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-    /// voter is the voter address for the proposal.
-    #[prost(string, tag = "2")]
-    pub voter: ::prost::alloc::string::String,
-    /// options defines the weighted vote options.
-    #[prost(message, repeated, tag = "3")]
-    pub options: ::prost::alloc::vec::Vec<WeightedVoteOption>,
-}
-impl ::prost::Name for MsgVoteWeighted {
-    const NAME: &'static str = "MsgVoteWeighted";
-    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
-///
-/// Since: cosmos-sdk 0.43
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgVoteWeightedResponse {}
-impl ::prost::Name for MsgVoteWeightedResponse {
-    const NAME: &'static str = "MsgVoteWeightedResponse";
-    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgDeposit defines a message to submit a deposit to an existing proposal.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgDeposit {
-    /// proposal_id defines the unique id of the proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-    /// depositor defines the deposit addresses from the proposals.
-    #[prost(string, tag = "2")]
-    pub depositor: ::prost::alloc::string::String,
-    /// amount to be deposited by depositor.
-    #[prost(message, repeated, tag = "3")]
-    pub amount: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-}
-impl ::prost::Name for MsgDeposit {
-    const NAME: &'static str = "MsgDeposit";
-    const PACKAGE: &'static str = "cosmos.gov.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgDepositResponse defines the Msg/Deposit response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgDepositResponse {}
-impl ::prost::Name for MsgDepositResponse {
-    const NAME: &'static str = "MsgDepositResponse";
     const PACKAGE: &'static str = "cosmos.gov.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.gov.v1beta1.{}", Self::NAME)

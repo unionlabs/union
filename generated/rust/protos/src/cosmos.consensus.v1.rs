@@ -1,32 +1,4 @@
 // @generated
-/// QueryParamsRequest defines the request type for querying x/consensus parameters.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsRequest {}
-impl ::prost::Name for QueryParamsRequest {
-    const NAME: &'static str = "QueryParamsRequest";
-    const PACKAGE: &'static str = "cosmos.consensus.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.consensus.v1.{}", Self::NAME)
-    }
-}
-/// QueryParamsResponse defines the response type for querying x/consensus parameters.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsResponse {
-    /// params are the tendermint consensus params stored in the consensus module.
-    /// Please note that `params.version` is not populated in this response, it is
-    /// tracked separately in the x/upgrade module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<super::super::super::tendermint::types::ConsensusParams>,
-}
-impl ::prost::Name for QueryParamsResponse {
-    const NAME: &'static str = "QueryParamsResponse";
-    const PACKAGE: &'static str = "cosmos.consensus.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.consensus.v1.{}", Self::NAME)
-    }
-}
 /// MsgUpdateParams is the Msg/UpdateParams request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -63,6 +35,34 @@ impl ::prost::Name for MsgUpdateParams {
 pub struct MsgUpdateParamsResponse {}
 impl ::prost::Name for MsgUpdateParamsResponse {
     const NAME: &'static str = "MsgUpdateParamsResponse";
+    const PACKAGE: &'static str = "cosmos.consensus.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.consensus.v1.{}", Self::NAME)
+    }
+}
+/// QueryParamsRequest defines the request type for querying x/consensus parameters.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsRequest {}
+impl ::prost::Name for QueryParamsRequest {
+    const NAME: &'static str = "QueryParamsRequest";
+    const PACKAGE: &'static str = "cosmos.consensus.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.consensus.v1.{}", Self::NAME)
+    }
+}
+/// QueryParamsResponse defines the response type for querying x/consensus parameters.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsResponse {
+    /// params are the tendermint consensus params stored in the consensus module.
+    /// Please note that `params.version` is not populated in this response, it is
+    /// tracked separately in the x/upgrade module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<super::super::super::tendermint::types::ConsensusParams>,
+}
+impl ::prost::Name for QueryParamsResponse {
+    const NAME: &'static str = "QueryParamsResponse";
     const PACKAGE: &'static str = "cosmos.consensus.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.consensus.v1.{}", Self::NAME)
