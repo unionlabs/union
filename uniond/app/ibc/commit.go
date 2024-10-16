@@ -92,7 +92,7 @@ type ethPacket struct {
 }
 
 type DoubleCommitMiddleware struct {
-	ibc               ibckeeper.Keeper
+	ibc               *ibckeeper.Keeper
 	app               porttypes.IBCModule
 	cdc               codec.Codec
 	commitKey         *storetypes.KVStoreKey
@@ -102,13 +102,22 @@ type DoubleCommitMiddleware struct {
 	processingAcks    *stack.Stack
 }
 
+type CommitMiddleware interface {
+	store.KVStoreService
+	porttypes.IBCModule
+}
+
 func NewDoubleCommitMiddleware(
+	ibc *ibckeeper.Keeper,
+	app porttypes.IBCModule,
 	codec codec.Codec,
 	ics4Wrapper porttypes.ICS4Wrapper,
 	commitKey *storetypes.KVStoreKey,
 	ibcKey *storetypes.KVStoreKey,
-) store.KVStoreService {
+) CommitMiddleware {
 	return &DoubleCommitMiddleware{
+		ibc:               ibc,
+		app:               app,
 		cdc:               codec,
 		commitKey:         commitKey,
 		ibcKey:            ibcKey,
