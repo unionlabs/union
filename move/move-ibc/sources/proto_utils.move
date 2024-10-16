@@ -1,4 +1,4 @@
-module IBC::proto_utils {
+module ibc::proto_utils {
     use std::string::{Self, String};
     use std::vector;
     use std::option::{Self, Option};
@@ -276,7 +276,7 @@ module IBC::proto_utils {
 
     #[test]
     public fun test_str() {
-        let exp = vector<String>[
+        let exp = vector[
             string::utf8(b"h"),
             string::utf8(b"hello world"),
             string::utf8(b"hello world hello again")

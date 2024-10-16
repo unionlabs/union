@@ -1,7 +1,7 @@
-module IBC::connection_end {
+module ibc::connection_end {
     use std::string::{Self, String};
     use std::vector;
-    use IBC::proto_utils;
+    use ibc::proto_utils;
     use std::option::{Option, Self};
 
     struct Version has copy, store, drop, key {
@@ -152,7 +152,7 @@ module IBC::connection_end {
     public fun default(): ConnectionEnd {
         ConnectionEnd {
             client_id: string::utf8(b""),
-            versions: vector<Version>[],
+            versions: vector::empty(),
             state: 0,
             delay_period: 0,
             counterparty: Counterparty {
@@ -464,16 +464,14 @@ module IBC::connection_end {
     fun test_proto() {
         let conn_end = ConnectionEnd {
             client_id: string::utf8(b"cometbls-1"),
-            versions: vector<Version>[
+            versions: vector[
                 Version {
                     identifier: string::utf8(b"first_version"),
-                    features: vector<String>[string::utf8(b"first_1"), string::utf8(
-                        b"first_2"
-                    )]
+                    features: vector[string::utf8(b"first_1"), string::utf8(b"first_2")]
                 },
                 Version {
                     identifier: string::utf8(b"second_version"),
-                    features: vector<String>[string::utf8(b"second_1"), string::utf8(
+                    features: vector[string::utf8(b"second_1"), string::utf8(
                         b"second_2"
                     )]
                 }

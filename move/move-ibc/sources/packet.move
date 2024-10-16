@@ -1,12 +1,12 @@
-module IBC::packet {
+module ibc::packet {
     use std::string::{Self, String, utf8};
     use std::vector;
     use std::option::{Self, Option};
     use std::hash;
     use std::bcs;
 
-    use IBC::height::{Self, Height};
-    use IBC::proto_utils;
+    use ibc::height::{Self, Height};
+    use ibc::proto_utils;
 
     struct Packet has copy, store, drop, key {
         sequence: u64,

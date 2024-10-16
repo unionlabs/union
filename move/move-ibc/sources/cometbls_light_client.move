@@ -1,14 +1,14 @@
-module IBC::LightClient {
+module ibc::light_client {
     use std::vector;
     use std::bcs;
     use std::string::{Self, String};
-    use IBC::height::{Self, Height};
+    use ibc::height::{Self, Height};
     use aptos_std::smart_table::{Self, SmartTable};
     use std::object;
     use std::timestamp;
-    use IBC::ics23;
-    use IBC::bcs_utils;
-    use IBC::groth16_verifier::{Self, ZKP};
+    use ibc::ics23;
+    use ibc::bcs_utils;
+    use ibc::groth16_verifier::{Self, ZKP};
 
     const E_INVALID_CLIENT_STATE: u64 = 35100;
     const E_CONSENSUS_STATE_TIMESTAMP_ZERO: u64 = 35101;
@@ -208,8 +208,8 @@ module IBC::LightClient {
 
         (
             bcs::to_bytes(&state.client_state),
-            vector<vector<u8>>[encode_consensus_state(&new_consensus_state)],
-            vector<height::Height>[new_height]
+            vector[encode_consensus_state(&new_consensus_state)],
+            vector[new_height]
         )
     }
 
@@ -292,7 +292,7 @@ module IBC::LightClient {
     }
 
     fun get_client_address(client_id: &string::String): address {
-        let vault_addr = object::create_object_address(&@IBC, b"IBC_VAULT_SEED");
+        let vault_addr = object::create_object_address(&@ibc, b"IBC_VAULT_SEED");
 
         object::create_object_address(&vault_addr, *string::bytes(client_id))
     }
@@ -433,7 +433,7 @@ module IBC::LightClient {
     }
 
     fun encode_consensus_state(cs: &ConsensusState): vector<u8> {
-        let buf = vector<u8>[];
+        let buf = vector::empty();
 
         vector::append(&mut buf, bcs::to_bytes(&cs.timestamp));
         vector::append(&mut buf, cs.app_hash.hash);
@@ -571,7 +571,7 @@ module IBC::LightClient {
     //     parse_zkp(zkp);
     // }
 
-    #[test(ibc_signer = @IBC)]
+    #[test(ibc_signer = @ibc)]
     fun test_create_client(ibc_signer: &signer) acquires State {
         let client_state = ClientState {
             chain_id: string::utf8(b"this-chain"),

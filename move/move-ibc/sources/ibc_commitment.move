@@ -1,9 +1,9 @@
-module IBC::IBCCommitment {
+module ibc::commitment {
 
     use aptos_std::string::{Self, String};
     use aptos_std::string_utils;
     use aptos_std::hash;
-    use IBC::height::{Self, Height};
+    use ibc::height::{Self, Height};
 
     // Function to convert a String to vector<u8>
     public inline fun keccak256(s: String): vector<u8> {

@@ -1,8 +1,8 @@
-module IBC::channel {
+module ibc::channel {
     use std::option::{Self, Option};
     use std::string::{Self, String, utf8};
     use std::vector;
-    use IBC::proto_utils;
+    use ibc::proto_utils;
 
     const CHAN_STATE_UNINITIALIZED: u8 = 0;
     const CHAN_STATE_INIT: u8 = 1;
@@ -287,7 +287,7 @@ module IBC::channel {
                 port_id: utf8(b"port-0"),
                 channel_id: utf8(b"channel-0")
             },
-            connection_hops: vector<String>[utf8(b"connection-0"), utf8(b"connection-1")],
+            connection_hops: vector[utf8(b"connection-0"), utf8(b"connection-1")],
             version: utf8(b"ics20-1")
         };
 
@@ -312,7 +312,7 @@ module IBC::channel {
                 port_id: utf8(b""),
                 channel_id: utf8(b"channel-0")
             },
-            connection_hops: vector<String>[utf8(b"connection-0"), utf8(b"connection-1")],
+            connection_hops: vector[utf8(b"connection-0"), utf8(b"connection-1")],
             version: utf8(b"")
         };
 

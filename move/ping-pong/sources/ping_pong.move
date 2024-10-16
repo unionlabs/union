@@ -4,13 +4,13 @@ module ping_pong::ibc {
     use std::object;
     use std::signer;
     use std::string::{Self, String, utf8};
-    use IBC::ibc;
+    use ibc::ibc;
     use std::vector;
     use std::bcs;
     use std::from_bcs;
-    use IBC::height;
-    use IBC::channel;
-    use IBC::packet::{Self, Packet};
+    use ibc::height;
+    use ibc::channel;
+    use ibc::packet::{Self, Packet};
 
     const ACK_SUCCESS: vector<u8> = b"\x01";
     const ERR_ONLY_ONE_CHANNEL: u64 = 2001;

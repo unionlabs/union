@@ -1,10 +1,11 @@
-module IBC::ics23 {
+module ibc::ics23 {
     use std::vector;
     use std::option::Option;
     use std::hash;
-    use IBC::bcs_utils::{Self, BcsBuf};
-    use IBC::connection_end;
-    use IBC::proto_utils;
+    use ibc::bcs_utils::{Self, BcsBuf};
+    #[test_only]
+    use ibc::connection_end;
+    use ibc::proto_utils;
 
     const E_EMPTY_LEAF_PREFIX: u64 = 35200;
     const E_EMPTY_LEAF_KEY: u64 = 35201;
@@ -210,7 +211,7 @@ module IBC::ics23 {
             key: x"303142424373615a55715146735259436c6a5767",
             value: x"76616c75655f666f725f303142424373615a55715146735259436c6a5767",
             leaf_prefix: x"00",
-            path: vector<InnerOp>[
+            path: vector[
                 InnerOp {
                     prefix: x"01",
                     suffix: x"cb3131cd98b069efcc0e8c7e68da47370adbff32266d7fcd1b0580fdf3961266"

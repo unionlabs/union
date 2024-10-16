@@ -40,7 +40,7 @@ module IBC::ChannelTest {
         assert!(!is_not_supported, 1002);
     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     #[expected_failure(abort_code = 1016)] // E_INVALID_CHANNEL_STATE
     //     public fun test_channel_open_ack_invalid_state(alice: &signer) {
     //         // Initialize IBCStore for testing
@@ -83,7 +83,7 @@ module IBC::ChannelTest {
     //             proof_height
     //         );
     //     }
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     public fun test_channel_open_confirm_success(alice: &signer) {
     //         // Initialize IBCStore for testing
     //         // ibc::create_ibc_store(alice);
@@ -125,7 +125,7 @@ module IBC::ChannelTest {
     //         assert!(channel::state(&updated_channel) == 3, 1001); // STATE_OPEN
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     #[expected_failure(abort_code = 1016)] // E_INVALID_CHANNEL_STATE
     //     public fun test_channel_open_confirm_invalid_state(alice: &signer) {
     //         // Initialize IBCStore for testing
@@ -164,7 +164,7 @@ module IBC::ChannelTest {
     //         ibc::channel_open_confirm(port_id, channel_id, proof_ack, proof_height);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     public fun test_channel_open_try_success(alice: &signer) {
     //         // Initialize IBCStore for testing
     //         // ibc::create_ibc_store(alice);
@@ -207,7 +207,7 @@ module IBC::ChannelTest {
     //         assert!(*channel::version(&stored_channel) == string::utf8(b"1"), 8003);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     #[expected_failure(abort_code = 1016)] // E_INVALID_CHANNEL_STATE
     //     public fun test_channel_open_try_invalid_state(alice: &signer) {
     //         // Initialize IBCStore for testing
@@ -243,7 +243,7 @@ module IBC::ChannelTest {
     //         ibc::channel_open_try(string::utf8(b"port-0"), channel, string::utf8(b"1"), proof_init, proof_height);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     public fun test_claim_capability_success(alice: &signer) {
     //         // Initialize IBCStore for testing
     //         // ibc::create_ibc_store(alice);
@@ -258,7 +258,7 @@ module IBC::ChannelTest {
     //         assert!(claimed_addr == addr, 9001);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     #[expected_failure(abort_code = 1014)] // E_CAPABILITY_ALREADY_CLAIMED
     //     public fun test_claim_capability_already_claimed(alice: &signer) {
     //         // Initialize IBCStore for testing
@@ -273,7 +273,7 @@ module IBC::ChannelTest {
     //         ibc::claim_capability(capability_name, addr);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     public fun test_write_acknowledgement_success(alice: &signer) {
     //         // Initialize IBCStore for testing
     //         // ibc::create_ibc_store(alice);
@@ -312,7 +312,7 @@ module IBC::ChannelTest {
     //         let stored_ack = ibc::get_commitment(ack_commitment_key);
     //         assert!(stored_ack == hash::sha2_256(acknowledgement), 1101);
     //     }
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     #[expected_failure(abort_code = 1020)] // E_UNAUTHORIZED
     //     public fun test_write_acknowledgement_unauthorized(alice: &signer) {
     //         // Initialize IBCStore for testing
@@ -344,7 +344,7 @@ module IBC::ChannelTest {
     //         ibc::write_acknowledgement(alice, packet_data, acknowledgement);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     #[expected_failure(abort_code = 1028)] // E_ACKNOWLEDGEMENT_IS_EMPTY
     //     public fun test_write_acknowledgement_empty_ack(alice: &signer) {
     //         // Initialize IBCStore for testing
@@ -380,7 +380,7 @@ module IBC::ChannelTest {
     //         ibc::write_acknowledgement(alice, packet_data, empty_acknowledgement);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     #[expected_failure(abort_code = 1029)] // E_ACKNOWLEDGEMENT_ALREADY_EXISTS
     //     public fun test_write_acknowledgement_already_exists(alice: &signer) {
     //         // Initialize IBCStore for testing
@@ -419,7 +419,7 @@ module IBC::ChannelTest {
     //         ibc::write_acknowledgement(alice, packet_data, acknowledgement);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     public fun test_acknowledge_packet_success(alice: &signer) {
     //         // Initialize IBCStore for testing
     //         // ibc::create_ibc_store(alice);
@@ -481,7 +481,7 @@ module IBC::ChannelTest {
     //         assert!(vector::length(&retrieved_commitment) == 0, 1101);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     #[expected_failure(abort_code = 1032)] // E_PACKET_COMMITMENT_NOT_FOUND
     //     public fun test_acknowledge_packet_commitment_not_found(alice: &signer) {
     //         // Initialize IBCStore for testing
@@ -532,7 +532,7 @@ module IBC::ChannelTest {
     //         ibc::acknowledge_packet(packet_data, acknowledgement, proof, proof_height);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     #[expected_failure(abort_code = 1033)] // E_INVALID_PACKET_COMMITMENT
     //     public fun test_acknowledge_packet_invalid_commitment(alice: &signer) {
     //         // Initialize IBCStore for testing
@@ -587,7 +587,7 @@ module IBC::ChannelTest {
     //         ibc::acknowledge_packet(packet_data, acknowledgement, proof, proof_height);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     #[expected_failure(abort_code = 1026)] // E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH
     //     public fun test_acknowledge_packet_sequence_mismatch(alice: &signer) {
     //         // Initialize IBCStore for testing
@@ -646,7 +646,7 @@ module IBC::ChannelTest {
     //         ibc::acknowledge_packet(packet_data, acknowledgement, proof, proof_height);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     public fun test_timeout_packet_success_ordered(alice: &signer) {
     //         // Initialize IBCStore for testing
     //         // ibc::create_ibc_store(alice);
@@ -710,7 +710,7 @@ module IBC::ChannelTest {
     //         let retrieved_commitment = ibc::get_commitment(packet_commitment_key);
     //         assert!(vector::length(&retrieved_commitment) == 0, 1101);
     //     }
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     public fun test_timeout_packet_success_unordered(alice: &signer) {
     //         // Initialize IBCStore for testing
     //         // ibc::create_ibc_store(alice);
@@ -775,7 +775,7 @@ module IBC::ChannelTest {
     //         assert!(vector::length(&retrieved_commitment) == 0, 1102);
     //     }
 
-    //     #[test(alice = @IBC)]
+    //     #[test(alice = @ibc)]
     //     #[expected_failure(abort_code = 1032)] // E_PACKET_COMMITMENT_NOT_FOUND
     //     public fun test_timeout_packet_commitment_not_found(alice: &signer) {
     //         // Initialize IBCStore for testing
