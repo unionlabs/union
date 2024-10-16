@@ -44,18 +44,18 @@ Union supports different protocols over each channel. Channels are connection ag
   content={`
 flowchart TB
     Connection --> Channel
-    Channel --> ICS20-1-relay
-    Channel --> UCS0-1-relay
-    Channel --> UCS0-2-relay
-    Channel --> UCS0-3-relay
+    Channel --> ics20-1
+    Channel --> ucs01-relay
+    Channel --> ucs02-nft
+    Channel --> ucs03-zkgm-1
 `}/>
 
-Each protocol version has different functionalities and intended use cases. For most users, `ucs03-relay-1` is the appropriate channel type.
+Each protocol version has different functionalities and intended use cases. For most users, `ucs03-zkgm-1` is the appropriate channel type.
 
 | version       | use case                                          |
 |---------------|--------------------------------------------------|
 | ucs01-relay-1 | Asset transfers                                  |
 | ucs02-relay-1 | NFT transfers                                    |
-| ucs03-relay-1 | Asset transfers, NFT transfers, packets, intents |
+| ucs03-zkgm-1 | Asset transfers, NFT transfers, packets, intents |
 | ics20-1       | Asset transfers                                  |
 

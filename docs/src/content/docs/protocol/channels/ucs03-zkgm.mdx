@@ -1,5 +1,5 @@
 ---
-title: "ucs03-relay-1"
+title: "ucs03-zkgm-1"
 sidebar:
   badge:
     text: live
@@ -10,7 +10,7 @@ import Mermaid from "#/components/Mermaid.astro";
 
 # Overview
 
-`ucs03-relay-1` is the most advanced and recommended protocol to use for 
+`ucs03-zkgm-1` is the most advanced and recommended protocol to use for 
 
 - message passing
 - transfers (assets and NFTs)
@@ -21,7 +21,7 @@ It's the most gas-efficient version and suitable for almost all use cases.
 
 ## Protocol
 
-There are two main modes for a packet to be transferred using `ucs03-relay-1`. The main mode, which always succeeds for any chain, 
+There are two main modes for a packet to be transferred using `ucs03-zkgm-1`. The main mode, which always succeeds for any chain, 
 leverages state lenses to create a recursive connection and a communication channel between two chains.
 
 
@@ -43,7 +43,7 @@ significantly more gas efficient over multi-hop-based protocols.
 
 ### Open Filling
 
-A groundbreaking protocol improvement on IBC and trust-minimized bridging in general, is that `ucs03-relay-1` allows arbitrary filling of orders by any party. 
+A groundbreaking protocol improvement on IBC and trust-minimized bridging in general, is that `ucs03-zkgm-1` allows arbitrary filling of orders by any party. 
 
 :::tip
 
@@ -75,7 +75,7 @@ Theoretically, a filler can submit the transfer to the destination side before t
 
 The `Acknowledgement`, which may contain arbitrary payloads, is used to encode information on the filler and repay the filler for the service by unlocking assets from the vault. 
 
-Open filling is opt-in for any protocol, allowing for the same optimizations that `ucs03-relay-1` leverages to increase transfer speeds.
+Open filling is opt-in for any protocol, allowing for the same optimizations that `ucs03-zkgm-1` leverages to increase transfer speeds.
 
 ### Batching
 
