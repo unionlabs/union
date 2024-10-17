@@ -56,7 +56,7 @@ impl From<PublicKey> for protos::tendermint::crypto::PublicKey {
                 PublicKey::Secp256k1(key) => {
                     Some(protos::tendermint::crypto::public_key::Sum::Secp256k1(key))
                 }
-                PublicKey::Bls12381(_) | PublicKey::Bn254(_) => None,
+                PublicKey::Bls12381(_) | PublicKey::Bn254(_) => panic!("wtf r u doing"),
             },
         }
     }

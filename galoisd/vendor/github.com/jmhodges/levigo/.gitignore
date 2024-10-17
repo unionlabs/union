@@ -1,6 +1,0 @@
-*.o
-*.a
-*.6
-*.out
-_testmain.go
-_obj
