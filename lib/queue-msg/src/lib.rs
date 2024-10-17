@@ -372,18 +372,23 @@ impl<T: QueueMessage> Op<T> {
                     match msg.clone().handle(store, depth + 1).await {
                         Ok(ok) => Ok(ok),
                         Err(err) => match remaining.get().checked_sub(1).and_then(NonZeroU8::new) {
-                            Some(retries_left) => {
-                                warn!(
-                                    retries_left,
-                                    ?err,
-                                    "msg failed, retrying in {RETRY_DELAY_SECONDS} seconds"
-                                );
-
-                                Ok(Some(seq([
-                                    defer_absolute(now() + RETRY_DELAY_SECONDS),
-                                    retry(retries_left, *msg),
-                                ])))
-                            }
+                            Some(retries_left) => match err {
+                                QueueError::Fatal(err) => {
+                                    warn!(?err, "fatal error");
+                                    Ok(None)
+                                }
+                                QueueError::Retry(err) => {
+                                    warn!(
+                                        retries_left,
+                                        ?err,
+                                        "msg failed, retrying in {RETRY_DELAY_SECONDS} seconds"
+                                    );
+                                    Ok(Some(seq([
+                                        defer_absolute(now() + RETRY_DELAY_SECONDS),
+                                        retry(retries_left, *msg),
+                                    ])))
+                                }
+                            },
                             None => {
                                 error!("msg failed after all retries");
                                 Err(err)
