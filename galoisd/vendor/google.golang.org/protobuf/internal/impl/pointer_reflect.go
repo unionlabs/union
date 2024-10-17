@@ -16,7 +16,7 @@ import (
 const UnsafeEnabled = false
 
 // Pointer is an opaque pointer type.
-type Pointer interface{}
+type Pointer any
 
 // offset represents the offset to a struct field, accessible from a pointer.
 // The offset is the field index into a struct.
@@ -62,7 +62,7 @@ func pointerOfValue(v reflect.Value) pointer {
 }
 
 // pointerOfIface returns the pointer portion of an interface.
-func pointerOfIface(v interface{}) pointer {
+func pointerOfIface(v any) pointer {
 	return pointer{v: reflect.ValueOf(v)}
 }
 
@@ -93,7 +93,7 @@ func (p pointer) AsValueOf(t reflect.Type) reflect.Value {
 
 // AsIfaceOf treats p as a pointer to an object of type t and returns the value.
 // It is equivalent to p.AsValueOf(t).Interface()
-func (p pointer) AsIfaceOf(t reflect.Type) interface{} {
+func (p pointer) AsIfaceOf(t reflect.Type) any {
 	return p.AsValueOf(t).Interface()
 }
 
@@ -157,6 +157,42 @@ func (p pointer) AppendPointerSlice(v pointer) {
 // SetPointer sets *p to v.
 func (p pointer) SetPointer(v pointer) {
 	p.v.Elem().Set(v.v)
+}
+
+func growSlice(p pointer, addCap int) {
+	// TODO: Once we only support Go 1.20 and newer, use reflect.Grow.
+	in := p.v.Elem()
+	out := reflect.MakeSlice(in.Type(), in.Len(), in.Len()+addCap)
+	reflect.Copy(out, in)
+	p.v.Elem().Set(out)
+}
+
+func (p pointer) growBoolSlice(addCap int) {
+	growSlice(p, addCap)
+}
+
+func (p pointer) growInt32Slice(addCap int) {
+	growSlice(p, addCap)
+}
+
+func (p pointer) growUint32Slice(addCap int) {
+	growSlice(p, addCap)
+}
+
+func (p pointer) growInt64Slice(addCap int) {
+	growSlice(p, addCap)
+}
+
+func (p pointer) growUint64Slice(addCap int) {
+	growSlice(p, addCap)
+}
+
+func (p pointer) growFloat64Slice(addCap int) {
+	growSlice(p, addCap)
+}
+
+func (p pointer) growFloat32Slice(addCap int) {
+	growSlice(p, addCap)
 }
 
 func (Export) MessageStateOf(p Pointer) *messageState     { panic("not supported") }

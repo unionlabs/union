@@ -78,6 +78,8 @@ const (
 	ECHOPRT                          = 0x400
 	EFD_CLOEXEC                      = 0x80000
 	EFD_NONBLOCK                     = 0x800
+	EPIOCGPARAMS                     = 0x80088a02
+	EPIOCSPARAMS                     = 0x40088a01
 	EPOLL_CLOEXEC                    = 0x80000
 	ESR_MAGIC                        = 0x45535201
 	EXTPROC                          = 0x10000
@@ -87,6 +89,7 @@ const (
 	FICLONE                          = 0x40049409
 	FICLONERANGE                     = 0x4020940d
 	FLUSHO                           = 0x1000
+	FPMR_MAGIC                       = 0x46504d52
 	FPSIMD_MAGIC                     = 0x46508001
 	FS_IOC_ENABLE_VERITY             = 0x40806685
 	FS_IOC_GETFLAGS                  = 0x80086601
@@ -278,6 +281,9 @@ const (
 	SCM_TIMESTAMPNS                  = 0x23
 	SCM_TXTIME                       = 0x3d
 	SCM_WIFI_STATUS                  = 0x29
+	SECCOMP_IOCTL_NOTIF_ADDFD        = 0x40182103
+	SECCOMP_IOCTL_NOTIF_ID_VALID     = 0x40082102
+	SECCOMP_IOCTL_NOTIF_SET_FLAGS    = 0x40082104
 	SFD_CLOEXEC                      = 0x80000
 	SFD_NONBLOCK                     = 0x800
 	SIOCATMARK                       = 0x8905

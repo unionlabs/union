@@ -31,6 +31,9 @@
 //	        return subscription.Err()
 //	    }
 //	}
+//
+// Package pubsub may be internalized (made private) in future  releases.
+// XXX Deprecated.
 package pubsub
 
 import (
@@ -81,7 +84,7 @@ type cmd struct {
 	clientID     string
 
 	// publish
-	msg    interface{}
+	msg    any
 	events map[string][]string
 }
 
@@ -150,7 +153,8 @@ func (s *Server) Subscribe(
 	ctx context.Context,
 	clientID string,
 	query Query,
-	outCapacity ...int) (*Subscription, error) {
+	outCapacity ...int,
+) (*Subscription, error) {
 	outCap := 1
 	if len(outCapacity) > 0 {
 		if outCapacity[0] <= 0 {
@@ -266,14 +270,14 @@ func (s *Server) NumClientSubscriptions(clientID string) int {
 
 // Publish publishes the given message. An error will be returned to the caller
 // if the context is canceled.
-func (s *Server) Publish(ctx context.Context, msg interface{}) error {
+func (s *Server) Publish(ctx context.Context, msg any) error {
 	return s.PublishWithEvents(ctx, msg, make(map[string][]string))
 }
 
 // PublishWithEvents publishes the given message with the set of events. The set
 // is matched with clients queries. If there is a match, the message is sent to
 // the client.
-func (s *Server) PublishWithEvents(ctx context.Context, msg interface{}, events map[string][]string) error {
+func (s *Server) PublishWithEvents(ctx context.Context, msg any, events map[string][]string) error {
 	select {
 	case s.cmds <- cmd{op: pub, msg: msg, events: events}:
 		return nil
@@ -289,7 +293,7 @@ func (s *Server) OnStop() {
 	s.cmds <- cmd{op: shutdown}
 }
 
-// NOTE: not goroutine safe
+// NOTE: not goroutine safe.
 type state struct {
 	// query string -> client -> subscription
 	subscriptions map[string]map[string]*Subscription
@@ -313,8 +317,8 @@ func (s *Server) OnStart() error {
 	return nil
 }
 
-// OnReset implements Service.OnReset
-func (s *Server) OnReset() error {
+// OnReset implements Service.OnReset.
+func (*Server) OnReset() error {
 	return nil
 }
 
@@ -403,7 +407,7 @@ func (state *state) removeAll(reason error) {
 	}
 }
 
-func (state *state) send(msg interface{}, events map[string][]string) error {
+func (state *state) send(msg any, events map[string][]string) error {
 	for qStr, clientSubscriptions := range state.subscriptions {
 		q := state.queries[qStr].q
 

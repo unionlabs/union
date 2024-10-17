@@ -237,7 +237,8 @@ type Any struct {
 	//
 	// Note: this functionality is not currently available in the official
 	// protobuf release, and it is not used for type URLs beginning with
-	// type.googleapis.com.
+	// type.googleapis.com. As of May 2023, there are no widely used type server
+	// implementations and no plans to implement one.
 	//
 	// Schemes other than `http`, `https` (or the empty scheme) might be
 	// used with implementation specific semantics.
@@ -444,7 +445,7 @@ func file_google_protobuf_any_proto_rawDescGZIP() []byte {
 }
 
 var file_google_protobuf_any_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_google_protobuf_any_proto_goTypes = []interface{}{
+var file_google_protobuf_any_proto_goTypes = []any{
 	(*Any)(nil), // 0: google.protobuf.Any
 }
 var file_google_protobuf_any_proto_depIdxs = []int32{
@@ -461,7 +462,7 @@ func file_google_protobuf_any_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_google_protobuf_any_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_google_protobuf_any_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*Any); i {
 			case 0:
 				return &v.state

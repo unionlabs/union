@@ -7,7 +7,7 @@
 // Deprecated: RIPEMD-160 is a legacy hash and should not be used for new
 // applications. Also, this package does not and will not provide an optimized
 // implementation. Instead, use a modern hash like SHA-256 (from crypto/sha256).
-package ripemd160 // import "golang.org/x/crypto/ripemd160"
+package ripemd160
 
 // RIPEMD-160 is designed by Hans Dobbertin, Antoon Bosselaers, and Bart
 // Preneel with specifications available at:

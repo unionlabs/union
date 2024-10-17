@@ -1,7 +1,7 @@
 # Fixed size 256-bit math library
 
 This is a library specialized at replacing the big.Int library for math based on 256-bit types, used by both 
-[go-ethereum](https://github.com/ethereum/go-ethereum) and [turbo-geth](https://github.com/ledgerwatch/turbo-geth).
+[go-ethereum](https://github.com/ethereum/go-ethereum) and [erigon](https://github.com/ledgerwatch/erigon).
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/holiman/uint256.svg)](https://pkg.go.dev/github.com/holiman/uint256)
 [![codecov](https://codecov.io/gh/holiman/uint256/branch/master/graph/badge.svg?token=LHs7xL99wQ)](https://codecov.io/gh/holiman/uint256)

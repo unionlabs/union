@@ -8,17 +8,6 @@ import (
 	"math/bits"
 )
 
-// Some utility functions
-
-func leadingZeros(x *Int) (z int) {
-	var t int
-	z = bits.LeadingZeros64(x[3])
-	t = bits.LeadingZeros64(x[2]); if z ==  64 { z = t +  64 }
-	t = bits.LeadingZeros64(x[1]); if z == 128 { z = t + 128 }
-	t = bits.LeadingZeros64(x[0]); if z == 192 { z = t + 192 }
-	return z
-}
-
 // Reciprocal computes a 320-bit value representing 1/m
 //
 // Notes:
@@ -341,8 +330,8 @@ func Reciprocal(m *Int) (mu [5]uint64) {
 
 // reduce4 computes the least non-negative residue of x modulo m
 //
-// requires a four-word modulus (m[3] > 1) and its inverse (mu)
-func reduce4(x [8]uint64, m *Int, mu [5]uint64) (z Int) {
+// requires a four-word modulus (m[3] != 0) and its inverse (mu)
+func (z *Int) reduce4(x *[8]uint64, m *Int, mu *[5]uint64) *Int {
 
 	// NB: Most variable names in the comments match the pseudocode for
 	// 	Barrett reduction in the Handbook of Applied Cryptography.

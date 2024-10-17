@@ -1,12 +1,14 @@
 package types
 
 import (
+	"bytes"
 	"sort"
+	"strings"
 )
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 
-// ValidatorUpdates is a list of validators that implements the Sort interface
+// ValidatorUpdates is a list of validators that implements the Sort interface.
 type ValidatorUpdates []ValidatorUpdate
 
 var _ sort.Interface = (ValidatorUpdates)(nil)
@@ -21,9 +23,9 @@ func (v ValidatorUpdates) Len() int {
 	return len(v)
 }
 
-// XXX: doesn't distinguish same validator with different power
+// XXX: doesn't distinguish same validator with different power.
 func (v ValidatorUpdates) Less(i, j int) bool {
-	return v[i].PubKey.Compare(v[j].PubKey) <= 0
+	return strings.Compare(v[i].PubKeyType, v[j].PubKeyType) <= 0 && bytes.Compare(v[i].PubKeyBytes, v[j].PubKeyBytes) <= 0
 }
 
 func (v ValidatorUpdates) Swap(i, j int) {

@@ -27,7 +27,7 @@ func (fr Fraction) String() string {
 func ParseFraction(f string) (Fraction, error) {
 	o := strings.Split(f, "/")
 	if len(o) != 2 {
-		return Fraction{}, errors.New("incorrect formating: should have a single slash i.e. \"1/3\"")
+		return Fraction{}, errors.New("incorrect formatting: should have a single slash i.e. \"1/3\"")
 	}
 	numerator, err := strconv.ParseUint(o[0], 10, 64)
 	if err != nil {

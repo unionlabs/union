@@ -21,26 +21,18 @@ type extensionFieldInfo struct {
 	validation          validationInfo
 }
 
-var legacyExtensionFieldInfoCache sync.Map // map[protoreflect.ExtensionType]*extensionFieldInfo
-
 func getExtensionFieldInfo(xt protoreflect.ExtensionType) *extensionFieldInfo {
 	if xi, ok := xt.(*ExtensionInfo); ok {
 		xi.lazyInit()
 		return xi.info
 	}
-	return legacyLoadExtensionFieldInfo(xt)
-}
-
-// legacyLoadExtensionFieldInfo dynamically loads a *ExtensionInfo for xt.
-func legacyLoadExtensionFieldInfo(xt protoreflect.ExtensionType) *extensionFieldInfo {
-	if xi, ok := legacyExtensionFieldInfoCache.Load(xt); ok {
-		return xi.(*extensionFieldInfo)
-	}
-	e := makeExtensionFieldInfo(xt.TypeDescriptor())
-	if e, ok := legacyMessageTypeCache.LoadOrStore(xt, e); ok {
-		return e.(*extensionFieldInfo)
-	}
-	return e
+	// Ideally we'd cache the resulting *extensionFieldInfo so we don't have to
+	// recompute this metadata repeatedly. But without support for something like
+	// weak references, such a cache would pin temporary values (like dynamic
+	// extension types, constructed for the duration of a user request) to the
+	// heap forever, causing memory usage of the cache to grow unbounded.
+	// See discussion in https://github.com/golang/protobuf/issues/1521.
+	return makeExtensionFieldInfo(xt.TypeDescriptor())
 }
 
 func makeExtensionFieldInfo(xd protoreflect.ExtensionDescriptor) *extensionFieldInfo {
@@ -105,6 +97,28 @@ func (f *ExtensionField) canLazy(xt protoreflect.ExtensionType) bool {
 		return true
 	}
 	return false
+}
+
+// isUnexpandedLazy returns true if the ExensionField is lazy and not
+// yet expanded, which means it's present and already checked for
+// initialized required fields.
+func (f *ExtensionField) isUnexpandedLazy() bool {
+	return f.lazy != nil && atomic.LoadUint32(&f.lazy.atomicOnce) == 0
+}
+
+// lazyBuffer retrieves the buffer for a lazy extension if it's not yet expanded.
+//
+// The returned buffer has to be kept over whatever operation we're planning,
+// as re-retrieving it will fail after the message is lazily decoded.
+func (f *ExtensionField) lazyBuffer() []byte {
+	// This function might be in the critical path, so check the atomic without
+	// taking a look first, then only take the lock if needed.
+	if !f.isUnexpandedLazy() {
+		return nil
+	}
+	f.lazy.mu.Lock()
+	defer f.lazy.mu.Unlock()
+	return f.lazy.b
 }
 
 func (f *ExtensionField) lazyInit() {

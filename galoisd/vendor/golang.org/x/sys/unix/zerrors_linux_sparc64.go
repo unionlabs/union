@@ -82,6 +82,8 @@ const (
 	EFD_CLOEXEC                      = 0x400000
 	EFD_NONBLOCK                     = 0x4000
 	EMT_TAGOVF                       = 0x1
+	EPIOCGPARAMS                     = 0x40088a02
+	EPIOCSPARAMS                     = 0x80088a01
 	EPOLL_CLOEXEC                    = 0x400000
 	EXTPROC                          = 0x10000
 	FF1                              = 0x8000
@@ -335,6 +337,9 @@ const (
 	SCM_TIMESTAMPNS                  = 0x21
 	SCM_TXTIME                       = 0x3f
 	SCM_WIFI_STATUS                  = 0x25
+	SECCOMP_IOCTL_NOTIF_ADDFD        = 0x80182103
+	SECCOMP_IOCTL_NOTIF_ID_VALID     = 0x80082102
+	SECCOMP_IOCTL_NOTIF_SET_FLAGS    = 0x80082104
 	SFD_CLOEXEC                      = 0x400000
 	SFD_NONBLOCK                     = 0x4000
 	SF_FP                            = 0x38

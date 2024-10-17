@@ -97,7 +97,7 @@ func HashFromByteSlicesIterative(input [][]byte) []byte {
 	}
 }
 
-// getSplitPoint returns the largest power of 2 less than length
+// getSplitPoint returns the largest power of 2 less than length.
 func getSplitPoint(length int64) int64 {
 	if length < 1 {
 		panic("Trying to split a tree with size < 1")

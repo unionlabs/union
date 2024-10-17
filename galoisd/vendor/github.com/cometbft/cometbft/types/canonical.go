@@ -3,16 +3,16 @@ package types
 import (
 	"time"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 // Canonical* wraps the structs in types for amino encoding them for use in SignBytes / the Signable interface.
 
-// TimeFormat is used for generating the sigs
+// TimeFormat is used for generating the sigs.
 const TimeFormat = time.RFC3339Nano
 
-//-----------------------------------
+// -----------------------------------
 // Canonicalize the structs
 
 func CanonicalizeBlockID(bid cmtproto.BlockID) *cmtproto.CanonicalBlockID {
@@ -21,7 +21,7 @@ func CanonicalizeBlockID(bid cmtproto.BlockID) *cmtproto.CanonicalBlockID {
 		panic(err)
 	}
 	var cbid *cmtproto.CanonicalBlockID
-	if rbid == nil || rbid.IsZero() {
+	if rbid == nil || rbid.IsNil() {
 		cbid = nil
 	} else {
 		cbid = &cmtproto.CanonicalBlockID{
@@ -33,18 +33,18 @@ func CanonicalizeBlockID(bid cmtproto.BlockID) *cmtproto.CanonicalBlockID {
 	return cbid
 }
 
-// CanonicalizeVote transforms the given PartSetHeader to a CanonicalPartSetHeader.
+// CanonicalizePartSetHeader transforms the given PartSetHeader to a CanonicalPartSetHeader.
 func CanonicalizePartSetHeader(psh cmtproto.PartSetHeader) cmtproto.CanonicalPartSetHeader {
 	return cmtproto.CanonicalPartSetHeader(psh)
 }
 
-// CanonicalizeVote transforms the given Proposal to a CanonicalProposal.
+// CanonicalizeProposal transforms the given Proposal to a CanonicalProposal.
 func CanonicalizeProposal(chainID string, proposal *cmtproto.Proposal) cmtproto.CanonicalProposal {
 	return cmtproto.CanonicalProposal{
-		Type:      cmtproto.ProposalType,
-		Height:    proposal.Height,       // encoded as sfixed64
-		Round:     int64(proposal.Round), // encoded as sfixed64
-		POLRound:  int64(proposal.PolRound),
+		Type:      ProposalType,
+		Height:    proposal.Height,          // encoded as sfixed64
+		Round:     int64(proposal.Round),    // encoded as sfixed64
+		POLRound:  int64(proposal.PolRound), // FIXME: not matching
 		BlockID:   CanonicalizeBlockID(proposal.BlockID),
 		Timestamp: proposal.Timestamp,
 		ChainID:   chainID,
@@ -56,23 +56,10 @@ func CanonicalizeProposal(chainID string, proposal *cmtproto.Proposal) cmtproto.
 // relating to vote extensions.
 func CanonicalizeVote(chainID string, vote *cmtproto.Vote) cmtproto.CanonicalVote {
 	return cmtproto.CanonicalVote{
-		Type:    vote.Type,
-		Height:  vote.Height,       // encoded as sfixed64
-		Round:   int64(vote.Round), // encoded as sfixed64
-		BlockID: CanonicalizeBlockID(vote.BlockID),
-		ChainID: chainID,
-	}
-}
-
-// Same as `CanonicalizeVote` but uses `Tendermint/CometBFT`'s `CanonicalVote` instead to
-// be able to be used by the `07-tendermint` light client.
-func CanonicalizeVoteLegacy(chainID string, vote *cmtproto.Vote) cmtproto.LegacyCanonicalVote {
-	return cmtproto.LegacyCanonicalVote{
 		Type:      vote.Type,
 		Height:    vote.Height,       // encoded as sfixed64
 		Round:     int64(vote.Round), // encoded as sfixed64
 		BlockID:   CanonicalizeBlockID(vote.BlockID),
-		Timestamp: vote.Timestamp,
 		ChainID:   chainID,
 	}
 }
