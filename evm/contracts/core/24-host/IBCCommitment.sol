@@ -1,78 +1,78 @@
 pragma solidity ^0.8.27;
 
 library IBCCommitment {
-    bytes1 public constant CLIENT_STATE = 0x00;
-    bytes1 public constant CONSENSUS_STATE = 0x01;
-    bytes1 public constant CONNECTIONS = 0x02;
-    bytes1 public constant CHANNELS = 0x03;
-    bytes1 public constant PACKETS = 0x04;
-    bytes1 public constant PACKET_ACKS = 0x05;
-    bytes1 public constant NEXT_SEQ_SEND = 0x06;
-    bytes1 public constant NEXT_SEQ_RECV = 0x07;
-    bytes1 public constant NEXT_SEQ_ACK = 0x08;
+    uint256 public constant CLIENT_STATE = 0x00;
+    uint256 public constant CONSENSUS_STATE = 0x01;
+    uint256 public constant CONNECTIONS = 0x02;
+    uint256 public constant CHANNELS = 0x03;
+    uint256 public constant PACKETS = 0x04;
+    uint256 public constant PACKET_ACKS = 0x05;
+    uint256 public constant NEXT_SEQ_SEND = 0x06;
+    uint256 public constant NEXT_SEQ_RECV = 0x07;
+    uint256 public constant NEXT_SEQ_ACK = 0x08;
 
     function clientStatePath(
         uint32 clientId
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(CLIENT_STATE, clientId);
+        return abi.encode(CLIENT_STATE, clientId);
     }
 
     function consensusStatePath(
         uint32 clientId,
         uint64 height
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(CONSENSUS_STATE, clientId, height);
+        return abi.encode(CONSENSUS_STATE, clientId, height);
     }
 
     function connectionPath(
         uint32 connectionId
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(CONNECTIONS, connectionId);
+        return abi.encode(CONNECTIONS, connectionId);
     }
 
     function channelPath(
         uint32 channelId
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(CHANNELS, channelId);
+        return abi.encode(CHANNELS, channelId);
     }
 
     function packetCommitmentPath(
         uint32 channelId,
         uint64 sequence
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(PACKETS, channelId, sequence);
+        return abi.encode(PACKETS, channelId, sequence);
     }
 
     function batchPacketsCommitmentPath(
         uint32 channelId,
         bytes32 batchHash
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(PACKETS, channelId, batchHash);
+        return abi.encode(PACKETS, channelId, batchHash);
     }
 
     function batchReceiptsCommitmentPath(
         uint32 channelId,
         bytes32 batchHash
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(PACKET_ACKS, channelId, batchHash);
+        return abi.encode(PACKET_ACKS, channelId, batchHash);
     }
 
     function nextSequenceSendCommitmentPath(
         uint32 channelId
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(NEXT_SEQ_SEND, channelId);
+        return abi.encode(NEXT_SEQ_SEND, channelId);
     }
 
     function nextSequenceRecvCommitmentPath(
         uint32 channelId
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(NEXT_SEQ_RECV, channelId);
+        return abi.encode(NEXT_SEQ_RECV, channelId);
     }
 
     function nextSequenceAckCommitmentPath(
         uint32 channelId
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(NEXT_SEQ_ACK, channelId);
+        return abi.encode(NEXT_SEQ_ACK, channelId);
     }
 
     // Key generators for Commitment mapping
