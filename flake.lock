@@ -96,17 +96,17 @@
     "cosmosproto": {
       "flake": false,
       "locked": {
-        "lastModified": 1678351217,
-        "narHash": "sha256-kFm1ChSmm5pU9oJqKmWq4KfO/hxgxzvcSzr66oTulos=",
+        "lastModified": 1713435259,
+        "narHash": "sha256-vMq1+gMLgUdhClbz38+U3MIh9Wzw0DvyAMX6M4ZZBso=",
         "owner": "cosmos",
         "repo": "cosmos-proto",
-        "rev": "78e33f25b874e7639f540037599d8ea1d161a62c",
+        "rev": "0748a2ad4a5c78b1db6c8090db01e255bcc91365",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
         "repo": "cosmos-proto",
-        "rev": "78e33f25b874e7639f540037599d8ea1d161a62c",
+        "rev": "0748a2ad4a5c78b1db6c8090db01e255bcc91365",
         "type": "github"
       }
     },
@@ -371,17 +371,17 @@
     "ibc-go": {
       "flake": false,
       "locked": {
-        "lastModified": 1700058834,
-        "narHash": "sha256-vGtOGyoW3qZwMYHmTWzugx/DAxsiUn8upc49hjL0uJg=",
-        "owner": "cosmos",
-        "repo": "ibc-go",
-        "rev": "c98311964dc550b9fe9a5bff8b6dd8e35bf13642",
+        "lastModified": 1729132086,
+        "narHash": "sha256-OF2QFcEwDTVbYO2DcUdyzi504JglKge14lF71ozqCgQ=",
+        "owner": "unionlabs",
+        "repo": "ibc-go-union",
+        "rev": "4fbe0649cdf00d58090909bc4dfe5a7be32b013e",
         "type": "github"
       },
       "original": {
-        "owner": "cosmos",
-        "repo": "ibc-go",
-        "rev": "c98311964dc550b9fe9a5bff8b6dd8e35bf13642",
+        "owner": "unionlabs",
+        "repo": "ibc-go-union",
+        "rev": "4fbe0649cdf00d58090909bc4dfe5a7be32b013e",
         "type": "github"
       }
     },
