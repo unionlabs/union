@@ -20,18 +20,14 @@ library IBCMsgs {
     }
 
     struct MsgConnectionOpenInit {
-        string clientType;
         uint32 clientId;
-        string counterpartyClientType;
         uint32 counterpartyClientId;
         address relayer;
     }
 
     struct MsgConnectionOpenTry {
-        string counterpartyClientType;
         uint32 counterpartyClientId;
         uint32 counterpartyConnectionId;
-        string clientType;
         uint32 clientId;
         bytes proofInit;
         uint64 proofHeight;
@@ -55,25 +51,24 @@ library IBCMsgs {
 
     struct MsgChannelOpenInit {
         address portId;
+        string counterpartyPortId;
         uint32 connectionId;
         IBCChannelOrder ordering;
-        bytes32 version;
+        string version;
         address relayer;
     }
 
     struct MsgChannelOpenTry {
-        address portId;
         IBCChannel channel;
-        bytes32 counterpartyVersion;
+        string counterpartyVersion;
         bytes proofInit;
         uint64 proofHeight;
         address relayer;
     }
 
     struct MsgChannelOpenAck {
-        address portId;
         uint32 channelId;
-        bytes32 counterpartyVersion;
+        string counterpartyVersion;
         uint32 counterpartyChannelId;
         bytes proofTry;
         uint64 proofHeight;
@@ -81,7 +76,6 @@ library IBCMsgs {
     }
 
     struct MsgChannelOpenConfirm {
-        address portId;
         uint32 channelId;
         bytes proofAck;
         uint64 proofHeight;
@@ -89,13 +83,11 @@ library IBCMsgs {
     }
 
     struct MsgChannelCloseInit {
-        address portId;
         uint32 channelId;
         address relayer;
     }
 
     struct MsgChannelCloseConfirm {
-        address portId;
         uint32 channelId;
         bytes proofInit;
         uint64 proofHeight;

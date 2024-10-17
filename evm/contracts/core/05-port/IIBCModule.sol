@@ -10,7 +10,7 @@ interface IIBCModule {
         IBCChannelOrder order,
         uint32 connectionId,
         uint32 channelId,
-        bytes32 version,
+        string calldata version,
         address relayer
     ) external;
 
@@ -19,15 +19,15 @@ interface IIBCModule {
         uint32 connectionId,
         uint32 channelId,
         uint32 counterpartyChannelId,
-        bytes32 version,
-        bytes32 counterpartyVersion,
+        string calldata version,
+        string calldata counterpartyVersion,
         address relayer
     ) external;
 
     function onChanOpenAck(
         uint32 channelId,
         uint32 counterpartyChannelId,
-        bytes32 counterpartyVersion,
+        string calldata counterpartyVersion,
         address relayer
     ) external;
 

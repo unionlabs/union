@@ -134,7 +134,7 @@ contract PingPong is IBCAppBase {
         IBCChannelOrder,
         uint32,
         uint32,
-        bytes32,
+        string calldata,
         address
     ) external virtual override onlyIBC {
         // This protocol is only accepting a single counterparty.
@@ -148,8 +148,8 @@ contract PingPong is IBCAppBase {
         uint32,
         uint32,
         uint32,
-        bytes32,
-        bytes32,
+        string calldata,
+        string calldata,
         address
     ) external virtual override onlyIBC {
         // Symmetric to onChanOpenInit
@@ -161,7 +161,7 @@ contract PingPong is IBCAppBase {
     function onChanOpenAck(
         uint32 channelId,
         uint32,
-        bytes32,
+        string calldata,
         address
     ) external virtual override onlyIBC {
         // Store the port/channel needed to send packets.

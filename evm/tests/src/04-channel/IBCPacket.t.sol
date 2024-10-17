@@ -10,8 +10,9 @@ import "@openzeppelin/utils/math/Math.sol";
 
 contract IBCPacketTests is Test {
     string public constant CLIENT_TYPE = "zkgm";
-    bytes32 public constant VERSION = keccak256("protocol-1");
+    string public constant VERSION = "zkgm-1";
     uint32 public constant COUNTERPARTY_CHANNEL_ID = 0xDEADC0DE;
+    string public constant COUNTERPARTY_PORT_ID = "wasm.abcdef";
 
     TestIBCHandler handler;
     TestLightClient lightClient;
@@ -41,9 +42,7 @@ contract IBCPacketTests is Test {
         IBCMsgs.MsgConnectionOpenTry memory msgTry_ = IBCMsgs
             .MsgConnectionOpenTry({
             counterpartyConnectionId: 0xCAFE,
-            counterpartyClientType: "zkgm",
             counterpartyClientId: 0xDEADC0DE,
-            clientType: CLIENT_TYPE,
             clientId: clientId,
             proofInit: hex"",
             proofHeight: 0,
@@ -64,6 +63,7 @@ contract IBCPacketTests is Test {
         // Create channel
         IBCMsgs.MsgChannelOpenInit memory msgInit_ = IBCMsgs.MsgChannelOpenInit({
             portId: address(module),
+            counterpartyPortId: COUNTERPARTY_PORT_ID,
             connectionId: connectionId,
             ordering: IBCChannelOrder.Unordered,
             version: VERSION,
@@ -71,7 +71,6 @@ contract IBCPacketTests is Test {
         });
         channelId = handler.channelOpenInit(msgInit_);
         IBCMsgs.MsgChannelOpenAck memory msgAck_ = IBCMsgs.MsgChannelOpenAck({
-            portId: address(module),
             channelId: channelId,
             counterpartyVersion: VERSION,
             counterpartyChannelId: COUNTERPARTY_CHANNEL_ID,
