@@ -12,13 +12,12 @@ import (
 	"strconv"
 	"time"
 
-	"cosmossdk.io/math"
+	tmtypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
-	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	// sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/spf13/cobra"
 )
 
@@ -41,13 +40,13 @@ func ExampleVerifyCmd() *cobra.Command {
 				if err != nil {
 					return &tmtypes.SimpleValidator{}, err
 				}
-				power, err := rand.Int(rand.Reader, big.NewInt(9223372036854775807/8))
+				_, err = rand.Int(rand.Reader, big.NewInt(9223372036854775807/8))
 				if err != nil {
 					return &tmtypes.SimpleValidator{}, err
 				}
 				return &tmtypes.SimpleValidator{
 					PubKey:      &protoPK,
-					VotingPower: sdk.TokensToConsensusPower(math.NewInt(power.Int64()), sdk.DefaultPowerReduction),
+					VotingPower: 6,
 				}, nil
 			}
 
