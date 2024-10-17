@@ -49,7 +49,7 @@
     };
 
     ibc-go = {
-      url = "github:cosmos/ibc-go?rev=c98311964dc550b9fe9a5bff8b6dd8e35bf13642";
+      url = "github:unionlabs/ibc-go-union?rev=4fbe0649cdf00d58090909bc4dfe5a7be32b013e";
       flake = false;
     };
     ics23 = {
@@ -57,7 +57,7 @@
       flake = false;
     };
     cosmosproto = {
-      url = "github:cosmos/cosmos-proto?rev=78e33f25b874e7639f540037599d8ea1d161a62c";
+      url = "github:cosmos/cosmos-proto?rev=0748a2ad4a5c78b1db6c8090db01e255bcc91365";
       flake = false;
     };
     gogoproto = {
