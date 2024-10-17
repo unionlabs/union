@@ -1,60 +1,4 @@
 // @generated
-/// MsgIBCSend
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgIbcSend {
-    /// the channel by which the packet will be sent
-    #[prost(string, tag = "2")]
-    pub channel: ::prost::alloc::string::String,
-    /// Timeout height relative to the current block height.
-    /// The timeout is disabled when set to 0.
-    #[prost(uint64, tag = "4")]
-    pub timeout_height: u64,
-    /// Timeout timestamp (in nanoseconds) relative to the current block timestamp.
-    /// The timeout is disabled when set to 0.
-    #[prost(uint64, tag = "5")]
-    pub timeout_timestamp: u64,
-    /// Data is the payload to transfer. We must not make assumption what format or
-    /// content is in here.
-    #[prost(bytes = "vec", tag = "6")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for MsgIbcSend {
-    const NAME: &'static str = "MsgIBCSend";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// MsgIBCSendResponse
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgIbcSendResponse {
-    /// Sequence number of the IBC packet sent
-    #[prost(uint64, tag = "1")]
-    pub sequence: u64,
-}
-impl ::prost::Name for MsgIbcSendResponse {
-    const NAME: &'static str = "MsgIBCSendResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// MsgIBCCloseChannel port and channel need to be owned by the contract
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgIbcCloseChannel {
-    #[prost(string, tag = "2")]
-    pub channel: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgIbcCloseChannel {
-    const NAME: &'static str = "MsgIBCCloseChannel";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
 /// AccessTypeParam
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -565,6 +509,73 @@ impl ::prost::Name for Sequence {
         ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
     }
 }
+/// MsgIBCSend
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgIbcSend {
+    /// the channel by which the packet will be sent
+    #[prost(string, tag = "2")]
+    pub channel: ::prost::alloc::string::String,
+    /// Timeout height relative to the current block height.
+    /// The timeout is disabled when set to 0.
+    #[prost(uint64, tag = "4")]
+    pub timeout_height: u64,
+    /// Timeout timestamp (in nanoseconds) relative to the current block timestamp.
+    /// The timeout is disabled when set to 0.
+    #[prost(uint64, tag = "5")]
+    pub timeout_timestamp: u64,
+    /// Data is the payload to transfer. We must not make assumption what format or
+    /// content is in here.
+    #[prost(bytes = "vec", tag = "6")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for MsgIbcSend {
+    const NAME: &'static str = "MsgIBCSend";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// MsgIBCSendResponse
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgIbcSendResponse {
+    /// Sequence number of the IBC packet sent
+    #[prost(uint64, tag = "1")]
+    pub sequence: u64,
+}
+impl ::prost::Name for MsgIbcSendResponse {
+    const NAME: &'static str = "MsgIBCSendResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// MsgIBCWriteAcknowledgementResponse
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgIbcWriteAcknowledgementResponse {}
+impl ::prost::Name for MsgIbcWriteAcknowledgementResponse {
+    const NAME: &'static str = "MsgIBCWriteAcknowledgementResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// MsgIBCCloseChannel port and channel need to be owned by the contract
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgIbcCloseChannel {
+    #[prost(string, tag = "2")]
+    pub channel: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgIbcCloseChannel {
+    const NAME: &'static str = "MsgIBCCloseChannel";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
 /// Deprecated: Do not use. Since wasmd v0.40, there is no longer a need for
 /// an explicit StoreCodeProposal. To submit WASM code to the system,
 /// a simple MsgStoreCode can be invoked from the x/gov module via
@@ -985,6 +996,492 @@ impl ::prost::Name for StoreAndInstantiateContractProposal {
         ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
     }
 }
+/// QueryContractInfoRequest is the request type for the Query/ContractInfo RPC
+/// method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryContractInfoRequest {
+    /// address is the address of the contract to query
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryContractInfoRequest {
+    const NAME: &'static str = "QueryContractInfoRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryContractInfoResponse is the response type for the Query/ContractInfo RPC
+/// method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryContractInfoResponse {
+    /// address is the address of the contract
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub contract_info: ::core::option::Option<ContractInfo>,
+}
+impl ::prost::Name for QueryContractInfoResponse {
+    const NAME: &'static str = "QueryContractInfoResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryContractHistoryRequest is the request type for the Query/ContractHistory
+/// RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryContractHistoryRequest {
+    /// address is the address of the contract to query
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination:
+        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryContractHistoryRequest {
+    const NAME: &'static str = "QueryContractHistoryRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryContractHistoryResponse is the response type for the
+/// Query/ContractHistory RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryContractHistoryResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub entries: ::prost::alloc::vec::Vec<ContractCodeHistoryEntry>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination:
+        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryContractHistoryResponse {
+    const NAME: &'static str = "QueryContractHistoryResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryContractsByCodeRequest is the request type for the Query/ContractsByCode
+/// RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryContractsByCodeRequest {
+    /// grpc-gateway_out does not support Go style CodeID
+    #[prost(uint64, tag = "1")]
+    pub code_id: u64,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination:
+        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryContractsByCodeRequest {
+    const NAME: &'static str = "QueryContractsByCodeRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryContractsByCodeResponse is the response type for the
+/// Query/ContractsByCode RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryContractsByCodeResponse {
+    /// contracts are a set of contract addresses
+    #[prost(string, repeated, tag = "1")]
+    pub contracts: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination:
+        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryContractsByCodeResponse {
+    const NAME: &'static str = "QueryContractsByCodeResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryAllContractStateRequest is the request type for the
+/// Query/AllContractState RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryAllContractStateRequest {
+    /// address is the address of the contract
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination:
+        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryAllContractStateRequest {
+    const NAME: &'static str = "QueryAllContractStateRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryAllContractStateResponse is the response type for the
+/// Query/AllContractState RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryAllContractStateResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub models: ::prost::alloc::vec::Vec<Model>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination:
+        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryAllContractStateResponse {
+    const NAME: &'static str = "QueryAllContractStateResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryRawContractStateRequest is the request type for the
+/// Query/RawContractState RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryRawContractStateRequest {
+    /// address is the address of the contract
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "2")]
+    pub query_data: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for QueryRawContractStateRequest {
+    const NAME: &'static str = "QueryRawContractStateRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryRawContractStateResponse is the response type for the
+/// Query/RawContractState RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryRawContractStateResponse {
+    /// Data contains the raw store data
+    #[prost(bytes = "vec", tag = "1")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for QueryRawContractStateResponse {
+    const NAME: &'static str = "QueryRawContractStateResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QuerySmartContractStateRequest is the request type for the
+/// Query/SmartContractState RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QuerySmartContractStateRequest {
+    /// address is the address of the contract
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+    /// QueryData contains the query data passed to the contract
+    #[prost(bytes = "vec", tag = "2")]
+    pub query_data: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for QuerySmartContractStateRequest {
+    const NAME: &'static str = "QuerySmartContractStateRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QuerySmartContractStateResponse is the response type for the
+/// Query/SmartContractState RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QuerySmartContractStateResponse {
+    /// Data contains the json data returned from the smart contract
+    #[prost(bytes = "vec", tag = "1")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for QuerySmartContractStateResponse {
+    const NAME: &'static str = "QuerySmartContractStateResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryCodeRequest is the request type for the Query/Code RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCodeRequest {
+    /// grpc-gateway_out does not support Go style CodeID
+    #[prost(uint64, tag = "1")]
+    pub code_id: u64,
+}
+impl ::prost::Name for QueryCodeRequest {
+    const NAME: &'static str = "QueryCodeRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryCodeInfoRequest is the request type for the Query/CodeInfo RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCodeInfoRequest {
+    /// grpc-gateway_out does not support Go style CodeID
+    #[prost(uint64, tag = "1")]
+    pub code_id: u64,
+}
+impl ::prost::Name for QueryCodeInfoRequest {
+    const NAME: &'static str = "QueryCodeInfoRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryCodeInfoResponse is the response type for the Query/CodeInfo RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCodeInfoResponse {
+    #[prost(uint64, tag = "1")]
+    pub code_id: u64,
+    #[prost(string, tag = "2")]
+    pub creator: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "3")]
+    pub checksum: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "4")]
+    pub instantiate_permission: ::core::option::Option<AccessConfig>,
+}
+impl ::prost::Name for QueryCodeInfoResponse {
+    const NAME: &'static str = "QueryCodeInfoResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// CodeInfoResponse contains code meta data from CodeInfo
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CodeInfoResponse {
+    /// id for legacy support
+    #[prost(uint64, tag = "1")]
+    pub code_id: u64,
+    #[prost(string, tag = "2")]
+    pub creator: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "3")]
+    pub data_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "6")]
+    pub instantiate_permission: ::core::option::Option<AccessConfig>,
+}
+impl ::prost::Name for CodeInfoResponse {
+    const NAME: &'static str = "CodeInfoResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryCodeResponse is the response type for the Query/Code RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCodeResponse {
+    #[prost(message, optional, tag = "1")]
+    pub code_info: ::core::option::Option<CodeInfoResponse>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for QueryCodeResponse {
+    const NAME: &'static str = "QueryCodeResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryCodesRequest is the request type for the Query/Codes RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCodesRequest {
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "1")]
+    pub pagination:
+        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryCodesRequest {
+    const NAME: &'static str = "QueryCodesRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryCodesResponse is the response type for the Query/Codes RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCodesResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub code_infos: ::prost::alloc::vec::Vec<CodeInfoResponse>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination:
+        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryCodesResponse {
+    const NAME: &'static str = "QueryCodesResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryPinnedCodesRequest is the request type for the Query/PinnedCodes
+/// RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPinnedCodesRequest {
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination:
+        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryPinnedCodesRequest {
+    const NAME: &'static str = "QueryPinnedCodesRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryPinnedCodesResponse is the response type for the
+/// Query/PinnedCodes RPC method
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPinnedCodesResponse {
+    #[prost(uint64, repeated, packed = "false", tag = "1")]
+    pub code_ids: ::prost::alloc::vec::Vec<u64>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination:
+        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryPinnedCodesResponse {
+    const NAME: &'static str = "QueryPinnedCodesResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryParamsRequest is the request type for the Query/Params RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsRequest {}
+impl ::prost::Name for QueryParamsRequest {
+    const NAME: &'static str = "QueryParamsRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryParamsResponse is the response type for the Query/Params RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsResponse {
+    /// params defines the parameters of the module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for QueryParamsResponse {
+    const NAME: &'static str = "QueryParamsResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryContractsByCreatorRequest is the request type for the
+/// Query/ContractsByCreator RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryContractsByCreatorRequest {
+    /// CreatorAddress is the address of contract creator
+    #[prost(string, tag = "1")]
+    pub creator_address: ::prost::alloc::string::String,
+    /// Pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination:
+        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryContractsByCreatorRequest {
+    const NAME: &'static str = "QueryContractsByCreatorRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryContractsByCreatorResponse is the response type for the
+/// Query/ContractsByCreator RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryContractsByCreatorResponse {
+    /// ContractAddresses result set
+    #[prost(string, repeated, tag = "1")]
+    pub contract_addresses: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    /// Pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination:
+        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryContractsByCreatorResponse {
+    const NAME: &'static str = "QueryContractsByCreatorResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryBuildAddressRequest is the request type for the Query/BuildAddress RPC
+/// method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryBuildAddressRequest {
+    /// CodeHash is the hash of the code
+    #[prost(string, tag = "1")]
+    pub code_hash: ::prost::alloc::string::String,
+    /// CreatorAddress is the address of the contract instantiator
+    #[prost(string, tag = "2")]
+    pub creator_address: ::prost::alloc::string::String,
+    /// Salt is a hex encoded salt
+    #[prost(string, tag = "3")]
+    pub salt: ::prost::alloc::string::String,
+    /// InitArgs are optional json encoded init args to be used in contract address
+    /// building if provided
+    #[prost(bytes = "vec", tag = "4")]
+    pub init_args: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for QueryBuildAddressRequest {
+    const NAME: &'static str = "QueryBuildAddressRequest";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryBuildAddressResponse is the response type for the Query/BuildAddress RPC
+/// method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryBuildAddressResponse {
+    /// Address is the contract address
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryBuildAddressResponse {
+    const NAME: &'static str = "QueryBuildAddressResponse";
+    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
+    }
+}
 /// MsgStoreCode submit Wasm code to the system
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1075,7 +1572,7 @@ impl ::prost::Name for MsgInstantiateContractResponse {
     }
 }
 /// MsgInstantiateContract2 create a new smart contract instance for the given
-/// code id with a predicable address.
+/// code id with a predictable address.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgInstantiateContract2 {
@@ -1661,457 +2158,6 @@ impl ::prost::Name for MsgUpdateContractLabel {
 pub struct MsgUpdateContractLabelResponse {}
 impl ::prost::Name for MsgUpdateContractLabelResponse {
     const NAME: &'static str = "MsgUpdateContractLabelResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryContractInfoRequest is the request type for the Query/ContractInfo RPC
-/// method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryContractInfoRequest {
-    /// address is the address of the contract to query
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryContractInfoRequest {
-    const NAME: &'static str = "QueryContractInfoRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryContractInfoResponse is the response type for the Query/ContractInfo RPC
-/// method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryContractInfoResponse {
-    /// address is the address of the contract
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub contract_info: ::core::option::Option<ContractInfo>,
-}
-impl ::prost::Name for QueryContractInfoResponse {
-    const NAME: &'static str = "QueryContractInfoResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryContractHistoryRequest is the request type for the Query/ContractHistory
-/// RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryContractHistoryRequest {
-    /// address is the address of the contract to query
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination:
-        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryContractHistoryRequest {
-    const NAME: &'static str = "QueryContractHistoryRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryContractHistoryResponse is the response type for the
-/// Query/ContractHistory RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryContractHistoryResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub entries: ::prost::alloc::vec::Vec<ContractCodeHistoryEntry>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination:
-        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryContractHistoryResponse {
-    const NAME: &'static str = "QueryContractHistoryResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryContractsByCodeRequest is the request type for the Query/ContractsByCode
-/// RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryContractsByCodeRequest {
-    /// grpc-gateway_out does not support Go style CodID
-    #[prost(uint64, tag = "1")]
-    pub code_id: u64,
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination:
-        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryContractsByCodeRequest {
-    const NAME: &'static str = "QueryContractsByCodeRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryContractsByCodeResponse is the response type for the
-/// Query/ContractsByCode RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryContractsByCodeResponse {
-    /// contracts are a set of contract addresses
-    #[prost(string, repeated, tag = "1")]
-    pub contracts: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination:
-        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryContractsByCodeResponse {
-    const NAME: &'static str = "QueryContractsByCodeResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryAllContractStateRequest is the request type for the
-/// Query/AllContractState RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryAllContractStateRequest {
-    /// address is the address of the contract
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination:
-        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryAllContractStateRequest {
-    const NAME: &'static str = "QueryAllContractStateRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryAllContractStateResponse is the response type for the
-/// Query/AllContractState RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryAllContractStateResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub models: ::prost::alloc::vec::Vec<Model>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination:
-        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryAllContractStateResponse {
-    const NAME: &'static str = "QueryAllContractStateResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryRawContractStateRequest is the request type for the
-/// Query/RawContractState RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryRawContractStateRequest {
-    /// address is the address of the contract
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "2")]
-    pub query_data: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for QueryRawContractStateRequest {
-    const NAME: &'static str = "QueryRawContractStateRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryRawContractStateResponse is the response type for the
-/// Query/RawContractState RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryRawContractStateResponse {
-    /// Data contains the raw store data
-    #[prost(bytes = "vec", tag = "1")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for QueryRawContractStateResponse {
-    const NAME: &'static str = "QueryRawContractStateResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QuerySmartContractStateRequest is the request type for the
-/// Query/SmartContractState RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QuerySmartContractStateRequest {
-    /// address is the address of the contract
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-    /// QueryData contains the query data passed to the contract
-    #[prost(bytes = "vec", tag = "2")]
-    pub query_data: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for QuerySmartContractStateRequest {
-    const NAME: &'static str = "QuerySmartContractStateRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QuerySmartContractStateResponse is the response type for the
-/// Query/SmartContractState RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QuerySmartContractStateResponse {
-    /// Data contains the json data returned from the smart contract
-    #[prost(bytes = "vec", tag = "1")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for QuerySmartContractStateResponse {
-    const NAME: &'static str = "QuerySmartContractStateResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryCodeRequest is the request type for the Query/Code RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCodeRequest {
-    /// grpc-gateway_out does not support Go style CodID
-    #[prost(uint64, tag = "1")]
-    pub code_id: u64,
-}
-impl ::prost::Name for QueryCodeRequest {
-    const NAME: &'static str = "QueryCodeRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// CodeInfoResponse contains code meta data from CodeInfo
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CodeInfoResponse {
-    /// id for legacy support
-    #[prost(uint64, tag = "1")]
-    pub code_id: u64,
-    #[prost(string, tag = "2")]
-    pub creator: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "3")]
-    pub data_hash: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "6")]
-    pub instantiate_permission: ::core::option::Option<AccessConfig>,
-}
-impl ::prost::Name for CodeInfoResponse {
-    const NAME: &'static str = "CodeInfoResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryCodeResponse is the response type for the Query/Code RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCodeResponse {
-    #[prost(message, optional, tag = "1")]
-    pub code_info: ::core::option::Option<CodeInfoResponse>,
-    #[prost(bytes = "vec", tag = "2")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for QueryCodeResponse {
-    const NAME: &'static str = "QueryCodeResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryCodesRequest is the request type for the Query/Codes RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCodesRequest {
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "1")]
-    pub pagination:
-        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryCodesRequest {
-    const NAME: &'static str = "QueryCodesRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryCodesResponse is the response type for the Query/Codes RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCodesResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub code_infos: ::prost::alloc::vec::Vec<CodeInfoResponse>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination:
-        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryCodesResponse {
-    const NAME: &'static str = "QueryCodesResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryPinnedCodesRequest is the request type for the Query/PinnedCodes
-/// RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryPinnedCodesRequest {
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination:
-        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryPinnedCodesRequest {
-    const NAME: &'static str = "QueryPinnedCodesRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryPinnedCodesResponse is the response type for the
-/// Query/PinnedCodes RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryPinnedCodesResponse {
-    #[prost(uint64, repeated, packed = "false", tag = "1")]
-    pub code_ids: ::prost::alloc::vec::Vec<u64>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination:
-        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryPinnedCodesResponse {
-    const NAME: &'static str = "QueryPinnedCodesResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryParamsRequest is the request type for the Query/Params RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsRequest {}
-impl ::prost::Name for QueryParamsRequest {
-    const NAME: &'static str = "QueryParamsRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryParamsResponse is the response type for the Query/Params RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsResponse {
-    /// params defines the parameters of the module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for QueryParamsResponse {
-    const NAME: &'static str = "QueryParamsResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryContractsByCreatorRequest is the request type for the
-/// Query/ContractsByCreator RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryContractsByCreatorRequest {
-    /// CreatorAddress is the address of contract creator
-    #[prost(string, tag = "1")]
-    pub creator_address: ::prost::alloc::string::String,
-    /// Pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination:
-        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryContractsByCreatorRequest {
-    const NAME: &'static str = "QueryContractsByCreatorRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryContractsByCreatorResponse is the response type for the
-/// Query/ContractsByCreator RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryContractsByCreatorResponse {
-    /// ContractAddresses result set
-    #[prost(string, repeated, tag = "1")]
-    pub contract_addresses: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    /// Pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination:
-        ::core::option::Option<super::super::super::cosmos::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryContractsByCreatorResponse {
-    const NAME: &'static str = "QueryContractsByCreatorResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryBuildAddressRequest is the request type for the Query/BuildAddress RPC
-/// method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryBuildAddressRequest {
-    /// CodeHash is the hash of the code
-    #[prost(string, tag = "1")]
-    pub code_hash: ::prost::alloc::string::String,
-    /// CreatorAddress is the address of the contract instantiator
-    #[prost(string, tag = "2")]
-    pub creator_address: ::prost::alloc::string::String,
-    /// Salt is a hex encoded salt
-    #[prost(string, tag = "3")]
-    pub salt: ::prost::alloc::string::String,
-    /// InitArgs are optional json encoded init args to be used in contract address
-    /// building if provided
-    #[prost(bytes = "vec", tag = "4")]
-    pub init_args: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for QueryBuildAddressRequest {
-    const NAME: &'static str = "QueryBuildAddressRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryBuildAddressResponse is the response type for the Query/BuildAddress RPC
-/// method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryBuildAddressResponse {
-    /// Address is the contract address
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryBuildAddressResponse {
-    const NAME: &'static str = "QueryBuildAddressResponse";
     const PACKAGE: &'static str = "cosmwasm.wasm.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)

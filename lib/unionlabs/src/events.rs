@@ -35,7 +35,7 @@ macro_rules! event {
         impl IbcEvent {
             #[must_use]
             pub fn try_from_tendermint_event(
-                event: crate::tendermint::abci::event::Event,
+                event: crate::cometbft::abci::event::Event,
             ) -> Option<Result<Self, TryFromTendermintEventError>> {
                 // to silence unused variable warnings on the last repetition of the following block
                 let _event = event;
@@ -67,10 +67,10 @@ macro_rules! event {
             }
 
 
-            impl TryFrom<crate::tendermint::abci::event::Event> for $Struct {
+            impl TryFrom<crate::cometbft::abci::event::Event> for $Struct {
                 type Error = TryFromTendermintEventError;
 
-                fn try_from(value: crate::tendermint::abci::event::Event) -> Result<Self, Self::Error> {
+                fn try_from(value: crate::cometbft::abci::event::Event) -> Result<Self, Self::Error> {
                     const DEPRECATED: &[&'static str] = &[$($($dep),+)?];
 
                     if value.ty != $tag {
@@ -140,7 +140,7 @@ pub enum TryFromTendermintEventError {
     #[error("incorrect type, expected `{expected}` but found `{}`", found.ty)]
     IncorrectType {
         expected: &'static str,
-        found: crate::tendermint::abci::event::Event,
+        found: crate::cometbft::abci::event::Event,
     },
     #[error(
         "duplicate field `{key}` (first occurrence index {first_occurrence}, \
@@ -458,11 +458,11 @@ impl IbcEvent {
 mod tests {
     mod event_conversion {
         use crate::{
+            cometbft::abci::{event::Event, event_attribute::EventAttribute},
             events::{
                 ConnectionOpenConfirm, CreateClient, TryFromTendermintEventError, UpdateClient,
             },
             ibc::core::client::height::{Height, HeightFromStrError},
-            tendermint::abci::{event::Event, event_attribute::EventAttribute},
         };
 
         #[test]

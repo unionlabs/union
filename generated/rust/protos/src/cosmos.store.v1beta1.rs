@@ -1,9 +1,7 @@
 // @generated
-/// StoreKVPair is a KVStore KVPair used for listening to state changes (Sets and Deletes)
-/// It optionally includes the StoreKey for the originating KVStore and a Boolean flag to distinguish between Sets and
-/// Deletes
-///
-/// Since: cosmos-sdk 0.43
+/// StoreKVPair is a KVStore KVPair used for listening to state changes (Sets and
+/// Deletes) It optionally includes the StoreKey for the originating KVStore and
+/// a Boolean flag to distinguish between Sets and Deletes
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StoreKvPair {
@@ -32,14 +30,13 @@ impl ::prost::Name for StoreKvPair {
 pub struct BlockMetadata {
     #[prost(message, optional, tag = "6")]
     pub response_commit:
-        ::core::option::Option<super::super::super::tendermint::abci::ResponseCommit>,
+        ::core::option::Option<super::super::super::cometbft::abci::v1::CommitResponse>,
     #[prost(message, optional, tag = "7")]
     pub request_finalize_block:
-        ::core::option::Option<super::super::super::tendermint::abci::RequestFinalizeBlock>,
-    /// TODO: should we renumber this?
+        ::core::option::Option<super::super::super::cometbft::abci::v1::FinalizeBlockRequest>,
     #[prost(message, optional, tag = "8")]
     pub response_finalize_block:
-        ::core::option::Option<super::super::super::tendermint::abci::ResponseFinalizeBlock>,
+        ::core::option::Option<super::super::super::cometbft::abci::v1::FinalizeBlockResponse>,
 }
 impl ::prost::Name for BlockMetadata {
     const NAME: &'static str = "BlockMetadata";

@@ -47,10 +47,8 @@ pub struct TxResponse {
     /// these events include those emitted by processing all the messages and those
     /// emitted from the ante. Whereas Logs contains the events, with
     /// additional metadata, emitted only by processing the messages.
-    ///
-    /// Since: cosmos-sdk 0.42.11, 0.44.5, 0.45
     #[prost(message, repeated, tag = "13")]
-    pub events: ::prost::alloc::vec::Vec<super::super::super::super::tendermint::abci::Event>,
+    pub events: ::prost::alloc::vec::Vec<super::super::super::super::cometbft::abci::v1::Event>,
 }
 impl ::prost::Name for TxResponse {
     const NAME: &'static str = "TxResponse";
@@ -148,10 +146,8 @@ pub struct Result {
     /// Events contains a slice of Event objects that were emitted during message
     /// or handler execution.
     #[prost(message, repeated, tag = "3")]
-    pub events: ::prost::alloc::vec::Vec<super::super::super::super::tendermint::abci::Event>,
+    pub events: ::prost::alloc::vec::Vec<super::super::super::super::cometbft::abci::v1::Event>,
     /// msg_responses contains the Msg handler responses type packed in Anys.
-    ///
-    /// Since: cosmos-sdk 0.46
     #[prost(message, repeated, tag = "4")]
     pub msg_responses: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
 }
@@ -206,8 +202,6 @@ pub struct TxMsgData {
     #[prost(message, repeated, tag = "1")]
     pub data: ::prost::alloc::vec::Vec<MsgData>,
     /// msg_responses contains the Msg handler responses packed into Anys.
-    ///
-    /// Since: cosmos-sdk 0.46
     #[prost(message, repeated, tag = "2")]
     pub msg_responses: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
 }
@@ -269,7 +263,7 @@ pub struct SearchBlocksResult {
     pub limit: i64,
     /// List of blocks in current page
     #[prost(message, repeated, tag = "6")]
-    pub blocks: ::prost::alloc::vec::Vec<super::super::super::super::tendermint::types::Block>,
+    pub blocks: ::prost::alloc::vec::Vec<super::super::super::super::cometbft::types::v1::Block>,
 }
 impl ::prost::Name for SearchBlocksResult {
     const NAME: &'static str = "SearchBlocksResult";

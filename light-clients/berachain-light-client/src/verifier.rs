@@ -4,15 +4,14 @@ use ethereum_verifier::verify::BlsVerify;
 use sha2::Digest;
 use tendermint_verifier::types::HostFns;
 use unionlabs::{
-    cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    tendermint::crypto::public_key::PublicKey,
+    cometbft::crypto::public_key::PublicKey, cosmwasm::wasm::union::custom_query::UnionCustomQuery,
 };
 
-pub struct Bls12_381Verifier<'a> {
+pub struct Bls12381Verifier<'a> {
     inner: VerificationContext<'a>,
 }
 
-impl<'a> Bls12_381Verifier<'a> {
+impl<'a> Bls12381Verifier<'a> {
     pub fn new(deps: Deps<'a, UnionCustomQuery>) -> Self {
         Self {
             inner: VerificationContext { deps },
@@ -20,10 +19,10 @@ impl<'a> Bls12_381Verifier<'a> {
     }
 }
 
-impl<'a> HostFns for Bls12_381Verifier<'a> {
+impl<'a> HostFns for Bls12381Verifier<'a> {
     fn verify_signature(&self, pubkey: &PublicKey, msg: &[u8], sig: &[u8]) -> bool {
         match pubkey {
-            PublicKey::Bls12_381(ref key) => {
+            PublicKey::Bls12381(ref key) => {
                 let Ok(key) = key.try_into() else {
                     return false;
                 };

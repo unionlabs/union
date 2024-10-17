@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package union.galois.api.v3;
 
-import "tendermint/types/types.proto";
-import "tendermint/types/validator.proto";
-import "tendermint/types/canonical.proto";
+import "cometbft/types/v1/types.proto";
+import "cometbft/types/v1/validator.proto";
+import "cometbft/types/v1/canonical.proto";
 
 option go_package = "union/galois/rpc/grpc";
 
@@ -20,14 +20,14 @@ message ZeroKnowledgeProof {
 }
 
 message ValidatorSetCommit {
-  repeated .tendermint.types.SimpleValidator validators = 1;
+  repeated .cometbft.types.v1.SimpleValidator validators = 1;
   repeated bytes signatures = 2;
   bytes bitmap = 3;
 }
 
 message ProveRequest {
-  .tendermint.types.CanonicalVote vote = 1;
-  .tendermint.types.Header untrusted_header = 2;
+  .cometbft.types.v1.CanonicalVote vote = 1;
+  .cometbft.types.v1.Header untrusted_header = 2;
   ValidatorSetCommit trusted_commit = 3;
   ValidatorSetCommit untrusted_commit = 4;
 }
@@ -116,4 +116,3 @@ service UnionProverAPI {
 
   rpc Poll(PollRequest) returns (PollResponse);
 }
-
