@@ -586,26 +586,26 @@ mod tests {
             client_type: ClientType::new(ClientType::COMETBLS_GROTH16),
         }));
 
-        assert!(true == false)
+        print_json(Op::Data(Data::IdentifiedIbcMessage(WithChainId {
+            chain_id: ChainId::new("union-devnet-1"),
+            message: IbcMessage::ConnectionOpenInit(MsgConnectionOpenInit {
+                client_id: "07-tendermint-0".parse().unwrap(),
+                counterparty: connection::counterparty::Counterparty {
+                    client_id: "08-wasm-0".parse().unwrap(),
+                    connection_id: None,
+                    prefix: MerklePrefix {
+                        key_prefix: b"ibc".to_vec(),
+                    },
+                },
+                version: Version {
+                    identifier: "1".to_owned(),
+                    features: vec![Order::Unordered, Order::Ordered],
+                },
+                delay_period: DELAY_PERIOD,
+            }),
+        })));
 
-        // print_json(Op::Data(Data::IdentifiedIbcMessage(WithChainId {
-        //     chain_id: ChainId::new("union-devnet-1"),
-        //     message: IbcMessage::ConnectionOpenInit(MsgConnectionOpenInit {
-        //         client_id: todo!(),
-        //         counterparty: connection::counterparty::Counterparty {
-        //             client_id: todo!(),
-        //             connection_id: None,
-        //             prefix: MerklePrefix {
-        //                 key_prefix: b"ibc".to_vec(),
-        //             },
-        //         },
-        //         version: Version {
-        //             identifier: "1".to_owned(),
-        //             features: vec![Order::Unordered, Order::Ordered],
-        //         },
-        //         delay_period: DELAY_PERIOD,
-        //     }),
-        // })));
+        assert!(true == false)
     }
 
     fn print_json(t: Op<VoyagerMessage>) {
