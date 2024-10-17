@@ -323,6 +323,7 @@ func (s coreDoubleCommitStore) Set(key, value []byte) error {
 			return nil
 		}
 		s.commitStore.Set(commitmentKey, CommitmentMagic[:])
+		return nil
 	}
 	if sequence, channelId, err := parsePacketReceiptPath(string(key)); err == nil {
 		packet, found := s.processingPackets.Peek()
@@ -338,7 +339,7 @@ func (s coreDoubleCommitStore) Set(key, value []byte) error {
 			return nil
 		}
 		s.commitStore.Set(commitmentKey, CommitmentMagic[:])
-
+		return nil
 	}
 	if sequence, channelId, err := parsePacketAckPath(string(key)); err == nil {
 		packet, found := s.processingPackets.Peek()
@@ -361,6 +362,7 @@ func (s coreDoubleCommitStore) Set(key, value []byte) error {
 		ack := keccak(ackI.(ibcexported.Acknowledgement).Acknowledgement())
 		ack[0] = 01
 		s.commitStore.Set(commitmentKey, ack[:])
+		return nil
 	}
 	// channel commitment
 	if strings.HasPrefix(keyStr, host.KeyChannelEndPrefix) {
@@ -389,6 +391,7 @@ func (s coreDoubleCommitStore) Set(key, value []byte) error {
 			return err
 		}
 		s.commitStore.Set(commitmentKey, commitmentValue)
+		return nil
 	}
 	// connection commitment
 	if strings.HasPrefix(keyStr, host.KeyConnectionPrefix) {
@@ -417,6 +420,7 @@ func (s coreDoubleCommitStore) Set(key, value []byte) error {
 			return err
 		}
 		s.commitStore.Set(commitmentKey, commitmentValue)
+		return nil
 	}
 	return nil
 }
