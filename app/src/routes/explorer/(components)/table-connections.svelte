@@ -15,7 +15,7 @@ let connections = createQuery({
   queryKey: ["connections"],
   refetchInterval: 5_000,
   retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000), // expo backoff
-  queryFn: async () => request(URLS.GRAPHQL, connectionsQuery, {}),
+  queryFn: async () => request(URLS().GRAPHQL, connectionsQuery, {}),
   select: data => {
     if (!data.v1_connections) raise("error fetching transfers")
 

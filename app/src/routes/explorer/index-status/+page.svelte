@@ -15,7 +15,7 @@ import { indexStatusQuery } from "$lib/graphql/queries/index-status.ts"
 let indexStatus = createQuery({
   queryKey: ["index-status"],
   refetchInterval: 500,
-  queryFn: async () => request(URLS.GRAPHQL, indexStatusQuery, {}),
+  queryFn: async () => request(URLS().GRAPHQL, indexStatusQuery, {}),
   select: data => {
     const enabledChains = data.chains.flatMap(chain => chain.chain_id)
     return data.statuses

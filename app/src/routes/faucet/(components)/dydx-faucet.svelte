@@ -74,7 +74,7 @@ const requestDydxFromFaucet = async () => {
 
   if ($dydxFaucetState.kind === "SUBMITTING") {
     try {
-      const result = await request(URLS.GRAPHQL, dydxFaucetMutation, {
+      const result = await request(URLS().GRAPHQL, dydxFaucetMutation, {
         address: $dydxAddress,
         captchaToken: $dydxFaucetState.captchaToken
       })

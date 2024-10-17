@@ -40,7 +40,7 @@ type TransfersReturnType = Promise<Array<ReturnType<typeof transferTransform>>>
 export async function transfersLatest({
   limit = 12
 }: { limit?: number } = {}): TransfersReturnType {
-  const { data } = await request(URLS.GRAPHQL, transfersLatestQuery, {
+  const { data } = await request(URLS().GRAPHQL, transfersLatestQuery, {
     limit
   })
   return data.map(transferTransform)
@@ -53,7 +53,7 @@ export async function transfersTimestamp({
   limit: number
   timestamp: string
 }): TransfersReturnType {
-  const { older, newer } = await request(URLS.GRAPHQL, transfersTimestampQuery, {
+  const { older, newer } = await request(URLS().GRAPHQL, transfersTimestampQuery, {
     limit: limit / 2,
     timestamp
   })
@@ -68,7 +68,7 @@ export async function transfersByAddressesLatest({
   limit: number
   addresses: Array<string>
 }): TransfersReturnType {
-  const { data } = await request(URLS.GRAPHQL, transfersByAddressesLatestQuery, {
+  const { data } = await request(URLS().GRAPHQL, transfersByAddressesLatestQuery, {
     limit,
     addresses
   })
@@ -84,7 +84,7 @@ export async function transfersByAddressesTimestamp({
   timestamp: string
   addresses: Array<string>
 }): TransfersReturnType {
-  const { older, newer } = await request(URLS.GRAPHQL, transfersByAddressesTimestampQuery, {
+  const { older, newer } = await request(URLS().GRAPHQL, transfersByAddressesTimestampQuery, {
     limit: limit / 2,
     timestamp,
     addresses

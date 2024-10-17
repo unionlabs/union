@@ -90,7 +90,7 @@ const requestUnoFromFaucet = async () => {
 
   if ($unoFaucetState.kind === "SUBMITTING") {
     try {
-      const result = await request(URLS.GRAPHQL, faucetUnoMutation2, {
+      const result = await request(URLS().GRAPHQL, faucetUnoMutation2, {
         address,
         captchaToken: $unoFaucetState.captchaToken
       })

@@ -50,7 +50,7 @@ const packetTransform = (p: FragmentOf<typeof packetListDataFragment>) => {
 type PacketsReturnType = Promise<Array<ReturnType<typeof packetTransform>>>
 
 export async function packetsLatest({ limit = 12 }: { limit?: number } = {}): PacketsReturnType {
-  const { v1_packets } = await request(URLS.GRAPHQL, packetsLatestQuery, {
+  const { v1_packets } = await request(URLS().GRAPHQL, packetsLatestQuery, {
     limit
   })
   return v1_packets.map(packetTransform)
@@ -60,7 +60,7 @@ export async function packetsTimestamp({
   limit,
   timestamp
 }: { limit: number; timestamp: string }): PacketsReturnType {
-  const { newer, older } = await request(URLS.GRAPHQL, packetsTimestampQuery, {
+  const { newer, older } = await request(URLS().GRAPHQL, packetsTimestampQuery, {
     timestamp,
     limit: limit / 2
   })
@@ -72,7 +72,7 @@ export async function packetsByChainIdLatest({
   limit,
   chain_id
 }: { limit: number; chain_id: string }): PacketsReturnType {
-  const { v1_packets } = await request(URLS.GRAPHQL, packetsByChainLatestQuery, {
+  const { v1_packets } = await request(URLS().GRAPHQL, packetsByChainLatestQuery, {
     limit,
     chain_id
   })
@@ -84,7 +84,7 @@ export async function packetsByChainIdTimestamp({
   chain_id,
   timestamp
 }: { limit: number; chain_id: string; timestamp: string }): PacketsReturnType {
-  const { newer, older } = await request(URLS.GRAPHQL, packetsByChainTimestampQuery, {
+  const { newer, older } = await request(URLS().GRAPHQL, packetsByChainTimestampQuery, {
     limit,
     chain_id,
     timestamp
@@ -97,7 +97,7 @@ export async function packetsByConnectionIdLatest({
   chain_id,
   connection_id
 }: { limit: number; chain_id: string; connection_id: string }): PacketsReturnType {
-  const { v1_packets } = await request(URLS.GRAPHQL, packetsByConnectionIdLatestQuery, {
+  const { v1_packets } = await request(URLS().GRAPHQL, packetsByConnectionIdLatestQuery, {
     limit,
     chain_id,
     connection_id
@@ -116,7 +116,7 @@ export async function packetsByConnectionIdTimestamp({
   connection_id: string
   timestamp: string
 }): PacketsReturnType {
-  const { newer, older } = await request(URLS.GRAPHQL, packetsByConnectionIdTimestampQuery, {
+  const { newer, older } = await request(URLS().GRAPHQL, packetsByConnectionIdTimestampQuery, {
     limit,
     chain_id,
     connection_id,
@@ -136,7 +136,7 @@ export async function packetsByChannelIdLatest({
   connection_id: string
   channel_id: string
 }): PacketsReturnType {
-  const { v1_packets } = await request(URLS.GRAPHQL, packetsByChannelIdLatestQuery, {
+  const { v1_packets } = await request(URLS().GRAPHQL, packetsByChannelIdLatestQuery, {
     limit,
     chain_id,
     connection_id,
@@ -158,7 +158,7 @@ export async function packetsByChannelIdTimestamp({
   channel_id: string
   timestamp: string
 }): PacketsReturnType {
-  const { newer, older } = await request(URLS.GRAPHQL, packetsByChannelIdTimestampQuery, {
+  const { newer, older } = await request(URLS().GRAPHQL, packetsByChannelIdTimestampQuery, {
     limit,
     chain_id,
     connection_id,
@@ -294,7 +294,7 @@ export const packetDetailsQuery = (
     refetchInterval: 5_000,
     placeholderData: keepPreviousData,
     queryFn: async () =>
-      await request(URLS.GRAPHQL, packetDetailsQueryDocument, {
+      await request(URLS().GRAPHQL, packetDetailsQueryDocument, {
         chain_id,
         connection_id,
         channel_id,
