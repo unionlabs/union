@@ -21,7 +21,7 @@
         },
         "config": {
           "ws_url": "http://localhost:26757",
-          "grpc_url": "http://localhost:9090"
+          "grpc_url": "http://localhost:9190"
         }
       },
       {
@@ -60,7 +60,23 @@
         "config": {
           "chain_id": "stargaze-devnet-1",
           "ws_url": "http://localhost:26757",
-          "grpc_url": "http://localhost:9090"
+          "grpc_url": "http://localhost:9190"
+        }
+      },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-consensus-module-cometbls",
+        "info": {
+          "chain_id": "union-devnet-1",
+          "consensus_type": "cometbls"
+        },
+        "config": {
+          "chain_id": "union-devnet-1",
+          "ws_url": "http://localhost:26657",
+          "grpc_url": "http://localhost:9090",
+          "prover_endpoints": [
+            "http://localhost:9999"
+          ]
         }
       },
       {
@@ -202,7 +218,7 @@
           "gas_price": "1.0",
           "gas_denom": "muno",
           "gas_multiplier": "1.1",
-          "max_gas": 60000000
+          "max_gas": 10000000
         },
         "ws_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090"
@@ -227,10 +243,10 @@
           "gas_price": "1.0",
           "gas_denom": "ustars",
           "gas_multiplier": "1.1",
-          "max_gas": 60000000
+          "max_gas": 10000000
         },
         "ws_url": "http://localhost:26757",
-        "grpc_url": "http://localhost:9090"
+        "grpc_url": "http://localhost:9190"
       }
     },
     {
@@ -365,7 +381,7 @@
       "config": {
         "chain_id": "stargaze-devnet-1",
         "ws_url": "http://localhost:26757",
-        "grpc_url": "http://localhost:9090"
+        "grpc_url": "http://localhost:9190"
       }
     }
   ],

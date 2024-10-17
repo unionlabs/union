@@ -378,7 +378,7 @@ func NewUnionApp(
 	}
 	app.AccountKeeper = accountsKeeper
 
-	app.AuthKeeper = authkeeper.NewAccountKeeper(runtime.NewEnvironment(runtime.NewKVStoreService(keys[authtypes.StoreKey]), logger.With(log.ModuleKey, "x/auth")), appCodec, authtypes.ProtoBaseAccount, accountsKeeper, maccPerms, signingCtx.AddressCodec(), sdk.Bech32MainPrefix, govModuleAddr)
+	app.AuthKeeper = authkeeper.NewAccountKeeper(runtime.NewEnvironment(runtime.NewKVStoreService(keys[authtypes.StoreKey]), logger.With(log.ModuleKey, "x/auth")), appCodec, authtypes.ProtoBaseAccount, accountsKeeper, maccPerms, signingCtx.AddressCodec(), AccountAddressPrefix, govModuleAddr)
 
 	app.AuthzKeeper = authzkeeper.NewKeeper(runtime.NewEnvironment(runtime.NewKVStoreService(keys[authzkeeper.StoreKey]), logger.With(log.ModuleKey, "x/authz"), runtime.EnvWithMsgRouterService(app.MsgServiceRouter()), runtime.EnvWithQueryRouterService(app.GRPCQueryRouter())), appCodec, app.AuthKeeper)
 

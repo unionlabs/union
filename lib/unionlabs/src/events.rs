@@ -112,8 +112,9 @@ macro_rules! event {
                                     ))
                                 },
                             )+
-                            // TODO(aeryz): this is newly added to cosmos-sdk, until we understand what to do with this, ignore
                             "msg_index" => {}
+                            "event_index" => {}
+                            "tx_index" => {}
                             key => {
                                 if !DEPRECATED.contains(&key) {
                                     return Err(TryFromTendermintEventError::UnknownAttribute(attr.key))
@@ -153,7 +154,7 @@ pub enum TryFromTendermintEventError {
     },
     #[error("missing attribute `{0}`")]
     MissingAttribute(&'static str),
-    #[error("missing attribute `{0}`")]
+    #[error("unkown attribute `{0}`")]
     UnknownAttribute(String),
     #[error("unable to parse value for attribute `{field}`: {error}")]
     AttributeValueParse {
