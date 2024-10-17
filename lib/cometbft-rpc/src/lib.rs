@@ -405,7 +405,7 @@ mod tests {
 
         let result = client
             .tx(
-                hex!("32DAD1842DF0441870B168D0C177F8EEC156B18B32D88C3658349BE07F352CCA").into(),
+                hex!("D672117EFE2D126450BBD78D7B87DAC84F80C51B1DF70EA4E2AEF509488B9B02").into(),
                 true,
             )
             .await

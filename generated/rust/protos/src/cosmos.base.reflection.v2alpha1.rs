@@ -16,7 +16,7 @@ pub struct AppDescriptor {
     /// configuration provides metadata information regarding the sdk.Config type
     #[prost(message, optional, tag = "4")]
     pub configuration: ::core::option::Option<ConfigurationDescriptor>,
-    /// query_services provides metadata information regarding the available queriable endpoints
+    /// query_services provides metadata information regarding the available queryable endpoints
     #[prost(message, optional, tag = "5")]
     pub query_services: ::core::option::Option<QueryServicesDescriptor>,
     /// tx provides metadata information regarding how to send transactions to the given application
@@ -372,7 +372,7 @@ impl ::prost::Name for GetTxDescriptorResponse {
         ::prost::alloc::format!("cosmos.base.reflection.v2alpha1.{}", Self::NAME)
     }
 }
-/// QueryServicesDescriptor contains the list of cosmos-sdk queriable services
+/// QueryServicesDescriptor contains the list of cosmos-sdk queryable services
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryServicesDescriptor {

@@ -7,9 +7,9 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use unionlabs::{
+    cometbft::types::{validator::Validator, validator_set::ValidatorSet},
     hash::H160,
     ibc::lightclients::tendermint::header::Header,
-    tendermint::types::{validator::Validator, validator_set::ValidatorSet},
 };
 use voyager_message::{
     call::Call,

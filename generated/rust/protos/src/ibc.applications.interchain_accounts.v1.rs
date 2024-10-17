@@ -1,37 +1,4 @@
 // @generated
-/// Metadata defines a set of protocol specific data encoded into the ICS27 channel version bytestring
-/// See ICS004: <https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#Versioning>
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Metadata {
-    /// version defines the ICS27 protocol version
-    #[prost(string, tag = "1")]
-    pub version: ::prost::alloc::string::String,
-    /// controller_connection_id is the connection identifier associated with the controller chain
-    #[prost(string, tag = "2")]
-    pub controller_connection_id: ::prost::alloc::string::String,
-    /// host_connection_id is the connection identifier associated with the host chain
-    #[prost(string, tag = "3")]
-    pub host_connection_id: ::prost::alloc::string::String,
-    /// address defines the interchain account address to be fulfilled upon the OnChanOpenTry handshake step
-    /// NOTE: the address field is empty on the OnChanOpenInit handshake step
-    #[prost(string, tag = "4")]
-    pub address: ::prost::alloc::string::String,
-    /// encoding defines the supported codec format
-    #[prost(string, tag = "5")]
-    pub encoding: ::prost::alloc::string::String,
-    /// tx_type defines the type of transactions the interchain account can execute
-    #[prost(string, tag = "6")]
-    pub tx_type: ::prost::alloc::string::String,
-}
-impl ::prost::Name for Metadata {
-    const NAME: &'static str = "Metadata";
-    const PACKAGE: &'static str = "ibc.applications.interchain_accounts.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.interchain_accounts.v1.{}", Self::NAME)
-    }
-}
 /// InterchainAccountPacketData is comprised of a raw transaction, type of transaction and optional memo field.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -110,6 +77,39 @@ pub struct InterchainAccount {
 }
 impl ::prost::Name for InterchainAccount {
     const NAME: &'static str = "InterchainAccount";
+    const PACKAGE: &'static str = "ibc.applications.interchain_accounts.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.interchain_accounts.v1.{}", Self::NAME)
+    }
+}
+/// Metadata defines a set of protocol specific data encoded into the ICS27 channel version bytestring
+/// See ICS004: <https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#Versioning>
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Metadata {
+    /// version defines the ICS27 protocol version
+    #[prost(string, tag = "1")]
+    pub version: ::prost::alloc::string::String,
+    /// controller_connection_id is the connection identifier associated with the controller chain
+    #[prost(string, tag = "2")]
+    pub controller_connection_id: ::prost::alloc::string::String,
+    /// host_connection_id is the connection identifier associated with the host chain
+    #[prost(string, tag = "3")]
+    pub host_connection_id: ::prost::alloc::string::String,
+    /// address defines the interchain account address to be fulfilled upon the OnChanOpenTry handshake step
+    /// NOTE: the address field is empty on the OnChanOpenInit handshake step
+    #[prost(string, tag = "4")]
+    pub address: ::prost::alloc::string::String,
+    /// encoding defines the supported codec format
+    #[prost(string, tag = "5")]
+    pub encoding: ::prost::alloc::string::String,
+    /// tx_type defines the type of transactions the interchain account can execute
+    #[prost(string, tag = "6")]
+    pub tx_type: ::prost::alloc::string::String,
+}
+impl ::prost::Name for Metadata {
+    const NAME: &'static str = "Metadata";
     const PACKAGE: &'static str = "ibc.applications.interchain_accounts.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.applications.interchain_accounts.v1.{}", Self::NAME)

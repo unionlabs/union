@@ -1,18 +1,20 @@
 // @generated
-/// Metadata defines the ICS29 channel specific metadata encoded into the channel version bytestring
-/// See ICS004: <https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#Versioning>
+/// IncentivizedAcknowledgement is the acknowledgement format to be used by applications wrapped in the fee middleware
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Metadata {
-    /// fee_version defines the ICS29 fee version
-    #[prost(string, tag = "1")]
-    pub fee_version: ::prost::alloc::string::String,
-    /// app_version defines the underlying application version, which may or may not be a JSON encoded bytestring
+pub struct IncentivizedAcknowledgement {
+    /// the underlying app acknowledgement bytes
+    #[prost(bytes = "vec", tag = "1")]
+    pub app_acknowledgement: ::prost::alloc::vec::Vec<u8>,
+    /// the relayer address which submits the recv packet message
     #[prost(string, tag = "2")]
-    pub app_version: ::prost::alloc::string::String,
+    pub forward_relayer_address: ::prost::alloc::string::String,
+    /// success flag of the base application callback
+    #[prost(bool, tag = "3")]
+    pub underlying_app_success: bool,
 }
-impl ::prost::Name for Metadata {
-    const NAME: &'static str = "Metadata";
+impl ::prost::Name for IncentivizedAcknowledgement {
+    const NAME: &'static str = "IncentivizedAcknowledgement";
     const PACKAGE: &'static str = "ibc.applications.fee.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
@@ -200,162 +202,20 @@ impl ::prost::Name for ForwardRelayerAddress {
         ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
     }
 }
-/// IncentivizedAcknowledgement is the acknowledgement format to be used by applications wrapped in the fee middleware
+/// Metadata defines the ICS29 channel specific metadata encoded into the channel version bytestring
+/// See ICS004: <https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#Versioning>
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IncentivizedAcknowledgement {
-    /// the underlying app acknowledgement bytes
-    #[prost(bytes = "vec", tag = "1")]
-    pub app_acknowledgement: ::prost::alloc::vec::Vec<u8>,
-    /// the relayer address which submits the recv packet message
-    #[prost(string, tag = "2")]
-    pub forward_relayer_address: ::prost::alloc::string::String,
-    /// success flag of the base application callback
-    #[prost(bool, tag = "3")]
-    pub underlying_app_success: bool,
-}
-impl ::prost::Name for IncentivizedAcknowledgement {
-    const NAME: &'static str = "IncentivizedAcknowledgement";
-    const PACKAGE: &'static str = "ibc.applications.fee.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
-    }
-}
-/// MsgRegisterPayee defines the request type for the RegisterPayee rpc
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRegisterPayee {
-    /// unique port identifier
+pub struct Metadata {
+    /// fee_version defines the ICS29 fee version
     #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// unique channel identifier
+    pub fee_version: ::prost::alloc::string::String,
+    /// app_version defines the underlying application version, which may or may not be a JSON encoded bytestring
     #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    /// the relayer address
-    #[prost(string, tag = "3")]
-    pub relayer: ::prost::alloc::string::String,
-    /// the payee address
-    #[prost(string, tag = "4")]
-    pub payee: ::prost::alloc::string::String,
+    pub app_version: ::prost::alloc::string::String,
 }
-impl ::prost::Name for MsgRegisterPayee {
-    const NAME: &'static str = "MsgRegisterPayee";
-    const PACKAGE: &'static str = "ibc.applications.fee.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
-    }
-}
-/// MsgRegisterPayeeResponse defines the response type for the RegisterPayee rpc
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRegisterPayeeResponse {}
-impl ::prost::Name for MsgRegisterPayeeResponse {
-    const NAME: &'static str = "MsgRegisterPayeeResponse";
-    const PACKAGE: &'static str = "ibc.applications.fee.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
-    }
-}
-/// MsgRegisterCounterpartyPayee defines the request type for the RegisterCounterpartyPayee rpc
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRegisterCounterpartyPayee {
-    /// unique port identifier
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// unique channel identifier
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    /// the relayer address
-    #[prost(string, tag = "3")]
-    pub relayer: ::prost::alloc::string::String,
-    /// the counterparty payee address
-    #[prost(string, tag = "4")]
-    pub counterparty_payee: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgRegisterCounterpartyPayee {
-    const NAME: &'static str = "MsgRegisterCounterpartyPayee";
-    const PACKAGE: &'static str = "ibc.applications.fee.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
-    }
-}
-/// MsgRegisterCounterpartyPayeeResponse defines the response type for the RegisterCounterpartyPayee rpc
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRegisterCounterpartyPayeeResponse {}
-impl ::prost::Name for MsgRegisterCounterpartyPayeeResponse {
-    const NAME: &'static str = "MsgRegisterCounterpartyPayeeResponse";
-    const PACKAGE: &'static str = "ibc.applications.fee.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
-    }
-}
-/// MsgPayPacketFee defines the request type for the PayPacketFee rpc
-/// This Msg can be used to pay for a packet at the next sequence send & should be combined with the Msg that will be
-/// paid for
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgPayPacketFee {
-    /// fee encapsulates the recv, ack and timeout fees associated with an IBC packet
-    #[prost(message, optional, tag = "1")]
-    pub fee: ::core::option::Option<Fee>,
-    /// the source port unique identifier
-    #[prost(string, tag = "2")]
-    pub source_port_id: ::prost::alloc::string::String,
-    /// the source channel unique identifer
-    #[prost(string, tag = "3")]
-    pub source_channel_id: ::prost::alloc::string::String,
-    /// account address to refund fee if necessary
-    #[prost(string, tag = "4")]
-    pub signer: ::prost::alloc::string::String,
-    /// optional list of relayers permitted to the receive packet fees
-    #[prost(string, repeated, tag = "5")]
-    pub relayers: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-}
-impl ::prost::Name for MsgPayPacketFee {
-    const NAME: &'static str = "MsgPayPacketFee";
-    const PACKAGE: &'static str = "ibc.applications.fee.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
-    }
-}
-/// MsgPayPacketFeeResponse defines the response type for the PayPacketFee rpc
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgPayPacketFeeResponse {}
-impl ::prost::Name for MsgPayPacketFeeResponse {
-    const NAME: &'static str = "MsgPayPacketFeeResponse";
-    const PACKAGE: &'static str = "ibc.applications.fee.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
-    }
-}
-/// MsgPayPacketFeeAsync defines the request type for the PayPacketFeeAsync rpc
-/// This Msg can be used to pay for a packet at a specified sequence (instead of the next sequence send)
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgPayPacketFeeAsync {
-    /// unique packet identifier comprised of the channel ID, port ID and sequence
-    #[prost(message, optional, tag = "1")]
-    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
-    /// the packet fee associated with a particular IBC packet
-    #[prost(message, optional, tag = "2")]
-    pub packet_fee: ::core::option::Option<PacketFee>,
-}
-impl ::prost::Name for MsgPayPacketFeeAsync {
-    const NAME: &'static str = "MsgPayPacketFeeAsync";
-    const PACKAGE: &'static str = "ibc.applications.fee.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
-    }
-}
-/// MsgPayPacketFeeAsyncResponse defines the response type for the PayPacketFeeAsync rpc
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgPayPacketFeeAsyncResponse {}
-impl ::prost::Name for MsgPayPacketFeeAsyncResponse {
-    const NAME: &'static str = "MsgPayPacketFeeAsyncResponse";
+impl ::prost::Name for Metadata {
+    const NAME: &'static str = "Metadata";
     const PACKAGE: &'static str = "ibc.applications.fee.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
@@ -705,6 +565,146 @@ pub struct QueryFeeEnabledChannelResponse {
 }
 impl ::prost::Name for QueryFeeEnabledChannelResponse {
     const NAME: &'static str = "QueryFeeEnabledChannelResponse";
+    const PACKAGE: &'static str = "ibc.applications.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
+    }
+}
+/// MsgRegisterPayee defines the request type for the RegisterPayee rpc
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgRegisterPayee {
+    /// unique port identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// unique channel identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// the relayer address
+    #[prost(string, tag = "3")]
+    pub relayer: ::prost::alloc::string::String,
+    /// the payee address
+    #[prost(string, tag = "4")]
+    pub payee: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgRegisterPayee {
+    const NAME: &'static str = "MsgRegisterPayee";
+    const PACKAGE: &'static str = "ibc.applications.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
+    }
+}
+/// MsgRegisterPayeeResponse defines the response type for the RegisterPayee rpc
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgRegisterPayeeResponse {}
+impl ::prost::Name for MsgRegisterPayeeResponse {
+    const NAME: &'static str = "MsgRegisterPayeeResponse";
+    const PACKAGE: &'static str = "ibc.applications.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
+    }
+}
+/// MsgRegisterCounterpartyPayee defines the request type for the RegisterCounterpartyPayee rpc
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgRegisterCounterpartyPayee {
+    /// unique port identifier
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// unique channel identifier
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// the relayer address
+    #[prost(string, tag = "3")]
+    pub relayer: ::prost::alloc::string::String,
+    /// the counterparty payee address
+    #[prost(string, tag = "4")]
+    pub counterparty_payee: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgRegisterCounterpartyPayee {
+    const NAME: &'static str = "MsgRegisterCounterpartyPayee";
+    const PACKAGE: &'static str = "ibc.applications.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
+    }
+}
+/// MsgRegisterCounterpartyPayeeResponse defines the response type for the RegisterCounterpartyPayee rpc
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgRegisterCounterpartyPayeeResponse {}
+impl ::prost::Name for MsgRegisterCounterpartyPayeeResponse {
+    const NAME: &'static str = "MsgRegisterCounterpartyPayeeResponse";
+    const PACKAGE: &'static str = "ibc.applications.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
+    }
+}
+/// MsgPayPacketFee defines the request type for the PayPacketFee rpc
+/// This Msg can be used to pay for a packet at the next sequence send & should be combined with the Msg that will be
+/// paid for
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgPayPacketFee {
+    /// fee encapsulates the recv, ack and timeout fees associated with an IBC packet
+    #[prost(message, optional, tag = "1")]
+    pub fee: ::core::option::Option<Fee>,
+    /// the source port unique identifier
+    #[prost(string, tag = "2")]
+    pub source_port_id: ::prost::alloc::string::String,
+    /// the source channel unique identifer
+    #[prost(string, tag = "3")]
+    pub source_channel_id: ::prost::alloc::string::String,
+    /// account address to refund fee if necessary
+    #[prost(string, tag = "4")]
+    pub signer: ::prost::alloc::string::String,
+    /// optional list of relayers permitted to the receive packet fees
+    #[prost(string, repeated, tag = "5")]
+    pub relayers: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+impl ::prost::Name for MsgPayPacketFee {
+    const NAME: &'static str = "MsgPayPacketFee";
+    const PACKAGE: &'static str = "ibc.applications.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
+    }
+}
+/// MsgPayPacketFeeResponse defines the response type for the PayPacketFee rpc
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgPayPacketFeeResponse {}
+impl ::prost::Name for MsgPayPacketFeeResponse {
+    const NAME: &'static str = "MsgPayPacketFeeResponse";
+    const PACKAGE: &'static str = "ibc.applications.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
+    }
+}
+/// MsgPayPacketFeeAsync defines the request type for the PayPacketFeeAsync rpc
+/// This Msg can be used to pay for a packet at a specified sequence (instead of the next sequence send)
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgPayPacketFeeAsync {
+    /// unique packet identifier comprised of the channel ID, port ID and sequence
+    #[prost(message, optional, tag = "1")]
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
+    /// the packet fee associated with a particular IBC packet
+    #[prost(message, optional, tag = "2")]
+    pub packet_fee: ::core::option::Option<PacketFee>,
+}
+impl ::prost::Name for MsgPayPacketFeeAsync {
+    const NAME: &'static str = "MsgPayPacketFeeAsync";
+    const PACKAGE: &'static str = "ibc.applications.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
+    }
+}
+/// MsgPayPacketFeeAsyncResponse defines the response type for the PayPacketFeeAsync rpc
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgPayPacketFeeAsyncResponse {}
+impl ::prost::Name for MsgPayPacketFeeAsyncResponse {
+    const NAME: &'static str = "MsgPayPacketFeeAsyncResponse";
     const PACKAGE: &'static str = "ibc.applications.fee.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)

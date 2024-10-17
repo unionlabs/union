@@ -19,6 +19,78 @@ impl ::prost::Name for Params {
         )
     }
 }
+/// QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryInterchainAccountRequest {
+    #[prost(string, tag = "1")]
+    pub owner: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub connection_id: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryInterchainAccountRequest {
+    const NAME: &'static str = "QueryInterchainAccountRequest";
+    const PACKAGE: &'static str = "ibc.applications.interchain_accounts.controller.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "ibc.applications.interchain_accounts.controller.v1.{}",
+            Self::NAME
+        )
+    }
+}
+/// QueryInterchainAccountResponse the response type for the Query/InterchainAccount RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryInterchainAccountResponse {
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryInterchainAccountResponse {
+    const NAME: &'static str = "QueryInterchainAccountResponse";
+    const PACKAGE: &'static str = "ibc.applications.interchain_accounts.controller.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "ibc.applications.interchain_accounts.controller.v1.{}",
+            Self::NAME
+        )
+    }
+}
+/// QueryParamsRequest is the request type for the Query/Params RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsRequest {}
+impl ::prost::Name for QueryParamsRequest {
+    const NAME: &'static str = "QueryParamsRequest";
+    const PACKAGE: &'static str = "ibc.applications.interchain_accounts.controller.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "ibc.applications.interchain_accounts.controller.v1.{}",
+            Self::NAME
+        )
+    }
+}
+/// QueryParamsResponse is the response type for the Query/Params RPC method.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsResponse {
+    /// params defines the parameters of the module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for QueryParamsResponse {
+    const NAME: &'static str = "QueryParamsResponse";
+    const PACKAGE: &'static str = "ibc.applications.interchain_accounts.controller.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "ibc.applications.interchain_accounts.controller.v1.{}",
+            Self::NAME
+        )
+    }
+}
 /// MsgRegisterInterchainAccount defines the payload for Msg/RegisterAccount
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -30,6 +102,11 @@ pub struct MsgRegisterInterchainAccount {
     pub connection_id: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
     pub version: ::prost::alloc::string::String,
+    #[prost(
+        enumeration = "super::super::super::super::core::channel::v1::Order",
+        tag = "4"
+    )]
+    pub ordering: i32,
 }
 impl ::prost::Name for MsgRegisterInterchainAccount {
     const NAME: &'static str = "MsgRegisterInterchainAccount";
@@ -136,78 +213,6 @@ impl ::prost::Name for MsgUpdateParams {
 pub struct MsgUpdateParamsResponse {}
 impl ::prost::Name for MsgUpdateParamsResponse {
     const NAME: &'static str = "MsgUpdateParamsResponse";
-    const PACKAGE: &'static str = "ibc.applications.interchain_accounts.controller.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "ibc.applications.interchain_accounts.controller.v1.{}",
-            Self::NAME
-        )
-    }
-}
-/// QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryInterchainAccountRequest {
-    #[prost(string, tag = "1")]
-    pub owner: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub connection_id: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryInterchainAccountRequest {
-    const NAME: &'static str = "QueryInterchainAccountRequest";
-    const PACKAGE: &'static str = "ibc.applications.interchain_accounts.controller.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "ibc.applications.interchain_accounts.controller.v1.{}",
-            Self::NAME
-        )
-    }
-}
-/// QueryInterchainAccountResponse the response type for the Query/InterchainAccount RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryInterchainAccountResponse {
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryInterchainAccountResponse {
-    const NAME: &'static str = "QueryInterchainAccountResponse";
-    const PACKAGE: &'static str = "ibc.applications.interchain_accounts.controller.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "ibc.applications.interchain_accounts.controller.v1.{}",
-            Self::NAME
-        )
-    }
-}
-/// QueryParamsRequest is the request type for the Query/Params RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsRequest {}
-impl ::prost::Name for QueryParamsRequest {
-    const NAME: &'static str = "QueryParamsRequest";
-    const PACKAGE: &'static str = "ibc.applications.interchain_accounts.controller.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "ibc.applications.interchain_accounts.controller.v1.{}",
-            Self::NAME
-        )
-    }
-}
-/// QueryParamsResponse is the response type for the Query/Params RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsResponse {
-    /// params defines the parameters of the module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for QueryParamsResponse {
-    const NAME: &'static str = "QueryParamsResponse";
     const PACKAGE: &'static str = "ibc.applications.interchain_accounts.controller.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(

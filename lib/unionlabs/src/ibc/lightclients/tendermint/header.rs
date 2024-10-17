@@ -1,12 +1,12 @@
 use macros::model;
 
 use crate::{
-    errors::{required, MissingField},
-    ibc::core::client::height::Height,
-    tendermint::types::{
+    cometbft::types::{
         signed_header::{SignedHeader, TryFromSignedHeaderError},
         validator_set::{TryFromValidatorSetError, ValidatorSet},
     },
+    errors::{required, MissingField},
+    ibc::core::client::height::Height,
 };
 
 #[model(proto(raw(protos::ibc::lightclients::tendermint::v1::Header), into, from))]
@@ -47,11 +47,7 @@ impl TryFrom<protos::ibc::lightclients::tendermint::v1::Header> for Header {
         value: protos::ibc::lightclients::tendermint::v1::Header,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            signed_header: value
-                .signed_header
-                .ok_or(TryFromHeaderError::MissingField(MissingField(
-                    "signed header",
-                )))?
+            signed_header: required!(value.signed_header)?
                 .try_into()
                 .map_err(TryFromHeaderError::SignedHeader)?,
             validator_set: required!(value.validator_set)?

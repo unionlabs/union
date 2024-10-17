@@ -8,5 +8,7 @@ wrapper_enum! {
         Tryopen = 2,
         Open = 3,
         Closed = 4,
+        Flushing = 5,
+        Flushcomplete = 6,
     }
 }

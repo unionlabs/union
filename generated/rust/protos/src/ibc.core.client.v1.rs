@@ -150,8 +150,6 @@ pub struct UpgradeProposal {
     pub title: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub description: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "3")]
-    pub plan: ::core::option::Option<super::super::super::super::cosmos::upgrade::v1beta1::Plan>,
     /// An UpgradedClientState must be provided to perform an IBC breaking upgrade.
     /// This will make the chain commit to the correct upgraded (self) client state
     /// before the upgrade occurs, so that connecting chains can verify that the
@@ -233,266 +231,6 @@ pub struct IdentifiedGenesisMetadata {
 }
 impl ::prost::Name for IdentifiedGenesisMetadata {
     const NAME: &'static str = "IdentifiedGenesisMetadata";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgCreateClient defines a message to create an IBC client
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCreateClient {
-    /// light client state
-    #[prost(message, optional, tag = "1")]
-    pub client_state: ::core::option::Option<::pbjson_types::Any>,
-    /// consensus state associated with the client that corresponds to a given
-    /// height.
-    #[prost(message, optional, tag = "2")]
-    pub consensus_state: ::core::option::Option<::pbjson_types::Any>,
-    /// signer address
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgCreateClient {
-    const NAME: &'static str = "MsgCreateClient";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgCreateClientResponse defines the Msg/CreateClient response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCreateClientResponse {}
-impl ::prost::Name for MsgCreateClientResponse {
-    const NAME: &'static str = "MsgCreateClientResponse";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateClient defines an sdk.Msg to update a IBC client state using
-/// the given client message.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateClient {
-    /// client unique identifier
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// client message to update the light client
-    #[prost(message, optional, tag = "2")]
-    pub client_message: ::core::option::Option<::pbjson_types::Any>,
-    /// signer address
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgUpdateClient {
-    const NAME: &'static str = "MsgUpdateClient";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateClientResponse defines the Msg/UpdateClient response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateClientResponse {}
-impl ::prost::Name for MsgUpdateClientResponse {
-    const NAME: &'static str = "MsgUpdateClientResponse";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client
-/// state
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpgradeClient {
-    /// client unique identifier
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// upgraded client state
-    #[prost(message, optional, tag = "2")]
-    pub client_state: ::core::option::Option<::pbjson_types::Any>,
-    /// upgraded consensus state, only contains enough information to serve as a
-    /// basis of trust in update logic
-    #[prost(message, optional, tag = "3")]
-    pub consensus_state: ::core::option::Option<::pbjson_types::Any>,
-    /// proof that old chain committed to new client
-    #[prost(bytes = "vec", tag = "4")]
-    pub proof_upgrade_client: ::prost::alloc::vec::Vec<u8>,
-    /// proof that old chain committed to new consensus state
-    #[prost(bytes = "vec", tag = "5")]
-    pub proof_upgrade_consensus_state: ::prost::alloc::vec::Vec<u8>,
-    /// signer address
-    #[prost(string, tag = "6")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgUpgradeClient {
-    const NAME: &'static str = "MsgUpgradeClient";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgUpgradeClientResponse defines the Msg/UpgradeClient response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpgradeClientResponse {}
-impl ::prost::Name for MsgUpgradeClientResponse {
-    const NAME: &'static str = "MsgUpgradeClientResponse";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
-/// light client misbehaviour.
-/// This message has been deprecated. Use MsgUpdateClient instead.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitMisbehaviour {
-    /// client unique identifier
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// misbehaviour used for freezing the light client
-    #[prost(message, optional, tag = "2")]
-    pub misbehaviour: ::core::option::Option<::pbjson_types::Any>,
-    /// signer address
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgSubmitMisbehaviour {
-    const NAME: &'static str = "MsgSubmitMisbehaviour";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response
-/// type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitMisbehaviourResponse {}
-impl ::prost::Name for MsgSubmitMisbehaviourResponse {
-    const NAME: &'static str = "MsgSubmitMisbehaviourResponse";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgRecoverClient defines the message used to recover a frozen or expired client.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRecoverClient {
-    /// the client identifier for the client to be updated if the proposal passes
-    #[prost(string, tag = "1")]
-    pub subject_client_id: ::prost::alloc::string::String,
-    /// the substitute client identifier for the client which will replace the subject
-    /// client
-    #[prost(string, tag = "2")]
-    pub substitute_client_id: ::prost::alloc::string::String,
-    /// signer address
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgRecoverClient {
-    const NAME: &'static str = "MsgRecoverClient";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgRecoverClientResponse defines the Msg/RecoverClient response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRecoverClientResponse {}
-impl ::prost::Name for MsgRecoverClientResponse {
-    const NAME: &'static str = "MsgRecoverClientResponse";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgIBCSoftwareUpgrade defines the message used to schedule an upgrade of an IBC client using a v1 governance proposal
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgIbcSoftwareUpgrade {
-    #[prost(message, optional, tag = "1")]
-    pub plan: ::core::option::Option<super::super::super::super::cosmos::upgrade::v1beta1::Plan>,
-    /// An UpgradedClientState must be provided to perform an IBC breaking upgrade.
-    /// This will make the chain commit to the correct upgraded (self) client state
-    /// before the upgrade occurs, so that connecting chains can verify that the
-    /// new upgraded client is valid by verifying a proof on the previous version
-    /// of the chain. This will allow IBC connections to persist smoothly across
-    /// planned chain upgrades. Correspondingly, the UpgradedClientState field has been
-    /// deprecated in the Cosmos SDK to allow for this logic to exist solely in
-    /// the 02-client module.
-    #[prost(message, optional, tag = "2")]
-    pub upgraded_client_state: ::core::option::Option<::pbjson_types::Any>,
-    /// signer address
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgIbcSoftwareUpgrade {
-    const NAME: &'static str = "MsgIBCSoftwareUpgrade";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgIBCSoftwareUpgradeResponse defines the Msg/IBCSoftwareUpgrade response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgIbcSoftwareUpgradeResponse {}
-impl ::prost::Name for MsgIbcSoftwareUpgradeResponse {
-    const NAME: &'static str = "MsgIBCSoftwareUpgradeResponse";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateParams defines the sdk.Msg type to update the client parameters.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateParams {
-    /// signer address
-    #[prost(string, tag = "1")]
-    pub signer: ::prost::alloc::string::String,
-    /// params defines the client parameters to update.
-    ///
-    /// NOTE: All parameters must be supplied.
-    #[prost(message, optional, tag = "2")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for MsgUpdateParams {
-    const NAME: &'static str = "MsgUpdateParams";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateParamsResponse defines the MsgUpdateParams response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateParamsResponse {}
-impl ::prost::Name for MsgUpdateParamsResponse {
-    const NAME: &'static str = "MsgUpdateParamsResponse";
     const PACKAGE: &'static str = "ibc.core.client.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
@@ -837,6 +575,314 @@ pub struct QueryUpgradedConsensusStateResponse {
 }
 impl ::prost::Name for QueryUpgradedConsensusStateResponse {
     const NAME: &'static str = "QueryUpgradedConsensusStateResponse";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// QueryVerifyMembershipRequest is the request type for the Query/VerifyMembership RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryVerifyMembershipRequest {
+    /// client unique identifier.
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// the proof to be verified by the client.
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof: ::prost::alloc::vec::Vec<u8>,
+    /// the height of the commitment root at which the proof is verified.
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<Height>,
+    /// the commitment key path.
+    #[prost(message, optional, tag = "4")]
+    pub merkle_path: ::core::option::Option<super::super::commitment::v1::MerklePath>,
+    /// the value which is proven.
+    #[prost(bytes = "vec", tag = "5")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
+    /// optional time delay
+    #[prost(uint64, tag = "6")]
+    pub time_delay: u64,
+    /// optional block delay
+    #[prost(uint64, tag = "7")]
+    pub block_delay: u64,
+}
+impl ::prost::Name for QueryVerifyMembershipRequest {
+    const NAME: &'static str = "QueryVerifyMembershipRequest";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// QueryVerifyMembershipResponse is the response type for the Query/VerifyMembership RPC method
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryVerifyMembershipResponse {
+    /// boolean indicating success or failure of proof verification.
+    #[prost(bool, tag = "1")]
+    pub success: bool,
+}
+impl ::prost::Name for QueryVerifyMembershipResponse {
+    const NAME: &'static str = "QueryVerifyMembershipResponse";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgCreateClient defines a message to create an IBC client
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCreateClient {
+    /// light client state
+    #[prost(message, optional, tag = "1")]
+    pub client_state: ::core::option::Option<::pbjson_types::Any>,
+    /// consensus state associated with the client that corresponds to a given
+    /// height.
+    #[prost(message, optional, tag = "2")]
+    pub consensus_state: ::core::option::Option<::pbjson_types::Any>,
+    /// signer address
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgCreateClient {
+    const NAME: &'static str = "MsgCreateClient";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgCreateClientResponse defines the Msg/CreateClient response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCreateClientResponse {}
+impl ::prost::Name for MsgCreateClientResponse {
+    const NAME: &'static str = "MsgCreateClientResponse";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateClient defines an sdk.Msg to update a IBC client state using
+/// the given client message.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateClient {
+    /// client unique identifier
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// client message to update the light client
+    #[prost(message, optional, tag = "2")]
+    pub client_message: ::core::option::Option<::pbjson_types::Any>,
+    /// signer address
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgUpdateClient {
+    const NAME: &'static str = "MsgUpdateClient";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateClientResponse defines the Msg/UpdateClient response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateClientResponse {}
+impl ::prost::Name for MsgUpdateClientResponse {
+    const NAME: &'static str = "MsgUpdateClientResponse";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client
+/// state
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpgradeClient {
+    /// client unique identifier
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// upgraded client state
+    #[prost(message, optional, tag = "2")]
+    pub client_state: ::core::option::Option<::pbjson_types::Any>,
+    /// upgraded consensus state, only contains enough information to serve as a
+    /// basis of trust in update logic
+    #[prost(message, optional, tag = "3")]
+    pub consensus_state: ::core::option::Option<::pbjson_types::Any>,
+    /// proof that old chain committed to new client
+    #[prost(bytes = "vec", tag = "4")]
+    pub proof_upgrade_client: ::prost::alloc::vec::Vec<u8>,
+    /// proof that old chain committed to new consensus state
+    #[prost(bytes = "vec", tag = "5")]
+    pub proof_upgrade_consensus_state: ::prost::alloc::vec::Vec<u8>,
+    /// signer address
+    #[prost(string, tag = "6")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgUpgradeClient {
+    const NAME: &'static str = "MsgUpgradeClient";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgUpgradeClientResponse defines the Msg/UpgradeClient response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpgradeClientResponse {}
+impl ::prost::Name for MsgUpgradeClientResponse {
+    const NAME: &'static str = "MsgUpgradeClientResponse";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
+/// light client misbehaviour.
+/// This message has been deprecated. Use MsgUpdateClient instead.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSubmitMisbehaviour {
+    /// client unique identifier
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// misbehaviour used for freezing the light client
+    #[prost(message, optional, tag = "2")]
+    pub misbehaviour: ::core::option::Option<::pbjson_types::Any>,
+    /// signer address
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgSubmitMisbehaviour {
+    const NAME: &'static str = "MsgSubmitMisbehaviour";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response
+/// type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSubmitMisbehaviourResponse {}
+impl ::prost::Name for MsgSubmitMisbehaviourResponse {
+    const NAME: &'static str = "MsgSubmitMisbehaviourResponse";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgRecoverClient defines the message used to recover a frozen or expired client.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgRecoverClient {
+    /// the client identifier for the client to be updated if the proposal passes
+    #[prost(string, tag = "1")]
+    pub subject_client_id: ::prost::alloc::string::String,
+    /// the substitute client identifier for the client which will replace the subject
+    /// client
+    #[prost(string, tag = "2")]
+    pub substitute_client_id: ::prost::alloc::string::String,
+    /// signer address
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgRecoverClient {
+    const NAME: &'static str = "MsgRecoverClient";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgRecoverClientResponse defines the Msg/RecoverClient response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgRecoverClientResponse {}
+impl ::prost::Name for MsgRecoverClientResponse {
+    const NAME: &'static str = "MsgRecoverClientResponse";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgIBCSoftwareUpgrade defines the message used to schedule an upgrade of an IBC client using a v1 governance proposal
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgIbcSoftwareUpgrade {
+    /// An UpgradedClientState must be provided to perform an IBC breaking upgrade.
+    /// This will make the chain commit to the correct upgraded (self) client state
+    /// before the upgrade occurs, so that connecting chains can verify that the
+    /// new upgraded client is valid by verifying a proof on the previous version
+    /// of the chain. This will allow IBC connections to persist smoothly across
+    /// planned chain upgrades. Correspondingly, the UpgradedClientState field has been
+    /// deprecated in the Cosmos SDK to allow for this logic to exist solely in
+    /// the 02-client module.
+    #[prost(message, optional, tag = "2")]
+    pub upgraded_client_state: ::core::option::Option<::pbjson_types::Any>,
+    /// signer address
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgIbcSoftwareUpgrade {
+    const NAME: &'static str = "MsgIBCSoftwareUpgrade";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgIBCSoftwareUpgradeResponse defines the Msg/IBCSoftwareUpgrade response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgIbcSoftwareUpgradeResponse {}
+impl ::prost::Name for MsgIbcSoftwareUpgradeResponse {
+    const NAME: &'static str = "MsgIBCSoftwareUpgradeResponse";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateParams defines the sdk.Msg type to update the client parameters.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParams {
+    /// signer address
+    #[prost(string, tag = "1")]
+    pub signer: ::prost::alloc::string::String,
+    /// params defines the client parameters to update.
+    ///
+    /// NOTE: All parameters must be supplied.
+    #[prost(message, optional, tag = "2")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for MsgUpdateParams {
+    const NAME: &'static str = "MsgUpdateParams";
+    const PACKAGE: &'static str = "ibc.core.client.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateParamsResponse defines the MsgUpdateParams response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParamsResponse {}
+impl ::prost::Name for MsgUpdateParamsResponse {
+    const NAME: &'static str = "MsgUpdateParamsResponse";
     const PACKAGE: &'static str = "ibc.core.client.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)

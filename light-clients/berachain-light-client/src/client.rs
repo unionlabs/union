@@ -42,7 +42,7 @@ use unionlabs::{
     },
 };
 
-use crate::{errors::Error, verifier::Bls12_381Verifier};
+use crate::{errors::Error, verifier::Bls12381Verifier};
 
 pub struct BerachainLightClient;
 
@@ -207,7 +207,7 @@ impl IbcClient for BerachainLightClient {
                 .map_err(|_| Error::from(InvalidHostTimestamp(env.block.time)))?,
             client_state.data.max_clock_drift,
             &client_state.data.trust_level,
-            &SignatureVerifier::new(Bls12_381Verifier::new(deps)),
+            &SignatureVerifier::new(Bls12381Verifier::new(deps)),
         )
         .map_err(Error::TendermintVerify)?;
 
