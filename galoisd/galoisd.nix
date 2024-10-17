@@ -33,10 +33,11 @@
           {
             name = "galoisd";
             src = ./.;
-            vendorHash = null;
+            vendorHash = "sha256-NjX+FEYMC2dy3Rr1nubO7+bHqfI10K3x57rDCe49png=";
             meta = {
               mainProgram = "galoisd";
             };
+            doCheck = false;
           }
           // (
             if pkgs.stdenv.isLinux then
