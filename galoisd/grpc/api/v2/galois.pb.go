@@ -7,7 +7,7 @@
 package grpc
 
 import (
-	types "github.com/cometbft/cometbft/proto/tendermint/types"
+	types "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
