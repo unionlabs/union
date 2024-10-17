@@ -36,7 +36,7 @@ impl ::prost::Name for ZeroKnowledgeProof {
 pub struct ValidatorSetCommit {
     #[prost(message, repeated, tag = "1")]
     pub validators:
-        ::prost::alloc::vec::Vec<super::super::super::super::tendermint::types::SimpleValidator>,
+        ::prost::alloc::vec::Vec<super::super::super::super::cometbft::types::v1::SimpleValidator>,
     #[prost(bytes = "vec", repeated, tag = "2")]
     pub signatures: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
     #[prost(bytes = "vec", tag = "3")]
@@ -53,10 +53,11 @@ impl ::prost::Name for ValidatorSetCommit {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProveRequest {
     #[prost(message, optional, tag = "1")]
-    pub vote: ::core::option::Option<super::super::super::super::tendermint::types::CanonicalVote>,
+    pub vote:
+        ::core::option::Option<super::super::super::super::cometbft::types::v1::CanonicalVote>,
     #[prost(message, optional, tag = "2")]
     pub untrusted_header:
-        ::core::option::Option<super::super::super::super::tendermint::types::Header>,
+        ::core::option::Option<super::super::super::super::cometbft::types::v1::Header>,
     #[prost(message, optional, tag = "3")]
     pub trusted_commit: ::core::option::Option<ValidatorSetCommit>,
     #[prost(message, optional, tag = "4")]

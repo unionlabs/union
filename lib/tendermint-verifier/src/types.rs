@@ -1,4 +1,4 @@
-use unionlabs::tendermint::crypto::public_key::PublicKey;
+use unionlabs::cometbft::crypto::public_key::PublicKey;
 
 pub trait HostFns {
     fn verify_signature(&self, pubkey: &PublicKey, msg: &[u8], sig: &[u8]) -> bool;

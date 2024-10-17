@@ -3,10 +3,8 @@ use std::num::NonZeroU64;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedU8,
-    google::protobuf::timestamp::Timestamp,
-    hash::{hash_v2::HexUnprefixed, H160, H256},
-    tendermint::{
-        abci::{exec_tx_result::ExecTxResult, response_query::ResponseQuery},
+    cometbft::{
+        abci::{exec_tx_result::ExecTxResult, query_response::QueryResponse},
         crypto::public_key::PublicKey,
         p2p::default_node_info::DefaultNodeInfo,
         types::{
@@ -14,6 +12,8 @@ use unionlabs::{
             validator::Validator,
         },
     },
+    google::protobuf::timestamp::Timestamp,
+    hash::{hash_v2::HexUnprefixed, H160, H256},
 };
 
 use crate::serde::{serde_as, serde_as_list, serde_as_opt};
@@ -28,16 +28,16 @@ pub enum Order {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BlockResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::types::BlockId, _>")]
+    #[serde(deserialize_with = "serde_as::<_, protos::cometbft::types::v1::BlockId, _>")]
     pub block_id: BlockId,
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::types::Block, _>")]
+    #[serde(deserialize_with = "serde_as::<_, protos::cometbft::types::v1::Block, _>")]
     pub block: Block,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct StatusResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::p2p::DefaultNodeInfo, _>")]
+    #[serde(deserialize_with = "serde_as::<_, protos::cometbft::p2p::v1::DefaultNodeInfo, _>")]
     pub node_info: DefaultNodeInfo,
     pub sync_info: SyncInfo,
     pub validator_info: ValidatorInfo,
@@ -63,7 +63,7 @@ pub struct SyncInfo {
 #[serde(deny_unknown_fields)]
 pub struct ValidatorInfo {
     pub address: H160<HexUnprefixed>,
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::crypto::PublicKey, _>")]
+    #[serde(deserialize_with = "serde_as::<_, protos::cometbft::crypto::v1::PublicKey, _>")]
     pub pub_key: PublicKey,
     // REVIEW: is this bounded the same way as Validator?
     #[serde(with = "::serde_utils::string")]
@@ -75,7 +75,7 @@ pub struct ValidatorInfo {
 pub struct ValidatorsResponse {
     #[serde(with = "::serde_utils::string")]
     pub block_height: NonZeroU64,
-    #[serde(deserialize_with = "serde_as_list::<_, protos::tendermint::types::Validator, _>")]
+    #[serde(deserialize_with = "serde_as_list::<_, protos::cometbft::types::v1::Validator, _>")]
     pub validators: Vec<Validator>,
     #[serde(with = "::serde_utils::string")]
     pub count: u64,
@@ -99,14 +99,14 @@ pub struct ValidatorsPagination {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AbciQueryResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::abci::ResponseQuery, _>")]
-    pub response: ResponseQuery,
+    #[serde(deserialize_with = "serde_as::<_, protos::cometbft::abci::v1::QueryResponse, _>")]
+    pub response: QueryResponse,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CommitResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::types::SignedHeader, _>")]
+    #[serde(deserialize_with = "serde_as::<_, protos::cometbft::types::v1::SignedHeader, _>")]
     pub signed_header: SignedHeader,
     pub canonical: bool,
 }
@@ -119,14 +119,14 @@ pub struct TxResponse {
     #[serde(with = "::serde_utils::string_opt")]
     pub height: Option<NonZeroU64>,
     pub index: u32,
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::abci::ExecTxResult, _>")]
+    #[serde(deserialize_with = "serde_as::<_, protos::cometbft::abci::v1::ExecTxResult, _>")]
     pub tx_result: ExecTxResult,
     #[serde(with = "::serde_utils::base64")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub tx: Vec<u8>,
     #[serde(
         default,
-        deserialize_with = "serde_as_opt::<_, protos::tendermint::types::TxProof, _>"
+        deserialize_with = "serde_as_opt::<_, protos::cometbft::types::v1::TxProof, _>"
     )]
     pub proof: Option<TxProof>,
 }

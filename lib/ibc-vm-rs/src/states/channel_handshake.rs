@@ -152,6 +152,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                     counterparty: counterparty.clone(),
                     connection_hops: connection_hops.clone(),
                     version: version.clone(),
+                    upgrade_sequence: 0,
                 };
 
                 host.commit(
@@ -282,6 +283,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                     },
                     connection_hops: vec![connection.counterparty.connection_id.unwrap()],
                     version: counterparty_version.clone(),
+                    upgrade_sequence: 0,
                 };
 
                 // TODO(aeryz): check if port_id is a valid addr here?
@@ -381,6 +383,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                     counterparty: counterparty.clone(),
                     connection_hops: connection_hops.clone(),
                     version: version.clone(),
+                    upgrade_sequence: 0,
                 };
 
                 host.commit(
@@ -533,6 +536,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                     },
                     connection_hops: vec![connection.counterparty.connection_id.unwrap()],
                     version: counterparty_version.clone(),
+                    upgrade_sequence: 0,
                 };
 
                 // TODO(aeryz): check if port_id is a valid addr here?
@@ -745,6 +749,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                     },
                     connection_hops: vec![connection.counterparty.connection_id.unwrap()],
                     version: channel.version,
+                    upgrade_sequence: 0,
                 };
 
                 // TODO(aeryz): check if port_id is a valid addr here?

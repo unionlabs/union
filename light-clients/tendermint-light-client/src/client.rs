@@ -13,6 +13,7 @@ use tendermint_light_client_types::{ClientState, ConsensusState, Header};
 use tendermint_verifier::types::SignatureVerifier;
 use unionlabs::{
     bounded::BoundedI64,
+    cometbft::types::{commit::Commit, signed_header::SignedHeader},
     encoding::{DecodeAs, Proto},
     ensure,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
@@ -21,7 +22,6 @@ use unionlabs::{
         client::{genesis_metadata::GenesisMetadata, height::Height},
         commitment::{merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot},
     },
-    tendermint::types::{commit::Commit, signed_header::SignedHeader},
 };
 
 use crate::{
@@ -418,7 +418,7 @@ impl IbcClient for TendermintLightClient {
 }
 
 pub fn set_total_voting_power(
-    validator_set: &mut unionlabs::tendermint::types::validator_set::ValidatorSet,
+    validator_set: &mut unionlabs::cometbft::types::validator_set::ValidatorSet,
 ) -> Result<(), MathOverflow> {
     validator_set.total_voting_power =
         validator_set
@@ -449,7 +449,7 @@ pub fn construct_partial_header(
     next_validators_hash: H256,
 ) -> SignedHeader {
     SignedHeader {
-        header: unionlabs::tendermint::types::header::Header {
+        header: unionlabs::cometbft::types::header::Header {
             chain_id,
             time,
             next_validators_hash,

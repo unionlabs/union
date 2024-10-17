@@ -1,6 +1,6 @@
 use cosmwasm_std::Deps;
 use tendermint_verifier::types::HostFns;
-use unionlabs::tendermint::crypto::public_key::PublicKey;
+use unionlabs::cometbft::crypto::public_key::PublicKey;
 
 pub struct Ed25519Verifier<'a> {
     deps: Deps<'a>,

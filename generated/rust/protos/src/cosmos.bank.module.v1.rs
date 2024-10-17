@@ -11,6 +11,12 @@ pub struct Module {
     /// authority defines the custom module authority. If not set, defaults to the governance module.
     #[prost(string, tag = "2")]
     pub authority: ::prost::alloc::string::String,
+    /// restrictions_order specifies the order of send restrictions and should be
+    /// a list of module names which provide a send restriction instance. If no
+    /// order is provided, then restrictions will be applied in alphabetical order
+    /// of module names.
+    #[prost(string, repeated, tag = "3")]
+    pub restrictions_order: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 impl ::prost::Name for Module {
     const NAME: &'static str = "Module";

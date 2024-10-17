@@ -107,13 +107,13 @@ func NewDoubleCommitMiddleware(
 	ibc *ibckeeper.Keeper,
 	app porttypes.IBCModule,
 	ics4Wrapper porttypes.ICS4Wrapper,
-	store       *DoubleCommitStore,
+	store *DoubleCommitStore,
 ) CommitMiddleware {
 	return &DoubleCommitMiddleware{
 		ibc:         ibc,
 		app:         app,
 		ics4Wrapper: ics4Wrapper,
-		store: store,
+		store:       store,
 	}
 }
 
@@ -260,11 +260,11 @@ func NewDoubleCommitStoreService(
 	ibcKey *storetypes.KVStoreKey,
 ) *DoubleCommitStore {
 	return &DoubleCommitStore{
-		cdc: cdc,
-		commitKey: commitKey,
-		ibcKey: ibcKey,
+		cdc:               cdc,
+		commitKey:         commitKey,
+		ibcKey:            ibcKey,
 		processingPackets: stack.New(),
-		processingAcks: stack.New(),
+		processingAcks:    stack.New(),
 	}
 }
 
