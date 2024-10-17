@@ -1,7 +1,0 @@
-syntax = "proto3";
-package cockroach.errorspb;
-option go_package = "errorspb";
-
-message StringPayload {
-  string msg = 1;
-}

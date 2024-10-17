@@ -90,7 +90,7 @@
 //
 //	type Struct struct {
 //		Car *Car
-//		Vehicle Vehicle
+//		Vehicle
 //	}
 //
 //	Struct{Car: &Car{Wheels: 4}, Vehicle: &Car{Wheels: 4}}

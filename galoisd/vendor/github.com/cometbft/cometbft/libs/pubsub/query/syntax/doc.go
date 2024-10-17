@@ -17,7 +17,7 @@
 // The lexical terms are defined here using RE2 regular expression notation:
 //
 //	// The name of an event attribute (type.value)
-//	tag    = #'\w+(\.\w+)*'
+//	 tag   = #`^[\w]+[\.-\w]?$`
 //
 //	// A datestamp (YYYY-MM-DD)
 //	date   = #'DATE \d{4}-\d{2}-\d{2}'

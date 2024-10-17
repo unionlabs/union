@@ -99,7 +99,7 @@ func (s *Scanner) Next() error {
 		}
 		if '0' <= ch && ch <= '9' {
 			return s.scanNumber(ch)
-		} else if isTagRune(ch) {
+		} else if isFirstTagRune(ch) {
 			return s.scanTagLike(ch)
 		}
 		switch ch {
@@ -126,7 +126,7 @@ func (s *Scanner) Pos() int { return s.pos }
 func (s *Scanner) Err() error { return s.err }
 
 // scanNumber scans for numbers with optional fractional parts.
-// Examples: 0, 1, 3.14
+// Examples: 0, 1, 3.14.
 func (s *Scanner) scanNumber(first rune) error {
 	s.buf.WriteRune(first)
 	if err := s.scanWhile(isDigit); err != nil {
@@ -266,13 +266,14 @@ func (s *Scanner) scanDatestamp() error {
 func (s *Scanner) scanWhile(ok func(rune) bool) error {
 	for {
 		ch, err := s.rune()
-		if err == io.EOF {
+		switch {
+		case err == io.EOF:
 			return nil
-		} else if err != nil {
-			return s.fail(err)
-		} else if !ok(ch) {
+		case !ok(ch):
 			s.unrune()
 			return nil
+		case err != nil:
+			return s.fail(err)
 		}
 		s.buf.WriteRune(ch)
 	}
@@ -302,7 +303,11 @@ func (s *Scanner) invalid(ch rune) error {
 func isDigit(r rune) bool { return '0' <= r && r <= '9' }
 
 func isTagRune(r rune) bool {
-	return r == '.' || r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
+	return r == '.' || r == '_' || r == '-' || unicode.IsLetter(r) || unicode.IsDigit(r)
+}
+
+func isFirstTagRune(r rune) bool {
+	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
 }
 
 func isTimeRune(r rune) bool {

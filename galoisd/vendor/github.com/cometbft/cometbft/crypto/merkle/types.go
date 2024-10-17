@@ -20,20 +20,20 @@ type Tree interface {
 	Save() (hash []byte)
 	Load(hash []byte)
 	Copy() Tree
-	Iterate(func(key []byte, value []byte) (stop bool)) (stopped bool)
+	Iterate(fx func(key []byte, value []byte) (stop bool)) (stopped bool)
 	IterateRange(start []byte, end []byte, ascending bool, fx func(key []byte, value []byte) (stop bool)) (stopped bool)
 }
 
-//-----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 
-// Uvarint length prefixed byteslice
+// Uvarint length prefixed byteslice.
 func encodeByteSlice(w io.Writer, bz []byte) (err error) {
 	var buf [binary.MaxVarintLen64]byte
 	n := binary.PutUvarint(buf[:], uint64(len(bz)))
 	_, err = w.Write(buf[0:n])
 	if err != nil {
-		return
+		return err
 	}
 	_, err = w.Write(bz)
-	return
+	return err
 }

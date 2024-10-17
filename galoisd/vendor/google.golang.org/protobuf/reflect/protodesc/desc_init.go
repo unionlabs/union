@@ -28,6 +28,7 @@ func (r descsByName) initEnumDeclarations(eds []*descriptorpb.EnumDescriptorProt
 			opts = proto.Clone(opts).(*descriptorpb.EnumOptions)
 			e.L2.Options = func() protoreflect.ProtoMessage { return opts }
 		}
+		e.L1.EditionFeatures = mergeEditionFeatures(parent, ed.GetOptions().GetFeatures())
 		for _, s := range ed.GetReservedName() {
 			e.L2.ReservedNames.List = append(e.L2.ReservedNames.List, protoreflect.Name(s))
 		}
@@ -68,6 +69,7 @@ func (r descsByName) initMessagesDeclarations(mds []*descriptorpb.DescriptorProt
 		if m.L0, err = r.makeBase(m, parent, md.GetName(), i, sb); err != nil {
 			return nil, err
 		}
+		m.L1.EditionFeatures = mergeEditionFeatures(parent, md.GetOptions().GetFeatures())
 		if opts := md.GetOptions(); opts != nil {
 			opts = proto.Clone(opts).(*descriptorpb.MessageOptions)
 			m.L2.Options = func() protoreflect.ProtoMessage { return opts }
@@ -114,6 +116,27 @@ func (r descsByName) initMessagesDeclarations(mds []*descriptorpb.DescriptorProt
 	return ms, nil
 }
 
+// canBePacked returns whether the field can use packed encoding:
+// https://protobuf.dev/programming-guides/encoding/#packed
+func canBePacked(fd *descriptorpb.FieldDescriptorProto) bool {
+	if fd.GetLabel() != descriptorpb.FieldDescriptorProto_LABEL_REPEATED {
+		return false // not a repeated field
+	}
+
+	switch protoreflect.Kind(fd.GetType()) {
+	case protoreflect.MessageKind, protoreflect.GroupKind:
+		return false // not a scalar type field
+
+	case protoreflect.StringKind, protoreflect.BytesKind:
+		// string and bytes can explicitly not be declared as packed,
+		// see https://protobuf.dev/programming-guides/encoding/#packed
+		return false
+
+	default:
+		return true
+	}
+}
+
 func (r descsByName) initFieldsFromDescriptorProto(fds []*descriptorpb.FieldDescriptorProto, parent protoreflect.Descriptor, sb *strs.Builder) (fs []filedesc.Field, err error) {
 	fs = make([]filedesc.Field, len(fds)) // allocate up-front to ensure stable pointers
 	for i, fd := range fds {
@@ -121,13 +144,15 @@ func (r descsByName) initFieldsFromDescriptorProto(fds []*descriptorpb.FieldDesc
 		if f.L0, err = r.makeBase(f, parent, fd.GetName(), i, sb); err != nil {
 			return nil, err
 		}
+		f.L1.EditionFeatures = mergeEditionFeatures(parent, fd.GetOptions().GetFeatures())
 		f.L1.IsProto3Optional = fd.GetProto3Optional()
 		if opts := fd.GetOptions(); opts != nil {
 			opts = proto.Clone(opts).(*descriptorpb.FieldOptions)
 			f.L1.Options = func() protoreflect.ProtoMessage { return opts }
 			f.L1.IsWeak = opts.GetWeak()
-			f.L1.HasPacked = opts.Packed != nil
-			f.L1.IsPacked = opts.GetPacked()
+			if opts.Packed != nil {
+				f.L1.EditionFeatures.IsPacked = opts.GetPacked()
+			}
 		}
 		f.L1.Number = protoreflect.FieldNumber(fd.GetNumber())
 		f.L1.Cardinality = protoreflect.Cardinality(fd.GetLabel())
@@ -136,6 +161,14 @@ func (r descsByName) initFieldsFromDescriptorProto(fds []*descriptorpb.FieldDesc
 		}
 		if fd.JsonName != nil {
 			f.L1.StringName.InitJSON(fd.GetJsonName())
+		}
+
+		if f.L1.EditionFeatures.IsLegacyRequired {
+			f.L1.Cardinality = protoreflect.Required
+		}
+
+		if f.L1.Kind == protoreflect.MessageKind && f.L1.EditionFeatures.IsDelimitedEncoded {
+			f.L1.Kind = protoreflect.GroupKind
 		}
 	}
 	return fs, nil
@@ -148,6 +181,7 @@ func (r descsByName) initOneofsFromDescriptorProto(ods []*descriptorpb.OneofDesc
 		if o.L0, err = r.makeBase(o, parent, od.GetName(), i, sb); err != nil {
 			return nil, err
 		}
+		o.L1.EditionFeatures = mergeEditionFeatures(parent, od.GetOptions().GetFeatures())
 		if opts := od.GetOptions(); opts != nil {
 			opts = proto.Clone(opts).(*descriptorpb.OneofOptions)
 			o.L1.Options = func() protoreflect.ProtoMessage { return opts }
@@ -164,10 +198,13 @@ func (r descsByName) initExtensionDeclarations(xds []*descriptorpb.FieldDescript
 		if x.L0, err = r.makeBase(x, parent, xd.GetName(), i, sb); err != nil {
 			return nil, err
 		}
+		x.L1.EditionFeatures = mergeEditionFeatures(parent, xd.GetOptions().GetFeatures())
 		if opts := xd.GetOptions(); opts != nil {
 			opts = proto.Clone(opts).(*descriptorpb.FieldOptions)
 			x.L2.Options = func() protoreflect.ProtoMessage { return opts }
-			x.L2.IsPacked = opts.GetPacked()
+			if opts.Packed != nil {
+				x.L1.EditionFeatures.IsPacked = opts.GetPacked()
+			}
 		}
 		x.L1.Number = protoreflect.FieldNumber(xd.GetNumber())
 		x.L1.Cardinality = protoreflect.Cardinality(xd.GetLabel())

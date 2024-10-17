@@ -51,6 +51,8 @@ type UnmarshalOptions struct {
 
 // Unmarshal parses the wire-format message in b and places the result in m.
 // The provided message must be mutable (e.g., a non-nil pointer to a message).
+//
+// See the [UnmarshalOptions] type if you need more control.
 func Unmarshal(b []byte, m Message) error {
 	_, err := UnmarshalOptions{RecursionLimit: protowire.DefaultRecursionLimit}.unmarshal(b, m.ProtoReflect())
 	return err
@@ -69,7 +71,7 @@ func (o UnmarshalOptions) Unmarshal(b []byte, m Message) error {
 // UnmarshalState parses a wire-format message and places the result in m.
 //
 // This method permits fine-grained control over the unmarshaler.
-// Most users should use Unmarshal instead.
+// Most users should use [Unmarshal] instead.
 func (o UnmarshalOptions) UnmarshalState(in protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
 	if o.RecursionLimit == 0 {
 		o.RecursionLimit = protowire.DefaultRecursionLimit

@@ -5,6 +5,7 @@
 package filedesc
 
 import (
+	"fmt"
 	"sync"
 
 	"google.golang.org/protobuf/encoding/protowire"
@@ -98,6 +99,7 @@ func (fd *File) unmarshalSeed(b []byte) {
 	var prevField protoreflect.FieldNumber
 	var numEnums, numMessages, numExtensions, numServices int
 	var posEnums, posMessages, posExtensions, posServices int
+	var options []byte
 	b0 := b
 	for len(b) > 0 {
 		num, typ, n := protowire.ConsumeTag(b)
@@ -111,8 +113,12 @@ func (fd *File) unmarshalSeed(b []byte) {
 				switch string(v) {
 				case "proto2":
 					fd.L1.Syntax = protoreflect.Proto2
+					fd.L1.Edition = EditionProto2
 				case "proto3":
 					fd.L1.Syntax = protoreflect.Proto3
+					fd.L1.Edition = EditionProto3
+				case "editions":
+					fd.L1.Syntax = protoreflect.Editions
 				default:
 					panic("invalid syntax")
 				}
@@ -120,6 +126,8 @@ func (fd *File) unmarshalSeed(b []byte) {
 				fd.L1.Path = sb.MakeString(v)
 			case genid.FileDescriptorProto_Package_field_number:
 				fd.L1.Package = protoreflect.FullName(sb.MakeString(v))
+			case genid.FileDescriptorProto_Options_field_number:
+				options = v
 			case genid.FileDescriptorProto_EnumType_field_number:
 				if prevField != genid.FileDescriptorProto_EnumType_field_number {
 					if numEnums > 0 {
@@ -154,6 +162,13 @@ func (fd *File) unmarshalSeed(b []byte) {
 				numServices++
 			}
 			prevField = num
+		case protowire.VarintType:
+			v, m := protowire.ConsumeVarint(b)
+			b = b[m:]
+			switch num {
+			case genid.FileDescriptorProto_Edition_field_number:
+				fd.L1.Edition = Edition(v)
+			}
 		default:
 			m := protowire.ConsumeFieldValue(num, typ, b)
 			b = b[m:]
@@ -164,6 +179,14 @@ func (fd *File) unmarshalSeed(b []byte) {
 	// If syntax is missing, it is assumed to be proto2.
 	if fd.L1.Syntax == 0 {
 		fd.L1.Syntax = protoreflect.Proto2
+		fd.L1.Edition = EditionProto2
+	}
+
+	fd.L1.EditionFeatures = getFeaturesFor(fd.L1.Edition)
+
+	// Parse editions features from options if any
+	if options != nil {
+		fd.unmarshalSeedOptions(options)
 	}
 
 	// Must allocate all declarations before parsing each descriptor type
@@ -219,10 +242,33 @@ func (fd *File) unmarshalSeed(b []byte) {
 	}
 }
 
+func (fd *File) unmarshalSeedOptions(b []byte) {
+	for b := b; len(b) > 0; {
+		num, typ, n := protowire.ConsumeTag(b)
+		b = b[n:]
+		switch typ {
+		case protowire.BytesType:
+			v, m := protowire.ConsumeBytes(b)
+			b = b[m:]
+			switch num {
+			case genid.FileOptions_Features_field_number:
+				if fd.Syntax() != protoreflect.Editions {
+					panic(fmt.Sprintf("invalid descriptor: using edition features in a proto with syntax %s", fd.Syntax()))
+				}
+				fd.L1.EditionFeatures = unmarshalFeatureSet(v, fd.L1.EditionFeatures)
+			}
+		default:
+			m := protowire.ConsumeFieldValue(num, typ, b)
+			b = b[m:]
+		}
+	}
+}
+
 func (ed *Enum) unmarshalSeed(b []byte, sb *strs.Builder, pf *File, pd protoreflect.Descriptor, i int) {
 	ed.L0.ParentFile = pf
 	ed.L0.Parent = pd
 	ed.L0.Index = i
+	ed.L1.EditionFeatures = featuresFromParentDesc(ed.Parent())
 
 	var numValues int
 	for b := b; len(b) > 0; {
@@ -275,6 +321,7 @@ func (md *Message) unmarshalSeed(b []byte, sb *strs.Builder, pf *File, pd protor
 	md.L0.ParentFile = pf
 	md.L0.Parent = pd
 	md.L0.Index = i
+	md.L1.EditionFeatures = featuresFromParentDesc(md.Parent())
 
 	var prevField protoreflect.FieldNumber
 	var numEnums, numMessages, numExtensions int
@@ -380,6 +427,13 @@ func (md *Message) unmarshalSeedOptions(b []byte) {
 			case genid.MessageOptions_MessageSetWireFormat_field_number:
 				md.L1.IsMessageSet = protowire.DecodeBool(v)
 			}
+		case protowire.BytesType:
+			v, m := protowire.ConsumeBytes(b)
+			b = b[m:]
+			switch num {
+			case genid.MessageOptions_Features_field_number:
+				md.L1.EditionFeatures = unmarshalFeatureSet(v, md.L1.EditionFeatures)
+			}
 		default:
 			m := protowire.ConsumeFieldValue(num, typ, b)
 			b = b[m:]
@@ -391,6 +445,7 @@ func (xd *Extension) unmarshalSeed(b []byte, sb *strs.Builder, pf *File, pd prot
 	xd.L0.ParentFile = pf
 	xd.L0.Parent = pd
 	xd.L0.Index = i
+	xd.L1.EditionFeatures = featuresFromParentDesc(pd)
 
 	for len(b) > 0 {
 		num, typ, n := protowire.ConsumeTag(b)
@@ -415,6 +470,38 @@ func (xd *Extension) unmarshalSeed(b []byte, sb *strs.Builder, pf *File, pd prot
 				xd.L0.FullName = appendFullName(sb, pd.FullName(), v)
 			case genid.FieldDescriptorProto_Extendee_field_number:
 				xd.L1.Extendee = PlaceholderMessage(makeFullName(sb, v))
+			case genid.FieldDescriptorProto_Options_field_number:
+				xd.unmarshalOptions(v)
+			}
+		default:
+			m := protowire.ConsumeFieldValue(num, typ, b)
+			b = b[m:]
+		}
+	}
+
+	if xd.L1.Kind == protoreflect.MessageKind && xd.L1.EditionFeatures.IsDelimitedEncoded {
+		xd.L1.Kind = protoreflect.GroupKind
+	}
+}
+
+func (xd *Extension) unmarshalOptions(b []byte) {
+	for len(b) > 0 {
+		num, typ, n := protowire.ConsumeTag(b)
+		b = b[n:]
+		switch typ {
+		case protowire.VarintType:
+			v, m := protowire.ConsumeVarint(b)
+			b = b[m:]
+			switch num {
+			case genid.FieldOptions_Packed_field_number:
+				xd.L1.EditionFeatures.IsPacked = protowire.DecodeBool(v)
+			}
+		case protowire.BytesType:
+			v, m := protowire.ConsumeBytes(b)
+			b = b[m:]
+			switch num {
+			case genid.FieldOptions_Features_field_number:
+				xd.L1.EditionFeatures = unmarshalFeatureSet(v, xd.L1.EditionFeatures)
 			}
 		default:
 			m := protowire.ConsumeFieldValue(num, typ, b)
@@ -447,7 +534,7 @@ func (sd *Service) unmarshalSeed(b []byte, sb *strs.Builder, pf *File, pd protor
 }
 
 var nameBuilderPool = sync.Pool{
-	New: func() interface{} { return new(strs.Builder) },
+	New: func() any { return new(strs.Builder) },
 }
 
 func getBuilder() *strs.Builder {

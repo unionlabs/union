@@ -49,24 +49,25 @@ func NewDelimitedReader(r io.Reader, maxSize int) ReadCloser {
 	if c, ok := r.(io.Closer); ok {
 		closer = c
 	}
-	return &varintReader{r, nil, maxSize, closer}
+	return &varintReader{r, newByteReader(r), nil, maxSize, closer}
 }
 
 type varintReader struct {
-	r       io.Reader
-	buf     []byte
-	maxSize int
-	closer  io.Closer
-}
-
-func (r *varintReader) ReadMsg(msg proto.Message) (int, error) {
+	r io.Reader
 	// ReadUvarint needs an io.ByteReader, and we also need to keep track of the
 	// number of bytes read, so we use our own byteReader. This can't be
 	// buffered, so the caller should pass a buffered io.Reader to avoid poor
 	// performance.
-	byteReader := newByteReader(r.r)
-	l, err := binary.ReadUvarint(byteReader)
-	n := byteReader.bytesRead
+	byteReader *byteReader
+	buf        []byte
+	maxSize    int
+	closer     io.Closer
+}
+
+func (r *varintReader) ReadMsg(msg proto.Message) (int, error) {
+	r.byteReader.resetBytesRead()
+	l, err := binary.ReadUvarint(r.byteReader)
+	n := r.byteReader.bytesRead
 	if err != nil {
 		return n, err
 	}

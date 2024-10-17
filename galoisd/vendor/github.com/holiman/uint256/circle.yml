@@ -19,14 +19,14 @@ commands:
 
 jobs:
 
-  go120:
+  go122:
     docker:
-      - image: cimg/go:1.20
+      - image: cimg/go:1.22
     steps:
       - run:
           name: "Install tools"
           command: |
-            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.51.1
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.58.0
       - checkout
       - run:
           name: "Lint"
@@ -44,8 +44,14 @@ jobs:
       - run:
           name: "Fuzzing"
           command: |
-            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzBase10StringCompare -fuzztime 30s
-            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzDecimal -fuzztime 30s
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzBinaryOperations -fuzztime 20s
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzCompareOperations -fuzztime 20s
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzTernaryOperations -fuzztime 20s
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzBase10StringCompare -fuzztime 10s
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzDecimal -fuzztime 10s
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzFloat64 -fuzztime 10s
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzLog10 -fuzztime 10s
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzSetString -fuzztime 10s
       - save_cache:
           key: corpus-v3-{{ epoch }}
           paths:
@@ -65,7 +71,7 @@ jobs:
 
   bigendian:
     docker:
-      - image: circleci/buildpack-deps:bullseye
+      - image: cimg/base:current
     steps:
       - run:
           name: "Install QEMU"
@@ -76,6 +82,20 @@ jobs:
           name: "Test (PPC64 emulation)"
           command: qemu-ppc64-static uint256.test.ppc64 -test.v
 
+  go121:
+    docker:
+      - image: cimg/go:1.21
+    steps:
+      - checkout
+      - test
+
+  go120:
+    docker:
+      - image: cimg/go:1.20
+    steps:
+      - checkout
+      - test
+
   go119:
     docker:
       - image: cimg/go:1.19
@@ -85,13 +105,16 @@ jobs:
 
 
 
-
 workflows:
   version: 2
   uint256:
     jobs:
-      - go120
       - go119
+      - go120
+      - go121
+      - go122:
+          requires:
+            - go121
       - bigendian:
           requires:
-            - go120
+            - go122

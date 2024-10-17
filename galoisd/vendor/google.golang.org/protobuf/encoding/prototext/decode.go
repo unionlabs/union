@@ -21,7 +21,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
-// Unmarshal reads the given []byte into the given proto.Message.
+// Unmarshal reads the given []byte into the given [proto.Message].
 // The provided message must be mutable (e.g., a non-nil pointer to a message).
 func Unmarshal(b []byte, m proto.Message) error {
 	return UnmarshalOptions{}.Unmarshal(b, m)
@@ -51,7 +51,7 @@ type UnmarshalOptions struct {
 	}
 }
 
-// Unmarshal reads the given []byte and populates the given proto.Message
+// Unmarshal reads the given []byte and populates the given [proto.Message]
 // using options in the UnmarshalOptions object.
 // The provided message must be mutable (e.g., a non-nil pointer to a message).
 func (o UnmarshalOptions) Unmarshal(b []byte, m proto.Message) error {
@@ -84,7 +84,7 @@ type decoder struct {
 }
 
 // newError returns an error object with position info.
-func (d decoder) newError(pos int, f string, x ...interface{}) error {
+func (d decoder) newError(pos int, f string, x ...any) error {
 	line, column := d.Position(pos)
 	head := fmt.Sprintf("(line %d:%d): ", line, column)
 	return errors.New(head+f, x...)
@@ -96,7 +96,7 @@ func (d decoder) unexpectedTokenError(tok text.Token) error {
 }
 
 // syntaxError returns a syntax error for given position.
-func (d decoder) syntaxError(pos int, f string, x ...interface{}) error {
+func (d decoder) syntaxError(pos int, f string, x ...any) error {
 	line, column := d.Position(pos)
 	head := fmt.Sprintf("syntax error (line %d:%d): ", line, column)
 	return errors.New(head+f, x...)
@@ -739,7 +739,9 @@ func (d decoder) skipValue() error {
 			case text.ListClose:
 				return nil
 			case text.MessageOpen:
-				return d.skipMessageValue()
+				if err := d.skipMessageValue(); err != nil {
+					return err
+				}
 			default:
 				// Skip items. This will not validate whether skipped values are
 				// of the same type or not, same behavior as C++

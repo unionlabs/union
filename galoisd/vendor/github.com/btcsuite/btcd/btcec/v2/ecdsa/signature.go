@@ -37,10 +37,20 @@ var (
 	oneInitializer = []byte{0x01}
 )
 
-// MinSigLen is the minimum length of a DER encoded signature and is when both R
-// and S are 1 byte each.
-// 0x30 + <1-byte> + 0x02 + 0x01 + <byte> + 0x2 + 0x01 + <byte>
-const MinSigLen = 8
+const (
+	// MinSigLen is the minimum length of a DER encoded signature and is when both R
+	// and S are 1 byte each.
+	// 0x30 + <1-byte> + 0x02 + 0x01 + <byte> + 0x2 + 0x01 + <byte>
+	MinSigLen = 8
+
+	// MaxSigLen is the maximum length of a DER encoded signature and is
+	// when both R and S are 33 bytes each.  It is 33 bytes because a
+	// 256-bit integer requires 32 bytes and an additional leading null byte
+	// might be required if the high bit is set in the value.
+	//
+	// 0x30 + <1-byte> + 0x02 + 0x21 + <33 bytes> + 0x2 + 0x21 + <33 bytes>
+	MaxSigLen = 72
+)
 
 // canonicalPadding checks whether a big-endian encoded integer could
 // possibly be misinterpreted as a negative number (even though OpenSSL
@@ -68,9 +78,15 @@ func parseSig(sigStr []byte, der bool) (*Signature, error) {
 	// 0x30 <length of whole message> <0x02> <length of R> <R> 0x2
 	// <length of S> <S>.
 
-	if len(sigStr) < MinSigLen {
+	// The signature must adhere to the minimum and maximum allowed length.
+	totalSigLen := len(sigStr)
+	if totalSigLen < MinSigLen {
 		return nil, errors.New("malformed signature: too short")
 	}
+	if der && totalSigLen > MaxSigLen {
+		return nil, errors.New("malformed signature: too long")
+	}
+
 	// 0x30
 	index := 0
 	if sigStr[index] != 0x30 {
@@ -196,7 +212,7 @@ func parseSig(sigStr []byte, der bool) (*Signature, error) {
 }
 
 // ParseSignature parses a signature in BER format for the curve type `curve'
-// into a Signature type, perfoming some basic sanity checks.  If parsing
+// into a Signature type, performing some basic sanity checks.  If parsing
 // according to the more strict DER format is needed, use ParseDERSignature.
 func ParseSignature(sigStr []byte) (*Signature, error) {
 	return parseSig(sigStr, false)
@@ -217,9 +233,9 @@ func ParseDERSignature(sigStr []byte) (*Signature, error) {
 // <(byte of 27+public key solution)+4 if compressed >< padded bytes for signature R><padded bytes for signature S>
 // where the R and S parameters are padde up to the bitlengh of the curve.
 func SignCompact(key *btcec.PrivateKey, hash []byte,
-	isCompressedKey bool) ([]byte, error) {
+	isCompressedKey bool) []byte {
 
-	return secp_ecdsa.SignCompact(key, hash, isCompressedKey), nil
+	return secp_ecdsa.SignCompact(key, hash, isCompressedKey)
 }
 
 // RecoverCompact verifies the compact signature "signature" of "hash" for the

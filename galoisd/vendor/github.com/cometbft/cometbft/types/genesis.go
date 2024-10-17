@@ -9,18 +9,19 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
+	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtos "github.com/cometbft/cometbft/libs/os"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 const (
 	// MaxChainIDLen is a maximum length of the chain ID.
-	MaxChainIDLen = 50
+	// This is specific to the Bn254 curve where we want it to fit the scalar field (32 bytes modulus).
+	MaxChainIDLen = 31
 )
 
-//------------------------------------------------------------
+// ------------------------------------------------------------
 // core types for a genesis definition
 // NOTE: any changes to the genesis definition should
 // be reflected in the documentation:
@@ -51,10 +52,10 @@ func (genDoc *GenesisDoc) SaveAs(file string) error {
 	if err != nil {
 		return err
 	}
-	return cmtos.WriteFile(file, genDocBytes, 0644)
+	return cmtos.WriteFile(file, genDocBytes, 0o644)
 }
 
-// ValidatorHash returns the hash of the validator set contained in the GenesisDoc
+// ValidatorHash returns the hash of the validator set contained in the GenesisDoc.
 func (genDoc *GenesisDoc) ValidatorHash() []byte {
 	vals := make([]*Validator, len(genDoc.Validators))
 	for i, v := range genDoc.Validators {
@@ -65,7 +66,7 @@ func (genDoc *GenesisDoc) ValidatorHash() []byte {
 }
 
 // ValidateAndComplete checks that all necessary fields are present
-// and fills in defaults for optional fields left empty
+// and fills in defaults for optional fields left empty.
 func (genDoc *GenesisDoc) ValidateAndComplete() error {
 	if genDoc.ChainID == "" {
 		return errors.New("genesis doc must include non-empty chain_id")
@@ -105,7 +106,7 @@ func (genDoc *GenesisDoc) ValidateAndComplete() error {
 	return nil
 }
 
-//------------------------------------------------------------
+// ------------------------------------------------------------
 // Make genesis state from file
 
 // GenesisDocFromJSON unmarshalls JSON data into a GenesisDoc.

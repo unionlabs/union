@@ -27,8 +27,8 @@ const (
 	sizeFp                   = fp.Bytes
 	sizePublicKey            = sizeFp
 	sizePrivateKey           = sizeFr + sizePublicKey
-	PrivKeyName              = "tendermint/PrivKeyBn254"
-	PubKeyName               = "tendermint/PubKeyBn254"
+	PrivKeyName              = "cometbft/PrivKeyBn254"
+	PubKeyName               = "cometbft/PubKeyBn254"
 	KeyType                  = "bn254"
 	CometblsSigDST           = "COMETBLS_SIG_BN254G2_XMDMIMC256"
 	CometblsHMACKey          = "CometBLS"
