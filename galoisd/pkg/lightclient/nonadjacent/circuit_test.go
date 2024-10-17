@@ -9,13 +9,11 @@ import (
 	"math/rand"
 	"time"
 
-	"cosmossdk.io/math"
+	tmtypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
-	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/types"
 	comettypes "github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 
 	ce "github.com/cometbft/cometbft/crypto/encoding"
@@ -212,7 +210,7 @@ func toValidator(pubKey []byte, power int64) (*tmtypes.SimpleValidator, error) {
 	}
 	return &tmtypes.SimpleValidator{
 		PubKey:      &protoPK,
-		VotingPower: sdk.TokensToConsensusPower(math.NewInt(power), sdk.DefaultPowerReduction),
+		VotingPower: 6,
 	}, nil
 }
 
