@@ -17,7 +17,7 @@ import { truncate } from "$lib/utilities/format"
 let cosmosBlocks = createQuery({
   queryKey: ["cosmos-blocks"],
   refetchInterval: 6_000,
-  queryFn: async () => request(URLS.GRAPHQL, cosmosBlocksQuery, { limit: 100 }),
+  queryFn: async () => request(URLS().GRAPHQL, cosmosBlocksQuery, { limit: 100 }),
   select: ({ data }) => {
     if (!data) raise("No data found in cosmos blocks")
     return data.map(block => ({

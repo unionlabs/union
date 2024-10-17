@@ -74,7 +74,7 @@ const requestStrdFromFaucet = async () => {
 
   if ($strideFaucetState.kind === "SUBMITTING") {
     try {
-      const result = await request(URLS.GRAPHQL, strideFaucetMutation, {
+      const result = await request(URLS().GRAPHQL, strideFaucetMutation, {
         address: $strideAddress,
         captchaToken: $strideFaucetState.captchaToken
       })

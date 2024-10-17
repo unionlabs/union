@@ -32,7 +32,7 @@ let transfers = createQuery({
   refetchInterval: query => (query.state.data?.length === 0 ? 1_000 : false), // fetch every second until we have the transaction
   placeholderData: (previousData, _) => previousData,
   queryFn: async () => {
-    const response = await request(URLS.GRAPHQL, transfersBySourceHashBaseQueryDocument, {
+    const response = await request(URLS().GRAPHQL, transfersBySourceHashBaseQueryDocument, {
       source_transaction_hash: source
     })
 
@@ -120,7 +120,7 @@ let tracesAndHops = createQuery({
   placeholderData: (previousData, _) => previousData,
   queryFn: async () =>
     (
-      await request(URLS.GRAPHQL, transfersBySourceHashTracesAndHopsQueryDocument, {
+      await request(URLS().GRAPHQL, transfersBySourceHashTracesAndHopsQueryDocument, {
         source_transaction_hash: source
       })
     ).v1_transfers
