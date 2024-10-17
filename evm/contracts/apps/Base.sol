@@ -42,7 +42,7 @@ abstract contract IBCAppBase is IIBCModule {
         IBCChannelOrder,
         uint32,
         uint32,
-        bytes32,
+        string calldata,
         address
     ) external virtual override onlyIBC {}
 
@@ -56,8 +56,8 @@ abstract contract IBCAppBase is IIBCModule {
         uint32,
         uint32,
         uint32,
-        bytes32,
-        bytes32,
+        string calldata,
+        string calldata,
         address
     ) external virtual override onlyIBC {}
 
@@ -69,7 +69,7 @@ abstract contract IBCAppBase is IIBCModule {
     function onChanOpenAck(
         uint32,
         uint32,
-        bytes32,
+        string calldata,
         address
     ) external virtual override onlyIBC {}
 

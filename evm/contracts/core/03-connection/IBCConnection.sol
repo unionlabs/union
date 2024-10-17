@@ -7,33 +7,23 @@ import "../03-connection/IIBCConnection.sol";
 
 library IBCConnectionLib {
     event ConnectionOpenInit(
-        uint32 connectionId,
-        string clientType,
-        uint32 clientId,
-        string counterpartyClientType,
-        uint32 counterpartyClientId
+        uint32 connectionId, uint32 clientId, uint32 counterpartyClientId
     );
     event ConnectionOpenTry(
         uint32 connectionId,
-        string clientType,
         uint32 clientId,
-        string counterpartyClientType,
         uint32 counterpartyClientId,
         uint32 counterpartyConnectionId
     );
     event ConnectionOpenAck(
         uint32 connectionId,
-        string clientType,
         uint32 clientId,
-        string counterpartyClientType,
         uint32 counterpartyClientId,
         uint32 counterpartyConnectionId
     );
     event ConnectionOpenConfirm(
         uint32 connectionId,
-        string clientType,
         uint32 clientId,
-        string counterpartyClientType,
         uint32 counterpartyClientId,
         uint32 counterpartyConnectionId
     );
@@ -52,18 +42,12 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
     ) external override returns (uint32) {
         uint32 connectionId = generateConnectionIdentifier();
         IBCConnection storage connection = connections[connectionId];
-        connection.clientType = msg_.clientType;
         connection.clientId = msg_.clientId;
         connection.state = IBCConnectionState.Init;
-        connection.counterpartyClientType = msg_.counterpartyClientType;
         connection.counterpartyClientId = msg_.counterpartyClientId;
         commitConnection(connectionId, connection);
         emit IBCConnectionLib.ConnectionOpenInit(
-            connectionId,
-            msg_.clientType,
-            msg_.clientId,
-            msg_.counterpartyClientType,
-            msg_.counterpartyClientId
+            connectionId, msg_.clientId, msg_.counterpartyClientId
         );
         return connectionId;
     }
@@ -77,19 +61,15 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
     ) external override returns (uint32) {
         uint32 connectionId = generateConnectionIdentifier();
         IBCConnection storage connection = connections[connectionId];
-        connection.clientType = msg_.clientType;
         connection.clientId = msg_.clientId;
         connection.state = IBCConnectionState.TryOpen;
-        connection.counterpartyClientType = msg_.counterpartyClientType;
         connection.counterpartyClientId = msg_.counterpartyClientId;
         connection.counterpartyConnectionId = msg_.counterpartyConnectionId;
         IBCConnection memory expectedConnection = IBCConnection({
             state: IBCConnectionState.Init,
             clientId: msg_.counterpartyClientId,
-            clientType: msg_.counterpartyClientType,
             counterpartyClientId: msg_.clientId,
-            counterpartyConnectionId: 0,
-            counterpartyClientType: ""
+            counterpartyConnectionId: 0
         });
         if (
             !verifyConnectionState(
@@ -105,9 +85,7 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         commitConnection(connectionId, connection);
         emit IBCConnectionLib.ConnectionOpenTry(
             connectionId,
-            msg_.clientType,
             msg_.clientId,
-            msg_.counterpartyClientType,
             msg_.counterpartyClientId,
             msg_.counterpartyConnectionId
         );
@@ -128,10 +106,8 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         IBCConnection memory expectedConnection = IBCConnection({
             state: IBCConnectionState.TryOpen,
             clientId: connection.counterpartyClientId,
-            clientType: connection.counterpartyClientType,
             counterpartyClientId: connection.clientId,
-            counterpartyConnectionId: msg_.connectionId,
-            counterpartyClientType: connection.clientType
+            counterpartyConnectionId: msg_.connectionId
         });
         if (
             !verifyConnectionState(
@@ -149,9 +125,7 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         commitConnection(msg_.connectionId, connection);
         emit IBCConnectionLib.ConnectionOpenAck(
             msg_.connectionId,
-            connection.clientType,
             connection.clientId,
-            connection.counterpartyClientType,
             connection.counterpartyClientId,
             connection.counterpartyConnectionId
         );
@@ -171,10 +145,8 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         IBCConnection memory expectedConnection = IBCConnection({
             state: IBCConnectionState.Open,
             clientId: connection.counterpartyClientId,
-            clientType: connection.counterpartyClientType,
             counterpartyClientId: connection.clientId,
-            counterpartyConnectionId: msg_.connectionId,
-            counterpartyClientType: connection.clientType
+            counterpartyConnectionId: msg_.connectionId
         });
         if (
             !verifyConnectionState(
@@ -191,9 +163,7 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         commitConnection(msg_.connectionId, connection);
         emit IBCConnectionLib.ConnectionOpenConfirm(
             msg_.connectionId,
-            connection.clientType,
             connection.clientId,
-            connection.counterpartyClientType,
             connection.counterpartyClientId,
             connection.counterpartyConnectionId
         );

@@ -75,7 +75,7 @@ library RelayLib {
 
     IBCChannelOrder public constant ORDER = IBCChannelOrder.Unordered;
 
-    bytes32 public constant VERSION = keccak256("ucs01-relay-1");
+    string public constant VERSION = "ucs01-relay-1";
     bytes1 public constant ACK_SUCCESS = 0x01;
     bytes1 public constant ACK_FAILURE = 0x00;
     uint256 public constant ACK_LENGTH = 1;
@@ -124,9 +124,9 @@ library RelayLib {
     );
 
     function isValidVersion(
-        bytes32 version
+        string calldata version
     ) internal pure returns (bool) {
-        return version == VERSION;
+        return version.eq(VERSION);
     }
 
     function isFromChannel(
@@ -565,7 +565,7 @@ contract UCS01Relay is
         IBCChannelOrder order,
         uint32,
         uint32,
-        bytes32 version,
+        string calldata version,
         address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
@@ -581,8 +581,8 @@ contract UCS01Relay is
         uint32,
         uint32,
         uint32,
-        bytes32 version,
-        bytes32 counterpartyVersion,
+        string calldata version,
+        string calldata counterpartyVersion,
         address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
@@ -599,7 +599,7 @@ contract UCS01Relay is
     function onChanOpenAck(
         uint32,
         uint32,
-        bytes32 counterpartyVersion,
+        string calldata counterpartyVersion,
         address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(counterpartyVersion)) {
