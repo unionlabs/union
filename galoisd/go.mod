@@ -5,7 +5,6 @@ go 1.22.5
 toolchain go1.23.1
 
 require (
-	cosmossdk.io/math v1.2.0
 	github.com/cometbft/cometbft v0.38.2
 	github.com/cometbft/cometbft/api v1.0.0-rc.1
 	github.com/consensys/gnark v0.7.2-0.20230418172633-f83323bdf138
@@ -56,7 +55,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240604185151-ef581f913117 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
-	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
 replace (
@@ -66,4 +64,5 @@ replace (
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6
 	github.com/cosmos/gogoproto => github.com/cosmos/gogoproto v1.4.11
+	github.com/tunabay/go-bitarray => github.com/poisonphang/go-bitarray v0.0.0-20240912214703-d6127bb4d1bd
 )
