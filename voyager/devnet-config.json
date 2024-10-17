@@ -14,13 +14,13 @@
         }
       },
       {
-        "enabled": false,
+        "enabled": true,
         "path": "./target/debug/voyager-chain-module-cosmos-sdk",
         "info": {
           "chain_id": "stargaze-devnet-1"
         },
         "config": {
-          "ws_url": "http://localhost:26657",
+          "ws_url": "http://localhost:26757",
           "grpc_url": "http://localhost:9090"
         }
       },
@@ -51,15 +51,15 @@
     ],
     "consensus": [
       {
-        "enabled": false,
+        "enabled": true,
         "path": "./target/debug/voyager-consensus-module-tendermint",
         "info": {
           "chain_id": "stargaze-devnet-1",
-          "consensus_type": "07-tendermint"
+          "consensus_type": "tendermint"
         },
         "config": {
           "chain_id": "stargaze-devnet-1",
-          "ws_url": "http://localhost:26657",
+          "ws_url": "http://localhost:26757",
           "grpc_url": "http://localhost:9090"
         }
       },
@@ -113,7 +113,7 @@
         }
       },
       {
-        "enabled": true,
+        "enabled": false,
         "path": "./target/debug/voyager-client-module-cometbls",
         "info": {
           "client_type": "cometbls",
@@ -209,7 +209,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
       "config": {
         "chain_id": "stargaze-devnet-1",
@@ -229,7 +229,7 @@
           "gas_multiplier": "1.1",
           "max_gas": 60000000
         },
-        "ws_url": "http://localhost:26657",
+        "ws_url": "http://localhost:26757",
         "grpc_url": "http://localhost:9090"
       }
     },
@@ -334,7 +334,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "path": "./target/debug/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "stargaze-devnet-1",
@@ -356,6 +356,15 @@
       "config": {
         "chain_id": "union-devnet-1",
         "ws_url": "http://localhost:26657",
+        "grpc_url": "http://localhost:9090"
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
+      "config": {
+        "chain_id": "stargaze-devnet-1",
+        "ws_url": "http://localhost:26757",
         "grpc_url": "http://localhost:9090"
       }
     }
