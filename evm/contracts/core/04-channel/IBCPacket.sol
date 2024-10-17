@@ -217,6 +217,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         if (l == 0) {
             revert IBCErrors.ErrNotEnoughPackets();
         }
+        uint32 sourceChannel = packets[0].sourceChannel;
         uint32 destinationChannel = packets[0].destinationChannel;
         IBCChannel storage channel = ensureChannelState(destinationChannel);
         uint32 clientId = ensureConnectionState(channel.connectionId);
@@ -224,11 +225,11 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             bytes32 proofCommitmentKey;
             if (l == 1) {
                 proofCommitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
-                    destinationChannel, IBCPacketLib.commitPacket(packets[0])
+                    sourceChannel, IBCPacketLib.commitPacket(packets[0])
                 );
             } else {
                 proofCommitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
-                    destinationChannel, IBCPacketLib.commitPackets(packets)
+                    sourceChannel, IBCPacketLib.commitPackets(packets)
                 );
             }
             if (
