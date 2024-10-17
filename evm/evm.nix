@@ -449,35 +449,37 @@ _: {
             }
           );
 
-          solidity-coverage =
-            pkgs.runCommand "solidity-coverage"
-              {
-                buildInputs = [
-                  self'.packages.forge
-                  pkgs.lcov
-                ];
-              }
-              ''
-                cp --no-preserve=mode -r ${evmSources}/* .
-                FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
-                lcov --remove ./lcov.info -o ./lcov.info.pruned \
-                  'contracts/Multicall.sol' \
-                  'contracts/clients/Verifier.sol' \
-                  'contracts/apps/ucs/00-pingpong/*' \
-                  'contracts/core/OwnableIBCHandler.sol' \
-                  'contracts/core/24-host/IBCCommitment.sol' \
-                  'contracts/core/25-handler/IBCHandler.sol' \
-                  'tests/*'
-                genhtml lcov.info.pruned -o $out --branch-coverage
-                mv lcov.info.pruned $out/lcov.info
-              '';
-          show-solidity-coverage = pkgs.writeShellApplication {
-            name = "show-solidity-coverage";
-            runtimeInputs = [ ];
-            text = ''
-              xdg-open ${self'.packages.solidity-coverage}/index.html
-            '';
-          };
+          # Stack too deep :)
+          #
+          # solidity-coverage =
+          #   pkgs.runCommand "solidity-coverage"
+          #     {
+          #       buildInputs = [
+          #         self'.packages.forge
+          #         pkgs.lcov
+          #       ];
+          #     }
+          #     ''
+          #       cp --no-preserve=mode -r ${evmSources}/* .
+          #       FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
+          #       lcov --remove ./lcov.info -o ./lcov.info.pruned \
+          #         'contracts/Multicall.sol' \
+          #         'contracts/clients/Verifier.sol' \
+          #         'contracts/apps/ucs/00-pingpong/*' \
+          #         'contracts/core/OwnableIBCHandler.sol' \
+          #         'contracts/core/24-host/IBCCommitment.sol' \
+          #         'contracts/core/25-handler/IBCHandler.sol' \
+          #         'tests/*'
+          #       genhtml lcov.info.pruned -o $out --branch-coverage
+          #       mv lcov.info.pruned $out/lcov.info
+          #     '';
+          # show-solidity-coverage = pkgs.writeShellApplication {
+          #   name = "show-solidity-coverage";
+          #   runtimeInputs = [ ];
+          #   text = ''
+          #     xdg-open ${self'.packages.solidity-coverage}/index.html
+          #   '';
+          # };
 
           hubble-abis =
             let
