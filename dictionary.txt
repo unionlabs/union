@@ -1,4 +1,3 @@
-
 0xbonlulu
 0xc0dejug
 0xkaiserkarel
@@ -656,6 +655,7 @@ headshot
 headshots
 healthcheck
 healthz
+hellwolf
 heredocs
 herumi
 hexdump

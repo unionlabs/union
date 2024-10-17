@@ -163,7 +163,7 @@ _: {
       compilers = pkgs.linkFarm "evm-libraries" [
         {
           name = ".svm/${pkgs.solc.version}/solc-${pkgs.solc.version}";
-          path = "${pkgs.solc}/bin/solc";
+          path = "${pkgs.lib.getExe pkgs.solc}";
         }
       ];
       wrappedForge = pkgs.symlinkJoin {

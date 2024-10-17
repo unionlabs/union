@@ -1,6 +1,10 @@
 {
   description = "Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security and usage in decentralized finance.";
   inputs = {
+    solc = {
+      url = "github:hellwolf/solc.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nixpkgs.url = "github:NixOS/nixpkgs?rev=75a5ebf473cd60148ba9aec0d219f72e5cf52519";
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -169,6 +173,7 @@
       googleapis,
       get-flake,
       wasmd,
+      solc,
       ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -307,9 +312,12 @@
               pkgs = nixpkgs.legacyPackages.${system}.appendOverlays (
                 with inputs;
                 [
+                  solc.overlay
                   rust-overlay.overlays.default
                   foundry.overlay
                   (_: super: {
+                    inherit (self'.packages) devnet-utils;
+
                     go-ethereum = super.go-ethereum.override {
                       buildGoModule =
                         args:
@@ -346,31 +354,20 @@
                       pkgs = super;
                     };
 
-                    inherit (self'.packages) devnet-utils;
                     solc =
                       if system == "aarch64-linux" then
-                        nixpkgs-solc.legacyPackages.${system}.solc.overrideAttrs (
-                          old:
-                          old
-                          // rec {
-                            version = "0.8.27";
-                            src = pkgs.fetchzip {
-                              url = "https://github.com/ethereum/solidity/releases/download/v${version}/solidity_${version}.tar.gz";
-                              sha256 = "sha256-koyoS/MsKpDECtVZ56bkQ6oUOft79HTJl/LZobGLmSk=";
-                            };
-                            postPatch = "";
-                          }
-                        )
-                      else
-                        super.stdenv.mkDerivation rec {
-                          pname = "solc-static";
+                        super.gccStdenv.mkDerivation rec {
+                          pname = "solc";
                           version = "0.8.27";
                           src = pkgs.fetchurl {
-                            url = "https://github.com/ethereum/solidity/releases/download/v${version}/solc-static-linux";
-                            hash = "sha256-uZd9UAwXy6bwAyypOe+YxN7PY2PxnzhtBfsC9wgRUmQ=";
+                            url = "https://github.com/nikitastupin/solc/raw/main/linux/aarch64/solc-v${version}";
+                            hash = "sha256-L5W7foccAyGJmcvINqByiDMJUYPuy0AOaVWKDvahCac=";
                           };
                           dontUnpack = true;
-                          nativeBuildInputs = pkgs.lib.optionals (!super.stdenv.isDarwin) [ super.autoPatchelfHook ];
+                          nativeBuildInputs = [
+                            super.stdenv.cc.cc.lib
+                            super.autoPatchelfHook
+                          ];
                           installPhase = ''
                             runHook preInstall
                             mkdir -p $out/bin
@@ -383,7 +380,9 @@
                             homepage = "https://github.com/ethereum/solidity";
                             license = super.lib.licenses.gpl3;
                           };
-                        };
+                        }
+                      else
+                        super.solc_0_8_27;
                   })
                 ]
               );
