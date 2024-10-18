@@ -1,0 +1,14 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "unionlabs-tracing"
+repository.workspace   = true
+version                = "0.1.0"
+
+[dependencies]
+tracing                      = { workspace = true, features = ["valuable"] }
+tracing-subscriber.workspace = true
+valuable                     = "0.1.0"
+
+[lints]
+workspace = true

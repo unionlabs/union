@@ -97,7 +97,7 @@ pub fn schedule_create_client_checker(
                                         }
                                     };
 
-                                    cs.chain_id
+                                    cs.chain_id.as_str().to_owned()
                                 }
                                 WasmClientType::Tendermint => {
                                     let cs = match unionlabs::ibc::lightclients::tendermint::client_state::ClientState::decode_as::<Proto>(&cs.data) {

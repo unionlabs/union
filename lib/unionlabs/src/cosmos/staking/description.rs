@@ -14,26 +14,31 @@ pub struct Description {
     pub details: String,
 }
 
-impl From<protos::cosmos::staking::v1beta1::Description> for Description {
-    fn from(value: protos::cosmos::staking::v1beta1::Description) -> Self {
-        Self {
-            moniker: value.moniker,
-            identity: value.identity,
-            website: value.website,
-            security_contact: value.security_contact,
-            details: value.details,
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::cosmos::staking::description::Description;
+
+    impl From<protos::cosmos::staking::v1beta1::Description> for Description {
+        fn from(value: protos::cosmos::staking::v1beta1::Description) -> Self {
+            Self {
+                moniker: value.moniker,
+                identity: value.identity,
+                website: value.website,
+                security_contact: value.security_contact,
+                details: value.details,
+            }
         }
     }
-}
 
-impl From<Description> for protos::cosmos::staking::v1beta1::Description {
-    fn from(value: Description) -> Self {
-        Self {
-            moniker: value.moniker,
-            identity: value.identity,
-            website: value.website,
-            security_contact: value.security_contact,
-            details: value.details,
+    impl From<Description> for protos::cosmos::staking::v1beta1::Description {
+        fn from(value: Description) -> Self {
+            Self {
+                moniker: value.moniker,
+                identity: value.identity,
+                website: value.website,
+                security_contact: value.security_contact,
+                details: value.details,
+            }
         }
     }
 }

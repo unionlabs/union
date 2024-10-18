@@ -284,7 +284,7 @@ impl Scroll {
             l1_client_id: self.l1_client_id.to_string(),
             chain_id: self.chain_id(),
             // REVIEW: Should we query the l1 latest slot here?
-            latest_slot: height.revision_height,
+            latest_slot: height.height(),
             latest_batch_index_slot: self.rollup_last_finalized_batch_index_slot,
             frozen_height: Height {
                 revision_number: 0,
@@ -302,9 +302,7 @@ impl Scroll {
         &self,
         height: Height,
     ) -> scroll::consensus_state::ConsensusState {
-        let batch_index = self
-            .batch_index_of_beacon_slot(height.revision_height)
-            .await;
+        let batch_index = self.batch_index_of_beacon_slot(height.height()).await;
         let scroll_height = self.scroll_height_of_batch_index(batch_index).await;
 
         let block = self

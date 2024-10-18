@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use frame_support_procedural::{CloneNoBound, DebugNoBound, DefaultNoBound};
+use derive_where::derive_where;
 use futures::Future;
 use serde::{Deserialize, Serialize};
 
@@ -19,8 +19,13 @@ pub trait Pass<T: QueueMessage>: Send + Sync + Sized {
 /// The result of running an optimization pass. Both `optimize_further` and `ready` are lists of
 /// `(parents, op)`, allowing for correlating new messages with multiple parents (i.e. combining
 /// messages).
-#[derive(DebugNoBound, CloneNoBound, DefaultNoBound, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""))]
+#[derive_where(Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize)]
+#[serde(
+    rename_all = "snake_case",
+    bound(serialize = "", deserialize = ""),
+    deny_unknown_fields
+)]
 pub struct PassResult<T: QueueMessage> {
     /// [`Op`]s that are considered incomplete by this optimization pass and are to be optimized
     /// further.

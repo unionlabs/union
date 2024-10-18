@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    fmt::Debug,
     path::{Path, PathBuf},
     process::Stdio,
     sync::Arc,
@@ -12,19 +13,19 @@ use futures::{
     Future, StreamExt, TryStreamExt,
 };
 use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
-use macros::model;
 use schemars::JsonSchema;
 use serde::Serialize;
 use serde_json::{Map, Value};
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, debug_span, error, info, instrument, trace, warn, Instrument};
-use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
-use voyager_core::ConsensusType;
+use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, ErrorReporter};
+use voyager_core::{ConsensusType, IbcStoreFormat};
 use voyager_vm::{BoxDynError, QueueError};
 
 use crate::{
     core::{ChainId, ClientType, IbcInterface},
+    macros::model,
     module::{
         ChainModuleClient, ChainModuleInfo, ClientModuleClient, ClientModuleInfo,
         ConsensusModuleClient, ConsensusModuleInfo, PluginClient, PluginInfo,
@@ -62,16 +63,25 @@ pub struct Modules {
     chain_consensus_types: HashMap<ChainId<'static>, ConsensusType<'static>>,
 
     client_consensus_types: HashMap<ClientType<'static>, ConsensusType<'static>>,
+
+    client_ibc_store_formats: HashMap<ClientType<'static>, IbcStoreFormat<'static>>,
 }
 
 impl voyager_vm::Context for Context {}
 
-#[derive(macros::Debug, Clone)]
+#[derive(Clone)]
 pub struct ModuleRpcClient {
-    #[debug(skip)]
     client: reconnecting_jsonrpc_ws_client::Client,
     #[allow(dead_code)]
     name: String,
+}
+
+impl Debug for ModuleRpcClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ModuleRpcClient")
+            .field("name", &self.name)
+            .finish_non_exhaustive()
+    }
 }
 
 impl ModuleRpcClient {
@@ -185,6 +195,7 @@ impl Context {
             consensus_modules: Default::default(),
             chain_consensus_types: Default::default(),
             client_consensus_types: Default::default(),
+            client_ibc_store_formats: Default::default(),
         };
 
         let mut plugins = HashMap::default();
@@ -326,6 +337,7 @@ impl Context {
                  client_type,
                  consensus_type,
                  ibc_interface,
+                 ibc_store_format,
              },
              rpc_client| {
                 let prev = modules
@@ -353,6 +365,21 @@ impl Context {
                             client type `{client_type}` is registered \
                             as tracking both `{previous_consensus_type}` \
                             and `{consensus_type}`"
+                        )
+                        .into());
+                    }
+                }
+
+                if let Some(previous_ibc_store_format) = modules
+                    .client_ibc_store_formats
+                    .insert(client_type.clone(), ibc_store_format.clone())
+                {
+                    if &previous_ibc_store_format != ibc_store_format {
+                        return Err(format!(
+                            "inconsistency in client IBC store formats: \
+                            client type `{client_type}` is registered \
+                            as verifying against both `{previous_ibc_store_format}` \
+                            and `{ibc_store_format}`"
                         )
                         .into());
                     }
@@ -499,6 +526,7 @@ impl Modules {
                         consensus_type: self.client_consensus_types[client_type].clone(),
                         client_type: client_type.clone(),
                         ibc_interface,
+                        ibc_store_format: self.client_ibc_store_formats[client_type].clone(),
                     })
             })
             .collect();
@@ -528,6 +556,17 @@ impl Modules {
                 client_type: client_type.clone().into_owned(),
             }
         })
+    }
+
+    pub fn client_ibc_store_format<'a, 'b, 'c: 'a>(
+        &'a self,
+        client_type: &'b ClientType<'c>,
+    ) -> Result<&'a IbcStoreFormat<'static>, ClientModuleNotFound> {
+        self.client_ibc_store_formats
+            .get(client_type)
+            .ok_or_else(|| ClientModuleNotFound::ClientTypeNotFound {
+                client_type: client_type.clone().into_owned(),
+            })
     }
 
     pub fn chain_module<'a, 'b, 'c: 'a>(

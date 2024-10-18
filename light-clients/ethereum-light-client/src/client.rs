@@ -20,26 +20,20 @@ use ics008_wasm_client::{
 };
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
+    encoding::{DecodeAs, Proto},
     ensure,
     ethereum::{ibc_commitment_key, keccak256},
-    google::protobuf::any::Any,
     hash::H256,
     ibc::{
         core::{
             client::{genesis_metadata::GenesisMetadata, height::Height},
             commitment::merkle_path::MerklePath,
         },
-        lightclients::{
-            cometbls,
-            ethereum::{
-                client_state::ClientState, consensus_state::ConsensusState, header::Header,
-                misbehaviour::Misbehaviour, storage_proof::StorageProof,
-            },
-            wasm,
+        lightclients::ethereum::{
+            client_state::ClientState, consensus_state::ConsensusState, header::Header,
+            misbehaviour::Misbehaviour, storage_proof::StorageProof,
         },
     },
-    ics24::Path,
     uint::U256,
 };
 
@@ -47,7 +41,7 @@ use crate::{
     consensus_state::TrustedConsensusState,
     context::LightClientContext,
     custom_query::VerificationContext,
-    errors::{CanonicalizeStoredValueError, Error, InvalidCommitmentKey, StoredValueMismatch},
+    errors::{Error, InvalidCommitmentKey, StoredValueMismatch},
     Config,
 };
 
@@ -274,7 +268,7 @@ impl IbcClient for EthereumLightClient {
         // Some updates can be only for updating the sync committee, therefore the slot number can be
         // smaller. We don't want to save a new state if this is the case.
         let updated_height = core::cmp::max(
-            trusted_height.revision_height,
+            trusted_height.height(),
             consensus_update.attested_header.beacon.slot,
         );
 
@@ -296,10 +290,7 @@ impl IbcClient for EthereumLightClient {
             }
         }
 
-        let updated_height = Height {
-            revision_number: trusted_height.revision_number,
-            revision_height: updated_height,
-        };
+        let updated_height = Height::new_with_revision(trusted_height.revision(), updated_height);
 
         save_consensus_state::<Self>(deps, consensus_state, &updated_height);
 
@@ -322,10 +313,8 @@ impl IbcClient for EthereumLightClient {
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
     ) -> Result<bool, IbcClientError<Self>> {
-        let height = Height {
-            revision_number: 0,
-            revision_height: header.consensus_update.attested_header.beacon.slot,
-        };
+        let height =
+            Height::new_with_revision(0, header.consensus_update.attested_header.beacon.slot);
 
         if let Some(consensus_state) = read_consensus_state::<Self>(deps, &height)? {
             // New header is given with the same height but the storage roots don't match.
@@ -473,7 +462,7 @@ pub fn do_verify_membership(
     check_commitment_key(&path, ibc_commitment_slot, storage_proof.key)?;
 
     // we store the hash of the data, not the data itself to the commitments map
-    let expected_value_hash = keccak256(canonicalize_stored_value(path, raw_value)?);
+    let expected_value_hash = keccak256(raw_value);
 
     let proof_value = H256::from(storage_proof.value.to_be_bytes());
 
@@ -494,38 +483,38 @@ pub fn do_verify_membership(
     .map_err(Error::VerifyStorageProof)
 }
 
-// this is required because ibc-go requires the client state to be a protobuf Any, even though
-// the counterparty (ethereum in this case) stores it as raw bytes. this will no longer be
-// required with ibc-go v9.
-pub fn canonicalize_stored_value(
-    path: String,
-    raw_value: Vec<u8>,
-) -> Result<Vec<u8>, CanonicalizeStoredValueError> {
-    let path = path
-        .parse::<Path>()
-        .map_err(|_| CanonicalizeStoredValueError::UnknownIbcPath(path))?;
+// // this is required because ibc-go requires the client state to be a protobuf Any, even though
+// // the counterparty (ethereum in this case) stores it as raw bytes. this will no longer be
+// // required with ibc-go v9.
+// pub fn canonicalize_stored_value(
+//     path: String,
+//     raw_value: Vec<u8>,
+// ) -> Result<Vec<u8>, CanonicalizeStoredValueError> {
+//     let path = path
+//         .parse::<Path>()
+//         .map_err(|_| CanonicalizeStoredValueError::UnknownIbcPath(path))?;
 
-    let canonical_value = match path {
-        // proto(any<cometbls>) -> ethabi(cometbls)
-        Path::ClientState(_) => {
-            Any::<cometbls::client_state::ClientState>::decode_as::<Proto>(raw_value.as_ref())
-                .map_err(CanonicalizeStoredValueError::CometblsClientStateDecode)?
-                .0
-                .encode_as::<EthAbi>()
-        }
-        // proto(any<wasm<cometbls>>) -> ethabi(cometbls)
-        Path::ClientConsensusState(_) => Any::<
-            wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
-        >::decode_as::<Proto>(raw_value.as_ref())
-        .map_err(CanonicalizeStoredValueError::CometblsConsensusStateDecode)?
-        .0
-        .data
-        .encode_as::<EthAbi>(),
-        _ => raw_value,
-    };
+//     let canonical_value = match path {
+//         // proto(any<cometbls>) -> ethabi(cometbls)
+//         Path::ClientState(_) => {
+//             Any::<cometbls::client_state::ClientState>::decode_as::<Proto>(raw_value.as_ref())
+//                 .map_err(CanonicalizeStoredValueError::CometblsClientStateDecode)?
+//                 .0
+//                 .encode_as::<EthAbi>()
+//         }
+//         // proto(any<wasm<cometbls>>) -> ethabi(cometbls)
+//         Path::ClientConsensusState(_) => Any::<
+//             wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
+//         >::decode_as::<Proto>(raw_value.as_ref())
+//         .map_err(CanonicalizeStoredValueError::CometblsConsensusStateDecode)?
+//         .0
+//         .data
+//         .encode_as::<EthAbi>(),
+//         _ => raw_value,
+//     };
 
-    Ok(canonical_value)
-}
+//     Ok(canonical_value)
+// }
 
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
 pub fn do_verify_non_membership(
@@ -577,9 +566,11 @@ mod test {
     };
     use serde::Deserialize;
     use unionlabs::{
-        encoding::Encode,
+        encoding::{Encode, EncodeAs},
         ethereum::config::Mainnet,
+        google::protobuf::any::Any,
         ibc::{core::connection::connection_end::ConnectionEnd, lightclients::ethereum},
+        id::ClientId,
     };
 
     use super::*;
@@ -599,15 +590,9 @@ mod test {
         expected_data: T,
     }
 
-    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
-        revision_number: 0,
-        revision_height: 3577152,
-    };
+    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height::new_with_revision(0, 3577152);
 
-    const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height {
-        revision_number: 0,
-        revision_height: 3577200,
-    };
+    const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height::new_with_revision(0, 3577200);
 
     lazy_static::lazy_static! {
         static ref UPDATES: Vec<ethereum::header::Header<Mainnet>> = {
@@ -635,7 +620,7 @@ mod test {
             for f in update_files {
                 let mut data: ethereum::header::Header<Mainnet>= serde_json::from_str(&fs::read_to_string(f).unwrap()).unwrap();
                 if prev_height != 0 {
-                    data.trusted_sync_committee.trusted_height.revision_height = prev_height;
+                    *data.trusted_sync_committee.trusted_height.height_mut() = prev_height;
                 }
                 prev_height = data.consensus_update.attested_header.beacon.slot;
                 updates.push(data);
@@ -737,16 +722,16 @@ mod test {
             EthereumLightClient::update_state(deps.as_mut(), env, update.clone()).unwrap();
             // Consensus state is saved to the updated height.
             if update.consensus_update.attested_header.beacon.slot
-                > update.trusted_sync_committee.trusted_height.revision_height
+                > update.trusted_sync_committee.trusted_height.height()
             {
                 // It's a finality update
                 let wasm_consensus_state: WasmConsensusState =
                     read_consensus_state::<EthereumLightClient>(
                         deps.as_ref(),
-                        &Height {
-                            revision_number: 0,
-                            revision_height: update.consensus_update.attested_header.beacon.slot,
-                        },
+                        &Height::new_with_revision(
+                            0,
+                            update.consensus_update.attested_header.beacon.slot,
+                        ),
                     )
                     .unwrap()
                     .unwrap();
@@ -771,16 +756,13 @@ mod test {
             } else {
                 // It's a sync committee update
                 let updated_height = core::cmp::max(
-                    update.trusted_sync_committee.trusted_height.revision_height,
+                    update.trusted_sync_committee.trusted_height.height(),
                     update.consensus_update.attested_header.beacon.slot,
                 );
                 let wasm_consensus_state: WasmConsensusState =
                     read_consensus_state::<EthereumLightClient>(
                         deps.as_ref(),
-                        &Height {
-                            revision_number: 0,
-                            revision_height: updated_height,
-                        },
+                        &Height::new_with_revision(0, updated_height),
                     )
                     .unwrap()
                     .unwrap();
@@ -938,7 +920,7 @@ mod test {
         let proofs = vec![
             {
                 let mut proof = proof.clone();
-                proof.key.0 .0[0] ^= u64::MAX;
+                proof.key = proof.key + U256::from(1);
                 proof
             },
             {
@@ -981,8 +963,7 @@ mod test {
         let (proof, commitment_path, slot, storage_root, mut connection_end) =
             membership_data::<ConnectionEnd>("src/test/memberships/valid_connection_end.json");
 
-        connection_end.client_id =
-            unionlabs::validated::Validated::new("08-client-1".into()).unwrap();
+        connection_end.client_id = ClientId::new(1);
 
         assert!(do_verify_membership(
             commitment_path,

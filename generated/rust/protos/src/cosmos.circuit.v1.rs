@@ -98,91 +98,6 @@ impl ::prost::Name for GenesisState {
         ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
     }
 }
-/// QueryAccountRequest is the request type for the Query/Account RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryAccountRequest {
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryAccountRequest {
-    const NAME: &'static str = "QueryAccountRequest";
-    const PACKAGE: &'static str = "cosmos.circuit.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
-    }
-}
-/// AccountResponse is the response type for the Query/Account RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AccountResponse {
-    #[prost(message, optional, tag = "1")]
-    pub permission: ::core::option::Option<Permissions>,
-}
-impl ::prost::Name for AccountResponse {
-    const NAME: &'static str = "AccountResponse";
-    const PACKAGE: &'static str = "cosmos.circuit.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
-    }
-}
-/// QueryAccountsRequest is the request type for the Query/Accounts RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryAccountsRequest {
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "1")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryAccountsRequest {
-    const NAME: &'static str = "QueryAccountsRequest";
-    const PACKAGE: &'static str = "cosmos.circuit.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
-    }
-}
-/// AccountsResponse is the response type for the Query/Accounts RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AccountsResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub accounts: ::prost::alloc::vec::Vec<GenesisAccountPermissions>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for AccountsResponse {
-    const NAME: &'static str = "AccountsResponse";
-    const PACKAGE: &'static str = "cosmos.circuit.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
-    }
-}
-/// QueryDisableListRequest is the request type for the Query/DisabledList RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryDisabledListRequest {}
-impl ::prost::Name for QueryDisabledListRequest {
-    const NAME: &'static str = "QueryDisabledListRequest";
-    const PACKAGE: &'static str = "cosmos.circuit.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
-    }
-}
-/// DisabledListResponse is the response type for the Query/DisabledList RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DisabledListResponse {
-    #[prost(string, repeated, tag = "1")]
-    pub disabled_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-}
-impl ::prost::Name for DisabledListResponse {
-    const NAME: &'static str = "DisabledListResponse";
-    const PACKAGE: &'static str = "cosmos.circuit.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
-    }
-}
 /// MsgAuthorizeCircuitBreaker defines the Msg/AuthorizeCircuitBreaker request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -286,6 +201,91 @@ pub struct MsgResetCircuitBreakerResponse {
 }
 impl ::prost::Name for MsgResetCircuitBreakerResponse {
     const NAME: &'static str = "MsgResetCircuitBreakerResponse";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
+/// QueryAccountRequest is the request type for the Query/Account RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryAccountRequest {
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryAccountRequest {
+    const NAME: &'static str = "QueryAccountRequest";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
+/// AccountResponse is the response type for the Query/Account RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AccountResponse {
+    #[prost(message, optional, tag = "1")]
+    pub permission: ::core::option::Option<Permissions>,
+}
+impl ::prost::Name for AccountResponse {
+    const NAME: &'static str = "AccountResponse";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
+/// QueryAccountsRequest is the request type for the Query/Accounts RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryAccountsRequest {
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "1")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryAccountsRequest {
+    const NAME: &'static str = "QueryAccountsRequest";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
+/// AccountsResponse is the response type for the Query/Accounts RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AccountsResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub accounts: ::prost::alloc::vec::Vec<GenesisAccountPermissions>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for AccountsResponse {
+    const NAME: &'static str = "AccountsResponse";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
+/// QueryDisableListRequest is the request type for the Query/DisabledList RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryDisabledListRequest {}
+impl ::prost::Name for QueryDisabledListRequest {
+    const NAME: &'static str = "QueryDisabledListRequest";
+    const PACKAGE: &'static str = "cosmos.circuit.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
+    }
+}
+/// DisabledListResponse is the response type for the Query/DisabledList RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DisabledListResponse {
+    #[prost(string, repeated, tag = "1")]
+    pub disabled_list: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+impl ::prost::Name for DisabledListResponse {
+    const NAME: &'static str = "DisabledListResponse";
     const PACKAGE: &'static str = "cosmos.circuit.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)

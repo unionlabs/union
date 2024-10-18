@@ -13,6 +13,7 @@ pub struct ProveRequest {
     pub untrusted_commit: ValidatorSetCommit,
 }
 
+#[cfg(feature = "proto")]
 impl From<ProveRequest> for protos::union::galois::api::v3::ProveRequest {
     fn from(value: ProveRequest) -> Self {
         Self {

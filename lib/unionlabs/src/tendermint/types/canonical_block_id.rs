@@ -8,6 +8,7 @@ pub struct CanonicalBlockId {
     pub part_set_header: CanonicalPartSetHeader,
 }
 
+#[cfg(feature = "proto")]
 impl From<CanonicalBlockId> for protos::tendermint::types::CanonicalBlockId {
     fn from(value: CanonicalBlockId) -> Self {
         Self {

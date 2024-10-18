@@ -30,7 +30,7 @@ pub struct BeaconHeaderData {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BeaconHeaderSignature {
     pub message: BeaconBlockHeader,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }
 
 // #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -136,9 +136,8 @@ pub struct BeaconHeaderSignature {
 
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    bls::BlsSignature,
     ethereum::{config::PresetBaseKind, Version},
-    hash::H256,
+    hash::{H256, H768},
     ibc::lightclients::ethereum::{
         beacon_block_header::BeaconBlockHeader, fork::Fork, fork_parameters::ForkParameters,
         light_client_update::UnboundedLightClientUpdate,

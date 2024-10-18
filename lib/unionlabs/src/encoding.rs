@@ -2,21 +2,28 @@ use core::fmt::Debug;
 
 pub trait Encoding: Send + Sync {}
 
+#[cfg(feature = "ethabi")]
 pub enum EthAbi {}
+#[cfg(feature = "ethabi")]
 impl Encoding for EthAbi {}
 
+#[cfg(feature = "proto")]
 pub enum Proto {}
+#[cfg(feature = "proto")]
 impl Encoding for Proto {}
 
+// TODO: Feature gate this
+#[cfg(feature = "ssz")]
 pub enum Ssz {}
+#[cfg(feature = "ssz")]
 impl Encoding for Ssz {}
 
+#[cfg(feature = "json")]
 pub enum Json {}
+#[cfg(feature = "json")]
 impl Encoding for Json {}
 
-pub enum Bcs {}
-impl Encoding for Bcs {}
-
+#[cfg(feature = "json")]
 impl<T> Encode<Json> for T
 where
     T: serde::Serialize,
@@ -26,6 +33,7 @@ where
     }
 }
 
+#[cfg(feature = "json")]
 impl<T> Decode<Json> for T
 where
     T: serde::de::DeserializeOwned,
@@ -37,9 +45,17 @@ where
     }
 }
 
+#[cfg(feature = "json")]
 static_assertions::assert_impl_all!(u8: Encode<Json>);
+#[cfg(feature = "json")]
 static_assertions::assert_impl_all!(&u8: Encode<Json>);
 
+#[cfg(feature = "bcs")]
+pub enum Bcs {}
+#[cfg(feature = "bcs")]
+impl Encoding for Bcs {}
+
+#[cfg(feature = "bcs")]
 impl<T> Encode<Bcs> for T
 where
     T: serde::Serialize,
@@ -49,6 +65,7 @@ where
     }
 }
 
+#[cfg(feature = "bcs")]
 impl<T> Decode<Bcs> for T
 where
     T: serde::de::DeserializeOwned,
@@ -60,7 +77,9 @@ where
     }
 }
 
+#[cfg(feature = "bcs")]
 static_assertions::assert_impl_all!(u8: Encode<Bcs>);
+#[cfg(feature = "bcs")]
 static_assertions::assert_impl_all!(&u8: Encode<Bcs>);
 
 pub trait Encode<Enc: Encoding>: Sized {

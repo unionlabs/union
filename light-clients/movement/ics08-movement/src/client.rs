@@ -10,20 +10,17 @@ use unionlabs::{
         account::AccountAddress, storage_proof::StorageProof, transaction_info::TransactionInfo,
     },
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    encoding::{Bcs, DecodeAs, EncodeAs as _, Proto},
-    google::protobuf::any::Any,
+    encoding::{DecodeAs, Proto},
     hash::H256,
     ibc::{
         core::{client::height::Height, commitment::merkle_path::MerklePath},
         lightclients::{
-            cometbls,
             movement::{
                 client_state::ClientState, consensus_state::ConsensusState, header::Header,
             },
             wasm,
         },
     },
-    ics24::Path,
 };
 
 use crate::errors::Error;
@@ -181,14 +178,11 @@ impl IbcClient for MovementLightClient {
 
         if header.new_height > client_state.data.latest_block_num {
             client_state.data.latest_block_num = header.new_height;
-            client_state.latest_height.revision_height = header.new_height;
+            *client_state.latest_height.height_mut() = header.new_height;
             save_client_state::<MovementLightClient>(deps.branch(), client_state);
         }
 
-        let update_height = Height {
-            revision_number: 0,
-            revision_height: header.new_height,
-        };
+        let update_height = Height::new(header.new_height);
 
         save_consensus_state::<MovementLightClient>(
             deps,
@@ -276,35 +270,13 @@ fn do_verify_membership(
 ) -> Result<(), IbcClientError<MovementLightClient>> {
     let proof = StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
-    let value = match path
-        .parse::<Path>()
-        .map_err(|_| Error::InvalidIbcPath(path.clone()))?
-    {
-        // proto(any<cometbls>) -> bcs(cometbls)
-        Path::ClientState(_) => {
-            Any::<cometbls::client_state::ClientState>::decode_as::<Proto>(&value)
-                .map_err(Error::CometblsClientStateDecode)?
-                .0
-                .encode_as::<Bcs>()
-        }
-        // proto(any<wasm<cometbls>>) -> bcs(cometbls)
-        Path::ClientConsensusState(_) => Any::<
-            wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
-        >::decode_as::<Proto>(&value)
-        .map_err(Error::CometblsConsensusStateDecode)?
-        .0
-        .data
-        .encode_as::<Bcs>(),
-        _ => value,
-    };
-
     let Some(proof_value) = &proof.state_value else {
         return Err(Error::MembershipProofWithoutValue.into());
     };
 
     // `aptos_std::table` stores the value as bcs encoded
     let given_value = bcs::to_bytes(&value).expect("cannot fail");
-    if proof_value.data() != &given_value {
+    if proof_value.data() != given_value {
         return Err(Error::ProofValueMismatch(proof_value.data().to_vec(), given_value).into());
     }
 

@@ -39,11 +39,6 @@ _: {
                 workspace = true;
                 features = [ "prost-derive" ];
               };
-              ethers = {
-                workspace = true;
-                optional = true;
-                features = [ "rustls" ];
-              };
               serde = {
                 workspace = true;
                 features = [ "derive" ];
@@ -84,10 +79,6 @@ _: {
               std = [
                 "prost/std"
                 "serde/std"
-              ];
-              eth-abi = [
-                "ethers"
-                "std"
               ];
               client = [ "tonic" ];
               json-schema = [ "schemars" ];
@@ -137,10 +128,10 @@ _: {
             sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/tendermint.crypto.rs"
 
             # i can't figure out how to add attributes to the variants directly, possibly related to the issue linked above
-            sed -i 's/Ed25519(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeyEd25519")\]Ed25519(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
-            sed -i 's/Secp256k1(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeySecp256k1")\]Secp256k1(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
-            sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeyBn254")\]Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
-            sed -i 's/Bls12_381(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBls12_381")\]Bls12_381(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
+            sed -i 's/Ed25519(::prost::alloc::vec::Vec<u8>)/#\[cfg_attr(feature = "serde", serde(rename = "tendermint\/PubKeyEd25519"))\]Ed25519(#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
+            sed -i 's/Secp256k1(::prost::alloc::vec::Vec<u8>)/#\[cfg_attr(feature = "serde", serde(rename = "tendermint\/PubKeySecp256k1"))\]Secp256k1(#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
+            sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>)/#\[cfg_attr(feature = "serde", serde(rename = "tendermint\/PubKeyBn254"))\]Bn254(#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
+            sed -i 's/Bls12_381(::prost::alloc::vec::Vec<u8>)/#\[cfg_attr(feature = "serde", serde(rename = "cometbft\/PubKeyBls12_381"))\]Bls12_381(#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
 
 
 
@@ -148,8 +139,8 @@ _: {
             sed -i 's/pub sum: ::core::option::Option<evidence::Sum>,/#\[cfg_attr(feature = "serde", serde(flatten))\]pub sum: ::core::option::Option<evidence::Sum>,/' "./src/tendermint.types.rs"
             sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/tendermint.types.rs"
 
-            sed -i 's/DuplicateVoteEvidence(/#\[serde(rename = "tendermint\/DuplicateVoteEvidence")\]DuplicateVoteEvidence(/' "./src/tendermint.types.rs"
-            sed -i 's/LightClientAttackEvidence(/#\[serde(rename = "tendermint\/DuplicateVoteEvidence")\]LightClientAttackEvidence(/' "./src/tendermint.types.rs"
+            sed -i 's/DuplicateVoteEvidence(/#\[cfg_attr(feature = "serde", serde(rename = "tendermint\/DuplicateVoteEvidence"))\]DuplicateVoteEvidence(/' "./src/tendermint.types.rs"
+            sed -i 's/LightClientAttackEvidence(/#\[cfg_attr(feature = "serde", serde(rename = "tendermint\/DuplicateVoteEvidence"))\]LightClientAttackEvidence(/' "./src/tendermint.types.rs"
           '';
         };
         uniond = rec {
@@ -241,8 +232,6 @@ _: {
           # ord = ''#[derive(Eq, PartialOrd, Ord)]'';
           # eq = ''#[derive(Eq)]'';
 
-          # eth_abi = ''#[cfg_attr(feature = "ethers", derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec))]'';
-
           serde = ''#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]'';
           serde_default = ''#[cfg_attr(feature = "serde", serde(default))]'';
           # serde_flatten = ''#[cfg_attr(feature = "serde", serde(flatten))]'';
@@ -255,7 +244,7 @@ _: {
 
           # jsonschema = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), derive(::schemars::JsonSchema))]'';
           # jsonschema_str = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]'';
-          serde_alias = alias: ''#[serde(alias = "${alias}")]'';
+          serde_alias = alias: ''#[cfg_attr(feature = "serde", serde(alias = "${alias}"))]'';
         in
         {
           type_attribute = {
@@ -449,9 +438,10 @@ _: {
             ".tendermint.types.CommitSig.timestamp" = [
               ''
                 #[cfg_attr(
-                                  feature = "serde",
-                                  serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
-                              )]''
+                    feature = "serde",
+                    serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
+                )]
+              ''
             ];
 
             ".tendermint.version.Consensus.block" = [ serde_string ];

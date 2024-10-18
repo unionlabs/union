@@ -670,484 +670,6 @@ impl ::prost::Name for GenesisState {
         ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
     }
 }
-/// QueryGroupInfoRequest is the Query/GroupInfo request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupInfoRequest {
-    /// group_id is the unique ID of the group.
-    #[prost(uint64, tag = "1")]
-    pub group_id: u64,
-}
-impl ::prost::Name for QueryGroupInfoRequest {
-    const NAME: &'static str = "QueryGroupInfoRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupInfoResponse is the Query/GroupInfo response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupInfoResponse {
-    /// info is the GroupInfo of the group.
-    #[prost(message, optional, tag = "1")]
-    pub info: ::core::option::Option<GroupInfo>,
-}
-impl ::prost::Name for QueryGroupInfoResponse {
-    const NAME: &'static str = "QueryGroupInfoResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupPolicyInfoRequest is the Query/GroupPolicyInfo request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupPolicyInfoRequest {
-    /// address is the account address of the group policy.
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryGroupPolicyInfoRequest {
-    const NAME: &'static str = "QueryGroupPolicyInfoRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupPolicyInfoResponse is the Query/GroupPolicyInfo response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupPolicyInfoResponse {
-    /// info is the GroupPolicyInfo of the group policy.
-    #[prost(message, optional, tag = "1")]
-    pub info: ::core::option::Option<GroupPolicyInfo>,
-}
-impl ::prost::Name for QueryGroupPolicyInfoResponse {
-    const NAME: &'static str = "QueryGroupPolicyInfoResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupMembersRequest is the Query/GroupMembers request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupMembersRequest {
-    /// group_id is the unique ID of the group.
-    #[prost(uint64, tag = "1")]
-    pub group_id: u64,
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryGroupMembersRequest {
-    const NAME: &'static str = "QueryGroupMembersRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupMembersResponse is the Query/GroupMembersResponse response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupMembersResponse {
-    /// members are the members of the group with given group_id.
-    #[prost(message, repeated, tag = "1")]
-    pub members: ::prost::alloc::vec::Vec<GroupMember>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryGroupMembersResponse {
-    const NAME: &'static str = "QueryGroupMembersResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupsByAdminRequest is the Query/GroupsByAdmin request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupsByAdminRequest {
-    /// admin is the account address of a group's admin.
-    #[prost(string, tag = "1")]
-    pub admin: ::prost::alloc::string::String,
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryGroupsByAdminRequest {
-    const NAME: &'static str = "QueryGroupsByAdminRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupsByAdminResponse is the Query/GroupsByAdminResponse response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupsByAdminResponse {
-    /// groups are the groups info with the provided admin.
-    #[prost(message, repeated, tag = "1")]
-    pub groups: ::prost::alloc::vec::Vec<GroupInfo>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryGroupsByAdminResponse {
-    const NAME: &'static str = "QueryGroupsByAdminResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupPoliciesByGroupRequest is the Query/GroupPoliciesByGroup request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupPoliciesByGroupRequest {
-    /// group_id is the unique ID of the group policy's group.
-    #[prost(uint64, tag = "1")]
-    pub group_id: u64,
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryGroupPoliciesByGroupRequest {
-    const NAME: &'static str = "QueryGroupPoliciesByGroupRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupPoliciesByGroupResponse is the Query/GroupPoliciesByGroup response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupPoliciesByGroupResponse {
-    /// group_policies are the group policies info associated with the provided group.
-    #[prost(message, repeated, tag = "1")]
-    pub group_policies: ::prost::alloc::vec::Vec<GroupPolicyInfo>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryGroupPoliciesByGroupResponse {
-    const NAME: &'static str = "QueryGroupPoliciesByGroupResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupPoliciesByAdminRequest is the Query/GroupPoliciesByAdmin request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupPoliciesByAdminRequest {
-    /// admin is the admin address of the group policy.
-    #[prost(string, tag = "1")]
-    pub admin: ::prost::alloc::string::String,
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryGroupPoliciesByAdminRequest {
-    const NAME: &'static str = "QueryGroupPoliciesByAdminRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupPoliciesByAdminResponse is the Query/GroupPoliciesByAdmin response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupPoliciesByAdminResponse {
-    /// group_policies are the group policies info with provided admin.
-    #[prost(message, repeated, tag = "1")]
-    pub group_policies: ::prost::alloc::vec::Vec<GroupPolicyInfo>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryGroupPoliciesByAdminResponse {
-    const NAME: &'static str = "QueryGroupPoliciesByAdminResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryProposalRequest is the Query/Proposal request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryProposalRequest {
-    /// proposal_id is the unique ID of a proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-}
-impl ::prost::Name for QueryProposalRequest {
-    const NAME: &'static str = "QueryProposalRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryProposalResponse is the Query/Proposal response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryProposalResponse {
-    /// proposal is the proposal info.
-    #[prost(message, optional, tag = "1")]
-    pub proposal: ::core::option::Option<Proposal>,
-}
-impl ::prost::Name for QueryProposalResponse {
-    const NAME: &'static str = "QueryProposalResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryProposalsByGroupPolicyRequest is the Query/ProposalByGroupPolicy request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryProposalsByGroupPolicyRequest {
-    /// address is the account address of the group policy related to proposals.
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryProposalsByGroupPolicyRequest {
-    const NAME: &'static str = "QueryProposalsByGroupPolicyRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryProposalsByGroupPolicyResponse is the Query/ProposalByGroupPolicy response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryProposalsByGroupPolicyResponse {
-    /// proposals are the proposals with given group policy.
-    #[prost(message, repeated, tag = "1")]
-    pub proposals: ::prost::alloc::vec::Vec<Proposal>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryProposalsByGroupPolicyResponse {
-    const NAME: &'static str = "QueryProposalsByGroupPolicyResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryVoteByProposalVoterRequest is the Query/VoteByProposalVoter request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryVoteByProposalVoterRequest {
-    /// proposal_id is the unique ID of a proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-    /// voter is a proposal voter account address.
-    #[prost(string, tag = "2")]
-    pub voter: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryVoteByProposalVoterRequest {
-    const NAME: &'static str = "QueryVoteByProposalVoterRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryVoteByProposalVoterResponse is the Query/VoteByProposalVoter response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryVoteByProposalVoterResponse {
-    /// vote is the vote with given proposal_id and voter.
-    #[prost(message, optional, tag = "1")]
-    pub vote: ::core::option::Option<Vote>,
-}
-impl ::prost::Name for QueryVoteByProposalVoterResponse {
-    const NAME: &'static str = "QueryVoteByProposalVoterResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryVotesByProposalRequest is the Query/VotesByProposal request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryVotesByProposalRequest {
-    /// proposal_id is the unique ID of a proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryVotesByProposalRequest {
-    const NAME: &'static str = "QueryVotesByProposalRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryVotesByProposalResponse is the Query/VotesByProposal response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryVotesByProposalResponse {
-    /// votes are the list of votes for given proposal_id.
-    #[prost(message, repeated, tag = "1")]
-    pub votes: ::prost::alloc::vec::Vec<Vote>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryVotesByProposalResponse {
-    const NAME: &'static str = "QueryVotesByProposalResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryVotesByVoterRequest is the Query/VotesByVoter request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryVotesByVoterRequest {
-    /// voter is a proposal voter account address.
-    #[prost(string, tag = "1")]
-    pub voter: ::prost::alloc::string::String,
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryVotesByVoterRequest {
-    const NAME: &'static str = "QueryVotesByVoterRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryVotesByVoterResponse is the Query/VotesByVoter response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryVotesByVoterResponse {
-    /// votes are the list of votes by given voter.
-    #[prost(message, repeated, tag = "1")]
-    pub votes: ::prost::alloc::vec::Vec<Vote>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryVotesByVoterResponse {
-    const NAME: &'static str = "QueryVotesByVoterResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupsByMemberRequest is the Query/GroupsByMember request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupsByMemberRequest {
-    /// address is the group member address.
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryGroupsByMemberRequest {
-    const NAME: &'static str = "QueryGroupsByMemberRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupsByMemberResponse is the Query/GroupsByMember response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupsByMemberResponse {
-    /// groups are the groups info with the provided group member.
-    #[prost(message, repeated, tag = "1")]
-    pub groups: ::prost::alloc::vec::Vec<GroupInfo>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryGroupsByMemberResponse {
-    const NAME: &'static str = "QueryGroupsByMemberResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryTallyResultRequest is the Query/TallyResult request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryTallyResultRequest {
-    /// proposal_id is the unique id of a proposal.
-    #[prost(uint64, tag = "1")]
-    pub proposal_id: u64,
-}
-impl ::prost::Name for QueryTallyResultRequest {
-    const NAME: &'static str = "QueryTallyResultRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryTallyResultResponse is the Query/TallyResult response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryTallyResultResponse {
-    /// tally defines the requested tally.
-    #[prost(message, optional, tag = "1")]
-    pub tally: ::core::option::Option<TallyResult>,
-}
-impl ::prost::Name for QueryTallyResultResponse {
-    const NAME: &'static str = "QueryTallyResultResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupsRequest is the Query/Groups request type.
-///
-/// Since: cosmos-sdk 0.47.1
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupsRequest {
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
-}
-impl ::prost::Name for QueryGroupsRequest {
-    const NAME: &'static str = "QueryGroupsRequest";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
-/// QueryGroupsResponse is the Query/Groups response type.
-///
-/// Since: cosmos-sdk 0.47.1
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGroupsResponse {
-    /// `groups` is all the groups present in state.
-    #[prost(message, repeated, tag = "1")]
-    pub groups: ::prost::alloc::vec::Vec<GroupInfo>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
-}
-impl ::prost::Name for QueryGroupsResponse {
-    const NAME: &'static str = "QueryGroupsResponse";
-    const PACKAGE: &'static str = "cosmos.group.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
-    }
-}
 /// MsgCreateGroup is the Msg/CreateGroup request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1681,6 +1203,484 @@ impl Exec {
             "EXEC_TRY" => Some(Self::Try),
             _ => None,
         }
+    }
+}
+/// QueryGroupInfoRequest is the Query/GroupInfo request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupInfoRequest {
+    /// group_id is the unique ID of the group.
+    #[prost(uint64, tag = "1")]
+    pub group_id: u64,
+}
+impl ::prost::Name for QueryGroupInfoRequest {
+    const NAME: &'static str = "QueryGroupInfoRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupInfoResponse is the Query/GroupInfo response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupInfoResponse {
+    /// info is the GroupInfo of the group.
+    #[prost(message, optional, tag = "1")]
+    pub info: ::core::option::Option<GroupInfo>,
+}
+impl ::prost::Name for QueryGroupInfoResponse {
+    const NAME: &'static str = "QueryGroupInfoResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupPolicyInfoRequest is the Query/GroupPolicyInfo request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupPolicyInfoRequest {
+    /// address is the account address of the group policy.
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryGroupPolicyInfoRequest {
+    const NAME: &'static str = "QueryGroupPolicyInfoRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupPolicyInfoResponse is the Query/GroupPolicyInfo response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupPolicyInfoResponse {
+    /// info is the GroupPolicyInfo of the group policy.
+    #[prost(message, optional, tag = "1")]
+    pub info: ::core::option::Option<GroupPolicyInfo>,
+}
+impl ::prost::Name for QueryGroupPolicyInfoResponse {
+    const NAME: &'static str = "QueryGroupPolicyInfoResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupMembersRequest is the Query/GroupMembers request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupMembersRequest {
+    /// group_id is the unique ID of the group.
+    #[prost(uint64, tag = "1")]
+    pub group_id: u64,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryGroupMembersRequest {
+    const NAME: &'static str = "QueryGroupMembersRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupMembersResponse is the Query/GroupMembersResponse response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupMembersResponse {
+    /// members are the members of the group with given group_id.
+    #[prost(message, repeated, tag = "1")]
+    pub members: ::prost::alloc::vec::Vec<GroupMember>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryGroupMembersResponse {
+    const NAME: &'static str = "QueryGroupMembersResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupsByAdminRequest is the Query/GroupsByAdmin request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupsByAdminRequest {
+    /// admin is the account address of a group's admin.
+    #[prost(string, tag = "1")]
+    pub admin: ::prost::alloc::string::String,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryGroupsByAdminRequest {
+    const NAME: &'static str = "QueryGroupsByAdminRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupsByAdminResponse is the Query/GroupsByAdminResponse response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupsByAdminResponse {
+    /// groups are the groups info with the provided admin.
+    #[prost(message, repeated, tag = "1")]
+    pub groups: ::prost::alloc::vec::Vec<GroupInfo>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryGroupsByAdminResponse {
+    const NAME: &'static str = "QueryGroupsByAdminResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupPoliciesByGroupRequest is the Query/GroupPoliciesByGroup request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupPoliciesByGroupRequest {
+    /// group_id is the unique ID of the group policy's group.
+    #[prost(uint64, tag = "1")]
+    pub group_id: u64,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryGroupPoliciesByGroupRequest {
+    const NAME: &'static str = "QueryGroupPoliciesByGroupRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupPoliciesByGroupResponse is the Query/GroupPoliciesByGroup response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupPoliciesByGroupResponse {
+    /// group_policies are the group policies info associated with the provided group.
+    #[prost(message, repeated, tag = "1")]
+    pub group_policies: ::prost::alloc::vec::Vec<GroupPolicyInfo>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryGroupPoliciesByGroupResponse {
+    const NAME: &'static str = "QueryGroupPoliciesByGroupResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupPoliciesByAdminRequest is the Query/GroupPoliciesByAdmin request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupPoliciesByAdminRequest {
+    /// admin is the admin address of the group policy.
+    #[prost(string, tag = "1")]
+    pub admin: ::prost::alloc::string::String,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryGroupPoliciesByAdminRequest {
+    const NAME: &'static str = "QueryGroupPoliciesByAdminRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupPoliciesByAdminResponse is the Query/GroupPoliciesByAdmin response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupPoliciesByAdminResponse {
+    /// group_policies are the group policies info with provided admin.
+    #[prost(message, repeated, tag = "1")]
+    pub group_policies: ::prost::alloc::vec::Vec<GroupPolicyInfo>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryGroupPoliciesByAdminResponse {
+    const NAME: &'static str = "QueryGroupPoliciesByAdminResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryProposalRequest is the Query/Proposal request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryProposalRequest {
+    /// proposal_id is the unique ID of a proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+}
+impl ::prost::Name for QueryProposalRequest {
+    const NAME: &'static str = "QueryProposalRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryProposalResponse is the Query/Proposal response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryProposalResponse {
+    /// proposal is the proposal info.
+    #[prost(message, optional, tag = "1")]
+    pub proposal: ::core::option::Option<Proposal>,
+}
+impl ::prost::Name for QueryProposalResponse {
+    const NAME: &'static str = "QueryProposalResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryProposalsByGroupPolicyRequest is the Query/ProposalByGroupPolicy request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryProposalsByGroupPolicyRequest {
+    /// address is the account address of the group policy related to proposals.
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryProposalsByGroupPolicyRequest {
+    const NAME: &'static str = "QueryProposalsByGroupPolicyRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryProposalsByGroupPolicyResponse is the Query/ProposalByGroupPolicy response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryProposalsByGroupPolicyResponse {
+    /// proposals are the proposals with given group policy.
+    #[prost(message, repeated, tag = "1")]
+    pub proposals: ::prost::alloc::vec::Vec<Proposal>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryProposalsByGroupPolicyResponse {
+    const NAME: &'static str = "QueryProposalsByGroupPolicyResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryVoteByProposalVoterRequest is the Query/VoteByProposalVoter request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryVoteByProposalVoterRequest {
+    /// proposal_id is the unique ID of a proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    /// voter is a proposal voter account address.
+    #[prost(string, tag = "2")]
+    pub voter: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryVoteByProposalVoterRequest {
+    const NAME: &'static str = "QueryVoteByProposalVoterRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryVoteByProposalVoterResponse is the Query/VoteByProposalVoter response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryVoteByProposalVoterResponse {
+    /// vote is the vote with given proposal_id and voter.
+    #[prost(message, optional, tag = "1")]
+    pub vote: ::core::option::Option<Vote>,
+}
+impl ::prost::Name for QueryVoteByProposalVoterResponse {
+    const NAME: &'static str = "QueryVoteByProposalVoterResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryVotesByProposalRequest is the Query/VotesByProposal request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryVotesByProposalRequest {
+    /// proposal_id is the unique ID of a proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryVotesByProposalRequest {
+    const NAME: &'static str = "QueryVotesByProposalRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryVotesByProposalResponse is the Query/VotesByProposal response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryVotesByProposalResponse {
+    /// votes are the list of votes for given proposal_id.
+    #[prost(message, repeated, tag = "1")]
+    pub votes: ::prost::alloc::vec::Vec<Vote>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryVotesByProposalResponse {
+    const NAME: &'static str = "QueryVotesByProposalResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryVotesByVoterRequest is the Query/VotesByVoter request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryVotesByVoterRequest {
+    /// voter is a proposal voter account address.
+    #[prost(string, tag = "1")]
+    pub voter: ::prost::alloc::string::String,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryVotesByVoterRequest {
+    const NAME: &'static str = "QueryVotesByVoterRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryVotesByVoterResponse is the Query/VotesByVoter response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryVotesByVoterResponse {
+    /// votes are the list of votes by given voter.
+    #[prost(message, repeated, tag = "1")]
+    pub votes: ::prost::alloc::vec::Vec<Vote>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryVotesByVoterResponse {
+    const NAME: &'static str = "QueryVotesByVoterResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupsByMemberRequest is the Query/GroupsByMember request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupsByMemberRequest {
+    /// address is the group member address.
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryGroupsByMemberRequest {
+    const NAME: &'static str = "QueryGroupsByMemberRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupsByMemberResponse is the Query/GroupsByMember response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupsByMemberResponse {
+    /// groups are the groups info with the provided group member.
+    #[prost(message, repeated, tag = "1")]
+    pub groups: ::prost::alloc::vec::Vec<GroupInfo>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryGroupsByMemberResponse {
+    const NAME: &'static str = "QueryGroupsByMemberResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryTallyResultRequest is the Query/TallyResult request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryTallyResultRequest {
+    /// proposal_id is the unique id of a proposal.
+    #[prost(uint64, tag = "1")]
+    pub proposal_id: u64,
+}
+impl ::prost::Name for QueryTallyResultRequest {
+    const NAME: &'static str = "QueryTallyResultRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryTallyResultResponse is the Query/TallyResult response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryTallyResultResponse {
+    /// tally defines the requested tally.
+    #[prost(message, optional, tag = "1")]
+    pub tally: ::core::option::Option<TallyResult>,
+}
+impl ::prost::Name for QueryTallyResultResponse {
+    const NAME: &'static str = "QueryTallyResultResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupsRequest is the Query/Groups request type.
+///
+/// Since: cosmos-sdk 0.47.1
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupsRequest {
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+impl ::prost::Name for QueryGroupsRequest {
+    const NAME: &'static str = "QueryGroupsRequest";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
+    }
+}
+/// QueryGroupsResponse is the Query/Groups response type.
+///
+/// Since: cosmos-sdk 0.47.1
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryGroupsResponse {
+    /// `groups` is all the groups present in state.
+    #[prost(message, repeated, tag = "1")]
+    pub groups: ::prost::alloc::vec::Vec<GroupInfo>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
+impl ::prost::Name for QueryGroupsResponse {
+    const NAME: &'static str = "QueryGroupsResponse";
+    const PACKAGE: &'static str = "cosmos.group.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.group.v1.{}", Self::NAME)
     }
 }
 include!("cosmos.group.v1.tonic.rs");

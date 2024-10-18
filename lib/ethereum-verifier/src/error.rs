@@ -1,9 +1,6 @@
 use milagro_bls::AmclError;
 use trie_db::TrieError;
-use unionlabs::{
-    bls::{BlsPublicKey, BlsSignature},
-    hash::H256,
-};
+use unionlabs::hash::{H256, H384, H768};
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 #[error("invalid merkle branch \
@@ -22,9 +19,9 @@ pub struct InvalidMerkleBranch {
 #[derive(Debug, PartialEq, thiserror::Error, Clone)]
 #[error("signature cannot be verified (public_keys: {public_keys:?}, msg: {msg}, signature: {signature})", msg = serde_utils::to_hex(.msg))]
 pub struct InvalidSignature {
-    pub public_keys: Vec<BlsPublicKey>,
+    pub public_keys: Vec<H384>,
     pub msg: Vec<u8>,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }
 
 #[derive(Debug, PartialEq, thiserror::Error, Clone)]
@@ -93,10 +90,7 @@ pub enum Error {
     #[error(
         "next sync committee ({found}) does not match with the one in the current state ({expected})"
     )]
-    NextSyncCommitteeMismatch {
-        expected: BlsPublicKey,
-        found: BlsPublicKey,
-    },
+    NextSyncCommitteeMismatch { expected: H384, found: H384 },
     #[error("insufficient number of sync committee participants ({0})")]
     InsufficientSyncCommitteeParticipants(usize),
     #[error("bls error ({0:?})")]
@@ -110,7 +104,7 @@ pub enum Error {
     #[error("proof is invalid due to missing value: {v}", v = serde_utils::to_hex(value))]
     ValueMissing { value: Vec<u8> },
     #[error("trie error ({0:?})")]
-    Trie(Box<TrieError<primitive_types::H256, rlp::DecoderError>>),
+    Trie(Box<TrieError<H256, rlp::DecoderError>>),
     // we us debug here because the display implementation for rlp::DecoderError is stupid
     #[error("rlp decoding failed: {0:?}")]
     RlpDecode(#[from] rlp::DecoderError),
@@ -133,8 +127,8 @@ impl From<AmclError> for Error {
 }
 
 // NOTE: Implemented here instead of via #[from] since Box<TrieError<primitive_types::H256, rlp::DecoderError>> doesn't implement core::error::Error
-impl From<Box<TrieError<primitive_types::H256, rlp::DecoderError>>> for Error {
-    fn from(e: Box<TrieError<primitive_types::H256, rlp::DecoderError>>) -> Self {
+impl From<Box<TrieError<H256, rlp::DecoderError>>> for Error {
+    fn from(e: Box<TrieError<H256, rlp::DecoderError>>) -> Self {
         Error::Trie(e)
     }
 }

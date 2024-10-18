@@ -20,17 +20,11 @@ use crate::{
 };
 
 /// Signals that the client is not frozen
-pub const ZERO_HEIGHT: Height = Height {
-    revision_number: 0,
-    revision_height: 0,
-};
+pub const ZERO_HEIGHT: Height = Height::new(0);
 
 /// Signals that a client is frozen. This should be used as the `frozen_height`
 /// when the client is needed to be frozen.
-pub const FROZEN_HEIGHT: Height = Height {
-    revision_number: 0,
-    revision_height: 1,
-};
+pub const FROZEN_HEIGHT: Height = Height::new(0);
 
 pub enum StorageState {
     Occupied(Vec<u8>),
