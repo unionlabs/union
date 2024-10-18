@@ -4,7 +4,9 @@ import { GraphiQL, type GraphiQLProps } from "graphiql"
 import { createGraphiQLFetcher } from "@graphiql/toolkit"
 import { explorerPlugin } from "@graphiql/plugin-explorer"
 
-const GRAPHQL_ENDPOINT = "https://graphql.union.build/v1/graphql"
+// https://hubble-purple.hasura.app/api/rest/chains/2?include_assets=false&include_rpcs=false&include_contracts=true
+
+const GRAPHQL_ENDPOINT = "https://hubble-purple.hasura.app/v1/graphql"
 const fetcher = createGraphiQLFetcher({
   url: GRAPHQL_ENDPOINT,
   enableIncrementalDelivery: true

@@ -1,0 +1,21 @@
+---
+import Refreshable from '#/components/Refreshable.astro'
+interface Props {}
+---
+
+<Refreshable
+  client:load
+  query={`
+query ClientsQuery {
+  data: v1_clients {
+    chain {
+      rpc_type
+      chain_id
+    }
+    client_id
+    counterparty_chain_id
+  }
+}
+`}
+  variables={{}}
+/>

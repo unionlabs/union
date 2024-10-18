@@ -1,7 +1,10 @@
 import { loadEnv } from "vite"
 import react from "@astrojs/react"
+import preact from "@astrojs/preact"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
+// @ts-expect-error
+import liveCode from "astro-live-code"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
@@ -24,12 +27,6 @@ const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
 export default defineConfig({
   site: SITE_URL,
   output: "static",
-  experimental: {
-    serverIslands: true,
-    clientPrerender: true,
-    directRenderScript: true,
-    contentIntellisense: true
-  },
   trailingSlash: "ignore",
   markdown: markdownConfiguration,
   vite: {
@@ -245,10 +242,19 @@ export default defineConfig({
       applyBaseStyles: false,
       configFile: "tailwind.config.ts"
     }),
-    svelte(),
+    svelte({ include: ["**/svelte/**"] }),
     react({
       include: ["**/react/**"],
       experimentalReactChildren: true
+    }),
+    preact({
+      devtools: true,
+      include: ["**/preact/**"]
+    }),
+    liveCode({
+      // defaultProps: {
+      //   "client:load": true
+      // }
     })
   ]
 })

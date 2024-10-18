@@ -1,0 +1,42 @@
+---
+interface Props {
+  query: string
+  variables: Record<string, unknown>
+  passResultToElementQueryselector: string
+}
+
+const { query, variables, passResultToElementQueryselector } = Astro.props
+---
+
+<refreshable-vibes
+  data-query={query}
+  data-variables={JSON.stringify(variables)}
+  data-pass-result-to-element-queryselector={passResultToElementQueryselector}></refreshable-vibes>
+
+<script>
+  class refreshableVibes extends HTMLElement {
+    connectedCallback() {
+      const query = this.dataset.query
+      if (!query) return
+      const variables = this.dataset.variables
+      const passResultToElementQueryselector = this.dataset.passResultToElementQueryselector
+      if (!variables) return
+      // query the graphql endpoint
+      fetch('https://hubble-purple.hasura.app/v1/graphql', {
+        method: 'POST',
+        body: JSON.stringify({
+          query,
+        }),
+        headers: { 'Content-Type': 'application/json' },
+      })
+        .then(response => response.json())
+        .then(data => {
+          // update the element with the result
+          const resultElement = document.querySelector(passResultToElementQueryselector)
+          resultElement?.innerHTML = JSON.stringify(data, null, 2)
+        })
+    }
+  }
+
+  customElements.define('refreshable-vibes', refreshableVibes)
+</script>

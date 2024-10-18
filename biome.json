@@ -253,6 +253,7 @@
         "noExplicitAny": "off",
         "noCatchAssign": "off",
         "noEmptyInterface": "off",
+        "noConfusingVoidType": "off",
         "noAssignInExpressions": "off"
       },
       "complexity": {

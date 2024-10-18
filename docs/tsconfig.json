@@ -1,8 +1,15 @@
 {
-  "extends": ["astro/tsconfigs/strict", "astro/tsconfigs/base"],
+  "extends": [
+    "astro/tsconfigs/strict",
+    "astro/tsconfigs/base"
+  ],
   "compilerOptions": {
     "verbatimModuleSyntax": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -14,7 +21,7 @@
     "strictNullChecks": true,
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "react",
+    "jsxImportSource": "preact",
     "skipDefaultLibCheck": true,
     "allowJs": true,
     "checkJs": true,
@@ -22,19 +29,35 @@
     "resolvePackageJsonExports": true,
     "resolvePackageJsonImports": true,
     "paths": {
-      "#/*": ["./src/*"],
-      "~root/*": ["../*"],
-      "tailwind.config": ["./tailwind.config.ts"],
-      "markdown.config": ["./markdown.config.ts"]
+      "#/*": [
+        "./src/*"
+      ],
+      "~root/*": [
+        "../*"
+      ],
+      "tailwind.config": [
+        "./tailwind.config.ts"
+      ],
+      "markdown.config": [
+        "./markdown.config.ts"
+      ]
     },
     "plugins": [
       {
         "name": "@astrojs/ts-plugin"
       }
     ],
-    "types": ["node", "bun", "typed-query-selector/strict"]
+    "types": [
+      "node",
+      "bun",
+      "typed-query-selector/strict"
+    ]
   },
-  "include": ["src", "public", "scripts"],
+  "include": [
+    "src",
+    "public",
+    "scripts"
+  ],
   "files": [
     "reset.d.ts",
     "astro.config.ts",
@@ -43,5 +66,9 @@
     "postcss.config.cjs",
     "markdown.config.ts"
   ],
-  "exclude": ["_", "dist", "node_modules"]
+  "exclude": [
+    "_",
+    "dist",
+    "node_modules"
+  ]
 }

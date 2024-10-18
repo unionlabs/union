@@ -1,0 +1,62 @@
+---
+import { Code } from 'astro:components'
+import Refreshable from '#/components/Refreshable.astro'
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro'
+
+// export const prerender = false
+
+interface Props {}
+
+const clientsQuery = /* graphql */ `
+query ClientsQuery {
+  data: v1_clients {
+    chain {
+      rpc_type
+      chain_id
+    }
+    client_id
+    counterparty_chain_id
+  }
+}
+`
+
+const markdownTable = /* markdown */ `
+  | Label | Chain  ID | Last Block | 
+  | ----- | --------  | ---------- |
+`
+const sample = {
+  data: {
+    data: [
+      {
+        chain: {
+          rpc_type: 'cosmos',
+          chain_id: 'union-testnet-8',
+        },
+        client_id: '08-wasm-27',
+        counterparty_chain_id: '11155111',
+      },
+    ],
+  },
+}
+---
+
+<StarlightPage frontmatter={{ title: 'FoOk Yo' }}>
+  <Code
+    class=""
+    lang="mdx"
+    client:load
+    theme={'vesper'}
+    code={markdownTable}
+    id="live-code-editor"
+    data-markdown-table=""
+  />
+
+  <Refreshable
+    query={clientsQuery}
+    variables={{}}
+    passResultToElementQueryselector="#live-code-editor"
+  />
+</StarlightPage>
+
+<style lang="postcss">
+</style>
