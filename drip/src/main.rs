@@ -1,5 +1,11 @@
 use std::{
-    borrow::{Borrow, BorrowMut}, collections::HashMap, ffi::OsString, fmt, fs::read_to_string, rc::Rc, time::Duration
+    borrow::{Borrow, BorrowMut},
+    collections::HashMap,
+    ffi::OsString,
+    fmt,
+    fs::read_to_string,
+    rc::Rc,
+    time::Duration,
 };
 
 use async_graphql::{http::GraphiQLSource, *};
@@ -306,7 +312,6 @@ struct ChainClient {
     pub tm_client: WebSocketClient,
 }
 
-
 impl CosmosSdkChainRpcs for ChainClient {
     fn tm_chain_id(&self) -> String {
         self.chain.id.clone()
@@ -324,7 +329,6 @@ impl CosmosSdkChainRpcs for ChainClient {
         &self.chain.gas_config
     }
 }
-
 
 impl ChainClient {
     pub async fn new(chain: &Chain) -> Self {
@@ -457,11 +461,7 @@ impl ChainClient {
         };
 
         let (tx_hash, gas_used) = self
-            .broadcast_tx_commit(
-                &self.signer,
-                [msg],
-                self.chain.memo.clone(),
-            )
+            .broadcast_tx_commit(&self.signer, [msg], self.chain.memo.clone())
             .await?;
 
         info!(
