@@ -177,7 +177,7 @@
         "chain_id": "union-devnet-1",
         "ws_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090",
-        "prover_endpoints": ["https://galois.testnet-8.union.build:443"]
+        "prover_endpoints": ["http://localhost:9999"]
       }
     },
     {
