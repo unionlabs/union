@@ -98,7 +98,9 @@ module ibc::ibc {
     #[event]
     struct ConnectionOpenInit has copy, drop, store {
         connection_id: u32,
+        client_type: String,
         client_id: u32,
+        counterparty_client_type: String,
         counterparty_client_id: u32
     }
 
@@ -138,7 +140,9 @@ module ibc::ibc {
     #[event]
     struct ConnectionOpenTry has copy, drop, store {
         connection_id: u32,
+        client_type: String,
         client_id: u32,
+        counterparty_client_type: String,
         counterparty_client_id: u32,
         counterparty_connection_id: u32
     }
@@ -146,7 +150,9 @@ module ibc::ibc {
     #[event]
     struct ConnectionOpenAck has copy, drop, store {
         connection_id: u32,
+        client_type: String,
         client_id: u32,
+        counterparty_client_type: String,
         counterparty_client_id: u32,
         counterparty_connection_id: u32
     }
@@ -154,7 +160,9 @@ module ibc::ibc {
     #[event]
     struct ConnectionOpenConfirm has copy, drop, store {
         connection_id: u32,
+        client_type: String,
         client_id: u32,
+        counterparty_client_type: String,
         counterparty_client_id: u32,
         counterparty_connection_id: u32
     }
@@ -289,111 +297,70 @@ module ibc::ibc {
         counterparty_client_type: String,
         counterparty_client_id: u32
     ) acquires IBCStore {
-        let version = connection_end::new_version(version_identifier, version_features);
-        let counterparty =
-            connection_end::new_counterparty(
-                counterparty_client_id,
-                counterparty_connection_id,
-                counterparty_prefix
-            );
-
-        assert!(light_client::status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
-
-        let connection_id = generate_connection_identifier();
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        let connection_id = generate_connection_identifier();
+
         let connection =
             connection_end::new(
-                client_id,
-                vector::empty(),
                 CONN_STATE_INIT,
-                delay_period,
-                counterparty
+                client_id,
+                counterparty_client_id,
+                0, // counterparty_connection_id
+                client_type,
+                counterparty_client_type
             );
-
-        if (vector::is_empty(connection_end::version_features(&version))) {
-            connection_end::set_versions(&mut connection, get_compatible_versions());
-        } else {
-            assert!(
-                is_supported_version(&get_compatible_versions(), &version),
-                E_UNSUPPORTED_VERSION
-            );
-
-            connection_end::set_versions(&mut connection, vector[version]);
-        };
 
         smart_table::upsert(&mut store.connections, connection_id, connection);
 
-        update_connection_commitment(store, connection_id, connection);
+        commit_connection(connection_id, connection);
 
         event::emit(
             ConnectionOpenInit {
                 connection_id: connection_id,
+                client_type: client_type,
                 client_id: client_id,
-                counterparty_client_id: *connection_end::conn_counterparty_client_id(
-                    &connection
-                )
+                counterparty_client_type: counterparty_client_type,
+                counterparty_client_id: counterparty_client_id
             }
-        );
+        )
     }
 
+
     public entry fun connection_open_try(
+        counterparty_client_type: String,
         counterparty_client_id: u32,
         counterparty_connection_id: u32,
-        counterparty_prefix: vector<u8>,
-        delay_period: u64,
+        client_type: String,
         client_id: u32,
-        client_state_bytes: vector<u8>,
-        counterparty_version_identifiers: vector<String>,
-        counterparty_version_features: vector<vector<String>>,
         proof_init: vector<u8>,
-        proof_client: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        proof_height: u64
     ) acquires IBCStore {
-        let counterparty =
-            connection_end::new_counterparty(
-                counterparty_client_id,
-                counterparty_connection_id,
-                counterparty_prefix
-            );
-        let counterparty_versions =
-            connection_end::new_versions(
-                counterparty_version_identifiers, counterparty_version_features
-            );
-        let proof_height =
-            height::new(proof_height_revision_num, proof_height_revision_height);
-
-        assert!(light_client::status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
-
-        // Generate a new connection identifier
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let connection_id = generate_connection_identifier();
 
-        let store = borrow_global_mut<IBCStore>(get_vault_addr());
-
-        // Retrieve the connection from the store
         let connection =
             smart_table::borrow_mut_with_default(
                 &mut store.connections,
                 connection_id,
                 connection_end::new(
+                    CONN_STATE_INIT,
                     client_id,
-                    vector[pick_version(
-                        &get_compatible_versions(), &counterparty_versions
-                    )],
-                    CONN_STATE_TRYOPEN,
-                    delay_period,
-                    counterparty
+                    counterparty_client_id,
+                    counterparty_connection_id, // counterparty_connection_id
+                    client_type,
+                    counterparty_client_type
                 )
             );
 
         // Create the expected connection
         let expected_connection =
             connection_end::new(
-                *connection_end::conn_counterparty_client_id(connection),
-                counterparty_versions,
                 CONN_STATE_INIT,
-                delay_period,
-                connection_end::new_counterparty(client_id, string::utf8(b""), b"ibc")
+                client_id,
+                counterparty_client_type,
+                client_id,
+                0,
+                utf8(b"")
             );
 
         // Verify the connection state
@@ -402,56 +369,32 @@ module ibc::ibc {
                 connection,
                 proof_height,
                 proof_init,
-                *connection_end::counterparty_connection_id(&counterparty),
+                counterparty_connection_id,
                 expected_connection
-            );
-        assert!(err == 0, E_INVALID_PROOF);
-
-        let counterparty_client_id =
-            connection_end::conn_counterparty_client_id(connection);
-
-        // Verify the client state
-        let err =
-            verify_client_state(
-                connection,
-                proof_height,
-                commitment::client_state_key(*counterparty_client_id),
-                proof_client,
-                client_state_bytes
             );
         assert!(err == 0, E_INVALID_PROOF);
 
         event::emit(
             ConnectionOpenTry {
                 connection_id,
+                client_type,
                 client_id: client_id,
-                counterparty_client_id: *connection_end::conn_counterparty_client_id(
-                    connection
-                ),
-                counterparty_connection_id: *connection_end::conn_counterparty_connection_id(
-                    connection
-                )
+                counterparty_client_id: counterparty_client_id,
+                counterparty_client_type: counterparty_client_type,
+                counterparty_connection_id: counterparty_connection_id
             }
         );
 
-        update_connection_commitment(store, connection_id, *connection);
+        commit_connection(connection_id, connection);
     }
 
     public entry fun connection_open_ack(
         connection_id: u32,
-        client_state_bytes: vector<u8>,
-        version_identifier: String,
-        version_features: vector<String>,
-        proof_try: vector<u8>,
-        proof_client: vector<u8>,
         counterparty_connection_id: u32,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        proof_try: vector<u8>,
+        proof_height: u64
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
-        let version = connection_end::new_version(version_identifier, version_features);
-        let proof_height =
-            height::new(proof_height_revision_num, proof_height_revision_height);
 
         assert!(
             smart_table::contains(&store.connections, connection_id),
@@ -459,62 +402,34 @@ module ibc::ibc {
         );
 
         let connection = smart_table::borrow_mut(&mut store.connections, connection_id);
-
         assert!(
             connection_end::state(connection) == CONN_STATE_INIT,
             E_INVALID_CONNECTION_STATE
         );
 
-        assert!(
-            is_supported_version(connection_end::versions(connection), &version),
-            E_UNSUPPORTED_VERSION
-        );
-
-        let expected_counterparty =
-            connection_end::new_counterparty(
-                *connection_end::client_id(connection),
-                connection_id,
-                b"ibc"
-            );
-
+        // Create the expected connection
         let expected_connection =
             connection_end::new(
-                *connection_end::conn_counterparty_client_id(connection),
-                vector::singleton(version),
                 CONN_STATE_TRYOPEN,
-                connection_end::delay_period(connection),
-                expected_counterparty
+                connection_end::counterparty_client_id(connection),
+                connection_end::counterparty_client_type(connection),
+                connection_end::client_id(connection),
+                connection_id,
+                connection_end::client_type(connection)
             );
 
+        // Verify the connection state
         let err =
             verify_connection_state(
                 connection,
                 proof_height,
-                proof_try,
+                proof_init,
                 counterparty_connection_id,
                 expected_connection
             );
-        assert!(err == 0, err);
 
-        let counterparty_client_id =
-            *connection_end::conn_counterparty_client_id(connection);
-
-        let err =
-            verify_client_state(
-                connection,
-                proof_height,
-                commitment::client_state_key(counterparty_client_id),
-                proof_client,
-                client_state_bytes
-            );
-        assert!(err == 0, err);
-
-        connection_end::set_state(connection, CONN_STATE_OPEN);
-
-        let conn_versions = *connection_end::versions(connection);
-        copy_versions(&vector::singleton(version), &mut conn_versions);
-        connection_end::set_versions(connection, conn_versions);
-        connection_end::set_conn_counterparty_connection_id(
+        connection_end::set_state(connection, CONN_STATE_TRYOPEN);
+        connection_end::set_counterparty_connection_id(
             connection, counterparty_connection_id
         );
 
@@ -531,71 +446,62 @@ module ibc::ibc {
             }
         );
 
-        update_connection_commitment(store, connection_id, *connection);
+        commit_connection(connection_id, connection);
     }
 
     public entry fun connection_open_confirm(
         connection_id: u32,
         proof_ack: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        proof_height: u64
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
-        let proof_height =
-            height::new(proof_height_revision_num, proof_height_revision_height);
+
+        assert!(
+            smart_table::contains(&store.connections, connection_id),
+            E_CONNECTION_DOES_NOT_EXIST
+        );
 
         let connection = smart_table::borrow_mut(&mut store.connections, connection_id);
-
         assert!(
             connection_end::state(connection) == CONN_STATE_TRYOPEN,
             E_INVALID_CONNECTION_STATE
         );
 
-        let expected_counterparty =
-            connection_end::new_counterparty(
-                *connection_end::client_id(connection),
-                connection_id,
-                b"ibc"
-            );
-
+        // Create the expected connection
         let expected_connection =
             connection_end::new(
-                *connection_end::conn_counterparty_client_id(connection),
-                *connection_end::versions(connection),
                 CONN_STATE_OPEN,
-                connection_end::delay_period(connection),
-                expected_counterparty
+                connection_end::counterparty_client_id(connection),
+                connection_end::counterparty_client_type(connection),
+                connection_end::client_id(connection),
+                connection_id,
+                connection_end::client_type(connection)
             );
 
-        let counterparty_conn_id =
-            *connection_end::conn_counterparty_connection_id(connection);
-
+        // Verify the connection state
         let err =
             verify_connection_state(
                 connection,
                 proof_height,
-                proof_ack,
-                counterparty_conn_id,
+                proof_init,
+                counterparty_connection_id,
                 expected_connection
             );
-        assert!(err == 0, err);
 
         connection_end::set_state(connection, CONN_STATE_OPEN);
 
         event::emit(
-            ConnectionOpenConfirm {
-                connection_id,
-                client_id: *connection_end::client_id(connection),
-                counterparty_client_id: *connection_end::conn_counterparty_client_id(
-                    connection
-                ),
-                counterparty_connection_id: *connection_end::conn_counterparty_connection_id(
-                    connection
-                )
+            ConnectionOpenAck {
+                connection_id: connection_id,
+                client_type: *connection_end::client_type(connection),
+                client_id: connection_end::client_id(connection),
+                counterparty_client_type: connection_end::counterparty_client_type(connection),
+                counterparty_client_id: connection_end::counterparty_client_id(connection),
+                counterparty_connection_id: connection_end::counterparty_connection_id(connection)
             }
         );
 
-        update_connection_commitment(store, connection_id, *connection);
+        commit_connection(connection_id, connection);
     }
 
     public entry fun update_client(
@@ -1947,15 +1853,28 @@ module ibc::ibc {
         (connection_id, connection)
     }
 
-    fun encode_channel(channel: IBCChannel): vector<u8> {
-        channel::encode(channel)
+    fun encode_channel(channel: Channel): vector<u8> {
+        channel::encode(&channel)
     }
 
-    fun commit_channel(channel_id: u32, channel: IBCChannel) acquires IBCStore {
+
+    fun encode_connection(connection: ConnectionEnd): vector<u8> {
+        connection_end::encode(&connection)
+    }
+
+    fun commit_channel(channel_id: u32, channel: Channel) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let key = commitment::channel_commitment_key(channel_id);
 
         let encoded = encode_channel(channel);
+        table::upsert(&mut store.commitments, key, encoded);
+    }
+
+    fun commit_connection(connection_id: u32, connection: ConnectionEnd) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        let key = commitment::connection_commitment_key(connection_id);
+
+        let encoded = encode_connection(connection_id);
         table::upsert(&mut store.commitments, key, encoded);
     }
 

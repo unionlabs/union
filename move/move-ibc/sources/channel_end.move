@@ -14,7 +14,7 @@ module ibc::channel {
     const CHAN_ORDERING_UNORDERED: u8 = 1;
     const CHAN_ORDERING_ORDERED: u8 = 2;
 
-    struct IBCChannel has copy, store, drop, key {
+    struct Channel has copy, store, drop, key {
         state: u8,
         ordering: u8,
         connection_id: u32,
@@ -23,55 +23,55 @@ module ibc::channel {
     }
 
     // Getters
-    public fun state(channel: &IBCChannel): u8 {
+    public fun state(channel: &Channel): u8 {
         channel.state
     }
 
-    public fun ordering(channel: &IBCChannel): u8 {
+    public fun ordering(channel: &Channel): u8 {
         channel.ordering
     }
 
-    public fun connection_id(channel: &IBCChannel): u32 {
+    public fun connection_id(channel: &Channel): u32 {
         channel.connection_id
     }
 
-    public fun counterparty_channel_id(channel: &IBCChannel): u32 {
+    public fun counterparty_channel_id(channel: &Channel): u32 {
         channel.counterparty_channel_id
     }
 
-    public fun version(channel: &IBCChannel): &vector<u8> {
+    public fun version(channel: &Channel): &vector<u8> {
         &channel.version
     }
 
     // Setters
-    public fun set_state(channel: &mut IBCChannel, new_state: u8) {
+    public fun set_state(channel: &mut Channel, new_state: u8) {
         channel.state = new_state;
     }
 
-    public fun set_ordering(channel: &mut IBCChannel, new_ordering: u8) {
+    public fun set_ordering(channel: &mut Channel, new_ordering: u8) {
         channel.ordering = new_ordering;
     }
 
-    public fun set_connection_id(channel: &mut IBCChannel, new_connection_id: u32) {
+    public fun set_connection_id(channel: &mut Channel, new_connection_id: u32) {
         channel.connection_id = new_connection_id;
     }
 
-    public fun set_counterparty_channel_id(channel: &mut IBCChannel, new_id: u32) {
+    public fun set_counterparty_channel_id(channel: &mut Channel, new_id: u32) {
         channel.counterparty_channel_id = new_id;
     }
 
 
-    public fun set_version(channel: &mut IBCChannel, new_version: vector<u8>) {
+    public fun set_version(channel: &mut Channel, new_version: vector<u8>) {
         channel.version = new_version;
     }
 
     // Encode and decode functions (empty for now)
-    public fun encode(_channel: &IBCChannel): vector<u8> {
+    public fun encode(_channel: &Channel): vector<u8> {
         // Placeholder implementation
         vector::empty()
     }
 
-    public fun decode(_buf: vector<u8>): Option<IBCChannel> {
+    public fun decode(_buf: vector<u8>): Option<Channel> {
         // Placeholder implementation
         option::none()
     }
@@ -83,8 +83,8 @@ module ibc::channel {
         connection_id: u32,
         counterparty_channel_id: u32,
         version: vector<u8>
-    ): IBCChannel {
-        IBCChannel {
+    ): Channel {
+        Channel {
             state,
             ordering,
             connection_id,
@@ -94,7 +94,7 @@ module ibc::channel {
     }
 
     // Default function
-    public fun default(): IBCChannel {
+    public fun default(): Channel {
         new(0, 0, 0, 0, vector::empty())
     }
 }
