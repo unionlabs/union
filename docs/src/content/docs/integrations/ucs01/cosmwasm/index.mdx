@@ -56,6 +56,12 @@ curl --location \\
     title='Install uniond'
 />
 
+Make `uniond` executable
+
+```sh frame="none"
+chmod +x uniond
+```
+
 Install Rust
 
 ```sh frame="none"
@@ -102,25 +108,6 @@ thiserror = { version = "1.0.64", default-features = false }
 opt-level = "z"
 strip = true
 ```
-
-Install `uniond`
-
-<Code
-    code={
-`
-# determine your system architecture
-RELEASE="uniond-release-$(uname -m)-linux"
-# get version we want to install
-VERSION="${chainVersion({chainId: 'union-testnet-8'}).current}"
-
-curl --location \\
-        https://github.com/unionlabs/union/releases/download/$VERSION/$RELEASE \\
-        --output uniond
-`
-    }
-    lang='sh'
-    title='Install uniond'
-/>
 
 Our end directory structure will look like this:    
 
@@ -252,7 +239,7 @@ pub fn execute_transfer(
 You will be using the same RPC url across examples, so good to export it to an environment variable:
 
 ```sh frame="none"
-export RPC_URL=" https://rpc.testnet-8.union.build:443"
+export RPC_URL="https://rpc.testnet-8.union.build:443"
 ```
 
 ### Building the Contract
@@ -305,7 +292,7 @@ curl https://rest.testnet-8.union.build/cosmos/bank/v1beta1/balances/$WALLET_ADD
 ```
 
 ```sh title="Deploy the contract"
-tx wasm store ./target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.wasm \
+uniond tx wasm store ./target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.wasm \
     --from $WALLET_NAME \
     --gas auto \
     --gas-adjustment 1.4 \
