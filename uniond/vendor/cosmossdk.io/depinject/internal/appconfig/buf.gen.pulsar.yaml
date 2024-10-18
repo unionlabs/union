@@ -1,5 +1,0 @@
-version: v1
-plugins:
-  - name: go-pulsar
-    out: .
-    opt: paths=source_relative

@@ -1,9 +1,0 @@
-# Github action artifacts.
-artifacts
-# Profiling artifacts.
-cpu.*.prof
-heap.prof
-mutex.prof
-coverprofile.out
-# Testing artifacts
-meta.*.test

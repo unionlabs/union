@@ -1,2 +1,0 @@
-codegen:
-	@(buf generate)
