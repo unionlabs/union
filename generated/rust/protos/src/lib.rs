@@ -845,18 +845,6 @@ pub mod tokenfactory {
 pub mod union {
     pub mod galois {
         pub mod api {
-            #[cfg(feature = "union+galois+api+v1")]
-            // @@protoc_insertion_point(attribute:union.galois.api.v1)
-            pub mod v1 {
-                include!("union.galois.api.v1.rs");
-                // @@protoc_insertion_point(union.galois.api.v1)
-            }
-            #[cfg(feature = "union+galois+api+v2")]
-            // @@protoc_insertion_point(attribute:union.galois.api.v2)
-            pub mod v2 {
-                include!("union.galois.api.v2.rs");
-                // @@protoc_insertion_point(union.galois.api.v2)
-            }
             #[cfg(feature = "union+galois+api+v3")]
             // @@protoc_insertion_point(attribute:union.galois.api.v3)
             pub mod v3 {
