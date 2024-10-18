@@ -10,7 +10,7 @@ module ibc::connection_end {
     }
 
     struct ConnectionEnd has copy, store, drop {
-        client_id: String,
+        client_id: u32,
         versions: vector<Version>,
         state: u64,
         delay_period: u64,
@@ -18,8 +18,8 @@ module ibc::connection_end {
     }
 
     struct Counterparty has copy, store, drop {
-        client_id: String,
-        connection_id: String,
+        client_id: u32,
+        connection_id: u32,
         prefix: MerklePrefix
     }
 
@@ -28,7 +28,7 @@ module ibc::connection_end {
     }
 
     public fun new(
-        client_id: String,
+        client_id: u32,
         versions: vector<Version>,
         state: u64,
         delay_period: u64,
@@ -38,7 +38,7 @@ module ibc::connection_end {
     }
 
     public fun new_counterparty(
-        client_id: String, connection_id: String, prefix: vector<u8>
+        client_id: u32, connection_id: u32, prefix: vector<u8>
     ): Counterparty {
         Counterparty {
             client_id,
@@ -87,22 +87,22 @@ module ibc::connection_end {
         connection_end.versions = versions;
     }
 
-    public fun client_id(connection_end: &ConnectionEnd): &String {
+    public fun client_id(connection_end: &ConnectionEnd): &u32 {
         &connection_end.client_id
     }
 
-    public fun conn_counterparty_client_id(connection_end: &ConnectionEnd): &String {
+    public fun conn_counterparty_client_id(connection_end: &ConnectionEnd): &u32 {
         &connection_end.counterparty.client_id
     }
 
     public fun conn_counterparty_connection_id(
         connection_end: &ConnectionEnd
-    ): &String {
+    ): &u32 {
         &connection_end.counterparty.connection_id
     }
 
     public fun set_conn_counterparty_connection_id(
-        connection_end: &mut ConnectionEnd, connection_id: String
+        connection_end: &mut ConnectionEnd, connection_id: u32
     ) {
         connection_end.counterparty.connection_id = connection_id;
     }
@@ -113,11 +113,11 @@ module ibc::connection_end {
         &connection_end.counterparty.prefix.key_prefix
     }
 
-    public fun counterparty_connection_id(counterparty: &Counterparty): &String {
+    public fun counterparty_connection_id(counterparty: &Counterparty): &u32 {
         &counterparty.connection_id
     }
 
-    public fun counterparty_client_id(counterparty: &Counterparty): &String {
+    public fun counterparty_client_id(counterparty: &Counterparty): &u32 {
         &counterparty.client_id
     }
 
@@ -151,13 +151,13 @@ module ibc::connection_end {
 
     public fun default(): ConnectionEnd {
         ConnectionEnd {
-            client_id: string::utf8(b""),
+            client_id: 0,
             versions: vector::empty(),
             state: 0,
             delay_period: 0,
             counterparty: Counterparty {
-                client_id: string::utf8(b""),
-                connection_id: string::utf8(b""),
+                client_id: 0,
+                connection_id: 0,
                 prefix: MerklePrefix { key_prefix: vector::empty() }
             }
         }
@@ -463,7 +463,7 @@ module ibc::connection_end {
     #[test]
     fun test_proto() {
         let conn_end = ConnectionEnd {
-            client_id: string::utf8(b"cometbls-1"),
+            client_id: 0,
             versions: vector[
                 Version {
                     identifier: string::utf8(b"first_version"),
@@ -479,8 +479,8 @@ module ibc::connection_end {
             state: 3,
             delay_period: 100,
             counterparty: Counterparty {
-                client_id: string::utf8(b"08-wasm-0"),
-                connection_id: string::utf8(b"connection-0"),
+                client_id: 0,
+                connection_id: 0,
                 prefix: MerklePrefix { key_prefix: x"" }
             }
         };

@@ -83,23 +83,23 @@ module ibc::ibc {
 
     #[event]
     struct ClientCreatedEvent has copy, drop, store {
-        client_id: String,
+        client_id: u32,
         client_type: String,
         consensus_height: Height
     }
 
     #[event]
     struct ClientUpdated has copy, drop, store {
-        client_id: String,
+        client_id: u32,
         client_type: String,
         height: Height
     }
 
     #[event]
     struct ConnectionOpenInit has copy, drop, store {
-        connection_id: String,
-        client_id: String,
-        counterparty_client_id: String
+        connection_id: u32,
+        client_id: u32,
+        counterparty_client_id: u32
     }
 
     #[event]
@@ -107,7 +107,7 @@ module ibc::ibc {
         port_id: String,
         channel_id: String,
         counterparty_port_id: String,
-        connection_id: String,
+        connection_id: u32,
         version: String
     }
 
@@ -117,7 +117,7 @@ module ibc::ibc {
         channel_id: String,
         counterparty_port_id: String,
         counterparty_channel_id: String,
-        connection_id: String,
+        connection_id: u32,
         version: String
     }
 
@@ -127,7 +127,7 @@ module ibc::ibc {
         channel_id: String,
         counterparty_port_id: String,
         counterparty_channel_id: String,
-        connection_id: String
+        connection_id: u32
     }
 
     #[event]
@@ -136,31 +136,31 @@ module ibc::ibc {
         channel_id: String,
         counterparty_port_id: String,
         counterparty_channel_id: String,
-        connection_id: String
+        connection_id: u32
     }
 
     #[event]
     struct ConnectionOpenTry has copy, drop, store {
-        connection_id: String,
-        client_id: String,
-        counterparty_client_id: String,
-        counterparty_connection_id: String
+        connection_id: u32,
+        client_id: u32,
+        counterparty_client_id: u32,
+        counterparty_connection_id: u32
     }
 
     #[event]
     struct ConnectionOpenAck has copy, drop, store {
-        connection_id: String,
-        client_id: String,
-        counterparty_client_id: String,
-        counterparty_connection_id: String
+        connection_id: u32,
+        client_id: u32,
+        counterparty_client_id: u32,
+        counterparty_connection_id: u32
     }
 
     #[event]
     struct ConnectionOpenConfirm has copy, drop, store {
-        connection_id: String,
-        client_id: String,
-        counterparty_client_id: String,
-        counterparty_connection_id: String
+        connection_id: u32,
+        client_id: u32,
+        counterparty_client_id: u32,
+        counterparty_connection_id: u32
     }
 
     #[event]
@@ -197,7 +197,7 @@ module ibc::ibc {
 
     #[event]
     struct SubmitMisbehaviour has drop, store {
-        client_id: String,
+        client_id: u32,
         client_type: String
     }
 
@@ -211,7 +211,7 @@ module ibc::ibc {
         client_impls: SmartTable<String, address>,
         client_registry: SmartTable<String, address>,
         commitments: Table<vector<u8>, vector<u8>>,
-        connections: SmartTable<String, ConnectionEnd>,
+        connections: SmartTable<u32, ConnectionEnd>,
         channels: SmartTable<ChannelPort, Channel>
     }
 
@@ -251,7 +251,7 @@ module ibc::ibc {
         // additional gas cost. We should only enforce the use of `cometbls` for the `client_type`
         assert!(string::bytes(&client_type) == &b"cometbls", E_UNKNOWN_CLIENT_TYPE);
 
-        let client_id = generate_client_identifier(client_type);
+        let client_id = generate_client_identifier();
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let (client_state, consensus_state) =
@@ -265,7 +265,7 @@ module ibc::ibc {
             );
 
         // TODO(aeryz): fetch these status from proper exported consts
-        assert!(light_client::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
+        assert!(light_client::status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         // Update commitments
         table::upsert(
@@ -288,11 +288,11 @@ module ibc::ibc {
     }
 
     public entry fun connection_open_init(
-        client_id: String,
+        client_id: u32,
         version_identifier: String,
         version_features: vector<String>,
-        counterparty_client_id: String,
-        counterparty_connection_id: String,
+        counterparty_client_id: u32,
+        counterparty_connection_id: u32,
         counterparty_prefix: vector<u8>,
         delay_period: u64
     ) acquires IBCStore {
@@ -304,7 +304,7 @@ module ibc::ibc {
                 counterparty_prefix
             );
 
-        assert!(light_client::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
+        assert!(light_client::status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         let connection_id = generate_connection_identifier();
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
@@ -344,11 +344,11 @@ module ibc::ibc {
     }
 
     public entry fun connection_open_try(
-        counterparty_client_id: String,
-        counterparty_connection_id: String,
+        counterparty_client_id: u32,
+        counterparty_connection_id: u32,
         counterparty_prefix: vector<u8>,
         delay_period: u64,
-        client_id: String,
+        client_id: u32,
         client_state_bytes: vector<u8>,
         counterparty_version_identifiers: vector<String>,
         counterparty_version_features: vector<vector<String>>,
@@ -370,7 +370,7 @@ module ibc::ibc {
         let proof_height =
             height::new(proof_height_revision_num, proof_height_revision_height);
 
-        assert!(light_client::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
+        assert!(light_client::status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         // Generate a new connection identifier
         let connection_id = generate_connection_identifier();
@@ -445,13 +445,13 @@ module ibc::ibc {
     }
 
     public entry fun connection_open_ack(
-        connection_id: String,
+        connection_id: u32,
         client_state_bytes: vector<u8>,
         version_identifier: String,
         version_features: vector<String>,
         proof_try: vector<u8>,
         proof_client: vector<u8>,
-        counterparty_connection_id: String,
+        counterparty_connection_id: u32,
         proof_height_revision_num: u64,
         proof_height_revision_height: u64
     ) acquires IBCStore {
@@ -542,7 +542,7 @@ module ibc::ibc {
     }
 
     public entry fun connection_open_confirm(
-        connection_id: String,
+        connection_id: u32,
         proof_ack: vector<u8>,
         proof_height_revision_num: u64,
         proof_height_revision_height: u64
@@ -606,7 +606,7 @@ module ibc::ibc {
     }
 
     public entry fun update_client(
-        client_id: String, client_message: vector<u8>
+        client_id: u32, client_message: vector<u8>
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
@@ -669,7 +669,7 @@ module ibc::ibc {
     }
 
     public entry fun submit_misbehaviour(
-        client_id: String, misbehaviour: vector<u8>
+        client_id: u32, misbehaviour: vector<u8>
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
@@ -688,6 +688,86 @@ module ibc::ibc {
                 client_type: string::utf8(CLIENT_TYPE_COMETBLS)
             }
         );
+    }
+
+    public fun initialize_channel_sequences(channel_id: u32) acquires IBCStore {
+        table::upsert(
+            &mut store.commitments,
+            commitment::next_sequence_send_key(port_id, channel_id),
+            bcs::to_bytes(&1)
+        );
+
+        table::upsert(
+            &mut store.commitments,
+            commitment::next_sequence_recv_key(port_id, channel_id),
+            bcs::to_bytes(&1)
+        );
+
+        table::upsert(
+            &mut store.commitments,
+            commitment::next_sequence_ack_key(port_id, channel_id),
+            bcs::to_bytes(&1)
+        );
+
+    }
+    public fun channel_open_init2(
+        ibc_app: &signer, // this is the caller which should be the `ibc_app`
+        port_id: address,
+        connection_id: u32,
+        ordering: u8,
+        version: vector<u8>
+    ): (Channel, u64) acquires IBCStore {
+        authorize_app(ibc_app, port_id);
+
+        let port_id = address_to_string(port_id);
+        
+        ensure_connection_state(connection_id);
+
+        let channel_id = generate_channel_identifier();
+
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+
+        let channel_port = ChannelPort { port_id, channel_id };
+        let channel =
+            channel::new(
+                CHAN_STATE_INIT,
+                ordering,
+                counterparty,
+                connection_hops,
+                version
+            );
+        smart_table::upsert(&mut store.channels, channel_port, channel);
+
+        table::upsert(
+            &mut store.commitments,
+            commitment::next_sequence_send_key(port_id, channel_id),
+            bcs::to_bytes(&1)
+        );
+
+        table::upsert(
+            &mut store.commitments,
+            commitment::next_sequence_recv_key(port_id, channel_id),
+            bcs::to_bytes(&1)
+        );
+
+        table::upsert(
+            &mut store.commitments,
+            commitment::next_sequence_ack_key(port_id, channel_id),
+            bcs::to_bytes(&1)
+        );
+
+        event::emit(
+            ChannelOpenInit {
+                port_id: port_id,
+                channel_id: channel_id,
+                counterparty_port_id: *channel::chan_counterparty_port_id(&channel),
+                connection_id: connection_id,
+                version: *channel::version(&channel)
+            }
+        );
+        update_channel_commitment(port_id, channel_id);
+
+        (channel, 0)
     }
 
     public fun channel_open_init(
@@ -1437,13 +1517,13 @@ module ibc::ibc {
     // ========= UTILS and VIEW functions ========= //
 
     #[view]
-    public fun client_state(client_id: String): vector<u8> {
+    public fun client_state(client_id: u32): vector<u8> {
         light_client::get_client_state(client_id)
     }
 
     #[view]
     public fun consensus_state(
-        client_id: String, revision_number: u64, revision_height: u64
+        client_id: u32, revision_number: u64, revision_height: u64
     ): vector<u8> {
         light_client::get_consensus_state(
             client_id, height::new(revision_number, revision_height)
@@ -1466,7 +1546,7 @@ module ibc::ibc {
         from_bcs::to_u64(*next_sequence_bytes)
     }
 
-    fun set_connection(connection_id: String, connection: ConnectionEnd) acquires IBCStore {
+    fun set_connection(connection_id: u32, connection: ConnectionEnd) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         smart_table::upsert(&mut store.connections, connection_id, connection);
     }
@@ -1521,7 +1601,7 @@ module ibc::ibc {
     }
 
     // Function to generate a client identifier
-    fun generate_client_identifier(client_type: String): String acquires IBCStore {
+    fun generate_client_identifier(): u32 acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let next_sequence =
@@ -1535,10 +1615,7 @@ module ibc::ibc {
             b"nextClientSequence",
             bcs::to_bytes<u64>(&(next_sequence + 1))
         );
-
-        string::append_utf8(&mut client_type, b"-");
-        string::append(&mut client_type, string_utils::to_string(&next_sequence));
-        client_type
+        next_sequence
     }
 
     fun get_ibc_signer(): signer acquires SignerRef {
@@ -1759,7 +1836,7 @@ module ibc::ibc {
         connection: &ConnectionEnd,
         height: height::Height,
         proof: vector<u8>,
-        connection_id: String,
+        connection_id: u32,
         counterparty_connection: ConnectionEnd
     ): u64 {
         light_client::verify_membership(
@@ -1789,7 +1866,7 @@ module ibc::ibc {
         )
     }
 
-    public fun generate_connection_identifier(): String acquires IBCStore {
+    public fun generate_connection_identifier(): u32 acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let next_sequence_bytes =
             table::borrow_with_default(
@@ -1804,13 +1881,11 @@ module ibc::ibc {
             bcs::to_bytes(&(next_sequence + 1))
         );
 
-        let connection_id = utf8(b"connection-");
-        string::append(&mut connection_id, string_utils::to_string(&next_sequence));
-        connection_id
+        next_sequence
     }
 
     public fun update_connection_commitment(
-        store: &mut IBCStore, connection_id: String, connection: ConnectionEnd
+        store: &mut IBCStore, connection_id: u32, connection: ConnectionEnd
     ) {
         let encoded_connection = connection_end::encode_proto(connection);
         let key = commitment::connection_key(connection_id);
@@ -1824,7 +1899,7 @@ module ibc::ibc {
 
     // Returns connection by `connection_id`. Aborts if the connection does not exist.
     #[view]
-    public fun get_connection(connection_id: String): Option<ConnectionEnd> acquires IBCStore {
+    public fun get_connection(connection_id: u32): Option<ConnectionEnd> acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
 
         if (!smart_table::contains(&store.connections, connection_id)) {
@@ -1903,7 +1978,7 @@ module ibc::ibc {
         return_val
     }
 
-    fun get_counterparty_hops(connection_id: String): vector<String> acquires IBCStore {
+    fun get_counterparty_hops(connection_id: u32): vector<String> acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
         let connection = smart_table::borrow(&store.connections, connection_id);
         let hops = vector::empty<String>();
@@ -1933,7 +2008,7 @@ module ibc::ibc {
         identifier
     }
 
-    fun ensure_connection_state(connection_id: String): ConnectionEnd acquires IBCStore {
+    fun ensure_connection_state(connection_id: u32): ConnectionEnd acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
         let connection = smart_table::borrow(&store.connections, connection_id);
         assert!(
@@ -2270,11 +2345,11 @@ module ibc::ibc {
         init_module(alice);
 
         // Prepare a mock connection and set it in the IBCStore
-        let client_id = string::utf8(b"client-0");
-        let connection_id = string::utf8(b"connection-0");
+        let client_id = 0;
+        let connection_id = 0;
         let counterparty =
             connection_end::new_counterparty(
-                string::utf8(b"counterparty-client"),
+                1,
                 connection_id,
                 b""
             );
