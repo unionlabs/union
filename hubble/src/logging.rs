@@ -1,22 +1,26 @@
 use std::str::FromStr;
 
 use thiserror::Error;
-use tracing_subscriber::EnvFilter;
+use tracing_error::ErrorLayer;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
 
 pub fn init(log_format: LogFormat) {
     match log_format {
         LogFormat::Plain => {
-            tracing_subscriber::fmt()
-                .with_env_filter(EnvFilter::from_default_env())
+            Registry::default()
+                .with(tracing_subscriber::fmt::layer())
+                .with(EnvFilter::from_default_env())
+                .with(ErrorLayer::default())
                 .init();
         }
         LogFormat::Json => {
-            tracing_subscriber::fmt()
-                .with_env_filter(EnvFilter::from_default_env())
-                .json()
+            Registry::default()
+                .with(tracing_subscriber::fmt::layer().json())
+                .with(EnvFilter::from_default_env())
+                .with(ErrorLayer::default())
                 .init();
         }
-    }
+    };
 }
 
 #[derive(Debug, Copy, Clone)]

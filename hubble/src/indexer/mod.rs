@@ -112,7 +112,7 @@ where
             }
             Err(error) => {
                 error!(
-                    "error creating client: {} (context: {})",
+                    "error creating client: {:?} (context: {})",
                     error, self.context
                 );
                 None
@@ -199,7 +199,10 @@ impl<T: BlockHandle> HappyRangeFetcher<T> for T {
                     }
                 }
                 Some(Err(error)) => {
-                    error!("{}: error reading block: {})", expected_block_height, error);
+                    error!(
+                        "{}: error reading block: {:?})",
+                        expected_block_height, error
+                    );
                     return Err(IndexerError::ErrorReadingBlock(
                         expected_block_height,
                         range,

@@ -230,6 +230,15 @@
           description = "RUST_BACKTRACE passed to hubble";
           example = "full";
         };
+        no-color = mkOption {
+          type = types.enum [
+            "0"
+            "1"
+          ];
+          default = "1";
+          description = "NO_COLOR passed to hubble";
+          example = "1";
+        };
         log-format = mkOption {
           type = types.enum [
             "json"
@@ -285,6 +294,7 @@
             environment = {
               RUST_LOG = "${cfg.log-level}";
               RUST_BACKTRACE = "${cfg.backtrace}";
+              NO_COLOR = "${cfg.no-color}";
             };
           };
       };

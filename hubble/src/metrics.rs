@@ -45,14 +45,14 @@ pub async fn handler() -> Result<String, StatusCode> {
     let mut response = encoder
         .encode_to_string(&REGISTRY.gather())
         .map_err(|err| {
-            tracing::error!("could not gather metrics: {}", err);
+            tracing::error!("could not gather metrics: {:?}", err);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
     encoder
         .encode_utf8(&prometheus::gather(), &mut response)
         .map_err(|err| {
-            tracing::error!("could not gather metrics: {}", err);
+            tracing::error!("could not gather metrics: {:?}", err);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
     Ok(response)

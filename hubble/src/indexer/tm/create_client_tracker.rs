@@ -35,7 +35,7 @@ pub fn schedule_create_client_checker(
                 let tm_clients = match unmapped_client_ids(&pg_pool, internal_chain_id).await {
                     Ok(tm_clients) => tm_clients,
                     Err(err) => {
-                        error!("error fetching unmapped clients: {} => retry later", err);
+                        error!("error fetching unmapped clients: {:?} => retry later", err);
                         continue;
                     },
                 };
