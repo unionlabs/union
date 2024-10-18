@@ -6266,6 +6266,7 @@ dependencies = [
  "tokio",
  "tonic",
  "tracing",
+ "tracing-error",
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "url",
