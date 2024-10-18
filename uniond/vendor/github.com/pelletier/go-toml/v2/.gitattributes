@@ -1,4 +1,0 @@
-* text=auto
-
-benchmark/benchmark.toml text eol=lf
-testdata/** text eol=lf

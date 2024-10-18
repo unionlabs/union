@@ -1,9 +1,0 @@
-version: v1
-managed:
-  enabled: true
-  go_package_prefix:
-    default: github.com/cosmos/iavl/proto
-plugins:
-  - name: gogofaster
-    out: proto
-    opt: paths=source_relative
