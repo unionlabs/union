@@ -56,6 +56,12 @@ curl --location \\
     title='Install uniond'
 />
 
+Make `uniond` executable
+
+```sh frame="none"
+chmod +x uniond
+```
+
 Install Rust
 
 ```sh frame="none"
@@ -78,7 +84,7 @@ git init .
 Set up a new Rust project
 
 ```sh frame="none"
-cargo new --lib example_ucs01_cosmwasm
+cargo new --lib example-ucs01-cosmwasm
 ```
 
 Add the required dependencies to the `Cargo.toml` file
@@ -103,25 +109,6 @@ opt-level = "z"
 strip = true
 ```
 
-Install `uniond`
-
-<Code
-    code={
-`
-# determine your system architecture
-RELEASE="uniond-release-$(uname -m)-linux"
-# get version we want to install
-VERSION="${chainVersion({chainId: 'union-testnet-8'}).current}"
-
-curl --location \\
-        https://github.com/unionlabs/union/releases/download/$VERSION/$RELEASE \\
-        --output uniond
-`
-    }
-    lang='sh'
-    title='Install uniond'
-/>
-
 Our end directory structure will look like this:    
 
 <FileTree>
@@ -133,6 +120,8 @@ Our end directory structure will look like this:
 </FileTree>
 
 ___
+
+The UCS01 Relay contract address:
 
 ```sh frame="none"
 export UCS01_RELAY="union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
@@ -163,8 +152,6 @@ pub enum ExecuteMsg {
         contract_address: String,
     },
 }
-
-pub type Fees = BTreeMap<String, Uint128>;
 
 #[cw_serde]
 pub enum Ucs01ExecuteMsg {
@@ -252,7 +239,7 @@ pub fn execute_transfer(
 You will be using the same RPC url across examples, so good to export it to an environment variable:
 
 ```sh frame="none"
-export RPC_URL=" https://rpc.testnet-8.union.build:443"
+export RPC_URL="https://rpc.testnet-8.union.build:443"
 ```
 
 ### Building the Contract
@@ -305,7 +292,7 @@ curl https://rest.testnet-8.union.build/cosmos/bank/v1beta1/balances/$WALLET_ADD
 ```
 
 ```sh title="Deploy the contract"
-tx wasm store ./target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.wasm \
+uniond tx wasm store ./target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.wasm \
     --from $WALLET_NAME \
     --gas auto \
     --gas-adjustment 1.4 \
@@ -323,9 +310,11 @@ uniond query tx $DEPLOY_TX_HASH --node https://rpc.testnet-8.union.build:443 | r
 
 Instantiate the contract:
 
+> `$CODE_ID` is the `code_id` returned from the previous step.
+
 ```sh frame="none"
 uniond \
-    tx wasm instantiate 269 '{}' \
+    tx wasm instantiate $CODE_ID '{}' \
     --label foobar \
     --no-admin \
     --from $WALLET_NAME \
@@ -337,7 +326,7 @@ uniond \
     --node $RPC_URL --yes
 ```
 
-The above will return a transaction hash at the end, use it t query the transaction to get the `_contract_address`:
+The above will return a transaction hash at the end, use it to query the transaction to get the `_contract_address`:
 
 ```sh frame="none" 
 query tx $INSTANTIATE_TX_HASH --node https://rpc.testnet-8.union.build:443 | rg "_contract_address"
