@@ -179,6 +179,48 @@ module ibc::commitment {
         path_vec
     }
 
+    public fun client_state_commitment_key(channel_id: u32): vector<u8> {
+        client_state_path(channel_id)
+    }
+
+    public fun consenseus_state_commitment_key(channel_id: u32): vector<u8> {
+        consenseus_state_commitment_key(channel_id)
+    }
+
+    public fun connection_commitment_key(channel_id: u32): vector<u8> {
+        connection_path(channel_id)
+    }
+
+    public fun channel_commitment_key(channel_id: u32): vector<u8> {
+        channel_path(channel_id)
+    }
+
+    public fun packet_commitment_key(channel_id: u32, sequence: u64): vector<u8> {
+        packet_commitment_path(channel_id, sequence)
+    }
+
+    public fun batch_packets_commitment_key(channel_id: u32, batch_hash: vector<u8>): vector<u8> {
+        batch_packets_commitment_path(channel_id, batch_hash)
+    }
+
+    
+    public fun batch_receipts_commitment_key(channel_id: u32, batch_hash: vector<u8>): vector<u8> {
+        batch_receipts_commitment_path(channel_id, batch_hash)
+    }
+
+    public fun next_sequence_send_commitment_key(channel_id: u32): vector<u8> {
+        next_sequence_send_commitment_path(channel_id)
+    }
+
+    public fun next_sequence_recv_commitment_key(channel_id: u32): vector<u8> {
+        next_sequence_recv_commitment_path(channel_id)
+    }
+
+    public fun next_sequence_ack_commitment_key(channel_id: u32): vector<u8> {
+        next_sequence_ack_commitment_path(channel_id)
+    }
+    
+    
 
 
 

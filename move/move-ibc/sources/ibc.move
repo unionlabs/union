@@ -727,7 +727,6 @@ module ibc::ibc {
 
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        let channel_port = ChannelPort { port_id, channel_id };
         let channel =
             channel::new(
                 CHAN_STATE_INIT,
@@ -736,7 +735,6 @@ module ibc::ibc {
                 connection_hops,
                 version
             );
-        smart_table::upsert(&mut store.channels, channel_port, channel);
 
         table::upsert(
             &mut store.commitments,
@@ -756,6 +754,8 @@ module ibc::ibc {
             bcs::to_bytes(&1)
         );
 
+        commit_channel(channel_id, channel);
+
         event::emit(
             ChannelOpenInit {
                 port_id: port_id,
@@ -765,7 +765,6 @@ module ibc::ibc {
                 version: *channel::version(&channel)
             }
         );
-        update_channel_commitment(port_id, channel_id);
 
         (channel, 0)
     }
@@ -2037,6 +2036,18 @@ module ibc::ibc {
         (connection_id, connection)
     }
 
+    fun encode_channel(channel: IBCChannel): vector<u8> {
+        channel::encode(channel)
+    }
+
+    fun commit_channel(channel_id: u32, channel: IBCChannel) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        let key = commitment::channel_commitment_key(channel_id);
+
+        let encoded = encode_channel(channel);
+        table::upsert(&mut store.commitments, key, encoded);
+    }
+
     fun update_channel_commitment(port_id: String, channel_id: String) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let channel_port = ChannelPort { port_id: port_id, channel_id };
@@ -2330,6 +2341,8 @@ module ibc::ibc {
         assert!(channel::ordering(&stored_channel_val) == CHAN_ORDERING_ORDERED, 8003);
     }
 
+
+    
     #[
         test(
             alice = @ibc,
