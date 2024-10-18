@@ -277,7 +277,7 @@ module ibc::ics23 {
             b"connections/connection-0",
             connection_end::encode_proto(
                 connection_end::new(
-                    std::string::utf8(b"08-wasm-0"),
+                    0,
                     vector[
                         connection_end::new_version(
                             std::string::utf8(b"1"),
@@ -287,8 +287,8 @@ module ibc::ics23 {
                     2,
                     0,
                     connection_end::new_counterparty(
-                        std::string::utf8(b"cometbls-0"),
-                        std::string::utf8(b"connection-0"),
+                        1,
+                        0,
                         b"ibc"
                     )
                 )

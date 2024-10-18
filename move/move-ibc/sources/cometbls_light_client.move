@@ -73,7 +73,7 @@ module ibc::light_client {
     // Function to mock the creation of a client
     public fun create_client(
         ibc_signer: &signer,
-        client_id: String,
+        client_id: u32,
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>
     ): (vector<u8>, vector<u8>) {
@@ -96,7 +96,7 @@ module ibc::light_client {
         let state = State { client_state: client_state, consensus_states: consensus_states };
 
         let store_constructor =
-            object::create_named_object(ibc_signer, *string::bytes(&client_id));
+            object::create_named_object(ibc_signer, bcs::to_bytes<u256>(&(client_id as u256)));
         let client_signer = object::generate_signer(&store_constructor);
 
         move_to(&client_signer, state);
@@ -104,9 +104,9 @@ module ibc::light_client {
         (client_state_bytes, consensus_state_bytes)
     }
 
-    public fun latest_height(client_id: String): height::Height acquires State {
+    public fun latest_height(client_id: u32): height::Height acquires State {
         // Return error code, 0 for success
-        let state = borrow_global<State>(get_client_address(&client_id));
+        let state = borrow_global<State>(get_client_address(client_id));
         state.client_state.latest_height
     }
 
@@ -163,11 +163,11 @@ module ibc::light_client {
     }
 
     public fun update_client(
-        client_id: String, client_msg: vector<u8>
+        client_id: u32, client_msg: vector<u8>
     ): (vector<u8>, vector<vector<u8>>, vector<height::Height>) acquires State {
         let header = decode_header(client_msg);
 
-        let state = borrow_global_mut<State>(get_client_address(&client_id));
+        let state = borrow_global_mut<State>(get_client_address(client_id));
 
         assert!(height::is_zero(&state.client_state.frozen_height), E_FROZEN_CLIENT);
 
@@ -215,7 +215,7 @@ module ibc::light_client {
 
     // Checks whether `misbehaviour` is valid and freezes the client
     public fun report_misbehaviour(
-        client_id: String, misbehaviour: vector<u8>
+        client_id: u32, misbehaviour: vector<u8>
     ) acquires State {
         let Misbehaviour { header_a, header_b } = decode_misbehaviour(misbehaviour);
 
@@ -224,7 +224,7 @@ module ibc::light_client {
             E_INVALID_MISBEHAVIOUR
         );
 
-        let state = borrow_global_mut<State>(get_client_address(&client_id));
+        let state = borrow_global_mut<State>(get_client_address(client_id));
 
         let consensus_state_a =
             smart_table::borrow(&state.consensus_states, header_a.trusted_height);
@@ -252,7 +252,7 @@ module ibc::light_client {
     }
 
     public fun verify_membership(
-        client_id: String,
+        client_id: u32,
         height: height::Height,
         proof: vector<u8>,
         prefix: vector<u8>,
@@ -261,7 +261,7 @@ module ibc::light_client {
     ): u64 acquires State {
         let consensus_state =
             smart_table::borrow(
-                &borrow_global<State>(get_client_address(&client_id)).consensus_states,
+                &borrow_global<State>(get_client_address(client_id)).consensus_states,
                 height
             );
 
@@ -277,7 +277,7 @@ module ibc::light_client {
     }
 
     public fun verify_non_membership(
-        _client_id: String,
+        _client_id: u32,
         _height: height::Height,
         _proof: vector<u8>,
         _prefix: vector<u8>,
@@ -286,15 +286,15 @@ module ibc::light_client {
         0
     }
 
-    public fun status(_client_id: &String): u64 {
+    public fun status(_client_id: u32): u64 {
         // TODO(aeryz): fetch these status from proper exported consts
         0
     }
 
-    fun get_client_address(client_id: &string::String): address {
+    fun get_client_address(client_id: u32): address {
         let vault_addr = object::create_object_address(&@ibc, b"IBC_VAULT_SEED");
 
-        object::create_object_address(&vault_addr, *string::bytes(client_id))
+        object::create_object_address(&vault_addr, bcs::to_bytes<u256>(&(client_id as u256)))
     }
 
     public fun new_client_state(
@@ -330,20 +330,20 @@ module ibc::light_client {
     }
 
     public fun get_timestamp_at_height(
-        client_id: String, height: height::Height
+        client_id: u32, height: height::Height
     ): u64 acquires State {
-        let state = borrow_global<State>(get_client_address(&client_id));
+        let state = borrow_global<State>(get_client_address(client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
         consensus_state.timestamp
     }
 
-    public fun get_client_state(client_id: String): vector<u8> acquires State {
-        let state = borrow_global<State>(get_client_address(&client_id));
+    public fun get_client_state(client_id: u32): vector<u8> acquires State {
+        let state = borrow_global<State>(get_client_address(client_id));
         bcs::to_bytes(&state.client_state)
     }
 
-    public fun get_consensus_state(client_id: String, height: Height): vector<u8> acquires State {
-        let state = borrow_global<State>(get_client_address(&client_id));
+    public fun get_consensus_state(client_id: u32, height: Height): vector<u8> acquires State {
+        let state = borrow_global<State>(get_client_address(client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
         encode_consensus_state(consensus_state)
     }
@@ -372,9 +372,9 @@ module ibc::light_client {
     }
 
     public fun check_for_misbehaviour(
-        client_id: String, header: vector<u8>
+        client_id: u32, header: vector<u8>
     ): bool acquires State {
-        let state = borrow_global_mut<State>(get_client_address(&client_id));
+        let state = borrow_global_mut<State>(get_client_address(client_id));
 
         let header = decode_header(header);
 
@@ -593,7 +593,7 @@ module ibc::light_client {
         let (cs, cons) =
             create_client(
                 ibc_signer,
-                string::utf8(b"this_client"),
+                0,
                 bcs::to_bytes(&client_state),
                 encode_consensus_state(&consensus_state)
             );
@@ -604,7 +604,7 @@ module ibc::light_client {
         );
 
         let saved_state =
-            borrow_global<State>(get_client_address(&string::utf8(b"this_client")));
+            borrow_global<State>(get_client_address(0));
         assert!(saved_state.client_state == client_state, 0);
 
         assert!(
@@ -620,7 +620,7 @@ module ibc::light_client {
         let (cs, cons) =
             create_client(
                 ibc_signer,
-                string::utf8(b"this_client-2"),
+                2,
                 bcs::to_bytes(&client_state),
                 encode_consensus_state(&consensus_state)
             );
@@ -630,12 +630,12 @@ module ibc::light_client {
             1
         );
 
-        let lh = latest_height(string::utf8(b"this_client-2"));
+        let lh = latest_height(2);
         std::debug::print(&lh);
 
         // new client don't mess with this client's storage
         let saved_state =
-            borrow_global<State>(get_client_address(&string::utf8(b"this_client")));
+            borrow_global<State>(get_client_address(0));
         assert!(saved_state.client_state != client_state, 0);
 
         assert!(
@@ -646,7 +646,7 @@ module ibc::light_client {
         );
 
         let saved_state =
-            borrow_global<State>(get_client_address(&string::utf8(b"this_client-2")));
+            borrow_global<State>(get_client_address(1));
         assert!(saved_state.client_state == client_state, 0);
 
         assert!(
