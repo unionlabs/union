@@ -119,106 +119,124 @@ async fn main() {
                 info!("spawning worker thread");
                 let chain = chain.clone();
                 let handle = tokio::spawn(async move {
-                // recreate each time so that if this task panics, the keyring gets rebuilt
-                // make sure to panic *here* so that the tokio task will catch the panic!
-                info!(chain_id=chain.id, "creating chain client");
-                let chain_client = ChainClient::new(&chain).await;
-                info!(chain_id=chain.id, "entering worker poll loop");
-                loop {
-                    let chain = chain.clone();
-                    let requests: Vec<SendRequest> = pool
-                        .conn(move |conn| {
+                    // recreate each time so that if this task panics, the keyring gets rebuilt
+                    // make sure to panic *here* so that the tokio task will catch the panic!
+                    info!(chain_id = chain.id, "creating chain client");
+                    let chain_client = ChainClient::new(&chain).await;
+                    info!(chain_id = chain.id, "entering worker poll loop");
+                    loop {
+                        let chain = chain.clone();
+                        let requests: Vec<SendRequest> = pool
+                            .conn(move |conn| {
+                                let mut stmt = conn
+                                    .prepare_cached(
+                                        "SELECT id, denom, address FROM requests 
+                                     WHERE tx_hash IS NULL AND chain_id IS ?1 LIMIT ?2",
+                                    )
+                                    .expect("???");
+
+                                let mut rows = stmt
+                                    .query((&chain.id, batch_size as i64))
+                                    .expect("can't query rows");
+
+                                let mut requests = vec![];
+
+                                while let Some(row) = rows.next().expect("could not read row") {
+                                    let id: i64 = row.get(0).expect("could not read id");
+                                    let denom: String = row.get(1).expect("could not read denom");
+                                    let receiver: String =
+                                        row.get(2).expect("could not read address");
+
+                                    let Some(coin) =
+                                        chain.coins.iter().find(|coin| coin.denom == denom)
+                                    else {
+                                        error!(
+                                        %denom, 
+                                        chain_id=&chain.id, 
+                                        "dropping request for unknown denom");
+                                        break;
+                                    };
+
+                                    requests.push(SendRequest {
+                                        id,
+                                        receiver,
+                                        denom,
+                                        amount: coin.amount,
+                                    }); //todo fix amount
+                                }
+
+                                Ok(requests)
+                            })
+                            .await
+                            .expect("pool error");
+
+                        if requests.is_empty() {
+                            debug!("no requests in queue");
+                            tokio::time::sleep(Duration::from_millis(1000)).await;
+                            continue;
+                        }
+                        let mut i = 0;
+
+                        // try sending batch 5 times
+                        let result = loop {
+                            let send_res = chain_client.send(&requests).await;
+
+                            match send_res {
+                                Err(err) => {
+                                    if i >= 5 {
+                                        break format!("ERROR: {}", ErrorReporter(err));
+                                    }
+                                    warn!(
+                                        err = %ErrorReporter(err),
+                                        attempt = i,
+                                        "unable to submit transaction"
+                                    );
+                                    i += 1;
+                                }
+                                // this will be displayed to users, print the hash in the same way that cosmos sdk does
+                                Ok(tx_hash) => {
+                                    break tx_hash
+                                        .into_encoding::<HexUnprefixed>()
+                                        .to_string()
+                                        .to_uppercase()
+                                }
+                            };
+                        };
+
+                        pool.conn(move |conn| {
+                            debug!("loading vtab array module required for `IN (1,42,76,...)`");
+                            rusqlite::vtab::array::load_module(conn)
+                                .expect("error loading vtab array module");
+
                             let mut stmt = conn
                                 .prepare_cached(
-                                    "SELECT id, denom, address FROM requests WHERE tx_hash IS NULL AND chain_id IS ?1 LIMIT ?2",
+                                    "UPDATE requests SET tx_hash = ?1 WHERE id IN rarray(?2)",
                                 )
                                 .expect("???");
 
-                            let mut rows = stmt.query((&chain.id, batch_size as i64)).expect("can't query rows");
+                            // https://docs.rs/rusqlite/latest/rusqlite/vtab/array/index.html
+                            let rows_modified = stmt
+                                .execute((
+                                    &result,
+                                    Rc::new(
+                                        requests
+                                            .iter()
+                                            .map(|req| req.id)
+                                            .map(rusqlite::types::Value::from)
+                                            .collect::<Vec<rusqlite::types::Value>>(),
+                                    ),
+                                ))
+                                .expect("can't query rows");
 
-                            let mut requests = vec![];
+                            info!(rows_modified, "updated requests");
 
-
-                            while let Some(row) = rows.next().expect("could not read row") {
-                                let id: i64 = row.get(0).expect("could not read id");
-                                let denom: String = row.get(1).expect("could not read denom");
-                                let receiver: String = row.get(2).expect("could not read address");
-
-                                let Some(coin) = chain.coins.iter().find(|coin| coin.denom == denom) else {
-                                    error!(%denom, chain_id=&chain.id, "dropping request for unknown denom");
-                                    break;
-                                };
-                                
-
-                                requests.push(SendRequest { id, receiver, denom, amount: coin.amount }); //todo fix amount
-                            }
-
-                            Ok(requests)
+                            Ok(())
                         })
                         .await
                         .expect("pool error");
-
-                    if requests.is_empty() {
-                        debug!("no requests in queue");
-                        tokio::time::sleep(Duration::from_millis(1000)).await;
-                        continue;
                     }
-                    let mut i = 0;
-
-                    // try sending batch 5 times
-                    let result = loop {
-                        let send_res = chain_client
-                            .send(&requests).await;
-
-                        match send_res {
-                            Err(err) => {
-                                if i >= 5 {
-                                    break format!("ERROR: {}", ErrorReporter(err));
-                                }
-                                warn!(
-                                    err = %ErrorReporter(err),
-                                    attempt = i,
-                                    "unable to submit transaction"
-                                );
-                                i += 1;
-                            }
-                            // this will be displayed to users, print the hash in the same way that cosmos sdk does
-                            Ok(tx_hash) => break tx_hash.into_encoding::<HexUnprefixed>().to_string().to_uppercase(),
-                        };
-                    };
-
-                    pool.conn(move |conn| {
-                        debug!("loading vtab array module required for `IN (1,42,76,...)`");
-                        rusqlite::vtab::array::load_module(conn).expect("error loading vtab array module");
-                        
-                        let mut stmt = conn
-                            .prepare_cached(
-                                "UPDATE requests SET tx_hash = ?1 WHERE id IN rarray(?2)",
-                            )
-                            .expect("???");
-
-                        // https://docs.rs/rusqlite/latest/rusqlite/vtab/array/index.html
-                        let rows_modified = stmt
-                            .execute(( 
-                                &result, 
-                                Rc::new(requests.iter().map(|req| req.id)
-                                    .map(rusqlite::types::Value::from)
-                                    .collect::<Vec<rusqlite::types::Value>>())
-                             ))
-
- 
-                                
-                            .expect("can't query rows");
-
-                        info!(rows_modified, "updated requests");
-
-                        Ok(())
-                    })
-                    .await
-                    .expect("pool error");                    
-                }
-            })
-            .await;
+                })
+                .await;
 
                 match handle {
                     Ok(()) => {}
