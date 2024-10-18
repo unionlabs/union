@@ -122,7 +122,7 @@ pub struct DefaultNodeInfo {
     #[prost(message, optional, tag = "1")]
     pub protocol_version: ::core::option::Option<ProtocolVersion>,
     #[prost(string, tag = "2")]
-    #[serde(alias = "id")]
+    #[cfg_attr(feature = "serde", serde(alias = "id"))]
     pub default_node_id: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
     pub listen_addr: ::prost::alloc::string::String,

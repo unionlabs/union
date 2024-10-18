@@ -8,7 +8,6 @@ use unionlabs::{
         core::client::height::Height,
         lightclients::{cometbls, linea, wasm},
     },
-    ics24::PathParseError,
     linea::proof::InclusionProof,
 };
 
@@ -57,9 +56,6 @@ pub enum Error {
 
     #[error("expected value ({expected}) and stored value ({stored}) don't match")]
     StoredValueMismatch { expected: H256, stored: H256 },
-
-    #[error("unable to parse ics24 path")]
-    PathParse(#[from] PathParseError),
 
     #[error("failed to verify linea header: {0}")]
     Verify(#[from] linea_verifier::Error),

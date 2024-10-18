@@ -1,7 +1,4 @@
-use frame_support_procedural::DebugNoBound;
 use macros::model;
-
-use crate::encoding::{Decode, DecodeErrorOf, Encode, Proto};
 
 #[model(proto(
     raw(protos::ibc::lightclients::wasm::v1::ClientMessage),
@@ -13,32 +10,42 @@ pub struct ClientMessage<Data> {
     pub data: Data,
 }
 
-impl<Data: Encode<Proto>> From<ClientMessage<Data>>
-    for protos::ibc::lightclients::wasm::v1::ClientMessage
-{
-    fn from(value: ClientMessage<Data>) -> Self {
-        Self {
-            data: value.data.encode(),
+#[cfg(feature = "proto")]
+pub mod proto {
+    use frame_support_procedural::DebugNoBound;
+
+    use crate::{
+        encoding::{Decode, DecodeErrorOf, Encode, Proto},
+        ibc::lightclients::wasm::client_message::ClientMessage,
+    };
+
+    impl<Data: Encode<Proto>> From<ClientMessage<Data>>
+        for protos::ibc::lightclients::wasm::v1::ClientMessage
+    {
+        fn from(value: ClientMessage<Data>) -> Self {
+            Self {
+                data: value.data.encode(),
+            }
         }
     }
-}
 
-#[derive(DebugNoBound, thiserror::Error)]
-pub enum TryFromClientMessageError<Data: Decode<Proto>> {
-    #[error("error decoding `data`")]
-    Data(#[source] DecodeErrorOf<Proto, Data>),
-}
+    #[derive(DebugNoBound, thiserror::Error)]
+    pub enum TryFromClientMessageError<Data: Decode<Proto>> {
+        #[error("error decoding `data`")]
+        Data(#[source] DecodeErrorOf<Proto, Data>),
+    }
 
-impl<Data: Decode<Proto>> TryFrom<protos::ibc::lightclients::wasm::v1::ClientMessage>
-    for ClientMessage<Data>
-{
-    type Error = TryFromClientMessageError<Data>;
+    impl<Data: Decode<Proto>> TryFrom<protos::ibc::lightclients::wasm::v1::ClientMessage>
+        for ClientMessage<Data>
+    {
+        type Error = TryFromClientMessageError<Data>;
 
-    fn try_from(
-        value: protos::ibc::lightclients::wasm::v1::ClientMessage,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            data: Data::decode(&value.data).map_err(TryFromClientMessageError::Data)?,
-        })
+        fn try_from(
+            value: protos::ibc::lightclients::wasm::v1::ClientMessage,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                data: Data::decode(&value.data).map_err(TryFromClientMessageError::Data)?,
+            })
+        }
     }
 }

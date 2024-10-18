@@ -108,16 +108,15 @@ impl IbcClient for EvmInCosmosLightClient {
             deps,
             &env,
             client_state.data.l1_client_id.clone(),
+            todo!(),
             header.l1_height,
         )
         .map_err(Error::CustomQuery)?;
-        let client_consensus_state_path = Path::ClientConsensusState(ClientConsensusStatePath {
-            client_id: client_state.data.l2_client_id.parse().unwrap(),
-            height: Height {
-                revision_number: 0,
-                revision_height: header.l2_slot,
-            },
-        });
+        let client_consensus_state_path = format!(
+            "clients/{}/consensusStates/{}",
+            client_state.data.l2_client_id,
+            Height::new(header.l2_slot)
+        );
         // The ethereum consensus state is stored in proto-encoded wasm-wrapped form.
         let normalized_l2_consensus_state = WasmL2ConsensusState {
             data: header.l2_consensus_state,
@@ -127,10 +126,7 @@ impl IbcClient for EvmInCosmosLightClient {
             &header.l2_inclusion_proof,
             &SDK_SPECS,
             &l1_consensus_state.data.app_hash,
-            &[
-                b"ibc".to_vec(),
-                client_consensus_state_path.to_string().into_bytes(),
-            ],
+            &[b"ibc".to_vec(), client_consensus_state_path.into_bytes()],
             normalized_l2_consensus_state.encode_as::<Proto>(),
         )
         .map_err(Error::VerifyL2Membership)?;
@@ -152,18 +148,14 @@ impl IbcClient for EvmInCosmosLightClient {
     ) -> Result<Vec<Height>, IbcClientError<Self>> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
 
-        let updated_height = Height {
-            revision_number: client_state.latest_height.revision_number,
-            revision_height: header.l1_height.revision_height,
-        };
+        let updated_height = Height::new_with_revision(
+            client_state.latest_height.revision(),
+            header.l1_height.height(),
+        );
 
         if client_state.latest_height < header.l1_height {
-            client_state.data.latest_slot = updated_height.revision_height;
-            update_client_state::<Self>(
-                deps.branch(),
-                client_state,
-                updated_height.revision_height,
-            );
+            client_state.data.latest_slot = updated_height.height();
+            update_client_state::<Self>(deps.branch(), client_state, updated_height.height());
         }
 
         let consensus_state = WasmConsensusState {

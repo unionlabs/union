@@ -1,8 +1,11 @@
 #![warn(clippy::pedantic)]
 
-use macros::{apply, model};
+use macros::apply;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use unionlabs::{hash::H256, ibc::core::client::height::Height};
+use valuable::Valuable;
 
 /// Represents the IBC interface of a chain.
 ///
@@ -43,6 +46,23 @@ impl IbcInterface<'static> {
     pub const IBC_MOVE_APTOS: &'static str = "ibc-move/aptos";
 
     // lots more to come - near, fuel - stay tuned
+}
+
+/// The format used for IBC store commitments. An IBC interface can support potentially many IBC store formats, but a client is expected to verify proofs against only one.
+#[apply(str_newtype)]
+pub struct IbcStoreFormat;
+
+/// Well-known IBC stores, defined as constants for reusability and to allow
+/// for pattern matching.
+impl IbcStoreFormat<'static> {
+    /// Standard [ICS-24 path space]. This is the store format used by IBC-go.
+    ///
+    /// [ICS-24 path space]: https://github.com/cosmos/ibc/tree/main/spec/core/ics-024-host-requirements#path-space
+    pub const ICS24: &'static str = "ics24";
+
+    /// The store format used by the union IBC specification. This is the format used by `ibc-solidity`, and is also provided by cosmos chains running the union IBC-go double commit module.
+    // TODO: Link both of those once they're done, and rename this if we get a better name
+    pub const ETHABI: &'static str = "ethabi";
 }
 
 /// Newtype for client types. Clients of the same type have the same client
@@ -184,9 +204,10 @@ pub struct ChainId;
 /// - 08-wasm client on babylon, tracking union: `(ibc-go-v8/08-wasm, cometbls,
 ///   {"checksum": "0x..."}))`
 /// - cometbls client on scroll, tracking union: `(ibc-solidity, cometbls)`
-#[model]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Valuable, JsonSchema)]
 pub struct ClientInfo {
     pub client_type: ClientType<'static>,
+    /// The IBC interface this client is on.
     pub ibc_interface: IbcInterface<'static>,
     /// Additional metadata about this client.
     ///
@@ -194,10 +215,12 @@ pub struct ClientInfo {
     /// 08-wasm clients, and can likely be removed when support for that IBC
     /// interface is dropped.
     #[serde(default)]
+    #[valuable(skip)]
+    // TODO: Figure out a good way to emit this in the Valuable implementation
     pub metadata: Value,
 }
 
-#[model]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Valuable, JsonSchema)]
 pub struct ClientStateMeta {
     /// The counterparty height this client has been updated to. A consensus
     /// state will exist at this height.
@@ -207,14 +230,14 @@ pub struct ClientStateMeta {
     pub chain_id: ChainId<'static>,
 }
 
-#[model]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Valuable, JsonSchema)]
 pub struct ConsensusStateMeta {
     /// The timestamp of the counterparty at the height represented by this
     /// consensus state.
     pub timestamp_nanos: u64,
 }
 
-#[model]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Valuable, JsonSchema)]
 pub struct IbcGo08WasmClientMetadata {
     pub checksum: H256,
 }
@@ -231,10 +254,12 @@ macro_rules! str_newtype {
             Clone,
             PartialEq,
             Eq,
+            PartialOrd,
+            Ord,
             Hash,
             ::serde::Serialize,
             ::serde::Deserialize,
-            ::schemars::JsonSchema
+            ::schemars::JsonSchema,
         )]
         // I tested this and apparently it's not required (newtype is automatically transparent?) but
         // keeping it here for clarity
@@ -245,6 +270,16 @@ macro_rules! str_newtype {
         impl<'a> ::core::fmt::Display for $Struct<'a> {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 ::core::fmt::Display::fmt(&self.0, f)
+            }
+        }
+
+        impl<'a> ::valuable::Valuable for $Struct<'a> {
+            fn as_value(&self) -> ::valuable::Value<'_> {
+                ::valuable::Value::String(&self.0)
+            }
+
+            fn visit(&self, visit: &mut dyn ::valuable::Visit) {
+                visit.visit_value(self.as_value());
             }
         }
 

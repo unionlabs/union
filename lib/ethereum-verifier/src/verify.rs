@@ -4,7 +4,6 @@ use ssz::Ssz;
 use trie_db::{Trie, TrieDBBuilder};
 use typenum::Unsigned;
 use unionlabs::{
-    bls::{BlsPublicKey, BlsSignature},
     ensure,
     ethereum::{
         config::{
@@ -16,7 +15,7 @@ use unionlabs::{
         },
         DomainType,
     },
-    hash::{H160, H256},
+    hash::{hash_v2::Hash, H160, H256, H384},
     ibc::lightclients::ethereum::{
         execution_payload_header::CapellaExecutionPayloadHeader, fork_parameters::ForkParameters,
         light_client_header::LightClientHeader, light_client_update::LightClientUpdate,
@@ -41,9 +40,9 @@ type MinSyncCommitteeParticipants<Ctx> =
 pub trait BlsVerify {
     fn fast_aggregate_verify<'pk>(
         &self,
-        public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
+        public_keys: impl IntoIterator<Item = &'pk H384>,
         msg: Vec<u8>,
-        signature: BlsSignature,
+        signature: Hash<96>,
     ) -> Result<(), Error>;
 }
 
@@ -255,7 +254,6 @@ fn get_node(
         db.insert(hash_db::EMPTY_PREFIX, n.as_ref());
     });
 
-    let root: primitive_types::H256 = root.into();
     let trie = TrieDBBuilder::<EthLayout>::new(&db, &root).build();
     Ok(trie.get(&keccak_256(key.as_ref()))?)
 }
@@ -391,6 +389,7 @@ mod tests {
     use serde::Deserialize;
     use unionlabs::{
         ethereum::config::{Mainnet, SEPOLIA},
+        hash::H768,
         ibc::lightclients::ethereum::{storage_proof::StorageProof, sync_committee::SyncCommittee},
     };
 
@@ -493,9 +492,9 @@ mod tests {
     impl BlsVerify for BlsVerifier {
         fn fast_aggregate_verify<'pk>(
             &self,
-            public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
+            public_keys: impl IntoIterator<Item = &'pk H384>,
             msg: Vec<u8>,
-            signature: BlsSignature,
+            signature: H768,
         ) -> Result<(), Error> {
             let res = crate::crypto::fast_aggregate_verify_unchecked(
                 public_keys.into_iter().collect::<Vec<_>>().as_slice(),

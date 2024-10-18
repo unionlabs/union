@@ -1,18 +1,11 @@
-use core::num::TryFromIntError;
-
 use macros::model;
 
 use crate::{
     cosmos::{
-        crypto::{AnyPubKey, TryFromAnyPubKeyError},
-        staking::{
-            bond_status::BondStatus,
-            commission::{Commission, TryFromCommissionError},
-            description::Description,
-        },
+        crypto::AnyPubKey,
+        staking::{bond_status::BondStatus, commission::Commission, description::Description},
     },
-    errors::{required, MissingField, UnknownEnumVariant},
-    google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
+    google::protobuf::timestamp::Timestamp,
 };
 
 #[model(proto(raw(protos::cosmos::staking::v1beta1::Validator), into, from))]
@@ -50,66 +43,82 @@ pub struct Validator {
     pub unbonding_ids: Vec<u64>,
 }
 
-#[derive(Debug)]
-pub enum TryFromValidatorError {
-    MissingField(MissingField),
-    ConsensusPubKey(TryFromAnyPubKeyError),
-    BondStatus(UnknownEnumVariant<i32>),
-    UnbondingHeight(TryFromIntError),
-    Commission(TryFromCommissionError),
-    Timestamp(TryFromTimestampError),
-}
+#[cfg(feature = "proto")]
+pub mod proto {
+    use core::num::TryFromIntError;
 
-impl TryFrom<protos::cosmos::staking::v1beta1::Validator> for Validator {
-    type Error = TryFromValidatorError;
+    use crate::{
+        cosmos::{
+            crypto::proto::TryFromAnyPubKeyError,
+            staking::{commission::proto::TryFromCommissionError, validator::Validator},
+        },
+        errors::{required, MissingField, UnknownEnumVariant},
+        google::protobuf::timestamp::proto::TryFromTimestampError,
+    };
 
-    fn try_from(value: protos::cosmos::staking::v1beta1::Validator) -> Result<Self, Self::Error> {
-        Ok(Self {
-            operator_address: value.operator_address,
-            consensus_pubkey: required!(value.consensus_pubkey)?
-                .try_into()
-                .map_err(TryFromValidatorError::ConsensusPubKey)?,
-            jailed: value.jailed,
-            status: value
-                .status
-                .try_into()
-                .map_err(TryFromValidatorError::BondStatus)?,
-            tokens: value.tokens,
-            delegator_shares: value.delegator_shares,
-            description: required!(value.description)?.into(),
-            unbonding_height: value
-                .unbonding_height
-                .try_into()
-                .map_err(TryFromValidatorError::UnbondingHeight)?,
-            unbonding_time: required!(value.unbonding_time)?
-                .try_into()
-                .map_err(TryFromValidatorError::Timestamp)?,
-            commission: required!(value.commission)?
-                .try_into()
-                .map_err(TryFromValidatorError::Commission)?,
-            min_self_delegation: value.min_self_delegation,
-            unbonding_on_hold_ref_count: value.unbonding_on_hold_ref_count,
-            unbonding_ids: value.unbonding_ids,
-        })
+    #[derive(Debug)]
+    pub enum TryFromValidatorError {
+        MissingField(MissingField),
+        ConsensusPubKey(TryFromAnyPubKeyError),
+        BondStatus(UnknownEnumVariant<i32>),
+        UnbondingHeight(TryFromIntError),
+        Commission(TryFromCommissionError),
+        Timestamp(TryFromTimestampError),
     }
-}
 
-impl From<Validator> for protos::cosmos::staking::v1beta1::Validator {
-    fn from(value: Validator) -> Self {
-        Self {
-            operator_address: value.operator_address,
-            consensus_pubkey: Some(value.consensus_pubkey.into()),
-            jailed: value.jailed,
-            status: value.status.into(),
-            tokens: value.tokens,
-            delegator_shares: value.delegator_shares,
-            description: Some(value.description.into()),
-            unbonding_height: value.unbonding_height.into(),
-            unbonding_time: Some(value.unbonding_time.into()),
-            commission: Some(value.commission.into()),
-            min_self_delegation: value.min_self_delegation,
-            unbonding_on_hold_ref_count: value.unbonding_on_hold_ref_count,
-            unbonding_ids: value.unbonding_ids,
+    impl TryFrom<protos::cosmos::staking::v1beta1::Validator> for Validator {
+        type Error = TryFromValidatorError;
+
+        fn try_from(
+            value: protos::cosmos::staking::v1beta1::Validator,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                operator_address: value.operator_address,
+                consensus_pubkey: required!(value.consensus_pubkey)?
+                    .try_into()
+                    .map_err(TryFromValidatorError::ConsensusPubKey)?,
+                jailed: value.jailed,
+                status: value
+                    .status
+                    .try_into()
+                    .map_err(TryFromValidatorError::BondStatus)?,
+                tokens: value.tokens,
+                delegator_shares: value.delegator_shares,
+                description: required!(value.description)?.into(),
+                unbonding_height: value
+                    .unbonding_height
+                    .try_into()
+                    .map_err(TryFromValidatorError::UnbondingHeight)?,
+                unbonding_time: required!(value.unbonding_time)?
+                    .try_into()
+                    .map_err(TryFromValidatorError::Timestamp)?,
+                commission: required!(value.commission)?
+                    .try_into()
+                    .map_err(TryFromValidatorError::Commission)?,
+                min_self_delegation: value.min_self_delegation,
+                unbonding_on_hold_ref_count: value.unbonding_on_hold_ref_count,
+                unbonding_ids: value.unbonding_ids,
+            })
+        }
+    }
+
+    impl From<Validator> for protos::cosmos::staking::v1beta1::Validator {
+        fn from(value: Validator) -> Self {
+            Self {
+                operator_address: value.operator_address,
+                consensus_pubkey: Some(value.consensus_pubkey.into()),
+                jailed: value.jailed,
+                status: value.status.into(),
+                tokens: value.tokens,
+                delegator_shares: value.delegator_shares,
+                description: Some(value.description.into()),
+                unbonding_height: value.unbonding_height.into(),
+                unbonding_time: Some(value.unbonding_time.into()),
+                commission: Some(value.commission.into()),
+                min_self_delegation: value.min_self_delegation,
+                unbonding_on_hold_ref_count: value.unbonding_on_hold_ref_count,
+                unbonding_ids: value.unbonding_ids,
+            }
         }
     }
 }

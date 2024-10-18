@@ -1,8 +1,7 @@
 use std::num::NonZeroU64;
 
 use enumorph::Enumorph;
-use macros::model;
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use subset_of::SubsetOf;
 use tracing::info;
@@ -27,18 +26,24 @@ use unionlabs::{
             msg_connection_open_try::MsgConnectionOpenTry,
         },
     },
-    ics24::{ClientConsensusStatePath, ClientStatePath, IbcPath, Path},
+    ics24::{ClientConsensusStatePath, ClientStatePath, Path},
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    traits::Member,
 };
+use valuable::Valuable;
 
 use crate::{
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta},
+    macros::model,
     PluginMessage,
 };
 
-#[model]
-#[derive(Enumorph, SubsetOf)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Enumorph, SubsetOf)]
+#[serde(
+    deny_unknown_fields,
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case"
+)]
 #[allow(clippy::large_enum_variant)]
 pub enum Data {
     IbcEvent(ChainEvent),
@@ -154,7 +159,7 @@ impl ChainEvent {
 }
 
 #[model]
-#[derive(Enumorph)]
+#[derive(Enumorph, Valuable)]
 pub enum IbcMessage {
     CreateClient(MsgCreateClientData),
     UpdateClient(MsgUpdateClient),
@@ -295,11 +300,11 @@ pub struct ChannelOpenConfirm {
 #[model]
 pub struct WriteAcknowledgement {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub packet_data: Vec<u8>,
 
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub packet_ack: Vec<u8>,
 
     pub packet: PacketMetadata,
@@ -308,7 +313,7 @@ pub struct WriteAcknowledgement {
 #[model]
 pub struct RecvPacket {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub packet_data: Vec<u8>,
 
     pub packet: PacketMetadata,
@@ -317,7 +322,7 @@ pub struct RecvPacket {
 #[model]
 pub struct SendPacket {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub packet_data: Vec<u8>,
 
     pub packet: PacketMetadata,
@@ -334,6 +339,7 @@ pub struct TimeoutPacket {
 }
 
 #[model]
+#[derive(Valuable)]
 pub struct PacketMetadata {
     pub sequence: NonZeroU64,
 
@@ -347,6 +353,7 @@ pub struct PacketMetadata {
 }
 
 #[model]
+#[derive(Valuable)]
 pub struct ChannelMetadata {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -356,6 +363,7 @@ pub struct ChannelMetadata {
 }
 
 #[model]
+#[derive(Valuable)]
 pub struct ConnectionMetadata {
     pub client_id: ClientId,
     // this is really `Either<ConnectionId, EmptyString>`
@@ -396,22 +404,11 @@ pub struct UnfinalizedTrustedClientState {
 }
 
 #[model]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct IbcState<P: IbcPath> {
-    pub chain_id: ChainId<'static>,
-    pub path: P,
-    /// The height that the state was read at.
-    pub height: Height,
-    pub state: P::Value,
-}
-
-#[model]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct IbcProof<P: IbcPath> {
-    pub path: P,
+pub struct IbcProof {
+    pub path: Path,
     pub height: Height,
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub proof: Vec<u8>,
 }
 
@@ -458,21 +455,21 @@ pub struct OrderedMsgUpdateClients {
 #[model]
 pub struct EncodedClientState {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub encoded_client_state: Vec<u8>,
 }
 
 #[model]
 pub struct EncodedConsensusState {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub encoded_consensus_state: Vec<u8>,
 }
 
 #[model]
 pub struct EncodedHeader {
     #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    // #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub encoded_header: Vec<u8>,
 }
 
@@ -483,189 +480,8 @@ pub struct WithChainId<T> {
 }
 
 #[model]
+#[derive(Valuable)]
 pub struct MsgCreateClientData {
     pub msg: MsgCreateClient,
     pub client_type: ClientType<'static>,
-}
-
-pub fn log_msg(chain_id: &str, effect: &IbcMessage) {
-    match effect.clone() {
-        IbcMessage::ConnectionOpenInit(message) => {
-            info!(
-                %chain_id,
-                %message.client_id,
-                %message.counterparty.client_id,
-                message.counterparty.connection_id = %message.counterparty.connection_id.as_deref().unwrap_or_default(),
-                message.counterparty.prefix.key_prefix = %::serde_utils::to_hex(message.counterparty.prefix.key_prefix),
-                %message.version.identifier,
-                message.version.features = %message
-                    .version
-                    .features
-                    .into_iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(","),
-                %message.delay_period,
-            )
-        }
-        IbcMessage::ConnectionOpenTry(message) => {
-            info!(
-                %chain_id,
-                %message.client_id,
-                %message.counterparty.client_id,
-                message.counterparty.connection_id = %message.counterparty.connection_id.as_deref().unwrap_or_default(),
-                message.counterparty.prefix.key_prefix = %::serde_utils::to_hex(message.counterparty.prefix.key_prefix),
-                %message.delay_period,
-                // TODO: This needs `valuable`
-                // message.counterparty_versions = %message
-                //     .counterparty_versions
-                //     .into_iter()
-                //     .map(Into::into)
-                //     .collect(),
-                %message.proof_height,
-                %message.consensus_height,
-            )
-        }
-        IbcMessage::ConnectionOpenAck(message) => {
-            info!(
-                %chain_id,
-                // client_state.height = message.%data.message.client_state.height(),
-                %message.proof_height,
-                %message.consensus_height,
-                %message.connection_id,
-                %message.counterparty_connection_id,
-                %message.version.identifier,
-                message.version.features = %message
-                    .version
-                    .features
-                    .into_iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(","),
-            )
-        }
-        IbcMessage::ConnectionOpenConfirm(message) => {
-            info!(
-                %chain_id,
-                %message.connection_id,
-                %message.proof_height,
-            )
-        }
-        IbcMessage::ChannelOpenInit(message) => {
-            info!(
-                %chain_id,
-                %message.port_id,
-                %message.channel.state,
-                %message.channel.ordering,
-                %message.channel.counterparty.port_id,
-                %message.channel.counterparty.channel_id,
-                message.channel.connection_hops = %message
-                    .channel
-                    .connection_hops
-                    .into_iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(","),
-                %message.channel.version,
-            )
-        }
-        IbcMessage::ChannelOpenTry(message) => {
-            info!(
-                %chain_id,
-
-                %message.port_id,
-                %message.channel.state,
-                %message.channel.ordering,
-                %message.channel.counterparty.port_id,
-                %message.channel.counterparty.channel_id,
-                message.channel.connection_hops = %message
-                    .channel
-                    .connection_hops
-                    .into_iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(","),
-                %message.channel.version,
-                %message.counterparty_version,
-                %message.proof_height,
-            )
-        }
-        IbcMessage::ChannelOpenAck(message) => {
-            info!(
-                %chain_id,
-                %message.port_id,
-                %message.channel_id,
-                %message.counterparty_version,
-                %message.counterparty_channel_id,
-                %message.proof_height,
-            )
-        }
-        IbcMessage::ChannelOpenConfirm(message) => {
-            info!(
-                %chain_id,
-                %message.port_id,
-                %message.channel_id,
-                %message.proof_height,
-            )
-        }
-        IbcMessage::RecvPacket(message) => {
-            info!(
-                %chain_id,
-                %message.packet.sequence,
-                %message.packet.source_port,
-                %message.packet.source_channel,
-                %message.packet.destination_port,
-                %message.packet.destination_channel,
-                message.data = %::serde_utils::to_hex(message.packet.data),
-                %message.packet.timeout_height,
-                %message.packet.timeout_timestamp,
-
-                %message.proof_height,
-            )
-        }
-        IbcMessage::AcknowledgePacket(message) => {
-            info!(
-                %chain_id,
-                %message.packet.sequence,
-                %message.packet.source_port,
-                %message.packet.source_channel,
-                %message.packet.destination_port,
-                %message.packet.destination_channel,
-                message.data = %::serde_utils::to_hex(message.packet.data),
-                %message.packet.timeout_height,
-                %message.packet.timeout_timestamp,
-
-                message.data = %::serde_utils::to_hex(message.acknowledgement),
-                %message.proof_height,
-            )
-        }
-        IbcMessage::TimeoutPacket(message) => {
-            info!(
-                %chain_id,
-                %message.packet.sequence,
-                %message.packet.source_port,
-                %message.packet.source_channel,
-                %message.packet.destination_port,
-                %message.packet.destination_channel,
-                message.data = %::serde_utils::to_hex(message.packet.data),
-                %message.packet.timeout_height,
-                %message.packet.timeout_timestamp,
-
-                %message.proof_height,
-                %message.next_sequence_recv,
-            )
-        }
-        IbcMessage::CreateClient(message) => {
-            info!(
-                %chain_id,
-                %message.client_type,
-            )
-        }
-        IbcMessage::UpdateClient(message) => {
-            info!(
-                %chain_id,
-                %message.client_id,
-            )
-        }
-    }
 }

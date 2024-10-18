@@ -130,7 +130,7 @@ pub enum ModuleInitError {
 impl ConsensusModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
-        let ledger_version = self.ledger_version_of_height(height.revision_height).await;
+        let ledger_version = self.ledger_version_of_height(height.height()).await;
 
         let vault_addr = self
             .get_vault_addr(
@@ -164,11 +164,8 @@ impl ConsensusModuleServer for Module {
             table_handle: AccountAddress(Hash::new(
                 U256::from_be_hex(table_handle).unwrap().to_be_bytes(),
             )),
-            frozen_height: Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
-            latest_block_num: height.revision_height,
+            frozen_height: Height::default(),
+            latest_block_num: height.height(),
         })
         .expect("infallible"))
     }

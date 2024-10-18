@@ -1,6 +1,5 @@
 use enumorph::Enumorph;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
-use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use serde_utils::Hex;
@@ -23,13 +22,14 @@ use unionlabs::{
     },
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, ReceiptPath,
+        CommitmentPath, ConnectionPath,
     },
     id::{ClientId, ConnectionId},
-    traits::Member,
     QueryHeight, DELAY_PERIOD,
 };
+use valuable::Valuable;
 use voyager_core::ClientType;
+use voyager_macros::model;
 use voyager_vm::{call, data, defer, noop, now, seq, CallT, Op, QueueError};
 
 #[cfg(doc)]
@@ -39,7 +39,7 @@ use crate::{
     data::{IbcMessage, MsgCreateClientData, WithChainId},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::{ChainModuleClient, ClientModuleClient, ConsensusModuleClient, PluginClient},
-    rpc::json_rpc_error_to_error_object,
+    rpc::{json_rpc_error_to_error_object, VoyagerRpcServer},
     Context, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
@@ -399,6 +399,12 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
+                let ibc_store_format = ctx
+                    .rpc_server
+                    .client_type_ibc_store_format(target_client_info.client_type.clone())
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
                 // proof of connection_state, encoded for the client on the target chain
                 // this is encoded via the client module for the client on the origin chain
                 // (the chain the event was emitted on)
@@ -409,12 +415,13 @@ impl CallT<VoyagerMessage> for Call {
                         &target_client_info.ibc_interface,
                         ctx.rpc_server
                             .query_ibc_proof(
-                                &origin_chain_id,
-                                origin_chain_proof_height,
+                                origin_chain_id,
+                                origin_chain_proof_height.into(),
                                 ConnectionPath {
                                     connection_id: connection_open_ack_event.connection_id.clone(),
                                 }
                                 .into(),
+                                ibc_store_format,
                             )
                             .await
                             .map_err(error_object_to_queue_error)?
@@ -438,27 +445,12 @@ impl CallT<VoyagerMessage> for Call {
                 target_chain_id,
                 channel_open_init_event: event,
             }) => {
-                let origin_channel_path = ChannelEndPath {
-                    port_id: event.port_id.clone(),
-                    channel_id: event.channel_id.clone(),
-                };
-
                 let origin_channel = ctx
                     .rpc_server
-                    .query_ibc_state_typed(
-                        &origin_chain_id,
-                        origin_chain_proof_height,
-                        origin_channel_path.clone(),
-                    )
-                    .await
-                    .map_err(json_rpc_error_to_queue_error)?;
-
-                let proof_init = ctx
-                    .rpc_server
-                    .query_ibc_proof(
-                        &origin_chain_id,
-                        origin_chain_proof_height,
-                        origin_channel_path.into(),
+                    .query_channel(
+                        origin_chain_id.clone(),
+                        origin_chain_proof_height.into(),
+                        event.channel_id.clone(),
                     )
                     .await
                     .map_err(error_object_to_queue_error)?;
@@ -466,6 +458,26 @@ impl CallT<VoyagerMessage> for Call {
                 let client_info = ctx
                     .rpc_server
                     .client_info(&target_chain_id, event.connection.counterparty.client_id)
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                let ibc_store_format = ctx
+                    .rpc_server
+                    .client_type_ibc_store_format(client_info.client_type.clone())
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                let proof_init = ctx
+                    .rpc_server
+                    .query_ibc_proof(
+                        origin_chain_id,
+                        origin_chain_proof_height.into(),
+                        (ChannelEndPath {
+                            channel_id: event.channel_id.clone(),
+                        })
+                        .into(),
+                        ibc_store_format,
+                    )
                     .await
                     .map_err(error_object_to_queue_error)?;
 
@@ -489,7 +501,7 @@ impl CallT<VoyagerMessage> for Call {
                             .ordering,
                         counterparty: channel::counterparty::Counterparty {
                             port_id: event.port_id,
-                            channel_id: event.channel_id.to_string(),
+                            channel_id: Some(event.channel_id),
                         },
                         connection_hops: vec![event.connection.counterparty.connection_id.unwrap()],
                         version: event.version.clone(),
@@ -506,26 +518,31 @@ impl CallT<VoyagerMessage> for Call {
                 target_chain_id,
                 channel_open_try_event,
             }) => {
-                let origin_channel_path = ChannelEndPath {
-                    port_id: channel_open_try_event.port_id.clone(),
-                    channel_id: channel_open_try_event.channel_id.clone(),
-                };
-
-                let proof_try = ctx
-                    .rpc_server
-                    .query_ibc_proof(
-                        &origin_chain_id,
-                        origin_chain_proof_height,
-                        origin_channel_path.into(),
-                    )
-                    .await
-                    .map_err(error_object_to_queue_error)?;
-
                 let client_info = ctx
                     .rpc_server
                     .client_info(
                         &target_chain_id,
                         channel_open_try_event.connection.counterparty.client_id,
+                    )
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                let ibc_store_format = ctx
+                    .rpc_server
+                    .client_type_ibc_store_format(client_info.client_type.clone())
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                let proof_try = ctx
+                    .rpc_server
+                    .query_ibc_proof(
+                        origin_chain_id,
+                        origin_chain_proof_height.into(),
+                        ChannelEndPath {
+                            channel_id: channel_open_try_event.channel_id.clone(),
+                        }
+                        .into(),
+                        ibc_store_format,
                     )
                     .await
                     .map_err(error_object_to_queue_error)?;
@@ -556,26 +573,31 @@ impl CallT<VoyagerMessage> for Call {
                 target_chain_id,
                 channel_open_ack_event,
             }) => {
-                let origin_channel_path = ChannelEndPath {
-                    port_id: channel_open_ack_event.port_id.clone(),
-                    channel_id: channel_open_ack_event.channel_id.clone(),
-                };
-
-                let proof_ack = ctx
-                    .rpc_server
-                    .query_ibc_proof(
-                        &origin_chain_id,
-                        origin_chain_proof_height,
-                        origin_channel_path.into(),
-                    )
-                    .await
-                    .map_err(error_object_to_queue_error)?;
-
                 let client_info = ctx
                     .rpc_server
                     .client_info(
                         &target_chain_id,
                         channel_open_ack_event.connection.counterparty.client_id,
+                    )
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                let ibc_store_format = ctx
+                    .rpc_server
+                    .client_type_ibc_store_format(client_info.client_type.clone())
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                let proof_ack = ctx
+                    .rpc_server
+                    .query_ibc_proof(
+                        origin_chain_id,
+                        origin_chain_proof_height.into(),
+                        ChannelEndPath {
+                            channel_id: channel_open_ack_event.channel_id.clone(),
+                        }
+                        .into(),
+                        ibc_store_format,
                     )
                     .await
                     .map_err(error_object_to_queue_error)?;
@@ -647,7 +669,8 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
-                if chain_height.revision_number != height.revision_number {
+                // REVIEW: We may need to remove this
+                if chain_height.revision() != height.revision() {
                     return Err(QueueError::Fatal(
                         format!(
                             "revision number mismatch, \
@@ -659,7 +682,7 @@ impl CallT<VoyagerMessage> for Call {
 
                 debug!("latest height is {chain_height}, waiting for {height}");
 
-                if chain_height.revision_height >= height.revision_height {
+                if chain_height.height() >= height.height() {
                     Ok(noop())
                 } else {
                     Ok(seq([
@@ -678,10 +701,10 @@ impl CallT<VoyagerMessage> for Call {
 
                 Ok(call(WaitForHeight {
                     chain_id,
-                    height: Height {
-                        revision_number: chain_height.revision_number,
-                        revision_height: chain_height.revision_height + height,
-                    },
+                    height: Height::new_with_revision(
+                        chain_height.revision(),
+                        chain_height.height() + height,
+                    ),
                 }))
             }
 
@@ -736,7 +759,7 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
-                if trusted_client_state_meta.height.revision_height >= height.revision_height {
+                if trusted_client_state_meta.height.height() >= height.height() {
                     debug!(
                         "client height reached ({} >= {})",
                         trusted_client_state_meta.height, height
@@ -771,14 +794,7 @@ impl CallT<VoyagerMessage> for Call {
         %origin_chain_id,
         %origin_chain_proof_height,
         %target_chain_id,
-        %send_packet_event.packet.sequence,
-        %send_packet_event.packet.source_channel.port_id,
-        %send_packet_event.packet.source_channel.channel_id,
-        %send_packet_event.packet.destination_channel.port_id,
-        %send_packet_event.packet.destination_channel.channel_id,
-        %send_packet_event.packet.channel_ordering,
-        %send_packet_event.packet.timeout_height,
-        %send_packet_event.packet.timeout_timestamp,
+        send_packet_event.packet = send_packet_event.packet.as_value(),
     )
 )]
 async fn make_msg_recv_packet(
@@ -798,43 +814,24 @@ async fn make_msg_recv_packet(
 
     let commitment = ctx
         .rpc_server
-        .query_ibc_state_typed(
-            &target_chain_id,
-            target_chain_latest_height,
-            ReceiptPath {
-                port_id: send_packet_event.packet.destination_channel.port_id.clone(),
-                channel_id: send_packet_event
-                    .packet
-                    .destination_channel
-                    .channel_id
-                    .clone(),
-                sequence: send_packet_event.packet.sequence,
-            },
+        .query_receipt(
+            target_chain_id.clone(),
+            target_chain_latest_height.into(),
+            send_packet_event
+                .packet
+                .destination_channel
+                .channel_id
+                .clone(),
+            send_packet_event.packet.sequence,
         )
         .await
-        .map_err(json_rpc_error_to_queue_error)?
+        .map_err(error_object_to_queue_error)?
         .state;
 
     if commitment {
         info!("packet already received on the target chain");
         return Ok(noop());
     }
-
-    let proof_commitment = ctx
-        .rpc_server
-        .query_ibc_proof(
-            &origin_chain_id,
-            origin_chain_proof_height,
-            CommitmentPath {
-                port_id: send_packet_event.packet.source_channel.port_id.clone(),
-                channel_id: send_packet_event.packet.source_channel.channel_id.clone(),
-                sequence: send_packet_event.packet.sequence,
-            }
-            .into(),
-        )
-        .await
-        .map_err(error_object_to_queue_error)?
-        .proof;
 
     let client_info = ctx
         .rpc_server
@@ -848,6 +845,28 @@ async fn make_msg_recv_packet(
         )
         .await
         .map_err(error_object_to_queue_error)?;
+
+    let ibc_store_format = ctx
+        .rpc_server
+        .client_type_ibc_store_format(client_info.client_type.clone())
+        .await
+        .map_err(error_object_to_queue_error)?;
+
+    let proof_commitment = ctx
+        .rpc_server
+        .query_ibc_proof(
+            origin_chain_id,
+            origin_chain_proof_height.into(),
+            CommitmentPath {
+                channel_id: send_packet_event.packet.source_channel.channel_id.clone(),
+                sequence: send_packet_event.packet.sequence,
+            }
+            .into(),
+            ibc_store_format,
+        )
+        .await
+        .map_err(error_object_to_queue_error)?
+        .proof;
 
     let encoded_proof_commitment = ctx
         .rpc_server
@@ -881,14 +900,7 @@ async fn make_msg_recv_packet(
         %origin_chain_id,
         %origin_chain_proof_height,
         %target_chain_id,
-        %write_acknowledgement_event.packet.sequence,
-        %write_acknowledgement_event.packet.source_channel.port_id,
-        %write_acknowledgement_event.packet.source_channel.channel_id,
-        %write_acknowledgement_event.packet.destination_channel.port_id,
-        %write_acknowledgement_event.packet.destination_channel.channel_id,
-        %write_acknowledgement_event.packet.channel_ordering,
-        %write_acknowledgement_event.packet.timeout_height,
-        %write_acknowledgement_event.packet.timeout_timestamp,
+        write_acknowledgement_event.packet = write_acknowledgement_event.packet.as_value(),
     )
 )]
 async fn make_msg_acknowledgement(
@@ -908,55 +920,24 @@ async fn make_msg_acknowledgement(
 
     let commitment = ctx
         .rpc_server
-        .query_ibc_state_typed(
-            &target_chain_id,
-            target_chain_latest_height,
-            CommitmentPath {
-                port_id: write_acknowledgement_event
-                    .packet
-                    .source_channel
-                    .port_id
-                    .clone(),
-                channel_id: write_acknowledgement_event
-                    .packet
-                    .source_channel
-                    .channel_id
-                    .clone(),
-                sequence: write_acknowledgement_event.packet.sequence,
-            },
+        .query_commitment(
+            target_chain_id.clone(),
+            target_chain_latest_height.into(),
+            write_acknowledgement_event
+                .packet
+                .source_channel
+                .channel_id
+                .clone(),
+            write_acknowledgement_event.packet.sequence,
         )
         .await
-        .map_err(json_rpc_error_to_queue_error)?
+        .map_err(error_object_to_queue_error)?
         .state;
 
     if commitment.is_none() {
         info!("packet already acknowledged on the target chain");
         return Ok(noop());
     }
-
-    let proof_acked = ctx
-        .rpc_server
-        .query_ibc_proof(
-            &origin_chain_id,
-            origin_chain_proof_height,
-            AcknowledgementPath {
-                port_id: write_acknowledgement_event
-                    .packet
-                    .destination_channel
-                    .port_id
-                    .clone(),
-                channel_id: write_acknowledgement_event
-                    .packet
-                    .destination_channel
-                    .channel_id
-                    .clone(),
-                sequence: write_acknowledgement_event.packet.sequence,
-            }
-            .into(),
-        )
-        .await
-        .map_err(error_object_to_queue_error)?
-        .proof;
 
     let client_info = ctx
         .rpc_server
@@ -970,6 +951,32 @@ async fn make_msg_acknowledgement(
         )
         .await
         .map_err(error_object_to_queue_error)?;
+
+    let ibc_store_format = ctx
+        .rpc_server
+        .client_type_ibc_store_format(client_info.client_type.clone())
+        .await
+        .map_err(error_object_to_queue_error)?;
+
+    let proof_acked = ctx
+        .rpc_server
+        .query_ibc_proof(
+            origin_chain_id,
+            origin_chain_proof_height.into(),
+            AcknowledgementPath {
+                channel_id: write_acknowledgement_event
+                    .packet
+                    .destination_channel
+                    .channel_id
+                    .clone(),
+                sequence: write_acknowledgement_event.packet.sequence,
+            }
+            .into(),
+            ibc_store_format,
+        )
+        .await
+        .map_err(error_object_to_queue_error)?
+        .proof;
 
     let encoded_proof_acked = ctx
         .rpc_server
@@ -1105,9 +1112,9 @@ async fn make_msg_create_client(
     fields(
         %origin_chain_id,
         %target_chain_id,
-        %client_id,
-        %counterparty_client_id,
-        %connection_id,
+        client_id = client_id.as_value(),
+        counterparty_client_id = counterparty_client_id.as_value(),
+        connection_id = connection_id.as_value(),
         %origin_chain_proof_height,
     )
 )]
@@ -1129,10 +1136,8 @@ async fn mk_connection_handshake_state_and_proofs(
         .await?;
 
     debug!(
-        %counterparty_client_id,
-        %target_client_info.client_type,
-        %target_client_info.ibc_interface,
-        %target_client_info.metadata,
+        counterparty_client_id = counterparty_client_id.as_value(),
+        target_client_info = target_client_info.as_value()
     );
 
     // info of the client on the origin chain, this is used to decode the stored
@@ -1144,25 +1149,24 @@ async fn mk_connection_handshake_state_and_proofs(
         .await?;
 
     debug!(
-        %client_id,
-        %origin_client_info.client_type,
-        %origin_client_info.ibc_interface,
-        %origin_client_info.metadata,
+        client_id = client_id.as_value(),
+        origin_client_info = origin_client_info.as_value()
     );
 
+    let ibc_store_format = ctx
+        .rpc_server
+        .client_type_ibc_store_format(target_client_info.client_type.clone())
+        .await?;
+
     // client state of the destination on the source
-    let client_state_path = ClientStatePath {
-        client_id: client_id.clone(),
-    };
     let client_state = ctx
         .rpc_server
-        .query_ibc_state_typed(
-            &origin_chain_id,
-            origin_chain_proof_height,
-            client_state_path,
+        .query_client_state(
+            origin_chain_id.clone(),
+            origin_chain_proof_height.into(),
+            client_id.clone(),
         )
-        .await
-        .map_err(json_rpc_error_to_error_object)?
+        .await?
         .state;
 
     debug!(%client_state);
@@ -1179,10 +1183,7 @@ async fn mk_connection_handshake_state_and_proofs(
         )
         .await?;
 
-    debug!(
-        %client_meta.height,
-        %client_meta.chain_id,
-    );
+    debug!(client_meta = client_meta.as_value());
 
     let reencoded_client_state = ctx
         .rpc_server
@@ -1200,35 +1201,31 @@ async fn mk_connection_handshake_state_and_proofs(
     // the connection end as stored by the origin chain after open_init/try
     let connection_state = ctx
         .rpc_server
-        .query_ibc_state_typed(
-            &origin_chain_id,
-            origin_chain_proof_height,
-            ConnectionPath {
-                connection_id: connection_id.clone(),
-            },
+        .query_connection(
+            origin_chain_id.clone(),
+            origin_chain_proof_height.into(),
+            connection_id.clone(),
         )
-        .await
-        .map_err(json_rpc_error_to_error_object)?
+        .await?
         .state
         .ok_or(ErrorObject::owned(
             FATAL_JSONRPC_ERROR_CODE,
             "connection must exist",
             None::<()>,
         ))?;
-    debug!(
-        connection_state = %serde_json::to_string(&connection_state).unwrap(),
-    );
+    debug!(connection_state = connection_state.as_value());
 
     // proof of connection_state, encoded for the client on the target chain
     let connection_proof = ctx
         .rpc_server
         .query_ibc_proof(
-            &origin_chain_id,
-            origin_chain_proof_height,
+            origin_chain_id.clone(),
+            origin_chain_proof_height.into(),
             ConnectionPath {
                 connection_id: connection_id.clone(),
             }
             .into(),
+            ibc_store_format.clone(),
         )
         .await?
         .proof;
@@ -1247,12 +1244,13 @@ async fn mk_connection_handshake_state_and_proofs(
     let client_state_proof = ctx
         .rpc_server
         .query_ibc_proof(
-            &origin_chain_id,
-            origin_chain_proof_height,
+            origin_chain_id.clone(),
+            origin_chain_proof_height.into(),
             ClientStatePath {
                 client_id: client_id.clone(),
             }
             .into(),
+            ibc_store_format.clone(),
         )
         .await?
         .proof;
@@ -1271,13 +1269,14 @@ async fn mk_connection_handshake_state_and_proofs(
     let consensus_state_proof = ctx
         .rpc_server
         .query_ibc_proof(
-            &origin_chain_id,
-            origin_chain_proof_height,
+            origin_chain_id.clone(),
+            origin_chain_proof_height.into(),
             ClientConsensusStatePath {
                 client_id: client_id.clone(),
                 height: client_meta.height,
             }
             .into(),
+            ibc_store_format,
         )
         .await?
         .proof;

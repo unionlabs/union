@@ -17,14 +17,19 @@ pub struct CanonicalVote {
     pub chain_id: String,
 }
 
-impl From<CanonicalVote> for protos::tendermint::types::CanonicalVote {
-    fn from(value: CanonicalVote) -> Self {
-        Self {
-            r#type: value.ty.into(),
-            height: value.height.into(),
-            round: value.round.into(),
-            block_id: Some(value.block_id.into()),
-            chain_id: value.chain_id,
+#[cfg(feature = "proto")]
+pub mod proto {
+    use super::CanonicalVote;
+
+    impl From<CanonicalVote> for protos::tendermint::types::CanonicalVote {
+        fn from(value: CanonicalVote) -> Self {
+            Self {
+                r#type: value.ty.into(),
+                height: value.height.into(),
+                round: value.round.into(),
+                block_id: Some(value.block_id.into()),
+                chain_id: value.chain_id,
+            }
         }
     }
 }

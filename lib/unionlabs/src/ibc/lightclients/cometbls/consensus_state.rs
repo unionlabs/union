@@ -1,10 +1,6 @@
 use macros::model;
 
-use crate::{
-    errors::{required, InvalidLength, MissingField},
-    hash::H256,
-    ibc::core::commitment::merkle_root::{MerkleRoot, TryFromMerkleRootError},
-};
+use crate::{hash::H256, ibc::core::commitment::merkle_root::MerkleRoot};
 
 #[model(
     proto(
@@ -12,7 +8,7 @@ use crate::{
         into,
         from
     ),
-    ethabi(raw(contracts::glue::OptimizedConsensusState), into, from)
+    ethabi(raw(ibc_solidity::cometbls::ConsensusState), into, from)
 )]
 pub struct ConsensusState {
     pub timestamp: u64,
@@ -20,67 +16,82 @@ pub struct ConsensusState {
     pub next_validators_hash: H256,
 }
 
-#[derive(Debug, PartialEq, Clone, thiserror::Error)]
-pub enum TryFromConsensusStateError {
-    #[error(transparent)]
-    MissingField(MissingField),
-    #[error("invalid root")]
-    Root(#[from] TryFromMerkleRootError),
-    #[error("invalid next validators hash")]
-    NextValidatorsHash(#[from] InvalidLength),
-}
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        errors::{required, InvalidLength, MissingField},
+        ibc::{
+            core::commitment::merkle_root::proto::TryFromMerkleRootError,
+            lightclients::cometbls::consensus_state::ConsensusState,
+        },
+    };
 
-impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ConsensusState> for ConsensusState {
-    type Error = TryFromConsensusStateError;
-
-    fn try_from(
-        value: protos::union::ibc::lightclients::cometbls::v1::ConsensusState,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            timestamp: value.timestamp,
-            app_hash: required!(value.root)?
-                .try_into()
-                .map_err(TryFromConsensusStateError::Root)?,
-            next_validators_hash: value
-                .next_validators_hash
-                .try_into()
-                .map_err(TryFromConsensusStateError::NextValidatorsHash)?,
-        })
+    #[derive(Debug, PartialEq, Clone, thiserror::Error)]
+    pub enum TryFromConsensusStateError {
+        #[error(transparent)]
+        MissingField(MissingField),
+        #[error("invalid root")]
+        Root(#[from] TryFromMerkleRootError),
+        #[error("invalid next validators hash")]
+        NextValidatorsHash(#[from] InvalidLength),
     }
-}
 
-impl From<ConsensusState> for protos::union::ibc::lightclients::cometbls::v1::ConsensusState {
-    fn from(value: ConsensusState) -> Self {
-        Self {
-            timestamp: value.timestamp,
-            root: Some(value.app_hash.into()),
-            next_validators_hash: value.next_validators_hash.into(),
+    impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::ConsensusState> for ConsensusState {
+        type Error = TryFromConsensusStateError;
+
+        fn try_from(
+            value: protos::union::ibc::lightclients::cometbls::v1::ConsensusState,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                timestamp: value.timestamp,
+                app_hash: required!(value.root)?
+                    .try_into()
+                    .map_err(TryFromConsensusStateError::Root)?,
+                next_validators_hash: value
+                    .next_validators_hash
+                    .try_into()
+                    .map_err(TryFromConsensusStateError::NextValidatorsHash)?,
+            })
+        }
+    }
+
+    impl From<ConsensusState> for protos::union::ibc::lightclients::cometbls::v1::ConsensusState {
+        fn from(value: ConsensusState) -> Self {
+            Self {
+                timestamp: value.timestamp,
+                root: Some(value.app_hash.into()),
+                next_validators_hash: value.next_validators_hash.into(),
+            }
         }
     }
 }
 
 #[cfg(feature = "ethabi")]
-impl From<ConsensusState> for contracts::glue::OptimizedConsensusState {
-    fn from(value: ConsensusState) -> Self {
-        Self {
-            timestamp: value.timestamp,
-            app_hash: value.app_hash.hash.into(),
-            next_validators_hash: value.next_validators_hash.into(),
+pub mod ethabi {
+    use crate::ibc::{
+        core::commitment::merkle_root::MerkleRoot,
+        lightclients::cometbls::consensus_state::ConsensusState,
+    };
+
+    impl From<ConsensusState> for ibc_solidity::cometbls::ConsensusState {
+        fn from(value: ConsensusState) -> Self {
+            Self {
+                timestamp: value.timestamp,
+                appHash: value.app_hash.hash.into(),
+                nextValidatorsHash: value.next_validators_hash.into(),
+            }
         }
     }
-}
 
-#[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::OptimizedConsensusState> for ConsensusState {
-    type Error = TryFromConsensusStateError;
-
-    fn try_from(value: contracts::glue::OptimizedConsensusState) -> Result<Self, Self::Error> {
-        Ok(Self {
-            timestamp: value.timestamp,
-            app_hash: MerkleRoot {
-                hash: H256::from(value.app_hash),
-            },
-            next_validators_hash: value.next_validators_hash.into(),
-        })
+    impl From<ibc_solidity::cometbls::ConsensusState> for ConsensusState {
+        fn from(value: ibc_solidity::cometbls::ConsensusState) -> Self {
+            Self {
+                timestamp: value.timestamp,
+                app_hash: MerkleRoot {
+                    hash: value.appHash.into(),
+                },
+                next_validators_hash: value.nextValidatorsHash.into(),
+            }
+        }
     }
 }

@@ -90,10 +90,7 @@ impl IbcHost for Contract {
     }
 
     fn current_height(&self) -> Height {
-        Height {
-            revision_number: 0,
-            revision_height: env::block_height(),
-        }
+        Height::new(env::block_height())
     }
 
     fn current_timestamp(&self) -> u64 {

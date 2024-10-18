@@ -1,11 +1,8 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
-use crate::{
-    errors::InvalidLength,
-    hash::{hash_v2::HexUnprefixed, H256},
-};
+use crate::hash::{hash_v2::HexUnprefixed, H256};
 
+// TODO: Move this to the movement light client module
 /// A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root
 /// hash. For example, `TransactionInfoToAccountProof` can be constructed on top of this structure.
 #[model(proto(
@@ -30,63 +27,72 @@ pub struct SparseMerkleProof {
     pub siblings: Vec<H256<HexUnprefixed>>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SparseMerkleLeafNode {
     pub key: H256<HexUnprefixed>,
     pub value_hash: H256<HexUnprefixed>,
 }
 
-impl From<SparseMerkleProof> for protos::union::ibc::lightclients::movement::v1::SparseMerkleProof {
-    fn from(value: SparseMerkleProof) -> Self {
-        Self {
-            leaf: value.leaf.map(|leaf| {
-                protos::union::ibc::lightclients::movement::v1::SparseMerkleLeafNode {
-                    key: leaf.key.into(),
-                    value_hash: leaf.value_hash.into(),
-                }
-            }),
-            siblings: value.siblings.into_iter().map(Into::into).collect(),
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        aptos::sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
+        errors::InvalidLength,
+    };
+
+    impl From<SparseMerkleProof> for protos::union::ibc::lightclients::movement::v1::SparseMerkleProof {
+        fn from(value: SparseMerkleProof) -> Self {
+            Self {
+                leaf: value.leaf.map(|leaf| {
+                    protos::union::ibc::lightclients::movement::v1::SparseMerkleLeafNode {
+                        key: leaf.key.into(),
+                        value_hash: leaf.value_hash.into(),
+                    }
+                }),
+                siblings: value.siblings.into_iter().map(Into::into).collect(),
+            }
         }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromSparseMerkleProofError {
-    #[error("invalid siblings")]
-    Siblings(#[source] InvalidLength),
-    #[error("invalid leaf key")]
-    LeafKey(#[source] InvalidLength),
-    #[error("invalid leaf value hash")]
-    LeafValueHash(#[source] InvalidLength),
-}
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromSparseMerkleProofError {
+        #[error("invalid siblings")]
+        Siblings(#[source] InvalidLength),
+        #[error("invalid leaf key")]
+        LeafKey(#[source] InvalidLength),
+        #[error("invalid leaf value hash")]
+        LeafValueHash(#[source] InvalidLength),
+    }
 
-impl TryFrom<protos::union::ibc::lightclients::movement::v1::SparseMerkleProof>
-    for SparseMerkleProof
-{
-    type Error = TryFromSparseMerkleProofError;
+    impl TryFrom<protos::union::ibc::lightclients::movement::v1::SparseMerkleProof>
+        for SparseMerkleProof
+    {
+        type Error = TryFromSparseMerkleProofError;
 
-    fn try_from(
-        value: protos::union::ibc::lightclients::movement::v1::SparseMerkleProof,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            leaf: value.leaf.map(|leaf| SparseMerkleLeafNode {
-                key: leaf
-                    .key
-                    .try_into()
-                    .map_err(TryFromSparseMerkleProofError::LeafKey)
-                    .unwrap(),
-                value_hash: leaf
-                    .value_hash
-                    .try_into()
-                    .map_err(TryFromSparseMerkleProofError::LeafValueHash)
-                    .unwrap(),
-            }),
-            siblings: value
-                .siblings
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(TryFromSparseMerkleProofError::Siblings)?,
-        })
+        fn try_from(
+            value: protos::union::ibc::lightclients::movement::v1::SparseMerkleProof,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                leaf: value.leaf.map(|leaf| SparseMerkleLeafNode {
+                    key: leaf
+                        .key
+                        .try_into()
+                        .map_err(TryFromSparseMerkleProofError::LeafKey)
+                        .unwrap(),
+                    value_hash: leaf
+                        .value_hash
+                        .try_into()
+                        .map_err(TryFromSparseMerkleProofError::LeafValueHash)
+                        .unwrap(),
+                }),
+                siblings: value
+                    .siblings
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(TryFromSparseMerkleProofError::Siblings)?,
+            })
+        }
     }
 }

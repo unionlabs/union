@@ -1,13 +1,8 @@
 use macros::model;
 
-use crate::{
-    errors::{required, MissingField},
-    tendermint::types::{
-        duplicate_vote_evidence::{DuplicateVoteEvidence, TryFromDuplicateVoteEvidenceError},
-        light_client_attack_evidence::{
-            LightClientAttackEvidence, TryFromLightClientAttackEvidenceError,
-        },
-    },
+use crate::tendermint::types::{
+    duplicate_vote_evidence::DuplicateVoteEvidence,
+    light_client_attack_evidence::LightClientAttackEvidence,
 };
 
 #[model(proto(raw(protos::tendermint::types::Evidence), into, from))]
@@ -17,51 +12,63 @@ pub enum Evidence {
     LightClientAttack(LightClientAttackEvidence),
 }
 
-impl From<Evidence> for protos::tendermint::types::Evidence {
-    fn from(value: Evidence) -> Self {
-        Self {
-            sum: Some(match value {
-                Evidence::DuplicateVote(e) => {
-                    protos::tendermint::types::evidence::Sum::DuplicateVoteEvidence(e.into())
-                }
-                Evidence::LightClientAttack(e) => {
-                    protos::tendermint::types::evidence::Sum::LightClientAttackEvidence(e.into())
-                }
-            }),
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        errors::{required, MissingField},
+        tendermint::types::{
+            duplicate_vote_evidence::proto::TryFromDuplicateVoteEvidenceError, evidence::Evidence,
+            light_client_attack_evidence::proto::TryFromLightClientAttackEvidenceError,
+        },
+    };
+
+    impl From<Evidence> for protos::tendermint::types::Evidence {
+        fn from(value: Evidence) -> Self {
+            Self {
+                sum: Some(match value {
+                    Evidence::DuplicateVote(e) => {
+                        protos::tendermint::types::evidence::Sum::DuplicateVoteEvidence(e.into())
+                    }
+                    Evidence::LightClientAttack(e) => {
+                        protos::tendermint::types::evidence::Sum::LightClientAttackEvidence(
+                            e.into(),
+                        )
+                    }
+                }),
+            }
         }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromEvidenceError {
-    #[error(transparent)]
-    MissingField(#[from] MissingField),
-    #[error("invalid duplicate vote evidence")]
-    DuplicateVote(#[from] TryFromDuplicateVoteEvidenceError),
-    #[error("invalid light client attack evidence")]
-    LightClientAttack(#[from] TryFromLightClientAttackEvidenceError),
-}
-
-impl TryFrom<protos::tendermint::types::Evidence> for Evidence {
-    type Error = TryFromEvidenceError;
-
-    fn try_from(value: protos::tendermint::types::Evidence) -> Result<Self, Self::Error> {
-        Ok(match required!(value.sum)? {
-            protos::tendermint::types::evidence::Sum::DuplicateVoteEvidence(e) => {
-                Self::DuplicateVote(e.try_into()?)
-            }
-            protos::tendermint::types::evidence::Sum::LightClientAttackEvidence(e) => {
-                Self::LightClientAttack(e.try_into()?)
-            }
-        })
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromEvidenceError {
+        #[error(transparent)]
+        MissingField(#[from] MissingField),
+        #[error("invalid duplicate vote evidence")]
+        DuplicateVote(#[from] TryFromDuplicateVoteEvidenceError),
+        #[error("invalid light client attack evidence")]
+        LightClientAttack(#[from] TryFromLightClientAttackEvidenceError),
     }
-}
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn json() {
-        let json = r#"
+    impl TryFrom<protos::tendermint::types::Evidence> for Evidence {
+        type Error = TryFromEvidenceError;
+
+        fn try_from(value: protos::tendermint::types::Evidence) -> Result<Self, Self::Error> {
+            Ok(match required!(value.sum)? {
+                protos::tendermint::types::evidence::Sum::DuplicateVoteEvidence(e) => {
+                    Self::DuplicateVote(e.try_into()?)
+                }
+                protos::tendermint::types::evidence::Sum::LightClientAttackEvidence(e) => {
+                    Self::LightClientAttack(e.try_into()?)
+                }
+            })
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) mod tests {
+        #[test]
+        fn json() {
+            let json = r#"
 {
   "type": "tendermint/DuplicateVoteEvidence",
   "value": {
@@ -108,8 +115,10 @@ mod tests {
 }
 "#;
 
-        let evidence = serde_json::from_str::<protos::tendermint::types::Evidence>(json).unwrap();
+            let evidence =
+                serde_json::from_str::<protos::tendermint::types::Evidence>(json).unwrap();
 
-        dbg!(evidence);
+            dbg!(evidence);
+        }
     }
 }

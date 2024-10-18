@@ -7,8 +7,8 @@ use std::{
     },
 };
 
+use derive_where::derive_where;
 use either::Either;
-use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use tracing::{debug, info_span, warn, Instrument};
 
 use crate::{
@@ -17,7 +17,7 @@ use crate::{
     Captures, Op, Queue, QueueMessage,
 };
 
-#[derive(DebugNoBound, CloneNoBound)]
+#[derive_where(Debug, Clone)]
 pub struct InMemoryQueue<T: QueueMessage> {
     idx: Arc<AtomicU32>,
     ready: Arc<Mutex<BTreeMap<u32, Item<T>>>>,
@@ -26,7 +26,7 @@ pub struct InMemoryQueue<T: QueueMessage> {
     optimizer_queue: Arc<Mutex<BTreeMap<String, BTreeMap<u32, Item<T>>>>>,
 }
 
-#[derive(DebugNoBound, CloneNoBound)]
+#[derive_where(Debug, PartialEq, Clone)]
 pub(crate) struct Item<T: QueueMessage> {
     #[allow(dead_code)] // used in debug
     parents: Vec<u32>,

@@ -2,10 +2,6 @@ use core::{cmp::Ordering, fmt::Display, num::TryFromIntError, ops::Neg, str::Fro
 
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, TimeZone, Utc};
 use macros::model;
-use serde::{
-    de::{self, Unexpected},
-    Deserialize, Serialize,
-};
 
 use crate::{
     bounded::{BoundedI128, BoundedI32, BoundedI64, BoundedIntError},
@@ -25,11 +21,7 @@ pub type ValidTimestampUnixNanos = BoundedI128<
     { (TIMESTAMP_SECONDS_MAX as i128 * NANOS_PER_SECOND as i128) + NANOS_MAX as i128 },
 >;
 
-#[model(
-    proto(raw(protos::google::protobuf::Timestamp), into, from),
-    ethabi(raw(contracts::glue::GoogleProtobufTimestampData), into, from),
-    no_serde
-)]
+#[model(proto(raw(protos::google::protobuf::Timestamp), into, from), no_serde)]
 #[debug("Timestamp({})", self)]
 #[derive(Copy)]
 pub struct Timestamp {
@@ -48,9 +40,11 @@ impl Default for Timestamp {
 
 pub const MIN_TIMESTAMP: Timestamp = Timestamp {
     seconds: result_unwrap!(
-        BoundedI64::<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>::new(TIMESTAMP_SECONDS_MIN)
+        BoundedI64::<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>::new_const(
+            TIMESTAMP_SECONDS_MIN
+        )
     ),
-    nanos: result_unwrap!(BoundedI32::<0, NANOS_MAX>::new(0)),
+    nanos: result_unwrap!(BoundedI32::<0, NANOS_MAX>::new_const(0)),
 };
 
 impl Ord for Timestamp {
@@ -67,44 +61,59 @@ impl PartialOrd for Timestamp {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(rename = "Timestamp")]
-struct TimestampSerde {
-    pub seconds: BoundedI64<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>,
-    pub nanos: BoundedI32<0, NANOS_MAX>,
-}
+#[cfg(feature = "serde")]
+mod serde {
+    use serde::{
+        de::{self, Unexpected},
+        Deserialize, Serialize,
+    };
 
-impl Serialize for Timestamp {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        if serializer.is_human_readable() {
-            serializer.collect_str(self)
-        } else {
-            TimestampSerde {
-                seconds: self.seconds,
-                nanos: self.nanos,
+    use crate::{
+        bounded::{BoundedI32, BoundedI64},
+        google::protobuf::timestamp::{
+            Timestamp, NANOS_MAX, TIMESTAMP_SECONDS_MAX, TIMESTAMP_SECONDS_MIN,
+        },
+    };
+
+    #[derive(Serialize, Deserialize)]
+    #[serde(rename = "Timestamp")]
+    pub(crate) struct TimestampSerde {
+        pub seconds: BoundedI64<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>,
+        pub nanos: BoundedI32<0, NANOS_MAX>,
+    }
+
+    impl Serialize for Timestamp {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            if serializer.is_human_readable() {
+                serializer.collect_str(self)
+            } else {
+                TimestampSerde {
+                    seconds: self.seconds,
+                    nanos: self.nanos,
+                }
+                .serialize(serializer)
             }
-            .serialize(serializer)
         }
     }
-}
 
-impl<'de> Deserialize<'de> for Timestamp {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        if deserializer.is_human_readable() {
-            String::deserialize(deserializer).and_then(|str| {
-                str.parse().map_err(|_| {
-                    de::Error::invalid_value(Unexpected::Str(&str), &"a valid RFC 3339 string")
+    impl<'de> Deserialize<'de> for Timestamp {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            if deserializer.is_human_readable() {
+                String::deserialize(deserializer).and_then(|str| {
+                    str.parse().map_err(|_| {
+                        de::Error::invalid_value(Unexpected::Str(&str), &"a valid RFC 3339 string")
+                    })
                 })
-            })
-        } else {
-            let TimestampSerde { seconds, nanos } = TimestampSerde::deserialize(deserializer)?;
-            Ok(Self { seconds, nanos })
+            } else {
+                let TimestampSerde { seconds, nanos } = TimestampSerde::deserialize(deserializer)?;
+                Ok(Self { seconds, nanos })
+            }
         }
     }
 }
@@ -337,73 +346,42 @@ impl From<Timestamp> for cosmwasm_std::Timestamp {
     }
 }
 
-impl From<Timestamp> for protos::google::protobuf::Timestamp {
-    fn from(value: Timestamp) -> Self {
-        Self {
-            seconds: value.seconds.into(),
-            nanos: value.nanos.into(),
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{bounded::BoundedIntError, google::protobuf::timestamp::Timestamp};
+
+    impl From<Timestamp> for protos::google::protobuf::Timestamp {
+        fn from(value: Timestamp) -> Self {
+            Self {
+                seconds: value.seconds.into(),
+                nanos: value.nanos.into(),
+            }
         }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromTimestampError {
-    #[error("invalid seconds")]
-    Seconds(#[source] BoundedIntError<i64>),
-    #[error("invalid nanos")]
-    Nanos(#[source] BoundedIntError<i32>),
-}
-
-impl TryFrom<protos::google::protobuf::Timestamp> for Timestamp {
-    type Error = TryFromTimestampError;
-
-    fn try_from(value: protos::google::protobuf::Timestamp) -> Result<Self, Self::Error> {
-        Ok(Self {
-            seconds: value
-                .seconds
-                .try_into()
-                .map_err(TryFromTimestampError::Seconds)?,
-            nanos: value
-                .nanos
-                .try_into()
-                .map_err(TryFromTimestampError::Nanos)?,
-        })
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromTimestampError {
+        #[error("invalid seconds")]
+        Seconds(#[source] BoundedIntError<i64>),
+        #[error("invalid nanos")]
+        Nanos(#[source] BoundedIntError<i32>),
     }
-}
 
-#[cfg(feature = "ethabi")]
-impl From<Timestamp> for contracts::glue::GoogleProtobufTimestampData {
-    fn from(value: Timestamp) -> Self {
-        Self {
-            secs: value.seconds.into(),
-            nanos: value.nanos.inner().into(),
+    impl TryFrom<protos::google::protobuf::Timestamp> for Timestamp {
+        type Error = TryFromTimestampError;
+
+        fn try_from(value: protos::google::protobuf::Timestamp) -> Result<Self, Self::Error> {
+            Ok(Self {
+                seconds: value
+                    .seconds
+                    .try_into()
+                    .map_err(TryFromTimestampError::Seconds)?,
+                nanos: value
+                    .nanos
+                    .try_into()
+                    .map_err(TryFromTimestampError::Nanos)?,
+            })
         }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug, Clone, PartialEq)]
-pub enum TryFromEthAbiTimestampError {
-    Seconds(BoundedIntError<i64>),
-    Nanos(BoundedIntError<i32>),
-    NanosTryFromI64(core::num::TryFromIntError),
-}
-
-#[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::GoogleProtobufTimestampData> for Timestamp {
-    type Error = TryFromEthAbiTimestampError;
-
-    fn try_from(value: contracts::glue::GoogleProtobufTimestampData) -> Result<Self, Self::Error> {
-        Ok(Self {
-            seconds: value
-                .secs
-                .try_into()
-                .map_err(TryFromEthAbiTimestampError::Seconds)?,
-            nanos: i32::try_from(value.nanos)
-                .map_err(TryFromEthAbiTimestampError::NanosTryFromI64)?
-                .try_into()
-                .map_err(TryFromEthAbiTimestampError::Nanos)?,
-        })
     }
 }
 

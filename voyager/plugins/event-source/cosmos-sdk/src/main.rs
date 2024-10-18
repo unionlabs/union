@@ -150,10 +150,7 @@ impl Module {
 
     #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
-        Height {
-            revision_number: self.chain_revision,
-            revision_height: height,
-        }
+        Height::new_with_revision(self.chain_revision, height)
     }
 
     async fn client_type_of_checksum(&self, checksum: H256) -> RpcResult<Option<WasmClientType>> {
@@ -221,7 +218,7 @@ impl Module {
         }
     }
 
-    #[instrument(skip_all, fields(%client_id))]
+    #[instrument(skip_all, fields(client_id = client_id.as_value()))]
     async fn checksum_of_client_id(&self, client_id: ClientId) -> RpcResult<H256> {
         type WasmClientState = protos::ibc::lightclients::wasm::v1::ClientState;
 
@@ -380,7 +377,6 @@ impl Module {
                 self.chain_id.clone(),
                 event_height.into(),
                 ChannelEndPath {
-                    port_id: self_port_id.clone(),
                     channel_id: self_channel_id.clone(),
                 },
             )
@@ -394,7 +390,6 @@ impl Module {
                 client_meta.chain_id.clone(),
                 QueryHeight::Latest,
                 ChannelEndPath {
-                    port_id: other_port_id.clone(),
                     channel_id: other_channel_id.clone(),
                 },
             )
@@ -491,7 +486,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 let response = self
                     .tm_client
                     .tx_search(
-                        format!("tx.height={}", height.revision_height),
+                        format!("tx.height={}", height.height()),
                         false,
                         page,
                         PER_PAGE_LIMIT,
@@ -780,7 +775,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 height.into(),
                                 ChannelEndPath {
-                                    port_id: port_id.to_owned(),
                                     channel_id: channel_id.to_owned(),
                                 },
                             )

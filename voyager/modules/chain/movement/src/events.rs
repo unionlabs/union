@@ -1,6 +1,6 @@
 use aptos_move_ibc::ibc;
 use enumorph::Enumorph;
-use macros::model;
+use voyager_message::macros::model;
 
 #[model]
 #[derive(Enumorph)]

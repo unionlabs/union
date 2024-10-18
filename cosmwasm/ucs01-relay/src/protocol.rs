@@ -91,14 +91,10 @@ pub trait TransferProtocolExt<'a>:
             .unwrap_or_default()
             .nanos();
         let packet_timeout_height = match refund_info.origin_packet.timeout.block() {
-            Some(timeout_block) => Height {
-                revision_number: timeout_block.revision,
-                revision_height: timeout_block.height,
-            },
-            None => Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
+            Some(timeout_block) => {
+                Height::new_with_revision(timeout_block.revision, timeout_block.height)
+            }
+            None => Height::default(),
         };
 
         let deferred_packet_into = DeferredPacketInfo {
@@ -161,8 +157,8 @@ pub trait TransferProtocolExt<'a>:
         };
 
         let transfer_msg = TransferMsg {
-            channel: forward.channel.clone().value(),
-            receiver: forward.receiver.value(),
+            channel: forward.channel.to_string_prefixed(),
+            receiver: forward.receiver.into(),
             timeout: Some(timeout),
             memo,
             fees: forward.fees,
@@ -181,8 +177,8 @@ pub trait TransferProtocolExt<'a>:
             origin_sender_addr: self.common().info.sender.clone(),
             origin_packet: original_packet,
             forward_timeout: timeout,
-            forward_src_channel_id: forward.channel.value(),
-            forward_src_port_id: forward.port.value(),
+            forward_src_channel_id: forward.channel.to_string_prefixed(),
+            forward_src_port_id: forward.port.to_string(),
             origin_protocol_version: Self::VERSION.to_string(),
         };
 

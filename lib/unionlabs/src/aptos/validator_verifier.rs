@@ -1,10 +1,7 @@
 use macros::model;
 
 use super::public_key::PublicKey;
-use crate::{
-    aptos::account::AccountAddress,
-    errors::{required, InvalidLength, MissingField},
-};
+use crate::aptos::account::AccountAddress;
 
 /// Supports validation of signatures for known authors with individual voting powers. This struct
 /// can be used for all signature verification operations including block and network signature
@@ -31,76 +28,87 @@ pub struct ValidatorConsensusInfo {
     pub voting_power: u64,
 }
 
-impl From<ValidatorVerifier> for protos::union::ibc::lightclients::movement::v1::ValidatorVerifier {
-    fn from(value: ValidatorVerifier) -> Self {
-        Self {
-            validator_infos: value.validator_infos.into_iter().map(Into::into).collect(),
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        aptos::{
+            account::AccountAddress,
+            validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
+        },
+        errors::{required, InvalidLength, MissingField},
+    };
+
+    impl From<ValidatorVerifier> for protos::union::ibc::lightclients::movement::v1::ValidatorVerifier {
+        fn from(value: ValidatorVerifier) -> Self {
+            Self {
+                validator_infos: value.validator_infos.into_iter().map(Into::into).collect(),
+            }
         }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromValidatorVerifierError {
-    #[error("invalid validator infos: {0}")]
-    ValidatorInfos(#[from] TryFromValidatorConsensusInfoError),
-}
-
-impl TryFrom<protos::union::ibc::lightclients::movement::v1::ValidatorVerifier>
-    for ValidatorVerifier
-{
-    type Error = TryFromValidatorVerifierError;
-
-    fn try_from(
-        value: protos::union::ibc::lightclients::movement::v1::ValidatorVerifier,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            validator_infos: value
-                .validator_infos
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<_>, _>>()?,
-        })
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromValidatorVerifierError {
+        #[error("invalid validator infos: {0}")]
+        ValidatorInfos(#[from] TryFromValidatorConsensusInfoError),
     }
-}
 
-impl From<ValidatorConsensusInfo>
-    for protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo
-{
-    fn from(value: ValidatorConsensusInfo) -> Self {
-        Self {
-            address: value.address.0.into_bytes(),
-            public_key: Some(value.public_key.into()),
-            voting_power: value.voting_power,
+    impl TryFrom<protos::union::ibc::lightclients::movement::v1::ValidatorVerifier>
+        for ValidatorVerifier
+    {
+        type Error = TryFromValidatorVerifierError;
+
+        fn try_from(
+            value: protos::union::ibc::lightclients::movement::v1::ValidatorVerifier,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                validator_infos: value
+                    .validator_infos
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, _>>()?,
+            })
         }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromValidatorConsensusInfoError {
-    #[error(transparent)]
-    MissingField(#[from] MissingField),
-    #[error("invalid address")]
-    Address(#[source] InvalidLength),
-}
+    impl From<ValidatorConsensusInfo>
+        for protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo
+    {
+        fn from(value: ValidatorConsensusInfo) -> Self {
+            Self {
+                address: value.address.0.into_bytes(),
+                public_key: Some(value.public_key.into()),
+                voting_power: value.voting_power,
+            }
+        }
+    }
 
-impl TryFrom<protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo>
-    for ValidatorConsensusInfo
-{
-    type Error = TryFromValidatorConsensusInfoError;
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromValidatorConsensusInfoError {
+        #[error(transparent)]
+        MissingField(#[from] MissingField),
+        #[error("invalid address")]
+        Address(#[source] InvalidLength),
+    }
 
-    fn try_from(
-        value: protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            address: AccountAddress(
-                value
-                    .address
-                    .as_slice()
-                    .try_into()
-                    .map_err(TryFromValidatorConsensusInfoError::Address)?,
-            ),
-            public_key: required!(value.public_key)?.into(),
-            voting_power: value.voting_power,
-        })
+    impl TryFrom<protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo>
+        for ValidatorConsensusInfo
+    {
+        type Error = TryFromValidatorConsensusInfoError;
+
+        fn try_from(
+            value: protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                address: AccountAddress(
+                    value
+                        .address
+                        .as_slice()
+                        .try_into()
+                        .map_err(TryFromValidatorConsensusInfoError::Address)?,
+                ),
+                public_key: required!(value.public_key)?.into(),
+                voting_power: value.voting_power,
+            })
+        }
     }
 }

@@ -362,6 +362,424 @@ impl ::prost::Name for PacketSequence {
         ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
     }
 }
+/// MsgChannelOpenInit defines an sdk.Msg to initialize a channel handshake. It
+/// is called by a relayer on Chain A.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgChannelOpenInit {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub channel: ::core::option::Option<Channel>,
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgChannelOpenInit {
+    const NAME: &'static str = "MsgChannelOpenInit";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgChannelOpenInitResponse defines the Msg/ChannelOpenInit response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgChannelOpenInitResponse {
+    #[prost(string, tag = "1")]
+    pub channel_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub version: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgChannelOpenInitResponse {
+    const NAME: &'static str = "MsgChannelOpenInitResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgChannelOpenInit defines a msg sent by a Relayer to try to open a channel
+/// on Chain B. The version field within the Channel field has been deprecated. Its
+/// value will be ignored by core IBC.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgChannelOpenTry {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// Deprecated: this field is unused. Crossing hello's are no longer supported in core IBC.
+    #[deprecated]
+    #[prost(string, tag = "2")]
+    pub previous_channel_id: ::prost::alloc::string::String,
+    /// NOTE: the version field within the channel has been deprecated. Its value will be ignored by core IBC.
+    #[prost(message, optional, tag = "3")]
+    pub channel: ::core::option::Option<Channel>,
+    #[prost(string, tag = "4")]
+    pub counterparty_version: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "5")]
+    pub proof_init: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "6")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(string, tag = "7")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgChannelOpenTry {
+    const NAME: &'static str = "MsgChannelOpenTry";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgChannelOpenTryResponse defines the Msg/ChannelOpenTry response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgChannelOpenTryResponse {
+    #[prost(string, tag = "1")]
+    pub version: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgChannelOpenTryResponse {
+    const NAME: &'static str = "MsgChannelOpenTryResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgChannelOpenAck defines a msg sent by a Relayer to Chain A to acknowledge
+/// the change of channel state to TRYOPEN on Chain B.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgChannelOpenAck {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub counterparty_channel_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "4")]
+    pub counterparty_version: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "5")]
+    pub proof_try: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "6")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(string, tag = "7")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgChannelOpenAck {
+    const NAME: &'static str = "MsgChannelOpenAck";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgChannelOpenAckResponse defines the Msg/ChannelOpenAck response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgChannelOpenAckResponse {}
+impl ::prost::Name for MsgChannelOpenAckResponse {
+    const NAME: &'static str = "MsgChannelOpenAckResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgChannelOpenConfirm defines a msg sent by a Relayer to Chain B to
+/// acknowledge the change of channel state to OPEN on Chain A.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgChannelOpenConfirm {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "3")]
+    pub proof_ack: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "4")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(string, tag = "5")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgChannelOpenConfirm {
+    const NAME: &'static str = "MsgChannelOpenConfirm";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgChannelOpenConfirmResponse defines the Msg/ChannelOpenConfirm response
+/// type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgChannelOpenConfirmResponse {}
+impl ::prost::Name for MsgChannelOpenConfirmResponse {
+    const NAME: &'static str = "MsgChannelOpenConfirmResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgChannelCloseInit defines a msg sent by a Relayer to Chain A
+/// to close a channel with Chain B.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgChannelCloseInit {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgChannelCloseInit {
+    const NAME: &'static str = "MsgChannelCloseInit";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgChannelCloseInitResponse defines the Msg/ChannelCloseInit response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgChannelCloseInitResponse {}
+impl ::prost::Name for MsgChannelCloseInitResponse {
+    const NAME: &'static str = "MsgChannelCloseInitResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgChannelCloseConfirm defines a msg sent by a Relayer to Chain B
+/// to acknowledge the change of channel state to CLOSED on Chain A.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgChannelCloseConfirm {
+    #[prost(string, tag = "1")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub channel_id: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "3")]
+    pub proof_init: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "4")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(string, tag = "5")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgChannelCloseConfirm {
+    const NAME: &'static str = "MsgChannelCloseConfirm";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgChannelCloseConfirmResponse defines the Msg/ChannelCloseConfirm response
+/// type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgChannelCloseConfirmResponse {}
+impl ::prost::Name for MsgChannelCloseConfirmResponse {
+    const NAME: &'static str = "MsgChannelCloseConfirmResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgRecvPacket receives incoming IBC packet
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgRecvPacket {
+    #[prost(message, optional, tag = "1")]
+    pub packet: ::core::option::Option<Packet>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof_commitment: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(string, tag = "4")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgRecvPacket {
+    const NAME: &'static str = "MsgRecvPacket";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgRecvPacketResponse defines the Msg/RecvPacket response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgRecvPacketResponse {
+    #[prost(enumeration = "ResponseResultType", tag = "1")]
+    pub result: i32,
+}
+impl ::prost::Name for MsgRecvPacketResponse {
+    const NAME: &'static str = "MsgRecvPacketResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgTimeout receives timed-out packet
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgTimeout {
+    #[prost(message, optional, tag = "1")]
+    pub packet: ::core::option::Option<Packet>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof_unreceived: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "3")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(uint64, tag = "4")]
+    pub next_sequence_recv: u64,
+    #[prost(string, tag = "5")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgTimeout {
+    const NAME: &'static str = "MsgTimeout";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgTimeoutResponse defines the Msg/Timeout response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgTimeoutResponse {
+    #[prost(enumeration = "ResponseResultType", tag = "1")]
+    pub result: i32,
+}
+impl ::prost::Name for MsgTimeoutResponse {
+    const NAME: &'static str = "MsgTimeoutResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgTimeoutOnClose timed-out packet upon counterparty channel closure.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgTimeoutOnClose {
+    #[prost(message, optional, tag = "1")]
+    pub packet: ::core::option::Option<Packet>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub proof_unreceived: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "3")]
+    pub proof_close: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "4")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(uint64, tag = "5")]
+    pub next_sequence_recv: u64,
+    #[prost(string, tag = "6")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgTimeoutOnClose {
+    const NAME: &'static str = "MsgTimeoutOnClose";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgTimeoutOnCloseResponse defines the Msg/TimeoutOnClose response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgTimeoutOnCloseResponse {
+    #[prost(enumeration = "ResponseResultType", tag = "1")]
+    pub result: i32,
+}
+impl ::prost::Name for MsgTimeoutOnCloseResponse {
+    const NAME: &'static str = "MsgTimeoutOnCloseResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgAcknowledgement receives incoming IBC acknowledgement
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgAcknowledgement {
+    #[prost(message, optional, tag = "1")]
+    pub packet: ::core::option::Option<Packet>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub acknowledgement: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "3")]
+    pub proof_acked: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "4")]
+    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
+    #[prost(string, tag = "5")]
+    pub signer: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgAcknowledgement {
+    const NAME: &'static str = "MsgAcknowledgement";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// MsgAcknowledgementResponse defines the Msg/Acknowledgement response type.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgAcknowledgementResponse {
+    #[prost(enumeration = "ResponseResultType", tag = "1")]
+    pub result: i32,
+}
+impl ::prost::Name for MsgAcknowledgementResponse {
+    const NAME: &'static str = "MsgAcknowledgementResponse";
+    const PACKAGE: &'static str = "ibc.core.channel.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
+    }
+}
+/// ResponseResultType defines the possible outcomes of the execution of a message
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum ResponseResultType {
+    /// Default zero value enumeration
+    Unspecified = 0,
+    /// The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+    Noop = 1,
+    /// The message was executed successfully
+    Success = 2,
+}
+impl ResponseResultType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            ResponseResultType::Unspecified => "RESPONSE_RESULT_TYPE_UNSPECIFIED",
+            ResponseResultType::Noop => "RESPONSE_RESULT_TYPE_NOOP",
+            ResponseResultType::Success => "RESPONSE_RESULT_TYPE_SUCCESS",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "RESPONSE_RESULT_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
+            "RESPONSE_RESULT_TYPE_NOOP" => Some(Self::Noop),
+            "RESPONSE_RESULT_TYPE_SUCCESS" => Some(Self::Success),
+            _ => None,
+        }
+    }
+}
 /// QueryChannelRequest is the request type for the Query/Channel RPC method
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1002,424 +1420,6 @@ impl ::prost::Name for QueryNextSequenceSendResponse {
     const PACKAGE: &'static str = "ibc.core.channel.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgChannelOpenInit defines an sdk.Msg to initialize a channel handshake. It
-/// is called by a relayer on Chain A.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelOpenInit {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub channel: ::core::option::Option<Channel>,
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgChannelOpenInit {
-    const NAME: &'static str = "MsgChannelOpenInit";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgChannelOpenInitResponse defines the Msg/ChannelOpenInit response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelOpenInitResponse {
-    #[prost(string, tag = "1")]
-    pub channel_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub version: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgChannelOpenInitResponse {
-    const NAME: &'static str = "MsgChannelOpenInitResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgChannelOpenInit defines a msg sent by a Relayer to try to open a channel
-/// on Chain B. The version field within the Channel field has been deprecated. Its
-/// value will be ignored by core IBC.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelOpenTry {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    /// Deprecated: this field is unused. Crossing hello's are no longer supported in core IBC.
-    #[deprecated]
-    #[prost(string, tag = "2")]
-    pub previous_channel_id: ::prost::alloc::string::String,
-    /// NOTE: the version field within the channel has been deprecated. Its value will be ignored by core IBC.
-    #[prost(message, optional, tag = "3")]
-    pub channel: ::core::option::Option<Channel>,
-    #[prost(string, tag = "4")]
-    pub counterparty_version: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "5")]
-    pub proof_init: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "6")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "7")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgChannelOpenTry {
-    const NAME: &'static str = "MsgChannelOpenTry";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgChannelOpenTryResponse defines the Msg/ChannelOpenTry response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelOpenTryResponse {
-    #[prost(string, tag = "1")]
-    pub version: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgChannelOpenTryResponse {
-    const NAME: &'static str = "MsgChannelOpenTryResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgChannelOpenAck defines a msg sent by a Relayer to Chain A to acknowledge
-/// the change of channel state to TRYOPEN on Chain B.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelOpenAck {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "3")]
-    pub counterparty_channel_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "4")]
-    pub counterparty_version: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "5")]
-    pub proof_try: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "6")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "7")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgChannelOpenAck {
-    const NAME: &'static str = "MsgChannelOpenAck";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgChannelOpenAckResponse defines the Msg/ChannelOpenAck response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelOpenAckResponse {}
-impl ::prost::Name for MsgChannelOpenAckResponse {
-    const NAME: &'static str = "MsgChannelOpenAckResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgChannelOpenConfirm defines a msg sent by a Relayer to Chain B to
-/// acknowledge the change of channel state to OPEN on Chain A.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelOpenConfirm {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "3")]
-    pub proof_ack: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "4")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "5")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgChannelOpenConfirm {
-    const NAME: &'static str = "MsgChannelOpenConfirm";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgChannelOpenConfirmResponse defines the Msg/ChannelOpenConfirm response
-/// type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelOpenConfirmResponse {}
-impl ::prost::Name for MsgChannelOpenConfirmResponse {
-    const NAME: &'static str = "MsgChannelOpenConfirmResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgChannelCloseInit defines a msg sent by a Relayer to Chain A
-/// to close a channel with Chain B.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelCloseInit {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "3")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgChannelCloseInit {
-    const NAME: &'static str = "MsgChannelCloseInit";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgChannelCloseInitResponse defines the Msg/ChannelCloseInit response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelCloseInitResponse {}
-impl ::prost::Name for MsgChannelCloseInitResponse {
-    const NAME: &'static str = "MsgChannelCloseInitResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgChannelCloseConfirm defines a msg sent by a Relayer to Chain B
-/// to acknowledge the change of channel state to CLOSED on Chain A.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelCloseConfirm {
-    #[prost(string, tag = "1")]
-    pub port_id: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub channel_id: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "3")]
-    pub proof_init: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "4")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "5")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgChannelCloseConfirm {
-    const NAME: &'static str = "MsgChannelCloseConfirm";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgChannelCloseConfirmResponse defines the Msg/ChannelCloseConfirm response
-/// type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgChannelCloseConfirmResponse {}
-impl ::prost::Name for MsgChannelCloseConfirmResponse {
-    const NAME: &'static str = "MsgChannelCloseConfirmResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgRecvPacket receives incoming IBC packet
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRecvPacket {
-    #[prost(message, optional, tag = "1")]
-    pub packet: ::core::option::Option<Packet>,
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof_commitment: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "4")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgRecvPacket {
-    const NAME: &'static str = "MsgRecvPacket";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgRecvPacketResponse defines the Msg/RecvPacket response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRecvPacketResponse {
-    #[prost(enumeration = "ResponseResultType", tag = "1")]
-    pub result: i32,
-}
-impl ::prost::Name for MsgRecvPacketResponse {
-    const NAME: &'static str = "MsgRecvPacketResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgTimeout receives timed-out packet
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgTimeout {
-    #[prost(message, optional, tag = "1")]
-    pub packet: ::core::option::Option<Packet>,
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof_unreceived: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(uint64, tag = "4")]
-    pub next_sequence_recv: u64,
-    #[prost(string, tag = "5")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgTimeout {
-    const NAME: &'static str = "MsgTimeout";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgTimeoutResponse defines the Msg/Timeout response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgTimeoutResponse {
-    #[prost(enumeration = "ResponseResultType", tag = "1")]
-    pub result: i32,
-}
-impl ::prost::Name for MsgTimeoutResponse {
-    const NAME: &'static str = "MsgTimeoutResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgTimeoutOnClose timed-out packet upon counterparty channel closure.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgTimeoutOnClose {
-    #[prost(message, optional, tag = "1")]
-    pub packet: ::core::option::Option<Packet>,
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof_unreceived: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "3")]
-    pub proof_close: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "4")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(uint64, tag = "5")]
-    pub next_sequence_recv: u64,
-    #[prost(string, tag = "6")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgTimeoutOnClose {
-    const NAME: &'static str = "MsgTimeoutOnClose";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgTimeoutOnCloseResponse defines the Msg/TimeoutOnClose response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgTimeoutOnCloseResponse {
-    #[prost(enumeration = "ResponseResultType", tag = "1")]
-    pub result: i32,
-}
-impl ::prost::Name for MsgTimeoutOnCloseResponse {
-    const NAME: &'static str = "MsgTimeoutOnCloseResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgAcknowledgement receives incoming IBC acknowledgement
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgAcknowledgement {
-    #[prost(message, optional, tag = "1")]
-    pub packet: ::core::option::Option<Packet>,
-    #[prost(bytes = "vec", tag = "2")]
-    pub acknowledgement: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "3")]
-    pub proof_acked: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "4")]
-    pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "5")]
-    pub signer: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgAcknowledgement {
-    const NAME: &'static str = "MsgAcknowledgement";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// MsgAcknowledgementResponse defines the Msg/Acknowledgement response type.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgAcknowledgementResponse {
-    #[prost(enumeration = "ResponseResultType", tag = "1")]
-    pub result: i32,
-}
-impl ::prost::Name for MsgAcknowledgementResponse {
-    const NAME: &'static str = "MsgAcknowledgementResponse";
-    const PACKAGE: &'static str = "ibc.core.channel.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.channel.v1.{}", Self::NAME)
-    }
-}
-/// ResponseResultType defines the possible outcomes of the execution of a message
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum ResponseResultType {
-    /// Default zero value enumeration
-    Unspecified = 0,
-    /// The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
-    Noop = 1,
-    /// The message was executed successfully
-    Success = 2,
-}
-impl ResponseResultType {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
-            ResponseResultType::Unspecified => "RESPONSE_RESULT_TYPE_UNSPECIFIED",
-            ResponseResultType::Noop => "RESPONSE_RESULT_TYPE_NOOP",
-            ResponseResultType::Success => "RESPONSE_RESULT_TYPE_SUCCESS",
-        }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-        match value {
-            "RESPONSE_RESULT_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
-            "RESPONSE_RESULT_TYPE_NOOP" => Some(Self::Noop),
-            "RESPONSE_RESULT_TYPE_SUCCESS" => Some(Self::Success),
-            _ => None,
-        }
     }
 }
 include!("ibc.core.channel.v1.tonic.rs");

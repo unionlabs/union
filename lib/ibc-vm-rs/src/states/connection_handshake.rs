@@ -10,7 +10,7 @@ use unionlabs::{
         },
     },
     ics24::ConnectionPath,
-    id::ClientId,
+    id::{ClientId, ConnectionId},
     validated::ValidateT,
 };
 
@@ -234,7 +234,10 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                             path: MerklePath {
                                 key_path: vec![
                                     "ibc".to_string(),
-                                    format!("connections/{}", counterparty_connection_id.unwrap()),
+                                    format!(
+                                        "connections/{}",
+                                        counterparty_connection_id.unwrap().to_string_prefixed()
+                                    ),
                                 ],
                             },
                             // TODO(aeryz): generic over the encoding
@@ -401,13 +404,13 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                 }
                 connection.state = connection::state::State::Open;
                 connection.counterparty.connection_id =
-                    Some(counterparty_connection_id.clone().validate().unwrap());
+                    Some(ConnectionId::parse_prefixed(&counterparty_connection_id).unwrap());
 
                 let counterparty_client_id = connection.counterparty.client_id.clone();
 
                 host.commit(
                     ConnectionPath {
-                        connection_id: connection_id.clone().validate().unwrap(),
+                        connection_id: ConnectionId::parse_prefixed(&connection_id).unwrap(),
                     }
                     .into(),
                     connection,
@@ -415,10 +418,13 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
 
                 Either::Right((
                     vec![IbcEvent::ConnectionOpenAck(events::ConnectionOpenAck {
-                        connection_id: connection_id.validate().unwrap(),
+                        connection_id: ConnectionId::parse_prefixed(&connection_id).unwrap(),
                         client_id,
                         counterparty_client_id,
-                        counterparty_connection_id: counterparty_connection_id.validate().unwrap(),
+                        counterparty_connection_id: ConnectionId::parse_prefixed(
+                            &counterparty_connection_id,
+                        )
+                        .unwrap(),
                     })],
                     IbcVmResponse::Empty,
                 ))

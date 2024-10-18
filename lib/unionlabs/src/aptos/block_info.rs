@@ -1,12 +1,8 @@
 use macros::model;
 
-use super::epoch_state::{EpochState, TryFromEpochStateError};
 use crate::{
-    errors::InvalidLength,
-    hash::{
-        hash_v2::{Hash, HexUnprefixed},
-        H256,
-    },
+    aptos::epoch_state::EpochState,
+    hash::{hash_v2::HexUnprefixed, H256},
 };
 
 /// The round of a block is a consensus-internal counter, which starts with 0 and increases
@@ -49,45 +45,54 @@ pub struct BlockInfo {
     pub next_epoch_state: Option<EpochState>,
 }
 
-impl From<BlockInfo> for protos::union::ibc::lightclients::movement::v1::BlockInfo {
-    fn from(value: BlockInfo) -> Self {
-        Self {
-            epoch: value.epoch,
-            round: value.round,
-            id: value.id.into_bytes(),
-            executed_state_id: value.executed_state_id.into_bytes(),
-            version: value.version,
-            timestamp_usecs: value.timestamp_usecs,
-            next_epoch_state: value.next_epoch_state.map(Into::into),
+#[cfg(feature = "proto")]
+pub mod proto {
+    use crate::{
+        aptos::{block_info::BlockInfo, epoch_state::proto::TryFromEpochStateError},
+        errors::InvalidLength,
+        hash::{hash_v2::Hash, H256},
+    };
+
+    impl From<BlockInfo> for protos::union::ibc::lightclients::movement::v1::BlockInfo {
+        fn from(value: BlockInfo) -> Self {
+            Self {
+                epoch: value.epoch,
+                round: value.round,
+                id: value.id.into_bytes(),
+                executed_state_id: value.executed_state_id.into_bytes(),
+                version: value.version,
+                timestamp_usecs: value.timestamp_usecs,
+                next_epoch_state: value.next_epoch_state.map(Into::into),
+            }
         }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromBlockInfoError {
-    #[error("invalid id")]
-    Id(#[source] InvalidLength),
-    #[error("invalid executed state id")]
-    ExecutedStateId(#[source] InvalidLength),
-    #[error("invalid next epoch state: {0}")]
-    NextEpochState(#[from] TryFromEpochStateError),
-}
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum TryFromBlockInfoError {
+        #[error("invalid id")]
+        Id(#[source] InvalidLength),
+        #[error("invalid executed state id")]
+        ExecutedStateId(#[source] InvalidLength),
+        #[error("invalid next epoch state: {0}")]
+        NextEpochState(#[from] TryFromEpochStateError),
+    }
 
-impl TryFrom<protos::union::ibc::lightclients::movement::v1::BlockInfo> for BlockInfo {
-    type Error = TryFromBlockInfoError;
+    impl TryFrom<protos::union::ibc::lightclients::movement::v1::BlockInfo> for BlockInfo {
+        type Error = TryFromBlockInfoError;
 
-    fn try_from(
-        value: protos::union::ibc::lightclients::movement::v1::BlockInfo,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            epoch: value.epoch,
-            round: value.round,
-            id: H256::try_from(value.id).map_err(TryFromBlockInfoError::Id)?,
-            executed_state_id: Hash::try_from(value.executed_state_id)
-                .map_err(TryFromBlockInfoError::ExecutedStateId)?,
-            version: value.version,
-            timestamp_usecs: value.timestamp_usecs,
-            next_epoch_state: value.next_epoch_state.map(TryInto::try_into).transpose()?,
-        })
+        fn try_from(
+            value: protos::union::ibc::lightclients::movement::v1::BlockInfo,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                epoch: value.epoch,
+                round: value.round,
+                id: H256::try_from(value.id).map_err(TryFromBlockInfoError::Id)?,
+                executed_state_id: Hash::try_from(value.executed_state_id)
+                    .map_err(TryFromBlockInfoError::ExecutedStateId)?,
+                version: value.version,
+                timestamp_usecs: value.timestamp_usecs,
+                next_epoch_state: value.next_epoch_state.map(TryInto::try_into).transpose()?,
+            })
+        }
     }
 }
