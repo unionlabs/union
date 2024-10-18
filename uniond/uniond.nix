@@ -77,7 +77,7 @@
                     (nix-filter.matchExt "md")
                   ];
                 };
-                vendorHash = null;
+                vendorHash = "sha256-vGBglbozflXRaStodNqwOFpuZd/xHUfJpTEojAEui7g=";
                 doCheck = true;
                 meta.mainProgram = "uniond";
               }
