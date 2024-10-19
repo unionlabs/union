@@ -75,7 +75,7 @@ impl<T: FetcherClient> Indexer<T> {
                                     block_range_to_finalize.end_exclusive,
                                 )))
                                 .into();
-                            info!("updating: {}", range_to_refresh);
+                            info!("{}: finalizing", range_to_refresh);
 
                             self.finalize_blocks(&last_finalized, range_to_refresh)
                                 .instrument(info_span!("monitor"))
