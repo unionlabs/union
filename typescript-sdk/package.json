@@ -41,12 +41,12 @@
     "neverthrow": "^8.0.0",
     "ofetch": "^1.4.1",
     "patch-package": "^8.0.0",
-    "viem": "^2.21.22"
+    "viem": "^2.21.29"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/bun": "^1.1.11",
-    "@types/node": "^22.7.5",
+    "@types/node": "^22.7.7",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.2",
@@ -54,7 +54,7 @@
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
     "vite-tsconfig-paths": "^5.0.1",
-    "vitest": "^2.1.2"
+    "vitest": "^2.1.3"
   },
   "repository": {
     "type": "git",
