@@ -140,8 +140,13 @@ export async function moveSameChainTransfer({
     // Build the transaction for a direct transfer
     const sender_account_addr = account.accountAddress.toString()
     const balance = await getBalance(aptos, sender_account_addr, denomAddress)
+    if (balance.isErr())
+      return err(new Error(`Failed to fetch balance for account ${sender_account_addr}`))
     console.info(`Balance of account ${sender_account_addr} is => ${balance.value}`)
+
     const balance_receiver = await getBalance(aptos, receiver, denomAddress)
+    if (balance_receiver.isErr())
+      return err(new Error(`Failed to fetch balance for account ${receiver}`))
     console.info(`Balance of account ${receiver} is => ${balance_receiver.value}`)
 
     const transaction = await aptos.transaction.build.simple({
@@ -170,7 +175,7 @@ export async function moveSameChainTransfer({
     return ok(pendingTxn.hash) // Return the transaction hash
   } catch (error) {
     console.error(`Transfer failed: ${error}`)
-    return err(new Error(`Transfer failed: ${error.message}`))
+    return err(new Error(`Transfer failed ${error instanceof Error ? error.message : error}`))
   }
 }
 
@@ -250,13 +255,12 @@ export async function transferAssetFromMoveSimulate({
     // If successful, return the VM status as a success message
     if (success) {
       return ok(vm_status || "Simulation succeeded.")
-    } else {
-      // If simulation failed, return an error with the VM status as the error message
-      return err(new Error(vm_status || "Simulation failed."))
     }
+    // If simulation failed, return an error with the VM status as the error message
+    return err(new Error(vm_status || "Simulation failed."))
   } catch (error) {
     // In case of an exception, return the error
     console.error(`Simulation failed: ${error}`)
-    return err(new Error(`Simulation failed: ${error.message}`))
+    return err(new Error(`Simulation failed ${error instanceof Error ? error.message : error}`))
   }
 }

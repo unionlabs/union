@@ -38,5 +38,6 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
           account?: AptosAccount // Define account type (Move accounts)
           relayContractAddress?: string // Optional relay contract address for cross-chain moves
           gasPrice?: { amount: string; denom: string } // Move might also have gas price logic
+          simulate?: boolean // Whether to simulate the transaction or not
         }
       : undefined)

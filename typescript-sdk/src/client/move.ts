@@ -1,11 +1,11 @@
-import { err, ok, type Result } from "neverthrow"
-import type { Account } from "@aptos-labs/ts-sdk"
-import type { TransferAssetsParameters } from "./types.ts"
 import {
   moveSameChainTransfer,
   transferAssetFromMove,
   transferAssetFromMoveSimulate
 } from "../transfer/move.ts"
+import { err, ok, type Result } from "neverthrow"
+import type { Account } from "@aptos-labs/ts-sdk"
+import type { TransferAssetsParameters } from "./types.ts"
 import { createClient, fallback, type HttpTransport } from "viem"
 
 // Define the list of supported Move chains
@@ -19,7 +19,6 @@ export interface MoveClientParameters {
   transport: HttpTransport
 }
 
-/* trunk-ignore(biome/lint/nursery/useExplicitFunctionReturnType) */
 export const createMoveClient = (parameters: MoveClientParameters) =>
   createClient({ transport: fallback([]) }).extend(_ => ({
     transferAsset: async ({
