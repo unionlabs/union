@@ -38,14 +38,20 @@ impl From<Packet> for protos::ibc::core::channel::v1::Packet {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum TryFromPacketError {
-    MissingField(MissingField),
-    Sequence(TryFromIntError),
-    SourceChannel(<ChannelIdValidator as Validate<String>>::Error),
-    DestinationChannel(<ChannelIdValidator as Validate<String>>::Error),
-    SourcePort(<PortIdValidator as Validate<String>>::Error),
-    DestinationPort(<PortIdValidator as Validate<String>>::Error),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid sequence")]
+    Sequence(#[source] TryFromIntError),
+    #[error("invalid source_channel")]
+    SourceChannel(#[source] <ChannelIdValidator as Validate<String>>::Error),
+    #[error("invalid destination_channel")]
+    DestinationChannel(#[source] <ChannelIdValidator as Validate<String>>::Error),
+    #[error("invalid source_port")]
+    SourcePort(#[source] <PortIdValidator as Validate<String>>::Error),
+    #[error("invalid destination_port")]
+    DestinationPort(#[source] <PortIdValidator as Validate<String>>::Error),
 }
 
 impl TryFrom<protos::ibc::core::channel::v1::Packet> for Packet {

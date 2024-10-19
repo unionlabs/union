@@ -2,9 +2,8 @@ use ethereum_light_client::errors::{CanonicalizeStoredValueError, InvalidCommitm
 use ics008_wasm_client::IbcClientError;
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
-    google::protobuf::any::Any,
     hash::H256,
-    ibc::{core::client::height::Height, lightclients::wasm},
+    ibc::core::client::height::Height,
     ics24::PathParseError,
 };
 
@@ -17,26 +16,26 @@ pub enum Error {
         #[source]
         DecodeErrorOf<Proto, unionlabs::ibc::lightclients::ethereum::storage_proof::StorageProof>,
     ),
-    #[error("unable to decode counterparty's stored cometbls client state")]
-    CometblsClientStateDecode(
-        #[source]
-        DecodeErrorOf<
-            Proto,
-            Any<unionlabs::ibc::lightclients::cometbls::client_state::ClientState>,
-        >,
-    ),
-    #[error("unable to decode counterparty's stored cometbls consensus state")]
-    CometblsConsensusStateDecode(
-        #[source]
-        DecodeErrorOf<
-            Proto,
-            Any<
-                wasm::consensus_state::ConsensusState<
-                    unionlabs::ibc::lightclients::cometbls::consensus_state::ConsensusState,
-                >,
-            >,
-        >,
-    ),
+    // #[error("unable to decode counterparty's stored cometbls client state")]
+    // CometblsClientStateDecode(
+    //     #[source]
+    //     DecodeErrorOf<
+    //         Proto,
+    //         Any<unionlabs::ibc::lightclients::cometbls::client_state::ClientState>,
+    //     >,
+    // ),
+    // #[error("unable to decode counterparty's stored cometbls consensus state")]
+    // CometblsConsensusStateDecode(
+    //     #[source]
+    //     DecodeErrorOf<
+    //         Proto,
+    //         Any<
+    //             wasm::consensus_state::ConsensusState<
+    //                 unionlabs::ibc::lightclients::cometbls::consensus_state::ConsensusState,
+    //             >,
+    //         >,
+    //     >,
+    // ),
     #[error("unable to decode client state")]
     ClientStateDecode(
         #[source]

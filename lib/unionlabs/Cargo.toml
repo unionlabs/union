@@ -52,6 +52,7 @@ typenum                  = { workspace = true, features = ["const-generics", "no
 uint                     = "*"
 wasmparser               = { version = "0.113" }
 
+alloy                = { workspace = true, optional = true, features = ["std", "sol-types"] }
 base64               = { workspace = true }
 bcs                  = { workspace = true }
 borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
@@ -69,7 +70,7 @@ serde_json = { workspace = true }
 default = ["ethabi", "std", "stargate"]
 
 cosmwasm = []
-ethabi   = ["contracts", "ethers-core", "ethers-contract-derive", "ethers"]
+ethabi   = ["contracts", "ethers-core", "ethers-contract-derive", "ethers", "alloy"]
 grpc     = ["protos/client"]
 near     = ["borsh", "near-sdk", "near-primitives-core"]
 std      = ["ethers-core/std"]

@@ -23,7 +23,7 @@ pub struct CompressedNonExistenceProof {
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromCompressedNonExistenceProofError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("left proof invalid")]
     Left(#[source] TryFromCompressedExistenceProofError),
     #[error("right proof invalid")]

@@ -1,11 +1,9 @@
+use cometbls_light_client_types::ClientState;
 use ics008_wasm_client::IbcClientError;
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
     hash::H256,
-    ibc::{
-        core::{client::height::Height, commitment::merkle_proof::MerkleProof},
-        lightclients::cometbls,
-    },
+    ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
 };
 
 use crate::{client::CometblsLightClient, zkp_verifier::ZkpVerifier};
@@ -45,7 +43,7 @@ pub enum Error {
     MerkleProofDecode(#[source] DecodeErrorOf<Proto, MerkleProof>),
 
     #[error("unable to decode client state")]
-    ClientStateDecode(#[source] DecodeErrorOf<Proto, cometbls::client_state::ClientState>),
+    ClientStateDecode(#[source] DecodeErrorOf<Proto, ClientState>),
 
     #[error("Client state not found")]
     ClientStateNotFound,
@@ -67,9 +65,6 @@ pub enum Error {
 
     #[error("forbidden fields have been changed during state migration")]
     MigrateFieldsChanged,
-
-    #[error("the chain id cannot be more than 31 bytes long to fit in the bn254 scalar field")]
-    InvalidChainId,
 
     #[error("header_b.height should be greater than or equal to header_a.height")]
     InvalidMisbehaviourHeaderSequence,

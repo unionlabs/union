@@ -564,6 +564,24 @@ pub mod hash_v2 {
     }
 
     #[cfg(feature = "ethabi")]
+    impl<E: Encoding, const BYTES: usize> From<alloy::core::primitives::FixedBytes<BYTES>>
+        for Hash<BYTES, E>
+    {
+        fn from(value: alloy::core::primitives::FixedBytes<BYTES>) -> Self {
+            value.0.into()
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
+    impl<E: Encoding, const BYTES: usize> From<Hash<BYTES, E>>
+        for alloy::core::primitives::FixedBytes<BYTES>
+    {
+        fn from(value: Hash<BYTES, E>) -> Self {
+            value.get().into()
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
     impl<E: Encoding, const BYTES: usize> TryFrom<::ethers_core::types::Bytes> for Hash<BYTES, E> {
         type Error = <Self as TryFrom<Vec<u8>>>::Error;
 

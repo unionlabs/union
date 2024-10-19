@@ -79,7 +79,7 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromLightClientUpdateError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid `attested_header`")]
     AttestedHeader(#[source] TryFromLightClientHeaderError),
     #[error("invalid `next_sync_committee`")]

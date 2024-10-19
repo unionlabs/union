@@ -97,7 +97,8 @@ impl Client {
         &self,
         mut height: Option<NonZeroU64>,
     ) -> Result<AllValidatorsResponse, JsonRpcError> {
-        const PER_PAGE: BoundedU8<1, 100> = const { result_unwrap!(BoundedU8::<1, 100>::new(100)) };
+        const PER_PAGE: BoundedU8<1, 100> =
+            const { result_unwrap!(BoundedU8::<1, 100>::new_const(100)) };
 
         let mut page = const { option_unwrap!(NonZeroU64::new(1)) };
 

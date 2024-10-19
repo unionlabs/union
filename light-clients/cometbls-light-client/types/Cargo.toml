@@ -1,0 +1,29 @@
+[package]
+edition.workspace    = true
+license-file         = { workspace = true }
+name                 = "cometbls-light-client-types"
+repository.workspace = true
+version              = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy       = { workspace = true, features = ["sol-types"] }
+prost       = { workspace = true }
+protos      = { workspace = true, features = ["union+ibc+lightclients+cometbls+v1"] }
+serde       = { workspace = true, features = ["derive"] }
+serde-utils = { workspace = true }
+thiserror   = { workspace = true }
+unionlabs   = { workspace = true }
+
+[features]
+default = ["proto", "ethabi"]
+ethabi = ["unionlabs/ethabi"]
+proto = [
+  # TODO: Once unionlabs feature gates protobuf, this will need to be enabled
+  # "unionlabs/proto"
+]
+
+[dev-dependencies]
+hex-literal = { workspace = true }

@@ -21,7 +21,7 @@ pub struct ConsensusState {
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromConsensusStateError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid root")]
     Root(#[from] TryFromMerkleRootError),
     #[error("invalid next validators hash")]

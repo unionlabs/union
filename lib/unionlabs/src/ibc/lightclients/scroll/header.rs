@@ -39,17 +39,26 @@ impl From<Header> for protos::union::ibc::lightclients::scroll::v1::Header {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromHeaderError {
-    MissingField(MissingField),
-    L1AccountProof(TryFromAccountProofError),
-    L2StateRoot(InvalidLength),
-    L2StateProof(TryFromStorageProofError),
-    LastBatchIndexProof(TryFromStorageProofError),
-    L2IbcAccountProof(TryFromAccountProofError),
-    BatchHashProof(TryFromStorageProofError),
-    L1MessageHash(InvalidLength),
-    BlobVersionedHash(InvalidLength),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid l1_account_proof")]
+    L1AccountProof(#[source] TryFromAccountProofError),
+    #[error("invalid l2_state_root")]
+    L2StateRoot(#[source] InvalidLength),
+    #[error("invalid l2_state_proof")]
+    L2StateProof(#[source] TryFromStorageProofError),
+    #[error("invalid last_batch_index_proof")]
+    LastBatchIndexProof(#[source] TryFromStorageProofError),
+    #[error("invalid l2_ibc_account_proof")]
+    L2IbcAccountProof(#[source] TryFromAccountProofError),
+    #[error("invalid batch_hash_proof")]
+    BatchHashProof(#[source] TryFromStorageProofError),
+    #[error("invalid l1_message_hash")]
+    L1MessageHash(#[source] InvalidLength),
+    #[error("invalid blob_versioned_hash")]
+    BlobVersionedHash(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::scroll::v1::Header> for Header {

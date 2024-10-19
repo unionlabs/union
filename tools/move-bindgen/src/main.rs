@@ -165,7 +165,7 @@ async fn main() -> Result<(), Bde> {
                     .collect::<Result<Vec<_>, _>>()
                     .map(|ps| {
                         #[allow(clippy::type_complexity)] // all hail our lord and saviour `unzip`
-                        let (mts, (idents, ((param_tys, field_tys), rs))): (Vec<_>, (Vec<_>, ((Vec<_>, Vec<_>), Vec<_>))) = ps.into_iter().unzip();
+                        let (_mts, (idents, ((param_tys, field_tys), rs))): (Vec<_>, (Vec<_>, ((Vec<_>, Vec<_>), Vec<_>))) = ps.into_iter().unzip();
 
                         // TODO: Support generics on view functions
                         // let mts_ts = mts.iter().map(|typ| move_type_to_type_literal(typ));
@@ -458,7 +458,7 @@ fn move_type_to_rust_type(this_module: Address, typ: &MoveType) -> Result<(Type,
         MoveType::Signer => (parse_quote!(Signer), parse_quote!(Signer)),
         MoveType::Vector { items } => {
             if **items == MoveType::U8 {
-                let (_param, field) = move_type_to_rust_type(this_module, items)?;
+                let (_param, _field) = move_type_to_rust_type(this_module, items)?;
                 (
                     parse_quote!(
                         ::move_bindgen::aptos_rest_client::aptos_api_types::HexEncodedBytes
@@ -524,6 +524,7 @@ fn move_type_to_rust_type(this_module: Address, typ: &MoveType) -> Result<(Type,
     })
 }
 
+#[allow(unused)]
 fn move_type_to_type_literal(typ: &MoveType) -> proc_macro2::TokenStream {
     match typ {
         MoveType::Bool => {

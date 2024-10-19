@@ -38,7 +38,7 @@ where
 #[derive(DebugNoBound, thiserror::Error)]
 pub enum TryFromWasmClientStateError<Data: Decode<Proto, Error: core::error::Error>> {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("unable to decode wasm client state data")]
     Data(#[source] DecodeErrorOf<Proto, Data>),
     #[error("invalid checksum")]

@@ -14,8 +14,6 @@ message ClientState {
   // duration of the period since the LastestTimestamp during which the
   // submitted headers are valid for upgrade
   uint64 trusting_period = 2;
-  // duration of the staking unbonding period
-  uint64 unbonding_period = 3;
   // defines how much new (untrusted) header's Time can drift into the future.
   uint64 max_clock_drift = 4;
   // Block height when the client was frozen due to a misbehaviour

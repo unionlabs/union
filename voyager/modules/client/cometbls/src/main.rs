@@ -1,4 +1,5 @@
 use ark_serialize::{CanonicalSerialize, SerializationError, Valid};
+use cometbls_light_client_types::{ClientState, ConsensusState, Header};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -13,10 +14,7 @@ use unionlabs::{
     self,
     encoding::{Bcs, DecodeAs, EncodeAs, EthAbi, Proto},
     google::protobuf::any::Any,
-    ibc::lightclients::{
-        cometbls::{client_state::ClientState, consensus_state::ConsensusState, header::Header},
-        wasm,
-    },
+    ibc::lightclients::wasm,
     union::ics23,
     ErrorReporter,
 };
@@ -35,8 +33,7 @@ async fn main() {
     run_client_module_server::<Module>().await
 }
 
-#[model(no_serde)]
-#[derive(Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Copy, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub enum SupportedIbcInterface {
     IbcSolidity,
@@ -178,7 +175,7 @@ impl ClientModuleServer for Module {
         let cs = self.decode_client_state(&client_state.0)?;
 
         Ok(ClientStateMeta {
-            chain_id: ChainId::new(cs.chain_id),
+            chain_id: ChainId::new(cs.chain_id.as_str().to_owned()),
             height: cs.latest_height,
         })
     }

@@ -2,10 +2,7 @@ use ics008_wasm_client::{IbcClient, IbcClientError};
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
     hash::H256,
-    ibc::{
-        core::commitment::merkle_proof::MerkleProof,
-        lightclients::{cometbls::header::Header, tendermint},
-    },
+    ibc::{core::commitment::merkle_proof::MerkleProof, lightclients::tendermint},
 };
 
 use crate::client::TendermintLightClient;
@@ -24,7 +21,7 @@ pub enum Error {
     Unimplemented,
 
     #[error("unable to decode header")]
-    HeaderDecode(#[source] DecodeErrorOf<Proto, Header>),
+    HeaderDecode(#[source] DecodeErrorOf<Proto, tendermint::header::Header>),
 
     #[error(transparent)]
     MerkleProofDecode(#[from] MerkleProofDecode),

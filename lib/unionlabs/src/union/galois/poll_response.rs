@@ -50,10 +50,12 @@ impl From<PollResponse> for protos::union::galois::api::v3::PollResponse {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum TryFromPollResponseError {
-    MissingField(MissingField),
-    ProveResponse(TryFromProveResponseError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid prove_response")]
+    ProveResponse(#[source] TryFromProveResponseError),
 }
 
 impl TryFrom<protos::union::galois::api::v3::PollResponse> for PollResponse {

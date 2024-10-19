@@ -3,6 +3,7 @@ use std::{
     num::{NonZeroU64, ParseIntError},
 };
 
+use cometbls_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
@@ -11,10 +12,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{error, instrument};
 use unionlabs::{
-    ibc::{
-        core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-        lightclients::cometbls::{client_state::ClientState, consensus_state::ConsensusState},
-    },
+    ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     traits::Member,
 };
 use voyager_message::{
@@ -114,9 +112,9 @@ impl ConsensusModuleServer for Module {
             u64::try_from(params.unbonding_time.clone().unwrap().seconds).unwrap() * 1_000_000_000;
 
         Ok(serde_json::to_value(ClientState {
-            chain_id: self.chain_id.to_string(),
+            chain_id: cometbls_light_client_types::ChainId::from_string(self.chain_id.to_string())
+                .unwrap(),
             trusting_period: unbonding_period * 85 / 100,
-            unbonding_period,
             max_clock_drift: (60 * 20) * 1_000_000_000,
             frozen_height: Height {
                 revision_number: 0,

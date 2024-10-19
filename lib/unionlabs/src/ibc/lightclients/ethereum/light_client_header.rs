@@ -49,7 +49,7 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<LightClientHeader<C>>
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromLightClientHeaderError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid `beacon_block_header`")]
     BeaconBlockHeader(#[from] TryFromBeaconBlockHeaderError),
     #[error("invalid `execution_payload_header`")]

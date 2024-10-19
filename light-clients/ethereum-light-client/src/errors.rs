@@ -2,15 +2,10 @@ use ics008_wasm_client::IbcClientError;
 use unionlabs::{
     bls::BlsPublicKey,
     encoding::{DecodeErrorOf, Proto},
-    google::protobuf::any::Any,
     hash::H256,
     ibc::{
         core::client::height::Height,
-        lightclients::{
-            cometbls,
-            ethereum::{self, storage_proof::StorageProof},
-            wasm,
-        },
+        lightclients::ethereum::{self, storage_proof::StorageProof},
     },
     uint::U256,
 };
@@ -103,20 +98,20 @@ pub enum Error {
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum CanonicalizeStoredValueError {
-    #[error("the proof path {0} is unknown")]
-    UnknownIbcPath(String),
-    #[error("unable to decode counterparty's stored cometbls client state")]
-    CometblsClientStateDecode(
-        #[source] DecodeErrorOf<Proto, Any<cometbls::client_state::ClientState>>,
-    ),
-    #[error("unable to decode counterparty's stored cometbls consensus state")]
-    CometblsConsensusStateDecode(
-        #[source]
-        DecodeErrorOf<
-            Proto,
-            Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>,
-        >,
-    ),
+    // #[error("the proof path {0} is unknown")]
+    // UnknownIbcPath(String),
+    // #[error("unable to decode counterparty's stored cometbls client state")]
+    // CometblsClientStateDecode(
+    //     #[source] DecodeErrorOf<Proto, Any<cometbls::client_state::ClientState>>,
+    // ),
+    // #[error("unable to decode counterparty's stored cometbls consensus state")]
+    // CometblsConsensusStateDecode(
+    //     #[source]
+    //     DecodeErrorOf<
+    //         Proto,
+    //         Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>,
+    //     >,
+    // ),
 }
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]

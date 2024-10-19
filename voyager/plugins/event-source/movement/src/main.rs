@@ -26,7 +26,7 @@ use unionlabs::{
     ErrorReporter, QueryHeight,
 };
 use voyager_message::{
-    call::{Call, WaitForHeight},
+    call::Call,
     core::{ChainId, ClientInfo, ClientType},
     data::{
         AcknowledgePacket, ChainEvent, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm,
@@ -35,7 +35,6 @@ use voyager_message::{
         FullIbcEvent, PacketMetadata, RecvPacket, SendPacket, UpdateClient, WriteAcknowledgement,
     },
     module::{PluginInfo, PluginServer},
-    reconnecting_jsonrpc_ws_client,
     rpc::{
         json_rpc_error_to_error_object, missing_state, VoyagerRpcClient, VoyagerRpcClientExt as _,
     },
@@ -441,7 +440,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             let next_height = (latest_height - height).clamp(1, 10) + height;
                             conc(
                                 ((height + 1)..next_height)
-                                    .into_iter()
                                     .map(|height| {
                                         call(PluginMessage::new(
                                             self.plugin_name(),

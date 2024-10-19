@@ -62,7 +62,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::linea::v1::ClientSt
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromClientStateError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     // y no clone?!??
     #[error("unable to parse chain id")]
     ChainId(#[source] Arc<FromDecStrErr>),

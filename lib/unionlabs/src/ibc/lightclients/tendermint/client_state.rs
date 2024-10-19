@@ -49,7 +49,7 @@ impl From<ClientState> for protos::ibc::lightclients::tendermint::v1::ClientStat
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromClientStateError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid trust level")]
     TrustLevel(#[source] TryFromFractionError),
     #[error("invalid trusting period")]

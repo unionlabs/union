@@ -50,14 +50,20 @@ pub struct Validator {
     pub unbonding_ids: Vec<u64>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum TryFromValidatorError {
-    MissingField(MissingField),
-    ConsensusPubKey(TryFromAnyPubKeyError),
-    BondStatus(UnknownEnumVariant<i32>),
-    UnbondingHeight(TryFromIntError),
-    Commission(TryFromCommissionError),
-    Timestamp(TryFromTimestampError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid consensus_pub_key")]
+    ConsensusPubKey(#[source] TryFromAnyPubKeyError),
+    #[error("invalid bond_status")]
+    BondStatus(#[source] UnknownEnumVariant<i32>),
+    #[error("invalid unbonding_height")]
+    UnbondingHeight(#[source] TryFromIntError),
+    #[error("invalid commission")]
+    Commission(#[source] TryFromCommissionError),
+    #[error("invalid timestamp")]
+    Timestamp(#[source] TryFromTimestampError),
 }
 
 impl TryFrom<protos::cosmos::staking::v1beta1::Validator> for Validator {

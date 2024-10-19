@@ -17,7 +17,7 @@ pub enum BatchEntry {
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromBatchEntryError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid existence proof")]
     Exist(#[from] TryFromExistenceProofError),
     #[error("invalid non existence proof")]

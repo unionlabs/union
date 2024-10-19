@@ -21,7 +21,7 @@ pub enum CommitmentProof {
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromCommitmentProofError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid existence proof")]
     Exist(#[from] TryFromExistenceProofError),
     #[error("invalid non existence proof")]

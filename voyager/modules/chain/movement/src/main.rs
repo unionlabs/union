@@ -365,7 +365,7 @@ impl ChainModuleServer for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_ibc_proof(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
+    async fn query_ibc_proof(&self, _: &Extensions, at: Height, _path: Path) -> RpcResult<Value> {
         let ledger_version = self.ledger_version_of_height(at.revision_height).await;
 
         let vault_addr = self

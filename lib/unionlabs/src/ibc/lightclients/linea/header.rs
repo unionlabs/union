@@ -35,17 +35,26 @@ impl From<Header> for protos::union::ibc::lightclients::linea::v1::Header {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromHeaderError {
-    MissingField(MissingField),
-    L1RollupContractProof(TryFromAccountProofError),
-    L2BlockNumber(InvalidLength),
-    L2BlockNumberProof(TryFromStorageProofError),
-    L2StateRoot(InvalidLength),
-    L2StateRootProof(TryFromStorageProofError),
-    L2Timestamp(InvalidLength),
-    L2TimestampProof(TryFromStorageProofError),
-    L2IbcContractProof(TryFromMerkleProofError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid l1_rollup_contract_proof")]
+    L1RollupContractProof(#[source] TryFromAccountProofError),
+    #[error("invalid l2_block_number")]
+    L2BlockNumber(#[source] InvalidLength),
+    #[error("invalid l2_block_number_proof")]
+    L2BlockNumberProof(#[source] TryFromStorageProofError),
+    #[error("invalid l2_state_root")]
+    L2StateRoot(#[source] InvalidLength),
+    #[error("invalid l2_state_root_proof")]
+    L2StateRootProof(#[source] TryFromStorageProofError),
+    #[error("invalid l2_timestamp")]
+    L2Timestamp(#[source] InvalidLength),
+    #[error("invalid l2_timestamp_proof")]
+    L2TimestampProof(#[source] TryFromStorageProofError),
+    #[error("invalid l2_ibc_contract_proof")]
+    L2IbcContractProof(#[source] TryFromMerkleProofError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::linea::v1::Header> for Header {

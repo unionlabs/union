@@ -48,9 +48,11 @@ impl Default for Timestamp {
 
 pub const MIN_TIMESTAMP: Timestamp = Timestamp {
     seconds: result_unwrap!(
-        BoundedI64::<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>::new(TIMESTAMP_SECONDS_MIN)
+        BoundedI64::<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>::new_const(
+            TIMESTAMP_SECONDS_MIN
+        )
     ),
-    nanos: result_unwrap!(BoundedI32::<0, NANOS_MAX>::new(0)),
+    nanos: result_unwrap!(BoundedI32::<0, NANOS_MAX>::new_const(0)),
 };
 
 impl Ord for Timestamp {

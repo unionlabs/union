@@ -19,7 +19,7 @@ pub struct BaseAccount {
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromBaseAccountError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("unable to decode pub key")]
     PubKey(#[from] TryFromAnyPubKeyError),
 }

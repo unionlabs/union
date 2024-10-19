@@ -9,16 +9,15 @@ pub struct UnknownEnumVariant<T>(pub T);
 #[error("missing field `{0}`")]
 pub struct MissingField(pub &'static str);
 
-/// For fields that are "fake options" from prost, for use in `TryFrom<<Self as Proto>::Proto>`.
+/// For fields that are "fake options" from prost, for use in implementing `TryFrom<protos::...::Type>`.
 ///
-/// `Self::Error` is expected to have a `MissingField(`[`MissingField`]`)` variant.
+/// `Self::Error` must implement `From<`[`MissingField`]`>`.
+#[macro_export]
 macro_rules! required {
     ($struct_var:ident.$field:ident) => {
         $struct_var
             .$field
-            .ok_or(<Self::Error>::MissingField(MissingField(stringify!(
-                $field
-            ))))
+            .ok_or($crate::errors::MissingField(stringify!($field)))
     };
     ($field:ident) => {
         $field.ok_or(<Self::Error>::MissingField(MissingField(stringify!(
@@ -28,7 +27,7 @@ macro_rules! required {
 }
 
 // https://stackoverflow.com/questions/26731243/how-do-i-use-a-macro-across-module-files
-pub(crate) use required;
+pub use crate::required;
 
 // Expected one length, but found another.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]

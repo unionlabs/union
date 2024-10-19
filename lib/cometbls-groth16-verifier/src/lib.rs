@@ -7,13 +7,12 @@ use core::marker::PhantomData;
 
 use ark_ff::vec;
 use byteorder::{BigEndian, ByteOrder};
+use cometbls_light_client_types::{light_header::LightHeader, ChainId};
 use constants::*;
 use hex_literal::hex;
 use sha3::Digest;
 use substrate_bn::G1;
-use unionlabs::{
-    hash::H256, ibc::lightclients::cometbls::light_header::LightHeader, uint::U256, ByteArrayExt,
-};
+use unionlabs::{hash::H256, uint::U256, ByteArrayExt};
 
 mod constants;
 
@@ -197,14 +196,13 @@ pub enum Error {
     InvalidVerifyingKey,
     InvalidCommitment,
     InvalidRawProof,
-    InvalidChainId,
     InvalidHeight,
     InvalidTimestamp,
     InvalidSliceLength,
 }
 
 pub fn verify_zkp(
-    chain_id: &str,
+    chain_id: &ChainId,
     trusted_validators_hash: H256,
     header: &LightHeader,
     zkp: impl Into<Vec<u8>>,
@@ -220,16 +218,13 @@ pub fn verify_zkp(
 }
 
 fn verify_generic_zkp_2(
-    chain_id: &str,
+    chain_id: &ChainId,
     trusted_validators_hash: H256,
     header: &LightHeader,
     g: substrate_bn::AffineG2,
     g_root_sigma_neg: substrate_bn::AffineG2,
     zkp: ZKP<BigEndian>,
 ) -> Result<(), Error> {
-    if chain_id.len() > 31 {
-        return Err(Error::InvalidChainId);
-    }
     // Constant + public inputs
     let decode_scalar = move |x: U256| -> Result<substrate_bn::Fr, Error> {
         substrate_bn::Fr::new(x.0 .0.into()).ok_or(Error::InvalidPublicInput)
@@ -238,9 +233,9 @@ fn verify_generic_zkp_2(
     let mut inputs_hash = <[u8; 32]>::from(
         sha2::Sha256::new()
             .chain_update(
-                vec![0u8; 32 - chain_id.len()]
+                vec![0u8; 32 - chain_id.as_str().len()]
                     .into_iter()
-                    .chain(chain_id.bytes())
+                    .chain(chain_id.as_str().bytes())
                     .collect::<Vec<_>>(),
             )
             .chain_update(
@@ -316,7 +311,7 @@ mod tests {
     fn test_ok() {
         assert_eq!(
             verify_zkp(
-                "union-devnet-1337",
+                &ChainId::from_string("union-devnet-1337").unwrap(),
                 hex!("1B7EA0F1B3E574F8D50A12827CCEA43CFF858C2716AE05370CC40AE8EC521FD8").into(),
                 &LightHeader {
                     height: 3405691582.try_into().unwrap(),
@@ -343,7 +338,7 @@ mod tests {
     fn test_err_969001_969006() {
         assert_eq!(
             verify_zkp(
-                "union-testnet-8",
+                &ChainId::from_string("union-testnet-8").unwrap(),
                 hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
                 &LightHeader {
                     height: 969006.try_into().unwrap(),
@@ -362,7 +357,7 @@ mod tests {
     fn test_ok_969001_969002() {
         assert_eq!(
             verify_zkp(
-                "union-testnet-8",
+                &ChainId::from_string("union-testnet-8").unwrap(),
                 hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
                 &LightHeader {
                     height: 969002.try_into().unwrap(),
@@ -381,7 +376,7 @@ mod tests {
     fn test_err_969001_969002() {
         assert_eq!(
             verify_zkp(
-                "union-testnet-8",
+                &ChainId::from_string("union-testnet-8").unwrap(),
                 hex!("01a84dca649aa2df8de2f65a84c9092bbd5296b4bc54d818f844b28573d8e0be").into(),
                 &LightHeader {
                     height: 969002.try_into().unwrap(),
@@ -400,7 +395,7 @@ mod tests {
     fn test_ok_968996_969001() {
         assert_eq!(
             verify_zkp(
-                "union-testnet-8",
+                &ChainId::from_string("union-testnet-8").unwrap(),
                 hex!("1deda64b1cc1319718f168b5aa8ed904b7d5b0ab932acdf6deae0ad9bd565a53").into(),
                 &LightHeader {
                     height: 969001.try_into().unwrap(),
@@ -419,7 +414,7 @@ mod tests {
     fn test_tampered_block() {
         assert_eq!(
             verify_zkp(
-                "union-devnet-1337",
+                &ChainId::from_string("union-devnet-1337").unwrap(),
                 hex!("1B7EA0F1B3E574F8D50A12827CCEA43CFF858C2716AE05370CC40AE8EC521FD8").into(),
                 &LightHeader {
                     height: 3405691583.try_into().unwrap(),
@@ -441,7 +436,7 @@ mod tests {
     fn invalid_vk() {
         assert_eq!(
             verify_zkp(
-                "union-devnet-1",
+                &ChainId::from_string("union-devnet-1").unwrap(),
                 hex!("2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d").into(),
                 &LightHeader {
                     height: 905.try_into().unwrap(),

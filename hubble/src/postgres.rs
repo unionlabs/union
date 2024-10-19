@@ -241,6 +241,7 @@ pub async fn get_chain_ids_and_ids<'a, A: Acquire<'a, Database = Postgres>>(
     Ok(chain_ids_and_ids)
 }
 
+#[allow(clippy::type_complexity)] // it's just kind of a mess
 pub async fn insert_or_update_tokens<'a, A: Acquire<'a, Database = Postgres>>(
     db: A,
     tokens: &[(i64, String, String, i64, Option<String>, String)],

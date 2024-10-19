@@ -32,9 +32,10 @@ sha2                      = { workspace = true }
 sha3                      = { workspace = true }
 thiserror                 = { workspace = true }
 
-ics008-wasm-client = { workspace = true }
-ics23              = { workspace = true }
-unionlabs          = { workspace = true }
+cometbls-light-client-types = { workspace = true, features = ["proto"] }
+ics008-wasm-client          = { workspace = true }
+ics23                       = { workspace = true }
+unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
 base64      = { workspace = true }
