@@ -33,6 +33,7 @@ struct IBCChannel {
     IBCChannelOrder ordering;
     uint32 connectionId;
     uint32 counterpartyChannelId;
+    string portId;
     string counterpartyPortId;
     string version;
 }
