@@ -69,7 +69,7 @@
       flake = false;
     };
     wasmd = {
-      url = "github:unionlabs/wasmd?rev=cc7764ecf9b95e7e251ecd5d4262abb4520f1556";
+      url = "github:unionlabs/wasmd?rev=913c24df4e0a7a3d791d27fc95313d559e9428b6";
       flake = false;
     };
     nix-filter.url = "github:numtide/nix-filter?rev=3449dc925982ad46246cfc36469baf66e1b64f17";
@@ -122,14 +122,14 @@
       type = "github";
       owner = "unionlabs";
       repo = "cometbft";
-      rev = "9ea090e8aeb8ddcbf4f7bb19464b3bc6fe261c1a";
+      rev = "40cbc598984d75fc4c8af1f100674dc459cda25d";
       flake = false;
     };
     cosmossdk = {
       type = "github";
       owner = "unionlabs";
       repo = "cosmos-sdk-union";
-      rev = "552069d283f61c861d4686a195ba09bf1b230046";
+      rev = "c2982236c55751ea227679164594ce572bb857f3";
       flake = false;
     };
 
