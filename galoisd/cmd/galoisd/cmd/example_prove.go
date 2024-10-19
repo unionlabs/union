@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	provergrpc "galois/grpc/api/v3"
 	"math/big"
 	"strconv"
 	"time"
@@ -16,8 +15,18 @@ import (
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/types"
+
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
+
+	"cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/spf13/cobra"
+
+	"google.golang.org/protobuf/proto"
+
+	provergrpc "galois/grpc/api/v3"
 )
 
 func marshalValidators(validators []*tmtypes.SimpleValidator) ([]byte, error) {
@@ -64,13 +73,13 @@ func ExampleProveCmd() *cobra.Command {
 				if err != nil {
 					return &tmtypes.SimpleValidator{}, err
 				}
-				_, err = rand.Int(rand.Reader, big.NewInt(9223372036854775807/8))
+				power, err := rand.Int(rand.Reader, big.NewInt(9223372036854775807/8))
 				if err != nil {
 					return &tmtypes.SimpleValidator{}, err
 				}
 				return &tmtypes.SimpleValidator{
 					PubKey:      &protoPK,
-					VotingPower: 6,
+					VotingPower: sdk.TokensToConsensusPower(math.NewInt(power.Int64()), sdk.DefaultPowerReduction),
 				}, nil
 			}
 
@@ -188,7 +197,7 @@ func ExampleProveCmd() *cobra.Command {
 
 			canonicalVote := types.CanonicalizeVote(chainID, vote)
 
-			res, err := client.Prove(ctx, &provergrpc.ProveRequest{
+			req := provergrpc.ProveRequest{
 				Vote:            &canonicalVote,
 				UntrustedHeader: header.ToProto(),
 				TrustedCommit: &provergrpc.ValidatorSetCommit{
@@ -201,7 +210,16 @@ func ExampleProveCmd() *cobra.Command {
 					Signatures: untrustedSignatures,
 					Bitmap:     untrustedBitmap.Bytes(),
 				},
-			})
+			}
+
+			val, _ := proto.Marshal(&req)
+
+			val, _ = json.Marshal(&val)
+			print("FFFFFFF\n")
+			fmt.Println(string(val))
+			print("\n")
+
+			res, err := client.Prove(ctx, &req)
 			if err != nil {
 				return err
 			}
