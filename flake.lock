@@ -79,17 +79,17 @@
     "cometbls": {
       "flake": false,
       "locked": {
-        "lastModified": 1728906696,
-        "narHash": "sha256-gIcJ3ghSQE8LX8gRzSM16QsB3V4kpFNrnuwtZxFYjJs=",
+        "lastModified": 1729267630,
+        "narHash": "sha256-bOast89F1/pcT8N13COxLms5nC7+dlxBjR320fGoqKw=",
         "owner": "unionlabs",
         "repo": "cometbft",
-        "rev": "9ea090e8aeb8ddcbf4f7bb19464b3bc6fe261c1a",
+        "rev": "40cbc598984d75fc4c8af1f100674dc459cda25d",
         "type": "github"
       },
       "original": {
         "owner": "unionlabs",
         "repo": "cometbft",
-        "rev": "9ea090e8aeb8ddcbf4f7bb19464b3bc6fe261c1a",
+        "rev": "40cbc598984d75fc4c8af1f100674dc459cda25d",
         "type": "github"
       }
     },
@@ -113,17 +113,17 @@
     "cosmossdk": {
       "flake": false,
       "locked": {
-        "lastModified": 1728727156,
-        "narHash": "sha256-A1KEbchsG33KaNWqQXHLXjFL69GCF8U3WsR3Wf+y3L0=",
+        "lastModified": 1729272985,
+        "narHash": "sha256-i6D5SOzxjrvTDZVqEkmm12Z+wfM2kPFDInH9AHtIFR0=",
         "owner": "unionlabs",
         "repo": "cosmos-sdk-union",
-        "rev": "552069d283f61c861d4686a195ba09bf1b230046",
+        "rev": "c2982236c55751ea227679164594ce572bb857f3",
         "type": "github"
       },
       "original": {
         "owner": "unionlabs",
         "repo": "cosmos-sdk-union",
-        "rev": "552069d283f61c861d4686a195ba09bf1b230046",
+        "rev": "c2982236c55751ea227679164594ce572bb857f3",
         "type": "github"
       }
     },
@@ -803,17 +803,17 @@
     "wasmd": {
       "flake": false,
       "locked": {
-        "lastModified": 1728922955,
-        "narHash": "sha256-O4/GgrzZw4GDD1j8GwHXIEKrRjCa8+rrUTY9V3uvN5A=",
+        "lastModified": 1729288814,
+        "narHash": "sha256-eyaJOvokQEDfgv4QOuF3N0hpxOVR/xHO8jMWiwCFyZI=",
         "owner": "unionlabs",
         "repo": "wasmd",
-        "rev": "cc7764ecf9b95e7e251ecd5d4262abb4520f1556",
+        "rev": "913c24df4e0a7a3d791d27fc95313d559e9428b6",
         "type": "github"
       },
       "original": {
         "owner": "unionlabs",
         "repo": "wasmd",
-        "rev": "cc7764ecf9b95e7e251ecd5d4262abb4520f1556",
+        "rev": "913c24df4e0a7a3d791d27fc95313d559e9428b6",
         "type": "github"
       }
     },
