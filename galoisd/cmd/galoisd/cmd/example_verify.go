@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	provergrpc "galois/grpc/api/v3"
 	"log"
 	"math/big"
 	"strconv"
@@ -17,8 +16,14 @@ import (
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/types"
-	// sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/spf13/cobra"
+
+	provergrpc "galois/grpc/api/v3"
 )
 
 // Example call to the prover `Prove` and then `Verify` endpoints using hardcoded values dumped from a local devnet.
@@ -40,13 +45,13 @@ func ExampleVerifyCmd() *cobra.Command {
 				if err != nil {
 					return &tmtypes.SimpleValidator{}, err
 				}
-				_, err = rand.Int(rand.Reader, big.NewInt(9223372036854775807/8))
+				power, err := rand.Int(rand.Reader, big.NewInt(9223372036854775807/8))
 				if err != nil {
 					return &tmtypes.SimpleValidator{}, err
 				}
 				return &tmtypes.SimpleValidator{
 					PubKey:      &protoPK,
-					VotingPower: 6,
+					VotingPower: sdk.TokensToConsensusPower(math.NewInt(power.Int64()), sdk.DefaultPowerReduction),
 				}, nil
 			}
 
