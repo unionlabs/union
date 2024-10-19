@@ -2,11 +2,14 @@ pragma solidity ^0.8.27;
 
 import "solady/utils/LibString.sol";
 
+import "solady/utils/LibString.sol";
+
 import "../24-host/IBCStore.sol";
 import "../25-handler/IBCMsgs.sol";
 import "../24-host/IBCCommitment.sol";
 import "../04-channel/IIBCChannel.sol";
 import "../05-port/IIBCModule.sol";
+import "../../lib/Hex.sol";
 import "../../lib/Hex.sol";
 
 library IBCChannelLib {
@@ -23,6 +26,7 @@ library IBCChannelLib {
         bytes counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId,
+        string version
         string version
     );
     event ChannelOpenAck(
@@ -51,12 +55,26 @@ library IBCChannelLib {
         bytes counterpartyPortId,
         uint32 counterpartyChannelId
     );
+    event ChannelCloseInit(
+        address portId,
+        uint32 channelId,
+        bytes counterpartyPortId,
+        uint32 counterpartyChannelId
+    );
+    event ChannelCloseConfirm(
+        address portId,
+        uint32 channelId,
+        bytes counterpartyPortId,
+        uint32 counterpartyChannelId
+    );
 }
 
 /**
  * @dev IBCChannelHandshake is a contract that implements [ICS-4](https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics).
  */
 abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
+    using LibString for *;
+
     using LibString for *;
 
     /**
@@ -71,6 +89,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         channel.state = IBCChannelState.Init;
         channel.connectionId = msg_.connectionId;
         channel.version = msg_.version;
+        channel.portId = msg_.portId.toHexString();
         channel.counterpartyPortId = msg_.counterpartyPortId;
         commitChannel(channelId, channel);
         claimChannel(msg_.portId, channelId);
@@ -131,6 +150,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             msg_.portId,
             channelId,
             msg_.channel.counterpartyPortId,
+            msg_.channel.counterpartyPortId,
             msg_.channel.counterpartyChannelId,
             msg_.channel.connectionId,
             msg_.counterpartyVersion
@@ -172,7 +192,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         channel.version = msg_.counterpartyVersion;
         channel.counterpartyChannelId = msg_.counterpartyChannelId;
         commitChannel(msg_.channelId, channel);
-        IIBCModule(portId).onChanOpenAck(
+        IIBCModule(Hex.hexToAddress(channel.portId)).onChanOpenAck(
             msg_.channelId,
             msg_.counterpartyChannelId,
             msg_.counterpartyVersion,
@@ -181,6 +201,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         emit IBCChannelLib.ChannelOpenAck(
             portId,
             msg_.channelId,
+            channel.counterpartyPortId,
             channel.counterpartyPortId,
             msg_.counterpartyChannelId,
             channel.connectionId
@@ -219,10 +240,13 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         }
         channel.state = IBCChannelState.Open;
         commitChannel(msg_.channelId, channel);
-        IIBCModule(portId).onChanOpenConfirm(msg_.channelId, msg_.relayer);
+        IIBCModule(Hex.hexToAddress(channel.portId)).onChanOpenConfirm(
+            msg_.channelId, msg_.relayer
+        );
         emit IBCChannelLib.ChannelOpenConfirm(
             portId,
             msg_.channelId,
+            channel.counterpartyPortId,
             channel.counterpartyPortId,
             channel.counterpartyChannelId,
             channel.connectionId
@@ -242,8 +266,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         ensureConnectionState(channel.connectionId);
         channel.state = IBCChannelState.Closed;
         commitChannel(msg_.channelId, channel);
-        address portId = channelOwner[msg_.channelId];
-        IIBCModule(portId).onChanCloseInit(msg_.channelId, msg_.relayer);
+        IIBCModule(Hex.hexToAddress(channel.portId)).onChanCloseInit(
+            msg_.channelId, msg_.relayer
+        );
         emit IBCChannelLib.ChannelCloseInit(
             portId,
             msg_.channelId,
@@ -285,7 +310,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         }
         channel.state = IBCChannelState.Closed;
         commitChannel(msg_.channelId, channel);
-        IIBCModule(portId).onChanCloseConfirm(msg_.channelId, msg_.relayer);
+        IIBCModule(Hex.hexToAddress(channel.portId)).onChanCloseConfirm(
+            msg_.channelId, msg_.relayer
+        );
         emit IBCChannelLib.ChannelCloseConfirm(
             portId,
             msg_.channelId,

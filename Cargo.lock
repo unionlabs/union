@@ -16,6 +16,7 @@ dependencies = [
 name = "abstract-domain-derive"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -725,7 +726,9 @@ dependencies = [
 [[package]]
 name = "anstyle"
 version = "1.0.6"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8901269c6307e8d93993578286ac0edf7f195079ffff5ebdeea6a59ffb7e36bc"
 checksum = "8901269c6307e8d93993578286ac0edf7f195079ffff5ebdeea6a59ffb7e36bc"
 
 [[package]]
@@ -766,6 +769,7 @@ checksum = "b3d1d046238990b9cf5bcde22a3fb3584ee5cf65fb2765f454ed428c7a0063da"
 name = "aptos-aggregator"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "aptos-logger",
  "aptos-types",
@@ -779,6 +783,7 @@ dependencies = [
 [[package]]
 name = "aptos-api-types"
 version = "0.0.1"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -807,6 +812,7 @@ dependencies = [
 name = "aptos-bitvec"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "serde",
  "serde_bytes",
@@ -815,6 +821,7 @@ dependencies = [
 [[package]]
 name = "aptos-config"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -845,6 +852,7 @@ dependencies = [
 [[package]]
 name = "aptos-crypto"
 version = "0.0.3"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "aes-gcm",
@@ -897,6 +905,7 @@ dependencies = [
 name = "aptos-crypto-derive"
 version = "0.0.3"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -906,6 +915,7 @@ dependencies = [
 [[package]]
 name = "aptos-dkg"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -939,6 +949,7 @@ dependencies = [
 name = "aptos-experimental-runtimes"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "aptos-runtimes",
  "core_affinity",
@@ -951,6 +962,7 @@ dependencies = [
 [[package]]
 name = "aptos-framework"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -974,6 +986,7 @@ dependencies = [
  "blake2-rfc",
  "bulletproofs",
  "byteorder",
+ "clap 4.5.4",
  "clap 4.5.4",
  "codespan-reporting",
  "curve25519-dalek-ng",
@@ -1017,6 +1030,7 @@ dependencies = [
 name = "aptos-gas-algebra"
 version = "0.0.1"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "either",
  "move-core-types",
@@ -1025,6 +1039,7 @@ dependencies = [
 [[package]]
 name = "aptos-gas-schedule"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "aptos-gas-algebra",
@@ -1039,15 +1054,18 @@ dependencies = [
 name = "aptos-global-constants"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 
 [[package]]
 name = "aptos-infallible"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 
 [[package]]
 name = "aptos-log-derive"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "proc-macro2",
@@ -1058,6 +1076,7 @@ dependencies = [
 [[package]]
 name = "aptos-logger"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "aptos-infallible",
@@ -1090,6 +1109,7 @@ dependencies = [
 name = "aptos-move-stdlib"
 version = "0.1.1"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "aptos-gas-schedule",
  "aptos-native-interface",
@@ -1104,6 +1124,7 @@ dependencies = [
 [[package]]
 name = "aptos-native-interface"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "aptos-gas-algebra",
@@ -1122,6 +1143,7 @@ dependencies = [
 name = "aptos-openapi"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "percent-encoding",
  "poem",
@@ -1133,6 +1155,7 @@ dependencies = [
 [[package]]
 name = "aptos-rest-client"
 version = "0.0.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -1158,6 +1181,7 @@ dependencies = [
 name = "aptos-runtimes"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "rayon",
  "tokio",
@@ -1167,10 +1191,12 @@ dependencies = [
 name = "aptos-sdk-builder"
 version = "0.2.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
  "aptos-types",
  "bcs 0.1.4",
+ "clap 4.5.4",
  "clap 4.5.4",
  "heck 0.4.1",
  "move-core-types",
@@ -1184,6 +1210,7 @@ dependencies = [
 [[package]]
 name = "aptos-secure-storage"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "aptos-crypto",
@@ -1206,6 +1233,7 @@ dependencies = [
 name = "aptos-short-hex-str"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "mirai-annotations",
  "serde",
@@ -1217,6 +1245,7 @@ dependencies = [
 name = "aptos-temppath"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "hex",
  "rand 0.7.3",
@@ -1225,6 +1254,7 @@ dependencies = [
 [[package]]
 name = "aptos-time-service"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "aptos-infallible",
@@ -1238,6 +1268,7 @@ dependencies = [
 [[package]]
 name = "aptos-types"
 version = "0.0.3"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -1294,6 +1325,7 @@ dependencies = [
 name = "aptos-vault-client"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "aptos-crypto",
  "base64 0.13.1",
@@ -1320,6 +1352,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm-types"
 version = "0.0.1"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -2874,7 +2907,9 @@ dependencies = [
 [[package]]
 name = "clap"
 version = "4.5.4"
+version = "4.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90bc066a67923782aa8515dbaea16946c5bcc5addbd668bb80af688e53e548a0"
 checksum = "90bc066a67923782aa8515dbaea16946c5bcc5addbd668bb80af688e53e548a0"
 dependencies = [
  "clap_builder",
@@ -2884,7 +2919,9 @@ dependencies = [
 [[package]]
 name = "clap_builder"
 version = "4.5.2"
+version = "4.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae129e2e766ae0ec03484e609954119f123cc1fe650337e155d03b022f24f7b4"
 checksum = "ae129e2e766ae0ec03484e609954119f123cc1fe650337e155d03b022f24f7b4"
 dependencies = [
  "anstream",
@@ -2897,7 +2934,9 @@ dependencies = [
 [[package]]
 name = "clap_derive"
 version = "4.5.4"
+version = "4.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "528131438037fd55894f62d6e9f068b8f45ac57ffa77517819645d10aed04f64"
 checksum = "528131438037fd55894f62d6e9f068b8f45ac57ffa77517819645d10aed04f64"
 dependencies = [
  "heck 0.5.0",
@@ -3549,6 +3588,7 @@ dependencies = [
  "anes",
  "cast",
  "ciborium",
+ "clap 4.5.4",
  "clap 4.5.4",
  "criterion-plot 0.5.0",
  "is-terminal",
@@ -4298,6 +4338,7 @@ dependencies = [
  "base64 0.21.7",
  "bip39",
  "clap 4.5.4",
+ "clap 4.5.4",
  "cosmwasm-std 2.1.0",
  "ed25519-compact",
  "hex",
@@ -4422,7 +4463,7 @@ dependencies = [
  "chain-utils",
  "chrono",
  "clap 4.5.4",
- "dashmap 5.5.3",
+ "dashmap",
  "prost 0.12.6",
  "protos",
  "recaptcha-verify",
@@ -4655,6 +4696,7 @@ dependencies = [
 name = "ensure-blocks"
 version = "0.0.0"
 dependencies = [
+ "clap 4.5.4",
  "clap 4.5.4",
  "ethers",
  "reqwest 0.11.27",
@@ -5737,6 +5779,7 @@ name = "generate-rust-sol-bindings"
 version = "0.1.0"
 dependencies = [
  "clap 4.5.4",
+ "clap 4.5.4",
  "ethers-contract-abigen",
 ]
 
@@ -6340,6 +6383,7 @@ dependencies = [
  "chain-utils",
  "chrono",
  "clap 4.5.4",
+ "clap 4.5.4",
  "color-eyre",
  "cometbft-rpc",
  "cometbls-light-client-types",
@@ -6372,6 +6416,7 @@ dependencies = [
  "tokio",
  "tonic",
  "tracing",
+ "tracing-error",
  "tracing-error",
  "tracing-subscriber 0.3.18",
  "unionlabs",
@@ -7696,6 +7741,7 @@ checksum = "1fafa6961cabd9c63bcd77a45d7e3b7f3b552b70417831fb0f56db717e72407e"
 name = "move-abigen"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7712,6 +7758,7 @@ dependencies = [
 [[package]]
 name = "move-binary-format"
 version = "0.0.3"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -7758,10 +7805,12 @@ dependencies = [
 name = "move-borrow-graph"
 version = "0.0.1"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 
 [[package]]
 name = "move-bytecode-source-map"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -7778,6 +7827,7 @@ dependencies = [
 name = "move-bytecode-spec"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "once_cell",
  "quote",
@@ -7787,6 +7837,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-utils"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -7799,6 +7850,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-verifier"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "fail",
@@ -7813,6 +7865,7 @@ dependencies = [
 [[package]]
 name = "move-command-line-common"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -7831,9 +7884,11 @@ dependencies = [
 name = "move-compiler"
 version = "0.0.1"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
+ "clap 4.5.4",
  "clap 4.5.4",
  "codespan-reporting",
  "hex",
@@ -7857,10 +7912,12 @@ dependencies = [
 name = "move-compiler-v2"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
  "bcs 0.1.4",
+ "clap 4.5.4",
  "clap 4.5.4",
  "codespan-reporting",
  "ethnum",
@@ -7891,6 +7948,7 @@ dependencies = [
 name = "move-core-types"
 version = "0.0.4"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7913,9 +7971,11 @@ dependencies = [
 name = "move-coverage"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
+ "clap 4.5.4",
  "clap 4.5.4",
  "codespan",
  "colored",
@@ -7932,8 +7992,10 @@ dependencies = [
 name = "move-disassembler"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
+ "clap 4.5.4",
  "clap 4.5.4",
  "colored",
  "move-binary-format",
@@ -7949,8 +8011,10 @@ dependencies = [
 name = "move-docgen"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
+ "clap 4.5.4",
  "clap 4.5.4",
  "codespan",
  "codespan-reporting",
@@ -7967,6 +8031,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -7986,6 +8051,7 @@ dependencies = [
 name = "move-ir-to-bytecode-syntax"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
  "hex",
@@ -7999,6 +8065,7 @@ dependencies = [
 name = "move-ir-types"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "hex",
  "move-command-line-common",
@@ -8011,6 +8078,7 @@ dependencies = [
 [[package]]
 name = "move-model"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
@@ -8038,8 +8106,10 @@ dependencies = [
 name = "move-package"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "anyhow",
+ "clap 4.5.4",
  "clap 4.5.4",
  "colored",
  "itertools 0.13.0",
@@ -8072,6 +8142,7 @@ dependencies = [
 name = "move-stackless-bytecode"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "abstract-domain-derive",
  "codespan-reporting",
@@ -8091,6 +8162,7 @@ dependencies = [
 name = "move-symbol-pool"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "once_cell",
  "serde",
@@ -8099,6 +8171,7 @@ dependencies = [
 [[package]]
 name = "move-table-extension"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "better_any",
@@ -8114,6 +8187,7 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "better_any",
@@ -8138,6 +8212,7 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
+source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 dependencies = [
  "bcs 0.1.4",
@@ -8944,6 +9019,7 @@ dependencies = [
 name = "parse-wasm-client-type"
 version = "0.1.0"
 dependencies = [
+ "clap 4.5.4",
  "clap 4.5.4",
  "unionlabs",
 ]
@@ -12410,6 +12486,7 @@ dependencies = [
  "cargo-util-schemas",
  "cargo_metadata",
  "clap 4.5.4",
+ "clap 4.5.4",
  "toml 0.8.12",
  "tracing",
  "tracing-subscriber 0.3.18",
@@ -13355,6 +13432,7 @@ dependencies = [
  "bs58 0.4.0",
  "chrono",
  "clap 4.5.4",
+ "clap 4.5.4",
  "contracts",
  "cosmwasm-std 1.5.2",
  "derive_more 0.99.17",
@@ -13401,6 +13479,7 @@ dependencies = [
 name = "unionvisor"
 version = "0.1.0"
 dependencies = [
+ "clap 4.5.4",
  "clap 4.5.4",
  "color-eyre",
  "figment",
@@ -13599,6 +13678,7 @@ name = "voyager-chain-module-cosmos-sdk"
 version = "0.1.0"
 dependencies = [
  "clap 4.5.4",
+ "clap 4.5.4",
  "cometbft-rpc",
  "dashmap 5.5.3",
  "enumorph",
@@ -13652,6 +13732,7 @@ dependencies = [
  "ark-bn254",
  "ark-serialize 0.4.2",
  "clap 4.5.4",
+ "clap 4.5.4",
  "cometbft-rpc",
  "cometbls-light-client-types",
  "dashmap 5.5.3",
@@ -13703,6 +13784,7 @@ dependencies = [
 name = "voyager-client-module-tendermint"
 version = "0.1.0"
 dependencies = [
+ "clap 4.5.4",
  "clap 4.5.4",
  "cometbft-rpc",
  "dashmap 5.5.3",
@@ -13906,6 +13988,7 @@ name = "voyager-event-source-plugin-cosmos-sdk"
 version = "0.1.0"
 dependencies = [
  "clap 4.5.4",
+ "clap 4.5.4",
  "cometbft-rpc",
  "dashmap 5.5.3",
  "enumorph",
@@ -13964,6 +14047,7 @@ dependencies = [
  "aptos-types",
  "bcs 0.1.6",
  "clap 4.5.4",
+ "clap 4.5.4",
  "enumorph",
  "futures",
  "hex",
@@ -13994,6 +14078,7 @@ name = "voyager-message"
 version = "0.1.0"
 dependencies = [
  "chain-utils",
+ "clap 4.5.4",
  "clap 4.5.4",
  "contracts",
  "enumorph",
