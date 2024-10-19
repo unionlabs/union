@@ -33,7 +33,7 @@
           {
             name = "galoisd";
             src = ./.;
-            vendorHash = "sha256-NjX+FEYMC2dy3Rr1nubO7+bHqfI10K3x57rDCe49png=";
+            vendorHash = "sha256-jq5ptrhhRhVPoQ+XrBo69uFMmo6gBXdBIdvWho6GGJk=";
             meta = {
               mainProgram = "galoisd";
             };
