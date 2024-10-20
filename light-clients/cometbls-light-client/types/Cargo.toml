@@ -19,11 +19,8 @@ unionlabs   = { workspace = true }
 
 [features]
 default = ["proto", "ethabi"]
-ethabi = ["unionlabs/ethabi"]
-proto = [
-  # TODO: Once unionlabs feature gates protobuf, this will need to be enabled
-  # "unionlabs/proto"
-]
+ethabi  = ["unionlabs/ethabi"]
+proto   = ["unionlabs/proto"]
 
 [dev-dependencies]
 hex-literal = { workspace = true }

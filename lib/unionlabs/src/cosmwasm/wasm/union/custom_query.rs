@@ -2,7 +2,7 @@ use core::fmt::Debug;
 
 use cosmwasm_std::{Binary, Deps, QueryRequest};
 
-use crate::{bls::BlsPublicKey, ibc::core::client::height::Height, ics24::Path};
+use crate::{bls::BlsPublicKey, ics24::Path};
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum Error {
@@ -73,6 +73,7 @@ use {
     crate::{
         encoding::{Decode, DecodeAs, Proto},
         google::protobuf::any::Any,
+        ibc::core::client::height::Height,
         ics24::{ClientConsensusStatePath, ClientStatePath},
     },
     cosmwasm_std::{to_json_vec, ContractResult, Env, SystemResult},

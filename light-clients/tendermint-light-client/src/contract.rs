@@ -7,10 +7,7 @@ use ics008_wasm_client::{
 use protos::ibc::lightclients::wasm::v1::{
     ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
 };
-use unionlabs::{
-    encoding::{DecodeAs, Proto},
-    ibc::lightclients::tendermint::client_state::ClientState,
-};
+use unionlabs::encoding::{DecodeAs, Proto};
 
 use crate::{client::TendermintLightClient, errors::Error};
 
@@ -25,7 +22,8 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, Error> {
     let client_state =
-        ClientState::decode_as::<Proto>(&msg.client_state).map_err(Error::ClientStateDecode)?;
+        tendermint_light_client_types::ClientState::decode_as::<Proto>(&msg.client_state)
+            .map_err(Error::ClientStateDecode)?;
 
     save_proto_consensus_state::<TendermintLightClient>(
         deps.branch(),
