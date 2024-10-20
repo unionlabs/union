@@ -100,7 +100,7 @@ pub fn schedule_create_client_checker(
                                     cs.chain_id.as_str().to_owned()
                                 }
                                 WasmClientType::Tendermint => {
-                                    let cs = match unionlabs::ibc::lightclients::tendermint::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                    let cs = match tendermint_light_client_types::client_state::ClientState::decode_as::<Proto>(&cs.data) {
                                         Ok(cs) => cs,
                                         Err(err) => {
                                             warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
@@ -134,7 +134,7 @@ pub fn schedule_create_client_checker(
                                 }
                                 WasmClientType::Linea => todo!("We still need to add linea"),
                                 WasmClientType::Berachain => {
-                                    let cs = match unionlabs::ibc::lightclients::berachain::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                    let cs = match berachain_light_client_types::client_state::ClientState::decode_as::<Proto>(&cs.data) {
                                         Ok(cs) => cs,
                                         // We changed the format of berachain client states, but union-testnet-8 still contains an old configuration which we need to ignore.
                                         Err(err) => {

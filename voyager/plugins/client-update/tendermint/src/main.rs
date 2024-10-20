@@ -5,10 +5,10 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
+use tendermint_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
     hash::H160,
-    ibc::lightclients::tendermint::header::Header,
     tendermint::types::{validator::Validator, validator_set::ValidatorSet},
 };
 use voyager_message::{

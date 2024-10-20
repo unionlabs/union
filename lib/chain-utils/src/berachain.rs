@@ -3,11 +3,13 @@ use std::{
     sync::Arc,
 };
 
+use berachain_light_client_types::{ClientState, ConsensusState};
 use cometbft_rpc::types::AbciQueryResponse;
 use contracts::ibc_handler::IBCHandler;
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use ics23::ibc_api::SDK_SPECS;
 use serde::{Deserialize, Serialize};
+use tendermint_light_client_types::Fraction;
 use unionlabs::{
     berachain::{
         BerachainChainSpec, LATEST_BEACON_BLOCK_HEADER_PREFIX,
@@ -19,13 +21,9 @@ use unionlabs::{
     hash::H160,
     ibc::{
         core::client::height::Height,
-        lightclients::{
-            berachain,
-            ethereum::{
-                beacon_block_header::BeaconBlockHeader,
-                execution_payload_header::ExecutionPayloadHeader, storage_proof::StorageProof,
-            },
-            tendermint::fraction::Fraction,
+        lightclients::ethereum::{
+            beacon_block_header::BeaconBlockHeader,
+            execution_payload_header::ExecutionPayloadHeader, storage_proof::StorageProof,
         },
     },
     option_unwrap, result_unwrap,
@@ -135,7 +133,7 @@ impl Berachain {
             .unwrap())
     }
 
-    async fn self_client_state(&self, height: Height) -> berachain::client_state::ClientState {
+    async fn self_client_state(&self, height: Height) -> ClientState {
         let commit = self
             .tm_client
             .commit(Some(height.revision_height.try_into().unwrap()))
@@ -148,7 +146,7 @@ impl Berachain {
         // 1/4 eth mainnet's ~28hrs
         const UNBONDING_PERIOD: i64 = 60 * 60 * 7;
 
-        berachain::client_state::ClientState {
+        ClientState {
             consensus_chain_id: self.consensus_chain_id.clone(),
             execution_chain_id: self.execution_chain_id,
             // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
@@ -172,10 +170,7 @@ impl Berachain {
         }
     }
 
-    async fn self_consensus_state(
-        &self,
-        height: Height,
-    ) -> berachain::consensus_state::ConsensusState {
+    async fn self_consensus_state(&self, height: Height) -> ConsensusState {
         let execution_header = self
             .execution_header_at_beacon_slot(height.revision_height)
             .await;
@@ -186,7 +181,7 @@ impl Berachain {
             .await
             .unwrap();
 
-        berachain::consensus_state::ConsensusState {
+        ConsensusState {
             eth_timestamp: execution_header.timestamp,
             comet_timestamp: commit.signed_header.header.time,
             eth_storage_root: self

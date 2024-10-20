@@ -2,10 +2,10 @@
 
 use std::collections::BTreeMap;
 
+use tendermint_light_client_types::Fraction;
 use unionlabs::{
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::H160,
-    ibc::lightclients::tendermint::fraction::Fraction,
     tendermint::{
         crypto::public_key::PublicKey,
         types::{
@@ -540,7 +540,8 @@ mod tests {
     use std::{fs, num::NonZeroU64};
 
     use ed25519_dalek::{Signature, Verifier, VerifyingKey};
-    use unionlabs::{ibc::lightclients::tendermint::header::Header, option_unwrap};
+    use tendermint_light_client_types::Header;
+    use unionlabs::option_unwrap;
 
     use super::*;
 

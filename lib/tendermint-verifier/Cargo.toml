@@ -13,13 +13,14 @@ workspace = true
 test-include = ["lib/tendermint-verifier/src/test/"]
 
 [dependencies]
-hex-literal = { workspace = true }
-prost       = { workspace = true }
-protos      = { workspace = true }
-serde-utils = { workspace = true }
-sha2        = { workspace = true }
-thiserror   = { workspace = true }
-unionlabs   = { workspace = true }
+hex-literal                             = { workspace = true }
+prost                                   = { workspace = true }
+protos                                  = { workspace = true }
+serde-utils                             = { workspace = true }
+sha2                                    = { workspace = true }
+tendermint-light-client-types.workspace = true
+thiserror                               = { workspace = true }
+unionlabs                               = { workspace = true }
 
 [dev-dependencies]
 ed25519-dalek = { version = "2.1.0", features = ["batch"] }

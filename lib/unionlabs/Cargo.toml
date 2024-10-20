@@ -67,7 +67,7 @@ rand       = "0.8.5"
 serde_json = { workspace = true }
 
 [features]
-default = ["ethabi", "std", "stargate"]
+default = ["ethabi", "std", "stargate", "proto"]
 
 cosmwasm = []
 ethabi   = ["contracts", "ethers-core", "ethers-contract-derive", "ethers", "alloy"]
@@ -78,5 +78,6 @@ std      = ["ethers-core/std"]
 fuzzing    = []
 test_utils = []
 
+proto    = []
 schemars = ["dep:schemars"]
 stargate = ["cosmwasm", "cosmwasm-std/stargate"]

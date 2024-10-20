@@ -11,14 +11,10 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tendermint_light_client_types::{ClientState, ConsensusState, Fraction};
 use tracing::instrument;
 use unionlabs::{
-    ibc::{
-        core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-        lightclients::tendermint::{
-            client_state::ClientState, consensus_state::ConsensusState, fraction::Fraction,
-        },
-    },
+    ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     option_unwrap, result_unwrap, ErrorReporter,
 };
 use voyager_message::{

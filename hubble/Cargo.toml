@@ -18,50 +18,52 @@ name = "hubble"
 path = "src/main.rs"
 
 [dependencies]
-alloy                       = { workspace = true, features = ["eips", "rpc", "rpc-types", "serde", "transports", "transport-http", "providers", "reqwest"] }
-aptos-crypto                = { workspace = true }
-aptos-move-ibc              = { workspace = true }
-aptos-rest-client           = { workspace = true }
-aptos-types                 = { workspace = true }
-async-trait                 = "0.1.82"
-axum                        = { workspace = true, features = ["macros", "tokio"] }
-backon                      = "0.4.4"
-base64                      = { workspace = true }
-chain-utils                 = { workspace = true }
-chrono                      = { workspace = true, features = ["clock"] }
-clap                        = { workspace = true, features = ["derive", "env", "error-context"] }
-color-eyre                  = { workspace = true, features = ["default"] }
-cometbft-rpc                = { workspace = true }
-cometbls-light-client-types = { workspace = true, features = ["proto", "ethabi"] }
-const-hex                   = "1.12.0"
-contracts                   = { workspace = true }
-futures                     = { workspace = true, features = ["async-await"] }
-hex                         = { workspace = true }
-itertools                   = "0.13.0"
-lazy_static                 = { workspace = true }
-num-traits                  = "0.2.19"
-prometheus                  = { version = "0.13.3", features = ["process"] }
-prost                       = { workspace = true }
-protos                      = { workspace = true, features = ["client"] }
-regex                       = "1.10.5"
-reqwest                     = { workspace = true, features = ["json", "blocking"] }
-scroll-api                  = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
-serde-aux                   = "4.5.0"
-serde_json                  = { workspace = true }
-sqlx                        = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json", "bigdecimal"] }
-tendermint                  = { workspace = true, features = ["std"] }
-tendermint-rpc              = { workspace = true, features = ["http-client", "tokio"] }
-thiserror                   = { workspace = true }
-time                        = { workspace = true, features = ["serde"] }
-tokio                       = { workspace = true, features = ["full"] }
-tonic                       = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
-tracing                     = { workspace = true }
-tracing-error               = { version = "0.2.0" }
-tracing-subscriber          = { workspace = true, features = ["env-filter", "json", "tracing-log"] }
-unionlabs                   = { workspace = true, features = ["ethabi"] }
-url                         = { version = "2.4.1", features = ["serde"] }
-valuable                    = { version = "0.1.0", features = ["derive"] }
+alloy                         = { workspace = true, features = ["eips", "rpc", "rpc-types", "serde", "transports", "transport-http", "providers", "reqwest"] }
+aptos-crypto                  = { workspace = true }
+aptos-move-ibc                = { workspace = true }
+aptos-rest-client             = { workspace = true }
+aptos-types                   = { workspace = true }
+async-trait                   = "0.1.82"
+axum                          = { workspace = true, features = ["macros", "tokio"] }
+backon                        = "0.4.4"
+base64                        = { workspace = true }
+berachain-light-client-types  = { workspace = true, features = ["proto"] }
+chain-utils                   = { workspace = true }
+chrono                        = { workspace = true, features = ["clock"] }
+clap                          = { workspace = true, features = ["derive", "env", "error-context"] }
+color-eyre                    = { workspace = true, features = ["default"] }
+cometbft-rpc                  = { workspace = true }
+cometbls-light-client-types   = { workspace = true, features = ["proto", "ethabi"] }
+const-hex                     = "1.12.0"
+contracts                     = { workspace = true }
+futures                       = { workspace = true, features = ["async-await"] }
+hex                           = { workspace = true }
+itertools                     = "0.13.0"
+lazy_static                   = { workspace = true }
+num-traits                    = "0.2.19"
+prometheus                    = { version = "0.13.3", features = ["process"] }
+prost                         = { workspace = true }
+protos                        = { workspace = true, features = ["client"] }
+regex                         = "1.10.5"
+reqwest                       = { workspace = true, features = ["json", "blocking"] }
+scroll-api                    = { workspace = true }
+serde                         = { workspace = true, features = ["derive"] }
+serde-aux                     = "4.5.0"
+serde_json                    = { workspace = true }
+sqlx                          = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json", "bigdecimal"] }
+tendermint                    = { workspace = true, features = ["std"] }
+tendermint-light-client-types = { workspace = true, features = ["proto"] }
+tendermint-rpc                = { workspace = true, features = ["http-client", "tokio"] }
+thiserror                     = { workspace = true }
+time                          = { workspace = true, features = ["serde"] }
+tokio                         = { workspace = true, features = ["full"] }
+tonic                         = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
+tracing                       = { workspace = true }
+tracing-error                 = { version = "0.2.0" }
+tracing-subscriber            = { workspace = true, features = ["env-filter", "json", "tracing-log"] }
+unionlabs                     = { workspace = true, features = ["ethabi"] }
+url                           = { version = "2.4.1", features = ["serde"] }
+valuable                      = { version = "0.1.0", features = ["derive"] }
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 tikv-jemallocator = "0.5"

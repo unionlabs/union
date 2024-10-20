@@ -334,6 +334,8 @@ impl FromStr for U256 {
     }
 }
 
+pub use uint::FromDecStrErr;
+
 impl Display for U256 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_fmt(format_args!("{}", self.0))
