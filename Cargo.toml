@@ -70,6 +70,7 @@ members = [
   "light-clients/scroll-light-client",
 
   "light-clients/tendermint-light-client",
+  "light-clients/tendermint-light-client/types",
 
   "light-clients/linea-light-client",
 
