@@ -23,6 +23,7 @@ aptos-crypto                  = { workspace = true }
 aptos-move-ibc                = { workspace = true }
 aptos-rest-client             = { workspace = true }
 aptos-types                   = { workspace = true }
+arbitrum-light-client-types   = { workspace = true, features = ["proto"] }
 async-trait                   = "0.1.82"
 axum                          = { workspace = true, features = ["macros", "tokio"] }
 backon                        = "0.4.4"

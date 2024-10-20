@@ -1,3 +1,4 @@
+use arbitrum_light_client_types::ClientState;
 use cosmwasm_std::{entry_point, DepsMut, Env, MessageInfo, Response};
 use ics008_wasm_client::{
     define_cosmwasm_light_client_contract,
@@ -9,7 +10,7 @@ use protos::ibc::lightclients::wasm::v1::{
 };
 use unionlabs::{
     encoding::{DecodeAs, Proto},
-    ibc::{core::client::height::Height, lightclients::arbitrum::client_state::ClientState},
+    ibc::core::client::height::Height,
 };
 
 use crate::{client::ArbitrumLightClient, errors::Error};

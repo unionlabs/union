@@ -57,6 +57,7 @@ members = [
   "lib/tendermint-verifier",
 
   "light-clients/arbitrum-light-client",
+  "light-clients/arbitrum-light-client/types",
 
   "light-clients/berachain-light-client",
   "light-clients/berachain-light-client/types",
@@ -150,7 +151,8 @@ beacon-api     = { path = "lib/beacon-api", default-features = false }
 chain-utils    = { path = "lib/chain-utils", default-features = false }
 cometbft-rpc   = { path = "lib/cometbft-rpc", default-features = false }
 
-arbitrum-verifier = { path = "lib/arbitrum-verifier", default-features = false }
+arbitrum-light-client-types = { path = "light-clients/arbitrum-light-client/types", default-features = false }
+arbitrum-verifier           = { path = "lib/arbitrum-verifier", default-features = false }
 
 cometbls-groth16-verifier   = { path = "lib/cometbls-groth16-verifier", default-features = false }
 cometbls-light-client-types = { path = "light-clients/cometbls-light-client/types", default-features = false }

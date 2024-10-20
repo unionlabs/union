@@ -13,22 +13,23 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-arbitrum-verifier     = { workspace = true }
-cosmwasm-std          = { workspace = true, features = ["abort"] }
-ethereum-light-client = { workspace = true, features = ["mainnet", "library"] }
-ethereum-verifier     = { workspace = true }
-ethers-core           = { workspace = true }
-hex                   = { workspace = true }
-ics008-wasm-client    = { workspace = true }
-protos                = { workspace = true }
-rlp                   = { workspace = true }
-schemars              = { workspace = true }
-serde                 = { workspace = true, features = ["derive"] }
-serde-json-wasm       = { workspace = true }
-sha3                  = { workspace = true }
-thiserror             = { workspace = true }
-tiny-keccak           = { workspace = true, features = ["keccak"] }
-unionlabs             = { workspace = true, features = ["ethabi", "stargate"] }
+arbitrum-light-client-types = { workspace = true, features = ["proto"] }
+arbitrum-verifier           = { workspace = true }
+cosmwasm-std                = { workspace = true, features = ["abort"] }
+ethereum-light-client       = { workspace = true, features = ["mainnet", "library"] }
+ethereum-verifier           = { workspace = true }
+ethers-core                 = { workspace = true }
+hex                         = { workspace = true }
+ics008-wasm-client          = { workspace = true }
+protos                      = { workspace = true }
+rlp                         = { workspace = true }
+schemars                    = { workspace = true }
+serde                       = { workspace = true, features = ["derive"] }
+serde-json-wasm             = { workspace = true }
+sha3                        = { workspace = true }
+thiserror                   = { workspace = true }
+tiny-keccak                 = { workspace = true, features = ["keccak"] }
+unionlabs                   = { workspace = true, features = ["ethabi", "stargate"] }
 
 [dev-dependencies]
 base64     = { workspace = true }
