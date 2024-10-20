@@ -2,7 +2,9 @@ use core::fmt::Debug;
 
 use cosmwasm_std::{Binary, Deps, QueryRequest};
 
-use crate::{bls::BlsPublicKey, ibc::core::client::height::Height, ics24::Path};
+#[cfg(feature = "stargate")]
+use crate::ibc::core::client::height::Height;
+use crate::{bls::BlsPublicKey, ics24::Path};
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum Error {

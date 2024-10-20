@@ -4,7 +4,10 @@ use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
     hash::H256,
     ibc::{
-        core::client::height::Height,
+        core::{
+            channel::channel::Channel, client::height::Height,
+            connection::connection_end::ConnectionEnd,
+        },
         lightclients::ethereum::{self, storage_proof::StorageProof},
     },
     uint::U256,
@@ -98,20 +101,12 @@ pub enum Error {
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum CanonicalizeStoredValueError {
-    // #[error("the proof path {0} is unknown")]
-    // UnknownIbcPath(String),
-    // #[error("unable to decode counterparty's stored cometbls client state")]
-    // CometblsClientStateDecode(
-    //     #[source] DecodeErrorOf<Proto, Any<cometbls::client_state::ClientState>>,
-    // ),
-    // #[error("unable to decode counterparty's stored cometbls consensus state")]
-    // CometblsConsensusStateDecode(
-    //     #[source]
-    //     DecodeErrorOf<
-    //         Proto,
-    //         Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>,
-    //     >,
-    // ),
+    #[error("the proof path {0} is unknown")]
+    UnknownIbcPath(String),
+    #[error("connection end")]
+    ConnectionEnd(#[source] DecodeErrorOf<Proto, ConnectionEnd>),
+    #[error("channel")]
+    Channel(#[source] DecodeErrorOf<Proto, Channel>),
 }
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
