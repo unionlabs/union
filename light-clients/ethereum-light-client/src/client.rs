@@ -20,20 +20,23 @@ use ics008_wasm_client::{
 };
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    encoding::{DecodeAs, Proto},
+    encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
     ensure,
     ethereum::{ibc_commitment_key, keccak256},
     hash::H256,
     ibc::{
         core::{
+            channel::channel::Channel,
             client::{genesis_metadata::GenesisMetadata, height::Height},
             commitment::merkle_path::MerklePath,
+            connection::connection_end::ConnectionEnd,
         },
         lightclients::ethereum::{
             client_state::ClientState, consensus_state::ConsensusState, header::Header,
             misbehaviour::Misbehaviour, storage_proof::StorageProof,
         },
     },
+    ics24::Path,
     uint::U256,
 };
 
@@ -488,37 +491,27 @@ pub fn do_verify_membership(
     .map_err(Error::VerifyStorageProof)
 }
 
-// this is required because ibc-go requires the client state to be a protobuf Any, even though
-// the counterparty (ethereum in this case) stores it as raw bytes. this will no longer be
-// required with ibc-go v9.
+/// ibc-go passes `ConnectionEnd` and `ChannelEnd` types as protobuf encoded. But the solidity implementation
+/// commits a customized version of them using ethabi encoding. We do that conversion here.
 pub fn canonicalize_stored_value(
-    _path: String,
+    path: String,
     raw_value: Vec<u8>,
 ) -> Result<Vec<u8>, CanonicalizeStoredValueError> {
-    // let path = path
-    //     .parse::<Path>()
-    //     .map_err(|_| CanonicalizeStoredValueError::UnknownIbcPath(path))?;
+    let path = path
+        .parse::<Path>()
+        .map_err(|_| CanonicalizeStoredValueError::UnknownIbcPath(path))?;
 
-    // let canonical_value = match path {
-    //     // proto(any<cometbls>) -> ethabi(cometbls)
-    //     Path::ClientState(_) => {
-    //         Any::<cometbls::client_state::ClientState>::decode_as::<Proto>(raw_value.as_ref())
-    //             .map_err(CanonicalizeStoredValueError::CometblsClientStateDecode)?
-    //             .0
-    //             .encode_as::<EthAbi>()
-    //     }
-    //     // proto(any<wasm<cometbls>>) -> ethabi(cometbls)
-    //     Path::ClientConsensusState(_) => Any::<
-    //         wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
-    //     >::decode_as::<Proto>(raw_value.as_ref())
-    //     .map_err(CanonicalizeStoredValueError::CometblsConsensusStateDecode)?
-    //     .0
-    //     .data
-    //     .encode_as::<EthAbi>(),
-    //     _ => raw_value,
-    // };
+    let canonical_value = match path {
+        Path::Connection(_) => ConnectionEnd::decode_as::<Proto>(raw_value.as_ref())
+            .map_err(CanonicalizeStoredValueError::ConnectionEnd)?
+            .encode_as::<EthAbi>(),
+        Path::ChannelEnd(_) => Channel::decode_as::<Proto>(raw_value.as_ref())
+            .map_err(CanonicalizeStoredValueError::Channel)?
+            .encode_as::<EthAbi>(),
+        _ => raw_value,
+    };
 
-    Ok(raw_value)
+    Ok(canonical_value)
 }
 
 /// Verifies that no value is committed at `path` in the counterparty light client's storage.
