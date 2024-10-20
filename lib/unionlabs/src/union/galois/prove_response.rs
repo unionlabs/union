@@ -21,11 +21,14 @@ impl From<ProveResponse> for protos::union::galois::api::v3::ProveResponse {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum TryFromProveResponseError {
-    MissingField(MissingField),
-    TrustedValidatorSetRoot(InvalidLength),
-    UntrustedValidatorSetRoot(InvalidLength),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid trusted_validator_set_root")]
+    TrustedValidatorSetRoot(#[source] InvalidLength),
+    #[error("invalid untrusted_validator_set_root")]
+    UntrustedValidatorSetRoot(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::galois::api::v3::ProveResponse> for ProveResponse {

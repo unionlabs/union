@@ -42,7 +42,7 @@ impl From<ProofSpec> for protos::cosmos::ics23::v1::ProofSpec {
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromProofSpecError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid leaf spec")]
     LeafSpec(#[from] TryFromLeafOpError),
     #[error("invalid inner spec")]
@@ -106,8 +106,8 @@ mod tests {
         };
 
         let cvt = ProofSpec::try_from(proto.clone()).unwrap();
-        assert_eq!(cvt.max_depth, Some(BoundedUsize::new(1).unwrap()));
-        assert_eq!(cvt.min_depth, Some(BoundedUsize::new(1).unwrap()));
+        assert_eq!(cvt.max_depth, Some(BoundedUsize::new_const(1).unwrap()));
+        assert_eq!(cvt.min_depth, Some(BoundedUsize::new_const(1).unwrap()));
 
         let proto = protos::cosmos::ics23::v1::ProofSpec {
             max_depth: 0,
@@ -128,11 +128,11 @@ mod tests {
         let cvt = ProofSpec::try_from(proto.clone()).unwrap();
         assert_eq!(
             cvt.max_depth,
-            Some(BoundedUsize::new(i32::MAX.try_into().unwrap()).unwrap())
+            Some(BoundedUsize::new_const(i32::MAX.try_into().unwrap()).unwrap())
         );
         assert_eq!(
             cvt.min_depth,
-            Some(BoundedUsize::new(i32::MAX.try_into().unwrap()).unwrap())
+            Some(BoundedUsize::new_const(i32::MAX.try_into().unwrap()).unwrap())
         );
     }
 }

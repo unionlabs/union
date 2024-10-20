@@ -1,8 +1,9 @@
-use unionlabs::{hash::H256, ibc::lightclients::cometbls::light_header::LightHeader};
+use cometbls_light_client_types::{ChainId, LightHeader};
+use unionlabs::hash::H256;
 
 pub trait ZkpVerifier {
     fn verify_zkp(
-        chain_id: &str,
+        chain_id: &ChainId,
         trusted_validators_hash: H256,
         header: &LightHeader,
         zkp: &[u8],
@@ -17,7 +18,7 @@ pub struct MockZKPVerifier;
 
 impl ZkpVerifier for MockZKPVerifier {
     fn verify_zkp(
-        _chain_id: &str,
+        _chain_id: &ChainId,
         _trusted_validators_hash: H256,
         _header: &LightHeader,
         _zkp: &[u8],

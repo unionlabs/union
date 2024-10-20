@@ -6,24 +6,19 @@ use ics008_wasm_client::{
     IbcClient, IbcClientError, StorageState,
 };
 use unionlabs::{
-    aptos::{
-        account::AccountAddress, storage_proof::StorageProof, transaction_info::TransactionInfo,
-    },
+    aptos::transaction_info::TransactionInfo,
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    encoding::{Bcs, DecodeAs, EncodeAs as _, Proto},
-    google::protobuf::any::Any,
+    encoding::Proto,
     hash::H256,
     ibc::{
         core::{client::height::Height, commitment::merkle_path::MerklePath},
         lightclients::{
-            cometbls,
             movement::{
                 client_state::ClientState, consensus_state::ConsensusState, header::Header,
             },
             wasm,
         },
     },
-    ics24::Path,
 };
 
 use crate::errors::Error;
@@ -63,11 +58,13 @@ impl IbcClient for MovementLightClient {
         _delay_time_period: u64,
         _delay_block_period: u64,
         proof: Vec<u8>,
-        mut path: MerklePath,
+        path: MerklePath,
         value: StorageState,
     ) -> Result<(), IbcClientError<Self>> {
         #[cfg(feature = "union-movement")]
         {
+            let mut path = path;
+
             let consensus_state: WasmConsensusState = read_consensus_state(deps, &height)?
                 .ok_or(Error::ConsensusStateNotFound(height))?;
             let client_state: WasmClientState = read_client_state(deps)?;
@@ -84,6 +81,10 @@ impl IbcClient for MovementLightClient {
                 )?,
                 StorageState::Empty => unimplemented!(),
             }
+        }
+        #[cfg(not(feature = "union-movement"))]
+        {
+            let _ = (deps, height, proof, path, value);
         }
         Ok(())
     }
@@ -148,6 +149,10 @@ impl IbcClient for MovementLightClient {
                 header.state_proof_hash_proof.proof,
             )
             .unwrap();
+        }
+        #[cfg(not(feature = "union-movement"))]
+        {
+            let _ = (deps, env, header);
         }
         Ok(())
     }
@@ -267,6 +272,7 @@ impl IbcClient for MovementLightClient {
     }
 }
 
+#[cfg(feature = "union-movement")]
 fn do_verify_membership(
     path: String,
     state_root: H256,
@@ -276,27 +282,27 @@ fn do_verify_membership(
 ) -> Result<(), IbcClientError<MovementLightClient>> {
     let proof = StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
-    let value = match path
-        .parse::<Path>()
-        .map_err(|_| Error::InvalidIbcPath(path.clone()))?
-    {
-        // proto(any<cometbls>) -> bcs(cometbls)
-        Path::ClientState(_) => {
-            Any::<cometbls::client_state::ClientState>::decode_as::<Proto>(&value)
-                .map_err(Error::CometblsClientStateDecode)?
-                .0
-                .encode_as::<Bcs>()
-        }
-        // proto(any<wasm<cometbls>>) -> bcs(cometbls)
-        Path::ClientConsensusState(_) => Any::<
-            wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
-        >::decode_as::<Proto>(&value)
-        .map_err(Error::CometblsConsensusStateDecode)?
-        .0
-        .data
-        .encode_as::<Bcs>(),
-        _ => value,
-    };
+    // let value = match path
+    //     .parse::<Path>()
+    //     .map_err(|_| Error::InvalidIbcPath(path.clone()))?
+    // {
+    //     // proto(any<cometbls>) -> bcs(cometbls)
+    //     Path::ClientState(_) => {
+    //         Any::<cometbls::client_state::ClientState>::decode_as::<Proto>(&value)
+    //             .map_err(Error::CometblsClientStateDecode)?
+    //             .0
+    //             .encode_as::<Bcs>()
+    //     }
+    //     // proto(any<wasm<cometbls>>) -> bcs(cometbls)
+    //     Path::ClientConsensusState(_) => Any::<
+    //         wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
+    //     >::decode_as::<Proto>(&value)
+    //     .map_err(Error::CometblsConsensusStateDecode)?
+    //     .0
+    //     .data
+    //     .encode_as::<Bcs>(),
+    //     _ => value,
+    // };
 
     let Some(proof_value) = &proof.state_value else {
         return Err(Error::MembershipProofWithoutValue.into());

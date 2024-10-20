@@ -39,12 +39,16 @@ impl From<Header> for protos::union::ibc::lightclients::evmincosmos::v1::Header 
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromHeaderError {
-    MissingField(MissingField),
-    L2ConsensusState(TryFromConsensusStateError),
-    L2InclusionProof(TryFromMerkleProofError),
-    AccountProof(TryFromAccountProofError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid l2_consensus_state")]
+    L2ConsensusState(#[source] TryFromConsensusStateError),
+    #[error("invalid l2_inclusion_proof")]
+    L2InclusionProof(#[source] TryFromMerkleProofError),
+    #[error("invalid account_proof")]
+    AccountProof(#[source] TryFromAccountProofError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::evmincosmos::v1::Header> for Header {

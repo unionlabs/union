@@ -37,6 +37,31 @@ where
     }
 }
 
+#[macro_export]
+macro_rules! impl_proto_via_try_from_into {
+    ($T:ty => $Proto:ty) => {
+        impl $crate::encoding::Decode<$crate::encoding::Proto> for $T {
+            type Error = $crate::TryFromProtoBytesError<<$T as TryFrom<$Proto>>::Error>;
+
+            fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+                <$Proto as ::prost::Message>::decode(bytes)
+                    .map_err($crate::TryFromProtoBytesError::Decode)
+                    .and_then(|proto| {
+                        proto
+                            .try_into()
+                            .map_err($crate::TryFromProtoBytesError::TryFromProto)
+                    })
+            }
+        }
+
+        impl $crate::encoding::Encode<$crate::encoding::Proto> for $T {
+            fn encode(self) -> Vec<u8> {
+                ::prost::Message::encode_to_vec(&Into::<$Proto>::into(self))
+            }
+        }
+    };
+}
+
 static_assertions::assert_impl_all!(u8: Encode<Json>);
 static_assertions::assert_impl_all!(&u8: Encode<Json>);
 

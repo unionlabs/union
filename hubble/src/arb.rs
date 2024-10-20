@@ -4,7 +4,7 @@ use alloy::{
     eips::{BlockId, RpcBlockHash},
     primitives::{FixedBytes, B256},
     providers::{Provider, ProviderBuilder, RootProvider},
-    rpc::types::{BlockTransactionsKind, Filter},
+    rpc::types::{BlockTransactionsKind, Filter, FilterBlockOption},
     sol,
     sol_types::SolEvent,
     transports::http::{Client, Http},
@@ -109,7 +109,10 @@ impl Arb {
             .get_logs(
                 &Filter::new()
                     .select(
-                        alloy::eips::BlockNumberOrTag::Earliest..alloy::eips::BlockNumberOrTag::Latest,
+                        FilterBlockOption::Range {
+                            from_block: Some(alloy::eips::BlockNumberOrTag::Earliest),
+                            to_block: Some(alloy::eips::BlockNumberOrTag::Latest)
+                        }
                     )
                     .address(alloy::primitives::Address(
                         FixedBytes::from_slice(self.rollup_finalization_config.l1_contract_address.get()),
@@ -134,7 +137,7 @@ impl Arb {
             .wrap_err("error fetching l2 block")?
             .expect("block should exist if it is finalized on the l1");
 
-        Ok(block.header.number.unwrap())
+        Ok(block.header.number)
     }
 
     pub async fn next_node_num_at_beacon_slot(&self, slot: u64) -> Result<u64> {

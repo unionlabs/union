@@ -2,12 +2,8 @@ use ethereum_light_client::errors::{CanonicalizeStoredValueError, InvalidCommitm
 use ics008_wasm_client::IbcClientError;
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
-    google::protobuf::any::Any,
     hash::H256,
-    ibc::{
-        core::client::height::Height,
-        lightclients::{cometbls, linea, wasm},
-    },
+    ibc::{core::client::height::Height, lightclients::linea},
     ics24::PathParseError,
     linea::proof::InclusionProof,
 };
@@ -19,18 +15,18 @@ pub enum Error {
     #[error("unable to decode storage proof")]
     InclusionProofDecode(#[source] DecodeErrorOf<Proto, InclusionProof>),
 
-    #[error("unable to decode counterparty's stored cometbls client state")]
-    CometblsClientStateDecode(
-        #[source] DecodeErrorOf<Proto, Any<cometbls::client_state::ClientState>>,
-    ),
-    #[error("unable to decode counterparty's stored cometbls consensus state")]
-    CometblsConsensusStateDecode(
-        #[source]
-        DecodeErrorOf<
-            Proto,
-            Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>,
-        >,
-    ),
+    // #[error("unable to decode counterparty's stored cometbls client state")]
+    // CometblsClientStateDecode(
+    //     #[source] DecodeErrorOf<Proto, Any<cometbls::client_state::ClientState>>,
+    // ),
+    // #[error("unable to decode counterparty's stored cometbls consensus state")]
+    // CometblsConsensusStateDecode(
+    //     #[source]
+    //     DecodeErrorOf<
+    //         Proto,
+    //         Any<wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>>,
+    //     >,
+    // ),
     #[error("unable to decode client state")]
     ClientStateDecode(#[source] DecodeErrorOf<Proto, linea::client_state::ClientState>),
     #[error("unable to decode consensus state")]

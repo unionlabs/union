@@ -1,5 +1,9 @@
 use std::marker::PhantomData;
 
+use cometbls_light_client_types::{
+    client_state::ClientState, consensus_state::ConsensusState, header::Header,
+    misbehaviour::Misbehaviour,
+};
 use cosmwasm_std::{Deps, DepsMut, Empty, Env};
 use ics008_wasm_client::{
     storage_utils::{
@@ -13,17 +17,9 @@ use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
     encoding::{DecodeAs, Proto},
     ensure,
-    ibc::{
-        core::{
-            client::{genesis_metadata::GenesisMetadata, height::Height},
-            commitment::{
-                merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
-            },
-        },
-        lightclients::cometbls::{
-            client_state::ClientState, consensus_state::ConsensusState, header::Header,
-            misbehaviour::Misbehaviour,
-        },
+    ibc::core::{
+        client::{genesis_metadata::GenesisMetadata, height::Height},
+        commitment::{merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot},
     },
 };
 
@@ -195,12 +191,10 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
             if misbehaviour.header_a.signed_header == misbehaviour.header_b.signed_header {
                 return Ok(());
             }
-        } else {
-            if misbehaviour.header_a.signed_header.time.as_unix_nanos()
-                <= misbehaviour.header_b.signed_header.time.as_unix_nanos()
-            {
-                return Ok(());
-            }
+        } else if misbehaviour.header_a.signed_header.time.as_unix_nanos()
+            <= misbehaviour.header_b.signed_header.time.as_unix_nanos()
+        {
+            return Ok(());
         }
 
         Err(Error::MisbehaviourNotFound.into())
@@ -433,8 +427,7 @@ fn migrate_check_allowed_fields(
     subject_client_state: &ClientState,
     substitute_client_state: &ClientState,
 ) -> bool {
-    subject_client_state.unbonding_period == substitute_client_state.unbonding_period
-        && subject_client_state.max_clock_drift == substitute_client_state.max_clock_drift
+    subject_client_state.max_clock_drift == substitute_client_state.max_clock_drift
 }
 
 fn is_client_expired(
@@ -616,7 +609,6 @@ mod tests {
         }
 
         let modifications = modify_fns! { s,
-            s.unbonding_period ^= u64::MAX,
             s.max_clock_drift ^= u64::MAX,
         };
 

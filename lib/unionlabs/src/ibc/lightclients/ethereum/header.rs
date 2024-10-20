@@ -41,7 +41,7 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromHeaderError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid `trusted_sync_committee`")]
     TrustedSyncCommittee(#[from] TryFromTrustedSyncCommitteeError),
     #[error("invalid `consensus_update`")]

@@ -79,7 +79,7 @@ pub async fn get_tokens(urls: TokensUrls) -> Result<Option<Vec<TokenList>>> {
                 Ok(Some(serde_json::from_value(val).unwrap())) as Result<Option<TokenList>>
             } else {
                 debug!("No valid token list found at: {}", url);
-                return Ok(None);
+                Ok(None)
             }
         }
     });
@@ -87,12 +87,8 @@ pub async fn get_tokens(urls: TokensUrls) -> Result<Option<Vec<TokenList>>> {
     // Execute all requests simultaneously and collect the results
     let results: Vec<Result<Option<TokenList>>> = futures::future::join_all(requests).await;
 
-    let mut tokens = Vec::new();
-    for result in results {
-        if let Ok(Some(token_list)) = result {
-            tokens.push(token_list);
-        }
-    }
+    let tokens = results.into_iter().flatten().flatten().collect::<Vec<_>>();
+
     if tokens.is_empty() {
         info!("No valid token lists found");
         Ok(None)

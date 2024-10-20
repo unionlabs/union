@@ -79,7 +79,7 @@ impl<C: SYNC_COMMITTEE_SIZE> From<TrustedSyncCommittee<C>>
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromTrustedSyncCommitteeError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid sync committee")]
     SyncCommittee(TryFromSyncCommitteeError),
 }

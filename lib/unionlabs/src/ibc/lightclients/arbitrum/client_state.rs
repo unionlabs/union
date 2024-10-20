@@ -80,7 +80,7 @@ impl TryFrom<protos::union::ibc::lightclients::arbitrum::v1::ClientState> for Cl
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromClientStateError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid l1_client_id")]
     L1ClientId(#[source] <ClientIdValidator as Validate<String>>::Error),
     #[error("invalid l1_contract_address")]

@@ -43,15 +43,8 @@ trait BlockReferenceProvider {
 impl BlockReferenceProvider for Block {
     fn block_reference(&self) -> Result<BlockReference, Report> {
         Ok(BlockReference {
-            height: self
-                .header
-                .number
-                .ok_or(Report::msg("block without a number"))?,
-            hash: self
-                .header
-                .hash
-                .map(|h| h.to_lower_hex())
-                .ok_or(Report::msg("block without a hash"))?,
+            height: self.header.number,
+            hash: self.header.hash.to_lower_hex(),
             timestamp: OffsetDateTime::from_unix_timestamp(self.header.timestamp as i64)
                 .map_err(|err| IndexerError::ProviderError(err.into()))?,
         })
@@ -146,7 +139,7 @@ impl EthFetcherClient {
 
         // We know now there is a potential match, we still apply a Filter to only
         // get the logs we want.
-        let log_filter = Filter::new().select(block.header.hash.unwrap());
+        let log_filter = Filter::new().select(block.header.hash);
         let log_addresses: Vec<Address> = self.contracts.to_vec();
         let log_filter = log_filter.address(log_addresses);
 

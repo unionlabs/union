@@ -5,18 +5,17 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use serde_utils::Hex;
 use tracing::instrument;
 use unionlabs::{
     self,
     aptos::storage_proof::StorageProof,
-    encoding::{Bcs, DecodeAs, EncodeAs, Proto},
+    encoding::{DecodeAs, EncodeAs, Proto},
     google::protobuf::any::Any,
     ibc::{
         core::client::height::Height,
         lightclients::{
-            cometbls,
             movement::{self, header::Header},
             wasm,
         },
@@ -198,27 +197,29 @@ impl ClientModuleServer for Module {
     async fn reencode_counterparty_client_state(
         &self,
         _: &Extensions,
-        client_state: Hex<Vec<u8>>,
-        client_type: ClientType<'static>,
+        _client_state: Hex<Vec<u8>>,
+        _client_type: ClientType<'static>,
     ) -> RpcResult<Hex<Vec<u8>>> {
-        match client_type.as_str() {
-            ClientType::COMETBLS_GROTH16 => {
-                Ok(Hex(Any(cometbls::client_state::ClientState::decode_as::<
-                    Bcs,
-                >(&client_state.0)
-                .map_err(|err| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode client state: {}", ErrorReporter(err)),
-                        Some(json!({
-                            "client_type": client_type,
-                        })),
-                    )
-                })?)
-                .encode_as::<Proto>()))
-            }
-            _ => Ok(client_state),
-        }
+        // match client_type.as_str() {
+        //     ClientType::COMETBLS_GROTH16 => {
+        //         Ok(Hex(Any(cometbls::client_state::ClientState::decode_as::<
+        //             Bcs,
+        //         >(&client_state.0)
+        //         .map_err(|err| {
+        //             ErrorObject::owned(
+        //                 FATAL_JSONRPC_ERROR_CODE,
+        //                 format!("unable to decode client state: {}", ErrorReporter(err)),
+        //                 Some(json!({
+        //                     "client_type": client_type,
+        //                 })),
+        //             )
+        //         })?)
+        //         .encode_as::<Proto>()))
+        //     }
+        //     _ => Ok(client_state),
+        // }
+
+        todo!()
     }
 
     #[instrument(skip_all)]

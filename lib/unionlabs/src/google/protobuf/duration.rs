@@ -210,21 +210,23 @@ impl Duration {
         #[allow(overlapping_range_endpoints)] // false positive, report upstream
         match (seconds, nanos) {
             (0, _) => {
-                let nanos = result_try!(SubZeroNanos::new(nanos), DurationError::Nanos);
+                let nanos = result_try!(SubZeroNanos::new_const(nanos), DurationError::Nanos);
 
                 Ok(Self::new_private(0, nanos.inner()))
             }
             // negative seconds, negative or zero nanos
             (..=-1, ..=0) => {
-                let seconds = result_try!(NegativeSeconds::new(seconds), DurationError::Seconds);
-                let nanos = result_try!(NegativeNanos::new(nanos), DurationError::Nanos);
+                let seconds =
+                    result_try!(NegativeSeconds::new_const(seconds), DurationError::Seconds);
+                let nanos = result_try!(NegativeNanos::new_const(nanos), DurationError::Nanos);
 
                 Ok(Self::new_private(seconds.inner(), nanos.inner()))
             }
             // positive seconds, positive or zero nanos
             (1.., 0..) => {
-                let seconds = result_try!(PositiveSeconds::new(seconds), DurationError::Seconds);
-                let nanos = result_try!(PositiveNanos::new(nanos), DurationError::Nanos);
+                let seconds =
+                    result_try!(PositiveSeconds::new_const(seconds), DurationError::Seconds);
+                let nanos = result_try!(PositiveNanos::new_const(nanos), DurationError::Nanos);
 
                 Ok(Self::new_private(seconds.inner(), nanos.inner()))
             }
@@ -240,7 +242,7 @@ impl Duration {
         // false positive (fixed in newer versions)
         // https://github.com/rust-lang/rust-clippy/pull/10811
         #[allow(clippy::match_wild_err_arm)]
-        match BoundedI128::new(inner) {
+        match BoundedI128::new_const(inner) {
             Ok(ok) => Self(ok),
             Err(_) => {
                 unreachable!()
@@ -261,7 +263,7 @@ impl Duration {
         // https://github.com/rust-lang/rust-clippy/pull/10811
         #[allow(clippy::match_wild_err_arm)]
         #[allow(clippy::cast_possible_truncation)] // invariant checked above
-        match BoundedI64::new(value as i64) {
+        match BoundedI64::new_const(value as i64) {
             Ok(ok) => ok,
             Err(_) => {
                 unreachable!()
@@ -279,7 +281,7 @@ impl Duration {
         // false positive (fixed in newer versions)
         // https://github.com/rust-lang/rust-clippy/pull/10811
         #[allow(clippy::cast_possible_truncation)] // invariant checked above
-        match BoundedI32::new(value as i32) {
+        match BoundedI32::new_const(value as i32) {
             Ok(ok) => ok,
             Err(_) => {
                 unreachable!()

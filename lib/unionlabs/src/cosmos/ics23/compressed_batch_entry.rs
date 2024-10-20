@@ -38,7 +38,7 @@ impl From<CompressedBatchEntry> for protos::cosmos::ics23::v1::CompressedBatchEn
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromCompressedBatchEntryProofError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid compressed existence proof")]
     Exist(#[from] TryFromCompressedExistenceProofError),
     #[error("invalid compressed non existence proof")]

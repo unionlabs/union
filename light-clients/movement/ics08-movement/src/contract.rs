@@ -17,6 +17,7 @@ use crate::{client::MovementLightClient, errors::Error};
 // in the client state makes this code kinda messy. But this is going to be resolved in the future versions
 // of IBC (probably v9). When that feature is implemented, we can move this to the ics008 macro.
 #[entry_point]
+#[allow(unused)]
 pub fn instantiate(
     mut deps: DepsMut<CustomQueryOf<MovementLightClient>>,
     _env: Env,

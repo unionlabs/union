@@ -66,11 +66,31 @@ macro_rules! bounded_int {
             }
 
             impl<const MIN: $ty, const MAX: $ty> $Struct<MIN, MAX> {
-                pub const fn new(n: $ty) -> Result<Self, BoundedIntError<$ty>> {
+                pub const fn new_const(n: $ty) -> Result<Self, BoundedIntError<$ty>> {
                     const { assert!(MIN < MAX) };
 
                     if n >= MIN && n <= MAX {
                         Ok(Self(n))
+                    } else {
+                        Err(BoundedIntError {
+                            max: MAX,
+                            min: MIN,
+                            found: n,
+                        })
+                    }
+                }
+
+                pub fn new<T: Copy + TryInto<$ty>>(n: T) -> Result<Self, BoundedIntError<$ty, T>> {
+                    const { assert!(MIN < MAX) };
+
+                    let m = n.try_into().map_err(|_| BoundedIntError {
+                        max: MAX,
+                        min: MIN,
+                        found: n,
+                    })?;
+
+                    if m >= MIN && m <= MAX {
+                        Ok(Self(m))
                     } else {
                         Err(BoundedIntError {
                             max: MAX,
@@ -135,13 +155,13 @@ macro_rules! bounded_int {
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("expected a value between {min}..={max}, found {found}")]
-pub struct BoundedIntError<T> {
+pub struct BoundedIntError<T, U = T> {
     min: T,
     max: T,
-    found: T,
+    found: U,
 }
 
-impl<T> BoundedIntError<T> {
+impl<T, U> BoundedIntError<T, U> {
     pub fn min(&self) -> &T {
         &self.min
     }
@@ -150,7 +170,7 @@ impl<T> BoundedIntError<T> {
         &self.max
     }
 
-    pub fn found(&self) -> &T {
+    pub fn found(&self) -> &U {
         &self.found
     }
 }

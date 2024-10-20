@@ -7,10 +7,7 @@ use aptos_rest_client::{
 use serde_json::Value;
 use tokio::{task::JoinSet, time::interval};
 use tracing::{debug, info, info_span, warn, Instrument};
-use unionlabs::{
-    encoding::{Bcs, DecodeAs},
-    ibc::lightclients::cometbls::client_state::ClientState,
-};
+use unionlabs::encoding::{Bcs, DecodeAs};
 
 use crate::indexer::{
     api::IndexerError,
@@ -90,7 +87,7 @@ pub fn schedule_create_client_checker(
                         }
                     };
 
-                    let client_state = match ClientState::decode_as::<Bcs>(argument_as_bytes.inner()) {
+                    let client_state = match cometbls_light_client_types::client_state::ClientState::decode_as::<Bcs>(argument_as_bytes.inner()) {
                         Ok(client_state) => client_state,
                         Err(err) => {
                             warn!("{}-{}: error decoding client state {}/{:?} => skipping ({:?})", height, version, argument_as_hex, argument_as_bytes, err);

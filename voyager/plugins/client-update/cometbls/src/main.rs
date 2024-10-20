@@ -324,7 +324,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                         // REVIEW: Should this be hardcoded to precommit?
                                         ty: SignedMsgType::Precommit,
                                         height: signed_header.commit.height,
-                                        round: BoundedI64::new(
+                                        round: BoundedI64::new_const(
                                             signed_header.commit.round.inner().into(),
                                         )
                                         .expect(

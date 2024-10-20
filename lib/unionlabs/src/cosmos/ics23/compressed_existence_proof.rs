@@ -22,7 +22,7 @@ pub struct CompressedExistenceProof {
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromCompressedExistenceProofError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid leaf")]
     Leaf(#[from] TryFromLeafOpError),
     #[error("invalid path")]

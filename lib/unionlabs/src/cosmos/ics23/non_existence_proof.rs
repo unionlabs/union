@@ -17,7 +17,7 @@ pub struct NonExistenceProof {
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromNonExistenceProofError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("left proof invalid")]
     Left(TryFromExistenceProofError),
     #[error("right proof invalid")]

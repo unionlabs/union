@@ -8,9 +8,6 @@ pub struct ClientState {
     /// submitted headers are valid for upgrade
     #[prost(uint64, tag = "2")]
     pub trusting_period: u64,
-    /// duration of the staking unbonding period
-    #[prost(uint64, tag = "3")]
-    pub unbonding_period: u64,
     /// defines how much new (untrusted) header's Time can drift into the future.
     #[prost(uint64, tag = "4")]
     pub max_clock_drift: u64,

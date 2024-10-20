@@ -23,14 +23,14 @@ pub const IAVL_PROOF_SPEC: ProofSpec = ProofSpec {
         child_order: Cow::Borrowed(
             const {
                 &[
-                    result_unwrap!(PositiveI32AsUsize::new(0)),
-                    result_unwrap!(PositiveI32AsUsize::new(1)),
+                    result_unwrap!(PositiveI32AsUsize::new_const(0)),
+                    result_unwrap!(PositiveI32AsUsize::new_const(1)),
                 ]
             },
         ),
-        child_size: result_unwrap!(PositiveI32AsUsize::new(33)),
-        min_prefix_length: result_unwrap!(PositiveI32AsUsize::new(4)),
-        max_prefix_length: result_unwrap!(PositiveI32AsUsize::new(12)),
+        child_size: result_unwrap!(PositiveI32AsUsize::new_const(33)),
+        min_prefix_length: result_unwrap!(PositiveI32AsUsize::new_const(4)),
+        max_prefix_length: result_unwrap!(PositiveI32AsUsize::new_const(12)),
         empty_child: Cow::Borrowed(&[]),
         hash: HashOp::Sha256,
     },
@@ -51,14 +51,14 @@ pub const TENDERMINT_PROOF_SPEC: ProofSpec = ProofSpec {
         child_order: Cow::Borrowed(
             const {
                 &[
-                    result_unwrap!(PositiveI32AsUsize::new(0)),
-                    result_unwrap!(PositiveI32AsUsize::new(1)),
+                    result_unwrap!(PositiveI32AsUsize::new_const(0)),
+                    result_unwrap!(PositiveI32AsUsize::new_const(1)),
                 ]
             },
         ),
-        child_size: result_unwrap!(PositiveI32AsUsize::new(32)),
-        min_prefix_length: result_unwrap!(PositiveI32AsUsize::new(1)),
-        max_prefix_length: result_unwrap!(PositiveI32AsUsize::new(1)),
+        child_size: result_unwrap!(PositiveI32AsUsize::new_const(32)),
+        min_prefix_length: result_unwrap!(PositiveI32AsUsize::new_const(1)),
+        max_prefix_length: result_unwrap!(PositiveI32AsUsize::new_const(1)),
         empty_child: Cow::Borrowed(&[]),
         hash: HashOp::Sha256,
     },

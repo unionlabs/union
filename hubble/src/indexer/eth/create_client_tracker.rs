@@ -3,10 +3,7 @@ use std::{str::FromStr, time::Duration};
 use alloy::{primitives::FixedBytes, sol};
 use tokio::{task::JoinSet, time::interval};
 use tracing::{debug, info, info_span, warn, Instrument};
-use unionlabs::{
-    encoding::{DecodeAs, EthAbi},
-    ibc::lightclients::cometbls::client_state::ClientState,
-};
+use unionlabs::encoding::{DecodeAs, EthAbi};
 
 use crate::indexer::{
     api::IndexerError,
@@ -68,7 +65,7 @@ pub fn schedule_create_client_checker(
 
                 match &*msg._0.client_type {
                     "cometbls" => {
-                        let cs = ClientState::decode_as::<EthAbi>(&msg._0.client_state_bytes).unwrap();
+                        let cs = cometbls_light_client_types::client_state::ClientState::decode_as::<EthAbi>(&msg._0.client_state_bytes).unwrap();
 
                         sqlx::query!(
                             r#"

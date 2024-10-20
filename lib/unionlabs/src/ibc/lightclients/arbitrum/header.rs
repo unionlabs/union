@@ -58,7 +58,7 @@ impl TryFrom<protos::union::ibc::lightclients::arbitrum::v1::Header> for Header 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromHeaderError {
     #[error(transparent)]
-    MissingField(MissingField),
+    MissingField(#[from] MissingField),
     #[error("invalid l1_account_proof")]
     L1AccountProof(#[source] TryFromAccountProofError),
     #[error("invalid l2_ibc_account_proof")]

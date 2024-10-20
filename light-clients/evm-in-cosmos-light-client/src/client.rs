@@ -18,7 +18,6 @@ use unionlabs::{
             commitment::merkle_path::MerklePath,
         },
         lightclients::{
-            cometbls,
             ethereum::{self, storage_proof::StorageProof},
             evm_in_cosmos::{
                 client_state::ClientState, consensus_state::ConsensusState, header::Header,
@@ -33,9 +32,11 @@ use crate::errors::Error;
 
 type WasmClientState = wasm::client_state::ClientState<ClientState>;
 type WasmConsensusState = wasm::consensus_state::ConsensusState<ConsensusState>;
-type WasmL1ConsensusState =
-    wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>;
-type WasmL1ClientState = wasm::client_state::ClientState<cometbls::client_state::ClientState>;
+type WasmL1ConsensusState = wasm::consensus_state::ConsensusState<
+    cometbls_light_client_types::consensus_state::ConsensusState,
+>;
+type WasmL1ClientState =
+    wasm::client_state::ClientState<cometbls_light_client_types::client_state::ClientState>;
 type WasmL2ConsensusState =
     wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>;
 

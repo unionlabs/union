@@ -14,10 +14,12 @@ pub struct Commission {
     pub update_time: Timestamp,
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum TryFromCommissionError {
-    MissingField(MissingField),
-    Timestamp(TryFromTimestampError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid timestamp")]
+    Timestamp(#[source] TryFromTimestampError),
 }
 
 impl TryFrom<protos::cosmos::staking::v1beta1::Commission> for Commission {

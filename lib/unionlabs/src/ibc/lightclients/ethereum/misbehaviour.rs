@@ -34,12 +34,16 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromMisbehaviourError {
-    MissingField(MissingField),
-    TrustedSyncCommittee(TryFromTrustedSyncCommitteeError),
-    Update1(TryFromLightClientUpdateError),
-    Update2(TryFromLightClientUpdateError),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid trusted_sync_committee")]
+    TrustedSyncCommittee(#[source] TryFromTrustedSyncCommitteeError),
+    #[error("invalid update1")]
+    Update1(#[source] TryFromLightClientUpdateError),
+    #[error("invalid update2")]
+    Update2(#[source] TryFromLightClientUpdateError),
 }
 
 impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
