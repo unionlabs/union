@@ -8,6 +8,9 @@ use ics008_wasm_client::{
     },
     IbcClient, IbcClientError, Status, StorageState,
 };
+use linea_light_client_types::{
+    client_state::ClientState, consensus_state::ConsensusState, header::Header,
+};
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
     encoding::{DecodeAs, Proto},
@@ -18,11 +21,7 @@ use unionlabs::{
             client::{genesis_metadata::GenesisMetadata, height::Height},
             commitment::merkle_path::MerklePath,
         },
-        lightclients::{
-            ethereum,
-            linea::{client_state::ClientState, consensus_state::ConsensusState, header::Header},
-            wasm,
-        },
+        lightclients::{ethereum, wasm},
     },
     linea::{
         account::ZkAccount,

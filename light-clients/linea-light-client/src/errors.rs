@@ -1,9 +1,10 @@
 use ethereum_light_client::errors::{CanonicalizeStoredValueError, InvalidCommitmentKey};
 use ics008_wasm_client::IbcClientError;
+use linea_light_client_types::{ClientState, ConsensusState};
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
     hash::H256,
-    ibc::{core::client::height::Height, lightclients::linea},
+    ibc::core::client::height::Height,
     ics24::PathParseError,
     linea::proof::InclusionProof,
 };
@@ -28,9 +29,9 @@ pub enum Error {
     //     >,
     // ),
     #[error("unable to decode client state")]
-    ClientStateDecode(#[source] DecodeErrorOf<Proto, linea::client_state::ClientState>),
+    ClientStateDecode(#[source] DecodeErrorOf<Proto, ClientState>),
     #[error("unable to decode consensus state")]
-    ConsensusStateDecode(#[source] DecodeErrorOf<Proto, linea::consensus_state::ConsensusState>),
+    ConsensusStateDecode(#[source] DecodeErrorOf<Proto, ConsensusState>),
 
     #[error(transparent)]
     CanonicalizeStoredValue(#[from] CanonicalizeStoredValueError),

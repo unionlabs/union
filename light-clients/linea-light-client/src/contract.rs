@@ -4,13 +4,11 @@ use ics008_wasm_client::{
     storage_utils::{save_proto_client_state, save_proto_consensus_state},
     CustomQueryOf, InstantiateMsg,
 };
+use linea_light_client_types::ClientState;
 use protos::ibc::lightclients::wasm::v1::{
     ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
 };
-use unionlabs::{
-    encoding::{DecodeAs, Proto},
-    ibc::lightclients::linea::client_state::ClientState,
-};
+use unionlabs::encoding::{DecodeAs, Proto};
 
 use crate::{client::LineaLightClient, errors::Error};
 

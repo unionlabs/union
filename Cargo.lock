@@ -7287,6 +7287,7 @@ dependencies = [
  "gnark-mimc",
  "hex",
  "ics008-wasm-client",
+ "linea-light-client-types",
  "linea-verifier",
  "linea-zktrie",
  "protos",
@@ -7302,6 +7303,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "linea-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "hex-literal",
+ "protos",
+ "serde",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "linea-verifier"
 version = "0.1.0"
 dependencies = [
@@ -7310,6 +7322,7 @@ dependencies = [
  "gnark-mimc",
  "hex",
  "hex-literal",
+ "linea-light-client-types",
  "linea-zktrie",
  "rlp",
  "scroll-codec",
