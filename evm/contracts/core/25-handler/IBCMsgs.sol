@@ -58,6 +58,7 @@ library IBCMsgs {
     }
 
     struct MsgChannelOpenTry {
+        address portId;
         IBCChannel channel;
         string counterpartyVersion;
         bytes proofInit;
