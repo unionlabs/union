@@ -22,7 +22,7 @@ _: {
     {
       packages = {
         app = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-DD7rjuzM5RSfubkK8hNH3qKAmEf3oy1e7hyR3gi9Kb0=";
+          npmDepsHash = "sha256-yrqA4Qp7iiGvSo/Xk0G5adXdVqgK8nGYGdXtvLp7EPk=";
           src = ./.;
           sourceRoot = "app";
           npmFlags = [ "--enable-pre-post-scripts" ];
