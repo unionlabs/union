@@ -4,7 +4,7 @@
 pub mod berachain;
 pub mod cosmos;
 pub mod ethereum;
-pub mod scroll;
+// pub mod scroll;
 pub mod union;
 
 pub mod cosmos_sdk;

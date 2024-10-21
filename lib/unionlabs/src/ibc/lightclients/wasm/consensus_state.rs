@@ -1,6 +1,5 @@
 use frame_support_procedural::DebugNoBound;
 use macros::model;
-use static_assertions::assert_impl_all;
 
 use crate::encoding::{Decode, DecodeErrorOf, Encode, Proto};
 
@@ -64,5 +63,3 @@ where
         })
     }
 }
-
-assert_impl_all!(TryFromWasmConsensusStateError<crate::ibc::lightclients::scroll::consensus_state::ConsensusState>: core::error::Error);

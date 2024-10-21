@@ -70,6 +70,7 @@ members = [
   "light-clients/evm-in-cosmos-light-client",
 
   "light-clients/scroll-light-client",
+  "light-clients/scroll-light-client/types",
 
   "light-clients/tendermint-light-client",
   "light-clients/tendermint-light-client/types",
@@ -156,6 +157,8 @@ arbitrum-verifier           = { path = "lib/arbitrum-verifier", default-features
 
 cometbls-groth16-verifier   = { path = "lib/cometbls-groth16-verifier", default-features = false }
 cometbls-light-client-types = { path = "light-clients/cometbls-light-client/types", default-features = false }
+
+scroll-light-client-types = { path = "light-clients/scroll-light-client/types", default-features = false }
 
 contracts = { path = "generated/rust/contracts", default-features = false }
 
