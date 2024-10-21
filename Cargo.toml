@@ -75,6 +75,7 @@ members = [
   "light-clients/tendermint-light-client/types",
 
   "light-clients/linea-light-client",
+  "light-clients/linea-light-client/types",
 
   "tools/generate-rust-sol-bindings",
   "tools/devnet-utils",
@@ -173,8 +174,9 @@ tendermint-light-client       = { path = "light-clients/tendermint-light-client"
 tendermint-light-client-types = { path = "light-clients/tendermint-light-client/types", default-features = false }
 tendermint-verifier           = { path = "lib/tendermint-verifier", default-features = false }
 
-linea-verifier = { path = "lib/linea-verifier", default-features = false }
-linea-zktrie   = { path = "lib/linea-zktrie", default-features = false }
+linea-light-client-types = { path = "light-clients/linea-light-client/types", default-features = false }
+linea-verifier           = { path = "lib/linea-verifier", default-features = false }
+linea-zktrie             = { path = "lib/linea-zktrie", default-features = false }
 
 gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }
