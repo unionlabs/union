@@ -43,7 +43,7 @@ export const offchainQuery = {
   > => {
     return await hubbleRestFetch<
       OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
-    >("/chains", {
+    >("/v1/chains", {
       query: {
         include_rpcs: includeEndpoints,
         include_contracts: includeContracts,
@@ -78,7 +78,7 @@ export const offchainQuery = {
   > => {
     return await hubbleRestFetch<
       OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
-    >(`/chains/${chainId}`, {
+    >(`/v1/chains/${chainId}`, {
       query: {
         include_assets: includeAssets,
         include_rpcs: includeEndpoints,
@@ -107,7 +107,7 @@ interface Asset {
 }
 
 interface Forward {
-  port: string
+  port_id: string
   channel_id: string
   connection_id: string
   contract_address: string
@@ -119,10 +119,8 @@ interface Forward {
 export interface Ucs1Configuration {
   channel_id: string
   connection_id: string
-  source_chain_id: number
   contract_address: string
   source_chain: {
-    id: number
     testnet: boolean
     enabled: boolean
     chain_id: string
@@ -130,9 +128,7 @@ export interface Ucs1Configuration {
     display_name: string
     logo_uri: string | null
   }
-  destination_chain_id: number
   destination_chain: {
-    id: number
     testnet: boolean
     enabled: boolean
     chain_id: ChainId
@@ -140,7 +136,7 @@ export interface Ucs1Configuration {
     display_name: string
     logo_uri: string | null
   }
-  forward: Array<Forward>
+  forwards: Array<Forward>
 }
 
 export interface Chain<
