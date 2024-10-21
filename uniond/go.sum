@@ -862,10 +862,10 @@ github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqri
 github.com/ulikunitz/xz v0.5.10/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/ulikunitz/xz v0.5.12 h1:37Nm15o69RwBkXM0J6A5OlE67RZTfzUxTj8fB3dfcsc=
 github.com/ulikunitz/xz v0.5.12/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
-github.com/unionlabs/cometbft v0.0.0-20241018160710-40cbc598984d h1:sH6Xx0bg6MhGDd0hhIi0L/ymuoFzXhDDs72YB6tq5SI=
-github.com/unionlabs/cometbft v0.0.0-20241018160710-40cbc598984d/go.mod h1:543Zt3C5ZchxJD+0FgKF6EuCbopOef2NeIfaQEE+4LA=
-github.com/unionlabs/cometbft/api v0.0.0-20241018160710-40cbc598984d h1:z9YqXSABylhTqTk4PnIjEsNzJIP86UwNtUv0PfwMfEA=
-github.com/unionlabs/cometbft/api v0.0.0-20241018160710-40cbc598984d/go.mod h1:NDFKiBBD8HJC6QQLAoUI99YhsiRZtg2+FJWfk6A6m6o=
+github.com/unionlabs/cometbft v0.0.0-20241021101406-df0586cc2041 h1:Ibq/BXD65qvyQhrV56ixTJFMiK037yaz3LwxDAyzWI0=
+github.com/unionlabs/cometbft v0.0.0-20241021101406-df0586cc2041/go.mod h1:543Zt3C5ZchxJD+0FgKF6EuCbopOef2NeIfaQEE+4LA=
+github.com/unionlabs/cometbft/api v0.0.0-20241021101406-df0586cc2041 h1:u/QjRmX3Yn3OtCiB9bvWMEkRfWWmrwTeVdsrSABIbVU=
+github.com/unionlabs/cometbft/api v0.0.0-20241021101406-df0586cc2041/go.mod h1:NDFKiBBD8HJC6QQLAoUI99YhsiRZtg2+FJWfk6A6m6o=
 github.com/unionlabs/cosmos-sdk-union v0.0.0-20241018173625-c2982236c557 h1:X+RDNCEfFAXs7CbJjjLUmuD3RLYsZsXqoIHGlGR+zBQ=
 github.com/unionlabs/cosmos-sdk-union v0.0.0-20241018173625-c2982236c557/go.mod h1:RkgOx8ysunO3teUnkvxOGDsaIZX2BW6uU2LCeUqsU9A=
 github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20241018173625-c2982236c557 h1:wtqJcqs9iYonLFQEnLbzWlxKU+UfsUKMSec2YGMzBDM=
