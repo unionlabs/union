@@ -1,3 +1,4 @@
+use arbitrum_light_client_types::{ClientState, ConsensusState, Header};
 use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_light_client::client::{canonicalize_stored_value, check_commitment_key};
 use ics008_wasm_client::{
@@ -20,12 +21,7 @@ use unionlabs::{
             client::{genesis_metadata::GenesisMetadata, height::Height},
             commitment::merkle_path::MerklePath,
         },
-        lightclients::{
-            arbitrum::{
-                client_state::ClientState, consensus_state::ConsensusState, header::Header,
-            },
-            ethereum::storage_proof::StorageProof,
-        },
+        lightclients::ethereum::storage_proof::StorageProof,
     },
     uint::U256,
 };

@@ -100,7 +100,7 @@ pub fn schedule_create_client_checker(
                                     cs.chain_id.as_str().to_owned()
                                 }
                                 WasmClientType::Tendermint => {
-                                    let cs = match tendermint_light_client_types::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                    let cs = match tendermint_light_client_types::ClientState::decode_as::<Proto>(&cs.data) {
                                         Ok(cs) => cs,
                                         Err(err) => {
                                             warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
@@ -122,7 +122,7 @@ pub fn schedule_create_client_checker(
                                     cs.chain_id.to_string()
                                 }
                                 WasmClientType::Arbitrum => {
-                                    let cs = match unionlabs::ibc::lightclients::arbitrum::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                    let cs = match arbitrum_light_client_types::ClientState::decode_as::<Proto>(&cs.data) {
                                         Ok(cs) => cs,
                                         Err(err) => {
                                             warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);

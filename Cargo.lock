@@ -1259,6 +1259,7 @@ dependencies = [
 name = "arbitrum-light-client"
 version = "0.1.0"
 dependencies = [
+ "arbitrum-light-client-types",
  "arbitrum-verifier",
  "base64 0.21.7",
  "cosmwasm-std 1.5.2",
@@ -1280,9 +1281,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "arbitrum-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "hex-literal",
+ "protos",
+ "rlp",
+ "serde",
+ "sha3 0.10.8",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "arbitrum-verifier"
 version = "0.1.0"
 dependencies = [
+ "arbitrum-light-client-types",
  "error_reporter",
  "ethereum-verifier",
  "ethers-core",
@@ -6218,6 +6233,7 @@ dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
+ "arbitrum-light-client-types",
  "async-trait",
  "axum 0.6.20",
  "backon",

@@ -46,5 +46,4 @@ ethereum-light-client = { workspace = true, features = ["test-utils"] }
 lazy_static           = "1.4.0"
 serde_json            = { workspace = true }
 
-
 [features]

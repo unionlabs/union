@@ -1,6 +1,6 @@
 #![feature(trait_alias)]
 
-pub mod arbitrum;
+// pub mod arbitrum;
 pub mod berachain;
 pub mod cosmos;
 pub mod ethereum;

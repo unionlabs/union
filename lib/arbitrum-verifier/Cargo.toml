@@ -12,17 +12,18 @@ workspace = true
 # test-include = ["lib/arbitrum-verifier/tests"]
 
 [dependencies]
-ethereum-verifier = { workspace = true }
-ethers-core       = { workspace = true }
-hex               = { workspace = true }
-hex-literal       = { workspace = true }
-rlp               = { workspace = true }
-serde             = { workspace = true }
-serde-utils       = { workspace = true }
-serde_json        = { workspace = true }
-sha3              = { workspace = true }
-thiserror         = { workspace = true }
-unionlabs         = { workspace = true }
+arbitrum-light-client-types.workspace = true
+ethereum-verifier                     = { workspace = true }
+ethers-core                           = { workspace = true }
+hex                                   = { workspace = true }
+hex-literal                           = { workspace = true }
+rlp                                   = { workspace = true }
+serde                                 = { workspace = true }
+serde-utils                           = { workspace = true }
+serde_json                            = { workspace = true }
+sha3                                  = { workspace = true }
+thiserror                             = { workspace = true }
+unionlabs                             = { workspace = true }
 
 [dev-dependencies]
 error_reporter = "1.0.0"
