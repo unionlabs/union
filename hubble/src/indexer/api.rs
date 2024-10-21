@@ -49,7 +49,7 @@ pub type BlockHeight = u64;
 pub type BlockHash = String;
 pub type BlockTimestamp = OffsetDateTime;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Deserialize)]
 pub struct BlockRange {
     pub start_inclusive: BlockHeight,
     pub end_exclusive: BlockHeight,
@@ -67,6 +67,10 @@ impl BlockRange {
 
     pub fn len(&self) -> u64 {
         self.end_exclusive - self.start_inclusive
+    }
+
+    pub fn contains(&self, block_height: BlockHeight) -> bool {
+        block_height >= self.start_inclusive && block_height < self.end_exclusive
     }
 }
 
