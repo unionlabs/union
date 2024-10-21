@@ -7,9 +7,10 @@ use ics008_wasm_client::{
 use protos::ibc::lightclients::wasm::v1::{
     ClientState as ProtoClientState, ConsensusState as ProtoConsensusState,
 };
+use scroll_light_client_types::ClientState;
 use unionlabs::{
     encoding::{DecodeAs, Proto},
-    ibc::{core::client::height::Height, lightclients::scroll::client_state::ClientState},
+    ibc::core::client::height::Height,
 };
 
 use crate::{client::ScrollLightClient, errors::Error};

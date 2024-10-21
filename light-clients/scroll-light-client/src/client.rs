@@ -10,6 +10,7 @@ use ics008_wasm_client::{
     IbcClient, IbcClientError, Status, StorageState,
 };
 use scroll_codec::batch_header::BatchHeaderV3;
+use scroll_light_client_types::{ClientState, ConsensusState, Header};
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
     encoding::{DecodeAs, Proto},
@@ -23,7 +24,6 @@ use unionlabs::{
         },
         lightclients::{
             ethereum::{self, storage_proof::StorageProof},
-            scroll::{client_state::ClientState, consensus_state::ConsensusState, header::Header},
             wasm,
         },
     },
