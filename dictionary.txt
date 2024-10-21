@@ -584,6 +584,7 @@ formsnap
 founderheads
 fpkmyvw
 frontends
+fullnode
 fullscreen
 functionx
 fuzzer
@@ -744,6 +745,7 @@ jumpstart
 justfile
 justif
 jwtsecret
+kaancaglan
 karel
 katex
 katexremark
@@ -988,6 +990,7 @@ preconfirmations
 prehash
 preimage
 preimages
+preinstall
 preprocessors
 prerender
 prerendered
