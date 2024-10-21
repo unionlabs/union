@@ -14,33 +14,35 @@ protos      = { workspace = true, features = ["default", "client"] }
 serde-utils = { workspace = true }
 unionlabs   = { workspace = true, features = ["default"] }
 
-bip32                    = { workspace = true, features = ["secp256k1"] }
-chrono                   = { workspace = true, features = ["alloc"] }
-cometbft-rpc             = { workspace = true }
-crossbeam-queue          = { workspace = true, features = ["std"] }
-dashmap                  = { workspace = true }
-enumorph                 = { workspace = true }
-ethers                   = { workspace = true, features = ["rustls", "ws"] }
-frame-support-procedural = { workspace = true }
-futures                  = { workspace = true }
-hex                      = { workspace = true }
-ics23                    = { workspace = true }
-num-rational             = "0.4.2"
-num_enum                 = "0.7.0"
-prost                    = { workspace = true }
-rand                     = "0.8.5"
-reqwest                  = { workspace = true }
-scroll-api               = { workspace = true }
-scroll-rpc               = { workspace = true }
-serde                    = { workspace = true, features = ["derive"] }
-serde_json               = { workspace = true }
-sha2                     = { workspace = true }
-tendermint-rpc           = { workspace = true, features = ["http-client", "websocket-client", "default"] }
-thiserror                = { workspace = true }
-tokio                    = { workspace = true }
-tonic                    = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
-tracing                  = { workspace = true }
-typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
+berachain-light-client-types.workspace  = true
+bip32                                   = { workspace = true, features = ["secp256k1"] }
+chrono                                  = { workspace = true, features = ["alloc"] }
+cometbft-rpc                            = { workspace = true }
+crossbeam-queue                         = { workspace = true, features = ["std"] }
+dashmap                                 = { workspace = true }
+enumorph                                = { workspace = true }
+ethers                                  = { workspace = true, features = ["rustls", "ws"] }
+frame-support-procedural                = { workspace = true }
+futures                                 = { workspace = true }
+hex                                     = { workspace = true }
+ics23                                   = { workspace = true }
+num-rational                            = "0.4.2"
+num_enum                                = "0.7.0"
+prost                                   = { workspace = true }
+rand                                    = "0.8.5"
+reqwest                                 = { workspace = true }
+scroll-api                              = { workspace = true }
+scroll-rpc                              = { workspace = true }
+serde                                   = { workspace = true, features = ["derive"] }
+serde_json                              = { workspace = true }
+sha2                                    = { workspace = true }
+tendermint-light-client-types.workspace = true
+tendermint-rpc                          = { workspace = true, features = ["http-client", "websocket-client", "default"] }
+thiserror                               = { workspace = true }
+tokio                                   = { workspace = true }
+tonic                                   = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
+tracing                                 = { workspace = true }
+typenum                                 = { workspace = true, features = ["const-generics", "no_std"] }
 
 [features]
 

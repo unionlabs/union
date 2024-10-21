@@ -105,6 +105,9 @@ pub(crate) mod macros;
 
 pub mod errors;
 
+#[cfg(feature = "proto")]
+pub use ::prost;
+
 #[cfg(any(feature = "test_utils", test))]
 #[allow(clippy::missing_panics_doc)]
 pub mod test_utils;

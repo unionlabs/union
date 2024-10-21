@@ -7,14 +7,12 @@ use macros::model;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
+use tendermint_light_client_types::{ClientState, ConsensusState, Header};
 use tracing::{debug, instrument};
 use unionlabs::{
     self,
     encoding::{DecodeAs, EncodeAs, Proto},
     google::protobuf::any::Any,
-    ibc::lightclients::tendermint::{
-        client_state::ClientState, consensus_state::ConsensusState, header::Header,
-    },
     ErrorReporter,
 };
 use voyager_message::{

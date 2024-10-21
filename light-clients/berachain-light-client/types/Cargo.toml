@@ -1,0 +1,15 @@
+[package]
+edition = "2021"
+name    = "berachain-light-client-types"
+version = "0.1.0"
+
+[dependencies]
+protos                        = { workspace = true, features = ["union+ibc+lightclients+berachain+v1"] }
+serde                         = { workspace = true, features = ["derive"] }
+tendermint-light-client-types = { workspace = true }
+thiserror                     = { workspace = true }
+unionlabs                     = { workspace = true }
+
+[features]
+default = ["proto"]
+proto   = ["unionlabs/proto", "tendermint-light-client-types/proto"]

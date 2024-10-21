@@ -59,6 +59,7 @@ members = [
   "light-clients/arbitrum-light-client",
 
   "light-clients/berachain-light-client",
+  "light-clients/berachain-light-client/types",
 
   "light-clients/cometbls-light-client",
   "light-clients/cometbls-light-client/types",
@@ -70,6 +71,7 @@ members = [
   "light-clients/scroll-light-client",
 
   "light-clients/tendermint-light-client",
+  "light-clients/tendermint-light-client/types",
 
   "light-clients/linea-light-client",
 
@@ -163,8 +165,11 @@ scroll-codec    = { path = "lib/scroll-codec", default-features = false }
 scroll-rpc      = { path = "lib/scroll-rpc", default-features = false }
 scroll-verifier = { path = "lib/scroll-verifier", default-features = false }
 
-tendermint-light-client = { path = "light-clients/tendermint-light-client", default-features = false }
-tendermint-verifier     = { path = "lib/tendermint-verifier", default-features = false }
+berachain-light-client-types = { path = "light-clients/berachain-light-client/types", default-features = false }
+
+tendermint-light-client       = { path = "light-clients/tendermint-light-client", default-features = false }
+tendermint-light-client-types = { path = "light-clients/tendermint-light-client/types", default-features = false }
+tendermint-verifier           = { path = "lib/tendermint-verifier", default-features = false }
 
 linea-verifier = { path = "lib/linea-verifier", default-features = false }
 linea-zktrie   = { path = "lib/linea-zktrie", default-features = false }

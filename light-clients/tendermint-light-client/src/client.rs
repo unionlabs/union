@@ -9,6 +9,7 @@ use ics008_wasm_client::{
     ZERO_HEIGHT,
 };
 use ics23::ibc_api::SDK_SPECS;
+use tendermint_light_client_types::{ClientState, ConsensusState, Header};
 use tendermint_verifier::types::SignatureVerifier;
 use unionlabs::{
     bounded::BoundedI64,
@@ -16,16 +17,9 @@ use unionlabs::{
     ensure,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::H256,
-    ibc::{
-        core::{
-            client::{genesis_metadata::GenesisMetadata, height::Height},
-            commitment::{
-                merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
-            },
-        },
-        lightclients::tendermint::{
-            client_state::ClientState, consensus_state::ConsensusState, header::Header,
-        },
+    ibc::core::{
+        client::{genesis_metadata::GenesisMetadata, height::Height},
+        commitment::{merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot},
     },
     tendermint::types::{commit::Commit, signed_header::SignedHeader},
 };

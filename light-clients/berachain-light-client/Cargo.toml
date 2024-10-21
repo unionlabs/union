@@ -32,11 +32,13 @@ tendermint-light-client = { workspace = true, features = ["library"] }
 tendermint-verifier     = { workspace = true }
 thiserror               = { workspace = true }
 
-ethereum-verifier  = { workspace = true }
-hex-literal        = { workspace = true }
-ics008-wasm-client = { workspace = true }
-ics23              = { workspace = true }
-unionlabs          = { workspace = true }
+berachain-light-client-types  = { workspace = true, features = ["proto"] }
+ethereum-verifier             = { workspace = true }
+hex-literal                   = { workspace = true }
+ics008-wasm-client            = { workspace = true }
+ics23                         = { workspace = true }
+tendermint-light-client-types = { workspace = true, features = ["proto"] }
+unionlabs                     = { workspace = true }
 
 [dev-dependencies]
 base64                = { workspace = true }

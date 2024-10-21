@@ -37,6 +37,7 @@ where
     }
 }
 
+#[cfg(feature = "proto")]
 #[macro_export]
 macro_rules! impl_proto_via_try_from_into {
     ($T:ty => $Proto:ty) => {
@@ -44,7 +45,7 @@ macro_rules! impl_proto_via_try_from_into {
             type Error = $crate::TryFromProtoBytesError<<$T as TryFrom<$Proto>>::Error>;
 
             fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-                <$Proto as ::prost::Message>::decode(bytes)
+                <$Proto as $crate::prost::Message>::decode(bytes)
                     .map_err($crate::TryFromProtoBytesError::Decode)
                     .and_then(|proto| {
                         proto
@@ -56,7 +57,13 @@ macro_rules! impl_proto_via_try_from_into {
 
         impl $crate::encoding::Encode<$crate::encoding::Proto> for $T {
             fn encode(self) -> Vec<u8> {
-                ::prost::Message::encode_to_vec(&Into::<$Proto>::into(self))
+                $crate::prost::Message::encode_to_vec(&Into::<$Proto>::into(self))
+            }
+        }
+
+        impl $crate::TypeUrl for $T {
+            fn type_url() -> String {
+                <$Proto as $crate::prost::Name>::type_url()
             }
         }
     };

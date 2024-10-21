@@ -1,3 +1,4 @@
+use berachain_light_client_types::ClientState;
 use cosmwasm_std::{entry_point, DepsMut, Env, MessageInfo, Response};
 use ics008_wasm_client::{
     define_cosmwasm_light_client_contract,
@@ -10,7 +11,6 @@ use protos::ibc::lightclients::wasm::v1::{
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::{DecodeAs, Proto},
-    ibc::lightclients::berachain::client_state::ClientState,
 };
 
 use crate::{client::BerachainLightClient, errors::Error};

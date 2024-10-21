@@ -1,3 +1,4 @@
+use berachain_light_client_types::ClientState;
 use ethereum_light_client::errors::{CanonicalizeStoredValueError, StoredValueMismatch};
 use ics008_wasm_client::IbcClientError;
 use tendermint_light_client::errors::{
@@ -7,7 +8,7 @@ use tendermint_light_client::errors::{
 };
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
-    ibc::lightclients::{berachain, ethereum::storage_proof::StorageProof},
+    ibc::lightclients::ethereum::storage_proof::StorageProof,
 };
 
 use crate::client::BerachainLightClient;
@@ -36,7 +37,7 @@ pub enum Error {
     MerkleProofDecode(#[from] MerkleProofDecode),
 
     #[error("unable to decode client state")]
-    ClientStateDecode(#[source] DecodeErrorOf<Proto, berachain::client_state::ClientState>),
+    ClientStateDecode(#[source] DecodeErrorOf<Proto, ClientState>),
 
     #[error(transparent)]
     IbcHeightTooLargeForTendermintHeight(#[from] IbcHeightTooLargeForTendermintHeight),

@@ -2130,6 +2130,7 @@ name = "berachain-light-client"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
+ "berachain-light-client-types",
  "bytes",
  "cosmwasm-std 1.5.2",
  "ethereum-light-client",
@@ -2149,7 +2150,19 @@ dependencies = [
  "sha2 0.10.8",
  "sha3 0.10.8",
  "tendermint-light-client",
+ "tendermint-light-client-types",
  "tendermint-verifier",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
+name = "berachain-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "protos",
+ "serde",
+ "tendermint-light-client-types",
  "thiserror",
  "unionlabs",
 ]
@@ -2665,6 +2678,7 @@ name = "chain-utils"
 version = "0.1.0"
 dependencies = [
  "beacon-api",
+ "berachain-light-client-types",
  "bip32",
  "chrono",
  "cometbft-rpc",
@@ -2690,6 +2704,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
+ "tendermint-light-client-types",
  "tendermint-rpc",
  "thiserror",
  "tokio",
@@ -6207,6 +6222,7 @@ dependencies = [
  "axum 0.6.20",
  "backon",
  "base64 0.21.7",
+ "berachain-light-client-types",
  "chain-utils",
  "chrono",
  "clap 4.5.4",
@@ -6231,6 +6247,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tendermint",
+ "tendermint-light-client-types",
  "tendermint-rpc",
  "thiserror",
  "tikv-jemallocator",
@@ -12074,7 +12091,19 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "sha3 0.10.8",
+ "tendermint-light-client-types",
  "tendermint-verifier",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
+name = "tendermint-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "hex-literal",
+ "protos",
+ "serde",
  "thiserror",
  "unionlabs",
 ]
@@ -12137,6 +12166,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
+ "tendermint-light-client-types",
  "thiserror",
  "unionlabs",
 ]
@@ -13601,6 +13631,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
+ "tendermint-light-client-types",
  "thiserror",
  "tokio",
  "tracing",
@@ -13711,6 +13742,7 @@ dependencies = [
  "protos",
  "serde",
  "serde_json",
+ "tendermint-light-client-types",
  "thiserror",
  "tokio",
  "tracing",
@@ -13818,6 +13850,7 @@ dependencies = [
  "protos",
  "serde",
  "serde_json",
+ "tendermint-light-client-types",
  "thiserror",
  "tokio",
  "tracing",
