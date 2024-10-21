@@ -56,7 +56,8 @@ var (
 		{Name: "ordering", Type: "uint8"},
 		{Name: "connectionId", Type: "uint32"},
 		{Name: "counterpartyChannelId", Type: "uint32"},
-		{Name: "version", Type: "bytes32"},
+		{Name: "counterpartyPortId", Type: "string"},
+		{Name: "version", Type: "string"},
 	})
 	EthPacket, _ = abi.NewType("tuple", "struct ethPacket", []abi.ArgumentMarshaling{
 		{Name: "sequence", Type: "uint64"},
@@ -80,7 +81,8 @@ type ethChannel struct {
 	Ordering              uint8
 	ConnectionId          uint32
 	CounterpartyChannelId uint32
-	Version               [32]byte
+	CounterpartyPortId    string
+	Version               string
 }
 
 type ethPacket struct {
@@ -305,68 +307,105 @@ func (s coreDoubleCommitStore) Has(key []byte) (bool, error) {
 }
 
 func (s coreDoubleCommitStore) Set(key, value []byte) error {
+	// base commit
 	s.ibcStore.Set(key, value)
 	// double commit depending on the path, ordered by hotest to coldest path
 	keyStr := string(key)
 	// packet commitment
-	if sequence, channelId, err := parsePacketCommitmentPath(string(key)); err == nil {
-		packet, found := s.processingPackets.Peek()
-		if !found {
-			return fmt.Errorf("the impossible happened")
+	if strings.HasPrefix(keyStr, host.KeyPacketCommitmentPrefix) {
+		if sequence, channelId, err := parsePacketCommitmentPath(keyStr); err == nil {
+			packet, found := s.processingPackets.Peek()
+			if !found {
+				return fmt.Errorf("the impossible happened")
+			}
+			batchHash, err := commitPacket(sequence, packet.(ibcexported.PacketI))
+			if err != nil {
+				return nil
+			}
+			commitmentKey, err := batchPacketsCommitmentKey(channelId, batchHash)
+			if err != nil {
+				return nil
+			}
+			s.commitStore.Set(commitmentKey, CommitmentMagic[:])
 		}
-		batchHash, err := commitPacket(sequence, packet.(ibcexported.PacketI))
-		if err != nil {
-			return nil
-		}
-		commitmentKey, err := batchPacketsCommitmentKey(channelId, batchHash)
-		if err != nil {
-			return nil
-		}
-		s.commitStore.Set(commitmentKey, CommitmentMagic[:])
 		return nil
 	}
-	if sequence, channelId, err := parsePacketReceiptPath(string(key)); err == nil {
-		packet, found := s.processingPackets.Peek()
-		if !found {
-			return fmt.Errorf("the impossible happened")
+	if strings.HasPrefix(keyStr, host.KeyPacketReceiptPrefix) {
+		if sequence, channelId, err := parsePacketReceiptPath(keyStr); err == nil {
+			packet, found := s.processingPackets.Peek()
+			if !found {
+				return fmt.Errorf("the impossible happened")
+			}
+			batchHash, err := commitPacket(sequence, packet.(ibcexported.PacketI))
+			if err != nil {
+				return nil
+			}
+			commitmentKey, err := batchPacketsReceiptCommitmentKey(channelId, batchHash)
+			if err != nil {
+				return nil
+			}
+			s.commitStore.Set(commitmentKey, CommitmentMagic[:])
 		}
-		batchHash, err := commitPacket(sequence, packet.(ibcexported.PacketI))
-		if err != nil {
-			return nil
-		}
-		commitmentKey, err := batchPacketsCommitmentKey(channelId, batchHash)
-		if err != nil {
-			return nil
-		}
-		s.commitStore.Set(commitmentKey, CommitmentMagic[:])
 		return nil
 	}
-	if sequence, channelId, err := parsePacketAckPath(string(key)); err == nil {
-		packet, found := s.processingPackets.Peek()
-		if !found {
-			return fmt.Errorf("the impossible happened")
+	if strings.HasPrefix(keyStr, host.KeyPacketAckPrefix) {
+		if sequence, channelId, err := parsePacketAckPath(keyStr); err == nil {
+			packet, found := s.processingPackets.Peek()
+			if !found {
+				return fmt.Errorf("the impossible happened")
+			}
+			ackI, ackFound := s.processingAcks.Peek()
+			if !ackFound {
+				return fmt.Errorf("the impossible happened")
+			}
+			batchHash, err := commitPacket(sequence, packet.(ibcexported.PacketI))
+			if err != nil {
+				return nil
+			}
+			commitmentKey, err := batchPacketsReceiptCommitmentKey(channelId, batchHash)
+			if err != nil {
+				return nil
+			}
+			// The MSB should be a bool indicating the receipt, the 31 bytes left are the acknowledgement hash
+			ack := keccak(ackI.(ibcexported.Acknowledgement).Acknowledgement())
+			ack[0] = 01
+			s.commitStore.Set(commitmentKey, ack[:])
 		}
-		ackI, ackFound := s.processingAcks.Peek()
-		if !ackFound {
-			return fmt.Errorf("the impossible happened")
+		return nil
+	}
+	if strings.HasPrefix(keyStr, host.KeyNextSeqSendPrefix) {
+		if channelId, err := parseNextSequence(host.KeyNextSeqSendPrefix, keyStr); err == nil {
+			commitmentKey, err := nextSequenceCommitmentKey(EthNextSeqSendPrefix, channelId)
+			if err != nil {
+				return err
+			}
+			s.commitStore.Set(commitmentKey, value)
 		}
-		batchHash, err := commitPacket(sequence, packet.(ibcexported.PacketI))
-		if err != nil {
-			return nil
+		return nil
+	}
+	if strings.HasPrefix(keyStr, host.KeyNextSeqRecvPrefix) {
+		if channelId, err := parseNextSequence(host.KeyNextSeqRecvPrefix, keyStr); err == nil {
+			commitmentKey, err := nextSequenceCommitmentKey(EthNextSeqRecvPrefix, channelId)
+			if err != nil {
+				return err
+			}
+			s.commitStore.Set(commitmentKey, value)
 		}
-		commitmentKey, err := batchPacketsCommitmentKey(channelId, batchHash)
-		if err != nil {
-			return nil
+		return nil
+	}
+	if strings.HasPrefix(keyStr, host.KeyNextSeqAckPrefix) {
+		if channelId, err := parseNextSequence(host.KeyNextSeqAckPrefix, keyStr); err == nil {
+			commitmentKey, err := nextSequenceCommitmentKey(EthNextSeqAckPrefix, channelId)
+			if err != nil {
+				return err
+			}
+			s.commitStore.Set(commitmentKey, value)
 		}
-		// The MSB should be a bool indicating the receipt, the 31 bytes left are the acknowledgement hash
-		ack := keccak(ackI.(ibcexported.Acknowledgement).Acknowledgement())
-		ack[0] = 01
-		s.commitStore.Set(commitmentKey, ack[:])
 		return nil
 	}
 	// channel commitment
 	if strings.HasPrefix(keyStr, host.KeyChannelEndPrefix) {
-		_, channelId, err := host.ParseChannelPath(string(key))
+		_, channelId, err := host.ParseChannelPath(keyStr)
 		if err != nil {
 			return nil
 		}
@@ -395,7 +434,7 @@ func (s coreDoubleCommitStore) Set(key, value []byte) error {
 	}
 	// connection commitment
 	if strings.HasPrefix(keyStr, host.KeyConnectionPrefix) {
-		connectionId, err := host.ParseConnectionPath(string(key))
+		connectionId, err := host.ParseConnectionPath(keyStr)
 		if err != nil {
 			return nil
 		}
@@ -436,6 +475,30 @@ func (s coreDoubleCommitStore) Iterator(start, end []byte) (store.Iterator, erro
 
 func (s coreDoubleCommitStore) ReverseIterator(start, end []byte) (store.Iterator, error) {
 	return s.ibcStore.ReverseIterator(start, end), nil
+}
+
+func parseNextSequence(typ string, path string) (uint32, error) {
+	split := strings.Split(path, "/")
+	if len(split) < 5 {
+		return 0, fmt.Errorf("cannot parse next sequence path, invalid fragments")
+	}
+	if split[0] != typ ||
+		split[1] != host.KeyPortPrefix ||
+		split[3] != host.KeyChannelPrefix {
+		return 0, fmt.Errorf("cannot parse next sequence path, invalid prefixes")
+	}
+	channel := split[4]
+	channelId, err := channeltypes.ParseChannelSequence(channel)
+	if err != nil {
+		return 0, err
+	}
+	if channelId > math.MaxUint32 {
+		return 0, fmt.Errorf(
+			"can't parse packet commitment, channel id > MaxUint32: %d",
+			channelId,
+		)
+	}
+	return uint32(channelId), nil
 }
 
 // "commitments/ports/{identifier}/channels/{identifier}/sequences/{sequence}"
@@ -573,7 +636,8 @@ func commitChannel(channel channeltypes.Channel) ([]byte, error) {
 			Ordering:              uint8(channel.Ordering),
 			ConnectionId:          uint32(connectionId),
 			CounterpartyChannelId: uint32(counterpartyChannelId),
-			Version:               keccak([]byte(channel.Version)),
+			CounterpartyPortId:    channel.Counterparty.PortId,
+			Version:               channel.Version,
 		},
 	)
 	if err != nil {
@@ -723,7 +787,7 @@ func batchPacketsCommitmentKey(channelId uint32, batchHash [32]byte) ([]byte, er
 	return hash[:], nil
 }
 
-func batchPacketReceiptsCommitmentKey(channelId uint32, batchHash [32]byte) ([]byte, error) {
+func batchPacketsReceiptCommitmentKey(channelId uint32, batchHash [32]byte) ([]byte, error) {
 	arguments := abi.Arguments{
 		{Name: "prefix", Type: EthUint8},
 		{Name: "channelId", Type: EthUint32},
@@ -733,6 +797,22 @@ func batchPacketReceiptsCommitmentKey(channelId uint32, batchHash [32]byte) ([]b
 		uint8(EthPacketAcksCommitmentPrefix),
 		channelId,
 		batchHash,
+	)
+	if err != nil {
+		return nil, err
+	}
+	hash := keccak(bytes)
+	return hash[:], nil
+}
+
+func nextSequenceCommitmentKey(prefix int, channelId uint32) ([]byte, error) {
+	arguments := abi.Arguments{
+		{Name: "prefix", Type: EthUint8},
+		{Name: "channelId", Type: EthUint32},
+	}
+	bytes, err := arguments.Pack(
+		uint8(prefix),
+		channelId,
 	)
 	if err != nil {
 		return nil, err
