@@ -1,0 +1,9 @@
+{
+  "query": "mutation UnoFaucetMutation($chain_id: String!, $denom: String!, $address: String!, $captchaToken: String!) { send(chainId: $chain_id, denom: $denom, address: $address, captchaToken: $captchaToken) }",
+  "variables": {
+    "chain_id": "stargaze-devnet-1",
+    "denom": "ustars",
+    "address": "stars1yt66vjvy3dp3m2e49tffvxe7vwf6qrukkj8ax6",
+    "captchaToken": "helloworld"
+  }
+}

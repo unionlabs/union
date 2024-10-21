@@ -1038,6 +1038,7 @@ qypy
 rabby
 randao
 rapide
+rarray
 ratelimit
 ratelimited
 rawfile
@@ -1069,6 +1070,7 @@ relpath
 remappings
 repellendus
 repr
+reqs
 reqwest
 resizer
 restaking
@@ -1406,6 +1408,7 @@ viem
 virtualisation
 vjgsyknnhmr
 vmdebug
+vtab
 vuex
 wagmi
 wakey
