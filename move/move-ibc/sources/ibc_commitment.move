@@ -6,7 +6,7 @@ module ibc::commitment {
     use aptos_std::hash;
     use ibc::height::{Self, Height};
     use std::bcs;
-
+    use ibc::packet::{Self, Packet};
 
     const CLIENT_STATE: u256 = 0x00;
     const CONSENSUS_STATE: u256 = 0x01;
@@ -218,6 +218,16 @@ module ibc::commitment {
 
     public fun next_sequence_ack_commitment_key(channel_id: u32): vector<u8> {
         next_sequence_ack_commitment_path(channel_id)
+    }
+
+    public fun commit_packet(packet: &Packet): vector<u8> {
+        // TODO: abi.encode(packet)
+        vector::empty()
+    }
+
+    public fun commit_packets(packets: vector<Packet>): vector<u8> {
+        // TODO: abi.encode(packets)
+        vector::empty()
     }
     // // Generate the path for packet commitment
     // public fun packet_path(
