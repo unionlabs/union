@@ -330,11 +330,13 @@ module ibc::light_client {
     }
 
     public fun get_timestamp_at_height(
-        client_id: u32, height: height::Height
-    ): u64 acquires State {
-        let state = borrow_global<State>(get_client_address(client_id));
-        let consensus_state = smart_table::borrow(&state.consensus_states, height);
-        consensus_state.timestamp
+        client_id: u32, height: u64 
+    ): u64 {
+        // TODO: implement this as height u64
+        0
+        // let state = borrow_global<State>(get_client_address(client_id));
+        // let consensus_state = smart_table::borrow(&state.consensus_states, height);
+        // consensus_state.timestamp
     }
 
     public fun get_client_state(client_id: u32): vector<u8> acquires State {

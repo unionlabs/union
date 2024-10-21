@@ -7,11 +7,12 @@ module ibc::packet {
 
     use ibc::height::{Self, Height};
     use ibc::proto_utils;
-
+    const COMMITMENT_MAGIC: vector<u8> = x"0100000000000000000000000000000000000000000000000000000000000000";
+    const COMMITMENT_NULL: vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
     struct Packet has copy, store, drop, key {
         sequence: u64,
-        source_channel: String,
-        destination_channel: String,
+        source_channel: u32,
+        destination_channel: u32,
         data: vector<u8>,
         timeout_height: u64,
         timeout_timestamp: u64
@@ -21,13 +22,13 @@ module ibc::packet {
         packet.sequence
     }
 
-    public fun source_channel(packet: &Packet): &String {
-        &packet.source_channel
+    public fun source_channel(packet: &Packet): u32 {
+        packet.source_channel
     }
 
 
-    public fun destination_channel(packet: &Packet): &String {
-        &packet.destination_channel
+    public fun destination_channel(packet: &Packet): u32 {
+        packet.destination_channel
     }
 
     public fun data(packet: &Packet): &vector<u8> {
@@ -38,8 +39,29 @@ module ibc::packet {
         packet.timeout_timestamp
     }
 
+
+    public fun timeout_height(packet: &Packet): u64 {
+        packet.timeout_height
+    }
+
     public fun commit_packet(packet: &Packet): vector<u8> {
         // TODO: Implmenet this - abi.encode(packet)
+        vector::empty()
+    }
+
+    public fun commit_acks(acks: vector<vector<u8>>): vector<u8> {
+        // TODO: Implement this - merge_ack(abi.encode(acks))
+        vector::empty()
+    }
+
+    public fun merge_ack(ack: vector<u8>): vector<u8> {
+        // TODO: Implement this
+        // COMMITMENT_MAGIC | (ack & x"00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF") 
+        vector::empty()
+    }
+
+    public fun commit_ack_memory(ack: vector<u8>): vector<u8> {
+        // TODO: Implement this - merge_ack(abi.encode(acks))
         vector::empty()
     }
 
@@ -71,8 +93,8 @@ module ibc::packet {
 
     public fun new(
         sequence: u64,
-        source_channel: String,
-        destination_channel: String,
+        source_channel: u32,
+        destination_channel: u32,
         data: vector<u8>,
         timeout_height: u64,
         timeout_timestamp: u64
@@ -90,8 +112,8 @@ module ibc::packet {
     public fun default(): Packet {
         new(
             0,
-            utf8(b""),
-            utf8(b""),
+            0,
+            0,
             vector::empty(),
             0,
             0
