@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT start_height, end_height, address\n        FROM   v1_evm.contracts\n        WHERE  internal_chain_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "start_height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "end_height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "address",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f7fceff24b9226e66a45f425d22950d2af48d33d75ba1a93b3869f3c251f45a0"
+}

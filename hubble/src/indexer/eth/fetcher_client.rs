@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, time::Duration};
+use std::{collections::HashMap, fmt::Display};
 
 use alloy::{
     eips::BlockId,
@@ -7,19 +7,24 @@ use alloy::{
 };
 use axum::async_trait;
 use color_eyre::eyre::Report;
+use itertools::Itertools;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
-use tracing::{debug, info, info_span, trace, warn, Instrument};
+use tracing::{debug, info, info_span, trace, Instrument};
 
 use crate::{
     indexer::{
-        api::{BlockReference, BlockSelection, FetchMode, FetcherClient, IndexerError},
+        api::{
+            BlockHeight, BlockRange, BlockReference, BlockSelection, FetchMode, FetcherClient,
+            IndexerError,
+        },
         eth::{
             block_handle::{
                 BlockDetails, BlockInsert, EthBlockHandle, EventInsert, TransactionInsert,
             },
             context::EthContext,
             create_client_tracker::schedule_create_client_checker,
+            postgres::transaction_filter,
             provider::{Provider, RpcProviderId},
         },
     },
@@ -55,7 +60,27 @@ impl BlockReferenceProvider for Block {
 pub struct EthFetcherClient {
     pub chain_id: ChainId,
     pub provider: Provider,
-    pub contracts: Vec<Address>,
+    pub transaction_filter: TransactionFilter,
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct TransactionFilter {
+    pub address_filters: Vec<AddressFilter>,
+}
+impl TransactionFilter {
+    pub(crate) fn addresses_at(&self, height: BlockHeight) -> Vec<Address> {
+        self.address_filters
+            .iter()
+            .filter(|address_filter| address_filter.block_range.contains(height))
+            .map(|address_filter| address_filter.address)
+            .collect_vec()
+    }
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct AddressFilter {
+    pub block_range: BlockRange,
+    pub address: Address,
 }
 
 impl Display for EthFetcherClient {
@@ -125,14 +150,19 @@ impl EthFetcherClient {
         let block_reference = block.block_reference()?;
 
         info!("{}: fetch", block_reference);
+
+        let contract_addresses = self.transaction_filter.addresses_at(block_reference.height);
+        debug!(
+            "{}: contract-addresses: {:?}",
+            block_reference, &contract_addresses
+        );
         // We check for a potential log match, which potentially avoids querying
         // eth_getLogs.
         let bloom = block.header.logs_bloom;
-        if self
-            .contracts
-            .iter()
-            .all(|contract| !bloom.contains_input(BloomInput::Raw(&contract.into_array())))
-        {
+
+        if contract_addresses.iter().all(|contract_address| {
+            !bloom.contains_input(BloomInput::Raw(&contract_address.into_array()))
+        }) {
             info!("{}: ignored (bloom)", block_reference);
             return Ok(None);
         }
@@ -140,8 +170,7 @@ impl EthFetcherClient {
         // We know now there is a potential match, we still apply a Filter to only
         // get the logs we want.
         let log_filter = Filter::new().select(block.header.hash);
-        let log_addresses: Vec<Address> = self.contracts.to_vec();
-        let log_filter = log_filter.address(log_addresses);
+        let log_filter = log_filter.address(contract_addresses);
 
         let logs = self
             .provider
@@ -249,59 +278,8 @@ impl FetcherClient for EthFetcherClient {
                 .await?
                 .get_inner_logged();
 
-            // TODO: remove once all data is based on new hubble tables
-            let rows = loop {
-                let rows = sqlx::query!(
-                    r#"
-                        SELECT c.address, COALESCE(cs.height, c.height - 1) as indexed_height
-                        FROM v0.contracts c
-                                LEFT JOIN hubble.contract_status cs
-                                        ON c.chain_id = cs.internal_chain_id and c.address = cs.address
-                        WHERE c.chain_id = $1 
-                    "#,
-                    chain_id.db
-                )
-                .fetch_all(tx.as_mut())
-                .await?;
-
-                if rows.is_empty() {
-                    warn!("no contracts found to track, retrying in 20 seconds");
-                    tokio::time::sleep(Duration::from_secs(20)).await;
-                    continue;
-                }
-                break rows;
-            };
-
-            let lowest: u64 = rows
-                .iter()
-                .map(|row| row.indexed_height.expect("query to return indexed_height"))
-                .min()
-                .expect("contracts should exist in the db")
-                .try_into()
-                .expect("indexed_height should be positive");
-
-            let highest: u64 = rows
-                .iter()
-                .map(|row| row.indexed_height.expect("query to return indexed_height"))
-                .max()
-                .expect("contracts should exist in the db")
-                .try_into()
-                .expect("indexed_height should be positive");
-
-            if lowest != highest {
-                info!("detected new contract. reload blocks that might be affected.");
-                warn!("NOT YET IMPLEMENTED");
-                // TODO: initiate repair
-            };
-
-            let contracts = rows
-                .into_iter()
-                .map(|row| {
-                    row.address
-                        .parse()
-                        .expect("database should contain valid addresses")
-                })
-                .collect();
+            let transaction_filter = transaction_filter(&pg_pool, chain_id.db).await?;
+            debug!("transaction-filter: {:?}", &transaction_filter);
 
             tx.commit().await?;
 
@@ -310,7 +288,7 @@ impl FetcherClient for EthFetcherClient {
             Ok(EthFetcherClient {
                 chain_id,
                 provider,
-                contracts,
+                transaction_filter,
             })
         }
         .instrument(indexing_span)
