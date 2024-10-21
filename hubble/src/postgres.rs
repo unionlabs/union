@@ -4,7 +4,6 @@ use std::fmt;
 use itertools::Itertools;
 use serde::Deserialize;
 use sqlx::{types::BigDecimal, Acquire, Postgres};
-use time::OffsetDateTime;
 use tracing::info;
 use valuable::Valuable;
 
@@ -125,42 +124,6 @@ pub async fn insert_mapped_execution_heights<'a, A: Acquire<'a, Database = Postg
     .execute(&mut *conn)
     .await?;
     Ok(())
-}
-
-pub async fn update_contracts_indexed_heights<'a>(
-    tx: &mut sqlx::Transaction<'_, Postgres>,
-    contracts: Vec<String>,
-    height: i64,
-    timestamp: OffsetDateTime,
-    chain_id: ChainId,
-) -> sqlx::Result<usize> {
-    let unique_contracts: Vec<String> = contracts.into_iter().unique().collect();
-
-    let rows_updated = sqlx::query!(
-        "
-        INSERT INTO hubble.contract_status(internal_chain_id, address, height, timestamp)
-            SELECT
-                $1::int            as internal_chain_id,
-                unnest($2::text[]) as address,
-                $3::bigint         as height,
-                $4::timestamptz    as timestamp
-            ON CONFLICT (internal_chain_id, address)
-            DO UPDATE
-            SET height    = EXCLUDED.height,
-                timestamp = EXCLUDED.timestamp
-            RETURNING hubble.contract_status.address
-        ",
-        &chain_id.db,
-        &unique_contracts,
-        &height,
-        &timestamp,
-    )
-    .fetch_all(tx.as_mut())
-    .await?
-    .iter()
-    .len();
-
-    Ok(rows_updated)
 }
 
 pub async fn schedule_replication_reset(
