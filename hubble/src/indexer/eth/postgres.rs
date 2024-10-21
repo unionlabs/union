@@ -6,8 +6,11 @@ use time::OffsetDateTime;
 
 use crate::{
     indexer::{
-        api::{BlockHash, BlockHeight},
-        eth::block_handle::{BlockInsert, TransactionInsert},
+        api::{BlockHash, BlockHeight, BlockRange},
+        eth::{
+            block_handle::{BlockInsert, TransactionInsert},
+            fetcher_client::{AddressFilter, TransactionFilter},
+        },
     },
     postgres::{schedule_replication_reset, ChainId, InsertMode},
 };
@@ -157,4 +160,31 @@ pub async fn unmapped_clients(
     .collect_vec();
 
     Ok(result)
+}
+
+pub async fn transaction_filter(
+    pg_pool: &PgPool,
+    internal_chain_id: i32,
+) -> sqlx::Result<TransactionFilter> {
+    let address_filters = sqlx::query!(
+        r#"
+        SELECT start_height, end_height, address
+        FROM   v1_evm.contracts
+        WHERE  internal_chain_id = $1
+        "#,
+        internal_chain_id
+    )
+    .fetch_all(pg_pool)
+    .await?
+    .into_iter()
+    .map(|record| AddressFilter {
+        block_range: BlockRange {
+            start_inclusive: record.start_height as u64,
+            end_exclusive: record.end_height as u64,
+        },
+        address: record.address.parse().expect("address to be valid"),
+    })
+    .collect_vec();
+
+    Ok(TransactionFilter { address_filters })
 }
