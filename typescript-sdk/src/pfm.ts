@@ -81,14 +81,14 @@ export async function getHubbleChainDetails({
     })
   }
 
-  const forward = ucsConfiguration.forward.find(
+  const forward = ucsConfiguration.forwards.find(
     item => item.destination_chain.chain_id === destinationChainId
   )
 
   if (!forward) return err(new Error("Forward configuration not found"))
   return ok({
     transferType,
-    port: forward.port,
+    port: forward.port_id,
     destinationChannel: forward.channel_id,
     sourceChannel: ucsConfiguration.channel_id,
     relayContractAddress: ucsConfiguration.contract_address,
