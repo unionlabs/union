@@ -249,7 +249,7 @@ module ibc::ibc {
 
     /// Create a client with an initial client and consensus state
     public entry fun create_client(
-        client_type: String, client_state: vector<u8>, consensus_state: vector<u8>
+        client_id: u32, client_state: vector<u8>, consensus_state: vector<u8>
     ) acquires IBCStore, SignerRef {
         // NOTE(aeryz): At this point, we don't need to have a routing mechanism because it will introduce
         // additional gas cost. We should only enforce the use of `cometbls` for the `client_type`
@@ -312,7 +312,7 @@ module ibc::ibc {
 
         smart_table::upsert(&mut store.connections, connection_id, connection);
 
-        commit_connection(connection_id, connection);
+        commit_connection(connection_id, *connection);
 
         event::emit(
             ConnectionOpenInit {
@@ -343,12 +343,12 @@ module ibc::ibc {
                 &mut store.connections,
                 connection_id,
                 connection_end::new(
-                    CONN_STATE_INIT,
+                    CONN_STATE_TRYOPEN,
                     client_id,
                     counterparty_client_id,
-                    counterparty_connection_id, // counterparty_connection_id
+                    counterparty_connection_id,
                     client_type,
-                    counterparty_client_type
+                    counterparty_client_type,
                 )
             );
 
@@ -356,10 +356,10 @@ module ibc::ibc {
         let expected_connection =
             connection_end::new(
                 CONN_STATE_INIT,
+                counterparty_client_id,
                 client_id,
+                0, // counterparty_connection_id
                 counterparty_client_type,
-                client_id,
-                0,
                 utf8(b"")
             );
 
@@ -385,7 +385,7 @@ module ibc::ibc {
             }
         );
 
-        commit_connection(connection_id, connection);
+        commit_connection(connection_id, *connection);
     }
 
     public entry fun connection_open_ack(
@@ -446,7 +446,7 @@ module ibc::ibc {
             }
         );
 
-        commit_connection(connection_id, connection);
+        commit_connection(connection_id, *connection);
     }
 
     public entry fun connection_open_confirm(
@@ -501,7 +501,7 @@ module ibc::ibc {
             }
         );
 
-        commit_connection(connection_id, connection);
+        commit_connection(connection_id, *connection);
     }
 
     public entry fun update_client(
@@ -592,19 +592,19 @@ module ibc::ibc {
     public fun initialize_channel_sequences(channel_id: u32) acquires IBCStore {
         table::upsert(
             &mut store.commitments,
-            commitment::next_sequence_send_key(port_id, channel_id),
+            commitment::next_sequence_send_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
         table::upsert(
             &mut store.commitments,
-            commitment::next_sequence_recv_key(port_id, channel_id),
+            commitment::next_sequence_recv_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
         table::upsert(
             &mut store.commitments,
-            commitment::next_sequence_ack_key(port_id, channel_id),
+            commitment::next_sequence_ack_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
@@ -634,19 +634,19 @@ module ibc::ibc {
 
         table::upsert(
             &mut store.commitments,
-            commitment::next_sequence_send_key(port_id, channel_id),
+            commitment::next_sequence_send_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
         table::upsert(
             &mut store.commitments,
-            commitment::next_sequence_recv_key(port_id, channel_id),
+            commitment::next_sequence_recv_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
         table::upsert(
             &mut store.commitments,
-            commitment::next_sequence_ack_key(port_id, channel_id),
+            commitment::next_sequence_ack_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
@@ -729,19 +729,19 @@ module ibc::ibc {
 
         table::upsert(
             &mut store.commitments,
-            commitment::next_sequence_send_key(port_id, channel_id),
+            commitment::next_sequence_send_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
         table::upsert(
             &mut store.commitments,
-            commitment::next_sequence_recv_key(port_id, channel_id),
+            commitment::next_sequence_recv_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
         table::upsert(
             &mut store.commitments,
-            commitment::next_sequence_ack_key(port_id, channel_id),
+            commitment::next_sequence_ack_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
@@ -924,12 +924,12 @@ module ibc::ibc {
             from_bcs::to_u64(
                 *table::borrow(
                     &store.commitments,
-                    commitment::next_sequence_send_key(source_port, source_channel)
+                    commitment::next_sequence_send_commitment_key(source_port, source_channel)
                 )
             );
         table::upsert(
             &mut store.commitments,
-            commitment::next_sequence_send_key(source_port, source_channel),
+            commitment::next_sequence_send_commitment_key(source_port, source_channel),
             bcs::to_bytes(&(packet_sequence + 1))
         );
 
@@ -1051,7 +1051,7 @@ module ibc::ibc {
                 from_bcs::to_u64(
                     *table::borrow_with_default(
                         &store.commitments,
-                        commitment::next_sequence_recv_key(
+                        commitment::next_sequence_recv_commitment_key(
                             *packet::destination_port(&packet),
                             *packet::destination_channel(&packet)
                         ),
@@ -1064,7 +1064,7 @@ module ibc::ibc {
             );
             table::upsert(
                 &mut store.commitments,
-                commitment::next_sequence_recv_key(
+                commitment::next_sequence_recv_commitment_key(
                     *packet::destination_port(&packet),
                     *packet::destination_channel(&packet)
                 ),
@@ -1185,7 +1185,7 @@ module ibc::ibc {
                 from_bcs::to_u64(
                     *table::borrow_with_default(
                         &borrow_global<IBCStore>(get_vault_addr()).commitments,
-                        commitment::next_sequence_ack_key(
+                        commitment::next_sequence_ack_commitment_key(
                             source_port_id, source_channel_id
                         ),
                         &bcs::to_bytes(&0u64)
@@ -1199,7 +1199,7 @@ module ibc::ibc {
 
             table::upsert(
                 &mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments,
-                commitment::next_sequence_ack_key(source_port_id, source_channel_id),
+                commitment::next_sequence_ack_commitment_key(source_port_id, source_channel_id),
                 bcs::to_bytes(&(expected_ack_sequence + 1))
             );
         };
@@ -1214,57 +1214,52 @@ module ibc::ibc {
 
     public fun timeout_packet(
         ibc_app: &signer,
-        port_id: address,
         packet: Packet,
         proof: vector<u8>,
-        proof_height: height::Height,
+        proof_height: u64,
         next_sequence_recv: u64
     ) acquires IBCStore {
         authorize_app(ibc_app, port_id);
 
         let channel_id = *packet::source_channel(&packet);
-
         let port_id = address_to_string(port_id);
-        let channel = ensure_channel_state(port_id, channel_id);
+        let source_channel = packet::source_channel(&packet);
+        let destination_channel = packet::destination_channel(&packet);
+        let channel = ensure_channel_state(source_channel);
+        let client_id = ensure_connection_state(channel::connection_id(&channel));
 
-        assert!(
-            *packet::destination_port(&packet)
-                == *channel::chan_counterparty_port_id(&channel),
-            E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH
+        let proof_timestamp = light_client::get_timestamp_at_height(
+            client_id,
+            proof_height
         );
-        assert!(
-            *packet::destination_channel(&packet)
-                == *channel::chan_counterparty_channel_id(&channel),
-            E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH
-        );
-
-        let connection_hop = *vector::borrow(channel::connection_hops(&channel), 0);
-        let connection = ensure_connection_state(connection_hop);
-
-        let packet_commitment_key =
-            commitment::packet_key(
-                *packet::source_port(&packet),
-                *packet::source_channel(&packet),
-                packet::sequence(&packet)
-            );
-        let expected_packet_commitment = get_commitment(packet_commitment_key);
-        assert!(
-            !vector::is_empty(&expected_packet_commitment),
-            E_PACKET_COMMITMENT_NOT_FOUND
-        );
-
-        let packet_commitment = packet::commitment(&packet);
-        assert!(
-            expected_packet_commitment == packet_commitment,
-            E_INVALID_PACKET_COMMITMENT
-        );
-
-        let proof_timestamp =
-            light_client::get_timestamp_at_height(
-                *connection_end::client_id(&connection),
-                proof_height
-            );
         assert!(proof_timestamp != 0, E_LATEST_TIMESTAMP_NOT_FOUND);
+
+        let ordering = channel::ordering(&channel);
+        let commitment_key = commitment::batch_receipts_commitment_key(destination_channel, commitment::commit_packet(&packet));
+
+        if (ordering == CHAN_ORDERING_ORDERED) {
+            let err =
+                verify_commitment(
+                    client_id,
+                    proof_height,
+                    proof,
+                    commitment::next_sequence_recv_commitment_key(destination_channel),
+                    bcs::to_bytes(&next_sequence_recv)
+                );
+            assert!(err == 0, E_INVALID_PROOF);
+        } else if(ordering == CHAN_ORDERING_UNORDERED) {
+
+            let err =
+                verify_absent_commitment(
+                    client_id,
+                    proof_height,
+                    proof,
+                    commitment_key
+                );
+            assert!(err == 0, ERR_INVALID_PROOF);
+        } else {
+            abort E_UNKNOWN_CHANNEL_ORDERING
+        };
 
         if (packet::timeout_timestamp(&packet) != 0) {
             assert!(
@@ -1285,39 +1280,11 @@ module ibc::ibc {
                 next_sequence_recv > packet::sequence(&packet),
                 E_NEXT_SEQUENCE_MUST_BE_GREATER_THAN_TIMEOUT_SEQUENCE
             );
-            let err =
-                verify_commitment(
-                    &connection,
-                    proof_height,
-                    proof,
-                    commitment::next_sequence_recv_key(
-                        *packet::destination_port(&packet),
-                        *packet::destination_channel(&packet)
-                    ),
-                    bcs::to_bytes(&next_sequence_recv)
-                );
-            assert!(err == 0, err);
-            channel::set_state(&mut channel, CHAN_STATE_CLOSED);
-        } else if (channel::ordering(&channel) == CHAN_ORDERING_UNORDERED) {
-            let err =
-                verify_absent_commitment(
-                    &connection,
-                    proof_height,
-                    proof,
-                    commitment::packet_receipt_key(
-                        *packet::destination_port(&packet),
-                        *packet::destination_channel(&packet),
-                        packet::sequence(&packet)
-                    )
-                );
-            assert!(err == 0, err);
-        } else {
-            abort E_UNKNOWN_CHANNEL_ORDERING
         };
 
         table::remove(
             &mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments,
-            packet_commitment_key
+            commitment_key
         );
 
         event::emit(TimeoutPacket { packet });
@@ -1359,7 +1326,8 @@ module ibc::ibc {
     #[view]
     public fun get_counterparty_connection(connection_id: u32): u32 acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
-        smart_table::borrow(&store.connections, connection_id)
+        let connection = smart_table::borrow(&store.connections, connection_id);
+        connection_end::counterparty_connection_id(connection)
 
     }
 
@@ -1369,12 +1337,11 @@ module ibc::ibc {
     }
 
     fun set_channel(
-        port_id: String, channel_id: String, channel: Channel
+        channel_id: u32, channel: Channel
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
-        let channel_port = ChannelPort { port_id, channel_id };
 
-        smart_table::upsert(&mut store.channels, channel_port, channel);
+        smart_table::upsert(&mut store.channels, channel_id, channel);
     }
 
     // Setter for Commitments
@@ -1401,10 +1368,9 @@ module ibc::ibc {
     }
 
     // Getter for Commitments
-    fun get_channel_from_store(key: String, channel_id: String): Channel acquires IBCStore {
+    fun get_channel_from_store(channel_id: u32): Channel acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
-        let channel_port = ChannelPort { port_id: key, channel_id };
-        let channel = smart_table::borrow(&store.channels, channel_port);
+        let channel = smart_table::borrow(&store.channels, channel_id);
 
         *channel
     }
@@ -1425,12 +1391,12 @@ module ibc::ibc {
             table::borrow_with_default(
                 &store.commitments, b"nextClientSequence", &bcs::to_bytes<u64>(&0u64)
             );
-        let next_sequence = from_bcs::to_u64(*next_sequence);
+        let next_sequence = from_bcs::to_u32(*next_sequence);
 
         table::upsert(
             &mut store.commitments,
             b"nextClientSequence",
-            bcs::to_bytes<u64>(&(next_sequence + 1))
+            bcs::to_bytes<u32>(&(next_sequence + 1))
         );
         next_sequence
     }
@@ -1440,247 +1406,41 @@ module ibc::ibc {
         object::generate_signer_for_extending(&vault.self_ref)
     }
 
-    fun default_ibc_version(): connection_end::Version {
-        connection_end::new_version(
-            string::utf8(b"1"),
-            vector[string::utf8(b"ORDER_ORDERED"), string::utf8(b"ORDER_UNORDERED")]
-        )
-    }
-
-    fun set_supported_versions(
-        supported_versions: vector<connection_end::Version>,
-        dst: &mut vector<connection_end::Version>
-    ) {
-        assert!(vector::length(dst) == 0, E_VERSION_MUST_BE_UNSET);
-        vector::append(dst, supported_versions);
-    }
-
-    fun is_supported_version(
-        supported_versions: &vector<connection_end::Version>,
-        version: &connection_end::Version
-    ): bool {
-        let (supported_version, found) =
-            find_supported_version(supported_versions, version);
-        if (found && verify_proposed_version(&supported_version, version)) {
-            return true
-        };
-        false
-        // found && verify_proposed_version(&supported_version, version)
-    }
-
-    fun get_feature_set_intersection(
-        source_features: &vector<String>, counterparty_features: &vector<String>
-    ): vector<String> {
-        let feature_set = vector::empty<String>();
-        let source_len = vector::length(source_features);
-        let i = 0;
-        while (i < source_len) {
-            let feature = vector::borrow(source_features, i);
-            if (vector::contains(counterparty_features, feature)) {
-                vector::push_back(&mut feature_set, *feature);
-            };
-            i = i + 1;
-        };
-        feature_set
-    }
-
-    fun pick_version(
-        supported_versions: &vector<connection_end::Version>,
-        counterparty_versions: &vector<connection_end::Version>
-    ): connection_end::Version {
-        let supported_len = vector::length(supported_versions);
-        let i = 0;
-        while (i < supported_len) {
-            let supported_version = vector::borrow(supported_versions, i);
-            let (counterparty_version, found) =
-                find_supported_version(counterparty_versions, supported_version);
-            if (found) {
-                let feature_set =
-                    get_feature_set_intersection(
-                        connection_end::version_features(supported_version),
-                        connection_end::version_features(&counterparty_version)
-                    );
-                if (vector::length(&feature_set) > 0) {
-                    return connection_end::new_version(
-                        *connection_end::version_identifier(supported_version),
-                        feature_set
-                    )
-                };
-            };
-            i = i + 1;
-        };
-        abort E_UNSUPPORTED_VERSION
-    }
-
-    fun copy_version(
-        src: &connection_end::Version, dst: &mut connection_end::Version
-    ) {
-        connection_end::set_version_identifier(
-            dst, *connection_end::version_identifier(src)
-        );
-        let src_len = vector::length(connection_end::version_features(src));
-        let dst_len = vector::length(connection_end::version_features(dst));
-        let i = 0;
-        let dst_features = connection_end::version_features_mut(dst);
-        while (i < src_len) {
-            if (i < dst_len) {
-                let src_feature = vector::borrow(
-                    connection_end::version_features(src), i
-                );
-                let dst_feature = vector::borrow_mut(dst_features, i);
-                *dst_feature = *src_feature;
-            } else {
-                let src_feature = vector::borrow(
-                    connection_end::version_features(src), i
-                );
-                vector::push_back(dst_features, *src_feature);
-            };
-            i = i + 1;
-        };
-        while (i < dst_len) {
-            vector::remove(dst_features, i);
-            i = i + 1;
-        }
-    }
-
-    fun copy_versions(
-        src: &vector<connection_end::Version>, dst: &mut vector<connection_end::Version>
-    ) {
-        let src_len = vector::length(src);
-        let dst_len = vector::length(dst);
-        if (src_len == dst_len) {
-            let i = 0;
-            while (i < src_len) {
-                let src_version = vector::borrow(src, i);
-                let dst_version = vector::borrow_mut(dst, i);
-                copy_version(src_version, dst_version);
-                i = i + 1;
-            };
-        } else if (src_len > dst_len) {
-            let i = 0;
-            while (i < dst_len) {
-                let src_version = vector::borrow(src, i);
-                let dst_version = vector::borrow_mut(dst, i);
-                copy_version(src_version, dst_version);
-                i = i + 1;
-            };
-            let j = dst_len;
-            while (j < src_len) {
-                let src_version = vector::borrow(src, j);
-                vector::push_back(dst, *src_version);
-                j = j + 1;
-            };
-        } else {
-            let i = 0;
-            while (i < src_len) {
-                let src_version = vector::borrow(src, i);
-                let dst_version = vector::borrow_mut(dst, i);
-                copy_version(src_version, dst_version);
-                i = i + 1;
-            };
-            let j = src_len;
-            while (j < dst_len) {
-                vector::remove(dst, j);
-                j = j + 1;
-            };
-        }
-    }
-
-    fun find_supported_version(
-        supported_versions: &vector<connection_end::Version>,
-        version: &connection_end::Version
-    ): (connection_end::Version, bool) {
-        let found_version = connection_end::default_version();
-        let found = false;
-        let len_supported_versions = vector::length(supported_versions);
-        let i = 0;
-        while (i < len_supported_versions) {
-            let v = vector::borrow(supported_versions, i);
-            if (connection_end::version_identifier(v)
-                == connection_end::version_identifier(version)) {
-                found_version = *v;
-                found = true;
-                break
-            };
-            i = i + 1;
-        };
-        (found_version, found)
-    }
-
-    fun verify_proposed_version(
-        supported_version: &connection_end::Version,
-        proposed_version: &connection_end::Version
-    ): bool {
-        let is_supported = false;
-        if (connection_end::version_identifier(supported_version)
-            == connection_end::version_identifier(proposed_version)) {
-            let len_proposed_version = vector::length(
-                connection_end::version_features(proposed_version)
-            );
-            let i = 0;
-            while (i < len_proposed_version) {
-                let feature = vector::borrow(
-                    connection_end::version_features(proposed_version), i
-                );
-                is_supported = vector::contains(
-                    connection_end::version_features(supported_version), feature
-                );
-                if (!is_supported) { break };
-                i = i + 1;
-            };
-        };
-        is_supported
-    }
-
-    fun verify_client_state(
-        connection: &ConnectionEnd,
-        height: height::Height,
-        path: vector<u8>,
-        proof: vector<u8>,
-        client_state_bytes: vector<u8>
-    ): u64 {
-        light_client::verify_membership(
-            *connection_end::client_id(connection),
-            height,
-            proof,
-            *connection_end::conn_counterparty_key_prefix(connection),
-            path,
-            client_state_bytes
-        )
-    }
 
     fun verify_connection_state(
         connection: &ConnectionEnd,
-        height: height::Height,
+        height: u64,
         proof: vector<u8>,
         connection_id: u32,
         counterparty_connection: ConnectionEnd
     ): u64 {
-        light_client::verify_membership(
-            *connection_end::client_id(connection),
-            height,
-            proof,
-            *connection_end::conn_counterparty_key_prefix(connection),
-            commitment::connection_key(connection_id),
-            connection_end::encode_proto(counterparty_connection)
-        )
+        0
+        // light_client::verify_membership(
+        //     *connection_end::client_id(connection),
+        //     height,
+        //     proof,
+        //     *connection_end::conn_counterparty_key_prefix(connection),
+        //     commitment::connection_key(connection_id),
+        //     connection_end::encode_proto(counterparty_connection)
+        // )
     }
 
     public fun verify_commitment(
-        connection: &ConnectionEnd,
-        height: Height,
+        client_id: u32,
+        height: u64,
         proof: vector<u8>,
         path: vector<u8>,
         commitment: vector<u8>
     ): u64 {
-        light_client::verify_membership(
-            *connection_end::client_id(connection),
-            height,
-            proof,
-            *connection_end::conn_counterparty_key_prefix(connection),
-            path,
-            commitment
-        )
+        0
+        // light_client::verify_membership(
+        //     *connection_end::client_id(connection),
+        //     height,
+        //     proof,
+        //     *connection_end::conn_counterparty_key_prefix(connection),
+        //     path,
+        //     commitment
+        // )
     }
 
     public fun generate_connection_identifier(): u32 acquires IBCStore {
@@ -1691,7 +1451,7 @@ module ibc::ibc {
                 b"nextConnectionSequence",
                 &bcs::to_bytes<u64>(&0)
             );
-        let next_sequence = from_bcs::to_u64(*next_sequence_bytes);
+        let next_sequence = from_bcs::to_u32(*next_sequence_bytes);
         table::upsert(
             &mut store.commitments,
             b"nextConnectionSequence",
@@ -1699,19 +1459,6 @@ module ibc::ibc {
         );
 
         next_sequence
-    }
-
-    public fun update_connection_commitment(
-        store: &mut IBCStore, connection_id: u32, connection: ConnectionEnd
-    ) {
-        let encoded_connection = connection_end::encode_proto(connection);
-        let key = commitment::connection_key(connection_id);
-        // let hash = hash::sha2_256(encoded_connection);
-        table::upsert(&mut store.commitments, key, encoded_connection);
-    }
-
-    public fun get_compatible_versions(): vector<connection_end::Version> {
-        vector[default_ibc_version()]
     }
 
     // Returns connection by `connection_id`. Aborts if the connection does not exist.
@@ -1729,60 +1476,19 @@ module ibc::ibc {
     }
 
     #[view]
-    public fun get_channel(port_id: String, channel_id: String): Option<Channel> acquires IBCStore {
+    public fun get_channel(channel_id: u32): Option<Channel> acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
 
         if (!smart_table::contains(
             &store.channels,
-            ChannelPort { port_id, channel_id }
+            channel_id
         )) {
             option::none<Channel>()
         } else {
             option::some<Channel>(
-                *smart_table::borrow(&store.channels, ChannelPort { port_id, channel_id })
+                *smart_table::borrow(&store.channels, channel_id)
             )
         }
-    }
-
-    #[view]
-    public fun get_next_sequence_recv(port_id: String, channel_id: String): u64 acquires IBCStore {
-        let store = borrow_global<IBCStore>(get_vault_addr());
-
-        let seq =
-            table::borrow_with_default(
-                &store.commitments,
-                commitment::next_sequence_recv_key(port_id, channel_id),
-                &bcs::to_bytes<u64>(&0)
-            );
-
-        from_bcs::to_u64(*seq)
-    }
-
-    #[view]
-    public fun get_next_sequence_send(port_id: String, channel_id: String): u64 acquires IBCStore {
-        let store = borrow_global<IBCStore>(get_vault_addr());
-
-        let seq =
-            table::borrow_with_default(
-                &store.commitments,
-                commitment::next_sequence_send_key(port_id, channel_id),
-                &bcs::to_bytes<u64>(&0)
-            );
-
-        from_bcs::to_u64(*seq)
-    }
-
-    public fun verify_supported_feature(
-        version: &connection_end::Version, feature: String
-    ): bool {
-        let i = 0;
-        while (i < vector::length(connection_end::version_features(version))) {
-            if (*vector::borrow(connection_end::version_features(version), i) == feature) {
-                return true
-            };
-            i = i + 1;
-        };
-        false
     }
 
     fun ordering_to_string(ordering: u8): String {
@@ -1795,16 +1501,6 @@ module ibc::ibc {
         return_val
     }
 
-    fun get_counterparty_hops(connection_id: u32): vector<String> acquires IBCStore {
-        let store = borrow_global<IBCStore>(get_vault_addr());
-        let connection = smart_table::borrow(&store.connections, connection_id);
-        let hops = vector::empty<String>();
-        vector::push_back(
-            &mut hops, *connection_end::conn_counterparty_connection_id(connection)
-        );
-        hops
-    }
-
     fun generate_channel_identifier(): u32 acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let next_sequence_bytes =
@@ -1813,14 +1509,14 @@ module ibc::ibc {
                 b"nextChannelSequence",
                 &bcs::to_bytes<u64>(&0)
             );
-        let next_sequence = from_bcs::to_u64(*next_sequence_bytes);
+        let next_sequence = from_bcs::to_u32(*next_sequence_bytes);
 
         table::upsert(
             &mut store.commitments,
             b"nextChannelSequence",
-            bcs::to_bytes(&new_sequence + 1)
+            bcs::to_bytes(&(next_sequence + 1))
         );
-        new_sequence
+        next_sequence
     }
 
     fun ensure_connection_state(connection_id: u32): u32 acquires IBCStore {
@@ -1832,25 +1528,6 @@ module ibc::ibc {
         );
 
         connection_end::client_id(connection)
-    }
-
-    // TODO(aeryz): borrow instead of copy
-    fun ensure_connection_feature(
-        connection_hops: vector<String>, ordering: u8
-    ): (String, ConnectionEnd) acquires IBCStore {
-        assert!(vector::length(&connection_hops) == 1, E_CONN_NOT_SINGLE_HOP);
-        let connection_id = *vector::borrow(&connection_hops, 0);
-        let connection = ensure_connection_state(connection_id);
-        assert!(
-            vector::length(connection_end::versions(&connection)) == 1,
-            E_CONN_NOT_SINGLE_VERSION
-        );
-        let version = *vector::borrow(connection_end::versions(&connection), 0);
-        assert!(
-            verify_supported_feature(&version, ordering_to_string(ordering)),
-            E_UNSUPPORTED_FEATURE
-        );
-        (connection_id, connection)
     }
 
     fun encode_channel(channel: Channel): vector<u8> {
@@ -1874,19 +1551,10 @@ module ibc::ibc {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let key = commitment::connection_commitment_key(connection_id);
 
-        let encoded = encode_connection(connection_id);
+        let encoded = encode_connection(connection);
         table::upsert(&mut store.commitments, key, encoded);
     }
 
-    fun update_channel_commitment(port_id: String, channel_id: String) acquires IBCStore {
-        let store = borrow_global_mut<IBCStore>(get_vault_addr());
-        let channel_port = ChannelPort { port_id: port_id, channel_id };
-        let channel = smart_table::borrow(&store.channels, channel_port);
-
-        let encoded = channel::encode_proto(*channel);
-        let key = commitment::channel_key(port_id, channel_id);
-        table::upsert(&mut store.commitments, key, encoded);
-    }
 
     fun verify_channel_state(
         client_id: u32,
@@ -1914,10 +1582,9 @@ module ibc::ibc {
     }
 
     // Ensures that the channel state is open
-    fun ensure_channel_state(port_id: String, channel_id: String): Channel acquires IBCStore {
+    fun ensure_channel_state(channel_id: u32): Channel acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
-        let channel_port = ChannelPort { port_id, channel_id };
-        let channel = smart_table::borrow(&store.channels, channel_port);
+        let channel = smart_table::borrow(&store.channels, channel_id);
 
         assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
         *channel
@@ -1929,13 +1596,14 @@ module ibc::ibc {
         proof: vector<u8>,
         path: vector<u8>
     ): u64 {
-        light_client::verify_non_membership(
-            *connection_end::client_id(connection),
-            height,
-            proof,
-            *connection_end::conn_counterparty_key_prefix(connection),
-            path
-        )
+        0
+        // light_client::verify_non_membership(
+        //     *connection_end::client_id(connection),
+        //     height,
+        //     proof,
+        //     *connection_end::conn_counterparty_key_prefix(connection),
+        //     path
+        // )
     }
 
     fun address_to_string(addr: address): String {

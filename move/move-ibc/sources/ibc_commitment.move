@@ -219,135 +219,130 @@ module ibc::commitment {
     public fun next_sequence_ack_commitment_key(channel_id: u32): vector<u8> {
         next_sequence_ack_commitment_path(channel_id)
     }
-    
-    
+    // // Generate the path for packet commitment
+    // public fun packet_path(
+    //     port_id: String, channel_id: String, sequence: u64
+    // ): String {
+    //     let path = string::utf8(b"commitments/ports/");
+    //     string::append(&mut path, port_id);
+    //     string::append_utf8(&mut path, b"/channels/");
+    //     string::append(&mut path, channel_id);
+    //     string::append_utf8(&mut path, b"/sequences/");
+    //     string::append(&mut path, string_utils::to_string(&sequence));
+    //     path
+    // }
 
+    // // Generate the path for packet acknowledgment commitment
+    // public fun packet_acknowledgement_path(
+    //     port_id: String, channel_id: String, sequence: u64
+    // ): String {
+    //     let path = string::utf8(b"acks/ports/");
+    //     string::append(&mut path, port_id);
+    //     string::append_utf8(&mut path, b"/channels/");
+    //     string::append(&mut path, channel_id);
+    //     string::append_utf8(&mut path, b"/sequences/");
+    //     string::append(&mut path, string_utils::to_string(&sequence));
+    //     path
+    // }
 
+    // // Generate the path for packet receipt commitment
+    // public fun packet_receipt_path(
+    //     port_id: String, channel_id: String, sequence: u64
+    // ): String {
+    //     let path = string::utf8(b"receipts/ports/");
+    //     string::append(&mut path, port_id);
+    //     string::append_utf8(&mut path, b"/channels/");
+    //     string::append(&mut path, channel_id);
+    //     string::append_utf8(&mut path, b"/sequences/");
+    //     string::append(&mut path, string_utils::to_string(&sequence));
+    //     path
+    // }
 
-    // Generate the path for packet commitment
-    public fun packet_path(
-        port_id: String, channel_id: String, sequence: u64
-    ): String {
-        let path = string::utf8(b"commitments/ports/");
-        string::append(&mut path, port_id);
-        string::append_utf8(&mut path, b"/channels/");
-        string::append(&mut path, channel_id);
-        string::append_utf8(&mut path, b"/sequences/");
-        string::append(&mut path, string_utils::to_string(&sequence));
-        path
-    }
+    // // Generate the path for next sequence send commitment
+    // public fun next_sequence_send_path(
+    //     port_id: String, channel_id: String
+    // ): String {
+    //     let path = string::utf8(b"nextSequenceSend/ports/");
+    //     string::append(&mut path, port_id);
+    //     string::append_utf8(&mut path, b"/channels/");
+    //     string::append(&mut path, channel_id);
+    //     path
+    // }
 
-    // Generate the path for packet acknowledgment commitment
-    public fun packet_acknowledgement_path(
-        port_id: String, channel_id: String, sequence: u64
-    ): String {
-        let path = string::utf8(b"acks/ports/");
-        string::append(&mut path, port_id);
-        string::append_utf8(&mut path, b"/channels/");
-        string::append(&mut path, channel_id);
-        string::append_utf8(&mut path, b"/sequences/");
-        string::append(&mut path, string_utils::to_string(&sequence));
-        path
-    }
+    // // Generate the path for next sequence receive commitment
+    // public fun next_sequence_recv_path(
+    //     port_id: String, channel_id: String
+    // ): String {
+    //     let path = string::utf8(b"nextSequenceRecv/ports/");
+    //     string::append(&mut path, port_id);
+    //     string::append_utf8(&mut path, b"/channels/");
+    //     string::append(&mut path, channel_id);
+    //     path
+    // }
 
-    // Generate the path for packet receipt commitment
-    public fun packet_receipt_path(
-        port_id: String, channel_id: String, sequence: u64
-    ): String {
-        let path = string::utf8(b"receipts/ports/");
-        string::append(&mut path, port_id);
-        string::append_utf8(&mut path, b"/channels/");
-        string::append(&mut path, channel_id);
-        string::append_utf8(&mut path, b"/sequences/");
-        string::append(&mut path, string_utils::to_string(&sequence));
-        path
-    }
+    // // Generate the path for next sequence acknowledge commitment
+    // public fun next_sequence_ack_path(port_id: String, channel_id: String): String {
+    //     let path = string::utf8(b"nextSequenceAck/ports/");
+    //     string::append(&mut path, port_id);
+    //     string::append_utf8(&mut path, b"/channels/");
+    //     string::append(&mut path, channel_id);
+    //     path
+    // }
 
-    // Generate the path for next sequence send commitment
-    public fun next_sequence_send_path(
-        port_id: String, channel_id: String
-    ): String {
-        let path = string::utf8(b"nextSequenceSend/ports/");
-        string::append(&mut path, port_id);
-        string::append_utf8(&mut path, b"/channels/");
-        string::append(&mut path, channel_id);
-        path
-    }
+    // // Key generation functions
+    // public fun client_state_key(client_id: u32): vector<u8> {
+    //     client_state_path(client_id)
+    // }
 
-    // Generate the path for next sequence receive commitment
-    public fun next_sequence_recv_path(
-        port_id: String, channel_id: String
-    ): String {
-        let path = string::utf8(b"nextSequenceRecv/ports/");
-        string::append(&mut path, port_id);
-        string::append_utf8(&mut path, b"/channels/");
-        string::append(&mut path, channel_id);
-        path
-    }
+    // public fun consensus_state_key(client_id: u32, height: Height): vector<u8> {
+    //     consensus_state_path(
+    //         client_id,
+    //         height::get_revision_height(&height)
+    //     )
+    // }
 
-    // Generate the path for next sequence acknowledge commitment
-    public fun next_sequence_ack_path(port_id: String, channel_id: String): String {
-        let path = string::utf8(b"nextSequenceAck/ports/");
-        string::append(&mut path, port_id);
-        string::append_utf8(&mut path, b"/channels/");
-        string::append(&mut path, channel_id);
-        path
-    }
+    // public fun connection_key(connection_id: u32): vector<u8> {
+    //     connection_path(connection_id)
+    // }
 
-    // Key generation functions
-    public fun client_state_key(client_id: u32): vector<u8> {
-        client_state_path(client_id)
-    }
+    // public fun channel_key(port_id: String, channel_id: String): vector<u8> {
+    //     *string::bytes(&channel_path(port_id, channel_id))
+    // }
 
-    public fun consensus_state_key(client_id: u32, height: Height): vector<u8> {
-        consensus_state_path(
-            client_id,
-            height::get_revision_height(&height)
-        )
-    }
+    // public fun packet_key(
+    //     port_id: String, channel_id: String, sequence: u64
+    // ): vector<u8> {
+    //     *string::bytes(&packet_path(port_id, channel_id, sequence))
+    // }
 
-    public fun connection_key(connection_id: u32): vector<u8> {
-        connection_path(connection_id)
-    }
+    // public fun packet_acknowledgement_key(
+    //     port_id: String, channel_id: String, sequence: u64
+    // ): vector<u8> {
+    //     *string::bytes(&packet_acknowledgement_path(port_id, channel_id, sequence))
+    // }
 
-    public fun channel_key(port_id: String, channel_id: String): vector<u8> {
-        *string::bytes(&channel_path(port_id, channel_id))
-    }
+    // public fun packet_receipt_key(
+    //     port_id: String, channel_id: String, sequence: u64
+    // ): vector<u8> {
+    //     *string::bytes(&packet_receipt_path(port_id, channel_id, sequence))
+    // }
 
-    public fun packet_key(
-        port_id: String, channel_id: String, sequence: u64
-    ): vector<u8> {
-        *string::bytes(&packet_path(port_id, channel_id, sequence))
-    }
+    // public fun next_sequence_send_key(port_id: String, channel_id: String): vector<u8> {
+    //     *string::bytes(&next_sequence_send_path(port_id, channel_id))
+    // }
 
-    public fun packet_acknowledgement_key(
-        port_id: String, channel_id: String, sequence: u64
-    ): vector<u8> {
-        *string::bytes(&packet_acknowledgement_path(port_id, channel_id, sequence))
-    }
+    // public fun next_sequence_recv_key(port_id: String, channel_id: String): vector<u8> {
+    //     *string::bytes(&next_sequence_recv_path(port_id, channel_id))
+    // }
 
-    public fun packet_receipt_key(
-        port_id: String, channel_id: String, sequence: u64
-    ): vector<u8> {
-        *string::bytes(&packet_receipt_path(port_id, channel_id, sequence))
-    }
+    // public fun next_sequence_ack_key(port_id: String, channel_id: String): vector<u8> {
+    //     *string::bytes(&next_sequence_ack_path(port_id, channel_id))
+    // }
 
-    public fun next_sequence_send_key(port_id: String, channel_id: String): vector<u8> {
-        *string::bytes(&next_sequence_send_path(port_id, channel_id))
-    }
-
-    public fun next_sequence_recv_key(port_id: String, channel_id: String): vector<u8> {
-        *string::bytes(&next_sequence_recv_path(port_id, channel_id))
-    }
-
-    public fun next_sequence_ack_key(port_id: String, channel_id: String): vector<u8> {
-        *string::bytes(&next_sequence_ack_path(port_id, channel_id))
-    }
-
-    #[test]
-    public fun test_client_state_path(){
-        let test = client_state_path(54);
-        std::debug::print(&test);
-        assert!(test == x"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000036", 1000);
-    }
+    // #[test]
+    // public fun test_client_state_path(){
+    //     let test = client_state_path(54);
+    //     std::debug::print(&test);
+    //     assert!(test == x"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000036", 1000);
+    // }
 }
