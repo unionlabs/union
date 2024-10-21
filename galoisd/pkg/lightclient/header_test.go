@@ -41,7 +41,7 @@ func getBlockHeader(r *rand.Rand) (*BlockHeader, *BlockVote, *types.Header, *tmt
 	versionApp := r.Uint64()
 	chainId := fmt.Sprintf("union-devnet-%d", r.Uint64()%65535)
 	height := r.Int63()
-	time := time.Unix(r.Int63(), r.Int63())
+	time := time.Unix(int64(r.Int63n(10000000000)), r.Int63())
 	lastBlockHash := readHash()[:1]
 	lastBlockPartSetHeaderTotal := r.Uint32()
 	lastBlockPartSetHeaderHash := readHash()
@@ -170,7 +170,6 @@ func FuzzVerifyInputs(f *testing.F) {
 		t.Parallel()
 		r := rand.New(rand.NewSource(seed))
 		header, vote, h, _ := getBlockHeader(r)
-
 		err := test.IsSolved(
 			&VerifyInputs{},
 			&VerifyInputs{

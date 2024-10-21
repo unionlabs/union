@@ -24,8 +24,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"google.golang.org/protobuf/proto"
-
 	provergrpc "galois/grpc/api/v3"
 )
 
@@ -211,13 +209,6 @@ func ExampleProveCmd() *cobra.Command {
 					Bitmap:     untrustedBitmap.Bytes(),
 				},
 			}
-
-			val, _ := proto.Marshal(&req)
-
-			val, _ = json.Marshal(&val)
-			print("FFFFFFF\n")
-			fmt.Println(string(val))
-			print("\n")
 
 			res, err := client.Prove(ctx, &req)
 			if err != nil {
