@@ -87,6 +87,7 @@ module ibc::ibc {
     const E_ACK_ALREADY_EXIST: u64 = 1042;
     const E_CANNOT_INTENT_ORDERED: u64 = 1043;
     const E_TIMEOUT_MUST_BE_SET: u64 = 1044;
+    const E_PACKET_SEQUENCE_ACK_SEQUENCE_MISMATCH: u64 = 1045;
 
     #[event]
     struct ClientCreatedEvent has copy, drop, store {
@@ -186,6 +187,11 @@ module ibc::ibc {
 
     #[event]
     struct RecvPacket has drop, store {
+        packet: Packet
+    }
+
+    #[event]
+    struct RecvIntentPacket has drop, store {
         packet: Packet
     }
 
@@ -926,11 +932,10 @@ module ibc::ibc {
 
     public fun process_receive(
         packets: vector<Packet>,
-        maker: address,
-        maker_messages: vector<vector<u8>>,
         proof_height: u64,
         proof: vector<u8>,
-        intent: bool
+        intent: bool,
+        acknowledgement: vector<u8>
     ) acquires IBCStore {
         let l = vector::length(&packets);
         assert!(l > 0 , E_NOT_ENOUGH_PACKETS);
@@ -1008,9 +1013,16 @@ module ibc::ibc {
             };
 
             if (!already_received){
-                let acknowledgement: vector<u8>;
-                let maker_msg = *vector::borrow(&maker_messages, i);
-                // TODO: verify what to do here, we won't call module.onrecvpackets etc.
+                if (intent){
+                    event::emit(RecvIntentPacket { packet: packet });
+                } else {
+                    event::emit(RecvPacket { packet: packet });
+                };
+                if (vector::length(&acknowledgement) > 0) {
+                    inner_write_acknowledgement(commitmentKey, acknowledgement);
+
+                    event::emit(WriteAcknowledgement { packet, acknowledgement });
+                };
             };
 
             i = i +1;
@@ -1025,14 +1037,13 @@ module ibc::ibc {
         ibc_app: &signer,
         port_id: address,
         packets: vector<Packet>,
-        relayer_msgs: vector<vector<u8>>,
-        relayer: address,
         proof: vector<u8>,
         proof_height: u64,
+        acknowledgement: vector<u8>
     ) acquires IBCStore {
         authorize_app(ibc_app, port_id);
 
-        process_receive(packets, relayer, relayer_msgs, proof_height, proof, false);
+        process_receive(packets, proof_height, proof, false, acknowledgement);
 
         // let channel =
         //     ensure_channel_state(
@@ -1239,10 +1250,10 @@ module ibc::ibc {
 
             let acknowledgement = *vector::borrow(&acknowledgements, i);
             // onAcknowledgementPacket(...)
+            if (ordering == CHAN_ORDERING_ORDERED){
+                set_next_sequence_ack(source_channel, packet::sequence(&packet));
+            };
 
-
-
-            // TODO: Verify how to do this? App should call here when onacknowledge triggered.
 
             event::emit(AcknowledgePacket { packet, acknowledgement });
 
@@ -1441,6 +1452,29 @@ module ibc::ibc {
             &mut store.commitments,
             next_sequence_recv_key,
             bcs::to_bytes<u64>(&(expected_recv_sequence + 1))
+        );
+    }
+
+    // Setter for nextChannelSequence in Commitments
+    fun set_next_sequence_ack(source_channel: u32, ack_sequence: u64) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+
+        let commitment_key = commitment::next_sequence_ack_commitment_key(source_channel);
+
+        let expected_ack_sequence = from_bcs::to_u64(
+            *table::borrow(
+                &store.commitments, commitment_key
+            )
+        );
+
+        if (expected_ack_sequence != ack_sequence) {
+            abort E_PACKET_SEQUENCE_ACK_SEQUENCE_MISMATCH
+        };
+
+        table::upsert(
+            &mut store.commitments,
+            next_sequence_recv_key,
+            bcs::to_bytes<u64>(&(expected_ack_sequence + 1))
         );
     }
 
