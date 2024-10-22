@@ -109,11 +109,12 @@ impl EthFetcherClient {
             .await;
 
         match block {
-            Ok(rpc_result) => match rpc_result.response {
-                Some(block) => {
+            Ok(rpc_result) => match rpc_result {
+                Some(result) => {
+                    let block = result.response;
                     debug!(
                         "{}: fetched (provider index: {:?})",
-                        selection, rpc_result.provider_id
+                        selection, result.provider_id
                     );
 
                     Ok(EthBlockHandle {
@@ -121,11 +122,11 @@ impl EthFetcherClient {
                         details: match mode {
                             FetchMode::Lazy => BlockDetails::Lazy(block),
                             FetchMode::Eager => BlockDetails::Eager(
-                                self.fetch_details(&block, rpc_result.provider_id).await?,
+                                self.fetch_details(&block, result.provider_id).await?,
                             ),
                         },
                         eth_client: self.clone(),
-                        provider_id: rpc_result.provider_id,
+                        provider_id: result.provider_id,
                     })
                 }
                 None => {
