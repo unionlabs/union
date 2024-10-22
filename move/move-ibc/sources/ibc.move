@@ -1473,7 +1473,7 @@ module ibc::ibc {
 
         table::upsert(
             &mut store.commitments,
-            next_sequence_recv_key,
+            commitment_key,
             bcs::to_bytes<u64>(&(expected_ack_sequence + 1))
         );
     }
