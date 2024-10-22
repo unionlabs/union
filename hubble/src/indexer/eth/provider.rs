@@ -11,7 +11,7 @@ use alloy::{
 };
 use url::Url;
 
-use crate::race_client::RaceClient;
+use crate::race_client::{RaceClient, RaceClientId, RaceClientResponse};
 
 #[derive(Clone, Debug)]
 pub struct Provider {
@@ -20,7 +20,13 @@ pub struct Provider {
 
 #[derive(Clone, Debug, Copy)]
 pub struct RpcProviderId {
-    index: usize,
+    race_client_id: RaceClientId,
+}
+
+impl From<RpcProviderId> for RaceClientId {    
+    fn from(value: RpcProviderId) -> Self {
+        value.race_client_id
+    }
 }
 
 #[derive(Debug)]
@@ -30,13 +36,19 @@ pub struct RpcResult<T> {
 }
 
 impl<T> RpcResult<T> {
-    fn new(provider_index: usize, result: T) -> Self {
+    fn new(race_client_id: RaceClientId, result: T) -> Self {
         Self {
             provider_id: RpcProviderId {
-                index: provider_index,
+                race_client_id,
             },
             response: result,
         }
+    }
+}
+
+impl<T> From<RaceClientResponse<T>> for RpcResult<T> {
+    fn from(value: RaceClientResponse<T>) -> Self {
+        RpcResult::new(value.race_client_id, value.response)
     }
 }
 
@@ -52,37 +64,11 @@ impl Provider {
         }
     }
 
-    fn rpc_client(
-        &self,
-        provider_id: Option<RpcProviderId>,
-    ) -> RaceClient<RootProvider<Http<Client>>> {
-        Self::select_client(self.rpc_client.clone(), provider_id.map(|id| id.index))
-    }
-
-    fn select_client<T: Clone>(
-        client: RaceClient<T>,
-        provider_index: Option<usize>,
-    ) -> RaceClient<T> {
-        match provider_index {
-            Some(provider_index) => RaceClient::new(vec![client.clients[provider_index].clone()]),
-            None => client,
-        }
-    }
-
     pub async fn get_chain_id(
         &self,
         provider_id: Option<RpcProviderId>,
     ) -> Result<RpcResult<u64>, RpcError<TransportErrorKind>> {
-        let result = self.rpc_client(provider_id).get_chain_id().await?;
-
-        // TODO: improve race client to return index with result
-        Ok(RpcResult::new(
-            provider_id.map_or_else(
-                || self.rpc_client.fastest_index(),
-                |provider_id| provider_id.index,
-            ),
-            result,
-        ))
+        self.rpc_client.race(provider_id.map(Into::into), |c| c.get_chain_id()).await.map(Into::into)
     }
 
     pub async fn get_block(
@@ -90,17 +76,9 @@ impl Provider {
         id: BlockId,
         kind: BlockTransactionsKind,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<RpcResult<Option<Block>>, RpcError<TransportErrorKind>> {
-        let result = self.rpc_client(provider_id).get_block(id, kind).await?;
-
-        // TODO: improve race client to return index with result
-        Ok(RpcResult::new(
-            provider_id.map_or_else(
-                || self.rpc_client.fastest_index(),
-                |provider_id| provider_id.index,
-            ),
-            result,
-        ))
+    ) -> Result<Option<RpcResult<Block>>, RpcError<TransportErrorKind>> {
+        self.rpc_client.race_some(provider_id.map(Into::into), |c| c.get_block(id, kind)).await
+        .map(|op| op.map(Into::into))
     }
 
     pub async fn get_logs(
@@ -108,16 +86,7 @@ impl Provider {
         filter: &Filter,
         provider_id: Option<RpcProviderId>,
     ) -> Result<RpcResult<Vec<Log>>, RpcError<TransportErrorKind>> {
-        let result = self.rpc_client(provider_id).get_logs(filter).await?;
-
-        // TODO: improve race client to return index with result
-        Ok(RpcResult::new(
-            provider_id.map_or_else(
-                || self.rpc_client.fastest_index(),
-                |provider_id| provider_id.index,
-            ),
-            result,
-        ))
+        self.rpc_client.race(provider_id.map(Into::into), |c| c.get_logs(filter)).await.map(Into::into)
     }
 
     pub async fn get_transaction_by_hash(
@@ -125,50 +94,10 @@ impl Provider {
         tx_hash: TxHash,
         provider_id: Option<RpcProviderId>,
     ) -> Result<
-        RpcResult<Option<<Ethereum as Network>::TransactionResponse>>,
+        Option<RpcResult<<Ethereum as Network>::TransactionResponse>>,
         RpcError<TransportErrorKind>,
     > {
-        let result = self
-            .rpc_client(provider_id)
-            .get_transaction_by_hash(tx_hash)
-            .await?;
-
-        // TODO: improve race client to return index with result
-        Ok(RpcResult::new(
-            provider_id.map_or_else(
-                || self.rpc_client.fastest_index(),
-                |provider_id| provider_id.index,
-            ),
-            result,
-        ))
-    }
-}
-
-impl RaceClient<RootProvider<Http<Client>>> {
-    pub async fn get_chain_id(&self) -> Result<u64, RpcError<TransportErrorKind>> {
-        self.race(|c| c.get_chain_id()).await
-    }
-
-    pub async fn get_block(
-        &self,
-        id: BlockId,
-        kind: BlockTransactionsKind,
-    ) -> Result<Option<Block>, RpcError<TransportErrorKind>> {
-        self.race_some(|c| c.get_block(id, kind)).await
-    }
-
-    pub async fn get_logs(
-        &self,
-        filter: &Filter,
-    ) -> Result<Vec<Log>, RpcError<TransportErrorKind>> {
-        self.race(|c| c.get_logs(filter)).await
-    }
-
-    pub async fn get_transaction_by_hash(
-        &self,
-        tx_hash: TxHash,
-    ) -> Result<Option<<Ethereum as Network>::TransactionResponse>, RpcError<TransportErrorKind>>
-    {
-        self.race_some(|c| c.get_transaction_by_hash(tx_hash)).await
+        self.rpc_client.race_some(provider_id.map(Into::into), |c| c.get_transaction_by_hash(tx_hash)).await
+            .map(|op| op.map(Into::into))
     }
 }
