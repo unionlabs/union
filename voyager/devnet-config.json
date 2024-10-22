@@ -74,9 +74,7 @@
           "chain_id": "union-devnet-1",
           "ws_url": "http://localhost:26657",
           "grpc_url": "http://localhost:9090",
-          "prover_endpoints": [
-            "http://localhost:9999"
-          ]
+          "prover_endpoints": ["http://localhost:9999"]
         }
       },
       {
@@ -178,6 +176,15 @@
         "ws_url": "http://localhost:26657",
         "grpc_url": "http://localhost:9090",
         "prover_endpoints": ["http://localhost:9999"]
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-client-update-plugin-tendermint",
+      "config": {
+        "chain_id": "stargaze-devnet-1",
+        "ws_url": "http://localhost:26757",
+        "grpc_url": "http://localhost:9190"
       }
     },
     {
