@@ -4,7 +4,6 @@ Hubble is a multi-stage ETL indexer for various chains. Currently, it supports t
 
 - CosmosSDK, with lightclient counterparty tracking
 - EVM (HTTP), with fork support
-- Aptos
 - Consensus Height Tracking:
   - Beacon
   - BeaconKit (Berachain)

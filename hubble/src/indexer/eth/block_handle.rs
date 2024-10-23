@@ -100,7 +100,7 @@ impl BlockHandle for EthBlockHandle {
 
     async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
         let reference = self.reference();
-        debug!("{}", reference);
+        debug!("{}: inserting", reference);
 
         let block_to_insert = self.get_block_insert().await?;
 
@@ -112,7 +112,6 @@ impl BlockHandle for EthBlockHandle {
                     block_to_insert.transactions.len()
                 );
 
-                // TODO: remove to this module once legacy eth is removed
                 insert_batch_logs(tx, vec![block_to_insert.into()], InsertMode::Insert).await?;
             }
             None => {
@@ -142,7 +141,7 @@ impl BlockHandle for EthBlockHandle {
 
     async fn update(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
         let reference = self.reference();
-        debug!("{}", reference);
+        debug!("{}: updating", reference);
 
         let block_to_insert = self.get_block_insert().await?;
 
