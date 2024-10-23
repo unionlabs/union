@@ -1,7 +1,7 @@
 module ibc::light_client {
     use std::vector;
     use std::bcs;
-    use std::string::{Self, String};
+    use std::string::{Self};
     use aptos_std::smart_table::{Self, SmartTable};
     use std::object;
     use std::timestamp;
@@ -324,12 +324,10 @@ module ibc::light_client {
         MerkleRoot { hash: hash }
     }
 
-    public fun get_timestamp_at_height(client_id: u32, height: u64): u64 {
-        // TODO: implement this as height u64
-        0
-        // let state = borrow_global<State>(get_client_address(client_id));
-        // let consensus_state = smart_table::borrow(&state.consensus_states, height);
-        // consensus_state.timestamp
+    public fun get_timestamp_at_height(client_id: u32, height: u64): u64 acquires State {
+        let state = borrow_global<State>(get_client_address(client_id));
+        let consensus_state = smart_table::borrow(&state.consensus_states, height);
+        consensus_state.timestamp
     }
 
     public fun get_client_state(client_id: u32): vector<u8> acquires State {
@@ -687,6 +685,6 @@ module ibc::light_client {
         let update =
             x"e101000000000000ab5ded6600000000717e872e2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d087872d0ad8da9d06cd7b97611bea8ca42741eb9440dbf823cdea268ecf4a3bc0100000000000000a800000000000000800306327cd8c426a4cba21185a8ff6c3c22432721cfa61499c65725bc9a1b4ca3eb1e47f9109ebc99820a989b324b2961613b9ad2c5f9362da38116b55b98cd170b141370751c54ba39bfedfacf83ca9182592c5ca9e24b273cfca5301c9ddebb66043822c12d446cf9d9ad288b593242c50796040fcba95ae1af1724d42be7662f0558864213a4e938f1a26cd889b4466f7b8dfc6ed2f0545ac4f067f77e0a81761263311f8bcdbecf6d0f1cea52011dd1182a36d16de8aabe9ee1664834273c56235b2195ebf4f9ba72347b9fab04734d762e7ba2529c8330b2c26dd47d8f90ef0348b6b26ab3ec6de09327616b78c3e1e3da91b379254f26d06513bad4bafbc0295369bae4c078b7c7b47a2e61267af50a318bac36d82a86d129ce5f8f27956f218903e09626a5a32c96b7ce51bc05b7c5f21278e4aaa566519aa4c71a2b601e11c718e76a7bf579d5a216e8426943b5232c1159280fa8e5210a5b3df23d25c91308e01c7c1e0f5c778fb6cfef463730f888df7cc26ab5950b067771930d9dea";
 
-        let header = decode_header(update);
+        let _header = decode_header(update);
     }
 }

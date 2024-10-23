@@ -16,7 +16,6 @@ module ibc::ibc {
     use std::string_utils;
     use ibc::commitment;
     use ibc::light_client;
-    use ibc::height::{Self, Height};
     use ibc::connection_end::{Self, ConnectionEnd};
     use ibc::channel::{Self, Channel};
     use ibc::packet::{Self, Packet};
@@ -443,6 +442,7 @@ module ibc::ibc {
                 counterparty_connection_id,
                 expected_connection
             );
+        assert!(err == 0, E_INVALID_PROOF);
 
         connection_end::set_state(connection, CONN_STATE_TRYOPEN);
         connection_end::set_counterparty_connection_id(
@@ -507,6 +507,7 @@ module ibc::ibc {
                 counterparty_connection_id,
                 expected_connection
             );
+        assert!(err == 0, E_INVALID_PROOF);
 
         connection_end::set_state(connection, CONN_STATE_OPEN);
 
@@ -896,7 +897,7 @@ module ibc::ibc {
         authorize_app(ibc_app, source_port);
 
         if (timeout_timestamp != 0 && timeout_height == 0) {
-            abort E_TIMEOUT_MUST_BE_SET;
+            abort E_TIMEOUT_MUST_BE_SET
         };
 
         let channel = ensure_channel_state(source_channel);
@@ -1014,7 +1015,7 @@ module ibc::ibc {
                 already_received = set_packet_receive(commitmentKey);
             } else if (ordering == CHAN_ORDERING_ORDERED) {
                 if (intent) {
-                    abort E_CANNOT_INTENT_ORDERED;
+                    abort E_CANNOT_INTENT_ORDERED
                 };
                 set_next_sequence_recv(destination_channel, packet::sequence(&packet));
             };
@@ -1177,7 +1178,7 @@ module ibc::ibc {
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         if (!table::contains(&store.commitments, commitment_key)) {
-            abort E_PACKET_NOT_RECEIVED;
+            abort E_PACKET_NOT_RECEIVED
         };
         let commitment = table::borrow(&store.commitments, commitment_key);
         assert!(
@@ -1289,8 +1290,6 @@ module ibc::ibc {
     ) acquires IBCStore {
         authorize_app(ibc_app, port_id);
 
-        let channel_id = packet::source_channel(&packet);
-        let port_id = address_to_string(port_id);
         let source_channel = packet::source_channel(&packet);
         let destination_channel = packet::destination_channel(&packet);
         let channel = ensure_channel_state(source_channel);
@@ -1364,9 +1363,7 @@ module ibc::ibc {
     }
 
     #[view]
-    public fun consensus_state(
-        client_id: u32, revision_number: u64, revision_height: u64
-    ): vector<u8> {
+    public fun consensus_state(client_id: u32, revision_height: u64): vector<u8> {
         light_client::get_consensus_state(client_id, revision_height)
     }
 
@@ -1477,9 +1474,7 @@ module ibc::ibc {
         let commitment_key = commitment::next_sequence_ack_commitment_key(source_channel);
 
         let expected_ack_sequence =
-            from_bcs::to_u64(
-                *table::borrow(&store.commitments, commitment_key)
-            );
+            from_bcs::to_u64(*table::borrow(&store.commitments, commitment_key));
 
         if (expected_ack_sequence != ack_sequence) {
             abort E_PACKET_SEQUENCE_ACK_SEQUENCE_MISMATCH

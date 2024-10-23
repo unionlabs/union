@@ -3,8 +3,6 @@ module ibc::ics23 {
     use std::option::Option;
     use std::hash;
     use ibc::bcs_utils::{Self, BcsBuf};
-    #[test_only]
-    use ibc::connection_end;
     use ibc::proto_utils;
 
     const E_EMPTY_LEAF_PREFIX: u64 = 35200;

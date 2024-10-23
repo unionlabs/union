@@ -1,7 +1,5 @@
 module ucs01::ibc {
     use ibc::ibc;
-    use ibc::channel;
-    use ibc::height;
     use ibc::packet::{Packet};
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self, Object};
@@ -12,13 +10,9 @@ module ucs01::ibc {
     use std::from_bcs;
     use std::bcs;
     use aptos_framework::fungible_asset::{Metadata};
-    #[test_only]
-    use aptos_framework::fungible_asset;
     use aptos_framework::signer;
     use aptos_std::smart_table::{Self, SmartTable};
     use std::vector;
-    #[test_only]
-    use std::option;
     use ucs01::ethabi;
 
     // Constants
@@ -734,7 +728,7 @@ module ucs01::ibc {
                 if (starts_with(token_from_vec.denom, string::utf8(b"@"))) {
                     token_denom = string::sub_string(&token_denom, 1, 65);
                 };
-                let denom_address = from_bcs::to_address(hex_to_bytes(token_denom));
+                denom_address = from_bcs::to_address(hex_to_bytes(token_denom));
                 let token = get_metadata(denom_address);
                 decrease_outstanding(channel_id, denom_address, token_from_vec.amount);
                 primary_fungible_store::transfer(
