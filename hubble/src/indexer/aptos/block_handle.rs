@@ -83,7 +83,7 @@ impl BlockHandle for AptosBlockHandle {
 
     async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
         let reference = self.reference();
-        debug!("{}: updating", reference);
+        debug!("{}: inserting", reference);
 
         let (block, transactions) = match &self.details {
             BlockDetails::Lazy(block) => (
@@ -184,7 +184,7 @@ impl BlockHandle for AptosBlockHandle {
 
     async fn update(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
         let reference = self.reference();
-        debug!("{}: inserting", reference);
+        debug!("{}: updating", reference);
 
         delete_aptos_block_transactions_events(tx, self.internal_chain_id, self.reference.height)
             .await?;
