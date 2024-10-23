@@ -59,7 +59,6 @@ function createCosmosStore(
     update,
     subscribe,
     connect: async (walletId: string) => {
-      console.info(walletId)
       if (!walletId || (walletId !== "keplr" && walletId !== "leap")) return
       update(v => ({ ...v, connectionStatus: "connecting", connectedWallet: walletId }))
       const walletApi = window[walletId]

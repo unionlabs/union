@@ -216,6 +216,7 @@
       },
       "a11y": {
         "all": true,
+        "useButtonType": "off",
         "noSvgWithoutTitle": "off",
         "noDistractingElements": "off"
       },

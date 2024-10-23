@@ -1,6 +1,7 @@
 import "@tanstack/svelte-table"
 import type { LeapWindow } from "@leapwallet/types"
 import type { Window as KeplrWindow } from "@keplr-wallet/types"
+import type { WalletCore as AptosWindow } from "@aptos-labs/wallet-adapter-core"
 
 declare module "@tanstack/svelte-table" {
   interface ColumnMeta<TData extends RowData, TValue> {
@@ -8,17 +9,16 @@ declare module "@tanstack/svelte-table" {
   }
 }
 
+// interface Aptos {
+//   isConnected: () => boolean
+// }
+
 declare global {
   namespace App {}
 
-  namespace Superforms {
-    type Message = {
-      text: string
-      type: "error" | "success"
-    }
-  }
-
   interface Window extends KeplrWindow, LeapWindow, Browser, GoogleRecaptcha {
+    aptos: AptosWindow
+    petra: AptosWindow
     EventEmitter: typeof EventEmitter
   }
 

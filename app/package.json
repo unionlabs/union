@@ -15,6 +15,7 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
+    "@aptos-labs/wallet-adapter-core": "^4.18.0",
     "@builder.io/partytown": "^0.10.2",
     "@cosmjs/amino": "^0.32.4",
     "@cosmjs/cosmwasm-stargate": "0.32.4",

@@ -15,11 +15,13 @@ export type CosmosAddress = `union${string}`
 export type Address = EvmAddress | CosmosAddress
 
 // shared types between wallets configs
-export type ChainWalletStore<TChainSource extends "cosmos" | "evm"> = {
-  chain: (TChainSource extends "evm" ? "sepolia" : "cosmos") | String
+export type ChainWalletStore<TChainSource extends "cosmos" | "evm" | "aptos"> = {
+  chain:
+    | (TChainSource extends "evm" ? "sepolia" : TChainSource extends "aptos" ? "aptos" : "cosmos")
+    | String
   hoverState: "hover" | "none"
   address: TChainSource extends "evm" ? EvmAddress | undefined : string | undefined
-  rawAddress: TChainSource extends "evm" ? undefined : Uint8Array | undefined
+  rawAddress: TChainSource extends "cosmos" ? Uint8Array | undefined : undefined
   connectionStatus: State["status"]
   connectedWallet: string | undefined
 }

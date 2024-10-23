@@ -12,7 +12,7 @@ import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/
 
 const OFFENDING_WALLET_ID = "io.metamask.mobile"
 
-export let chain: "cosmos" | "evm"
+export let chain: "cosmos" | "evm" | "aptos"
 type T = $$Generic<typeof chain>
 
 type $$Props = Props<T>
@@ -25,14 +25,32 @@ export let onDisconnectClick: $$Props["onDisconnectClick"]
 export let connectedWalletId: $$Props["connectedWalletId"]
 export let chainWalletsInformation: $$Props["chainWalletsInformation"]
 
+$: {
+  console.info("address", address)
+}
+
 $: connectText =
   connectStatus === "connected" && address && address?.length > 0
     ? chain === "evm"
       ? truncateEvmAddress(address, -1)
-      : truncateUnionAddress(address, -1)
-    : chain === "evm"
-      ? "EVM"
-      : "Cosmos"
+      : chain === "aptos"
+        ? address
+        : truncateUnionAddress(address, -1)
+    : ""
+// : chain === 'evm'
+//   ? 'EVM'
+//   : chain === 'cosmos'
+//     ? 'Cosmos'
+//     : 'Aptos'
+
+// $: if (connectStatus === 'connected' && address && address?.length > 0) {
+
+// }
+
+$: {
+  // console.info('chain', 'connectStatus', 'connectText')
+  // console.info(chain, connectStatus, connectText)
+}
 
 let copyClicked = false
 const toggleCopy = () => (copyClicked = !copyClicked)
@@ -58,25 +76,25 @@ let metamaskAlertDialogOpen = false
   {...$$restProps}
   builders={[{ action: node => copyTextAction(node, { text: address }) }]}
   class={cn(
-    "px-2 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start",
-    connectStatus !== "connected" &&
-      "hover:bg-transparent pointer-events-none text-md font-bold hidden",
+    'px-2 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start',
+    connectStatus !== 'connected' &&
+      'hover:bg-transparent pointer-events-none text-md font-bold hidden',
   )}
   id={`${chain}-connect`}
   on:click={_event => onCopyClick()}
   tabindex={0}
   data-connect-button=""
-  variant={connectStatus === "connected" ? "default" : "ghost"}
+  variant={connectStatus === 'connected' ? 'default' : 'ghost'}
 >
   <div
     class={cn(
-      "w-full text-left font-mono",
-      connectText === "EVM" || connectText === "Cosmos" ? "hidden" : "text-sm sm:text-[15.5px]",
+      'w-full text-left font-mono',
+      connectText === 'EVM' || connectText === 'Cosmos' ? 'hidden' : 'text-sm sm:text-[15.5px]',
     )}
   >
     {connectText}
   </div>
-  {#if connectStatus === "connected" && address?.length}
+  {#if connectStatus === 'connected' && address?.length}
     {#if copyClicked}
       <CheckIcon class="size-4 ml-auto" />
     {:else}
@@ -88,48 +106,52 @@ let metamaskAlertDialogOpen = false
 <div class="flex flex-col">
   {#each walletListToRender as { name, id, icon, download }, index (index)}
     {@const walletIdentifier = id}
-    {#if !(connectStatus === "connected" && connectedWalletId !== id)}
+    {#if !(connectStatus === 'connected' && connectedWalletId !== id)}
       <div
         role="row"
         tabindex={0}
         data-index={index}
-        on:mouseleave={() => (hoverState = connectedWalletId === id ? "none" : "none")}
-        on:mouseenter={() => (hoverState = connectedWalletId === id ? "hover" : "none")}
-        class={cn("flex flex-col w-full justify-start mb-3")}
+        on:mouseleave={() => (hoverState = connectedWalletId === id ? 'none' : 'none')}
+        on:mouseenter={() => (hoverState = connectedWalletId === id ? 'hover' : 'none')}
+        class={cn('flex flex-col w-full justify-start mb-3')}
       >
         <Button
           type="button"
           variant="outline"
           class={cn(
-            "capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent",
-            connectStatus === "connected" && connectedWalletId === id && "border-border",
-            (connectStatus === "disconnected" || connectStatus == undefined) &&
-              "opacity-75 hover:opacity-100 dark:hover:text-black",
-            hoverState === "hover" &&
-              connectStatus === "connected" &&
+            'capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent',
+            connectStatus === 'connected' && connectedWalletId === id && 'border-border',
+            (connectStatus === 'disconnected' || connectStatus == undefined) &&
+              'opacity-75 hover:opacity-100 dark:hover:text-black',
+            hoverState === 'hover' &&
+              connectStatus === 'connected' &&
               connectedWalletId === id &&
-              "hover:text-destructive border-destructive hover:bg-transparent dark:hover:text-white",
+              'hover:text-destructive border-destructive hover:bg-transparent dark:hover:text-white',
           )}
           on:click={async () => {
             if (walletIdentifier === OFFENDING_WALLET_ID) {
               metamaskAlertDialogOpen = true
             }
 
-            if (connectStatus === "disconnected") return onConnectClick(walletIdentifier)
+            if (connectStatus === 'disconnected') {
+              console.info('disconnected, calling onConnectClick')
+              return onConnectClick(walletIdentifier)
+            }
+            console.info('connected, calling onDisconnectClick')
             return onDisconnectClick()
           }}
         >
           <img src={icon} alt={name} class="size-7 mr-3 dark:text-white" />
           {name}
-          {#if connectStatus === "connected"}
+          {#if connectStatus === 'connected'}
             {#if connectedWalletId === id}
-              {#if hoverState === "hover"}
+              {#if hoverState === 'hover'}
                 <XIcon class="ml-auto text-red-500" />
               {:else}
                 <CheckIcon class="ml-auto" />
               {/if}
             {/if}
-          {:else if connectStatus === "connecting" || connectStatus === "reconnecting"}
+          {:else if connectStatus === 'connecting' || connectStatus === 'reconnecting'}
             {#if connectedWalletId === id}
               <LoaderCircleIcon class="animate-spin ml-auto" />
             {:else}
