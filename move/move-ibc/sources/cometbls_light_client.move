@@ -80,8 +80,7 @@ module ibc::light_client {
         let consensus_state = decode_consensus_state(consensus_state_bytes);
 
         assert!(
-            client_state.latest_height != 0
-                && consensus_state.timestamp != 0,
+            client_state.latest_height != 0 && consensus_state.timestamp != 0,
             E_INVALID_CLIENT_STATE
         );
 
@@ -95,7 +94,10 @@ module ibc::light_client {
         let state = State { client_state: client_state, consensus_states: consensus_states };
 
         let store_constructor =
-            object::create_named_object(ibc_signer, bcs::to_bytes<u256>(&(client_id as u256)));
+            object::create_named_object(
+                ibc_signer,
+                bcs::to_bytes<u256>(&(client_id as u256))
+            );
         let client_signer = object::generate_signer(&store_constructor);
 
         move_to(&client_signer, state);
@@ -182,9 +184,8 @@ module ibc::light_client {
             header.signed_header.time.seconds * 1_000_000_000
                 + (header.signed_header.time.nanos as u64);
 
-        if (untrusted_height_number
-            > state.client_state.latest_height){
-                state.client_state.latest_height = untrusted_height_number;
+        if (untrusted_height_number > state.client_state.latest_height) {
+            state.client_state.latest_height = untrusted_height_number;
         };
 
         let new_height = state.client_state.latest_height;
@@ -285,7 +286,10 @@ module ibc::light_client {
     fun get_client_address(client_id: u32): address {
         let vault_addr = object::create_object_address(&@ibc, b"IBC_VAULT_SEED");
 
-        object::create_object_address(&vault_addr, bcs::to_bytes<u256>(&(client_id as u256)))
+        object::create_object_address(
+            &vault_addr,
+            bcs::to_bytes<u256>(&(client_id as u256))
+        )
     }
 
     public fun new_client_state(
@@ -320,9 +324,7 @@ module ibc::light_client {
         MerkleRoot { hash: hash }
     }
 
-    public fun get_timestamp_at_height(
-        client_id: u32, height: u64 
-    ): u64 {
+    public fun get_timestamp_at_height(client_id: u32, height: u64): u64 {
         // TODO: implement this as height u64
         0
         // let state = borrow_global<State>(get_client_address(client_id));
@@ -364,9 +366,7 @@ module ibc::light_client {
         return (data1, data2)
     }
 
-    public fun check_for_misbehaviour(
-        client_id: u32, header: vector<u8>
-    ): bool acquires State {
+    public fun check_for_misbehaviour(client_id: u32, header: vector<u8>): bool acquires State {
         let state = borrow_global_mut<State>(get_client_address(client_id));
 
         let header = decode_header(header);
@@ -594,8 +594,7 @@ module ibc::light_client {
             1
         );
 
-        let saved_state =
-            borrow_global<State>(get_client_address(0));
+        let saved_state = borrow_global<State>(get_client_address(0));
         assert!(saved_state.client_state == client_state, 0);
 
         assert!(
@@ -625,8 +624,7 @@ module ibc::light_client {
         std::debug::print(&lh);
 
         // new client don't mess with this client's storage
-        let saved_state =
-            borrow_global<State>(get_client_address(0));
+        let saved_state = borrow_global<State>(get_client_address(0));
         assert!(saved_state.client_state != client_state, 0);
 
         assert!(
@@ -636,8 +634,7 @@ module ibc::light_client {
             0
         );
 
-        let saved_state =
-            borrow_global<State>(get_client_address(1));
+        let saved_state = borrow_global<State>(get_client_address(1));
         assert!(saved_state.client_state == client_state, 0);
 
         assert!(

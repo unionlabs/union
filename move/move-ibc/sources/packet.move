@@ -26,7 +26,6 @@ module ibc::packet {
         packet.source_channel
     }
 
-
     public fun destination_channel(packet: &Packet): u32 {
         packet.destination_channel
     }
@@ -38,7 +37,6 @@ module ibc::packet {
     public fun timeout_timestamp(packet: &Packet): u64 {
         packet.timeout_timestamp
     }
-
 
     public fun timeout_height(packet: &Packet): u64 {
         packet.timeout_height
@@ -56,7 +54,7 @@ module ibc::packet {
 
     public fun merge_ack(ack: vector<u8>): vector<u8> {
         // TODO: Implement this
-        // COMMITMENT_MAGIC | (ack & x"00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF") 
+        // COMMITMENT_MAGIC | (ack & x"00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
         vector::empty()
     }
 
@@ -110,14 +108,7 @@ module ibc::packet {
     }
 
     public fun default(): Packet {
-        new(
-            0,
-            0,
-            0,
-            vector::empty(),
-            0,
-            0
-        )
+        new(0, 0, 0, vector::empty(), 0, 0)
     }
 
     // public fun encode_proto(packet: Packet): vector<u8> {

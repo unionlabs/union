@@ -95,7 +95,6 @@ module ibc::commitment {
         vector::reverse(&mut param_bytes);
         vector::append(&mut path_vec, param_bytes);
 
-
         let param_bytes2 = bcs::to_bytes<u256>(&(sequence as u256));
         vector::reverse(&mut param_bytes2);
         vector::append(&mut path_vec, param_bytes2);
@@ -103,7 +102,9 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun batch_packets_commitment_path(channel_id: u32, batchHash: vector<u8>): vector<u8> {
+    public fun batch_packets_commitment_path(
+        channel_id: u32, batchHash: vector<u8>
+    ): vector<u8> {
         let path_vec = vector::empty<u8>();
 
         let channels_bytes = bcs::to_bytes<u256>(&PACKETS);
@@ -119,7 +120,9 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun batch_receipts_commitment_path(channel_id: u32, batchHash: vector<u8>): vector<u8> {
+    public fun batch_receipts_commitment_path(
+        channel_id: u32, batchHash: vector<u8>
+    ): vector<u8> {
         let path_vec = vector::empty<u8>();
 
         let channels_bytes = bcs::to_bytes<u256>(&PACKET_ACKS);
@@ -183,7 +186,9 @@ module ibc::commitment {
         client_state_path(channel_id)
     }
 
-    public fun consensus_state_commitment_key(channel_id: u32, height: u64): vector<u8> {
+    public fun consensus_state_commitment_key(
+        channel_id: u32, height: u64
+    ): vector<u8> {
         consensus_state_path(channel_id, height)
     }
 
@@ -199,12 +204,15 @@ module ibc::commitment {
         packet_commitment_path(channel_id, sequence)
     }
 
-    public fun batch_packets_commitment_key(channel_id: u32, batch_hash: vector<u8>): vector<u8> {
+    public fun batch_packets_commitment_key(
+        channel_id: u32, batch_hash: vector<u8>
+    ): vector<u8> {
         batch_packets_commitment_path(channel_id, batch_hash)
     }
 
-    
-    public fun batch_receipts_commitment_key(channel_id: u32, batch_hash: vector<u8>): vector<u8> {
+    public fun batch_receipts_commitment_key(
+        channel_id: u32, batch_hash: vector<u8>
+    ): vector<u8> {
         batch_receipts_commitment_path(channel_id, batch_hash)
     }
 

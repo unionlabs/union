@@ -44,23 +44,33 @@ module ibc::connection_end {
         connection.state = new_state;
     }
 
-    public fun set_client_id(connection: &mut ConnectionEnd, new_client_id: u32) {
+    public fun set_client_id(
+        connection: &mut ConnectionEnd, new_client_id: u32
+    ) {
         connection.client_id = new_client_id;
     }
 
-    public fun set_counterparty_client_id(connection: &mut ConnectionEnd, new_id: u32) {
+    public fun set_counterparty_client_id(
+        connection: &mut ConnectionEnd, new_id: u32
+    ) {
         connection.counterparty_client_id = new_id;
     }
 
-    public fun set_counterparty_connection_id(connection: &mut ConnectionEnd, new_id: u32) {
+    public fun set_counterparty_connection_id(
+        connection: &mut ConnectionEnd, new_id: u32
+    ) {
         connection.counterparty_connection_id = new_id;
     }
 
-    public fun set_client_type(connection: &mut ConnectionEnd, new_client_type: String) {
+    public fun set_client_type(
+        connection: &mut ConnectionEnd, new_client_type: String
+    ) {
         connection.client_type = new_client_type;
     }
 
-    public fun set_counterparty_client_type(connection: &mut ConnectionEnd, new_client_type: String) {
+    public fun set_counterparty_client_type(
+        connection: &mut ConnectionEnd, new_client_type: String
+    ) {
         connection.counterparty_client_type = new_client_type;
     }
 
@@ -73,7 +83,9 @@ module ibc::connection_end {
         let client_type = vector::empty();
         ethabi::encode_string(&mut client_type, connection.client_type);
         let counterparty_client_type = vector::empty();
-        ethabi::encode_string(&mut counterparty_client_type, connection.counterparty_client_type);
+        ethabi::encode_string(
+            &mut counterparty_client_type, connection.counterparty_client_type
+        );
 
         // no idea why this exist
         ethabi::encode_uint<u64>(&mut buf, 32);
@@ -110,8 +122,6 @@ module ibc::connection_end {
         option::none()
     }
 
-
-
     // Constructor
     public fun new(
         state: u64,
@@ -145,21 +155,22 @@ module ibc::connection_end {
         0000000000000000000000000000000000000000000000000000000000000064 - clientId
         00000000000000000000000000000000000000000000000000000000000000c8 - counterpartyClientId
         000000000000000000000000000000000000000000000000000000000000012c - counterpartyConnId
-        00000000000000000000000000000000000000000000000000000000000000c0 - 
+        00000000000000000000000000000000000000000000000000000000000000c0 -
         0000000000000000000000000000000000000000000000000000000000000100
         0000000000000000000000000000000000000000000000000000000000000008
         636f6d6574626c73000000000000000000000000000000000000000000000000
         0000000000000000000000000000000000000000000000000000000000000008
         6d6f76656d656e74000000000000000000000000000000000000000000000000
         */
-        let buf = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c8000000000000000000000000000000000000000000000000000000000000012c00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000008636f6d6574626c7300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000086d6f76656d656e74000000000000000000000000000000000000000000000000";
+        let buf =
+            x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c8000000000000000000000000000000000000000000000000000000000000012c00000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000008636f6d6574626c7300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000086d6f76656d656e74000000000000000000000000000000000000000000000000";
         let connection = ConnectionEnd {
             state: 1,
             client_id: 100,
             counterparty_client_id: 200,
             counterparty_connection_id: 300,
             client_type: utf8(b"cometbls"),
-            counterparty_client_type: utf8(b"movement"),
+            counterparty_client_type: utf8(b"movement")
         };
 
         let encoded = encode(&connection);
