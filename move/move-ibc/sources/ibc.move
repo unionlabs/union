@@ -297,7 +297,7 @@ module ibc::ibc {
 
         table::upsert(
             &mut store.commitments,
-            commitment::consenseus_state_commitment_key(client_id),
+            commitment::consensus_state_commitment_key(client_id, latest_height),
             consensus_state
         );
 
@@ -526,67 +526,65 @@ module ibc::ibc {
 
     public entry fun update_client(
         client_id: u32, client_message: vector<u8>
-    )  {
-        //TODO: Fix this.
+    )  acquires IBCStore  {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        // let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        assert!(
+            table::contains(
+                &store.commitments, commitment::client_state_commitment_key(client_id)
+            ),
+            E_CLIENT_NOT_FOUND
+        );
 
-        // assert!(
-        //     table::contains(
-        //         &store.commitments, commitment::client_state_key(client_id)
-        //     ),
-        //     E_CLIENT_NOT_FOUND
-        // );
+        if (light_client::check_for_misbehaviour(client_id, client_message)) {
+            event::emit(
+                SubmitMisbehaviour {
+                    client_id,
+                    client_type: string::utf8(CLIENT_TYPE_COMETBLS)
+                }
+            );
+            return
+        };
 
-        // if (light_client::check_for_misbehaviour(client_id, client_message)) {
-        //     event::emit(
-        //         SubmitMisbehaviour {
-        //             client_id,
-        //             client_type: string::utf8(CLIENT_TYPE_COMETBLS)
-        //         }
-        //     );
-        //     return
-        // };
+        let (client_state, consensus_states, heights) =
+            light_client::update_client(client_id, client_message);
 
-        // let (client_state, consensus_states, heights) =
-        //     light_client::update_client(client_id, client_message);
+        let heights_len = vector::length(&heights);
 
-        // let heights_len = vector::length(&heights);
+        assert!(
+            !vector::is_empty(&consensus_states)
+                && !vector::is_empty(&heights)
+                && heights_len == vector::length(&consensus_states),
+            E_INVALID_UPDATE
+        );
 
-        // assert!(
-        //     !vector::is_empty(&consensus_states)
-        //         && !vector::is_empty(&heights)
-        //         && heights_len == vector::length(&consensus_states),
-        //     E_INVALID_UPDATE
-        // );
+        table::upsert(
+            &mut store.commitments,
+            commitment::client_state_commitment_key(client_id),
+            client_state
+        );
 
-        // table::upsert(
-        //     &mut store.commitments,
-        //     commitment::client_state_key(client_id),
-        //     client_state
-        // );
+        let i = 0;
+        while (i < heights_len) {
+            let height = *vector::borrow(&heights, i);
 
-        // let i = 0;
-        // while (i < heights_len) {
-        //     let height = *vector::borrow(&heights, i);
+            table::upsert(
+                &mut store.commitments,
+                commitment::consensus_state_commitment_key(client_id, height),
+                hash::sha2_256(*vector::borrow(&consensus_states, i))
+            );
 
-        //     table::upsert(
-        //         &mut store.commitments,
-        //         commitment::consensus_state_key(client_id, height),
-        //         hash::sha2_256(*vector::borrow(&consensus_states, i))
-        //     );
+            event::emit(
+                ClientUpdated {
+                    client_id,
+                    // NOTE: This is currently enforced, if/when we refactor to be more general across clients then this will need to be modified accordingly
+                    client_type: string::utf8(CLIENT_TYPE_COMETBLS),
+                    height
+                }
+            );
 
-        //     event::emit(
-        //         ClientUpdated {
-        //             client_id,
-        //             // NOTE: This is currently enforced, if/when we refactor to be more general across clients then this will need to be modified accordingly
-        //             client_type: string::utf8(CLIENT_TYPE_COMETBLS),
-        //             height
-        //         }
-        //     );
-
-        //     i = i + 1;
-        // };
+            i = i + 1;
+        };
     }
     // TODO: Do we need this?
     // public entry fun submit_misbehaviour(
