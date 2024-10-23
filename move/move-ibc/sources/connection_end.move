@@ -86,9 +86,6 @@ module ibc::connection_end {
             &mut counterparty_client_type, &connection.counterparty_client_type
         );
 
-        // no idea why this exist
-        ethabi::encode_uint<u64>(&mut buf, 32);
-
         ethabi::encode_uint(&mut buf, connection.state);
         ethabi::encode_uint(&mut buf, connection.client_id);
         ethabi::encode_uint(&mut buf, connection.counterparty_client_id);
