@@ -265,9 +265,7 @@ module ibc::ibc {
     ) acquires IBCStore, SignerRef {
         // NOTE(aeryz): At this point, we don't need to have a routing mechanism because it will introduce
         // additional gas cost. We should only enforce the use of `cometbls` for the `client_type`
-
-        // TODO: Do we need this assert?
-        // assert!(string::bytes(&client_type) == &b"cometbls", E_UNKNOWN_CLIENT_TYPE);
+        assert!(string::bytes(&client_type) == &b"cometbls", E_UNKNOWN_CLIENT_TYPE);
 
         let client_id = generate_client_identifier();
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
@@ -320,7 +318,7 @@ module ibc::ibc {
                 CONN_STATE_INIT,
                 client_id,
                 counterparty_client_id,
-                0, // counterparty_connection_id
+                0,
                 client_type,
                 counterparty_client_type
             );
@@ -593,28 +591,28 @@ module ibc::ibc {
         };
     }
 
-    // TODO: Do we need this?
-    // public entry fun submit_misbehaviour(
-    //     client_id: u32, misbehaviour: vector<u8>
-    // ) acquires IBCStore {
-    //     let store = borrow_global_mut<IBCStore>(get_vault_addr());
+    public entry fun submit_misbehaviour(
+        client_id: u32, misbehaviour: vector<u8>
+    ) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-    //     assert!(
-    //         table::contains(
-    //             &store.commitments, commitment::client_state_key(client_id)
-    //         ),
-    //         E_CLIENT_NOT_FOUND
-    //     );
+        assert!(
+            table::contains(
+                &store.commitments,
+                commitment::client_state_commitment_key(client_id)
+            ),
+            E_CLIENT_NOT_FOUND
+        );
 
-    //     light_client::report_misbehaviour(client_id, misbehaviour);
+        light_client::report_misbehaviour(client_id, misbehaviour);
 
-    //     event::emit(
-    //         SubmitMisbehaviour {
-    //             client_id,
-    //             client_type: string::utf8(CLIENT_TYPE_COMETBLS)
-    //         }
-    //     );
-    // }
+        event::emit(
+            SubmitMisbehaviour {
+                client_id,
+                client_type: string::utf8(CLIENT_TYPE_COMETBLS)
+            }
+        );
+    }
 
     public fun channel_open_init(
         ibc_app: &signer, // this is the caller which should be the `ibc_app`
@@ -756,7 +754,6 @@ module ibc::ibc {
         (channel, 0)
     }
 
-    // TODO(aeryz): should we verify the caller here?
     public fun channel_open_ack(
         ibc_app: &signer, // this is the caller which should be the `ibc_app`
         port_id: address,

@@ -80,10 +80,10 @@ module ibc::connection_end {
         let buf = vector::empty();
 
         let client_type = vector::empty();
-        ethabi::encode_string(&mut client_type, connection.client_type);
+        ethabi::encode_string(&mut client_type, &connection.client_type);
         let counterparty_client_type = vector::empty();
         ethabi::encode_string(
-            &mut counterparty_client_type, connection.counterparty_client_type
+            &mut counterparty_client_type, &connection.counterparty_client_type
         );
 
         // no idea why this exist
