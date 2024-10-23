@@ -89,10 +89,10 @@ module ibc::channel {
     public fun decode(buf: vector<u8>): Option<Channel> {
         let index = 0;
 
-        let state = (ethabi::decode_uint(buf, &mut index) as u8);
-        let ordering = (ethabi::decode_uint(buf, &mut index) as u8);
-        let connection_id = (ethabi::decode_uint(buf, &mut index) as u32);
-        let counterparty_connection_id = (ethabi::decode_uint(buf, &mut index) as u32);
+        let state = (ethabi::decode_uint(&buf, &mut index) as u8);
+        let ordering = (ethabi::decode_uint(&buf, &mut index) as u8);
+        let connection_id = (ethabi::decode_uint(&buf, &mut index) as u32);
+        let counterparty_connection_id = (ethabi::decode_uint(&buf, &mut index) as u32);
 
         let i = index;
         while (i < index + 32) {
