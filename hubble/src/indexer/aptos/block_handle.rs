@@ -184,7 +184,7 @@ impl BlockHandle for AptosBlockHandle {
 
     async fn update(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
         let reference = self.reference();
-        debug!("{}: updating", reference);
+        debug!("{}: inserting", reference);
 
         delete_aptos_block_transactions_events(tx, self.internal_chain_id, self.reference.height)
             .await?;
