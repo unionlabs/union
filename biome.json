@@ -216,6 +216,7 @@
       },
       "a11y": {
         "all": true,
+        "useButtonType": "off",
         "noSvgWithoutTitle": "off",
         "noDistractingElements": "off"
       },
@@ -224,11 +225,8 @@
         "noSecrets": "off",
         "noProcessEnv": "off",
         "useStrictMode": "off",
-        "noNestedTernary": "off",
         "noExportedImports": "off",
-        "useImportRestrictions": "off",
-        "noDescendingSpecificity": "off",
-        "useExplicitFunctionReturnType": "off"
+        "useImportRestrictions": "off"
       },
       "performance": {
         "all": true,

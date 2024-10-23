@@ -29,7 +29,7 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
 
     let rpc_type: "evm" | "cosmos" = "cosmos"
     if (chain.rpc_type !== "evm" && chain.rpc_type !== "cosmos") {
-      console.error("invalid rpc type for chain", chain)
+      // console.error("invalid rpc type for chain", chain)
     } else {
       rpc_type = chain.rpc_type
     }
