@@ -292,7 +292,7 @@ curl https://rest.testnet-8.union.build/cosmos/bank/v1beta1/balances/$WALLET_ADD
 ```
 
 ```sh title="Deploy the contract"
-uniond tx wasm store ./target/wasm32-unknown-unknown/release/example_ucs01_cosmwasm.wasm \
+uniond tx wasm store ./build/contract.wasm \
     --from $WALLET_NAME \
     --gas auto \
     --gas-adjustment 1.4 \

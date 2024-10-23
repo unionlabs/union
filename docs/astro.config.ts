@@ -150,9 +150,24 @@ export default defineConfig({
             },
             {
               label: "Protocol",
-              autogenerate: {
-                directory: "/protocol"
-              }
+              items: [
+                {
+                  label: "Overview",
+                  link: "/protocol/overview"
+                },
+                {
+                  label: "Channels",
+                  autogenerate: {
+                    directory: "/protocol/channels"
+                  }
+                },
+                {
+                  label: "Connections",
+                  autogenerate: {
+                    directory: "/protocol/connections"
+                  }
+                }
+              ]
             },
             {
               label: "Architecture",
