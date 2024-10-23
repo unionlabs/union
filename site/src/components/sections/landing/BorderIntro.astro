@@ -3,153 +3,50 @@ import MatrixCover from "../../MatrixCover.astro"
 import H1 from "../../typography/h1.astro"
 import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
-import { renderRichText, renderTitle } from "../../../lib/contentful/render.ts"
+import {renderRichText, renderTitle} from "../../../lib/contentful/render.ts"
 
 interface Props {
   title: any
   text: any
 }
 
-const { title, text } = Astro.props
+const {title, text} = Astro.props
 
 const titleHtml = renderTitle(title)
 const textHtml = renderRichText(text)
 ---
 
-  <div class="header-grid">
-    <!--SCREW -->
-    <!-- <div class="screw bg-neutral-800 rounded-full w-6 h-6 absolute top-0 right-0 z-20 flex items-center justify-center">
-      <div class="absolute w-7 h-1 bg-black rotate-45"></div>
-    </div> -->
-    <div class="shiny-border" id="glowContainer">
-    </div>
-    <MatrixCover/>
-    <div class="backdrop-blur-2xl max-w-2xl header-text-content p-4 md:p-8 flex flex-col gap-4 m-4">
-      <H1><Fragment set:html={titleHtml} /></H1>
-      <QuoteSubTitle><Fragment set:html={textHtml} /></QuoteSubTitle>
-      <ButtonA href="https://app.union.build">DIVE IN </ButtonA>
-    </div>
-
-    <!--CLIPPED CONTAINER-->
-    <!-- <div class="clipped-container flex overflow-hidden stack h-full" id="glowContainer">
-      <div class="glow -z-10"></div>
-      <div class="content bg-black">
-      </div>
-      <div class="flex absolute z-10">
-        <div class="backdrop-blur-2xl p-8 flex flex-col gap-4">
-          <H1>The Modular ZK<br> <span class="text-accent-500">Interop Layer</span></H1>
-          <QuoteSubTitle>
-            Connecting every blockchain, without compromising on security, efficiency,
-            decentralization, or speed.
-         </QuoteSubTitle>
-          <ButtonA href="https://app.union.build">DIVE IN </ButtonA>
-       </div>
-      </div>
-    </div> -->
-
-    <!--SCREW -->
-    <!-- <div id="screw"
-         class="screw bg-neutral-800 mb-4 rounded-full w-6 h-6 absolute bottom-0 left-0 z-20 flex items-center justify-center transition-colors duration-200">
-      <div class="absolute w-7 h-1 bg-black rotate-45"></div>
-    </div> -->
-    
+<div class="header-grid">
+  <MatrixCover/>
+  <div class="backdrop-blur-2xl max-w-2xl header-text-content p-4 md:p-8 flex flex-col gap-4 m-4">
+    <H1>
+      <Fragment set:html={titleHtml}/>
+    </H1>
+    <QuoteSubTitle>
+      <Fragment set:html={textHtml}/>
+    </QuoteSubTitle>
+    <ButtonA href="https://app.union.build">DIVE IN</ButtonA>
   </div>
+</div>
 
 <style lang="postcss" is:global>
-  .header-grid {
-    --outer-border: 8px;
-    --inner-border: 2px;
-    height: calc(100svh - var(--header-height));
-    width: full;
-    display: grid;
-    grid-template-rows: 0 var(--inner-border) 1fr auto 1fr var(--inner-border) var(--outer-border);
-    grid-template-columns: var(--outer-border) var(--inner-border) 1fr auto 1fr var(--inner-border) var(--outer-border);
-  }
-
-  .shiny-border {
-    background-color: theme(colors.neutral.800); 
-    grid-area: 2 / 2 / 7 / 7;
-  }
-  .header-grid > canvas {
-    grid-area: 3 / 3 / 6 / 6;
-    background-color: black;
-  }
-
-  .header-text-content {
-    grid-area: 4 / 4 / 5 / 5;
-  }
-
-    .clipped-container {
-        position: relative;
-        width: 100%;
-        padding: 2px;
-        background-color: theme(colors.black);
-        clip-path: polygon(
-                0 0,
-                calc(100% - 75px) 0,
-                100% 75px,
-                100% 100%,
-                75px 100%,
-                0 calc(100% - 75px)
-        );
-        overflow: hidden;
+    .header-grid {
+        --outer-border: 0px;
+        --inner-border: 0px;
+        height: calc(100svh - var(--header-height));
+        width: full;
+        display: grid;
+        grid-template-rows: 0 var(--inner-border) 1fr auto 1fr var(--inner-border) var(--outer-border);
+        grid-template-columns: var(--outer-border) var(--inner-border) 1fr auto 1fr var(--inner-border) var(--outer-border);
     }
 
-    .content {
-        width: 100%;
-        background-color: transparent;
-        clip-path: polygon(
-                1px 1px,
-                calc(100% - 75px) 1px,
-                calc(100% - 1px) 75px,
-                calc(100% - 1px) calc(100% - 1px),
-                75px calc(100% - 1px),
-                1px calc(100% - 75px)
-        );
-        position: relative;
-        z-index: 1;
+    .header-grid > canvas {
+        grid-area: 3 / 3 / 6 / 6;
+        background-color: black;
     }
-    .glow {
-        position: absolute;
-        width: 500px;
-        height: 500px;
-        background: radial-gradient(circle, rgb(255, 255, 255) 0%, rgba(255, 255, 255, 0) 70%);
-        border-radius: 50%;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        z-index: 2;
+
+    .header-text-content {
+        grid-area: 4 / 4 / 5 / 5;
     }
+
 </style>
-
-<script>
-  const container = document.getElementById('glowContainer');
-  const glow = container.querySelector('.glow');
-  let isMouseOver = false;
-
-  document.addEventListener('mousemove', (e) => {
-    isMouseOver = true;
-    updateGlowPosition(e);
-  });
-
-  document.addEventListener('mouseleave', () => {
-    isMouseOver = false;
-    glow.style.opacity = '0';
-  });
-
-  function updateGlowPosition(e) {
-    const rect = container.getBoundingClientRect();
-    const x = e.clientX - rect.left - 250; // 75 is half the width of the glow
-    const y = e.clientY - rect.top - 250; // 75 is half the height of the glow
-
-    glow.style.left = `${x}px`;
-    glow.style.top = `${y}px`;
-    glow.style.opacity = '1';
-
-    // Check proximity to edges
-    const proximity = 50; // Adjust this value to change how close to the edge the effect starts
-    const isNearEdge = x < proximity || y < proximity ||
-      x > rect.width - proximity || y > rect.height - proximity;
-
-  }
-</script>

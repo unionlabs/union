@@ -1,10 +1,7 @@
 ---
 import { Image } from "astro:assets"
 import H1 from "../typography/h1.astro"
-import bubbles from "../../assets/images/spline-holders/bubbles.png"
 import smallWhale from "../../assets/images/whale.png"
-import Spline from "../Spline.astro"
-import trust from "../../assets/images/spline-holders/trust.png"
 import { renderRichText, renderTitle } from "../../lib/contentful/render.ts"
 
 const diver = [
@@ -22,14 +19,11 @@ const diver = [
 const { entries } = Astro.props
 ---
 
-<div class="flex justify-center  learn-gradient pb-24 text-lg font-mono" id="swim-container">
-  <Image src={bubbles} alt="bubbles"
-         class="absolute inset-0 w-full h-full object-cover object-center mix-blend-soft-light"></Image>
-
+<div class="flex justify-center py-24 text-lg font-mono" id="swim-container">
   <div class="relative grid grid-cols-4 gap-4 max-w-[1440px] px-6">
     <div class="flex flex-col col-span-full md:col-span-3 gap-12 md:gap-24 lg:gap-48">
 
-      <div>
+      <div id="">
         <H1>
           <Fragment set:html={renderTitle(entries.firstTitle)}/>
         </H1>
@@ -38,7 +32,7 @@ const { entries } = Astro.props
             <Fragment set:html={renderRichText(entries.firstText)}/>
           </div>
           <div class="object-contain h-auto w-full">
-            <Spline model={"https://prod.spline.design/4sixqZIrgH3JFR5H/scene.splinecode"} loading="eager"/>
+
           </div>
         </div>
       </div>
@@ -57,7 +51,7 @@ const { entries } = Astro.props
             <Fragment set:html={renderRichText(entries.thirdText)}/>
           </div>
           <div class="object-contain h-auto w-full">
-            <Spline model={"https://prod.spline.design/ekGIwYVP-nKgYf8O/scene.splinecode"} loading="eager"/>
+
           </div>
         </div>
       </div>
@@ -72,7 +66,7 @@ const { entries } = Astro.props
             <Fragment set:html={renderRichText(entries.fourthText)}/>
           </div>
           <div class="object-contain h-auto w-full w-max-[400px]">
-            <Spline model={"https://prod.spline.design/i1cLKOjQairx0xcM/scene.splinecode"} loading="eager"/>
+
           </div>
         </div>
       </div>
@@ -88,7 +82,7 @@ const { entries } = Astro.props
             </div>
           </div>
           <div class="object-contain  w-[300px]">
-            <Spline model={"https://prod.spline.design/I0VWm3Y5RdptPedN/scene.splinecode"} loading="eager"/>
+
           </div>
         </div>
       </div>
@@ -104,7 +98,7 @@ const { entries } = Astro.props
             </div>
           </div>
           <div class="object-contain h-auto w-full max-w-[386px]">
-            <Image src={trust} alt="union trust"/>
+
           </div>
         </div>
       </div>
@@ -146,7 +140,7 @@ const { entries } = Astro.props
     </div>
 
     <div class="relative col-span-1 hidden lg:block">
-      <div class="sticky top-24 p-4 pr-0">
+      <div class="sticky top-16 p-4 pr-0">
         <div class="flex gap-8 h-full justify-end font-mono">
           <div class="flex flex-col gap-6">
             {diver.map(item => (
@@ -203,14 +197,10 @@ const { entries } = Astro.props
 
 
   <style>
-      .learn-gradient {
-          background: linear-gradient(180deg, #000000 2%, #50767F 12%, #030711 39.08%, #000000 70.5%);
-      }
 
       .dive-gradient {
           background: linear-gradient(180deg, #FFFFFF 4%, #A0ECFD 7.13%, #030711 56%, #000000 100%);
       }
-
 
   </style>
 
