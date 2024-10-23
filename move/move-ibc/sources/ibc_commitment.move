@@ -183,8 +183,8 @@ module ibc::commitment {
         client_state_path(channel_id)
     }
 
-    public fun consenseus_state_commitment_key(channel_id: u32): vector<u8> {
-        consenseus_state_commitment_key(channel_id)
+    public fun consensus_state_commitment_key(channel_id: u32, height: u64): vector<u8> {
+        consensus_state_path(channel_id, height)
     }
 
     public fun connection_commitment_key(channel_id: u32): vector<u8> {
