@@ -53,14 +53,17 @@ module ibc::channel {
         channel.ordering = new_ordering;
     }
 
-    public fun set_connection_id(channel: &mut Channel, new_connection_id: u32) {
+    public fun set_connection_id(
+        channel: &mut Channel, new_connection_id: u32
+    ) {
         channel.connection_id = new_connection_id;
     }
 
-    public fun set_counterparty_channel_id(channel: &mut Channel, new_id: u32) {
+    public fun set_counterparty_channel_id(
+        channel: &mut Channel, new_id: u32
+    ) {
         channel.counterparty_channel_id = new_id;
     }
-
 
     public fun set_version(channel: &mut Channel, new_version: vector<u8>) {
         channel.version = new_version;
@@ -74,7 +77,6 @@ module ibc::channel {
         ethabi::encode_uint<u8>(&mut buf, channel.ordering);
         ethabi::encode_uint<u32>(&mut buf, channel.connection_id);
         ethabi::encode_uint<u32>(&mut buf, channel.counterparty_channel_id);
-
 
         let i = 32 - vector::length(&channel.version);
         vector::append(&mut buf, channel.version);
@@ -102,17 +104,19 @@ module ibc::channel {
                 break;
             };
 
-            i = i + 1;            
+            i = i + 1;
         };
         let version = vector::slice(&buf, index, i);
 
-        option::some(new(
-            state,
-            ordering,
-            connection_id,
-            counterparty_connection_id,
-            version
-        ))
+        option::some(
+            new(
+                state,
+                ordering,
+                connection_id,
+                counterparty_connection_id,
+                version
+            )
+        )
     }
 
     // Constructor
@@ -123,13 +127,7 @@ module ibc::channel {
         counterparty_channel_id: u32,
         version: vector<u8>
     ): Channel {
-        Channel {
-            state,
-            ordering,
-            connection_id,
-            counterparty_channel_id,
-            version
-        }
+        Channel { state, ordering, connection_id, counterparty_channel_id, version }
     }
 
     // Default function
@@ -139,7 +137,8 @@ module ibc::channel {
 
     #[test]
     public fun test_encode_decode_channel() {
-        let buf = x"00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c868656c6c6f000000000000000000000000000000000000000000000000000000";
+        let buf =
+            x"00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000c868656c6c6f000000000000000000000000000000000000000000000000000000";
         let channel = new(1, 1, 100, 200, b"hello");
 
         let encoded = encode(&channel);

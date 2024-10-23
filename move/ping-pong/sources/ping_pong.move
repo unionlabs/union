@@ -148,15 +148,15 @@ module ping_pong::ibc {
 
         initiate(pp_packet.ping);
 
-
-        let packet = packet::new(
-            packet_sequence,
-            packet_source_channel,
-            packet_destination_channel,
-            packet_data,
-            packet_timeout_height,
-            packet_timeout_timestamp
-        );
+        let packet =
+            packet::new(
+                packet_sequence,
+                packet_source_channel,
+                packet_destination_channel,
+                packet_data,
+                packet_timeout_height,
+                packet_timeout_timestamp
+            );
 
         ibc::recv_packet(
             &get_signer(),
@@ -211,9 +211,7 @@ module ping_pong::ibc {
     }
 
     public entry fun channel_open_init(
-        connection_id: u32,
-        ordering: u8,
-        version: vector<u8>
+        connection_id: u32, ordering: u8, version: vector<u8>
     ) acquires PingPong, SignerRef {
         // TODO(aeryz): save the channel here
         ibc::channel_open_init(
@@ -223,7 +221,7 @@ module ping_pong::ibc {
             ordering,
             version
         );
-        if (borrow_global<PingPong>(get_vault_addr()).channel_id!= 0) {
+        if (borrow_global<PingPong>(get_vault_addr()).channel_id != 0) {
             abort ERR_ONLY_ONE_CHANNEL
         };
     }
@@ -278,9 +276,7 @@ module ping_pong::ibc {
     }
 
     public entry fun channel_open_confirm(
-        channel_id: u32,
-        proof_ack: vector<u8>,
-        proof_height: u64
+        channel_id: u32, proof_ack: vector<u8>, proof_height: u64
     ) acquires PingPong, SignerRef {
         ibc::channel_open_confirm(
             &get_signer(),

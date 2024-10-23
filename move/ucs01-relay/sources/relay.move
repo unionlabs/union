@@ -155,9 +155,7 @@ module ucs01::ibc {
         object::address_to_object<Metadata>(asset_addr)
     }
 
-    public fun is_from_channel(
-        channel_id: u32, denom: String
-    ): bool {
+    public fun is_from_channel(channel_id: u32, denom: String): bool {
         let prefix = make_denom_prefix(channel_id);
         starts_with(denom, prefix)
     }
@@ -169,9 +167,7 @@ module ucs01::ibc {
         prefix
     }
 
-    public fun make_foreign_denom(
-        channel_id: u32, denom: String
-    ): String {
+    public fun make_foreign_denom(channel_id: u32, denom: String): String {
         let foreign_denom = make_denom_prefix(channel_id);
         string::append(&mut foreign_denom, denom);
         foreign_denom
@@ -248,9 +244,7 @@ module ucs01::ibc {
     }
 
     public entry fun channel_open_init(
-        connection_id: u32,
-        ordering: u8,
-        version: vector<u8>
+        connection_id: u32, ordering: u8, version: vector<u8>
     ) acquires SignerRef {
         ibc::channel_open_init(
             &get_signer(),
@@ -328,9 +322,7 @@ module ucs01::ibc {
     }
 
     public entry fun channel_open_confirm(
-        channel_id: u32,
-        proof_ack: vector<u8>,
-        proof_height: u64
+        channel_id: u32, proof_ack: vector<u8>, proof_height: u64
     ) acquires SignerRef {
         ibc::channel_open_confirm(
             &get_signer(),
@@ -367,14 +359,15 @@ module ucs01::ibc {
         // Call the refund_tokens function to refund the sender
         refund_tokens(packet_sequence, packet_source_channel, &relay_packet);
 
-        let packet = ibc::packet::new(
-            packet_sequence,
-            packet_source_channel,
-            packet_destination_channel,
-            packet_data,
-            packet_timeout_height,
-            packet_timeout_timestamp
-        );
+        let packet =
+            ibc::packet::new(
+                packet_sequence,
+                packet_source_channel,
+                packet_destination_channel,
+                packet_data,
+                packet_timeout_height,
+                packet_timeout_timestamp
+            );
 
         ibc::timeout_packet(
             &get_signer(),
@@ -604,11 +597,7 @@ module ucs01::ibc {
                 // Token originated from the counterparty chain, we need to mint the amount
 
                 // Construct the foreign denomination using the source and destination channels
-                let denom =
-                    make_foreign_denom(
-                        destination_channel,
-                        token.denom
-                    );
+                let denom = make_foreign_denom(destination_channel, token.denom);
 
                 // Create a DenomToAddressPair for the foreign denomination
                 let pair = DenomToAddressPair {
@@ -799,7 +788,6 @@ module ucs01::ibc {
             );
             i = i + 1;
         };
-
 
         ibc::recv_packet(
             &get_signer(),
