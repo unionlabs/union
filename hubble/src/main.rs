@@ -1,7 +1,4 @@
-#![feature(more_qualified_paths)]
-#![feature(try_blocks)]
-#![allow(clippy::needless_lifetimes, clippy::manual_async_fn)]
-#![feature(async_closure)]
+#![allow(clippy::manual_async_fn, clippy::needless_lifetimes)]
 
 use std::time::Duration;
 
