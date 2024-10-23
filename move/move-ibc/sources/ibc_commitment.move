@@ -226,11 +226,6 @@ module ibc::commitment {
         next_sequence_ack_commitment_path(channel_id)
     }
 
-    public fun commit_packet(_packet: &Packet): vector<u8> {
-        // TODO: abi.encode(packet)
-        vector::empty()
-    }
-
     public fun commit_packets(_packets: vector<Packet>): vector<u8> {
         // TODO: abi.encode(packets)
         vector::empty()

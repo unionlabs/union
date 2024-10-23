@@ -957,12 +957,12 @@ module ibc::ibc {
             if (l == 1) {
                 commitment_key = commitment::batch_receipts_commitment_key(
                     destination_channel,
-                    commitment::commit_packet(&firstPacket)
+                    packet::commit_packet(&firstPacket)
                 )
             } else {
                 commitment_key = commitment::batch_receipts_commitment_key(
                     destination_channel,
-                    commitment::commit_packets(packets)
+                    packet::commit_packets(&packets)
                 )
             };
 
@@ -1003,7 +1003,7 @@ module ibc::ibc {
             let commitmentKey =
                 commitment::batch_receipts_commitment_key(
                     destination_channel,
-                    commitment::commit_packet(&packet)
+                    packet::commit_packet(&packet)
                 );
 
             let already_received = false;
@@ -1200,7 +1200,7 @@ module ibc::ibc {
         let commitment_key =
             commitment::batch_receipts_commitment_key(
                 packet::destination_channel(&packet),
-                commitment::commit_packet(&packet)
+                packet::commit_packet(&packet)
             );
         inner_write_acknowledgement(commitment_key, acknowledgement);
 
@@ -1230,12 +1230,12 @@ module ibc::ibc {
         if (l == 1) {
             commitment_key = commitment::batch_receipts_commitment_key(
                 destination_channel,
-                commitment::commit_packet(&firstPacket)
+                packet::commit_packet(&firstPacket)
             )
         } else {
             commitment_key = commitment::batch_receipts_commitment_key(
                 destination_channel,
-                commitment::commit_packets(packets)
+                packet::commit_packets(&packets)
             )
         };
 
@@ -1258,7 +1258,7 @@ module ibc::ibc {
             let packet = *vector::borrow(&packets, i);
             let commitment_key =
                 commitment::batch_packets_commitment_key(
-                    source_channel, commitment::commit_packet(&packet)
+                    source_channel, packet::commit_packet(&packet)
                 );
             table::remove(
                 &mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments,
@@ -1311,7 +1311,7 @@ module ibc::ibc {
         } else if (ordering == CHAN_ORDERING_UNORDERED) {
             let commitment_key =
                 commitment::batch_receipts_commitment_key(
-                    destination_channel, commitment::commit_packet(&packet)
+                    destination_channel, packet::commit_packet(&packet)
                 );
             let err =
                 verify_absent_commitment(client_id, proof_height, proof, commitment_key);
@@ -1342,7 +1342,7 @@ module ibc::ibc {
         };
         let commitment_key =
             commitment::batch_packets_commitment_key(
-                source_channel, commitment::commit_packet(&packet)
+                source_channel, packet::commit_packet(&packet)
             );
         table::remove(
             &mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments,

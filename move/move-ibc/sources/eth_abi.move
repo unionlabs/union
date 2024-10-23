@@ -9,16 +9,19 @@ module ibc::ethabi {
     ];
 
     public fun encode_string(buf: &mut vector<u8>, str: &String) {
-        let str_bytes = string::bytes(str);
-        let str_len = vector::length(str_bytes);
-        let len_bytes = bcs::to_bytes(&(str_len as u256));
+        encode_bytes(buf, string::bytes(str))
+    }
+
+    public fun encode_bytes(buf: &mut vector<u8>, bytes: &vector<u8>) {
+        let len = vector::length(bytes);
+        let len_bytes = bcs::to_bytes(&(len as u256));
         vector::reverse(&mut len_bytes); // Reverse the bytes to big-endian
 
         vector::append(buf, len_bytes);
-        vector::append(buf, *str_bytes);
+        vector::append(buf, *bytes);
 
         // Calculate padding to align to 32 bytes
-        let padding_len = (32 - (str_len % 32)) % 32;
+        let padding_len = (32 - (len % 32)) % 32;
         let padding = vector::empty<u8>();
         let i = 0;
         while (i < padding_len) {
