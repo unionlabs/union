@@ -144,8 +144,8 @@ impl<T: FetcherClient> Indexer<T> {
                     debug!("{}: no block yet => sleep", next_height);
                     sleep(Duration::from_millis(1000)).await;
                 }
-                Err(err) => {
-                    warn!("{}: error reading block => sleep : {:?}", next_height, err);
+                Err(_) => {
+                    warn!("{}: error reading block => sleep", next_height);
                     sleep(Duration::from_millis(1000)).await;
                 }
             }
