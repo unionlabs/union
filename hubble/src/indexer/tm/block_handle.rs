@@ -120,7 +120,7 @@ impl BlockHandle for TmBlockHandle {
 
     async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
         let reference = self.reference();
-        debug!("{}: inserting", reference);
+        debug!("{}: updating", reference);
 
         let (block, transactions, events) = self.get_block_insert().await?;
 
