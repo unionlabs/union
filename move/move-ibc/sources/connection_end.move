@@ -99,6 +99,19 @@ module ibc::connection_end {
         option::none()
     }
 
+    // Encode and decode functions (empty for now)
+    public fun encode_proto(_connection: &ConnectionEnd): vector<u8> {
+        // Placeholder implementation
+        vector::empty()
+    }
+
+    public fun decode_proto(_buf: vector<u8>): Option<ConnectionEnd> {
+        // Placeholder implementation
+        option::none()
+    }
+
+
+
     // Constructor
     public fun new(
         state: u64,

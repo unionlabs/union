@@ -93,14 +93,14 @@ module ibc::ibc {
     struct ClientCreatedEvent has copy, drop, store {
         client_id: u32,
         client_type: String,
-        consensus_height: Height
+        consensus_height: u64
     }
 
     #[event]
     struct ClientUpdated has copy, drop, store {
         client_id: u32,
         client_type: String,
-        height: Height
+        height: u64
     }
 
     #[event]
@@ -262,48 +262,48 @@ module ibc::ibc {
 
     /// Create a client with an initial client and consensus state
     public entry fun create_client(
-        client_id: u32, client_state: vector<u8>, consensus_state: vector<u8>
-    ) {
-        // TODO: Fix this.
+        client_type: String, client_state: vector<u8>, consensus_state: vector<u8>
+    ) acquires IBCStore, SignerRef {
+        // NOTE(aeryz): At this point, we don't need to have a routing mechanism because it will introduce
+        // additional gas cost. We should only enforce the use of `cometbls` for the `client_type`
 
-        // // NOTE(aeryz): At this point, we don't need to have a routing mechanism because it will introduce
-        // // additional gas cost. We should only enforce the use of `cometbls` for the `client_type`
+        // TODO: Do we need this assert?
         // assert!(string::bytes(&client_type) == &b"cometbls", E_UNKNOWN_CLIENT_TYPE);
 
-        // let client_id = generate_client_identifier();
-        // let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        let client_id = generate_client_identifier();
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        // let (client_state, consensus_state) =
-        //     light_client::create_client(
-        //         &get_ibc_signer(),
-        //         client_id,
-        //         // from_bcs::to_bytes(client_state),
-        //         // from_bcs::to_bytes(consensus_state),
-        //         client_state,
-        //         consensus_state
-        //     );
+        let (client_state, consensus_state) =
+            light_client::create_client(
+                &get_ibc_signer(),
+                client_id,
+                // from_bcs::to_bytes(client_state),
+                // from_bcs::to_bytes(consensus_state),
+                client_state,
+                consensus_state
+            );
 
-        // // TODO(aeryz): fetch these status from proper exported consts
-        // assert!(light_client::status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
+        // TODO(aeryz): fetch these status from proper exported consts
+        assert!(light_client::status(client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
-        // // Update commitments
-        // table::upsert(
-        //     &mut store.commitments,
-        //     commitment::client_state_key(client_id),
-        //     client_state
-        // );
+        // Update commitments
+        table::upsert(
+            &mut store.commitments,
+            commitment::client_state_commitment_key(client_id),
+            client_state
+        );
 
-        // let latest_height = light_client::latest_height(client_id);
+        let latest_height = light_client::latest_height(client_id);
 
-        // table::upsert(
-        //     &mut store.commitments,
-        //     commitment::consensus_state_key(client_id, latest_height),
-        //     consensus_state
-        // );
+        table::upsert(
+            &mut store.commitments,
+            commitment::consenseus_state_commitment_key(client_id),
+            consensus_state
+        );
 
-        // event::emit(
-        //     ClientCreatedEvent { client_id, client_type, consensus_height: latest_height }
-        // );
+        event::emit(
+            ClientCreatedEvent { client_id, client_type, consensus_height: latest_height }
+        );
     }
 
     public entry fun connection_open_init(
@@ -1351,7 +1351,7 @@ module ibc::ibc {
         client_id: u32, revision_number: u64, revision_height: u64
     ): vector<u8> {
         light_client::get_consensus_state(
-            client_id, height::new(revision_number, revision_height)
+            client_id, revision_height
         )
     }
 
@@ -1554,15 +1554,13 @@ module ibc::ibc {
         connection_id: u32,
         counterparty_connection: ConnectionEnd
     ): u64 {
-        0
-        // light_client::verify_membership(
-        //     *connection_end::client_id(connection),
-        //     height,
-        //     proof,
-        //     *connection_end::conn_counterparty_key_prefix(connection),
-        //     commitment::connection_key(connection_id),
-        //     connection_end::encode_proto(counterparty_connection)
-        // )
+        light_client::verify_membership(
+            connection_end::client_id(connection),
+            height,
+            proof,
+            commitment::connection_commitment_key(connection_id),
+            connection_end::encode_proto(&counterparty_connection)
+        )
     }
 
     public fun verify_commitment(
@@ -1572,15 +1570,13 @@ module ibc::ibc {
         path: vector<u8>,
         commitment: vector<u8>
     ): u64 {
-        0
-        // light_client::verify_membership(
-        //     *connection_end::client_id(connection),
-        //     height,
-        //     proof,
-        //     *connection_end::conn_counterparty_key_prefix(connection),
-        //     path,
-        //     commitment
-        // )
+        light_client::verify_membership(
+            client_id,
+            height,
+            proof,
+            path,
+            commitment
+        )
     }
 
     public fun generate_connection_identifier(): u32 acquires IBCStore {
@@ -1703,22 +1699,13 @@ module ibc::ibc {
         channel_id: u32,
         channel: Channel
     ): u64 {
-        0
-        // TODO: Add verify
-        // let client_id = connection_end::client_id(connection);
-        // std::debug::print(&string::utf8(b"client_id"));
-        // std::debug::print(client_id);
-        // std::debug::print(&string::utf8(b"connection"));
-        // std::debug::print(connection);
-        // let path = commitment::channel_key(port_id, channel_id);
-        // light_client::verify_membership(
-        //     *connection_end::client_id(connection),
-        //     height,
-        //     proof,
-        //     *connection_end::conn_counterparty_key_prefix(connection),
-        //     path,
-        //     channel::encode(channel)
-        // )
+        light_client::verify_membership(
+            client_id,
+            height,
+            proof,
+            commitment::channel_commitment_key(channel_id),
+            channel::encode(&channel)
+        )
     }
 
     // Ensures that the channel state is open
@@ -1736,14 +1723,12 @@ module ibc::ibc {
         proof: vector<u8>,
         path: vector<u8>
     ): u64 {
-        0
-        // light_client::verify_non_membership(
-        //     *connection_end::client_id(connection),
-        //     height,
-        //     proof,
-        //     *connection_end::conn_counterparty_key_prefix(connection),
-        //     path
-        // )
+        light_client::verify_non_membership(
+            clientId,
+            height,
+            proof,
+            path
+        )
     }
 
     fun address_to_string(addr: address): String {
