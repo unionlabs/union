@@ -1,7 +1,6 @@
 module ibc::connection_end {
-    use std::string::{Self, String, utf8};
+    use std::string::{String, utf8};
     use std::vector;
-    use ibc::proto_utils;
     use ibc::ethabi;
     use std::option::{Option, Self};
 

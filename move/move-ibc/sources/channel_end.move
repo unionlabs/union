@@ -1,8 +1,6 @@
 module ibc::channel {
     use std::option::{Self, Option};
-    use std::string::{Self, String, utf8};
     use std::vector;
-    use ibc::proto_utils;
     use ibc::ethabi;
 
     const CHAN_STATE_UNINITIALIZED: u8 = 0;
@@ -100,9 +98,7 @@ module ibc::channel {
         while (i < index + 32) {
             let char = *vector::borrow(&buf, i);
 
-            if (char == 0) {
-                break;
-            };
+            if (char == 0) { break };
 
             i = i + 1;
         };

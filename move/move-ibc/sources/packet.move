@@ -1,12 +1,6 @@
 module ibc::packet {
-    use std::string::{Self, String, utf8};
     use std::vector;
-    use std::option::{Self, Option};
-    use std::hash;
-    use std::bcs;
 
-    use ibc::height::{Self, Height};
-    use ibc::proto_utils;
     const COMMITMENT_MAGIC: vector<u8> = x"0100000000000000000000000000000000000000000000000000000000000000";
     const COMMITMENT_NULL: vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
     struct Packet has copy, store, drop, key {
@@ -42,23 +36,23 @@ module ibc::packet {
         packet.timeout_height
     }
 
-    public fun commit_packet(packet: &Packet): vector<u8> {
+    public fun commit_packet(_packet: &Packet): vector<u8> {
         // TODO: Implmenet this - abi.encode(packet)
         vector::empty()
     }
 
-    public fun commit_acks(acks: vector<vector<u8>>): vector<u8> {
+    public fun commit_acks(_acks: vector<vector<u8>>): vector<u8> {
         // TODO: Implement this - merge_ack(abi.encode(acks))
         vector::empty()
     }
 
-    public fun merge_ack(ack: vector<u8>): vector<u8> {
+    public fun merge_ack(_ack: vector<u8>): vector<u8> {
         // TODO: Implement this
         // COMMITMENT_MAGIC | (ack & x"00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
         vector::empty()
     }
 
-    public fun commit_ack_memory(ack: vector<u8>): vector<u8> {
+    public fun commit_ack_memory(_ack: vector<u8>): vector<u8> {
         // TODO: Implement this - merge_ack(abi.encode(acks))
         vector::empty()
     }
