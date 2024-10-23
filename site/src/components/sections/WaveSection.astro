@@ -1,0 +1,23 @@
+---
+import MatrixCover from "../MatrixCover.astro"
+---
+
+<div class="relative grid h-svh">
+  <div class="bottom h-full w-full">
+    <MatrixCover/>
+  </div>
+  <div class="top w-full">
+
+  </div>
+</div>
+
+
+<style>
+    .top, .bottom {
+        grid-area: 1 / 1 / 2 / 2;
+    }
+
+    .top {
+        z-index: 1;
+    }
+</style>

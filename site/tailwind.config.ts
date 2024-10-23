@@ -18,6 +18,9 @@ export default {
       screens: {
         xs: "320px"
       },
+      height: {
+        "screen-minus-header": "calc(100svh - var(--header-height))"
+      },
       fontSize: {
         // this exists as `*-base` but `*-md` is more intuitive
         md: [
