@@ -6,16 +6,16 @@ import {
 import { err, ok, type Result } from "neverthrow"
 import type { Account } from "@aptos-labs/ts-sdk"
 import type { TransferAssetsParameters } from "./types.ts"
+import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { createClient, fallback, type HttpTransport } from "viem"
 
-// Define the list of supported Move chains
 export const moveChainId = ["2"] as const
 
 export type MoveChainId = `${(typeof moveChainId)[number]}`
 
 export interface MoveClientParameters {
-  chainId: MoveChainId
   account?: Account
+  chainId: MoveChainId
   transport: HttpTransport
 }
 
@@ -25,11 +25,11 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
       memo,
       amount,
       receiver,
+      simulate,
       denomAddress,
       destinationChainId,
-      relayContractAddress = "0x52570c4292730a9d81aead22ac75d4bfca3f23d788f679ce72a11ca3fa7d6762",
-      account = parameters.account,
-      simulate = true
+      relayContractAddress,
+      account = parameters.account
     }: TransferAssetsParameters<MoveChainId>): Promise<Result<string, Error>> => {
       const rpcUrl = parameters.transport({}).value?.url
 
@@ -47,87 +47,77 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
         return ok(transfer.value)
       }
 
-      // const chainDetails = await getHubbleChainDetails({
-      //   destinationChainId,
-      //   sourceChainId: parameters.chainId
-      // })
+      const chainDetails = await getHubbleChainDetails({
+        destinationChainId,
+        sourceChainId: parameters.chainId
+      })
+      if (chainDetails.isErr()) return err(chainDetails.error)
 
-      // if (chainDetails.isErr()) return err(chainDetails.error)
+      if (chainDetails.value.transferType === "pfm") {
+        if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
+        const pfmMemo = createPfmMemo({
+          receiver: "TODO",
+          port: chainDetails.value.port,
+          channel: chainDetails.value.destinationChannel
+        })
+        if (pfmMemo.isErr()) return err(pfmMemo.error)
+        memo = pfmMemo.value
+      }
 
-      // if (chainDetails.value.transferType === "pfm") {
-      //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
-      //   const pfmMemo = createPfmMemo({
-      //     channel: chainDetails.value.destinationChannel,
-      //     port: chainDetails.value.port,
-      //     receiver: cosmosChainId.includes(destinationChainId)
-      //       ? bech32AddressToHex({ address: receiver })
-      //       : receiver
-      //   })
+      const sourceChannel = chainDetails.value.sourceChannel
+      relayContractAddress ??= chainDetails.value.relayContractAddress
 
-      //   if (pfmMemo.isErr()) return err(pfmMemo.error)
-      //   memo = pfmMemo.value
-      // }
-
-      // const sourceChannel = chainDetails.value.sourceChannel
-      // const relayContractAddress = chainDetails.value.relayContractAddress
-      const sourceChannel = "channel-0"
-
-      // priv key: 0xe992615114d70429d2920c9d106ac55ec16d9d36a5a017f14f9ee77a85f02467
-      // account addr: 0xe3579557fd55ed8fab0d1e211eb1c05d56d74650e7070b703925493c38fe2aed
-      // Transfer asset using the previously defined transferAssetFromMove
       const result = await transferAssetFromMove({
         memo,
         amount,
         account,
         receiver,
+        simulate,
         denomAddress,
         sourceChannel,
-        relayContractAddress,
         baseUrl: rpcUrl,
-        simulate
+        relayContractAddress
       })
-      if (result.isErr()) {
-        return err(new Error(`Move transfer failed: ${result.error.message}`))
-      }
-      return result // Return the success or error result from transferAssetFromMove
+      if (result.isErr()) return err(new Error(`Move transfer failed: ${result.error.message}`))
+
+      return result
     },
     simulateTransaction: async ({
       memo,
       amount,
       receiver,
       denomAddress,
-      destinationChainId: _destinationChainId,
-      relayContractAddress = "0x52570c4292730a9d81aead22ac75d4bfca3f23d788f679ce72a11ca3fa7d6762",
+      destinationChainId,
+      relayContractAddress,
       account = parameters.account
     }: TransferAssetsParameters<MoveChainId>): Promise<Result<string, Error>> => {
       const rpcUrl = parameters.transport({}).value?.url
 
       if (!rpcUrl) return err(new Error("No Move RPC URL found"))
       if (!account) return err(new Error("No Move account found"))
-      // const chainDetails = await getHubbleChainDetails({
-      //   destinationChainId,
-      //   sourceChainId: parameters.chainId
-      // })
 
-      // if (chainDetails.isErr()) return err(chainDetails.error)
+      const chainDetails = await getHubbleChainDetails({
+        destinationChainId,
+        sourceChainId: parameters.chainId
+      })
 
-      // if (chainDetails.value.transferType === "pfm") {
-      //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
-      //   const pfmMemo = createPfmMemo({
-      //     channel: chainDetails.value.destinationChannel,
-      //     port: chainDetails.value.port,
-      //     receiver: cosmosChainId.includes(destinationChainId)
-      //       ? bech32AddressToHex({ address: receiver })
-      //       : receiver
-      //   })
+      if (chainDetails.isErr()) return err(chainDetails.error)
 
-      //   if (pfmMemo.isErr()) return err(pfmMemo.error)
-      //   memo = pfmMemo.value
-      // }
+      if (chainDetails.value.transferType === "pfm") {
+        if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
+        const pfmMemo = createPfmMemo({
+          receiver: "TODO",
+          port: chainDetails.value.port,
+          channel: chainDetails.value.destinationChannel
+        })
 
-      // const sourceChannel = chainDetails.value.sourceChannel
-      // const relayContractAddress = chainDetails.value.relayContractAddress
-      const sourceChannel = "channel-0"
+        if (pfmMemo.isErr()) return err(pfmMemo.error)
+        memo = pfmMemo.value
+      }
+
+      const sourceChannel = chainDetails.value.sourceChannel
+      relayContractAddress ??= chainDetails.value.relayContractAddress
+
       const result = await transferAssetFromMoveSimulate({
         memo,
         amount,
@@ -135,12 +125,11 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
         receiver,
         denomAddress,
         sourceChannel,
-        relayContractAddress,
-        baseUrl: rpcUrl
+        baseUrl: rpcUrl,
+        relayContractAddress
       })
-      if (!result) {
-        return err(new Error(`Move transfer failed`))
-      }
+      if (!result) return err(new Error(`Move transfer failed`))
+
       return result
     }
   }))

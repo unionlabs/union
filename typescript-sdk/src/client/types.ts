@@ -1,8 +1,8 @@
-import type { Account as ViemAccount, Address } from "viem"
 import type { OfflineSigner } from "../types.ts"
 import type { evmChainId, EvmChainId } from "./evm.ts"
+import type { moveChainId, MoveChainId } from "./move.ts"
+import type { Account as ViemAccount, Address } from "viem"
 import type { cosmosChainId, CosmosChainId } from "./cosmos.ts"
-import type { moveChainId, MoveChainId } from "./move.ts" // Import MoveChainId and moveChainId
 import type { Account as AptosAccount } from "@aptos-labs/ts-sdk"
 
 export type { evmChainId, EvmChainId, cosmosChainId, CosmosChainId, moveChainId, MoveChainId }
