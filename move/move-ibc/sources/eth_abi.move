@@ -123,6 +123,27 @@ module ibc::ethabi {
         }
     }
 
+    /// encode array of dynamic-sized data (string[], SomeDynStruct[])
+    public inline fun encode_dyn_array<T: copy>(
+        buf: &mut vector<u8>,
+        vec: &vector<T>,
+        encode_fn: |&mut vector<u8>, &T|
+    ) {
+        let rest_buf = vector::empty();
+
+        let i = 0;
+        let len = vector::length(vec);
+        encode_uint(buf, len);
+
+        while (i < len) {
+            encode_uint(buf, len * 32 + vector::length(&rest_buf));
+            encode_fn(&mut rest_buf, vector::borrow(vec, i));
+            i = i + 1;
+        };
+
+        vector::append(buf, rest_buf);
+    }
+
     public inline fun decode_vector<T>(
         buf: &vector<u8>,
         index: &mut u64,
