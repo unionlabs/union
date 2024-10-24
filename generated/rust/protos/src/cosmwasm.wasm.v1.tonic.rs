@@ -239,24 +239,6 @@ pub mod query_client {
                 .insert(GrpcMethod::new("cosmwasm.wasm.v1.Query", "Codes"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn code_info(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryCodeInfoRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryCodeInfoResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/cosmwasm.wasm.v1.Query/CodeInfo");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmwasm.wasm.v1.Query", "CodeInfo"));
-            self.inner.unary(req, path, codec).await
-        }
         pub async fn pinned_codes(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryPinnedCodesRequest>,

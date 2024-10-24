@@ -551,17 +551,6 @@ impl ::prost::Name for MsgIbcSendResponse {
         ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
     }
 }
-/// MsgIBCWriteAcknowledgementResponse
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgIbcWriteAcknowledgementResponse {}
-impl ::prost::Name for MsgIbcWriteAcknowledgementResponse {
-    const NAME: &'static str = "MsgIBCWriteAcknowledgementResponse";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
 /// MsgIBCCloseChannel port and channel need to be owned by the contract
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1074,7 +1063,7 @@ impl ::prost::Name for QueryContractHistoryResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryContractsByCodeRequest {
-    /// grpc-gateway_out does not support Go style CodeID
+    /// grpc-gateway_out does not support Go style CodID
     #[prost(uint64, tag = "1")]
     pub code_id: u64,
     /// pagination defines an optional pagination for the request.
@@ -1221,47 +1210,12 @@ impl ::prost::Name for QuerySmartContractStateResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryCodeRequest {
-    /// grpc-gateway_out does not support Go style CodeID
+    /// grpc-gateway_out does not support Go style CodID
     #[prost(uint64, tag = "1")]
     pub code_id: u64,
 }
 impl ::prost::Name for QueryCodeRequest {
     const NAME: &'static str = "QueryCodeRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryCodeInfoRequest is the request type for the Query/CodeInfo RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCodeInfoRequest {
-    /// grpc-gateway_out does not support Go style CodeID
-    #[prost(uint64, tag = "1")]
-    pub code_id: u64,
-}
-impl ::prost::Name for QueryCodeInfoRequest {
-    const NAME: &'static str = "QueryCodeInfoRequest";
-    const PACKAGE: &'static str = "cosmwasm.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryCodeInfoResponse is the response type for the Query/CodeInfo RPC method
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCodeInfoResponse {
-    #[prost(uint64, tag = "1")]
-    pub code_id: u64,
-    #[prost(string, tag = "2")]
-    pub creator: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "3")]
-    pub checksum: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "4")]
-    pub instantiate_permission: ::core::option::Option<AccessConfig>,
-}
-impl ::prost::Name for QueryCodeInfoResponse {
-    const NAME: &'static str = "QueryCodeInfoResponse";
     const PACKAGE: &'static str = "cosmwasm.wasm.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmwasm.wasm.v1.{}", Self::NAME)
@@ -1572,7 +1526,7 @@ impl ::prost::Name for MsgInstantiateContractResponse {
     }
 }
 /// MsgInstantiateContract2 create a new smart contract instance for the given
-/// code id with a predictable address.
+/// code id with a predicable address.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgInstantiateContract2 {

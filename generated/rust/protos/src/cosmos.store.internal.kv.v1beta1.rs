@@ -1,8 +1,5 @@
 // @generated
 /// Pairs defines a repeated slice of Pair objects.
-///
-/// Deprecated: Store v1 is deprecated as of v0.50.x, please use Store v2 types
-/// instead.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Pairs {
@@ -17,9 +14,6 @@ impl ::prost::Name for Pairs {
     }
 }
 /// Pair defines a key/value bytes tuple.
-///
-/// Deprecated: Store v1 is deprecated as of v0.50.x, please use Store v2 types
-/// instead.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Pair {

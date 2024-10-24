@@ -4,6 +4,7 @@
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::{http::Uri, *};
+    /// Query is the app module query service.
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -83,6 +84,7 @@ pub mod query_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
+        /// Config returns the current app config.
         pub async fn config(
             &mut self,
             request: impl tonic::IntoRequest<super::QueryConfigRequest>,

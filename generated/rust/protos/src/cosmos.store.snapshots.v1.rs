@@ -37,6 +37,8 @@ impl ::prost::Name for Metadata {
     }
 }
 /// SnapshotItem is an item contained in a rootmulti.Store snapshot.
+///
+/// Since: cosmos-sdk 0.46
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotItem {
@@ -68,6 +70,8 @@ impl ::prost::Name for SnapshotItem {
     }
 }
 /// SnapshotStoreItem contains metadata about a snapshotted store.
+///
+/// Since: cosmos-sdk 0.46
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotStoreItem {
@@ -82,6 +86,8 @@ impl ::prost::Name for SnapshotStoreItem {
     }
 }
 /// SnapshotIAVLItem is an exported IAVL node.
+///
+/// Since: cosmos-sdk 0.46
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotIavlItem {
@@ -104,6 +110,8 @@ impl ::prost::Name for SnapshotIavlItem {
     }
 }
 /// SnapshotExtensionMeta contains metadata about an external snapshotter.
+///
+/// Since: cosmos-sdk 0.46
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotExtensionMeta {
@@ -120,6 +128,8 @@ impl ::prost::Name for SnapshotExtensionMeta {
     }
 }
 /// SnapshotExtensionPayload contains payloads of an external snapshotter.
+///
+/// Since: cosmos-sdk 0.46
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SnapshotExtensionPayload {

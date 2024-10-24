@@ -273,27 +273,6 @@ pub mod query_client {
             ));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn verify_membership(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryVerifyMembershipRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryVerifyMembershipResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/ibc.core.client.v1.Query/VerifyMembership");
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "ibc.core.client.v1.Query",
-                "VerifyMembership",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
     }
 }
 /// Generated client implementations.

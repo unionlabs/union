@@ -2,11 +2,10 @@ use macros::model;
 
 use crate::{
     bounded::BoundedI64,
-    cometbft::types::{canonical_block_id::CanonicalBlockId, signed_msg_type::SignedMsgType},
-    google::protobuf::timestamp::Timestamp,
+    tendermint::types::{canonical_block_id::CanonicalBlockId, signed_msg_type::SignedMsgType},
 };
 
-#[model(proto(raw(protos::cometbft::types::v1::CanonicalVote), from))]
+#[model(proto(raw(protos::tendermint::types::CanonicalVote), from))]
 pub struct CanonicalVote {
     /// type alias for byte
     pub ty: SignedMsgType,
@@ -16,10 +15,9 @@ pub struct CanonicalVote {
     pub round: BoundedI64<0, { i64::MAX }>,
     pub block_id: CanonicalBlockId,
     pub chain_id: String,
-    pub timestamp: Timestamp,
 }
 
-impl From<CanonicalVote> for protos::cometbft::types::v1::CanonicalVote {
+impl From<CanonicalVote> for protos::tendermint::types::CanonicalVote {
     fn from(value: CanonicalVote) -> Self {
         Self {
             r#type: value.ty.into(),

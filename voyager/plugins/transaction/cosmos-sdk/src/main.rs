@@ -501,8 +501,6 @@ impl Module {
             timeout_height: 0,
             extension_options: vec![],
             non_critical_extension_options: vec![],
-            unordered: false,
-            timeout_timestamp: None,
         };
 
         let auth_info = AuthInfo {

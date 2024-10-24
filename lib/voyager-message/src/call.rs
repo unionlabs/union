@@ -493,7 +493,6 @@ impl CallT<VoyagerMessage> for Call {
                         },
                         connection_hops: vec![event.connection.counterparty.connection_id.unwrap()],
                         version: event.version.clone(),
-                        upgrade_sequence: 0,
                     },
                     counterparty_version: event.version,
                     proof_init: encoded_proof_init,

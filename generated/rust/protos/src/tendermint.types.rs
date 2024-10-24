@@ -142,6 +142,7 @@ impl ::prost::Name for AbciParams {
         ::prost::alloc::format!("tendermint.types.{}", Self::NAME)
     }
 }
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorSet {
@@ -159,16 +160,20 @@ impl ::prost::Name for ValidatorSet {
         ::prost::alloc::format!("tendermint.types.{}", Self::NAME)
     }
 }
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Validator {
     #[prost(bytes = "vec", tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub address: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
     pub pub_key: ::core::option::Option<super::crypto::PublicKey>,
     #[prost(int64, tag = "3")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub voting_power: i64,
     #[prost(int64, tag = "4")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub proposer_priority: i64,
 }
 impl ::prost::Name for Validator {
@@ -197,13 +202,13 @@ impl ::prost::Name for SimpleValidator {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum BlockIdFlag {
-    /// Indicates an error condition
+    /// indicates an error condition
     Unknown = 0,
-    /// The vote was not received
+    /// the vote was not received
     Absent = 1,
-    /// Voted for the block that received the majority
+    /// voted for the block that received the majority
     Commit = 2,
-    /// Voted for nil
+    /// voted for nil
     Nil = 3,
 }
 impl BlockIdFlag {
@@ -231,12 +236,14 @@ impl BlockIdFlag {
     }
 }
 /// PartsetHeader
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PartSetHeader {
     #[prost(uint32, tag = "1")]
     pub total: u32,
     #[prost(bytes = "vec", tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for PartSetHeader {
@@ -264,12 +271,15 @@ impl ::prost::Name for Part {
     }
 }
 /// BlockID
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockId {
     #[prost(bytes = "vec", tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
+    #[serde(alias = "parts")]
     pub part_set_header: ::core::option::Option<PartSetHeader>,
 }
 impl ::prost::Name for BlockId {
@@ -280,6 +290,7 @@ impl ::prost::Name for BlockId {
     }
 }
 /// Header defines the structure of a block header.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {
@@ -289,6 +300,7 @@ pub struct Header {
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(int64, tag = "3")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub height: i64,
     #[prost(message, optional, tag = "4")]
     pub time: ::core::option::Option<::pbjson_types::Timestamp>,
@@ -299,34 +311,43 @@ pub struct Header {
     ///
     /// commit from validators from the last block
     #[prost(bytes = "vec", tag = "6")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub last_commit_hash: ::prost::alloc::vec::Vec<u8>,
     /// transactions
     #[prost(bytes = "vec", tag = "7")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub data_hash: ::prost::alloc::vec::Vec<u8>,
     /// hashes from the app output from the prev block
     ///
     /// validators for the current block
     #[prost(bytes = "vec", tag = "8")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// validators for the next block
     #[prost(bytes = "vec", tag = "9")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// consensus params for current block
     #[prost(bytes = "vec", tag = "10")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub consensus_hash: ::prost::alloc::vec::Vec<u8>,
     /// state after txs from the previous block
     #[prost(bytes = "vec", tag = "11")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub app_hash: ::prost::alloc::vec::Vec<u8>,
     /// root hash of all results from the txs from the previous block
     #[prost(bytes = "vec", tag = "12")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub last_results_hash: ::prost::alloc::vec::Vec<u8>,
     /// consensus info
     ///
     /// evidence included in the block
     #[prost(bytes = "vec", tag = "13")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub evidence_hash: ::prost::alloc::vec::Vec<u8>,
     /// original proposer of the block
     #[prost(bytes = "vec", tag = "14")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub proposer_address: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for Header {
@@ -337,6 +358,7 @@ impl ::prost::Name for Header {
     }
 }
 /// Data contains the set of transactions included in the block
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Data {
@@ -344,6 +366,7 @@ pub struct Data {
     /// NOTE: not all txs here are valid.  We're just agreeing on the order first.
     /// This means that block.AppHash does not include these txs.
     #[prost(bytes = "vec", repeated, tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]
     pub txs: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
 impl ::prost::Name for Data {
@@ -355,12 +378,14 @@ impl ::prost::Name for Data {
 }
 /// Vote represents a prevote or precommit vote from validators for
 /// consensus.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Vote {
     #[prost(enumeration = "SignedMsgType", tag = "1")]
     pub r#type: i32,
     #[prost(int64, tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub height: i64,
     #[prost(int32, tag = "3")]
     pub round: i32,
@@ -370,21 +395,25 @@ pub struct Vote {
     #[prost(message, optional, tag = "5")]
     pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
     #[prost(bytes = "vec", tag = "6")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub validator_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(int32, tag = "7")]
     pub validator_index: i32,
     /// Vote signature by the validator if they participated in consensus for the
     /// associated block.
     #[prost(bytes = "vec", tag = "8")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub signature: ::prost::alloc::vec::Vec<u8>,
     /// Vote extension provided by the application. Only valid for precommit
     /// messages.
     #[prost(bytes = "vec", tag = "9")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub extension: ::prost::alloc::vec::Vec<u8>,
     /// Vote extension signature by the validator if they participated in
     /// consensus for the associated block.
     /// Only valid for precommit messages.
     #[prost(bytes = "vec", tag = "10")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub extension_signature: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for Vote {
@@ -395,10 +424,12 @@ impl ::prost::Name for Vote {
     }
 }
 /// Commit contains the evidence that a block was committed by a set of validators.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Commit {
     #[prost(int64, tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub height: i64,
     #[prost(int32, tag = "2")]
     pub round: i32,
@@ -415,16 +446,23 @@ impl ::prost::Name for Commit {
     }
 }
 /// CommitSig is a part of the Vote included in a Commit.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommitSig {
     #[prost(enumeration = "BlockIdFlag", tag = "1")]
     pub block_id_flag: i32,
     #[prost(bytes = "vec", tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub validator_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
+    )]
     pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
     #[prost(bytes = "vec", tag = "4")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub signature: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for CommitSig {
@@ -506,6 +544,7 @@ impl ::prost::Name for Proposal {
         ::prost::alloc::format!("tendermint.types.{}", Self::NAME)
     }
 }
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignedHeader {
@@ -521,6 +560,7 @@ impl ::prost::Name for SignedHeader {
         ::prost::alloc::format!("tendermint.types.{}", Self::NAME)
     }
 }
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LightBlock {
@@ -556,12 +596,15 @@ impl ::prost::Name for BlockMeta {
     }
 }
 /// TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxProof {
     #[prost(bytes = "vec", tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub root_hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub data: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
     pub proof: ::core::option::Option<super::crypto::Proof>,
@@ -577,13 +620,11 @@ impl ::prost::Name for TxProof {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum SignedMsgType {
-    /// Unknown
     Unknown = 0,
-    /// Prevote
+    /// Votes
     Prevote = 1,
-    /// Precommit
     Precommit = 2,
-    /// Proposal
+    /// Proposals
     Proposal = 32,
 }
 impl SignedMsgType {
@@ -610,20 +651,26 @@ impl SignedMsgType {
         }
     }
 }
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Evidence {
     #[prost(oneof = "evidence::Sum", tags = "1, 2")]
+    #[cfg_attr(feature = "serde", serde(flatten))]
     pub sum: ::core::option::Option<evidence::Sum>,
 }
 /// Nested message and enum types in `Evidence`.
 pub mod evidence {
+    #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
     pub enum Sum {
         #[prost(message, tag = "1")]
+        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
         DuplicateVoteEvidence(super::DuplicateVoteEvidence),
         #[prost(message, tag = "2")]
+        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
         LightClientAttackEvidence(super::LightClientAttackEvidence),
     }
 }
@@ -635,6 +682,7 @@ impl ::prost::Name for Evidence {
     }
 }
 /// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DuplicateVoteEvidence {
@@ -643,10 +691,15 @@ pub struct DuplicateVoteEvidence {
     #[prost(message, optional, tag = "2")]
     pub vote_b: ::core::option::Option<Vote>,
     #[prost(int64, tag = "3")]
+    #[serde(alias = "TotalVotingPower")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub total_voting_power: i64,
     #[prost(int64, tag = "4")]
+    #[serde(alias = "ValidatorPower")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub validator_power: i64,
     #[prost(message, optional, tag = "5")]
+    #[serde(alias = "Timestamp")]
     pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
 }
 impl ::prost::Name for DuplicateVoteEvidence {
@@ -657,16 +710,19 @@ impl ::prost::Name for DuplicateVoteEvidence {
     }
 }
 /// LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LightClientAttackEvidence {
     #[prost(message, optional, tag = "1")]
     pub conflicting_block: ::core::option::Option<LightBlock>,
     #[prost(int64, tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub common_height: i64,
     #[prost(message, repeated, tag = "3")]
     pub byzantine_validators: ::prost::alloc::vec::Vec<Validator>,
     #[prost(int64, tag = "4")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub total_voting_power: i64,
     #[prost(message, optional, tag = "5")]
     pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
@@ -678,6 +734,7 @@ impl ::prost::Name for LightClientAttackEvidence {
         ::prost::alloc::format!("tendermint.types.{}", Self::NAME)
     }
 }
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EvidenceList {
@@ -691,6 +748,7 @@ impl ::prost::Name for EvidenceList {
         ::prost::alloc::format!("tendermint.types.{}", Self::NAME)
     }
 }
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Block {
@@ -799,13 +857,37 @@ pub struct CanonicalVote {
     pub round: i64,
     #[prost(message, optional, tag = "4")]
     pub block_id: ::core::option::Option<CanonicalBlockId>,
-    #[prost(message, optional, tag = "5")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
     #[prost(string, tag = "6")]
     pub chain_id: ::prost::alloc::string::String,
 }
 impl ::prost::Name for CanonicalVote {
     const NAME: &'static str = "CanonicalVote";
+    const PACKAGE: &'static str = "tendermint.types";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.types.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LegacyCanonicalVote {
+    /// type alias for byte
+    #[prost(enumeration = "SignedMsgType", tag = "1")]
+    pub r#type: i32,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag = "2")]
+    pub height: i64,
+    /// canonicalization requires fixed size encoding here
+    #[prost(sfixed64, tag = "3")]
+    pub round: i64,
+    #[prost(message, optional, tag = "4")]
+    pub block_id: ::core::option::Option<CanonicalBlockId>,
+    #[prost(message, optional, tag = "5")]
+    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    #[prost(string, tag = "6")]
+    pub chain_id: ::prost::alloc::string::String,
+}
+impl ::prost::Name for LegacyCanonicalVote {
+    const NAME: &'static str = "LegacyCanonicalVote";
     const PACKAGE: &'static str = "tendermint.types";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("tendermint.types.{}", Self::NAME)

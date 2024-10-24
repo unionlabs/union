@@ -1,7 +1,7 @@
 use bitvec::prelude::Msb0;
 use macros::model;
 
-use crate::cometbft::types::simple_validator::SimpleValidator;
+use crate::tendermint::types::simple_validator::SimpleValidator;
 
 #[model(proto(raw(protos::union::galois::api::v3::ValidatorSetCommit), from))]
 pub struct ValidatorSetCommit {

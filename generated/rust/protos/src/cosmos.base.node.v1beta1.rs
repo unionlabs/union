@@ -30,7 +30,7 @@ impl ::prost::Name for ConfigResponse {
         ::prost::alloc::format!("cosmos.base.node.v1beta1.{}", Self::NAME)
     }
 }
-/// StatusRequest defines the request structure for the status of a node.
+/// StateRequest defines the request structure for the status of a node.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusRequest {}
@@ -41,7 +41,7 @@ impl ::prost::Name for StatusRequest {
         ::prost::alloc::format!("cosmos.base.node.v1beta1.{}", Self::NAME)
     }
 }
-/// StatusResponse defines the response structure for the status of a node.
+/// StateResponse defines the response structure for the status of a node.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusResponse {

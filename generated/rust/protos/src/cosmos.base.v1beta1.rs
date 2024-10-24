@@ -39,4 +39,36 @@ impl ::prost::Name for DecCoin {
         ::prost::alloc::format!("cosmos.base.v1beta1.{}", Self::NAME)
     }
 }
+/// IntProto defines a Protobuf wrapper around an Int object.
+/// Deprecated: Prefer to use math.Int directly. It supports binary Marshal and Unmarshal.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct IntProto {
+    #[prost(string, tag = "1")]
+    pub int: ::prost::alloc::string::String,
+}
+impl ::prost::Name for IntProto {
+    const NAME: &'static str = "IntProto";
+    const PACKAGE: &'static str = "cosmos.base.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.base.v1beta1.{}", Self::NAME)
+    }
+}
+/// DecProto defines a Protobuf wrapper around a Dec object.
+/// Deprecated: Prefer to use math.LegacyDec directly. It supports binary Marshal and Unmarshal.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DecProto {
+    #[prost(string, tag = "1")]
+    pub dec: ::prost::alloc::string::String,
+}
+impl ::prost::Name for DecProto {
+    const NAME: &'static str = "DecProto";
+    const PACKAGE: &'static str = "cosmos.base.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.base.v1beta1.{}", Self::NAME)
+    }
+}
 // @@protoc_insertion_point(module)

@@ -20,12 +20,15 @@ impl ::prost::Name for App {
 /// Consensus captures the consensus rules for processing a block in the blockchain,
 /// including all blockchain data structures and the rules of the application's
 /// state transition machine.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Consensus {
     #[prost(uint64, tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub block: u64,
     #[prost(uint64, tag = "2")]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub app: u64,
 }
 impl ::prost::Name for Consensus {
