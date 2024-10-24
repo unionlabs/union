@@ -336,7 +336,7 @@
               crateAttrsWithArtifactsTest = crateAttrs // {
                 doNotLinkInheritedArtifacts = true;
                 cargoArtifacts = artifacts;
-                buildPhaseCargoCommand = "cargo test ${packageFilterArgs} ${cargoTestExtraArgs}";
+                buildPhaseCargoCommand = "CARGO_INCREMENTAL=0 cargo test ${packageFilterArgs} ${cargoTestExtraArgs}";
               };
               sharedAttrs = builtins.intersectAttrs crateAttrsWithArtifactsTest cargoTestExtraAttrs;
             in
