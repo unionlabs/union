@@ -1,5 +1,4 @@
 use core::{fmt::Debug, future::Future};
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 use futures::{stream::FuturesUnordered, StreamExt};
 use tracing::debug;
@@ -7,16 +6,32 @@ use tracing::debug;
 #[derive(Debug)]
 pub struct RaceClient<C> {
     pub clients: Vec<C>,
-    fastest: AtomicUsize,
+}
+
+#[derive(Clone, Debug, Copy)]
+pub struct RaceClientId {
+    index: usize,
+}
+
+pub struct RaceClientResponse<T> {
+    pub race_client_id: RaceClientId,
+    pub response: T,
+}
+
+impl <T> RaceClientResponse<T> {
+    fn new(index: usize, response: T) -> Self {
+        RaceClientResponse {
+            race_client_id: RaceClientId { index },
+            response,
+        }
+    }
 }
 
 impl<C: Clone> Clone for RaceClient<C> {
     fn clone(&self) -> Self {
         let clients = self.clients.clone();
-        let fastest = self.fastest.load(Ordering::Relaxed);
         Self {
             clients,
-            fastest: fastest.into(),
         }
     }
 }
@@ -25,12 +40,7 @@ impl<C> RaceClient<C> {
     pub fn new(clients: Vec<C>) -> Self {
         Self {
             clients,
-            fastest: AtomicUsize::new(0),
         }
-    }
-
-    pub fn fastest_index(&self) -> usize {
-        self.fastest.load(Ordering::Relaxed)
     }
 
     /// Run the provided closure over the clients, returning the first encountered Ok, or if all error, the first
@@ -43,12 +53,14 @@ impl<C> RaceClient<C> {
         F: Fn(&'a C) -> FUT,
     >(
         &'a self,
+        race_client_id: Option<RaceClientId>,
         f: F,
-    ) -> Result<T, E> {
+    ) -> Result<RaceClientResponse<T>, E> {
         let mut futures: FuturesUnordered<_> = self
             .clients
             .iter()
             .enumerate()
+            .filter(|(i, _)| race_client_id.as_ref().is_none_or(|id| &id.index == i))
             .map(|(i, c)| {
                 let f = f(c);
                 async move {
@@ -62,8 +74,7 @@ impl<C> RaceClient<C> {
         loop {
             match futures.next().await {
                 Some((i, Ok(res))) => {
-                    self.fastest.store(i, Ordering::Relaxed);
-                    return Ok(res);
+                    return Ok(RaceClientResponse::new(i, res));
                 }
                 Some((_, Err(err))) => {
                     debug!("error racing client requests: {:?}", err);
@@ -89,12 +100,14 @@ impl<C> RaceClient<C> {
         F: Fn(&'a C) -> FUT,
     >(
         &'a self,
+        race_client_id: Option<RaceClientId>,
         f: F,
-    ) -> Result<Option<T>, E> {
+    ) -> Result<Option<RaceClientResponse<T>>, E> {
         let mut futures: FuturesUnordered<_> = self
             .clients
             .iter()
             .enumerate()
+            .filter(|(i, _)| race_client_id.as_ref().is_none_or(|id| &id.index == i))
             .map(|(i, c)| {
                 let f = f(c);
                 async move {
@@ -108,8 +121,7 @@ impl<C> RaceClient<C> {
         loop {
             match futures.next().await {
                 Some((i, Ok(Some(res)))) => {
-                    self.fastest.store(i, Ordering::Relaxed);
-                    return Ok(Some(res));
+                    return Ok(Some(RaceClientResponse::new(i, res)));
                 }
                 Some((_, Ok(None))) => continue,
                 Some((_, Err(err))) => {
