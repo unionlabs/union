@@ -9,27 +9,29 @@ import (
 	"math/rand"
 	"time"
 
-	"cosmossdk.io/math"
+	tmtypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
-	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/proto/tendermint/version"
-	"github.com/cometbft/cometbft/types"
-	comettypes "github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/assert"
-
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/types"
+	comettypes "github.com/cometbft/cometbft/types"
+
 	"github.com/consensys/gnark-crypto/ecc"
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 
 	"github.com/consensys/gnark/frontend"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
+	"github.com/consensys/gnark/test"
+
+	"cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/stretchr/testify/assert"
 
 	"testing"
-
-	"github.com/consensys/gnark/test"
 )
 
 type Pairing struct {

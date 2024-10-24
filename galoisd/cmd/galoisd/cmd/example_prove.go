@@ -5,21 +5,26 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	provergrpc "galois/grpc/api/v3"
 	"math/big"
 	"strconv"
 	"time"
 
-	"cosmossdk.io/math"
+	tmtypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/merkle"
-	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/types"
+
 	curve "github.com/consensys/gnark-crypto/ecc/bn254"
+
+	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/spf13/cobra"
+
+	provergrpc "galois/grpc/api/v3"
 )
 
 func marshalValidators(validators []*tmtypes.SimpleValidator) ([]byte, error) {
@@ -190,7 +195,7 @@ func ExampleProveCmd() *cobra.Command {
 
 			canonicalVote := types.CanonicalizeVote(chainID, vote)
 
-			res, err := client.Prove(ctx, &provergrpc.ProveRequest{
+			req := provergrpc.ProveRequest{
 				Vote:            &canonicalVote,
 				UntrustedHeader: header.ToProto(),
 				TrustedCommit: &provergrpc.ValidatorSetCommit{
@@ -203,7 +208,9 @@ func ExampleProveCmd() *cobra.Command {
 					Signatures: untrustedSignatures,
 					Bitmap:     untrustedBitmap.Bytes(),
 				},
-			})
+			}
+
+			res, err := client.Prove(ctx, &req)
 			if err != nil {
 				return err
 			}

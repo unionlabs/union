@@ -1,10 +1,10 @@
 package bindings
 
 import (
+	"context"
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	bankkeeper "cosmossdk.io/x/bank/keeper"
 
 	bindingstypes "union/x/tokenfactory/bindings/types"
 	tokenfactorykeeper "union/x/tokenfactory/keeper"
@@ -24,7 +24,7 @@ func NewQueryPlugin(b *bankkeeper.BaseKeeper, tfk *tokenfactorykeeper.Keeper) *Q
 }
 
 // GetDenomAdmin is a query to get denom admin.
-func (qp QueryPlugin) GetDenomAdmin(ctx sdk.Context, denom string) (*bindingstypes.AdminResponse, error) {
+func (qp QueryPlugin) GetDenomAdmin(ctx context.Context, denom string) (*bindingstypes.AdminResponse, error) {
 	metadata, err := qp.tokenFactoryKeeper.GetAuthorityMetadata(ctx, denom)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get admin for denom: %s", denom)
@@ -32,13 +32,13 @@ func (qp QueryPlugin) GetDenomAdmin(ctx sdk.Context, denom string) (*bindingstyp
 	return &bindingstypes.AdminResponse{Admin: metadata.Admin}, nil
 }
 
-func (qp QueryPlugin) GetDenomsByCreator(ctx sdk.Context, creator string) (*bindingstypes.DenomsByCreatorResponse, error) {
+func (qp QueryPlugin) GetDenomsByCreator(ctx context.Context, creator string) (*bindingstypes.DenomsByCreatorResponse, error) {
 	// TODO: validate creator address
 	denoms := qp.tokenFactoryKeeper.GetDenomsFromCreator(ctx, creator)
 	return &bindingstypes.DenomsByCreatorResponse{Denoms: denoms}, nil
 }
 
-func (qp QueryPlugin) GetMetadata(ctx sdk.Context, denom string) (*bindingstypes.MetadataResponse, error) {
+func (qp QueryPlugin) GetMetadata(ctx context.Context, denom string) (*bindingstypes.MetadataResponse, error) {
 	metadata, found := qp.bankKeeper.GetDenomMetaData(ctx, denom)
 	var parsed *bindingstypes.Metadata
 	if found {
@@ -47,7 +47,7 @@ func (qp QueryPlugin) GetMetadata(ctx sdk.Context, denom string) (*bindingstypes
 	return &bindingstypes.MetadataResponse{Metadata: parsed}, nil
 }
 
-func (qp QueryPlugin) GetParams(ctx sdk.Context) (*bindingstypes.ParamsResponse, error) {
+func (qp QueryPlugin) GetParams(ctx context.Context) (*bindingstypes.ParamsResponse, error) {
 	params := qp.tokenFactoryKeeper.GetParams(ctx)
 	return &bindingstypes.ParamsResponse{
 		Params: bindingstypes.Params{

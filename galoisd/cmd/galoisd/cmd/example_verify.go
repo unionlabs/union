@@ -6,20 +6,24 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	provergrpc "galois/grpc/api/v3"
 	"log"
 	"math/big"
 	"strconv"
 	"time"
 
-	"cosmossdk.io/math"
+	tmtypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	version "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
 	ce "github.com/cometbft/cometbft/crypto/encoding"
-	tmtypes "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/types"
+
+	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/spf13/cobra"
+
+	provergrpc "galois/grpc/api/v3"
 )
 
 // Example call to the prover `Prove` and then `Verify` endpoints using hardcoded values dumped from a local devnet.

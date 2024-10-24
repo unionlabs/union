@@ -7301,37 +7301,6 @@
         }
       }
     },
-    "/deferredack.v1beta1/params": {
-      "get": {
-        "tags": [
-          "Query"
-        ],
-        "description": "Params defines a gRPC query method that returns the deferredack module's\n parameters.",
-        "operationId": "Query_Params",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryParamsResponse"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Default error response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Status"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/tokenfactory.v1beta1/denoms/{denom}/authority_metadata": {
       "get": {
         "tags": [

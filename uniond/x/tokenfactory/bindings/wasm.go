@@ -3,7 +3,7 @@ package bindings
 import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	bankkeeper "cosmossdk.io/x/bank/keeper"
 
 	tokenfactorykeeper "union/x/tokenfactory/keeper"
 )

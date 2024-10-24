@@ -56,7 +56,7 @@ func GenStateProof() *cobra.Command {
 
 			path := args[2]
 
-			res, err := clientCtx.QueryABCI(abci.RequestQuery{
+			res, err := clientCtx.QueryABCI(abci.QueryRequest{
 				Data:   data,
 				Path:   path,
 				Height: int64(height),

@@ -1,8 +1,0 @@
-/.devenv/
-/.direnv/
-/.idea/
-/.pre-commit-config.yaml
-/bin/
-/build/
-/var/
-/vendor/

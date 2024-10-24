@@ -79,51 +79,51 @@
     "cometbls": {
       "flake": false,
       "locked": {
-        "lastModified": 1706545041,
-        "narHash": "sha256-qX37SK6d2kEgnHg5a8YDZQNhb5R+GcK7gp7iDTZGYgg=",
+        "lastModified": 1729267630,
+        "narHash": "sha256-bOast89F1/pcT8N13COxLms5nC7+dlxBjR320fGoqKw=",
         "owner": "unionlabs",
-        "repo": "cometbls",
-        "rev": "360766577f7daa89f958a4c28eee909340eb4b02",
+        "repo": "cometbft",
+        "rev": "40cbc598984d75fc4c8af1f100674dc459cda25d",
         "type": "github"
       },
       "original": {
         "owner": "unionlabs",
-        "repo": "cometbls",
-        "rev": "360766577f7daa89f958a4c28eee909340eb4b02",
+        "repo": "cometbft",
+        "rev": "40cbc598984d75fc4c8af1f100674dc459cda25d",
         "type": "github"
       }
     },
     "cosmosproto": {
       "flake": false,
       "locked": {
-        "lastModified": 1678351217,
-        "narHash": "sha256-kFm1ChSmm5pU9oJqKmWq4KfO/hxgxzvcSzr66oTulos=",
+        "lastModified": 1713435259,
+        "narHash": "sha256-vMq1+gMLgUdhClbz38+U3MIh9Wzw0DvyAMX6M4ZZBso=",
         "owner": "cosmos",
         "repo": "cosmos-proto",
-        "rev": "78e33f25b874e7639f540037599d8ea1d161a62c",
+        "rev": "0748a2ad4a5c78b1db6c8090db01e255bcc91365",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
         "repo": "cosmos-proto",
-        "rev": "78e33f25b874e7639f540037599d8ea1d161a62c",
+        "rev": "0748a2ad4a5c78b1db6c8090db01e255bcc91365",
         "type": "github"
       }
     },
     "cosmossdk": {
       "flake": false,
       "locked": {
-        "lastModified": 1711746382,
-        "narHash": "sha256-lxIrlLML6DItlUCMezzQ8FwysgaH1tF/d6+jCcmNm54=",
+        "lastModified": 1729272985,
+        "narHash": "sha256-i6D5SOzxjrvTDZVqEkmm12Z+wfM2kPFDInH9AHtIFR0=",
         "owner": "unionlabs",
-        "repo": "cosmos-sdk",
-        "rev": "7d067955f7028f45b3ce205b5c35aab2e1946b19",
+        "repo": "cosmos-sdk-union",
+        "rev": "c2982236c55751ea227679164594ce572bb857f3",
         "type": "github"
       },
       "original": {
         "owner": "unionlabs",
-        "repo": "cosmos-sdk",
-        "rev": "7d067955f7028f45b3ce205b5c35aab2e1946b19",
+        "repo": "cosmos-sdk-union",
+        "rev": "c2982236c55751ea227679164594ce572bb857f3",
         "type": "github"
       }
     },
@@ -371,17 +371,17 @@
     "ibc-go": {
       "flake": false,
       "locked": {
-        "lastModified": 1700058834,
-        "narHash": "sha256-vGtOGyoW3qZwMYHmTWzugx/DAxsiUn8upc49hjL0uJg=",
-        "owner": "cosmos",
-        "repo": "ibc-go",
-        "rev": "c98311964dc550b9fe9a5bff8b6dd8e35bf13642",
+        "lastModified": 1729132086,
+        "narHash": "sha256-OF2QFcEwDTVbYO2DcUdyzi504JglKge14lF71ozqCgQ=",
+        "owner": "unionlabs",
+        "repo": "ibc-go-union",
+        "rev": "4fbe0649cdf00d58090909bc4dfe5a7be32b013e",
         "type": "github"
       },
       "original": {
-        "owner": "cosmos",
-        "repo": "ibc-go",
-        "rev": "c98311964dc550b9fe9a5bff8b6dd8e35bf13642",
+        "owner": "unionlabs",
+        "repo": "ibc-go-union",
+        "rev": "4fbe0649cdf00d58090909bc4dfe5a7be32b013e",
         "type": "github"
       }
     },
@@ -435,16 +435,16 @@
     },
     "nixpkgs-go": {
       "locked": {
-        "lastModified": 1707786466,
-        "narHash": "sha256-yLPfrmW87M2qt+8bAmwopJawa+MJLh3M9rUbXtpUc1o=",
+        "lastModified": 1728492678,
+        "narHash": "sha256-9UTxR8eukdg+XZeHgxW5hQA9fIKHsKCdOIUycTryeVw=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "01885a071465e223f8f68971f864b15829988504",
+        "rev": "5633bcff0c6162b9e4b5f1264264611e950c8ec7",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-23.11",
+        "ref": "nixos-unstable",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -622,7 +622,8 @@
         "wasmd": "wasmd",
         "wasmvm": "wasmvm",
         "wasmvm-1_5_0": "wasmvm-1_5_0",
-        "wasmvm-2_0_1": "wasmvm-2_0_1"
+        "wasmvm-2_0_1": "wasmvm-2_0_1",
+        "wasmvm-2_1_3": "wasmvm-2_1_3"
       }
     },
     "rust-overlay": {
@@ -802,17 +803,17 @@
     "wasmd": {
       "flake": false,
       "locked": {
-        "lastModified": 1713797184,
-        "narHash": "sha256-k7c8RdLggeM6hSQhJt0UREY/48T3ZRSSijA+TMFKhUc=",
-        "owner": "CosmWasm",
+        "lastModified": 1729288814,
+        "narHash": "sha256-eyaJOvokQEDfgv4QOuF3N0hpxOVR/xHO8jMWiwCFyZI=",
+        "owner": "unionlabs",
         "repo": "wasmd",
-        "rev": "7b418de3f6cf8fbac1e9cb11c57983fcc17264d0",
+        "rev": "913c24df4e0a7a3d791d27fc95313d559e9428b6",
         "type": "github"
       },
       "original": {
-        "owner": "CosmWasm",
+        "owner": "unionlabs",
         "repo": "wasmd",
-        "rev": "7b418de3f6cf8fbac1e9cb11c57983fcc17264d0",
+        "rev": "913c24df4e0a7a3d791d27fc95313d559e9428b6",
         "type": "github"
       }
     },
@@ -863,6 +864,23 @@
       "original": {
         "owner": "CosmWasm",
         "ref": "v2.0.1",
+        "repo": "wasmvm",
+        "type": "github"
+      }
+    },
+    "wasmvm-2_1_3": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1727089467,
+        "narHash": "sha256-gYrK2EHhXnearJgLX38O6NLI6TfoGtpzA9be/7S/0ZU=",
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "2a104d140a5b2974dab7c15044da652769018cbe",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "ref": "v2.1.3",
         "repo": "wasmvm",
         "type": "github"
       }

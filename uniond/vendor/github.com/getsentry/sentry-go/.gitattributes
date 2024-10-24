@@ -1,5 +1,0 @@
-# Tell Git to use LF for line endings on all platforms.
-# Required to have correct test data on Windows.
-# https://github.com/mvdan/github-actions-golang#caveats
-# https://github.com/actions/checkout/issues/135#issuecomment-613361104
-* text eol=lf
