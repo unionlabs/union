@@ -16,6 +16,7 @@
         };
         extraEnv = {
           SQLX_OFFLINE = "1";
+          CARGO_INCREMENTAL = "0";
         };
       };
     in
