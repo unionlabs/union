@@ -3,14 +3,14 @@ import MatrixCover from "../../MatrixCover.astro"
 import H1 from "../../typography/h1.astro"
 import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
-import {renderRichText, renderTitle} from "../../../lib/contentful/render.ts"
+import { renderRichText, renderTitle } from "../../../lib/contentful/render.ts"
 
 interface Props {
   title: any
   text: any
 }
 
-const {title, text} = Astro.props
+const { title, text } = Astro.props
 
 const titleHtml = renderTitle(title)
 const textHtml = renderRichText(text)
