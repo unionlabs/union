@@ -83,7 +83,7 @@ impl BlockHandle for AptosBlockHandle {
 
     async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
         let reference = self.reference();
-        debug!("{}: inserting", reference);
+        debug!("{}: updating", reference);
 
         let (block, transactions) = match &self.details {
             BlockDetails::Lazy(block) => (

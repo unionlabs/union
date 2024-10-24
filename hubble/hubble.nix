@@ -10,6 +10,10 @@
     let
       hubble = crane.buildWorkspaceMember {
         crateDirFromRoot = "hubble";
+        cargoTestExtraAttrs = {
+          partitions = 1;
+          partitionType = "count";
+        };
         extraEnv = {
           SQLX_OFFLINE = "1";
         };
