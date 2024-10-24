@@ -1,5 +1,6 @@
 use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 
+use cometbft_types::types::{validator::Validator, validator_set::ValidatorSet};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
@@ -7,10 +8,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tendermint_light_client_types::Header;
 use tracing::instrument;
-use unionlabs::{
-    hash::H160,
-    tendermint::types::{validator::Validator, validator_set::ValidatorSet},
-};
+use unionlabs::hash::H160;
 use voyager_message::{
     call::Call,
     core::ChainId,

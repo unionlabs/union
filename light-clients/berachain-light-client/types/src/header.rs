@@ -47,7 +47,7 @@ pub mod proto {
     }
 
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum TryFromHeaderError {
+    pub enum Error {
         #[error(transparent)]
         MissingField(#[from] MissingField),
         #[error("invalid cometbft header")]
@@ -61,7 +61,7 @@ pub mod proto {
     }
 
     impl TryFrom<protos::union::ibc::lightclients::berachain::v1::Header> for Header {
-        type Error = TryFromHeaderError;
+        type Error = Error;
 
         fn try_from(
             value: protos::union::ibc::lightclients::berachain::v1::Header,
@@ -69,16 +69,16 @@ pub mod proto {
             Ok(Self {
                 cometbft_header: required!(value.cometbft_header)?
                     .try_into()
-                    .map_err(TryFromHeaderError::CometbftHeader)?,
+                    .map_err(Error::CometbftHeader)?,
                 execution_header: required!(value.execution_header)?
                     .try_into()
-                    .map_err(TryFromHeaderError::ExecutionHeader)?,
+                    .map_err(Error::ExecutionHeader)?,
                 execution_header_proof: required!(value.execution_header_proof)?
                     .try_into()
-                    .map_err(TryFromHeaderError::ExecutionHeaderProof)?,
+                    .map_err(Error::ExecutionHeaderProof)?,
                 account_proof: required!(value.account_proof)?
                     .try_into()
-                    .map_err(TryFromHeaderError::AccountProof)?,
+                    .map_err(Error::AccountProof)?,
             })
         }
     }

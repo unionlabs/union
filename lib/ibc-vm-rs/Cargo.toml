@@ -9,6 +9,7 @@ version      = "0.1.0"
 enumorph                 = { workspace = true }
 frame-support-procedural = { workspace = true }
 hex                      = { workspace = true }
+ibc-events               = { workspace = true }
 lazy_static              = { workspace = true }
 schemars                 = { workspace = true, features = ["derive"], optional = true }
 serde                    = { workspace = true }

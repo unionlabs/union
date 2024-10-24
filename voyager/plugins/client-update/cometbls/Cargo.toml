@@ -5,10 +5,12 @@ version = "0.1.0"
 
 [dependencies]
 cometbft-rpc                          = { workspace = true }
+cometbft-types.workspace              = true
 cometbls-light-client-types.workspace = true
 dashmap                               = { workspace = true }
 enumorph                              = { workspace = true }
 futures                               = { workspace = true }
+galois-rpc.workspace                  = true
 itertools                             = "0.13.0"
 jsonrpsee                             = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                                = { workspace = true }

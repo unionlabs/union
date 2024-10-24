@@ -27,7 +27,7 @@ pub mod proto {
     }
 
     #[derive(Debug, PartialEq, Clone, thiserror::Error)]
-    pub enum TryFromConsensusStateError {
+    pub enum Error {
         #[error("invalid state root")]
         StateRoot(#[source] InvalidLength),
         #[error("invalid ibc storage root")]
@@ -35,21 +35,18 @@ pub mod proto {
     }
 
     impl TryFrom<protos::union::ibc::lightclients::scroll::v1::ConsensusState> for ConsensusState {
-        type Error = TryFromConsensusStateError;
+        type Error = Error;
 
         fn try_from(
             value: protos::union::ibc::lightclients::scroll::v1::ConsensusState,
         ) -> Result<Self, Self::Error> {
             Ok(Self {
-                state_root: value
-                    .state_root
-                    .try_into()
-                    .map_err(TryFromConsensusStateError::IbcStorageRoot)?,
+                state_root: value.state_root.try_into().map_err(Error::IbcStorageRoot)?,
                 timestamp: value.timestamp,
                 ibc_storage_root: value
                     .ibc_storage_root
                     .try_into()
-                    .map_err(TryFromConsensusStateError::IbcStorageRoot)?,
+                    .map_err(Error::IbcStorageRoot)?,
             })
         }
     }

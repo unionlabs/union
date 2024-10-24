@@ -4,14 +4,15 @@ name    = "tendermint-light-client-types"
 version = "0.1.0"
 
 [dependencies]
-protos    = { workspace = true, features = ["ibc+lightclients+tendermint+v1"] }
-serde     = { workspace = true, features = ["derive"] }
-thiserror = { workspace = true }
-unionlabs = { workspace = true }
+cometbft-types.workspace = true
+protos                   = { workspace = true, features = ["ibc+lightclients+tendermint+v1"] }
+serde                    = { workspace = true, features = ["derive"] }
+thiserror                = { workspace = true }
+unionlabs                = { workspace = true }
 
 [features]
 default = ["proto"]
-proto   = ["unionlabs/proto"]
+proto   = ["unionlabs/proto", "cometbft-types/proto"]
 
 [dev-dependencies]
 hex-literal = { workspace = true }

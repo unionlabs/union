@@ -29,6 +29,7 @@ sha2            = { workspace = true }
 sha3            = { workspace = true }
 thiserror       = { workspace = true }
 
+cometbft-types                = { workspace = true, features = ["proto", "hash"] }
 ics008-wasm-client            = { workspace = true }
 ics23                         = { workspace = true }
 tendermint-light-client-types = { workspace = true, features = ["proto"] }

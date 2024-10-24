@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 
 use enumorph::Enumorph;
 use macros::model;
-use unionlabs::{events::IbcEvent, hash::H256, ibc::core::client::height::Height};
+use unionlabs::{hash::H256, ibc::core::client::height::Height};
 
 #[model]
 #[derive(Enumorph)]
@@ -29,5 +29,5 @@ pub struct FetchTransactions {
 pub struct MakeChainEvent {
     pub height: Height,
     pub tx_hash: H256,
-    pub event: IbcEvent,
+    pub event: ibc_events::IbcEvent,
 }

@@ -2,17 +2,17 @@
 
 use std::collections::BTreeMap;
 
+use cometbft_types::{
+    crypto::public_key::PublicKey,
+    types::{
+        block_id::BlockId, commit::Commit, commit_sig::CommitSig, signed_header::SignedHeader,
+        validator_set::ValidatorSet,
+    },
+};
 use tendermint_light_client_types::Fraction;
 use unionlabs::{
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::H160,
-    tendermint::{
-        crypto::public_key::PublicKey,
-        types::{
-            block_id::BlockId, commit::Commit, commit_sig::CommitSig, signed_header::SignedHeader,
-            validator_set::ValidatorSet,
-        },
-    },
 };
 
 use crate::{

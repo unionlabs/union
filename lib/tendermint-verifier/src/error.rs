@@ -1,8 +1,8 @@
+use cometbft_types::types::block_id::BlockId;
 use unionlabs::{
     errors::InvalidLength,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::{H160, H256},
-    tendermint::types::block_id::BlockId,
 };
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]

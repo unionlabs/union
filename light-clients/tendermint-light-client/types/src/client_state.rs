@@ -50,7 +50,7 @@ pub mod proto {
     }
 
     #[derive(Debug, PartialEq, Clone, thiserror::Error)]
-    pub enum TryFromClientStateError {
+    pub enum Error {
         #[error(transparent)]
         MissingField(#[from] MissingField),
         #[error("invalid trust level")]
@@ -66,7 +66,7 @@ pub mod proto {
     }
 
     impl TryFrom<protos::ibc::lightclients::tendermint::v1::ClientState> for ClientState {
-        type Error = TryFromClientStateError;
+        type Error = Error;
 
         fn try_from(
             value: protos::ibc::lightclients::tendermint::v1::ClientState,
@@ -75,16 +75,16 @@ pub mod proto {
                 chain_id: value.chain_id,
                 trust_level: required!(value.trust_level)?
                     .try_into()
-                    .map_err(TryFromClientStateError::TrustLevel)?,
+                    .map_err(Error::TrustLevel)?,
                 trusting_period: required!(value.trusting_period)?
                     .try_into()
-                    .map_err(TryFromClientStateError::TrustingPeriod)?,
+                    .map_err(Error::TrustingPeriod)?,
                 unbonding_period: required!(value.unbonding_period)?
                     .try_into()
-                    .map_err(TryFromClientStateError::TrustingPeriod)?,
+                    .map_err(Error::TrustingPeriod)?,
                 max_clock_drift: required!(value.max_clock_drift)?
                     .try_into()
-                    .map_err(TryFromClientStateError::TrustingPeriod)?,
+                    .map_err(Error::TrustingPeriod)?,
                 frozen_height: value.frozen_height.map(Into::into),
                 latest_height: required!(value.latest_height)?.into(),
                 proof_specs: value
@@ -92,7 +92,7 @@ pub mod proto {
                     .into_iter()
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<_>, _>>()
-                    .map_err(TryFromClientStateError::ProofSpecs)?,
+                    .map_err(Error::ProofSpecs)?,
                 upgrade_path: value.upgrade_path,
             })
         }

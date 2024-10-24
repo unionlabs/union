@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [dependencies]
 cometbft-rpc                  = { workspace = true }
+cometbft-types.workspace      = true
 dashmap                       = { workspace = true }
 enumorph                      = { workspace = true }
 futures                       = { workspace = true }

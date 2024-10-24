@@ -1,19 +1,19 @@
 use std::num::NonZeroU64;
 
+use cometbft_types::{
+    abci::{exec_tx_result::ExecTxResult, response_query::ResponseQuery},
+    crypto::public_key::PublicKey,
+    p2p::default_node_info::DefaultNodeInfo,
+    types::{
+        block::Block, block_id::BlockId, signed_header::SignedHeader, tx_proof::TxProof,
+        validator::Validator,
+    },
+};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedU8,
     google::protobuf::timestamp::Timestamp,
     hash::{hash_v2::HexUnprefixed, H160, H256},
-    tendermint::{
-        abci::{exec_tx_result::ExecTxResult, response_query::ResponseQuery},
-        crypto::public_key::PublicKey,
-        p2p::default_node_info::DefaultNodeInfo,
-        types::{
-            block::Block, block_id::BlockId, signed_header::SignedHeader, tx_proof::TxProof,
-            validator::Validator,
-        },
-    },
 };
 
 use crate::serde::{serde_as, serde_as_list, serde_as_opt};

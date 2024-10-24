@@ -1,0 +1,13 @@
+[package]
+edition = "2021"
+name    = "ibc-events"
+version = "0.1.0"
+
+[dependencies]
+cometbft-types = { workspace = true }
+enumorph       = { workspace = true }
+hex            = { workspace = true }
+serde          = { workspace = true }
+serde-utils    = { workspace = true }
+thiserror      = { workspace = true }
+unionlabs      = { workspace = true }

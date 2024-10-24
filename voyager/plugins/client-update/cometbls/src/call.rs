@@ -1,6 +1,6 @@
 use enumorph::Enumorph;
 use macros::model;
-use unionlabs::{ibc::core::client::height::Height, union::galois::prove_request::ProveRequest};
+use unionlabs::ibc::core::client::height::Height;
 
 #[model]
 #[derive(Enumorph)]
@@ -18,5 +18,5 @@ pub struct FetchUpdate {
 
 #[model]
 pub struct FetchProveRequest {
-    pub request: ProveRequest,
+    pub request: galois_rpc::prove_request::ProveRequest,
 }

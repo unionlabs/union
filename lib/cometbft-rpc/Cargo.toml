@@ -10,10 +10,11 @@ workspace = true
 
 [dependencies]
 base64                         = { workspace = true }
+cometbft-types                 = { workspace = true, features = ["proto"] }
 hex                            = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 macros                         = { workspace = true }
-protos                         = { workspace = true }
+protos                         = { workspace = true, features = ["serde", "tendermint+abci", "tendermint+blocksync", "tendermint+consensus", "tendermint+crypto", "tendermint+libs+bits", "tendermint+mempool", "tendermint+p2p", "tendermint+privval", "tendermint+rpc+grpc", "tendermint+state", "tendermint+statesync", "tendermint+store", "tendermint+types", "tendermint+version"] }
 reconnecting-jsonrpc-ws-client = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde-utils                    = { workspace = true }

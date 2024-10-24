@@ -26,7 +26,7 @@ pub mod proto {
     }
 
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum TryFromMisbehaviourError {
+    pub enum Error {
         #[error(transparent)]
         MissingField(#[from] MissingField),
         #[error("invalid signed header")]
@@ -34,7 +34,7 @@ pub mod proto {
     }
 
     impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::Misbehaviour> for Misbehaviour {
-        type Error = TryFromMisbehaviourError;
+        type Error = Error;
 
         fn try_from(
             value: protos::union::ibc::lightclients::cometbls::v1::Misbehaviour,

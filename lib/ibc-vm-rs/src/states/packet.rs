@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    events,
     ibc::core::{
         channel::{self, channel::Channel, order::Order, packet::Packet},
         client::height::Height,
@@ -138,7 +137,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     .into(),
                 ) {
                     Some(_) => Either::Right((
-                        vec![IbcEvent::RecvPacket(events::RecvPacket {
+                        vec![IbcEvent::RecvPacket(ibc_events::RecvPacket {
                             packet_data_hex: packet.data,
                             packet_timeout_height: packet.timeout_height,
                             packet_timeout_timestamp: packet.timeout_timestamp,
@@ -220,7 +219,7 @@ impl<T: IbcHost> Runnable<T> for RecvPacket {
                     vec![1],
                 )?;
 
-                let mut events = vec![IbcEvent::RecvPacket(events::RecvPacket {
+                let mut events = vec![IbcEvent::RecvPacket(ibc_events::RecvPacket {
                     packet_data_hex: packet.data.clone(),
                     packet_timeout_height: packet.timeout_height,
                     packet_timeout_timestamp: packet.timeout_timestamp,
@@ -256,7 +255,7 @@ pub fn write_acknowledgement<T: IbcHost>(
     channel: &Channel,
     packet: Packet,
     ack: Vec<u8>,
-) -> Result<events::WriteAcknowledgement, T::Error> {
+) -> Result<ibc_events::WriteAcknowledgement, T::Error> {
     let ack_key = AcknowledgementPath {
         port_id: packet.destination_port.clone(),
         channel_id: packet.destination_channel.clone(),
@@ -273,7 +272,7 @@ pub fn write_acknowledgement<T: IbcHost>(
 
     host.commit_raw(ack_key, host.sha256(ack.clone()))?;
 
-    Ok(events::WriteAcknowledgement {
+    Ok(ibc_events::WriteAcknowledgement {
         packet_data_hex: packet.data,
         packet_timeout_height: packet.timeout_height,
         packet_timeout_timestamp: packet.timeout_timestamp,
@@ -495,7 +494,7 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
                 )?;
 
                 Either::Right((
-                    vec![IbcEvent::SendPacket(events::SendPacket {
+                    vec![IbcEvent::SendPacket(ibc_events::SendPacket {
                         packet_data_hex: packet.data,
                         packet_timeout_height: timeout_height,
                         packet_timeout_timestamp: timeout_timestamp,
@@ -644,7 +643,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                     .into(),
                 ) else {
                     return Ok(Either::Right((
-                        vec![IbcEvent::AcknowledgePacket(events::AcknowledgePacket {
+                        vec![IbcEvent::AcknowledgePacket(ibc_events::AcknowledgePacket {
                             packet_timeout_height: packet.timeout_height,
                             packet_timeout_timestamp: packet.timeout_timestamp,
                             packet_sequence: packet.sequence,
@@ -738,7 +737,7 @@ impl<T: IbcHost> Runnable<T> for Acknowledgement {
                 )?;
 
                 Either::Right((
-                    vec![IbcEvent::AcknowledgePacket(events::AcknowledgePacket {
+                    vec![IbcEvent::AcknowledgePacket(ibc_events::AcknowledgePacket {
                         packet_timeout_height: packet.timeout_height,
                         packet_timeout_timestamp: packet.timeout_timestamp,
                         packet_sequence: packet.sequence,
