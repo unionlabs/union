@@ -1,7 +1,6 @@
 use alloy::rpc::types::Block;
 use axum::async_trait;
 use color_eyre::eyre::Report;
-use const_hex::ToHexExt;
 use futures::{stream::FuturesOrdered, Stream};
 use serde::{Deserialize, Serialize};
 use sqlx::Postgres;
@@ -17,7 +16,7 @@ use crate::{
             provider::RpcProviderId,
         },
     },
-    postgres::{update_contracts_indexed_heights, ChainId, InsertMode},
+    postgres::{ChainId, InsertMode},
 };
 
 #[derive(Clone)]
@@ -100,7 +99,7 @@ impl BlockHandle for EthBlockHandle {
 
     async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
         let reference = self.reference();
-        debug!("{}", reference);
+        debug!("{}: inserting", reference);
 
         let block_to_insert = self.get_block_insert().await?;
 
@@ -112,28 +111,12 @@ impl BlockHandle for EthBlockHandle {
                     block_to_insert.transactions.len()
                 );
 
-                // TODO: remove to this module once legacy eth is removed
                 insert_batch_logs(tx, vec![block_to_insert.into()], InsertMode::Insert).await?;
             }
             None => {
                 debug!("{}: block without transactions => ignore", reference);
             }
         }
-
-        // TODO: remove once all data based on new hubble tables
-        debug!("{}: updating contract heights", reference);
-        update_contracts_indexed_heights(
-            tx,
-            self.eth_client
-                .contracts
-                .iter()
-                .map(|addr| format!("0x{}", addr.encode_hex()))
-                .collect(),
-            reference.height as i64,
-            reference.timestamp,
-            self.eth_client.chain_id,
-        )
-        .await?;
 
         debug!("{}: done", reference);
 
@@ -142,7 +125,7 @@ impl BlockHandle for EthBlockHandle {
 
     async fn update(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
         let reference = self.reference();
-        debug!("{}", reference);
+        debug!("{}: updating", reference);
 
         let block_to_insert = self.get_block_insert().await?;
 
