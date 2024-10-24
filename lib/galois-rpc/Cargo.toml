@@ -1,0 +1,20 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "galois-rpc"
+repository.workspace   = true
+version                = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+cometbft-types        = { workspace = true, features = ["proto"] }
+protos                = { workspace = true, features = ["union+galois+api+v3", "client"] }
+serde-utils.workspace = true
+serde.workspace       = true
+thiserror.workspace   = true
+unionlabs.workspace   = true
+
+[dev-dependencies]
+serde_json = { workspace = true }

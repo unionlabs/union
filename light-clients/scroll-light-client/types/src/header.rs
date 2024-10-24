@@ -46,7 +46,7 @@ pub mod proto {
     }
 
     #[derive(Debug, PartialEq, Clone, thiserror::Error)]
-    pub enum TryFromHeaderError {
+    pub enum Error {
         #[error(transparent)]
         MissingField(#[from] MissingField),
         #[error("invalid l1_account_proof")]
@@ -68,7 +68,7 @@ pub mod proto {
     }
 
     impl TryFrom<protos::union::ibc::lightclients::scroll::v1::Header> for Header {
-        type Error = TryFromHeaderError;
+        type Error = Error;
 
         fn try_from(
             value: protos::union::ibc::lightclients::scroll::v1::Header,
@@ -77,19 +77,19 @@ pub mod proto {
                 l1_height: required!(value.l1_height)?.into(),
                 l1_account_proof: required!(value.l1_account_proof)?
                     .try_into()
-                    .map_err(TryFromHeaderError::L1AccountProof)?,
+                    .map_err(Error::L1AccountProof)?,
                 l2_state_root_proof: required!(value.l2_state_root_proof)?
                     .try_into()
-                    .map_err(TryFromHeaderError::L2StateProof)?,
+                    .map_err(Error::L2StateProof)?,
                 last_batch_index_proof: required!(value.last_batch_index_proof)?
                     .try_into()
-                    .map_err(TryFromHeaderError::LastBatchIndexProof)?,
+                    .map_err(Error::LastBatchIndexProof)?,
                 l2_ibc_account_proof: required!(value.l2_ibc_account_proof)?
                     .try_into()
-                    .map_err(TryFromHeaderError::L2IbcAccountProof)?,
+                    .map_err(Error::L2IbcAccountProof)?,
                 batch_hash_proof: required!(value.batch_hash_proof)?
                     .try_into()
-                    .map_err(TryFromHeaderError::BatchHashProof)?,
+                    .map_err(Error::BatchHashProof)?,
                 batch_header: value.batch_header,
             })
         }

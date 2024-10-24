@@ -1,12 +1,10 @@
+use cometbft_types::crypto::public_key::PublicKey;
 use cosmwasm_std::Deps;
 use ethereum_light_client::custom_query::VerificationContext;
 use ethereum_verifier::verify::BlsVerify;
 use sha2::Digest;
 use tendermint_verifier::types::HostFns;
-use unionlabs::{
-    cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-    tendermint::crypto::public_key::PublicKey,
-};
+use unionlabs::cosmwasm::wasm::union::custom_query::UnionCustomQuery;
 
 pub struct Bls12_381Verifier<'a> {
     inner: VerificationContext<'a>,

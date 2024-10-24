@@ -1,6 +1,6 @@
+use ibc_events::ClientMisbehaviour;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    events,
     ibc::core::client::height::Height,
     ics24::{ClientConsensusStatePath, ClientStatePath},
     id::ClientId,
@@ -103,7 +103,7 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                 UpdateClient::UpdatedStateOnMisbehaviour { client_id },
                 &[IbcResponse::UpdateStateOnMisbehaviour],
             ) => Either::Right((
-                vec![IbcEvent::ClientMisbehaviour(events::ClientMisbehaviour {
+                vec![IbcEvent::ClientMisbehaviour(ClientMisbehaviour {
                     client_id,
                     // TODO(aeryz): why????
                     client_type: "TODO(aeryz) why in the hell do we have this here".to_string(),
@@ -143,7 +143,7 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                     .collect::<Result<Vec<_>, <T as IbcHost>::Error>>()?;
 
                 Either::Right((
-                    vec![IbcEvent::UpdateClient(events::UpdateClient {
+                    vec![IbcEvent::UpdateClient(ibc_events::UpdateClient {
                         client_id,
                         client_type: "TODO(aeryz): I hate this".to_string(),
                         consensus_heights,

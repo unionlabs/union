@@ -13,6 +13,7 @@ workspace = true
 test-include = ["lib/tendermint-verifier/src/test/"]
 
 [dependencies]
+cometbft-types.workspace                = true
 hex-literal                             = { workspace = true }
 prost                                   = { workspace = true }
 protos                                  = { workspace = true }

@@ -1,17 +1,17 @@
+use cometbft_types::{
+    crypto::public_key::PublicKey,
+    types::{
+        block_id::BlockId, canonical_block_header::CanonicalPartSetHeader,
+        canonical_block_id::CanonicalBlockId, canonical_vote::CanonicalVote, commit::Commit,
+        commit_sig::CommitSig, signed_header::SignedHeader, signed_msg_type::SignedMsgType,
+        simple_validator::SimpleValidator, validator::Validator, validator_set::ValidatorSet,
+    },
+};
 use prost::Message;
 use unionlabs::{
     encoding::{EncodeAs, Proto},
     google::protobuf::{duration::Duration, timestamp::Timestamp},
     hash::{H160, H256},
-    tendermint::{
-        crypto::public_key::PublicKey,
-        types::{
-            block_id::BlockId, canonical_block_header::CanonicalPartSetHeader,
-            canonical_block_id::CanonicalBlockId, canonical_vote::CanonicalVote, commit::Commit,
-            commit_sig::CommitSig, signed_header::SignedHeader, signed_msg_type::SignedMsgType,
-            simple_validator::SimpleValidator, validator::Validator, validator_set::ValidatorSet,
-        },
-    },
 };
 
 use crate::{error::Error, merkle::calculate_merkle_root};

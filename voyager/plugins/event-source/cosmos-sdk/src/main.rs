@@ -9,6 +9,11 @@ use std::{
 };
 
 use dashmap::DashMap;
+use ibc_events::{
+    ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ClientMisbehaviour,
+    ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, CreateClient,
+    IbcEvent, SubmitEvidence, UpdateClient,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -18,11 +23,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{debug, error, info, instrument};
 use unionlabs::{
-    events::{
-        ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ClientMisbehaviour,
-        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-        CreateClient, IbcEvent, SubmitEvidence, UpdateClient,
-    },
     hash::{hash_v2::HexUnprefixed, H256},
     ibc::core::{
         channel::{self},

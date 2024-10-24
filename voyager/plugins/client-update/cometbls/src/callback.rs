@@ -1,10 +1,9 @@
+use cometbft_types::types::signed_header::SignedHeader;
 use cometbls_light_client_types::{header::Header, light_header::LightHeader};
 use enumorph::Enumorph;
 use macros::model;
 use subset_of::SubsetOf;
-use unionlabs::{
-    ibc::core::client::height::Height, tendermint::types::signed_header::SignedHeader,
-};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     core::ChainId,
     data::{DecodedHeaderMeta, OrderedHeaders},

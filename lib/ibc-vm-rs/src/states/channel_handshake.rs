@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     encoding::{EncodeAs, Proto},
-    events,
     ibc::core::{
         channel::{self, channel::Channel, counterparty::Counterparty, order::Order},
         client::height::Height,
@@ -189,7 +188,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenInit {
                 )?;
 
                 Either::Right((
-                    vec![IbcEvent::ChannelOpenInit(events::ChannelOpenInit {
+                    vec![IbcEvent::ChannelOpenInit(ibc_events::ChannelOpenInit {
                         port_id,
                         channel_id,
                         counterparty_port_id: counterparty.port_id,
@@ -418,7 +417,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                 )?;
 
                 Either::Right((
-                    vec![IbcEvent::ChannelOpenTry(events::ChannelOpenTry {
+                    vec![IbcEvent::ChannelOpenTry(ibc_events::ChannelOpenTry {
                         port_id,
                         channel_id,
                         counterparty_port_id: counterparty.port_id,
@@ -637,7 +636,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                 host.commit(channel_path, channel)?;
 
                 Either::Right((
-                    vec![IbcEvent::ChannelOpenAck(events::ChannelOpenAck {
+                    vec![IbcEvent::ChannelOpenAck(ibc_events::ChannelOpenAck {
                         port_id,
                         channel_id,
                         counterparty_port_id,
@@ -841,13 +840,15 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                 host.commit(channel_path, channel)?;
 
                 Either::Right((
-                    vec![IbcEvent::ChannelOpenConfirm(events::ChannelOpenConfirm {
-                        port_id,
-                        channel_id,
-                        counterparty_port_id: counterparty.port_id,
-                        counterparty_channel_id: counterparty.channel_id.validate().unwrap(),
-                        connection_id,
-                    })],
+                    vec![IbcEvent::ChannelOpenConfirm(
+                        ibc_events::ChannelOpenConfirm {
+                            port_id,
+                            channel_id,
+                            counterparty_port_id: counterparty.port_id,
+                            counterparty_channel_id: counterparty.channel_id.validate().unwrap(),
+                            connection_id,
+                        },
+                    )],
                     IbcVmResponse::Empty,
                 ))
             }

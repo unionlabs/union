@@ -6,8 +6,6 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 use subset_of::SubsetOf;
 use tracing::info;
-#[cfg(doc)]
-use unionlabs::events::IbcEvent;
 use unionlabs::{
     hash::H256,
     ibc::core::{
@@ -363,7 +361,7 @@ pub struct ConnectionMetadata {
     pub connection_id: ConnectionId,
 }
 
-/// Similar to [`IbcEvent`], but contains more information (counterparty
+/// Similar to `IbcEvent`, but contains more information (counterparty
 /// clients, channel version, etc)
 #[model]
 #[derive(Enumorph, SubsetOf)]

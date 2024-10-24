@@ -3,6 +3,21 @@ use std::{
     num::ParseIntError,
 };
 
+use cometbft_types::{
+    crypto::public_key::PublicKey,
+    types::{
+        canonical_block_header::CanonicalPartSetHeader, canonical_block_id::CanonicalBlockId,
+        commit_sig::CommitSig, signed_msg_type::SignedMsgType, simple_validator::SimpleValidator,
+        validator::Validator,
+    },
+};
+use galois_rpc::{
+    canonical_vote::CanonicalVote,
+    poll_request::PollRequest,
+    poll_response::{PollResponse, ProveRequestDone, ProveRequestFailed},
+    prove_request::ProveRequest,
+    validator_set_commit::ValidatorSetCommit,
+};
 use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -12,24 +27,7 @@ use num_bigint::BigUint;
 use protos::union::galois::api::v3::union_prover_api_client;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace};
-use unionlabs::{
-    bounded::BoundedI64,
-    cometbls::types::canonical_vote::CanonicalVote,
-    tendermint::{
-        crypto::public_key::PublicKey,
-        types::{
-            canonical_block_header::CanonicalPartSetHeader, canonical_block_id::CanonicalBlockId,
-            commit_sig::CommitSig, signed_msg_type::SignedMsgType,
-            simple_validator::SimpleValidator,
-        },
-    },
-    union::galois::{
-        poll_request::PollRequest,
-        poll_response::{PollResponse, ProveRequestDone, ProveRequestFailed},
-        prove_request::ProveRequest,
-        validator_set_commit::ValidatorSetCommit,
-    },
-};
+use unionlabs::bounded::BoundedI64;
 use voyager_message::{
     call::{Call, WaitForHeight},
     core::ChainId,
@@ -212,9 +210,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .unwrap()
                     .signed_header;
 
-                let make_validators_commit = |mut validators: Vec<
-                    unionlabs::tendermint::types::validator::Validator,
-                >| {
+                let make_validators_commit = |mut validators: Vec<Validator>| {
                     // Validators must be sorted to match the root, by token then address
                     validators.sort_by(|a, b| {
                         // TODO: Double check how these comparisons are supposed to work

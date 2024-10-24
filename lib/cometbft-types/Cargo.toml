@@ -1,0 +1,29 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "cometbft-types"
+repository.workspace   = true
+version                = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+prost                 = { workspace = true, optional = true }
+protos                = { workspace = true, features = ["tendermint+abci", "tendermint+blocksync", "tendermint+consensus", "tendermint+crypto", "tendermint+p2p", "tendermint+privval", "tendermint+statesync", "tendermint+store", "tendermint+types", "tendermint+version"], optional = true }
+serde-utils.workspace = true
+serde.workspace       = true
+sha2                  = { workspace = true, optional = true }
+thiserror.workspace   = true
+unionlabs             = { workspace = true }
+
+[dev-dependencies]
+cometbft-types        = { workspace = true, features = ["proto"] }
+hex-literal.workspace = true
+serde_json            = { workspace = true }
+unionlabs             = { workspace = true, features = ["test_utils"] }
+
+[features]
+default = ["proto", "hash"]
+hash    = ["dep:sha2", "dep:prost"]
+proto   = ["dep:protos"]

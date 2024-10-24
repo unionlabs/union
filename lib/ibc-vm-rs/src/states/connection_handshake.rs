@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     encoding::{EncodeAs, Proto},
-    events,
     ibc::core::{
         client::height::Height,
         commitment::merkle_path::MerklePath,
@@ -108,11 +107,13 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenInit {
                 )?;
 
                 Either::Right((
-                    vec![IbcEvent::ConnectionOpenInit(events::ConnectionOpenInit {
-                        connection_id,
-                        client_id,
-                        counterparty_client_id,
-                    })],
+                    vec![IbcEvent::ConnectionOpenInit(
+                        ibc_events::ConnectionOpenInit {
+                            connection_id,
+                            client_id,
+                            counterparty_client_id,
+                        },
+                    )],
                     IbcVmResponse::Empty,
                 ))
             }
@@ -274,7 +275,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                     end,
                 )?;
                 Either::Right((
-                    vec![IbcEvent::ConnectionOpenTry(events::ConnectionOpenTry {
+                    vec![IbcEvent::ConnectionOpenTry(ibc_events::ConnectionOpenTry {
                         connection_id,
                         client_id,
                         counterparty_client_id: counterparty.client_id,
@@ -414,7 +415,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                 )?;
 
                 Either::Right((
-                    vec![IbcEvent::ConnectionOpenAck(events::ConnectionOpenAck {
+                    vec![IbcEvent::ConnectionOpenAck(ibc_events::ConnectionOpenAck {
                         connection_id: connection_id.validate().unwrap(),
                         client_id,
                         counterparty_client_id,
@@ -549,7 +550,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
 
                 Either::Right((
                     vec![IbcEvent::ConnectionOpenConfirm(
-                        events::ConnectionOpenConfirm {
+                        ibc_events::ConnectionOpenConfirm {
                             connection_id: connection_id.validate().unwrap(),
                             client_id,
                             counterparty_client_id,

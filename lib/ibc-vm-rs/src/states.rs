@@ -5,7 +5,6 @@ pub mod packet;
 
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    events,
     ics24::{ClientConsensusStatePath, ClientStatePath},
     id::ClientId,
 };
@@ -118,7 +117,7 @@ impl<T: IbcHost> Runnable<T> for CreateClient {
                     consensus_state.clone(),
                 )?;
                 Either::Right((
-                    vec![IbcEvent::CreateClient(events::CreateClient {
+                    vec![IbcEvent::CreateClient(ibc_events::CreateClient {
                         client_id,
                         client_type,
                         consensus_height: height,

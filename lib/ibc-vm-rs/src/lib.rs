@@ -1,4 +1,5 @@
 use frame_support_procedural::PartialEqNoBound;
+use ibc_events::IbcEvent;
 use serde::{Deserialize, Serialize};
 use states::{
     channel_handshake::{ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry},
@@ -11,7 +12,6 @@ use states::{
 };
 use unionlabs::{
     encoding::{Decode, Encode, Proto},
-    events::IbcEvent,
     ibc::core::{
         channel::{self, order::Order, packet::Packet},
         client::height::Height,

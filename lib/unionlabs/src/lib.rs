@@ -43,9 +43,6 @@ pub mod near;
 /// Defines types that wrap the IBC specification, matching the proto module structure. This also includes `union` extensions to ibc (i.e. types defined in `union.ibc`).
 pub mod ibc;
 
-/// Defines types that wrap the tendermint specification, matching the proto module structure.
-pub mod tendermint;
-
 /// Defines types that are extended from tendermint in cometbls
 pub mod cometbls;
 
@@ -72,9 +69,6 @@ pub mod aptos;
 
 /// Wrapper types around [`milagro_bls`] types, providing more conversions and a simpler signing interface.
 pub mod bls;
-
-/// Well-known events emitted by ibc-enabled chains.
-pub mod events;
 
 pub mod bounded;
 

@@ -1,8 +1,6 @@
+use cometbft_types::types::{signed_header::SignedHeader, validator_set::ValidatorSet};
 use serde::{Deserialize, Serialize};
-use unionlabs::{
-    ibc::core::client::height::Height,
-    tendermint::types::{signed_header::SignedHeader, validator_set::ValidatorSet},
-};
+use unionlabs::ibc::core::client::height::Height;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Header {
@@ -14,13 +12,8 @@ pub struct Header {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use unionlabs::{
-        errors::MissingField,
-        impl_proto_via_try_from_into, required,
-        tendermint::types::{
-            signed_header::TryFromSignedHeaderError, validator_set::TryFromValidatorSetError,
-        },
-    };
+    use cometbft_types::types::{signed_header, validator_set};
+    use unionlabs::{errors::MissingField, impl_proto_via_try_from_into, required};
 
     use crate::Header;
 
@@ -42,11 +35,11 @@ pub mod proto {
         #[error(transparent)]
         MissingField(#[from] MissingField),
         #[error("invalid signed header")]
-        SignedHeader(#[from] TryFromSignedHeaderError),
+        SignedHeader(#[from] signed_header::proto::Error),
         #[error("invalid validator set")]
-        ValidatorSet(#[source] TryFromValidatorSetError),
+        ValidatorSet(#[source] validator_set::proto::Error),
         #[error("invalid trusted validators")]
-        TrustedValidators(#[source] TryFromValidatorSetError),
+        TrustedValidators(#[source] validator_set::proto::Error),
     }
 
     impl TryFrom<protos::ibc::lightclients::tendermint::v1::Header> for Header {

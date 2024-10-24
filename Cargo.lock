@@ -2147,6 +2147,7 @@ dependencies = [
  "base64 0.21.7",
  "berachain-light-client-types",
  "bytes",
+ "cometbft-types",
  "cosmwasm-std 1.5.2",
  "ethereum-light-client",
  "ethereum-verifier",
@@ -3006,6 +3007,7 @@ name = "cometbft-rpc"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
+ "cometbft-types",
  "hex",
  "hex-literal",
  "jsonrpsee",
@@ -3019,6 +3021,22 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "unionlabs",
+]
+
+[[package]]
+name = "cometbft-types"
+version = "0.1.0"
+dependencies = [
+ "cometbft-types",
+ "hex-literal",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.8",
+ "thiserror",
  "unionlabs",
 ]
 
@@ -5630,6 +5648,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "galois-rpc"
+version = "0.1.0"
+dependencies = [
+ "cometbft-types",
+ "protos",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "gcc"
 version = "0.3.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6442,12 +6473,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-events"
+version = "0.1.0"
+dependencies = [
+ "cometbft-types",
+ "enumorph",
+ "hex",
+ "serde",
+ "serde-utils",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "ibc-vm-rs"
 version = "0.1.0"
 dependencies = [
  "enumorph",
  "frame-support-procedural",
  "hex",
+ "ibc-events",
  "lazy_static",
  "schemars",
  "serde",
@@ -12123,6 +12168,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
  "bytes",
+ "cometbft-types",
  "cosmwasm-std 1.5.2",
  "hex",
  "ics008-wasm-client",
@@ -12147,6 +12193,7 @@ dependencies = [
 name = "tendermint-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "cometbft-types",
  "hex-literal",
  "protos",
  "serde",
@@ -12205,6 +12252,7 @@ dependencies = [
 name = "tendermint-verifier"
 version = "0.1.0"
 dependencies = [
+ "cometbft-types",
  "ed25519-dalek 2.1.1",
  "hex-literal",
  "prost 0.12.6",
@@ -13692,10 +13740,12 @@ name = "voyager-client-update-plugin-cometbls"
 version = "0.1.0"
 dependencies = [
  "cometbft-rpc",
+ "cometbft-types",
  "cometbls-light-client-types",
  "dashmap 5.5.3",
  "enumorph",
  "futures",
+ "galois-rpc",
  "itertools 0.13.0",
  "jsonrpsee",
  "macros",
@@ -13777,6 +13827,7 @@ name = "voyager-client-update-plugin-tendermint"
 version = "0.1.0"
 dependencies = [
  "cometbft-rpc",
+ "cometbft-types",
  "dashmap 5.5.3",
  "enumorph",
  "futures",
@@ -13931,6 +13982,7 @@ dependencies = [
  "dashmap 5.5.3",
  "enumorph",
  "futures",
+ "ibc-events",
  "jsonrpsee",
  "macros",
  "prost 0.12.6",
