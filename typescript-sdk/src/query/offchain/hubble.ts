@@ -15,15 +15,19 @@ const hubbleRestFetch = ofetch.create({
   retryDelay: 500,
   timeout: 6_000,
   headers: queryHeaders,
-  baseURL: `${HUBBLE_URL}/api/rest`
+  baseURL: `${HUBBLE_URL}/api/rest/v1`
 })
 
 export const offchainQuery = {
   /**
    * get all chains details from hubble
+   *
+   * `baseURL` is optional - defaults to https://graphql.union.build/api/rest/v1
+   *
    * @example
    * ```ts
    * const chains = await offchainQuery.chains({
+   *   baseURL: "https://graphql.union.build/api/rest/v1",
    *   includeAssets: true,
    *   includeEndpoints: true,
    *   includeContracts: true,
@@ -31,10 +35,12 @@ export const offchainQuery = {
    * ```
    */
   chains: async ({
+    baseURL = `${HUBBLE_URL}/api/rest/v1`,
     includeEndpoints = false,
     includeContracts = false,
     includeAssets = false
   }: {
+    baseURL?: string
     includeEndpoints?: boolean
     includeContracts?: boolean
     includeAssets?: boolean
@@ -43,7 +49,8 @@ export const offchainQuery = {
   > => {
     return await hubbleRestFetch<
       OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
-    >("/v1/chains", {
+    >("/chains", {
+      baseURL,
       query: {
         include_rpcs: includeEndpoints,
         include_contracts: includeContracts,
@@ -53,9 +60,13 @@ export const offchainQuery = {
   },
   /**
    * get chain details from hubble
+   *
+   * `baseURL` is optional - defaults to https://graphql.union.build/api/rest/v1
+   *
    * @example
    * ```ts
    * const chain = await offchainQuery.chain({
+   *   baseURL: "https://graphql.union.build/api/rest/v1",
    *   includeAssets: true,
    *   includeEndpoints: true,
    *   includeContracts: true,
@@ -65,11 +76,13 @@ export const offchainQuery = {
    */
   chain: async ({
     chainId,
+    baseURL = `${HUBBLE_URL}/api/rest/v1`,
     includeEndpoints = false,
     includeContracts = false,
     includeAssets = false
   }: {
     chainId: string
+    baseURL?: string
     includeEndpoints?: boolean
     includeContracts?: boolean
     includeAssets?: boolean
@@ -78,7 +91,8 @@ export const offchainQuery = {
   > => {
     return await hubbleRestFetch<
       OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
-    >(`/v1/chains/${chainId}`, {
+    >(`/chains/${chainId}`, {
+      baseURL,
       query: {
         include_assets: includeAssets,
         include_rpcs: includeEndpoints,
