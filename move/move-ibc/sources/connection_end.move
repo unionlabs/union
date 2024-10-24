@@ -2,7 +2,6 @@ module ibc::connection_end {
     use std::string::{String, utf8};
     use std::vector;
     use ibc::ethabi;
-    use std::option::{Option, Self};
 
     struct ConnectionEnd has copy, store, drop, key {
         state: u64,
@@ -100,22 +99,6 @@ module ibc::connection_end {
         vector::append(&mut buf, counterparty_client_type);
 
         buf
-    }
-
-    public fun decode(_buf: vector<u8>): Option<ConnectionEnd> {
-        // Placeholder implementation
-        option::none()
-    }
-
-    // Encode and decode functions (empty for now)
-    public fun encode_proto(_connection: &ConnectionEnd): vector<u8> {
-        // Placeholder implementation
-        vector::empty()
-    }
-
-    public fun decode_proto(_buf: vector<u8>): Option<ConnectionEnd> {
-        // Placeholder implementation
-        option::none()
     }
 
     // Constructor
