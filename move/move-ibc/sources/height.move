@@ -1,7 +1,4 @@
 module ibc::height {
-    use std::vector;
-
-    use ibc::proto_utils;
     use ibc::bcs_utils::{Self, BcsBuf};
 
     struct Height has key, drop, copy, store {
@@ -52,59 +49,6 @@ module ibc::height {
         height: &mut Height, revision_height: u64
     ) {
         height.revision_height = revision_height;
-    }
-
-    public fun encode_proto(height: Height): vector<u8> {
-        let buf = vector::empty();
-
-        if (height.revision_number != 0) {
-            vector::append(&mut buf, proto_utils::encode_u64(1, height.revision_number));
-        };
-
-        if (height.revision_height != 0) {
-            vector::append(&mut buf, proto_utils::encode_u64(2, height.revision_height));
-        };
-
-        buf
-    }
-
-    public fun decode_proto(
-        buf: &vector<u8>,
-        cursor: u64,
-        len: u64,
-        height: &mut Height
-    ): (u64, u64) {
-        let first_pos = cursor;
-        while (cursor - first_pos < len) {
-            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(buf, cursor);
-            if (err != 0) {
-                return (0, err)
-            };
-            cursor = cursor + advance;
-            let advance =
-                if (tag == 1) {
-                    let (num, advance, err) =
-                        proto_utils::decode_varint(wire_type, buf, cursor);
-                    if (err != 0) {
-                        return (0, err)
-                    };
-                    height.revision_number = num;
-                    advance
-                } else if (tag == 2) {
-                    let (num, advance, err) =
-                        proto_utils::decode_varint(wire_type, buf, cursor);
-                    if (err != 0) {
-                        return (0, err)
-                    };
-                    height.revision_height = num;
-                    advance
-                } else {
-                    return (0, 1)
-                };
-            cursor = cursor + advance;
-        };
-
-        (cursor - first_pos, 0)
     }
 
     public fun decode_bcs(buf: &mut BcsBuf): Height {

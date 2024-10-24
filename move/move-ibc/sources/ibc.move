@@ -1555,7 +1555,7 @@ module ibc::ibc {
             height,
             proof,
             commitment::connection_commitment_key(connection_id),
-            connection_end::encode_proto(&counterparty_connection)
+            connection_end::encode(&counterparty_connection)
         )
     }
 
