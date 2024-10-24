@@ -31,14 +31,12 @@ onMount(() => {
   const aptosWallet = getAptosWallet()
   console.info($aptosStore)
   if (aptosWallet && $aptosStore.connectionStatus === "connected") {
-    // @ts-expect-error
     aptosWallet.connect().then(account => {
       aptosStore.update(v => ({
         ...v,
-        // @ts-expect-error
-        address: account?.address,
+
         connectedWallet: "petra",
-        // @ts-expect-error
+        address: account?.address,
         connectionStatus: account?.address ? "connected" : "disconnected"
       }))
     })
@@ -71,8 +69,7 @@ $: if (connectedWallets > 1) {
   buttonText = "Connect Wallet"
 }
 
-// let sheetOpen = false
-let sheetOpen = true
+let sheetOpen = false
 $: if ($navigating) sheetOpen = false
 </script>
 

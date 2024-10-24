@@ -15,14 +15,12 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@aptos-labs/wallet-adapter-core": "^4.18.0",
     "@builder.io/partytown": "^0.10.2",
     "@cosmjs/amino": "^0.32.4",
     "@cosmjs/cosmwasm-stargate": "0.32.4",
     "@cosmjs/encoding": "^0.32.4",
     "@cosmjs/stargate": "0.32.4",
     "@cosmjs/tendermint-rpc": "^0.32.4",
-    "@sentry/sveltekit": "^8.29.0",
     "@tanstack/match-sorter-utils": "^8.19.4",
     "@tanstack/query-core": "^5.55.4",
     "@tanstack/svelte-query": "^5.55.4",
@@ -45,7 +43,7 @@
     "three": "^0.168.0",
     "valibot": "^0.41.0",
     "vaul-svelte": "^0.3.2",
-    "viem": "^2.21.8"
+    "viem": "^2.21.34"
   },
   "devDependencies": {
     "@iconify-json/fa6-solid": "^1.2.0",
@@ -54,6 +52,7 @@
     "@iconify-json/mdi": "^1.2.0",
     "@iconify-json/tabler": "^1.2.1",
     "@keplr-wallet/types": "^0.12.127",
+    "@aptos-labs/wallet-adapter-core": "^4.18.1",
     "@leapwallet/types": "^0.0.5",
     "@melt-ui/pp": "^0.3.2",
     "@melt-ui/svelte": "^0.83.0",
@@ -108,6 +107,7 @@
     "which-typed-array": "npm:@nolyfill/which-typed-array@^1",
     "is-core-module": "npm:@nolyfill/is-core-module@^1",
     "assert": "npm:@nolyfill/assert@^1",
-    "side-channel": "npm:@nolyfill/side-channel@^1"
+    "side-channel": "npm:@nolyfill/side-channel@^1",
+    "safe-buffer": "npm:@nolyfill/safe-buffer@^1"
   }
 }
