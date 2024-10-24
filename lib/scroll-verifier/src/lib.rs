@@ -2,10 +2,10 @@ use core::fmt::Debug;
 
 use ethereum_verifier::verify::{verify_account_storage_root, verify_storage_proof};
 use scroll_codec::{hash_batch, HashBatchError};
+use scroll_light_client_types::{ClientState, Header};
 use unionlabs::{
     ethereum::slot::{MappingKey, Slot},
     hash::{H160, H256},
-    ibc::lightclients::scroll::{client_state::ClientState, header::Header},
     scroll::account::Account,
     uint::U256,
 };
@@ -160,15 +160,10 @@ pub fn scroll_verify_zktrie_account_storage_root(
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
+    use scroll_light_client_types::{ClientState, Header};
     use unionlabs::{
         hash::{H160, H256},
-        ibc::{
-            core::client::height::Height,
-            lightclients::{
-                ethereum::storage_proof::StorageProof,
-                scroll::{client_state::ClientState, header::Header},
-            },
-        },
+        ibc::{core::client::height::Height, lightclients::ethereum::storage_proof::StorageProof},
     };
 
     use crate::{verify_header, verify_zktrie_storage_absence, verify_zktrie_storage_proof};

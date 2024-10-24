@@ -12,16 +12,17 @@ workspace = true
 test-include = ["lib/scroll-verifier/tests"]
 
 [dependencies]
-ethereum-verifier = { workspace = true }
-ethers-core       = { workspace = true }
-hex               = { workspace = true }
-hex-literal       = { workspace = true }
-rlp               = { workspace = true }
-scroll-codec      = { workspace = true }
-serde             = { workspace = true }
-serde-utils       = { workspace = true }
-serde_json        = { workspace = true }
-sha3              = { workspace = true }
-thiserror         = { workspace = true }
-unionlabs         = { workspace = true }
-zktrie            = { workspace = true }
+ethereum-verifier         = { workspace = true }
+ethers-core               = { workspace = true }
+hex                       = { workspace = true }
+hex-literal               = { workspace = true }
+rlp                       = { workspace = true }
+scroll-codec              = { workspace = true }
+scroll-light-client-types = { workspace = true }
+serde                     = { workspace = true }
+serde-utils               = { workspace = true }
+serde_json                = { workspace = true }
+sha3                      = { workspace = true }
+thiserror                 = { workspace = true }
+unionlabs                 = { workspace = true }
+zktrie                    = { workspace = true }

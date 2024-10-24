@@ -1,6 +1,7 @@
 use ethereum_light_client::errors::{CanonicalizeStoredValueError, InvalidCommitmentKey};
 use ics008_wasm_client::IbcClientError;
 use scroll_codec::batch_header::BatchHeaderV3DecodeError;
+use scroll_light_client_types::{ClientState, ConsensusState};
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
     hash::H256,
@@ -38,18 +39,9 @@ pub enum Error {
     //     >,
     // ),
     #[error("unable to decode client state")]
-    ClientStateDecode(
-        #[source]
-        DecodeErrorOf<Proto, unionlabs::ibc::lightclients::scroll::client_state::ClientState>,
-    ),
+    ClientStateDecode(#[source] DecodeErrorOf<Proto, ClientState>),
     #[error("unable to decode consensus state")]
-    ConsensusStateDecode(
-        #[source]
-        DecodeErrorOf<
-            Proto,
-            unionlabs::ibc::lightclients::scroll::consensus_state::ConsensusState,
-        >,
-    ),
+    ConsensusStateDecode(#[source] DecodeErrorOf<Proto, ConsensusState>),
 
     // REVIEW: Move this variant to IbcClientError?
     #[error("consensus state not found at height {0}")]

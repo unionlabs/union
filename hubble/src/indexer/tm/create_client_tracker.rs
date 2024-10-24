@@ -89,7 +89,7 @@ pub fn schedule_create_client_checker(
                                     cs.chain_id.to_string()
                                 }
                                 WasmClientType::Cometbls => {
-                                    let cs = match cometbls_light_client_types::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                    let cs = match cometbls_light_client_types::ClientState::decode_as::<Proto>(&cs.data) {
                                         Ok(cs) => cs,
                                         Err(err) => {
                                             warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
@@ -111,7 +111,7 @@ pub fn schedule_create_client_checker(
                                     cs.chain_id
                                 }
                                 WasmClientType::Scroll => {
-                                    let cs = match unionlabs::ibc::lightclients::scroll::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                    let cs = match scroll_light_client_types::ClientState::decode_as::<Proto>(&cs.data) {
                                         Ok(cs) => cs,
                                         Err(err) => {
                                             warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
@@ -134,7 +134,7 @@ pub fn schedule_create_client_checker(
                                 }
                                 WasmClientType::Linea => todo!("We still need to add linea"),
                                 WasmClientType::Berachain => {
-                                    let cs = match berachain_light_client_types::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                    let cs = match berachain_light_client_types::ClientState::decode_as::<Proto>(&cs.data) {
                                         Ok(cs) => cs,
                                         // We changed the format of berachain client states, but union-testnet-8 still contains an old configuration which we need to ignore.
                                         Err(err) => {

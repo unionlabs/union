@@ -6258,6 +6258,7 @@ dependencies = [
  "regex",
  "reqwest 0.11.27",
  "scroll-api",
+ "scroll-light-client-types",
  "serde",
  "serde-aux",
  "serde_json",
@@ -10783,6 +10784,7 @@ dependencies = [
  "rlp",
  "schemars",
  "scroll-codec",
+ "scroll-light-client-types",
  "scroll-verifier",
  "serde",
  "serde-json-wasm 1.0.1",
@@ -10790,6 +10792,20 @@ dependencies = [
  "sha3 0.10.8",
  "thiserror",
  "tiny-keccak",
+ "unionlabs",
+]
+
+[[package]]
+name = "scroll-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "hex-literal",
+ "protos",
+ "rlp",
+ "serde",
+ "serde-utils",
+ "sha3 0.10.8",
+ "thiserror",
  "unionlabs",
 ]
 
@@ -10817,6 +10833,7 @@ dependencies = [
  "hex-literal",
  "rlp",
  "scroll-codec",
+ "scroll-light-client-types",
  "serde",
  "serde-utils",
  "serde_json",
