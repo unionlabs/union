@@ -6,6 +6,22 @@ Union Labs TypeScript SDK providing utilities for cross-chain transfers and more
 npm install @unionlabs/client
 ```
 
+## Development
+
+### Publishing
+
+Publish to npm registry:
+
+```sh
+npm publish --access='public' --no-git-tags
+```
+
+Publish to JSR:
+
+```sh
+bun ./scripts/publish.ts
+```
+
 ## Usage
 
 ### Initiate a client
