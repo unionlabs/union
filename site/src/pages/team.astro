@@ -18,6 +18,7 @@ import team_spearbit from "#/assets/images/partners/spearbit.svg"
 import team_groomlake from "#/assets/images/partners/groomlake.png"
 import team_horizons from "#/assets/images/partners/horizons.svg"
 import ContainedSection from "../components/ContainedSection.astro"
+import H1 from "../components/typography/h1.astro"
 
 const teams = [
   {
@@ -112,13 +113,10 @@ try {
           </div>
   ) : teamData ? (
           <>
-            <TopSection title="Union team">
-              <div class="flex flex-col text-center gap-8">
-                <p class="md:text-4xl font-mono uppercase">Our team is a <span class="text-accent-500">global</span> network of
-                  professionals, working to build
-                  the <span class="text-accent-500">interoperability future.</span></p>
+            <TopSection>
+              <div class="flex h-full w-full items-center justify-center">
+                <H1>Meet the team</H1>
               </div>
-              <div></div>
             </TopSection>
 
             <ContainedSection>
