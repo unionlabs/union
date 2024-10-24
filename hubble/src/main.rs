@@ -119,3 +119,8 @@ pub fn new_block_backoff() -> ConstantBuilder {
         .with_delay(Duration::from_millis(500))
         .with_max_times(60)
 }
+
+#[test]
+fn dummy() {
+    assert!('a' < 'b')
+}
