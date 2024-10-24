@@ -48,7 +48,7 @@ protos                        = { workspace = true, features = ["client"] }
 regex                         = "1.10.5"
 reqwest                       = { workspace = true, features = ["json", "blocking"] }
 scroll-api                    = { workspace = true }
-scroll-light-client-types     = { version = "0.1.0", path = "../light-clients/scroll-light-client/types", features = ["proto"] }
+scroll-light-client-types     = { workspace = true, features = ["proto"] }
 serde                         = { workspace = true, features = ["derive"] }
 serde-aux                     = "4.5.0"
 serde_json                    = { workspace = true }

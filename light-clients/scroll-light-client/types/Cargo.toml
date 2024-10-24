@@ -4,13 +4,13 @@ name    = "scroll-light-client-types"
 version = "0.1.0"
 
 [dependencies]
-protos         = { workspace = true, features = ["union+ibc+lightclients+scroll+v1"] }
-rlp            = { workspace = true, features = ["derive"] }
-serde          = { workspace = true, features = ["derive"] }
+protos                = { workspace = true, features = ["union+ibc+lightclients+scroll+v1"] }
+rlp                   = { workspace = true, features = ["derive"] }
+serde                 = { workspace = true, features = ["derive"] }
 serde-utils.workspace = true
-sha3.workspace = true
-thiserror      = { workspace = true }
-unionlabs      = { workspace = true }
+sha3.workspace        = true
+thiserror             = { workspace = true }
+unionlabs             = { workspace = true }
 
 [features]
 default = ["proto"]
