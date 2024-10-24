@@ -1,15 +1,7 @@
-// import {
-//   WalletCore,
-//   convertNetwork,
-//   getAptosConfig,
-//   isAptosNetwork,
-//   isAptosConnectWallet,
-//   getAptosConnectWallets
-// } from "@aptos-labs/wallet-adapter-core"
 import { get } from "svelte/store"
 import type { State } from "@wagmi/core"
 import { persisted } from "svelte-persisted-store"
-import type { ChainWalletStore } from "$lib/wallet/types"
+import type { ChainWalletStore } from "../types.ts"
 
 /**
  * TODO:
@@ -18,9 +10,9 @@ import type { ChainWalletStore } from "$lib/wallet/types"
  */
 
 export function getAptosWallet() {
-  if (Object.hasOwn(window, "aptos")) {
-    return window.aptos
-  }
+  if (Object.hasOwn(window, "aptos")) return window.aptos
+  if (Object.hasOwn(window, "petra")) return window.petra
+
   window.open("https://petra.app/", "_blank", "noopener noreferrer")
 }
 
@@ -29,8 +21,8 @@ export const aptosWalletsInformation = [
     id: "petra",
     name: "Petra",
     icon: "/images/icons/petra.svg",
-    deepLink: "",
-    download: "https://petra.app/"
+    deepLink: "https://petra.app",
+    download: "https://petra.app"
   }
 ] as const
 
@@ -38,22 +30,18 @@ export type AptosWalletId = (typeof aptosWalletsInformation)[number]["id"]
 
 export function createAptosStore(
   previousState: ChainWalletStore<"aptos"> & {
-    rawAddress: undefined
     connectedWallet: AptosWalletId | undefined
   } = {
     chain: "aptos",
     hoverState: "none",
     address: undefined,
-    rawAddress: undefined,
     connectedWallet: "petra",
     connectionStatus: "disconnected"
   }
 ) {
   const walletCore = getAptosWallet()
 
-  const isConnected = (() => {
-    return walletCore?.isConnected()
-  })()
+  const isConnected = (() => walletCore?.isConnected())()
 
   const { subscribe, set, update, reset } = persisted(
     "aptos-store",
@@ -79,13 +67,11 @@ export function createAptosStore(
         return
       }
 
-      // @ts-expect-error
-      const account = (await walletCore.connect()) as { address: string }
+      const account = await walletCore.connect()
 
       update(v => ({
         ...v,
         address: account?.address,
-        rawAddress: undefined,
         connectedWallet: "petra",
         connectionStatus: account?.address ? "connected" : "disconnected"
       }))
@@ -93,20 +79,18 @@ export function createAptosStore(
     disconnect: async () => {
       const aptosWalletId = get({ subscribe }).connectedWallet as AptosWalletId
       const walletCore = getAptosWallet()
-      console.info(aptosWalletId)
       console.info(`[aptos] aptosDisconnectClick`, get(aptosStore))
 
       const isConnected = await walletCore?.isConnected()
       if (isConnected) {
         await walletCore?.disconnect()
 
-        update(v => ({
-          address: undefined,
-          rawAddress: undefined,
-          connectedWallet: undefined,
-          connectionStatus: "disconnected",
+        update(_ => ({
+          chain: "aptos",
           hoverState: "none",
-          chain: "aptos"
+          address: undefined,
+          connectedWallet: undefined,
+          connectionStatus: "disconnected"
         }))
       }
     }
@@ -115,6 +99,6 @@ export function createAptosStore(
 
 export const aptosStore = createAptosStore()
 
-aptosStore.subscribe(async v => {
-  // console.info(`[aptos] aptosStore.subscribe`, await v)
+aptosStore.subscribe(async _ => {
+  //
 })

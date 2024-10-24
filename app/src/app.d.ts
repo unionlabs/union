@@ -1,7 +1,6 @@
 import "@tanstack/svelte-table"
 import type { LeapWindow } from "@leapwallet/types"
 import type { Window as KeplrWindow } from "@keplr-wallet/types"
-import type { WalletCore as AptosWindow } from "@aptos-labs/wallet-adapter-core"
 
 declare module "@tanstack/svelte-table" {
   interface ColumnMeta<TData extends RowData, TValue> {
@@ -9,16 +8,30 @@ declare module "@tanstack/svelte-table" {
   }
 }
 
-// interface Aptos {
-//   isConnected: () => boolean
-// }
+interface Aptos {
+  disconnect: () => Promise<void>
+  isConnected: () => Promise<boolean>
+  network: () => Promise<"Testnet" | "Mainnet">
+  connect: () => Promise<{ address: string; publicKey: string }>
+  account: () => Promise<{ address: string; publicKey: string }>
+  getAccount: () => Promise<{ address: string; publicKey: string }>
+  getNetwork: () => Promise<{ chainId: string; name: "Testnet" | "Mainnet"; url: string }>
+
+  onAccountChange: (
+    callback: (account: { address: string; publicKey: string; type?: unknown }) => void
+  ) => void
+
+  onNetworkChange: (
+    callback: (network: { chainId: string; name: "Testnet" | "Mainnet"; url: string }) => void
+  ) => void
+}
 
 declare global {
   namespace App {}
 
   interface Window extends KeplrWindow, LeapWindow, Browser, GoogleRecaptcha {
-    aptos: AptosWindow
-    petra: AptosWindow
+    aptos: Aptos
+    petra: Aptos
     EventEmitter: typeof EventEmitter
   }
 
