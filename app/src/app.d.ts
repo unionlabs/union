@@ -8,17 +8,30 @@ declare module "@tanstack/svelte-table" {
   }
 }
 
+interface Aptos {
+  disconnect: () => Promise<void>
+  isConnected: () => Promise<boolean>
+  network: () => Promise<"Testnet" | "Mainnet">
+  connect: () => Promise<{ address: string; publicKey: string }>
+  account: () => Promise<{ address: string; publicKey: string }>
+  getAccount: () => Promise<{ address: string; publicKey: string }>
+  getNetwork: () => Promise<{ chainId: string; name: "Testnet" | "Mainnet"; url: string }>
+
+  onAccountChange: (
+    callback: (account: { address: string; publicKey: string; type?: unknown }) => void
+  ) => void
+
+  onNetworkChange: (
+    callback: (network: { chainId: string; name: "Testnet" | "Mainnet"; url: string }) => void
+  ) => void
+}
+
 declare global {
   namespace App {}
 
-  namespace Superforms {
-    type Message = {
-      text: string
-      type: "error" | "success"
-    }
-  }
-
   interface Window extends KeplrWindow, LeapWindow, Browser, GoogleRecaptcha {
+    aptos: Aptos
+    petra: Aptos
     EventEmitter: typeof EventEmitter
   }
 

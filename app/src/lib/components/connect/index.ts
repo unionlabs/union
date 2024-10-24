@@ -1,9 +1,10 @@
 import Connect from "./connect.svelte"
 import type { State } from "@wagmi/core"
 import type { EvmWalletId } from "$lib/wallet/evm"
+import type { AptosWalletId } from "$lib/wallet/aptos"
 import type { CosmosWalletId } from "$lib/wallet/cosmos"
 
-type Chain = "evm" | "cosmos"
+type Chain = "evm" | "cosmos" | "aptos"
 type HoverState = "hover" | "none"
 type ChainConnectStatus = State["status"]
 type ChainWalletsInformation = ReadonlyArray<{
@@ -19,7 +20,14 @@ type Props<TChain extends Chain = Chain> = {
   address: string | undefined
   connectStatus: ChainConnectStatus
   chainWalletsInformation: ChainWalletsInformation
-  connectedWalletId: (TChain extends "cosmos" ? CosmosWalletId : EvmWalletId) | null | undefined
+  connectedWalletId:
+    | (TChain extends "cosmos"
+        ? CosmosWalletId
+        : TChain extends "aptos"
+          ? AptosWalletId
+          : EvmWalletId)
+    | null
+    | undefined
   onConnectClick: (walletIdentifier: string) => void | Promise<void>
   onDisconnectClick: () => void
 }
