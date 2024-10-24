@@ -1,4 +1,7 @@
-#![allow(clippy::manual_async_fn, clippy::needless_lifetimes)]
+#![feature(more_qualified_paths)]
+#![feature(try_blocks)]
+#![allow(clippy::needless_lifetimes, clippy::manual_async_fn)]
+#![feature(async_closure)]
 
 use std::time::Duration;
 
@@ -118,9 +121,4 @@ pub fn new_block_backoff() -> ConstantBuilder {
     ConstantBuilder::default()
         .with_delay(Duration::from_millis(500))
         .with_max_times(60)
-}
-
-#[test]
-fn dummy() {
-    assert!('a' < 'b')
 }
