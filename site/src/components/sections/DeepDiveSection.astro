@@ -152,13 +152,6 @@ const { entries } = Astro.props
           <div class="flex dive-gradient h-auto min-w-7 relative" id="swim-lane">
             <Image id="scrolling-dot" src={smallWhale} alt="small whale" class="absolute w-10"></Image>
           </div>
-          <div class="flex flex-col gap-6 font-mono text-lg">
-            {diver.map(item => (
-                    <div class="h-16 flex items-center">
-                      <p class="text-2xl">{item.meter}</p>
-                    </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>
@@ -190,7 +183,6 @@ const { entries } = Astro.props
       const maxDotPosition = swimlaneHeight - dot.offsetHeight;
       const newTop = scrollPercentage * maxDotPosition;
 
-      // Set the dot's top position
       dot.style.top = `${newTop}px`;
     });
   </script>
