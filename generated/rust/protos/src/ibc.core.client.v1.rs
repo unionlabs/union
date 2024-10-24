@@ -150,6 +150,8 @@ pub struct UpgradeProposal {
     pub title: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub description: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub plan: ::core::option::Option<super::super::super::super::cosmos::upgrade::v1beta1::Plan>,
     /// An UpgradedClientState must be provided to perform an IBC breaking upgrade.
     /// This will make the chain commit to the correct upgraded (self) client state
     /// before the upgrade occurs, so that connecting chains can verify that the
@@ -580,56 +582,6 @@ impl ::prost::Name for QueryUpgradedConsensusStateResponse {
         ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
     }
 }
-/// QueryVerifyMembershipRequest is the request type for the Query/VerifyMembership RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryVerifyMembershipRequest {
-    /// client unique identifier.
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// the proof to be verified by the client.
-    #[prost(bytes = "vec", tag = "2")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// the height of the commitment root at which the proof is verified.
-    #[prost(message, optional, tag = "3")]
-    pub proof_height: ::core::option::Option<Height>,
-    /// the commitment key path.
-    #[prost(message, optional, tag = "4")]
-    pub merkle_path: ::core::option::Option<super::super::commitment::v1::MerklePath>,
-    /// the value which is proven.
-    #[prost(bytes = "vec", tag = "5")]
-    pub value: ::prost::alloc::vec::Vec<u8>,
-    /// optional time delay
-    #[prost(uint64, tag = "6")]
-    pub time_delay: u64,
-    /// optional block delay
-    #[prost(uint64, tag = "7")]
-    pub block_delay: u64,
-}
-impl ::prost::Name for QueryVerifyMembershipRequest {
-    const NAME: &'static str = "QueryVerifyMembershipRequest";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
-/// QueryVerifyMembershipResponse is the response type for the Query/VerifyMembership RPC method
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryVerifyMembershipResponse {
-    /// boolean indicating success or failure of proof verification.
-    #[prost(bool, tag = "1")]
-    pub success: bool,
-}
-impl ::prost::Name for QueryVerifyMembershipResponse {
-    const NAME: &'static str = "QueryVerifyMembershipResponse";
-    const PACKAGE: &'static str = "ibc.core.client.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.client.v1.{}", Self::NAME)
-    }
-}
 /// MsgCreateClient defines a message to create an IBC client
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -822,6 +774,8 @@ impl ::prost::Name for MsgRecoverClientResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgIbcSoftwareUpgrade {
+    #[prost(message, optional, tag = "1")]
+    pub plan: ::core::option::Option<super::super::super::super::cosmos::upgrade::v1beta1::Plan>,
     /// An UpgradedClientState must be provided to perform an IBC breaking upgrade.
     /// This will make the chain commit to the correct upgraded (self) client state
     /// before the upgrade occurs, so that connecting chains can verify that the

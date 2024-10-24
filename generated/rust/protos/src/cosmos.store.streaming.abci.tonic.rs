@@ -84,8 +84,7 @@ pub mod abci_listener_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        /// ListenFinalizeBlock is the corresponding endpoint for
-        /// ABCIListener.ListenEndBlock
+        /// ListenFinalizeBlock is the corresponding endpoint for ABCIListener.ListenEndBlock
         pub async fn listen_finalize_block(
             &mut self,
             request: impl tonic::IntoRequest<super::ListenFinalizeBlockRequest>,

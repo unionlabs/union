@@ -35,7 +35,7 @@ macro_rules! event {
         impl IbcEvent {
             #[must_use]
             pub fn try_from_tendermint_event(
-                event: crate::cometbft::abci::event::Event,
+                event: crate::tendermint::abci::event::Event,
             ) -> Option<Result<Self, TryFromTendermintEventError>> {
                 // to silence unused variable warnings on the last repetition of the following block
                 let _event = event;
@@ -67,10 +67,10 @@ macro_rules! event {
             }
 
 
-            impl TryFrom<crate::cometbft::abci::event::Event> for $Struct {
+            impl TryFrom<crate::tendermint::abci::event::Event> for $Struct {
                 type Error = TryFromTendermintEventError;
 
-                fn try_from(value: crate::cometbft::abci::event::Event) -> Result<Self, Self::Error> {
+                fn try_from(value: crate::tendermint::abci::event::Event) -> Result<Self, Self::Error> {
                     const DEPRECATED: &[&'static str] = &[$($($dep),+)?];
 
                     if value.ty != $tag {
@@ -112,9 +112,8 @@ macro_rules! event {
                                     ))
                                 },
                             )+
+                            // TODO(aeryz): this is newly added to cosmos-sdk, until we understand what to do with this, ignore
                             "msg_index" => {}
-                            "event_index" => {}
-                            "tx_index" => {}
                             key => {
                                 if !DEPRECATED.contains(&key) {
                                     return Err(TryFromTendermintEventError::UnknownAttribute(attr.key))
@@ -141,7 +140,7 @@ pub enum TryFromTendermintEventError {
     #[error("incorrect type, expected `{expected}` but found `{}`", found.ty)]
     IncorrectType {
         expected: &'static str,
-        found: crate::cometbft::abci::event::Event,
+        found: crate::tendermint::abci::event::Event,
     },
     #[error(
         "duplicate field `{key}` (first occurrence index {first_occurrence}, \
@@ -154,7 +153,7 @@ pub enum TryFromTendermintEventError {
     },
     #[error("missing attribute `{0}`")]
     MissingAttribute(&'static str),
-    #[error("unkown attribute `{0}`")]
+    #[error("missing attribute `{0}`")]
     UnknownAttribute(String),
     #[error("unable to parse value for attribute `{field}`: {error}")]
     AttributeValueParse {
@@ -459,11 +458,11 @@ impl IbcEvent {
 mod tests {
     mod event_conversion {
         use crate::{
-            cometbft::abci::{event::Event, event_attribute::EventAttribute},
             events::{
                 ConnectionOpenConfirm, CreateClient, TryFromTendermintEventError, UpdateClient,
             },
             ibc::core::client::height::{Height, HeightFromStrError},
+            tendermint::abci::{event::Event, event_attribute::EventAttribute},
         };
 
         #[test]

@@ -260,23 +260,5 @@ impl ::prost::Name for ClientMessage {
         ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
     }
 }
-/// Checksums defines a list of all checksums that are stored
-///
-/// Deprecated: This message is deprecated in favor of storing the checksums
-/// using a Collections.KeySet.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Checksums {
-    #[prost(bytes = "vec", repeated, tag = "1")]
-    pub checksums: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
-}
-impl ::prost::Name for Checksums {
-    const NAME: &'static str = "Checksums";
-    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
-    }
-}
 include!("ibc.lightclients.wasm.v1.tonic.rs");
 // @@protoc_insertion_point(module)

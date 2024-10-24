@@ -1,6 +1,9 @@
 use prost::Message;
 use unionlabs::{
-    cometbft::{
+    encoding::{EncodeAs, Proto},
+    google::protobuf::{duration::Duration, timestamp::Timestamp},
+    hash::{H160, H256},
+    tendermint::{
         crypto::public_key::PublicKey,
         types::{
             block_id::BlockId, canonical_block_header::CanonicalPartSetHeader,
@@ -9,9 +12,6 @@ use unionlabs::{
             simple_validator::SimpleValidator, validator::Validator, validator_set::ValidatorSet,
         },
     },
-    encoding::{EncodeAs, Proto},
-    google::protobuf::{duration::Duration, timestamp::Timestamp},
-    hash::{H160, H256},
 };
 
 use crate::{error::Error, merkle::calculate_merkle_root};
@@ -29,7 +29,7 @@ pub(crate) fn canonical_vote(
     };
 
     Ok(
-        Into::<protos::cometbft::types::v1::CanonicalVote>::into(CanonicalVote {
+        Into::<protos::tendermint::types::LegacyCanonicalVote>::into(CanonicalVote {
             ty: SignedMsgType::Precommit,
             height: commit.height,
             // roundabout way to go from i32 >= 0 to i64 >= 0
@@ -47,7 +47,7 @@ pub(crate) fn canonical_vote(
                 },
             },
             chain_id: chain_id.to_string(),
-            // timestamp: *timestamp,
+            timestamp: *timestamp,
         })
         .encode_length_delimited_to_vec(),
     )
@@ -74,7 +74,7 @@ pub fn validators_hash(validator_set: &ValidatorSet) -> H256 {
                 pub_key: match &validator.pub_key {
                     // hackerman
                     // https://github.com/unionlabs/cometbls/issues/86
-                    PublicKey::Bls12381(key) => PublicKey::Bn254(key.clone()),
+                    PublicKey::Bls12_381(key) => PublicKey::Bn254(key.clone()),
                     key => key.clone(),
                 },
                 voting_power: validator.voting_power.inner(),

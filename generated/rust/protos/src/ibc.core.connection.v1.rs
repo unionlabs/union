@@ -514,7 +514,6 @@ pub struct MsgConnectionOpenTry {
     #[deprecated]
     #[prost(string, tag = "2")]
     pub previous_connection_id: ::prost::alloc::string::String,
-    #[deprecated]
     #[prost(message, optional, tag = "3")]
     pub client_state: ::core::option::Option<::pbjson_types::Any>,
     #[prost(message, optional, tag = "4")]
@@ -530,20 +529,16 @@ pub struct MsgConnectionOpenTry {
     #[prost(bytes = "vec", tag = "8")]
     pub proof_init: ::prost::alloc::vec::Vec<u8>,
     /// proof of client state included in message
-    #[deprecated]
     #[prost(bytes = "vec", tag = "9")]
     pub proof_client: ::prost::alloc::vec::Vec<u8>,
     /// proof of client consensus state
-    #[deprecated]
     #[prost(bytes = "vec", tag = "10")]
     pub proof_consensus: ::prost::alloc::vec::Vec<u8>,
-    #[deprecated]
     #[prost(message, optional, tag = "11")]
     pub consensus_height: ::core::option::Option<super::super::client::v1::Height>,
     #[prost(string, tag = "12")]
     pub signer: ::prost::alloc::string::String,
     /// optional proof data for host state machines that are unable to introspect their own consensus state
-    #[deprecated]
     #[prost(bytes = "vec", tag = "13")]
     pub host_consensus_state_proof: ::prost::alloc::vec::Vec<u8>,
 }
@@ -578,7 +573,6 @@ pub struct MsgConnectionOpenAck {
     pub counterparty_connection_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
     pub version: ::core::option::Option<Version>,
-    #[deprecated]
     #[prost(message, optional, tag = "4")]
     pub client_state: ::core::option::Option<::pbjson_types::Any>,
     #[prost(message, optional, tag = "5")]
@@ -588,20 +582,16 @@ pub struct MsgConnectionOpenAck {
     #[prost(bytes = "vec", tag = "6")]
     pub proof_try: ::prost::alloc::vec::Vec<u8>,
     /// proof of client state included in message
-    #[deprecated]
     #[prost(bytes = "vec", tag = "7")]
     pub proof_client: ::prost::alloc::vec::Vec<u8>,
     /// proof of client consensus state
-    #[deprecated]
     #[prost(bytes = "vec", tag = "8")]
     pub proof_consensus: ::prost::alloc::vec::Vec<u8>,
-    #[deprecated]
     #[prost(message, optional, tag = "9")]
     pub consensus_height: ::core::option::Option<super::super::client::v1::Height>,
     #[prost(string, tag = "10")]
     pub signer: ::prost::alloc::string::String,
     /// optional proof data for host state machines that are unable to introspect their own consensus state
-    #[deprecated]
     #[prost(bytes = "vec", tag = "11")]
     pub host_consensus_state_proof: ::prost::alloc::vec::Vec<u8>,
 }

@@ -1,7 +1,7 @@
 use macros::model;
 
 use crate::{
-    cometbft::types::header::Header, cometbls::types::canonical_vote::CanonicalVote,
+    cometbls::types::canonical_vote::CanonicalVote, tendermint::types::header::Header,
     union::galois::validator_set_commit::ValidatorSetCommit,
 };
 

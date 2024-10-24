@@ -1,5 +1,7 @@
 // @generated
 /// StakeAuthorization defines authorization for delegate/undelegate/redelegate.
+///
+/// Since: cosmos-sdk 0.43
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StakeAuthorization {
@@ -105,7 +107,7 @@ impl AuthorizationType {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HistoricalInfo {
     #[prost(message, optional, tag = "1")]
-    pub header: ::core::option::Option<super::super::super::cometbft::types::v1::Header>,
+    pub header: ::core::option::Option<super::super::super::tendermint::types::Header>,
     #[prost(message, repeated, tag = "2")]
     pub valset: ::prost::alloc::vec::Vec<Validator>,
 }
@@ -225,12 +227,14 @@ pub struct Validator {
     #[prost(message, optional, tag = "10")]
     pub commission: ::core::option::Option<Commission>,
     /// min_self_delegation is the validator's self declared minimum self delegation.
+    ///
+    /// Since: cosmos-sdk 0.46
     #[prost(string, tag = "11")]
     pub min_self_delegation: ::prost::alloc::string::String,
     /// strictly positive if this validator's unbonding has been stopped by external modules
     #[prost(int64, tag = "12")]
     pub unbonding_on_hold_ref_count: i64,
-    /// list of unbonding ids, each uniquely identifying an unbonding of this validator
+    /// list of unbonding ids, each uniquely identifing an unbonding of this validator
     #[prost(uint64, repeated, tag = "13")]
     pub unbonding_ids: ::prost::alloc::vec::Vec<u64>,
 }
@@ -470,7 +474,6 @@ pub struct Params {
     #[prost(uint32, tag = "3")]
     pub max_entries: u32,
     /// historical_entries is the number of historical entries to persist.
-    #[deprecated]
     #[prost(uint32, tag = "4")]
     pub historical_entries: u32,
     /// bond_denom defines the bondable coin denomination.
@@ -479,15 +482,11 @@ pub struct Params {
     /// min_commission_rate is the chain-wide minimum commission rate that a validator can charge their delegators
     #[prost(string, tag = "6")]
     pub min_commission_rate: ::prost::alloc::string::String,
-    /// key_rotation_fee is fee to be spent when rotating validator's key
-    /// (either consensus pubkey or operator key)
-    #[prost(message, optional, tag = "7")]
-    pub key_rotation_fee: ::core::option::Option<super::super::base::v1beta1::Coin>,
     /// The percentage of validators that can be jailed before forcing a validator set rotation
-    #[prost(uint32, tag = "8")]
+    #[prost(uint32, tag = "7")]
     pub jailed_validator_threshold: u32,
     /// The number of blocks between regular validator set rotations (between epochs)
-    #[prost(int64, tag = "9")]
+    #[prost(int64, tag = "8")]
     pub epoch_length: i64,
 }
 impl ::prost::Name for Params {
@@ -573,52 +572,10 @@ impl ::prost::Name for Pool {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorUpdates {
     #[prost(message, repeated, tag = "1")]
-    pub updates: ::prost::alloc::vec::Vec<super::super::super::cometbft::abci::v1::ValidatorUpdate>,
+    pub updates: ::prost::alloc::vec::Vec<super::super::super::tendermint::abci::ValidatorUpdate>,
 }
 impl ::prost::Name for ValidatorUpdates {
     const NAME: &'static str = "ValidatorUpdates";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// ConsPubKeyRotationHistory contains a validator's consensus public key rotation history.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ConsPubKeyRotationHistory {
-    /// operator_address defines the address of the validator's operator; bech encoded in JSON.
-    #[prost(bytes = "vec", tag = "1")]
-    pub operator_address: ::prost::alloc::vec::Vec<u8>,
-    /// old_cons_pubkey is the old consensus public key of the validator, as a Protobuf Any.
-    #[prost(message, optional, tag = "2")]
-    pub old_cons_pubkey: ::core::option::Option<::pbjson_types::Any>,
-    /// new_cons_pubkey is the new consensus public key of the validator, as a Protobuf Any.
-    #[prost(message, optional, tag = "3")]
-    pub new_cons_pubkey: ::core::option::Option<::pbjson_types::Any>,
-    /// height defines the block height at which the rotation event occurred.
-    #[prost(uint64, tag = "4")]
-    pub height: u64,
-    /// fee holds the amount of fee deduced for the rotation.
-    #[prost(message, optional, tag = "5")]
-    pub fee: ::core::option::Option<super::super::base::v1beta1::Coin>,
-}
-impl ::prost::Name for ConsPubKeyRotationHistory {
-    const NAME: &'static str = "ConsPubKeyRotationHistory";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// ValAddrsOfRotatedConsKeys contains the array of validator addresses which rotated their keys
-/// This is to block the validator's next rotation till unbonding period.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValAddrsOfRotatedConsKeys {
-    #[prost(bytes = "vec", repeated, tag = "1")]
-    pub addresses: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
-}
-impl ::prost::Name for ValAddrsOfRotatedConsKeys {
-    const NAME: &'static str = "ValAddrsOfRotatedConsKeys";
     const PACKAGE: &'static str = "cosmos.staking.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
@@ -661,7 +618,7 @@ impl BondStatus {
         }
     }
 }
-/// Infraction indicates the infraction a validator committed.
+/// Infraction indicates the infraction a validator commited.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum Infraction {
@@ -724,12 +681,6 @@ pub struct GenesisState {
     /// exported defines a bool to identify whether the chain dealing with exported or initialized genesis.
     #[prost(bool, tag = "8")]
     pub exported: bool,
-    #[prost(message, repeated, tag = "9")]
-    pub rotation_index_records: ::prost::alloc::vec::Vec<RotationIndexRecord>,
-    #[prost(message, repeated, tag = "10")]
-    pub rotation_history: ::prost::alloc::vec::Vec<ConsPubKeyRotationHistory>,
-    #[prost(message, repeated, tag = "11")]
-    pub rotation_queue: ::prost::alloc::vec::Vec<RotationQueueRecord>,
 }
 impl ::prost::Name for GenesisState {
     const NAME: &'static str = "GenesisState";
@@ -756,37 +707,6 @@ impl ::prost::Name for LastValidatorPower {
         ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
     }
 }
-/// contains address as bytes and time as int64
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RotationIndexRecord {
-    #[prost(bytes = "vec", tag = "1")]
-    pub address: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
-}
-impl ::prost::Name for RotationIndexRecord {
-    const NAME: &'static str = "RotationIndexRecord";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RotationQueueRecord {
-    #[prost(message, optional, tag = "1")]
-    pub val_addrs: ::core::option::Option<ValAddrsOfRotatedConsKeys>,
-    #[prost(message, optional, tag = "2")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
-}
-impl ::prost::Name for RotationQueueRecord {
-    const NAME: &'static str = "RotationQueueRecord";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
 /// QueryValidatorsRequest is request type for Query/Validators RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -805,34 +725,15 @@ impl ::prost::Name for QueryValidatorsRequest {
         ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
     }
 }
-/// ValidatorInfo contains the validator's address and public key.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValidatorInfo {
-    /// consensus_address is the consensus address of the validator.
-    #[prost(string, tag = "1")]
-    pub consensus_address: ::prost::alloc::string::String,
-}
-impl ::prost::Name for ValidatorInfo {
-    const NAME: &'static str = "ValidatorInfo";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
 /// QueryValidatorsResponse is response type for the Query/Validators RPC method
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryValidatorsResponse {
+    /// validators contains all the queried validators.
     #[prost(message, repeated, tag = "1")]
     pub validators: ::prost::alloc::vec::Vec<Validator>,
-    /// validator_info contains additional information for each validator.
-    /// The order of the elements in this list corresponds to the order of the elements in the validators list.
-    /// For example, if you want the ValidatorInfo for the third validator in the validators list,
-    /// you should look at the third element in the validator_info list.
-    #[prost(message, repeated, tag = "2")]
-    pub validator_info: ::prost::alloc::vec::Vec<ValidatorInfo>,
-    #[prost(message, optional, tag = "3")]
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
 impl ::prost::Name for QueryValidatorsResponse {
@@ -1227,7 +1128,6 @@ impl ::prost::Name for QueryHistoricalInfoRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryHistoricalInfoResponse {
     /// hist defines the historical info at the given height.
-    #[deprecated]
     #[prost(message, optional, tag = "1")]
     pub hist: ::core::option::Option<HistoricalInfo>,
 }
@@ -1457,6 +1357,8 @@ pub struct MsgUndelegateResponse {
     #[prost(message, optional, tag = "1")]
     pub completion_time: ::core::option::Option<::pbjson_types::Timestamp>,
     /// amount returns the amount of undelegated coins
+    ///
+    /// Since: cosmos-sdk 0.50
     #[prost(message, optional, tag = "2")]
     pub amount: ::core::option::Option<super::super::base::v1beta1::Coin>,
 }
@@ -1468,6 +1370,8 @@ impl ::prost::Name for MsgUndelegateResponse {
     }
 }
 /// MsgCancelUnbondingDelegation defines the SDK message for performing a cancel unbonding delegation for delegator
+///
+/// Since: cosmos-sdk 0.46
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCancelUnbondingDelegation {
@@ -1490,6 +1394,8 @@ impl ::prost::Name for MsgCancelUnbondingDelegation {
     }
 }
 /// MsgCancelUnbondingDelegationResponse
+///
+/// Since: cosmos-sdk 0.46
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgCancelUnbondingDelegationResponse {}
@@ -1501,6 +1407,8 @@ impl ::prost::Name for MsgCancelUnbondingDelegationResponse {
     }
 }
 /// MsgUpdateParams is the Msg/UpdateParams request type.
+///
+/// Since: cosmos-sdk 0.47
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParams {
@@ -1522,39 +1430,13 @@ impl ::prost::Name for MsgUpdateParams {
 }
 /// MsgUpdateParamsResponse defines the response structure for executing a
 /// MsgUpdateParams message.
+///
+/// Since: cosmos-sdk 0.47
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgUpdateParamsResponse {}
 impl ::prost::Name for MsgUpdateParamsResponse {
     const NAME: &'static str = "MsgUpdateParamsResponse";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgRotateConsPubKey is the Msg/RotateConsPubKey request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRotateConsPubKey {
-    #[prost(string, tag = "1")]
-    pub validator_address: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub new_pubkey: ::core::option::Option<::pbjson_types::Any>,
-}
-impl ::prost::Name for MsgRotateConsPubKey {
-    const NAME: &'static str = "MsgRotateConsPubKey";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgRotateConsPubKeyResponse defines the response structure for executing a
-/// MsgRotateConsPubKey message.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRotateConsPubKeyResponse {}
-impl ::prost::Name for MsgRotateConsPubKeyResponse {
-    const NAME: &'static str = "MsgRotateConsPubKeyResponse";
     const PACKAGE: &'static str = "cosmos.staking.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)

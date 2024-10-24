@@ -1,14 +1,15 @@
 _: {
   perSystem =
-    { self'
-    , pkgs
-    , proto
-    , crane
-    , system
-    , config
-    , ensureAtRepositoryRoot
-    , mkCi
-    , ...
+    {
+      self',
+      pkgs,
+      proto,
+      crane,
+      system,
+      config,
+      ensureAtRepositoryRoot,
+      mkCi,
+      ...
     }:
     let
       protoc-gen-tonic = crane.lib.buildPackage {
@@ -223,28 +224,24 @@ _: {
 
       fold-opts =
         attrs:
-          with pkgs.lib;
-          escapeShellArg (
-            concatStringsSep "," (
-              flatten (
-                foldlAttrs
-                  (
-                    acc: opt-name: opt-value:
-                    acc
-                    ++ (
-                      # protoc splits on commas so we have to escape any in the attribute values
-                      foldlAttrs
-                        (
-                          acc: name: values:
-                          acc ++ (map (attr: "${opt-name}=${name}=${escape [ "," ] attr}") values)
-                        ) [ ]
-                        opt-value
-                    )
-                  ) [ ]
-                  attrs
-              )
+        with pkgs.lib;
+        escapeShellArg (
+          concatStringsSep "," (
+            flatten (
+              foldlAttrs (
+                acc: opt-name: opt-value:
+                acc
+                ++ (
+                  # protoc splits on commas so we have to escape any in the attribute values
+                  foldlAttrs (
+                    acc: name: values:
+                    acc ++ (map (attr: "${opt-name}=${name}=${escape [ "," ] attr}") values)
+                  ) [ ] opt-value
+                )
+              ) [ ] attrs
             )
-          );
+          )
+        );
 
       prost-opts =
         let
@@ -551,9 +548,10 @@ _: {
 
       proto-inputs =
         name:
-        { src
-        , additional-filter ? null
-        , ...
+        {
+          src,
+          additional-filter ? null,
+          ...
         }:
         let
           af = if additional-filter != null then "-and " + additional-filter else "";
@@ -566,19 +564,18 @@ _: {
         with pkgs.lib;
         concatStringsSep "\n\n" (
           flatten (
-            mapAttrsToList
-              (
-                name:
-                { fixup-script ? null
-                , ...
-                }:
-                optionalString (fixup-script != null) ''
-                  echo "[FIXUP] ${name}"
+            mapAttrsToList (
+              name:
+              {
+                fixup-script ? null,
+                ...
+              }:
+              optionalString (fixup-script != null) ''
+                echo "[FIXUP] ${name}"
 
-                  ${fixup-script}
-                ''
-              )
-              all-protos-to-build
+                ${fixup-script}
+              ''
+            ) all-protos-to-build
           )
         );
 
@@ -594,16 +591,14 @@ _: {
         name = "rust-proto";
         pname = "rust-proto";
         src = pkgs.linkFarm "rust-proto-srcs" (
-          pkgs.lib.mapAttrsToList
-            (
-              name:
-              { src, ... }:
-              {
-                name = name + "-protos";
-                path = src;
-              }
-            )
-            all-protos-to-build
+          pkgs.lib.mapAttrsToList (
+            name:
+            { src, ... }:
+            {
+              name = name + "-protos";
+              path = src;
+            }
+          ) all-protos-to-build
         );
         buildInputs = [
           pkgs.protobuf

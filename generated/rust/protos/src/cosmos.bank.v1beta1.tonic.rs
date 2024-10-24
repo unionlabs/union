@@ -469,23 +469,6 @@ pub mod msg_client {
                 .insert(GrpcMethod::new("cosmos.bank.v1beta1.Msg", "MultiSend"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn burn(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgBurn>,
-        ) -> std::result::Result<tonic::Response<super::MsgBurnResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/cosmos.bank.v1beta1.Msg/Burn");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.bank.v1beta1.Msg", "Burn"));
-            self.inner.unary(req, path, codec).await
-        }
         pub async fn update_params(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgUpdateParams>,

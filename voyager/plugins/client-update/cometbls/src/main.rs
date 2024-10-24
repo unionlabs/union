@@ -14,7 +14,8 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{
     bounded::BoundedI64,
-    cometbft::{
+    cometbls::types::canonical_vote::CanonicalVote,
+    tendermint::{
         crypto::public_key::PublicKey,
         types::{
             canonical_block_header::CanonicalPartSetHeader, canonical_block_id::CanonicalBlockId,
@@ -22,7 +23,6 @@ use unionlabs::{
             simple_validator::SimpleValidator,
         },
     },
-    cometbls::types::canonical_vote::CanonicalVote,
     union::galois::{
         poll_request::PollRequest,
         poll_response::{PollResponse, ProveRequestDone, ProveRequestFailed},
@@ -213,7 +213,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .signed_header;
 
                 let make_validators_commit = |mut validators: Vec<
-                    unionlabs::cometbft::types::validator::Validator,
+                    unionlabs::tendermint::types::validator::Validator,
                 >| {
                     // Validators must be sorted to match the root, by token then address
                     validators.sort_by(|a, b| {
@@ -351,8 +351,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                             },
                                         },
                                         chain_id: signed_header.header.chain_id.clone(),
-                                        // REVIEW: Is this correct?
-                                        timestamp: signed_header.header.time,
                                     },
                                     untrusted_header: signed_header.header.clone(),
                                     trusted_commit: trusted_validators_commit,
