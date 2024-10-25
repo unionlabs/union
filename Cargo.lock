@@ -4799,9 +4799,11 @@ dependencies = [
 name = "ethereum-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "beacon-api-types",
  "hex-literal",
  "protos",
  "serde",
+ "serde-utils",
  "thiserror",
  "unionlabs",
 ]

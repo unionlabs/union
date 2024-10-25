@@ -4,13 +4,14 @@ use unionlabs::hash::H256;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AccountProof {
     pub storage_root: H256,
-    #[serde(with = "::serde_utils::hex_string_list")]
     pub proof: Vec<Vec<u8>>,
 }
 
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::errors::InvalidLength;
+
+    use crate::AccountProof;
 
     impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::AccountProof> for AccountProof {
         type Error = Error;

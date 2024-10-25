@@ -66,11 +66,13 @@ pub use crate::{
     execution_payload::ExecutionPayload, fork_data::ForkData, fork_parameters::ForkParameters,
     genesis_data::GenesisData, indexed_attestation::IndexedAttestation,
     light_client_bootstrap::LightClientBootstrap,
-    light_client_finality_update::LightClientFinalityUpdate, proposer_slashing::ProposerSlashing,
+    light_client_finality_update::LightClientFinalityUpdate,
+    light_client_header::LightClientHeader, proposer_slashing::ProposerSlashing,
     signed_beacon_block::SignedBeaconBlock, signed_beacon_block_header::SignedBeaconBlockHeader,
     signed_bls_to_execution_change::SignedBlsToExecutionChange,
     signed_voluntary_exit::SignedVoluntaryExit, signing_data::SigningData,
-    voluntary_exit::VoluntaryExit, withdrawal::Withdrawal,
+    sync_aggregate::SyncAggregate, sync_committee::SyncCommittee, voluntary_exit::VoluntaryExit,
+    withdrawal::Withdrawal,
 };
 #[cfg(feature = "ssz")]
 pub use crate::{

@@ -4,8 +4,10 @@ name    = "ethereum-light-client-types"
 version = "0.1.0"
 
 [dependencies]
+beacon-api-types.workspace = true
 protos         = { workspace = true, features = ["union+ibc+lightclients+ethereum+v1"] }
 serde          = { workspace = true, features = ["derive"] }
+serde-utils.workspace = true
 thiserror      = { workspace = true }
 unionlabs      = { workspace = true }
 
