@@ -1,6 +1,6 @@
 use beacon_api_types::{
     fork::Fork, light_client_update::LightClientUpdate, BeaconBlockHeader, ForkParameters,
-    PresetBaseKind,
+    PresetBaseKind, Version,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -43,19 +43,19 @@ pub struct Spec {
     // TERMINAL_BLOCK_HASH_ACTIVATION_EPOCH: 18446744073709551615,
     // MIN_GENESIS_ACTIVE_VALIDATOR_COUNT: 1300,
     // MIN_GENESIS_TIME: 1655647200,
-    pub genesis_fork_version: Hash<4>,
+    pub genesis_fork_version: Version,
     #[serde(with = "::serde_utils::string")]
     pub genesis_delay: u64,
-    pub altair_fork_version: Hash<4>,
+    pub altair_fork_version: Version,
     #[serde(with = "::serde_utils::string")]
     pub altair_fork_epoch: u64,
-    pub bellatrix_fork_version: Hash<4>,
+    pub bellatrix_fork_version: Version,
     #[serde(with = "::serde_utils::string")]
     pub bellatrix_fork_epoch: u64,
-    pub capella_fork_version: Hash<4>,
+    pub capella_fork_version: Version,
     #[serde(with = "::serde_utils::string")]
     pub capella_fork_epoch: u64,
-    pub deneb_fork_version: Hash<4>,
+    pub deneb_fork_version: Version,
     #[serde(with = "::serde_utils::string")]
     pub deneb_fork_epoch: u64,
     #[serde(with = "::serde_utils::string")]

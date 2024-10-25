@@ -8,8 +8,8 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
+    aptos::storage_proof::StorageProof,
     hash::{H160, H256},
-    ibc::lightclients::ethereum::storage_proof::StorageProof,
     uint::U256,
 };
 

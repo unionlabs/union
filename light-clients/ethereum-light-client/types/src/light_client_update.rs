@@ -1,4 +1,7 @@
-use beacon_api_types::{LightClientHeader, SyncAggregate};
+use beacon_api_types::{
+    light_client_update::{FinalityBranch, NextSyncCommitteeBranch},
+    LightClientHeader, SyncAggregate, SyncCommittee,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -22,7 +25,7 @@ pub enum LightClientUpdate {
         /// The trusted sync committee for the *current* epoch.
         ///
         /// If the current epoch is 10, this will be the sync committee for epoch 10.
-        sync_committee: SyncCommittee<C>,
+        sync_committee: SyncCommittee,
 
         update_data: LightClientUpdateData,
     },
@@ -41,3 +44,6 @@ pub struct LightClientUpdateData {
     /// Slot at which the aggregate signature was created (untrusted)
     pub signature_slot: u64,
 }
+
+#[cfg(feature = "proto")]
+pub mod proto {}

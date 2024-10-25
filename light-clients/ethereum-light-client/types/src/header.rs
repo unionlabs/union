@@ -1,6 +1,7 @@
+use protos::ibc::core::client::v1::Height;
 use serde::{Deserialize, Serialize};
 
-use crate::LightClientUpdate;
+use crate::{AccountProof, LightClientUpdate};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Header {
@@ -14,14 +15,10 @@ pub struct Header {
     pub ibc_account_proof: AccountProof,
 }
 
-impl From<Header> for protos::union::ibc::lightclients::ethereum::v1::Header {
-    fn from(value: Header) -> Self {
-        todo!()
-    }
-}
-
 #[cfg(feature = "proto")]
 pub mod proto {
+    use unionlabs::errors::MissingField;
+
     use crate::Header;
 
     impl From<Header> for protos::union::ibc::lightclients::ethereum::v1::Header {

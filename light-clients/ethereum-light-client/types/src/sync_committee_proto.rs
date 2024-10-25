@@ -1,9 +1,10 @@
+use beacon_api_types::SyncCommittee;
 use unionlabs::errors::InvalidLength;
 
 pub fn try_from_proto(
     value: protos::union::ibc::lightclients::ethereum::v1::SyncCommittee,
 ) -> Result<SyncCommittee, Error> {
-    Ok(Self {
+    Ok(SyncCommittee {
         pubkeys: value
             .pubkeys
             .iter()

@@ -91,39 +91,43 @@ pub use crate::{
 };
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(transparent)
 )]
+#[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
 pub struct Version(pub Hash<4>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(transparent)
 )]
+#[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
 pub struct DomainType(pub Hash<4>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(transparent)
 )]
+#[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
 pub struct ForkDigest(pub Hash<4>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(transparent)
 )]
+#[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
 pub struct Domain(pub Hash<32>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#domain-types>
@@ -405,24 +409,24 @@ pub struct Config {
 pub const MAINNET: Config = Config {
     preset: preset::MAINNET,
     fork_parameters: ForkParameters {
-        genesis_fork_version: Hash::new([0, 0, 0, 0]),
+        genesis_fork_version: Version(Hash::new([0, 0, 0, 0])),
         genesis_slot: 0,
 
         altair: Fork {
-            version: Hash::new([1, 0, 0, 0]),
+            version: Version(Hash::new([1, 0, 0, 0])),
             epoch: 74_240,
         },
         bellatrix: Fork {
-            version: Hash::new([2, 0, 0, 0]),
+            version: Version(Hash::new([2, 0, 0, 0])),
             epoch: 144_896,
         },
         capella: Fork {
-            version: Hash::new([3, 0, 0, 0]),
+            version: Version(Hash::new([3, 0, 0, 0])),
             epoch: 194_048,
         },
         // TODO: enabled march 13th 2024
         deneb: Fork {
-            version: Hash::new([4, 0, 0, 0]),
+            version: Version(Hash::new([4, 0, 0, 0])),
             epoch: u64::MAX,
         },
     },
@@ -432,27 +436,27 @@ pub const MAINNET: Config = Config {
 pub const MINIMAL: Config = Config {
     preset: preset::MINIMAL,
     fork_parameters: ForkParameters {
-        genesis_fork_version: Hash::new([0, 0, 0, 1]),
+        genesis_fork_version: Version(Hash::new([0, 0, 0, 1])),
         genesis_slot: 0,
 
         altair: Fork {
-            version: Hash::new([1, 0, 0, 1]),
+            version: Version(Hash::new([1, 0, 0, 1])),
             epoch: 0,
         },
 
         bellatrix: Fork {
-            version: Hash::new([2, 0, 0, 1]),
+            version: Version(Hash::new([2, 0, 0, 1])),
             epoch: 0,
         },
 
         capella: Fork {
-            version: Hash::new([3, 0, 0, 1]),
+            version: Version(Hash::new([3, 0, 0, 1])),
             epoch: 0,
         },
 
         // NOTE: dummy data
         deneb: Fork {
-            version: Hash::new([4, 0, 0, 1]),
+            version: Version(Hash::new([4, 0, 0, 1])),
             epoch: 0,
         },
     },

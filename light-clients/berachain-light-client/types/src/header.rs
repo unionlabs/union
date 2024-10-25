@@ -1,13 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::{
-    berachain::BerachainChainSpec,
-    ibc::{
-        core::commitment::merkle_proof::MerkleProof,
-        lightclients::ethereum::{
-            account_proof::AccountProof, execution_payload_header::ExecutionPayloadHeader,
-        },
-    },
-};
+use unionlabs::ibc::core::commitment::merkle_proof::MerkleProof;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Header {
@@ -20,14 +12,7 @@ pub struct Header {
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{
-        errors::MissingField,
-        ibc::{
-            core::commitment::merkle_proof::TryFromMerkleProofError,
-            lightclients::ethereum::{
-                account_proof::TryFromAccountProofError,
-                execution_payload_header::TryFromExecutionPayloadHeaderError,
-            },
-        },
+        errors::MissingField, ibc::core::commitment::merkle_proof::TryFromMerkleProofError,
         impl_proto_via_try_from_into, required,
     };
 
@@ -53,11 +38,11 @@ pub mod proto {
         #[error("invalid cometbft header")]
         CometbftHeader(#[source] tendermint_light_client_types::header::proto::Error),
         #[error("invalid execution header")]
-        ExecutionHeader(#[source] TryFromExecutionPayloadHeaderError),
+        ExecutionHeader(#[source] execution_payload_header_proto::Error),
         #[error("invalid execution header proof")]
         ExecutionHeaderProof(#[source] TryFromMerkleProofError),
         #[error("invalid account proof")]
-        AccountProof(#[source] TryFromAccountProofError),
+        AccountProof(#[source] account_proof::proto::Error),
     }
 
     impl TryFrom<protos::union::ibc::lightclients::berachain::v1::Header> for Header {

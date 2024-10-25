@@ -2189,6 +2189,7 @@ dependencies = [
 name = "berachain-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "ethereum-light-client-types",
  "protos",
  "serde",
  "tendermint-light-client-types",
@@ -7379,6 +7380,7 @@ dependencies = [
 name = "linea-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "ethereum-light-client-types",
  "hex-literal",
  "protos",
  "serde",
@@ -10871,6 +10873,7 @@ dependencies = [
 name = "scroll-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "ethereum-light-client-types",
  "hex-literal",
  "protos",
  "rlp",

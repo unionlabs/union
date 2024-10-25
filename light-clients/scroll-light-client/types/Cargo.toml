@@ -4,6 +4,7 @@ name    = "scroll-light-client-types"
 version = "0.1.0"
 
 [dependencies]
+ethereum-light-client-types = { workspace = true }
 protos                = { workspace = true, features = ["union+ibc+lightclients+scroll+v1"] }
 rlp                   = { workspace = true, features = ["derive"] }
 serde                 = { workspace = true, features = ["derive"] }
@@ -14,7 +15,7 @@ unionlabs             = { workspace = true }
 
 [features]
 default = ["proto"]
-proto   = ["unionlabs/proto"]
+proto   = ["unionlabs/proto", "ethereum-light-client-types/proto"]
 
 [dev-dependencies]
 hex-literal = { workspace = true }

@@ -1,5 +1,6 @@
 use beacon_api_types::{
-    ForkParameters, EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
+    Domain, DomainType, ForkData, ForkParameters, SigningData, Version,
+    EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH, SYNC_COMMITTEE_SIZE,
 };
 use sha2::{Digest, Sha256};
 use ssz::{types::BitVector, Ssz};
@@ -176,11 +177,7 @@ pub fn validate_merkle_branch<'a>(
 #[cfg(test)]
 #[allow(clippy::redundant_clone)]
 mod tests {
-
-    use unionlabs::ethereum::{
-        beacon::signing_data::SigningData,
-        config::{Minimal, SEPOLIA},
-    };
+    use beacon_api_types::{Minimal, MAINNET};
 
     use super::*;
 
@@ -189,7 +186,7 @@ mod tests {
 
     #[test]
     fn compute_fork_version_works() {
-        let fork_parameters = SEPOLIA.fork_parameters;
+        let fork_parameters = MAINNET.fork_parameters;
         assert_eq!(
             compute_fork_version(&fork_parameters, fork_parameters.deneb.epoch),
             fork_parameters.deneb.version

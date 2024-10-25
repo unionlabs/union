@@ -1,3 +1,8 @@
+use beacon_api_types::{
+    consts::{floorlog2, get_subtree_index, FINALIZED_ROOT_INDEX, NEXT_SYNC_COMMITTEE_INDEX},
+    light_client_update::LightClientUpdateSsz,
+    ChainSpec, DomainType, ForkParameters, LightClientHeaderSsz, MIN_SYNC_COMMITTEE_PARTICIPANTS,
+};
 use hash_db::HashDB;
 use memory_db::{HashKey, MemoryDB};
 use ssz::Ssz;
@@ -6,21 +11,7 @@ use typenum::Unsigned;
 use unionlabs::{
     bls::{BlsPublicKey, BlsSignature},
     ensure,
-    ethereum::{
-        config::{
-            consts::{
-                floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
-                NEXT_SYNC_COMMITTEE_INDEX,
-            },
-            ChainSpec, MIN_SYNC_COMMITTEE_PARTICIPANTS,
-        },
-        DomainType,
-    },
     hash::{H160, H256},
-    ibc::lightclients::ethereum::{
-        execution_payload_header::CapellaExecutionPayloadHeader, fork_parameters::ForkParameters,
-        light_client_header::LightClientHeader, light_client_update::LightClientUpdate,
-    },
     uint::U256,
 };
 
@@ -67,7 +58,7 @@ pub trait BlsVerify {
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#validate_light_client_update)
 pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     ctx: &Ctx,
-    update: LightClientUpdate<Ctx::ChainSpec>,
+    update: LightClientUpdateSsz<Ctx::ChainSpec>,
     current_slot: u64,
     genesis_validators_root: H256,
     bls_verifier: V,
@@ -338,18 +329,19 @@ pub fn verify_storage_absence(
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/light-client/sync-protocol.md#modified-get_lc_execution_root)
 pub fn get_lc_execution_root<C: ChainSpec>(
     fork_parameters: &ForkParameters,
-    header: &LightClientHeader<C>,
+    header: &LightClientHeaderSsz<C>,
 ) -> H256 {
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
     if epoch >= fork_parameters.deneb.epoch {
         return header.execution.tree_hash_root().into();
     }
 
-    if epoch >= fork_parameters.capella.epoch {
-        return CapellaExecutionPayloadHeader::from(header.execution.clone())
-            .tree_hash_root()
-            .into();
-    }
+    // TODO: Figure out what to do here
+    // if epoch >= fork_parameters.capella.epoch {
+    //     return CapellaExecutionPayloadHeader::from(header.execution.clone())
+    //         .tree_hash_root()
+    //         .into();
+    // }
 
     H256::default()
 }

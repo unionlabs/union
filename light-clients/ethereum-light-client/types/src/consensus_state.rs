@@ -19,6 +19,8 @@ pub struct ConsensusState {
 
 #[cfg(feature = "proto")]
 pub mod proto {
+    use unionlabs::errors::InvalidLength;
+
     use crate::ConsensusState;
 
     impl From<ConsensusState> for protos::union::ibc::lightclients::ethereum::v1::ConsensusState {

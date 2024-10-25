@@ -1,26 +1,18 @@
 use serde::{Deserialize, Serialize};
+use unionlabs::errors::{required, MissingField};
 
-use crate::{
-    errors::{required, MissingField},
-    ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
-    ibc::lightclients::ethereum::{
-        light_client_update::{LightClientUpdate, TryFromLightClientUpdateError},
-        trusted_sync_committee::{TrustedSyncCommittee, TryFromTrustedSyncCommitteeError},
-    },
-};
+use crate::{light_client_update, LightClientUpdate};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""))]
-pub struct Misbehaviour<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
-    pub trusted_sync_committee: TrustedSyncCommittee<C>,
-    pub update_1: LightClientUpdate<C>,
-    pub update_2: LightClientUpdate<C>,
+pub struct Misbehaviour {
+    pub trusted_sync_committee: TrustedSyncCommittee,
+    pub update_1: LightClientUpdate,
+    pub update_2: LightClientUpdate,
 }
 
-impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<Misbehaviour<C>>
-    for protos::union::ibc::lightclients::ethereum::v1::Misbehaviour
-{
-    fn from(value: Misbehaviour<C>) -> Self {
+impl From<Misbehaviour> for protos::union::ibc::lightclients::ethereum::v1::Misbehaviour {
+    fn from(value: Misbehaviour) -> Self {
         Self {
             trusted_sync_committee: Some(value.trusted_sync_committee.into()),
             update_1: Some(value.update_1.into()),
@@ -36,14 +28,12 @@ pub enum TryFromMisbehaviourError {
     #[error("invalid trusted_sync_committee")]
     TrustedSyncCommittee(#[source] TryFromTrustedSyncCommitteeError),
     #[error("invalid update1")]
-    Update1(#[source] TryFromLightClientUpdateError),
+    Update1(#[source] light_client_update::proto::Error),
     #[error("invalid update2")]
-    Update2(#[source] TryFromLightClientUpdateError),
+    Update2(#[source] light_client_update::proto::Error),
 }
 
-impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
-    TryFrom<protos::union::ibc::lightclients::ethereum::v1::Misbehaviour> for Misbehaviour<C>
-{
+impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::Misbehaviour> for Misbehaviour {
     type Error = TryFromMisbehaviourError;
 
     fn try_from(

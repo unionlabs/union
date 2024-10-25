@@ -4,6 +4,7 @@ name    = "berachain-light-client-types"
 version = "0.1.0"
 
 [dependencies]
+ethereum-light-client-types   = { workspace = true }
 protos                        = { workspace = true, features = ["union+ibc+lightclients+berachain+v1"] }
 serde                         = { workspace = true, features = ["derive"] }
 tendermint-light-client-types = { workspace = true }
@@ -12,4 +13,4 @@ unionlabs                     = { workspace = true }
 
 [features]
 default = ["proto"]
-proto   = ["unionlabs/proto", "tendermint-light-client-types/proto"]
+proto   = ["unionlabs/proto", "tendermint-light-client-types/proto", "ethereum-light-client-types/proto"]

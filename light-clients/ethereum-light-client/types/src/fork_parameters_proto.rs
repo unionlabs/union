@@ -1,5 +1,8 @@
-use beacon_api_types::ForkParameters;
-use unionlabs::required;
+use beacon_api_types::{fork::Fork, ForkParameters};
+use unionlabs::{
+    errors::{InvalidLength, MissingField},
+    required,
+};
 
 pub fn into_proto(
     value: ForkParameters,
@@ -67,10 +70,7 @@ fn fork_try_from_proto(
     value: protos::union::ibc::lightclients::ethereum::v1::Fork,
 ) -> Result<Fork, ForkError> {
     Ok(Fork {
-        version: value
-            .version
-            .try_into()
-            .map_err(TryFromForkError::Version)?,
+        version: value.version.try_into().map_err(ForkError::Version)?,
         epoch: value.epoch,
     })
 }
