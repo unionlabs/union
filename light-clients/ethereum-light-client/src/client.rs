@@ -1,4 +1,5 @@
 use cosmwasm_std::{Deps, DepsMut, Env};
+use ethereum_light_client_types::{ClientState, ConsensusState};
 use ethereum_verifier::{
     utils::{
         compute_slot_at_timestamp, compute_sync_committee_period_at_slot,
@@ -24,15 +25,9 @@ use unionlabs::{
     ensure,
     ethereum::{ibc_commitment_key, keccak256},
     hash::H256,
-    ibc::{
-        core::{
-            client::{genesis_metadata::GenesisMetadata, height::Height},
-            commitment::merkle_path::MerklePath,
-        },
-        lightclients::ethereum::{
-            client_state::ClientState, consensus_state::ConsensusState, header::Header,
-            misbehaviour::Misbehaviour, storage_proof::StorageProof,
-        },
+    ibc::core::{
+        client::{genesis_metadata::GenesisMetadata, height::Height},
+        commitment::merkle_path::MerklePath,
     },
     uint::U256,
 };

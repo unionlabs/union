@@ -1,12 +1,10 @@
-use serde::{Deserialize, Serialize};
-use unionlabs::ibc::{
-    core::client::height::Height,
-    lightclients::ethereum::{account_proof::AccountProof, storage_proof::StorageProof},
-};
+use ethereum_light_client_types::{AccountProof, StorageProof};
+use unionlabs::ibc::core::client::height::Height;
 
 use crate::L2Header;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Header {
     pub l1_height: Height,
     pub l1_account_proof: AccountProof,
@@ -18,13 +16,8 @@ pub struct Header {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use unionlabs::{
-        errors::MissingField,
-        ibc::lightclients::ethereum::{
-            account_proof::TryFromAccountProofError, storage_proof::TryFromStorageProofError,
-        },
-        impl_proto_via_try_from_into, required,
-    };
+    use ethereum_light_client_types::{account_proof, storage_proof};
+    use unionlabs::{errors::MissingField, impl_proto_via_try_from_into, required};
 
     use crate::{l2_header, Header};
 
@@ -62,13 +55,13 @@ pub mod proto {
         #[error(transparent)]
         MissingField(#[from] MissingField),
         #[error("invalid l1_account_proof")]
-        L1AccountProof(#[source] TryFromAccountProofError),
+        L1AccountProof(#[source] account_proof::proto::Error),
         #[error("invalid l2_ibc_account_proof")]
-        L2IbcAccountProof(#[source] TryFromAccountProofError),
+        L2IbcAccountProof(#[source] account_proof::proto::Error),
         #[error("invalid l1_next_node_num_slot_proof")]
-        L1NextNodeNumSlotProof(#[source] TryFromStorageProofError),
+        L1NextNodeNumSlotProof(#[source] storage_proof::proto::Error),
         #[error("invalid l1_nodes_slot_proof")]
-        L1NodesSlotProof(#[source] TryFromStorageProofError),
+        L1NodesSlotProof(#[source] storage_proof::proto::Error),
         #[error("invalid l2_header")]
         L2Header(#[source] l2_header::proto::Error),
     }

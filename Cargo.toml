@@ -59,26 +59,29 @@ members = [
   "lib/scroll-verifier",
   "lib/tendermint-verifier",
 
-  "light-clients/arbitrum-light-client",
+  # these will all be re enabled and updated once ethereum-light-client is updated
+
+  # "light-clients/arbitrum-light-client",
   "light-clients/arbitrum-light-client/types",
 
-  "light-clients/berachain-light-client",
+  # "light-clients/berachain-light-client",
   "light-clients/berachain-light-client/types",
 
   "light-clients/cometbls-light-client",
   "light-clients/cometbls-light-client/types",
 
-  "light-clients/ethereum-light-client",
+  # "light-clients/ethereum-light-client",
+  "light-clients/ethereum-light-client/types",
 
-  "light-clients/evm-in-cosmos-light-client",
+  # "light-clients/evm-in-cosmos-light-client",
 
-  "light-clients/scroll-light-client",
+  # "light-clients/scroll-light-client",
   "light-clients/scroll-light-client/types",
 
   "light-clients/tendermint-light-client",
   "light-clients/tendermint-light-client/types",
 
-  "light-clients/linea-light-client",
+  # "light-clients/linea-light-client",
   "light-clients/linea-light-client/types",
 
   "tools/generate-rust-sol-bindings",
@@ -88,43 +91,43 @@ members = [
   "tools/move-bindgen",
   "lib/move-bindgen-derive",
 
-  "ucli",
   "unionvisor",
 
   "voyager",
 
   "voyager/modules/chain/cosmos-sdk",
-  "voyager/modules/chain/ethereum",
-  "voyager/modules/chain/movement",
+  # "voyager/modules/chain/ethereum",
+  # "voyager/modules/chain/movement",
 
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
-  "voyager/modules/client/movement",
+  # "voyager/modules/client/movement",
   "voyager/modules/client/tendermint",
 
   "voyager/modules/consensus/cometbls",
   "voyager/modules/consensus/ethereum",
-  "voyager/modules/consensus/movement",
+  # "voyager/modules/consensus/movement",
   "voyager/modules/consensus/tendermint",
 
   "voyager/plugins/client-update/cometbls",
   "voyager/plugins/client-update/ethereum",
-  "voyager/plugins/client-update/movement",
+  # "voyager/plugins/client-update/movement",
   "voyager/plugins/client-update/tendermint",
 
   "voyager/plugins/event-source/cosmos-sdk",
-  "voyager/plugins/event-source/ethereum",
+  # "voyager/plugins/event-source/ethereum",
   "voyager/plugins/event-source/movement",
 
   "voyager/plugins/transaction/cosmos-sdk",
-  "voyager/plugins/transaction/ethereum",
+  # "voyager/plugins/transaction/ethereum",
   "voyager/plugins/transaction/aptos",
 
   "voyager/plugins/packet-filter",
   "voyager/plugins/transaction-batch",
 
   "drip",
-  "light-clients/movement/ics08-movement",
+
+  # "light-clients/movement/ics08-movement",
   "light-clients/movement/ics08-movement/types",
 
   "lib/aptos-verifier",
@@ -134,6 +137,7 @@ members = [
   "lib/subset-of",
   "lib/cometbft-types",
   "lib/galois-rpc",
+  "lib/beacon-api-types",
 ]
 
 [workspace.package]
@@ -154,12 +158,13 @@ lto       = "thin"
 opt-level = 3
 
 [workspace.dependencies]
-aptos-move-ibc = { path = "generated/rust/aptos-move-ibc", default-features = false }
-aptos-verifier = { path = "lib/aptos-verifier", default-features = false }
-beacon-api     = { path = "lib/beacon-api", default-features = false }
-chain-utils    = { path = "lib/chain-utils", default-features = false }
-cometbft-rpc   = { path = "lib/cometbft-rpc", default-features = false }
-cometbft-types = { path = "lib/cometbft-types", default-features = false }
+aptos-move-ibc   = { path = "generated/rust/aptos-move-ibc", default-features = false }
+aptos-verifier   = { path = "lib/aptos-verifier", default-features = false }
+beacon-api       = { path = "lib/beacon-api", default-features = false }
+beacon-api-types = { path = "lib/beacon-api-types", default-features = false }
+chain-utils      = { path = "lib/chain-utils", default-features = false }
+cometbft-rpc     = { path = "lib/cometbft-rpc", default-features = false }
+cometbft-types   = { path = "lib/cometbft-types", default-features = false }
 
 arbitrum-light-client-types = { path = "light-clients/arbitrum-light-client/types", default-features = false }
 arbitrum-verifier           = { path = "lib/arbitrum-verifier", default-features = false }
@@ -171,8 +176,9 @@ scroll-light-client-types = { path = "light-clients/scroll-light-client/types", 
 
 contracts = { path = "generated/rust/contracts", default-features = false }
 
-ethereum-light-client = { path = "light-clients/ethereum-light-client", default-features = false }
-ethereum-verifier     = { path = "lib/ethereum-verifier", default-features = false }
+ethereum-light-client       = { path = "light-clients/ethereum-light-client", default-features = false }
+ethereum-light-client-types = { path = "light-clients/ethereum-light-client/types", default-features = false }
+ethereum-verifier           = { path = "lib/ethereum-verifier", default-features = false }
 
 scroll-api      = { path = "lib/scroll-api", default-features = false }
 scroll-codec    = { path = "lib/scroll-codec", default-features = false }

@@ -2,17 +2,13 @@
 
 use std::fmt::Display;
 
+use beacon_api_types::{
+    GenesisData, LightClientBootstrap, LightClientFinalityUpdate, SignedBeaconBlock,
+};
 use reqwest::{Client, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tracing::{debug, info, trace};
-use unionlabs::{
-    ethereum::beacon::{
-        genesis_data::GenesisData, light_client_bootstrap::UnboundedLightClientBootstrap,
-        light_client_finality_update::UnboundedLightClientFinalityUpdate,
-        signed_beacon_block::UnboundedSignedBeaconBlock,
-    },
-    hash::H256,
-};
+use unionlabs::hash::H256;
 
 use crate::{
     errors::{Error, InternalServerError, NotFoundError},
@@ -60,9 +56,7 @@ impl BeaconApiClient {
         self.get_json("/eth/v1/config/spec").await
     }
 
-    pub async fn finality_update(
-        &self,
-    ) -> Result<Response<UnboundedLightClientFinalityUpdate, Version>> {
+    pub async fn finality_update(&self) -> Result<Response<LightClientFinalityUpdate, Version>> {
         self.get_json("/eth/v1/beacon/light_client/finality_update")
             .await
     }
@@ -78,15 +72,12 @@ impl BeaconApiClient {
     pub async fn block(
         &self,
         block_id: BlockId,
-    ) -> Result<Response<UnboundedSignedBeaconBlock, BeaconBlockExtra>> {
+    ) -> Result<Response<SignedBeaconBlock, BeaconBlockExtra>> {
         self.get_json(format!("/eth/v2/beacon/blocks/{block_id}"))
             .await
     }
 
-    pub async fn bootstrap(
-        &self,
-        finalized_root: H256,
-    ) -> Result<Response<UnboundedLightClientBootstrap>> {
+    pub async fn bootstrap(&self, finalized_root: H256) -> Result<Response<LightClientBootstrap>> {
         self.get_json(format!(
             "/eth/v1/beacon/light_client/bootstrap/{finalized_root}"
         ))
@@ -127,10 +118,7 @@ impl BeaconApiClient {
         Ok(height)
     }
 
-    pub async fn bootstrap_for_slot(
-        &self,
-        slot: u64,
-    ) -> Result<Response<UnboundedLightClientBootstrap>> {
+    pub async fn bootstrap_for_slot(&self, slot: u64) -> Result<Response<LightClientBootstrap>> {
         // NOTE(benluelo): While this is technically two actions, I consider it to be one
         // action - if the beacon chain doesn't have the header, it won't have the bootstrap
         // either. It would be nice if the beacon chain exposed "fetch bootstrap by slot"

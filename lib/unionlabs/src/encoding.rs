@@ -11,6 +11,36 @@ impl Encoding for Proto {}
 pub enum Ssz {}
 impl Encoding for Ssz {}
 
+impl<T> Encode<Ssz> for T
+where
+    T: ssz::Ssz,
+{
+    fn encode(self) -> Vec<u8> {
+        ssz::Ssz::as_ssz_bytes(&self)
+    }
+}
+
+// TODO: Figure out why this doesn't work, I'm not sure why it doesn't
+// impl<T> Encode<Ssz> for &'_ T
+// where
+//     T: ssz::Ssz,
+// {
+//     fn encode(self) -> Vec<u8> {
+//         ssz::Ssz::as_ssz_bytes(self)
+//     }
+// }
+
+impl<T> Decode<Ssz> for T
+where
+    T: ssz::Ssz,
+{
+    type Error = ssz::decode::DecodeError;
+
+    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+        ssz::Ssz::from_ssz_bytes(bytes)
+    }
+}
+
 pub enum Json {}
 impl Encoding for Json {}
 

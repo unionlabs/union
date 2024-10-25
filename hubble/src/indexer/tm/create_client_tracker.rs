@@ -78,7 +78,7 @@ pub fn schedule_create_client_checker(
                             let counterparty_chain_id = match client_type.unwrap() {
                                 WasmClientType::EthereumMinimal
                                 | WasmClientType::EthereumMainnet => {
-                                    let cs = match unionlabs::ibc::lightclients::ethereum::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                    let cs = match ethereum_light_client_types::ClientState::decode_as::<Proto>(&cs.data) {
                                         Ok(cs) => cs,
                                         // We changed the format of berachain client states, but union-testnet-8 still contains an old configuration which we need to ignore.
                                         Err(err) => {
@@ -156,8 +156,6 @@ pub fn schedule_create_client_checker(
                                             continue;
                                         }
                                     };
-
-                                    cs.chain_id.to_string()
                                 }
                             };
 

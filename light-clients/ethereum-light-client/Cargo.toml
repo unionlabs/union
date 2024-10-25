@@ -18,6 +18,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 bytes                  = { workspace = true }
 cosmwasm-std           = { workspace = true, features = ["abort"] }
+ethereum-light-client-types = { workspace = true, features = ["proto"] }
 ethereum-verifier      = { workspace = true }
 ethers-contract-derive = { workspace = true }
 ethers-core            = { workspace = true }

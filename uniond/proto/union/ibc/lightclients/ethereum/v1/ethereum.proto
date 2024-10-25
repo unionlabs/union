@@ -42,29 +42,22 @@ message ConsensusState {
   uint64 slot = 1;
   bytes state_root = 2;
   bytes storage_root = 3;
-  // FIXME: isn't it already defined in ibc.lightclients.wasm.v1?
   uint64 timestamp = 4;
   bytes current_sync_committee = 5;
   bytes next_sync_committee = 6;
 }
 
-// TODO: This should be an enum containing either sync committee update or finality update.
 message Header {
-  TrustedSyncCommittee trusted_sync_committee = 1;
+  .ibc.core.client.v1.Height trusted_height = 1;
   LightClientUpdate consensus_update = 2;
-  AccountUpdate account_update = 3;
+  AccountProof ibc_account_proof = 3;
 }
 
 message Misbehaviour {
-  TrustedSyncCommittee trusted_sync_committee = 1;
-  LightClientUpdate update_1 = 2;
-  LightClientUpdate update_2 = 3;
-}
-
-message TrustedSyncCommittee {
   .ibc.core.client.v1.Height trusted_height = 1;
   SyncCommittee current_sync_committee = 2;
-  SyncCommittee next_sync_committee = 3;
+  LightClientUpdate update_1 = 3;
+  LightClientUpdate update_2 = 4;
 }
 
 message ForkParameters {
@@ -83,14 +76,33 @@ message Fork {
 }
 
 message LightClientUpdate {
-  LightClientHeader attested_header = 1;
+  oneof update {
+    EpochChangeUpdate epoch_change_update = 1;
+    WithinEpochUpdate within_epoch_update = 2;
+  }
+}
+
+message EpochChangeUpdate {
+  SyncCommittee sync_committee = 1;
   SyncCommittee next_sync_committee = 2;
   repeated bytes next_sync_committee_branch = 3;
-  LightClientHeader finalized_header = 4;
-  repeated bytes finality_branch = 5;
-  SyncAggregate sync_aggregate = 8;
-  uint64 signature_slot = 9;
+  LightClientUpdateData update_data = 4;
 }
+
+message WithinEpochUpdate {
+  SyncCommittee sync_committee = 1;
+  LightClientUpdateData update_data = 2;
+}
+
+message LightClientUpdateData {
+  LightClientHeader attested_header = 1;
+  LightClientHeader finalized_header = 2;
+  repeated bytes finality_branch = 3;
+  SyncAggregate sync_aggregate = 4;
+  uint64 signature_slot = 5;
+}
+
+// beacon api types
 
 message SyncCommittee {
   repeated bytes pubkeys = 1;
@@ -100,17 +112,6 @@ message SyncCommittee {
 message SyncAggregate {
   bytes sync_committee_bits = 1;
   bytes sync_committee_signature = 2;
-}
-
-message ExecutionUpdate {
-  bytes state_root = 1;
-  repeated bytes state_root_branch = 2;
-  uint64 block_number = 3;
-  repeated bytes block_number_branch = 4;
-}
-
-message AccountUpdate {
-  AccountProof account_proof = 1;
 }
 
 message LightClientHeader {
@@ -147,18 +148,3 @@ message BeaconBlockHeader {
   bytes state_root = 4;
   bytes body_root = 5;
 }
-
-message FinalizedHeaderMisbehaviour {
-  string client_id = 1;
-  TrustedSyncCommittee trusted_sync_committee = 2;
-  LightClientUpdate consensus_update_1 = 3;
-  LightClientUpdate consensus_update_2 = 4;
-}
-
-message NextSyncCommitteeMisbehaviour {
-  string client_id = 1;
-  TrustedSyncCommittee trusted_sync_committee = 2;
-  LightClientUpdate consensus_update_1 = 3;
-  LightClientUpdate consensus_update_2 = 4;
-}
-

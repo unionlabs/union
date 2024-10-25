@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
 use unionlabs::hash::H256;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
     pub state_root: H256,
     pub timestamp: u64,

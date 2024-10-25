@@ -222,7 +222,6 @@ UNBONDED
 UNBONDING
 UNNEST
 UUPS
-Ucli
 Unbonding
 Uncons
 Undelegate
@@ -1325,7 +1324,6 @@ typemap
 typenum
 typeof
 uatom
-ucli
 ucosm
 ufgwwpg
 uints

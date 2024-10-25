@@ -292,7 +292,44 @@ mod tests {
 
     #[test]
     fn header_hash() {
-        // https://stride-testnet-rpc.polkachu.com/block?height=8777722
-        let expected_hash = hex_literal::hex!("");
+        // https://stride-testnet-rpc.polkachu.com/block?hash=B1228B7D3D788854D73B082BFE307A9D12010550F369E9F9CFAD9DF9A1A13507
+        let expected_merkle_root =
+            hex_literal::hex!("B1228B7D3D788854D73B082BFE307A9D12010550F369E9F9CFAD9DF9A1A13507");
+        let header: Header = serde_json::from_str::<protos::tendermint::types::Header>(
+            r#"
+{
+  "version": {
+    "block": "11"
+  },
+  "chain_id": "stride-internal-1",
+  "height": "8777721",
+  "time": "2024-10-24T14:02:35.29813191Z",
+  "last_block_id": {
+    "hash": "FD01D47BAC82C15CB5E1EAC46A75A9BB3C9BAC25822FB0D3E322DD9C674F0A3F",
+    "parts": {
+      "total": 1,
+      "hash": "E0EE3204DEE193A24EC770580073CC3B0A67CA14FF74505D229C3843B144B1E1"
+    }
+  },
+  "last_commit_hash": "1C5718183AFC33BF5D4852B2759EEE53D8ED17C27A59EED201C70CD4A328827A",
+  "data_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+  "validators_hash": "5A73E37A4DC01CAD4CC0B16196826B548B6F476D1E62BD4E12EACCBA8A22D294",
+  "next_validators_hash": "5A73E37A4DC01CAD4CC0B16196826B548B6F476D1E62BD4E12EACCBA8A22D294",
+  "consensus_hash": "048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F",
+  "app_hash": "7B3339C0D3E2AF530F9B7A1ED8436A39423E9DC86845E9AAFB0E70B3C9A37E30",
+  "last_results_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+  "evidence_hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+  "proposer_address": "246F8FE3F3ADA28DAD4018E38AFD2CD28CCBDD95"
+}
+"#,
+        )
+        .unwrap()
+        .try_into()
+        .unwrap();
+
+        assert_eq!(
+            header.calculate_merkle_root().unwrap(),
+            <H256>::new(expected_merkle_root)
+        );
     }
 }

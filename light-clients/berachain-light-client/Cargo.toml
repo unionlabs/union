@@ -16,21 +16,22 @@ test-include = []
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-bytes                 = { workspace = true }
-cosmwasm-std          = { workspace = true, features = ["abort", "iterator"] }
-ethereum-light-client = { workspace = true, features = ["mainnet", "library"] }
-hex                   = { workspace = true }
-prost                 = { workspace = true }
-protos                = { workspace = true, features = ["ibc+lightclients+wasm+v1", "std"] }
-schemars              = { workspace = true }
-serde                 = { workspace = true, features = ["derive"] }
-serde-json-wasm       = { workspace = true }
-serde-utils           = { workspace = true }
-sha2                  = { workspace = true }
-sha3                  = { workspace = true }
-thiserror             = { workspace = true }
+bytes        = { workspace = true }
+cosmwasm-std = { workspace = true, features = ["abort", "iterator"] }
+# ethereum-light-client = { workspace = true, features = ["mainnet", "library"] }
+beacon-api-types = { workspace = true, features = ["ssz"] }
+hex              = { workspace = true }
+prost            = { workspace = true }
+schemars         = { workspace = true }
+serde            = { workspace = true, features = ["derive"] }
+serde-json-wasm  = { workspace = true }
+serde-utils      = { workspace = true }
+sha2             = { workspace = true }
+sha3             = { workspace = true }
+thiserror        = { workspace = true }
 
 berachain-light-client-types  = { workspace = true, features = ["proto"] }
+ethereum-light-client-types  = { workspace = true, features = ["proto"] }
 cometbft-types                = { workspace = true, features = ["proto", "hash"] }
 ethereum-verifier             = { workspace = true }
 hex-literal                   = { workspace = true }
