@@ -541,6 +541,7 @@
 
             SQLX_OFFLINE = true;
             LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+            RUST_MIN_STACK = 16777216; # ICE fix: maybe related to https://github.com/rust-lang/rust/issues/131419
             PROTOC = "${pkgs.protobuf}/bin/protoc";
           };
           # https://flake.parts/options/treefmt-nix#opt-perSystem.treefmt
