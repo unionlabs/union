@@ -17,6 +17,9 @@ test-include = []
 name = "hubble"
 path = "src/main.rs"
 
+[profile.release]
+incremental = false
+
 [dependencies]
 alloy                         = { workspace = true, features = ["eips", "rpc", "rpc-types", "serde", "transports", "transport-http", "providers", "reqwest"] }
 aptos-crypto                  = { workspace = true }
