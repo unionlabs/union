@@ -1,5 +1,6 @@
 import { ofetch } from "ofetch"
 import type { ChainId } from "../../mod.ts"
+import type { Network } from "../../types.ts"
 
 const queryHeaders = new Headers({
   Accept: "application/json",
@@ -12,8 +13,8 @@ const HUBBLE_URL = "https://graphql.union.build"
 const hubbleRestFetch = ofetch.create({
   method: "GET",
   retry: 2,
-  retryDelay: 500,
   timeout: 6_000,
+  retryDelay: 500,
   headers: queryHeaders,
   baseURL: `${HUBBLE_URL}/api/rest/v1`
 })
@@ -162,10 +163,10 @@ export interface Chain<
   testnet: boolean
   chain_id: string
   enabled: boolean
+  rpc_type: Network
   addr_prefix: string
   display_name: string
   logo_uri: string | null
-  rpc_type: "evm" | "cosmos"
   rpcs: IncludeEndpoints extends true ? Array<Rpc> : undefined
   assets: IncludeAssets extends true ? Array<Asset> : undefined
   ucs1_configurations: IncludeContracts extends true ? Array<Ucs1Configuration> : undefined

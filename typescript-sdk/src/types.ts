@@ -1,5 +1,8 @@
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
+/** Currently supported networks. */
+export type Network = "evm" | "cosmos" | "aptos"
+
 /** Hex address of the form `0x${string}`. Used for EVM addresses. */
 export type HexAddress = `0x${string}`
 

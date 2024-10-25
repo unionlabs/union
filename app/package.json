@@ -43,7 +43,7 @@
     "three": "^0.168.0",
     "valibot": "^0.41.0",
     "vaul-svelte": "^0.3.2",
-    "viem": "^2.21.34"
+    "viem": "^2.21.35"
   },
   "devDependencies": {
     "@iconify-json/fa6-solid": "^1.2.0",

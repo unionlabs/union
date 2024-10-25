@@ -29,26 +29,26 @@
     "preinstall": "npm_config_yes=true npm exec --no-package-lock=true only-allow@latest bun"
   },
   "dependencies": {
-    "@aptos-labs/ts-sdk": "^1.30.0",
+    "@aptos-labs/ts-sdk": "^1.31.0",
     "@cosmjs/amino": "^0.32.4",
     "@cosmjs/cosmwasm-stargate": "0.32.4",
     "@cosmjs/proto-signing": "^0.32.4",
     "@cosmjs/stargate": "0.32.4",
     "@cosmjs/tendermint-rpc": "^0.32.4",
     "@scure/base": "^1.1.9",
-    "neverthrow": "^8.1.0",
+    "neverthrow": "^8.1.1",
     "ofetch": "^1.4.1",
     "patch-package": "^8.0.0",
-    "viem": "^2.21.34"
+    "viem": "^2.21.35"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/bun": "^1.1.12",
-    "@types/node": "^22.7.9",
+    "@types/node": "^22.8.0",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.2",
-    "tsup": "^8.3.0",
+    "tsup": "^8.3.4",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
     "vite-tsconfig-paths": "^5.0.1",
