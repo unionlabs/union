@@ -1,4 +1,3 @@
-use ssz::Ssz;
 use unionlabs::bls::BlsSignature;
 
 use crate::VoluntaryExit;

@@ -1,15 +1,12 @@
-use hex_literal::hex;
 use sha2::Digest;
 use sha3::Keccak256;
 
 use crate::{
     ethereum::slot::{MappingKey, Slot},
     hash::H256,
-    macros::hex_string_array_wrapper,
     uint::U256,
 };
 
-pub mod config;
 pub mod slot;
 
 #[inline]

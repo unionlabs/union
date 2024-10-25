@@ -1,4 +1,4 @@
-use unionlabs::hash::{hash_v2::Hash, H256};
+use unionlabs::hash::H256;
 
 use crate::Version;
 
