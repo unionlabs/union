@@ -1,3 +1,7 @@
+figure > ::-webkit-scrollbar {
+  height: 8px;
+}
+
 figure:not(.has-title) > pre:nth-child(2) {
   /* border-radius: 8px !important; */
 }

@@ -13,19 +13,6 @@ Although most HTTP clients can be used to query our API, we recommend [URQL](htt
 be downloaded using [`graphqurl`](https://github.com/hasura/graphqurl) or [`graphql-inspector`](https://the-guild.dev/graphql/inspector):
 
 <Tabs>
-  <TabItem label="graphqurl" icon="seti:npm">
-```sh frame="none"
-# download .graphql schema
-npx graphqurl https://graphql.union.build/v1/graphql \
-  --introspect > schema.graphql
-```
-```sh frame="none"
-# download .json schema
-npx graphqurl https://graphql.union.build/v1/graphql \
-  --introspect \
-  --format json > schema.json
-```
-  </TabItem>
   <TabItem label="graphql-inspector" icon="seti:npm">
 ```sh frame="none"
 # download .graphql schema
@@ -38,6 +25,19 @@ npx @graphql-inspector/cli \
 npx @graphql-inspector/cli \
   introspect https://graphql.union.build/v1/graphql \
   --write schema.json
+```
+  </TabItem>
+  <TabItem label="graphqurl" icon="seti:npm">
+```sh frame="none"
+# download .graphql schema
+npx graphqurl https://graphql.union.build/v1/graphql \
+  --introspect > schema.graphql
+```
+```sh frame="none"
+# download .json schema
+npx graphqurl https://graphql.union.build/v1/graphql \
+  --introspect \
+  --format json > schema.json
 ```
   </TabItem>
   <TabItem label="curl" icon="seti:shell">

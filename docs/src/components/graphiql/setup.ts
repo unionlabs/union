@@ -14,7 +14,7 @@ const fetcher = createGraphiQLFetcher({
 
 let query = dedent(/* GraphQL */ `
       query UserTransfers {
-        v0_transfers(
+        v1_transfers(
           limit: 3,
           where: {
             sender: { 
