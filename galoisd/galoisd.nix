@@ -12,23 +12,6 @@
     }:
     {
       packages = {
-        galoisd-coverage-show = pkgs.writeShellApplication {
-          name = "galoisd-coverage-show";
-          runtimeInputs = [ goPkgs.go_1_23 ];
-          text = ''
-            ${ensureAtRepositoryRoot}
-            pushd galoisd
-            go tool cover -html=${self'.packages.galoisd-coverage}
-            popd
-          '';
-        };
-
-        galoisd-coverage = pkgs.runCommand "galoisd-coverage" { buildInputs = [ goPkgs.go_1_23 ]; } ''
-          HOME="$(mktemp -d)"
-          cd ${./.}
-          go test -v -coverpkg=./... -coverprofile=$out ./...
-        '';
-
         galoisd = goPkgs.pkgsStatic.buildGo123Module (
           {
             name = "galoisd";
