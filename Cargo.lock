@@ -4828,6 +4828,7 @@ dependencies = [
 name = "ethereum-verifier"
 version = "0.1.0"
 dependencies = [
+ "beacon-api-types",
  "bytes",
  "hash-db",
  "hash256-std-hasher",

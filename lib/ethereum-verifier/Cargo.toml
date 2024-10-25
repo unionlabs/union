@@ -30,6 +30,7 @@ sha3               = { workspace = true }
 thiserror          = { workspace = true }
 trie-db            = { version = "0.28", default-features = false }
 typenum            = { workspace = true, features = ["const-generics", "no_std"] }
+beacon-api-types.workspace = true
 
 [dev-dependencies]
 hex-literal = { workspace = true }

@@ -1,6 +1,12 @@
-use beacon_api_types::{light_client_update::LightClientUpdate, BeaconBlockHeader};
+use beacon_api_types::{
+    fork::Fork, light_client_update::LightClientUpdate, BeaconBlockHeader, ForkParameters,
+    PresetBaseKind,
+};
 use serde::{Deserialize, Serialize};
-use unionlabs::{bls::BlsSignature, hash::H256};
+use unionlabs::{
+    bls::BlsSignature,
+    hash::{hash_v2::Hash, H256},
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BeaconHeaderData {
@@ -27,51 +33,6 @@ pub struct LightClientUpdateResponse {
     pub data: LightClientUpdate,
 }
 
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct LightClientUpdateData<
-//     const SYNC_COMMITTEE_SIZE: usize,
-//     const BYTES_PER_LOGS_BLOOM: usize,
-//     const MAX_EXTRA_DATA_BYTES: usize,
-// > {
-//     pub attested_header: LightClientHeader<BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES>,
-//     pub next_sync_committee: SyncCommittee<SYNC_COMMITTEE_SIZE>,
-//     pub next_sync_committee_branch: [H256; NEXT_SYNC_COMMITTEE_DEPTH],
-//     pub finalized_header: LightClientHeader<BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES>,
-//     pub finality_branch: [H256; FINALIZED_ROOT_DEPTH],
-//     pub sync_aggregate: SyncAggregate<SYNC_COMMITTEE_SIZE>,
-//     pub signature_slot: Slot,
-// }
-
-// impl<
-//         const SYNC_COMMITTEE_SIZE: usize,
-//         const BYTES_PER_LOGS_BLOOM: usize,
-//         const MAX_EXTRA_DATA_BYTES: usize,
-//     > From<LightClientUpdateData<SYNC_COMMITTEE_SIZE, BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES>>
-//     for LightClientUpdate<SYNC_COMMITTEE_SIZE, BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES>
-// {
-//     fn from(
-//         value: LightClientUpdateData<
-//             SYNC_COMMITTEE_SIZE,
-//             BYTES_PER_LOGS_BLOOM,
-//             MAX_EXTRA_DATA_BYTES,
-//         >,
-//     ) -> Self {
-//         let next_sync_committee = if value.next_sync_committee == Default::default() {
-//             None
-//         } else {
-//             Some((value.next_sync_committee, value.next_sync_committee_branch))
-//         };
-//         Self {
-//             attested_header: value.attested_header,
-//             next_sync_committee,
-//             finalized_header: value.finalized_header,
-//             finality_branch: value.finality_branch,
-//             sync_aggregate: value.sync_aggregate,
-//             signature_slot: value.signature_slot,
-//         }
-//     }
-// }
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct Spec {
@@ -82,19 +43,19 @@ pub struct Spec {
     // TERMINAL_BLOCK_HASH_ACTIVATION_EPOCH: 18446744073709551615,
     // MIN_GENESIS_ACTIVE_VALIDATOR_COUNT: 1300,
     // MIN_GENESIS_TIME: 1655647200,
-    pub genesis_fork_version: Version,
+    pub genesis_fork_version: Hash<4>,
     #[serde(with = "::serde_utils::string")]
     pub genesis_delay: u64,
-    pub altair_fork_version: Version,
+    pub altair_fork_version: Hash<4>,
     #[serde(with = "::serde_utils::string")]
     pub altair_fork_epoch: u64,
-    pub bellatrix_fork_version: Version,
+    pub bellatrix_fork_version: Hash<4>,
     #[serde(with = "::serde_utils::string")]
     pub bellatrix_fork_epoch: u64,
-    pub capella_fork_version: Version,
+    pub capella_fork_version: Hash<4>,
     #[serde(with = "::serde_utils::string")]
     pub capella_fork_epoch: u64,
-    pub deneb_fork_version: Version,
+    pub deneb_fork_version: Hash<4>,
     #[serde(with = "::serde_utils::string")]
     pub deneb_fork_epoch: u64,
     #[serde(with = "::serde_utils::string")]

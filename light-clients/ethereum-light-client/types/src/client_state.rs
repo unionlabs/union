@@ -1,10 +1,8 @@
+use beacon_api_types::ForkParameters;
+use serde::{Deserialize, Serialize};
 use unionlabs::{
-    errors::{required, InvalidLength, MissingField},
     hash::{H160, H256},
-    ibc::{
-        core::client::height::Height,
-        lightclients::ethereum::fork_parameters::{ForkParameters, TryFromForkParametersError},
-    },
+    ibc::core::client::height::Height,
     uint::U256,
 };
 
@@ -30,9 +28,13 @@ pub struct ClientState {
 pub mod proto {
     use std::sync::Arc;
 
-    use unionlabs::uint::FromDecStrErr;
+    use unionlabs::{
+        errors::{InvalidLength, MissingField},
+        required,
+        uint::{FromDecStrErr, U256},
+    };
 
-    use crate::ClientState;
+    use crate::{fork_parameters_proto, ClientState};
 
     impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::ClientState {
         fn from(value: ClientState) -> Self {
@@ -60,7 +62,7 @@ pub mod proto {
         #[error("invalid chain id: {0:?}")]
         ChainId(Arc<FromDecStrErr>),
         #[error("invalid fork parameters")]
-        ForkParameters(#[source] TryFromForkParametersError),
+        ForkParameters(#[source] fork_parameters_proto::Error),
         #[error("invalid genesis validators root")]
         GenesisValidatorsRoot(#[source] InvalidLength),
         #[error("invalid ibc commitment slot")]

@@ -1,5 +1,8 @@
+use beacon_api_types::execution_payload_header::ExecutionPayloadHeader;
+use unionlabs::{errors::InvalidLength, uint::U256};
+
 pub fn into_proto(
-    value: ExecutionPayloadHeader<C>,
+    value: ExecutionPayloadHeader,
 ) -> protos::union::ibc::lightclients::ethereum::v1::ExecutionPayloadHeader {
     protos::union::ibc::lightclients::ethereum::v1::ExecutionPayloadHeader {
         parent_hash: value.parent_hash.into(),
@@ -36,23 +39,13 @@ pub fn try_from_proto(
             .receipts_root
             .try_into()
             .map_err(Error::ReceiptsRoot)?,
-        logs_bloom: value.logs_bloom.try_into().map_err(|vec: Vec<_>| {
-            Error::LogsBloom(InvalidLength {
-                expected: ExpectedLength::Exact(C::BYTES_PER_LOGS_BLOOM::USIZE),
-                found: vec.len(),
-            })
-        })?,
+        logs_bloom: value.logs_bloom,
         prev_randao: value.prev_randao.try_into().map_err(Error::PrevRandao)?,
         block_number: value.block_number,
         gas_limit: value.gas_limit,
         gas_used: value.gas_used,
         timestamp: value.timestamp,
-        extra_data: value.extra_data.try_into().map_err(|vec: Vec<_>| {
-            Error::ExtraData(InvalidLength {
-                expected: ExpectedLength::Exact(C::MAX_EXTRA_DATA_BYTES::USIZE),
-                found: vec.len(),
-            })
-        })?,
+        extra_data: value.extra_data,
         base_fee_per_gas: U256::try_from_be_bytes(&value.base_fee_per_gas)
             .map_err(Error::BaseFeePerGas)?,
         block_hash: value.block_hash.try_into().map_err(Error::BlockHash)?,
@@ -71,26 +64,22 @@ pub fn try_from_proto(
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum Error {
-    #[error("invalid parent hash")]
+    #[error("invalid parent_hash")]
     ParentHash(#[source] InvalidLength),
-    #[error("invalid fee recipient")]
+    #[error("invalid fee_recipient")]
     FeeRecipient(#[source] InvalidLength),
-    #[error("invalid state root")]
+    #[error("invalid state_root")]
     StateRoot(#[source] InvalidLength),
-    #[error("invalid receipts root")]
+    #[error("invalid receipts_root")]
     ReceiptsRoot(#[source] InvalidLength),
-    #[error("invalid logs bloom")]
-    LogsBloom(#[source] InvalidLength),
-    #[error("invalid prev randao")]
+    #[error("invalid prev_randao")]
     PrevRandao(#[source] InvalidLength),
-    #[error("invalid extra data")]
-    ExtraData(#[source] InvalidLength),
-    #[error("invalid base fee per gas")]
+    #[error("invalid base_fee_per_gas")]
     BaseFeePerGas(#[source] InvalidLength),
-    #[error("invalid block hash")]
+    #[error("invalid block_hash")]
     BlockHash(#[source] InvalidLength),
-    #[error("invalid transactions root")]
+    #[error("invalid transactions_root")]
     TransactionsRoot(#[source] InvalidLength),
-    #[error("invalid withdrawals root")]
+    #[error("invalid withdrawals_root")]
     WithdrawalsRoot(#[source] InvalidLength),
 }

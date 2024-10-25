@@ -1,5 +1,10 @@
-pub fn into_proto(value: BeaconBlockHeader) -> Self {
-    Self {
+use beacon_api_types::BeaconBlockHeader;
+use unionlabs::errors::InvalidLength;
+
+pub fn into_proto(
+    value: BeaconBlockHeader,
+) -> protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader {
+    protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader {
         slot: value.slot,
         proposer_index: value.proposer_index,
         parent_root: value.parent_root.get().into(),

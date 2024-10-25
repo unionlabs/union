@@ -57,6 +57,7 @@ use core::{
     str::FromStr,
 };
 
+use hex_literal::hex;
 use serde::{Deserialize, Serialize};
 use typenum::{NonZero, Unsigned};
 use unionlabs::hash::hash_v2::Hash;
@@ -89,30 +90,57 @@ pub use crate::{
     sync_aggregate::SyncAggregateSsz, sync_committee::SyncCommitteeSsz,
 };
 
-// hex_string_array_wrapper! {
-//     pub struct Version(pub [u8; 4]);
-//     pub struct DomainType(pub [u8; 4]);
-//     pub struct ForkDigest(pub [u8; 4]);
-//     pub struct Domain(pub [u8; 32]);
-// }
+/// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
+pub struct Version(pub Hash<4>);
+
+/// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
+pub struct DomainType(pub Hash<4>);
+
+/// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
+pub struct ForkDigest(pub Hash<4>);
+
+/// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
+pub struct Domain(pub Hash<32>);
 
 #[rustfmt::skip]
-pub mod domain_type {
-    use unionlabs::hash::hash_v2::Hash;
-    use hex_literal::hex;
-
-    pub const BEACON_PROPOSER: Hash<4>                = Hash::new(hex!("00000000"));
-    pub const BEACON_ATTESTER: Hash<4>                = Hash::new(hex!("01000000"));
-    pub const RANDAO: Hash<4>                         = Hash::new(hex!("02000000"));
-    pub const DEPOSIT: Hash<4>                        = Hash::new(hex!("03000000"));
-    pub const VOLUNTARY_EXIT: Hash<4>                 = Hash::new(hex!("04000000"));
-    pub const SELECTION_PROOF: Hash<4>                = Hash::new(hex!("05000000"));
-    pub const AGGREGATE_AND_PROOF: Hash<4>            = Hash::new(hex!("06000000"));
-    pub const SYNC_COMMITTEE: Hash<4>                 = Hash::new(hex!("07000000"));
-    pub const SYNC_COMMITTEE_SELECTION_PROOF: Hash<4> = Hash::new(hex!("08000000"));
-    pub const CONTRIBUTION_AND_PROOF: Hash<4>         = Hash::new(hex!("09000000"));
-    pub const BLS_TO_EXECUTION_CHANGE: Hash<4>        = Hash::new(hex!("0A000000"));
-    pub const APPLICATION_MASK: Hash<4>               = Hash::new(hex!("00000001"));
+/// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#domain-types>
+impl DomainType {
+    pub const BEACON_PROPOSER: Self                = Self(Hash::new(hex!("00000000")));
+    pub const BEACON_ATTESTER: Self                = Self(Hash::new(hex!("01000000")));
+    pub const RANDAO: Self                         = Self(Hash::new(hex!("02000000")));
+    pub const DEPOSIT: Self                        = Self(Hash::new(hex!("03000000")));
+    pub const VOLUNTARY_EXIT: Self                 = Self(Hash::new(hex!("04000000")));
+    pub const SELECTION_PROOF: Self                = Self(Hash::new(hex!("05000000")));
+    pub const AGGREGATE_AND_PROOF: Self            = Self(Hash::new(hex!("06000000")));
+    pub const SYNC_COMMITTEE: Self                 = Self(Hash::new(hex!("07000000")));
+    pub const SYNC_COMMITTEE_SELECTION_PROOF: Self = Self(Hash::new(hex!("08000000")));
+    pub const CONTRIBUTION_AND_PROOF: Self         = Self(Hash::new(hex!("09000000")));
+    pub const BLS_TO_EXECUTION_CHANGE: Self        = Self(Hash::new(hex!("0A000000")));
+    pub const APPLICATION_MASK: Self               = Self(Hash::new(hex!("00000001")));
 }
 
 /// Minimal config.

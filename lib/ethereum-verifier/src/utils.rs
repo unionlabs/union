@@ -1,18 +1,10 @@
+use beacon_api_types::{
+    ForkParameters, EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
+};
 use sha2::{Digest, Sha256};
 use ssz::{types::BitVector, Ssz};
 use typenum::Unsigned;
-use unionlabs::{
-    ethereum::{
-        beacon::{fork_data::ForkData, signing_data::SigningData},
-        config::{
-            EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
-            SYNC_COMMITTEE_SIZE,
-        },
-        Domain, DomainType, Version,
-    },
-    hash::H256,
-    ibc::lightclients::ethereum::fork_parameters::ForkParameters,
-};
+use unionlabs::hash::{hash_v2::Hash, H256};
 
 use crate::{
     error::{Error, InvalidMerkleBranch},
@@ -23,7 +15,7 @@ use crate::{
 /// NOTE: This implementation is based on capella.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/fork.md#modified-compute_fork_version)
-pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: u64) -> Version {
+pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: u64) -> Hash<4> {
     if epoch >= fork_parameters.deneb.epoch {
         fork_parameters.deneb.version
     } else if epoch >= fork_parameters.capella.epoch {
