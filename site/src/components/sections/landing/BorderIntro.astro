@@ -1,31 +1,45 @@
 ---
 import MatrixCover from "../../MatrixCover.astro"
 import H1 from "../../typography/h1.astro"
-import ButtonA from "../../ButtonA.astro"
-import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
-import { renderRichText, renderTitle } from "../../../lib/contentful/render.ts"
+import TextP from "../../typography/TextP.astro"
+// import { renderRichText, renderTitle } from "../../../lib/contentful/render.ts"
 
 interface Props {
-  title: any
-  text: any
+  title: string
+  text: string
 }
 
 const { title, text } = Astro.props
 
-const titleHtml = renderTitle(title)
-const textHtml = renderRichText(text)
+// const titleHtml = renderTitle(title)
+// const textHtml = renderRichText(text)
+
+// Define custom animation
+const slideTextAnimation = {
+  forwards: {
+    old: {
+      name: "slideOutLeft",
+      duration: "0.4s",
+      easing: "ease-out",
+      fillMode: "forwards"
+    },
+    new: {
+      name: "slideInRight",
+      duration: "0.4s",
+      easing: "ease-out",
+      fillMode: "forwards"
+    }
+  }
+}
 ---
 
 <div class="header-grid">
   <MatrixCover/>
-  <div class="backdrop-blur-2xl max-w-2xl header-text-content p-4 md:p-8 flex flex-col gap-4 m-4">
-    <H1>
-      <Fragment set:html={titleHtml}/>
-    </H1>
-    <QuoteSubTitle>
-      <Fragment set:html={textHtml}/>
-    </QuoteSubTitle>
-    <ButtonA href="https://app.union.build">DIVE IN</ButtonA>
+  <div class="bg-gradient-to-r from-transparent via-black to-transparent px-4 py-6 text-center header-text-content flex justify-center">
+    <div class="max-w-2xl flex flex-col gap-4" transition:animate={slideTextAnimation}>
+      <H1>{title}</H1>
+      <TextP>{text}</TextP>
+    </div>
   </div>
 </div>
 
@@ -33,8 +47,8 @@ const textHtml = renderRichText(text)
     .header-grid {
         --outer-border: 0px;
         --inner-border: 0px;
-        height: calc(100svh - var(--header-height));
-        width: full;
+        height: calc(100svh - 68px);
+        width: 100%;
         display: grid;
         grid-template-rows: 0 var(--inner-border) 1fr auto 1fr var(--inner-border) var(--outer-border);
         grid-template-columns: var(--outer-border) var(--inner-border) 1fr auto 1fr var(--inner-border) var(--outer-border);
@@ -46,7 +60,39 @@ const textHtml = renderRichText(text)
     }
 
     .header-text-content {
-        grid-area: 4 / 4 / 5 / 5;
+        grid-area: 4 / 3 / 5 / 6;
+        z-index: 1;
     }
 
+
+    @keyframes slideOutLeft {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
 </style>
+
+<script>
+
+  import {rotateCamera} from "../../../lib/matrix-cover";
+
+  document.addEventListener('astro:after-swap', () => {
+    rotateCamera('right')
+  })
+</script>

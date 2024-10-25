@@ -1,16 +1,11 @@
 ---
 import SectionsLayout from "../layouts/SectionsLayout.astro"
 import EcosystemSection from "../components/sections/EcosystemSection.astro"
-import TopSection from "../components/sections/TopSection.astro"
+import AnimationLayout from "../layouts/AnimationLayout.astro"
 ---
 
-<SectionsLayout title="Ecosystem">
-  <TopSection>
-    <div class="flex flex-col justify-center h-full py-16">
-      <div class="md:text-5xl font-mono uppercase text-center">
-        Connecting projects, people, and products into a <span class="text-accent-500">unified organism of interoperability.</span>
-      </div>
-    </div>
-  </TopSection>
-  <EcosystemSection/>
+<SectionsLayout gapless>
+  <AnimationLayout title="Ecosystem" text="Connecting projects, people, and products into a unified organism of interoperability.">
+    <EcosystemSection/>
+  </AnimationLayout>
 </SectionsLayout>

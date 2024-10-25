@@ -1,0 +1,21 @@
+---
+import BorderIntro from "../components/sections/landing/BorderIntro.astro"
+import { ViewTransitions } from "astro:transitions"
+
+interface Props {
+  title: any
+  text: any
+}
+
+const { title, text } = Astro.props
+---
+
+<head>
+  <ViewTransitions/>
+</head>
+
+<BorderIntro {title} {text}/>
+<div class="relative">
+  <slot/>
+</div>
+

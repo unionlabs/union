@@ -1,6 +1,59 @@
 import * as glMatrix from "gl-matrix"
 
-let state: "start" | "rotating" | "main"
+type OrbitDirection = "left" | "right"
+
+interface AnimationState {
+  currentRotation: number
+  targetRotation: number
+  isTransitioning: boolean
+  transitionStartTime: number
+  transitionDuration: number
+  totalRotation: number
+  lastTargetRotation: number
+}
+
+let state: AnimationState = {
+  currentRotation: 0,
+  targetRotation: 0,
+  isTransitioning: false,
+  transitionStartTime: 0,
+  transitionDuration: 1000,
+  totalRotation: 0,
+  lastTargetRotation: 0
+}
+
+function startRotationTransition(angle: number) {
+  if (state.isTransitioning) {
+    state.totalRotation += angle
+    state.targetRotation = state.totalRotation
+    state.transitionStartTime = performance.now()
+    return
+  }
+
+  state.isTransitioning = true
+  state.transitionStartTime = performance.now()
+  state.totalRotation = state.currentRotation + angle
+  state.targetRotation = state.totalRotation
+}
+
+function updateRotation(now: number) {
+  if (!state.isTransitioning) return state.currentRotation
+
+  const elapsed = now - state.transitionStartTime
+  const progress = Math.min(elapsed / state.transitionDuration, 1)
+
+  const eased = progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2
+
+  const newRotation = state.currentRotation + (state.targetRotation - state.currentRotation) * eased
+
+  if (progress >= 1) {
+    state.isTransitioning = false
+    state.currentRotation = state.targetRotation
+    state.lastTargetRotation = state.targetRotation
+  }
+
+  return newRotation
+}
 
 let canvas: HTMLCanvasElement
 let mouseX = 0
@@ -295,7 +348,6 @@ function initWebGL() {
     return noiseValue * amplitude
   }
 
-  // Draw scene
   function drawScene(gl, programInfo, buffers, cubePositions, totalTime) {
     gl.viewport(0, 0, displayWidth, displayHeight)
     gl.clearColor(0.0, 0.0, 0.0, 1.0)
@@ -305,7 +357,8 @@ function initWebGL() {
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-    const fieldOfView = (50 * Math.PI) / 180
+    // Adjusted field of view for better perspective
+    const fieldOfView = (45 * Math.PI) / 180 // Changed from 50 to 45 degrees
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight
     const zNear = 0.1
     const zFar = 100.0
@@ -315,26 +368,19 @@ function initWebGL() {
 
     const modelViewMatrix = glMatrix.mat4.create()
 
-    // mouseX -= 0.05;
-    // mouseY -= 0.05;
-
     // Smooth out mouse movement
     mouseX += (targetMouseX - mouseX) * 0.1
     mouseY += (targetMouseY - mouseY) * 0.1
 
-    // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [-10, 0, 0])
+    glMatrix.mat4.lookAt(modelViewMatrix, [0, 20, -15], [0, -2, 0], [0, 1, 0])
 
-    // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, 0]);
-    glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -16])
-    // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 2, [1, 0, 0]);
-    // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4, [0, 1, 0]);
+    // Apply rotations
+    const currentRotation = updateRotation(totalTime * 1000)
+    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, currentRotation, [0, 1, 0])
 
-    // Current time since the animation started (you need to define how you get this)
-
-    // Normalize time to a value between 0 and 1
-
-    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, endRotationY + mouseY * 0.05, [1, 0, 0])
-    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -endRotationX + mouseX * 0.05, [0, 1, 0])
+    // Reduced mouse movement sensitivity
+    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, mouseY * 0.03, [1, 0, 0])
+    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, mouseX * 0.03, [0, 1, 0])
 
     // Set up attribute buffers
     {
@@ -497,6 +543,11 @@ function initWebGL() {
   return () => {
     canvas.removeEventListener("mousemove", updateMousePosition)
   }
+}
+
+export function rotateCamera(direction: OrbitDirection) {
+  const angle = direction === "right" ? Math.PI / 2 : -Math.PI / 2
+  startRotationTransition(angle)
 }
 
 // Initialize WebGL when the component mounts
