@@ -68,8 +68,6 @@
               fileset =
                 intersection
                   (difference ../../. (unions [
-                    ../../galoisd/vendor
-                    ../../uniond/vendor
                     ../../app/src/generated
                     ../../networks/genesis
                     ../../lib/ethereum-verifier/src/test
