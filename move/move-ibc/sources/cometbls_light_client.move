@@ -96,7 +96,7 @@ module ibc::light_client {
         let store_constructor =
             object::create_named_object(
                 ibc_signer,
-                bcs::to_bytes<u256>(&(client_id as u256))
+                bcs::to_bytes<u32>(&client_id)
             );
         let client_signer = object::generate_signer(&store_constructor);
 
@@ -288,7 +288,7 @@ module ibc::light_client {
 
         object::create_object_address(
             &vault_addr,
-            bcs::to_bytes<u256>(&(client_id as u256))
+            bcs::to_bytes<u32>(&client_id)
         )
     }
 
