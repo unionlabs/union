@@ -1256,34 +1256,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "arbitrum-light-client"
-version = "0.1.0"
-dependencies = [
- "arbitrum-light-client-types",
- "arbitrum-verifier",
- "base64 0.21.7",
- "cosmwasm-std 1.5.2",
- "ethereum-light-client",
- "ethereum-verifier",
- "ethers-core",
- "hex",
- "ics008-wasm-client",
- "protos",
- "rlp",
- "schemars",
- "serde",
- "serde-json-wasm 1.0.1",
- "serde_json",
- "sha3 0.10.8",
- "thiserror",
- "tiny-keccak",
- "unionlabs",
-]
-
-[[package]]
 name = "arbitrum-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "ethereum-light-client-types",
  "hex-literal",
  "protos",
  "rlp",
@@ -2090,6 +2066,7 @@ dependencies = [
 name = "beacon-api"
 version = "0.1.0"
 dependencies = [
+ "beacon-api-types",
  "enumorph",
  "hex",
  "macros",
@@ -2101,6 +2078,19 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "unionlabs",
+]
+
+[[package]]
+name = "beacon-api-types"
+version = "0.1.0"
+dependencies = [
+ "hex-literal",
+ "serde",
+ "serde-utils",
+ "ssz",
+ "thiserror",
+ "typenum",
  "unionlabs",
 ]
 
@@ -2141,41 +2131,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "berachain-light-client"
-version = "0.1.0"
-dependencies = [
- "base64 0.21.7",
- "berachain-light-client-types",
- "bytes",
- "cometbft-types",
- "cosmwasm-std 1.5.2",
- "ethereum-light-client",
- "ethereum-verifier",
- "hex",
- "hex-literal",
- "ics008-wasm-client",
- "ics23",
- "lazy_static",
- "prost 0.12.6",
- "protos",
- "schemars",
- "serde",
- "serde-json-wasm 1.0.1",
- "serde-utils",
- "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "tendermint-light-client",
- "tendermint-light-client-types",
- "tendermint-verifier",
- "thiserror",
- "unionlabs",
-]
-
-[[package]]
 name = "berachain-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "beacon-api-types",
+ "ethereum-light-client-types",
  "protos",
  "serde",
  "tendermint-light-client-types",
@@ -4755,30 +4715,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "ethereum-light-client"
+name = "ethereum-light-client-types"
 version = "0.1.0"
 dependencies = [
- "base64 0.21.7",
- "bytes",
- "cosmwasm-std 1.5.2",
- "ethereum-verifier",
- "ethers-contract-derive",
- "ethers-core",
- "hex",
+ "beacon-api-types",
  "hex-literal",
- "ics008-wasm-client",
- "lazy_static",
- "prost 0.12.6",
  "protos",
- "rlp",
- "schemars",
  "serde",
- "serde-json-wasm 1.0.1",
  "serde-utils",
- "serde_json",
- "sha3 0.10.8",
  "thiserror",
- "tiny-keccak",
  "unionlabs",
 ]
 
@@ -4802,7 +4747,9 @@ dependencies = [
 name = "ethereum-verifier"
 version = "0.1.0"
 dependencies = [
+ "beacon-api-types",
  "bytes",
+ "ethereum-light-client-types",
  "hash-db",
  "hash256-std-hasher",
  "hex",
@@ -5104,20 +5051,6 @@ checksum = "958e4d70b6d5e81971bebec42271ec641e7ff4e170a6fa605f2b8a8b65cb97d3"
 dependencies = [
  "event-listener 4.0.3",
  "pin-project-lite",
-]
-
-[[package]]
-name = "evm-in-cosmos-light-client"
-version = "0.1.0"
-dependencies = [
- "cometbls-light-client-types",
- "cosmwasm-std 1.5.2",
- "ethereum-light-client",
- "ics008-wasm-client",
- "ics23",
- "protos",
- "thiserror",
- "unionlabs",
 ]
 
 [[package]]
@@ -6269,6 +6202,7 @@ dependencies = [
  "axum 0.6.20",
  "backon",
  "base64 0.21.7",
+ "beacon-api-types",
  "berachain-light-client-types",
  "chain-utils",
  "chrono",
@@ -6278,6 +6212,7 @@ dependencies = [
  "cometbls-light-client-types",
  "const-hex",
  "contracts",
+ "ethereum-light-client-types",
  "futures",
  "hex",
  "itertools 0.13.0",
@@ -6514,30 +6449,6 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "thiserror",
- "unionlabs",
-]
-
-[[package]]
-name = "ics08-movement"
-version = "0.1.0"
-dependencies = [
- "aptos-crypto",
- "aptos-types",
- "aptos-verifier",
- "bcs 0.1.6",
- "cosmwasm-std 1.5.2",
- "ethereum-verifier",
- "hex",
- "hex-literal",
- "ics008-wasm-client",
- "protos",
- "rlp",
- "serde",
- "serde-utils",
- "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
  "thiserror",
  "unionlabs",
 ]
@@ -7322,36 +7233,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "linea-light-client"
-version = "0.1.0"
-dependencies = [
- "base64 0.21.7",
- "cosmwasm-std 1.5.2",
- "ethereum-light-client",
- "ethereum-verifier",
- "ethers-core",
- "gnark-mimc",
- "hex",
- "ics008-wasm-client",
- "linea-light-client-types",
- "linea-verifier",
- "linea-zktrie",
- "protos",
- "rlp",
- "schemars",
- "serde",
- "serde-json-wasm 1.0.1",
- "serde_json",
- "sha3 0.10.8",
- "thiserror",
- "tiny-keccak",
- "unionlabs",
-]
-
-[[package]]
 name = "linea-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "ethereum-light-client-types",
  "hex-literal",
  "protos",
  "serde",
@@ -10815,35 +10700,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "scroll-light-client"
-version = "0.1.0"
-dependencies = [
- "base64 0.21.7",
- "cosmwasm-std 1.5.2",
- "ethereum-light-client",
- "ethereum-verifier",
- "ethers-core",
- "hex",
- "ics008-wasm-client",
- "protos",
- "rlp",
- "schemars",
- "scroll-codec",
- "scroll-light-client-types",
- "scroll-verifier",
- "serde",
- "serde-json-wasm 1.0.1",
- "serde_json",
- "sha3 0.10.8",
- "thiserror",
- "tiny-keccak",
- "unionlabs",
-]
-
-[[package]]
 name = "scroll-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "ethereum-light-client-types",
  "hex-literal",
  "protos",
  "rlp",
@@ -13090,25 +12950,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed646292ffc8188ef8ea4d1e0e0150fb15a5c2e12ad9b8fc191ae7a8a7f3c4b9"
 
 [[package]]
-name = "ucli"
-version = "0.1.0"
-dependencies = [
- "beacon-api",
- "chain-utils",
- "clap 4.5.4",
- "contracts",
- "cosmwasm-std 1.5.2",
- "ethers",
- "hex",
- "serde",
- "serde_json",
- "subtle-encoding",
- "tendermint-rpc",
- "tokio",
- "unionlabs",
-]
-
-[[package]]
 name = "ucs00-pingpong"
 version = "1.0.0"
 dependencies = [
@@ -13576,66 +13417,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-chain-module-ethereum"
-version = "0.1.0"
-dependencies = [
- "beacon-api",
- "chain-utils",
- "contracts",
- "enumorph",
- "ethers",
- "futures",
- "jsonrpsee",
- "macros",
- "serde",
- "serde-utils",
- "serde_json",
- "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-chain-module-movement"
-version = "0.1.0"
-dependencies = [
- "aptos-crypto",
- "aptos-move-ibc",
- "aptos-rest-client",
- "aptos-types",
- "bcs 0.1.6",
- "clap 4.5.4",
- "enumorph",
- "futures",
- "hex",
- "hex-literal",
- "jsonrpsee",
- "macros",
- "move-bindgen",
- "move-core-types",
- "prost 0.12.6",
- "protos",
- "reqwest 0.11.27",
- "serde",
- "serde-utils",
- "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-client-module-cometbls"
 version = "0.1.0"
 dependencies = [
@@ -13669,36 +13450,14 @@ dependencies = [
 name = "voyager-client-module-ethereum"
 version = "0.1.0"
 dependencies = [
+ "beacon-api-types",
  "chain-utils",
  "enumorph",
+ "ethereum-light-client-types",
  "futures",
  "jsonrpsee",
  "macros",
  "prost 0.12.6",
- "protos",
- "serde",
- "serde-utils",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-client-module-movement"
-version = "0.1.0"
-dependencies = [
- "chain-utils",
- "enumorph",
- "futures",
- "jsonrpsee",
- "macros",
- "prost 0.12.6",
- "protos",
  "serde",
  "serde-utils",
  "serde_json",
@@ -13769,50 +13528,19 @@ name = "voyager-client-update-plugin-ethereum"
 version = "0.1.0"
 dependencies = [
  "beacon-api",
+ "beacon-api-types",
  "bitvec 1.0.1",
  "chain-utils",
  "enumorph",
- "ethereum-verifier",
+ "ethereum-light-client-types",
  "ethers",
  "futures",
  "jsonrpsee",
  "macros",
  "num-bigint 0.4.6",
  "prost 0.12.6",
- "protos",
  "serde",
  "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-client-update-plugin-movement"
-version = "0.1.0"
-dependencies = [
- "aptos-move-ibc",
- "aptos-rest-client",
- "aptos-types",
- "bitvec 1.0.1",
- "chain-utils",
- "enumorph",
- "ethers",
- "futures",
- "jsonrpsee",
- "macros",
- "move-core-types",
- "num-bigint 0.4.6",
- "prost 0.12.6",
- "protos",
- "reqwest 0.11.27",
- "serde",
- "serde_json",
- "subset-of",
  "thiserror",
  "tokio",
  "tracing",
@@ -13879,10 +13607,11 @@ name = "voyager-consensus-module-ethereum"
 version = "0.1.0"
 dependencies = [
  "beacon-api",
+ "beacon-api-types",
  "bitvec 1.0.1",
  "chain-utils",
  "enumorph",
- "ethereum-verifier",
+ "ethereum-light-client-types",
  "ethers",
  "futures",
  "jsonrpsee",
@@ -13890,36 +13619,6 @@ dependencies = [
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-consensus-module-movement"
-version = "0.1.0"
-dependencies = [
- "aptos-move-ibc",
- "aptos-rest-client",
- "aptos-types",
- "bitvec 1.0.1",
- "chain-utils",
- "enumorph",
- "ethers",
- "futures",
- "jsonrpsee",
- "macros",
- "move-core-types",
- "num-bigint 0.4.6",
- "prost 0.12.6",
- "protos",
- "reqwest 0.11.27",
  "serde",
  "serde_json",
  "thiserror",
@@ -13990,32 +13689,6 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-event-source-plugin-ethereum"
-version = "0.1.0"
-dependencies = [
- "beacon-api",
- "chain-utils",
- "contracts",
- "enumorph",
- "ethers",
- "futures",
- "jsonrpsee",
- "macros",
- "serde",
- "serde-utils",
- "serde_json",
- "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
- "subset-of",
  "thiserror",
  "tokio",
  "tracing",
@@ -14209,31 +13882,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tonic",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-transaction-plugin-ethereum"
-version = "0.1.0"
-dependencies = [
- "beacon-api",
- "bip32",
- "chain-utils",
- "contracts",
- "enumorph",
- "ethers",
- "futures",
- "jsonrpsee",
- "macros",
- "serde",
- "serde-utils",
- "serde_json",
- "thiserror",
- "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
  "unionlabs",

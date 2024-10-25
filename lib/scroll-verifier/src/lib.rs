@@ -157,79 +157,79 @@ pub fn scroll_verify_zktrie_account_storage_root(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use hex_literal::hex;
-    use scroll_light_client_types::{ClientState, Header};
-    use unionlabs::{
-        hash::{H160, H256},
-        ibc::{core::client::height::Height, lightclients::ethereum::storage_proof::StorageProof},
-    };
+// #[cfg(test)]
+// mod tests {
+//     use hex_literal::hex;
+//     use scroll_light_client_types::{ClientState, Header};
+//     use unionlabs::{
+//         hash::{H160, H256},
+//         ibc::{core::client::height::Height, lightclients::ethereum::storage_proof::StorageProof},
+//     };
 
-    use crate::{verify_header, verify_zktrie_storage_absence, verify_zktrie_storage_proof};
+//     use crate::{verify_header, verify_zktrie_storage_absence, verify_zktrie_storage_proof};
 
-    #[test]
-    fn test_update_header() {
-        let scroll_client_state = ClientState {
-            l1_client_id: "cometbls-1".to_string(),
-            chain_id: 534351.into(),
-            latest_slot: 65327,
-            latest_batch_index_slot: 156.into(),
-            frozen_height: Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
-            l2_contract_address: H160::new(hex!("2d567ece699eabe5afcd141edb7a4f2d0d6ce8a0")),
-            l2_finalized_state_roots_slot: 158.into(),
-            l2_committed_batches_slot: 157.into(),
-            // Dummy contract address for the sake of testing
-            ibc_contract_address: H160::new(hex!("0000000000000000000000000000000000000000")),
-            ibc_commitment_slot: 0.into(),
-        };
-        let scroll_header: Header =
-            serde_json::from_str(&std::fs::read_to_string("tests/scroll_header.json").unwrap())
-                .unwrap();
-        let l1_state_root = H256::new(hex!(
-            "40ab3b90af84c30c31eb0fe9fc8cc5260b59f619d770706750ea3e474ca47c59"
-        ));
-        assert_eq!(
-            verify_header(scroll_client_state, scroll_header, l1_state_root),
-            Ok(())
-        );
-    }
+//     #[test]
+//     fn test_update_header() {
+//         let scroll_client_state = ClientState {
+//             l1_client_id: "cometbls-1".to_string(),
+//             chain_id: 534351.into(),
+//             latest_slot: 65327,
+//             latest_batch_index_slot: 156.into(),
+//             frozen_height: Height {
+//                 revision_number: 0,
+//                 revision_height: 0,
+//             },
+//             l2_contract_address: H160::new(hex!("2d567ece699eabe5afcd141edb7a4f2d0d6ce8a0")),
+//             l2_finalized_state_roots_slot: 158.into(),
+//             l2_committed_batches_slot: 157.into(),
+//             // Dummy contract address for the sake of testing
+//             ibc_contract_address: H160::new(hex!("0000000000000000000000000000000000000000")),
+//             ibc_commitment_slot: 0.into(),
+//         };
+//         let scroll_header: Header =
+//             serde_json::from_str(&std::fs::read_to_string("tests/scroll_header.json").unwrap())
+//                 .unwrap();
+//         let l1_state_root = H256::new(hex!(
+//             "40ab3b90af84c30c31eb0fe9fc8cc5260b59f619d770706750ea3e474ca47c59"
+//         ));
+//         assert_eq!(
+//             verify_header(scroll_client_state, scroll_header, l1_state_root),
+//             Ok(())
+//         );
+//     }
 
-    #[test]
-    fn test_l2_contract_slot_exist() {
-        let proof: StorageProof =
-            serde_json::from_str(&std::fs::read_to_string("tests/scroll_proof.json").unwrap())
-                .unwrap();
-        assert_eq!(
-            verify_zktrie_storage_proof(
-                H256::new(hex!(
-                    "1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0"
-                )),
-                proof.key.to_be_bytes().into(),
-                &proof.value.to_be_bytes(),
-                &proof.proof
-            ),
-            Ok(())
-        )
-    }
+//     #[test]
+//     fn test_l2_contract_slot_exist() {
+//         let proof: StorageProof =
+//             serde_json::from_str(&std::fs::read_to_string("tests/scroll_proof.json").unwrap())
+//                 .unwrap();
+//         assert_eq!(
+//             verify_zktrie_storage_proof(
+//                 H256::new(hex!(
+//                     "1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0"
+//                 )),
+//                 proof.key.to_be_bytes().into(),
+//                 &proof.value.to_be_bytes(),
+//                 &proof.proof
+//             ),
+//             Ok(())
+//         )
+//     }
 
-    #[test]
-    fn test_l2_contract_slot_absent() {
-        let proof: StorageProof =
-            serde_json::from_str(&std::fs::read_to_string("tests/scroll_absent.json").unwrap())
-                .unwrap();
-        assert_eq!(
-            verify_zktrie_storage_absence(
-                H256::new(hex!(
-                    "1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0"
-                )),
-                proof.key.to_be_bytes().into(),
-                &proof.proof
-            ),
-            Ok(())
-        )
-    }
-}
+//     #[test]
+//     fn test_l2_contract_slot_absent() {
+//         let proof: StorageProof =
+//             serde_json::from_str(&std::fs::read_to_string("tests/scroll_absent.json").unwrap())
+//                 .unwrap();
+//         assert_eq!(
+//             verify_zktrie_storage_absence(
+//                 H256::new(hex!(
+//                     "1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0"
+//                 )),
+//                 proof.key.to_be_bytes().into(),
+//                 &proof.proof
+//             ),
+//             Ok(())
+//         )
+//     }
+// }

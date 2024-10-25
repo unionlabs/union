@@ -7,17 +7,18 @@ version = "0.1.0"
 workspace = true
 
 [dependencies]
-enumorph    = { workspace = true }
-hex         = { workspace = true, features = ["alloc"] }
-macros      = { workspace = true }
-reqwest     = { workspace = true, features = ["rustls-tls", "json"] }
-serde       = { workspace = true, features = ["derive"] }
-serde-utils = { workspace = true }
-serde_json  = { workspace = true }
-thiserror   = { workspace = true }
-tokio       = { workspace = true, features = ["rt-multi-thread", "macros"] }
-tracing     = { workspace = true }
-unionlabs   = { workspace = true }
+beacon-api-types = { workspace = true, features = ["serde"] }
+enumorph         = { workspace = true }
+hex              = { workspace = true, features = ["alloc"] }
+macros           = { workspace = true }
+reqwest          = { workspace = true, features = ["rustls-tls", "json"] }
+serde            = { workspace = true, features = ["derive"] }
+serde-utils      = { workspace = true }
+serde_json       = { workspace = true }
+thiserror        = { workspace = true }
+tokio            = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tracing          = { workspace = true }
+unionlabs        = { workspace = true }
 
 [features]
 default = []

@@ -78,7 +78,7 @@ pub fn schedule_create_client_checker(
                             let counterparty_chain_id = match client_type.unwrap() {
                                 WasmClientType::EthereumMinimal
                                 | WasmClientType::EthereumMainnet => {
-                                    let cs = match unionlabs::ibc::lightclients::ethereum::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                    let cs = match ethereum_light_client_types::ClientState::decode_as::<Proto>(&cs.data) {
                                         Ok(cs) => cs,
                                         // We changed the format of berachain client states, but union-testnet-8 still contains an old configuration which we need to ignore.
                                         Err(err) => {
@@ -149,15 +149,16 @@ pub fn schedule_create_client_checker(
                                     todo!("We still need to add evm-in-cosmos")
                                 }
                                 WasmClientType::Movement => {
-                                    let cs = match unionlabs::ibc::lightclients::movement::client_state::ClientState::decode_as::<Proto>(&cs.data) {
-                                        Ok(cs) => cs,
-                                        Err(err) => {
-                                            warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
-                                            continue;
-                                        }
-                                    };
+                                    // let cs = match unionlabs::ibc::lightclients::movement::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                    //     Ok(cs) => cs,
+                                    //     Err(err) => {
+                                    //         warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
+                                    //         continue;
+                                    //     }
+                                    // };
 
-                                    cs.chain_id.to_string()
+                                    // cs.chain_id.to_string()
+                                    continue;
                                 }
                             };
 

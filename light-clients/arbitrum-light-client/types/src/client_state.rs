@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedU32, hash::H160, ibc::core::client::height::Height, id::ClientId, uint::U256,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ClientState {
     pub l1_client_id: ClientId,
     pub chain_id: U256,
