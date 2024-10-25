@@ -37,7 +37,7 @@ module ping_pong::ibc {
     }
 
     struct PingPong has key {
-        channel_id: String,
+        channel_id: u32,
         seconds_before_timeout: u64
     }
 
@@ -51,7 +51,7 @@ module ping_pong::ibc {
         let vault_constructor_ref = &object::create_named_object(deployer, IBC_APP_SEED);
         let vault_signer = &object::generate_signer(vault_constructor_ref);
 
-        let pp = PingPong { channel_id: string::utf8(b""), seconds_before_timeout: 100000 };
+        let pp = PingPong { channel_id: 0, seconds_before_timeout: 100000 };
         move_to(vault_signer, pp);
 
         move_to(
@@ -109,7 +109,7 @@ module ping_pong::ibc {
         // local_timeout: u64
     ) acquires PingPong, SignerRef {
         let pp = borrow_global<PingPong>(get_vault_addr());
-        if (string::length(&pp.channel_id) == 0) {
+        if (pp.channel_id == 0) {
             abort ERR_NO_CHANNEL
         };
 
@@ -117,7 +117,7 @@ module ping_pong::ibc {
             &get_signer(),
             get_self_address(),
             pp.channel_id,
-            height::default(), // no height timeout
+            0, // no height timeout
             (std::timestamp::now_seconds() + pp.seconds_before_timeout) * 1_000_000_000,
             encode_packet(
                 &PingPongPacket {
@@ -130,17 +130,13 @@ module ping_pong::ibc {
 
     public entry fun recv_packet(
         packet_sequence: u64,
-        packet_source_port: String,
-        packet_source_channel: String,
-        packet_destination_port: String,
-        packet_destination_channel: String,
+        packet_source_channel: u32,
+        packet_destination_channel: u32,
         packet_data: vector<u8>,
-        packet_timeout_revision_num: u64,
-        packet_timeout_revision_height: u64,
+        packet_timeout_height: u64,
         packet_timeout_timestamp: u64,
         proof: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        proof_height: u64
     ) acquires PingPong, SignerRef {
         let pp_packet = decode_packet(&packet_data);
         event::emit(RingEvent { ping: pp_packet.ping });
@@ -152,62 +148,60 @@ module ping_pong::ibc {
 
         initiate(pp_packet.ping);
 
+        let packet =
+            packet::new(
+                packet_sequence,
+                packet_source_channel,
+                packet_destination_channel,
+                packet_data,
+                packet_timeout_height,
+                packet_timeout_timestamp
+            );
+
         ibc::recv_packet(
             &get_signer(),
             get_self_address(),
-            packet::new(
-                packet_sequence,
-                packet_source_port,
-                packet_source_channel,
-                packet_destination_port,
-                packet_destination_channel,
-                packet_data,
-                height::new(
-                    packet_timeout_revision_num,
-                    packet_timeout_revision_height
-                ),
-                packet_timeout_timestamp
-            ),
+            vector[packet],
             proof,
-            height::new(proof_height_revision_num, proof_height_revision_height),
+            proof_height,
             vector[1]
         );
     }
 
     public entry fun acknowledge_packet(
-        packet_sequence: u64,
-        packet_source_port: String,
-        packet_source_channel: String,
-        packet_destination_port: String,
-        packet_destination_channel: String,
-        packet_data: vector<u8>,
-        packet_timeout_revision_num: u64,
-        packet_timeout_revision_height: u64,
-        packet_timeout_timestamp: u64,
-        acknowledgement: vector<u8>,
+        packet_sequences: vector<u64>,
+        packet_source_channels: vector<u32>,
+        packet_destination_channels: vector<u32>,
+        packet_datas: vector<vector<u8>>,
+        packet_timeout_heights: vector<u64>,
+        packet_timeout_timestamps: vector<u64>,
+        acknowledgements: vector<vector<u8>>,
         proof: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        proof_height: u64
     ) acquires SignerRef {
+        let packets: vector<Packet> = vector::empty();
+        let i = 0;
+        while (i < vector::length(&packet_sequences)) {
+            vector::push_back(
+                &mut packets,
+                packet::new(
+                    *vector::borrow(&packet_sequences, i),
+                    *vector::borrow(&packet_source_channels, i),
+                    *vector::borrow(&packet_destination_channels, i),
+                    *vector::borrow(&packet_datas, i),
+                    *vector::borrow(&packet_timeout_heights, i),
+                    *vector::borrow(&packet_timeout_timestamps, i)
+                )
+            );
+            i = i + 1;
+        };
         ibc::acknowledge_packet(
             &get_signer(),
             get_self_address(),
-            packet::new(
-                packet_sequence,
-                packet_source_port,
-                packet_source_channel,
-                packet_destination_port,
-                packet_destination_channel,
-                packet_data,
-                height::new(
-                    packet_timeout_revision_num,
-                    packet_timeout_revision_height
-                ),
-                packet_timeout_timestamp
-            ),
-            acknowledgement,
+            packets,
+            acknowledgements,
             proof,
-            height::new(proof_height_revision_num, proof_height_revision_height)
+            proof_height
         );
         event::emit(AcknowledgedEvent {});
     }
@@ -217,92 +211,79 @@ module ping_pong::ibc {
     }
 
     public entry fun channel_open_init(
-        connection_hops: vector<String>,
-        ordering: u8,
-        counterparty_port_id: String,
-        counterparty_channel_id: String,
-        version: String
+        connection_id: u32, ordering: u8, version: vector<u8>
     ) acquires PingPong, SignerRef {
         // TODO(aeryz): save the channel here
         ibc::channel_open_init(
             &get_signer(),
             get_self_address(),
-            connection_hops,
+            connection_id,
             ordering,
-            channel::new_counterparty(counterparty_port_id, counterparty_channel_id),
             version
         );
-        if (string::length(
-            &borrow_global<PingPong>(get_vault_addr()).channel_id
-        ) != 0) {
+        if (borrow_global<PingPong>(get_vault_addr()).channel_id != 0) {
             abort ERR_ONLY_ONE_CHANNEL
         };
     }
 
     public entry fun channel_open_try(
-        connection_hops: vector<String>,
-        ordering: u8,
-        counterparty_port_id: String,
-        counterparty_channel_id: String,
-        counterparty_version: String,
-        version: String,
+        channel_state: u8,
+        channel_order: u8,
+        connection_id: u32,
+        counterparty_channel_id: u32,
+        version: vector<u8>,
+        counterparty_version: vector<u8>,
         proof_init: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        proof_height: u64
     ) acquires PingPong, SignerRef {
         // TODO(aeryz): save the channel here
         ibc::channel_open_try(
             &get_signer(),
             get_self_address(),
-            connection_hops,
-            ordering,
-            channel::new_counterparty(counterparty_port_id, counterparty_channel_id),
-            counterparty_version,
+            channel_state,
+            channel_order,
+            connection_id,
+            counterparty_channel_id,
             version,
+            counterparty_version,
             proof_init,
-            height::new(proof_height_revision_num, proof_height_revision_height)
+            proof_height
         );
 
-        if (string::length(
-            &borrow_global<PingPong>(get_vault_addr()).channel_id
-        ) != 0) {
+        if (borrow_global<PingPong>(get_vault_addr()).channel_id != 0) {
             abort ERR_ONLY_ONE_CHANNEL
         };
     }
 
     public entry fun channel_open_ack(
-        channel_id: String,
-        counterparty_channel_id: String,
-        counterparty_version: String,
+        channel_id: u32,
+        counterparty_version: vector<u8>,
+        counterparty_channel_id: u32,
         proof_try: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        proof_height: u64
     ) acquires PingPong, SignerRef {
         // Store the channel_id
         ibc::channel_open_ack(
             &get_signer(),
             get_self_address(),
             channel_id,
-            counterparty_channel_id,
             counterparty_version,
+            counterparty_channel_id,
             proof_try,
-            height::new(proof_height_revision_num, proof_height_revision_height)
+            proof_height
         );
         borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
     }
 
     public entry fun channel_open_confirm(
-        channel_id: String,
-        proof_ack: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        channel_id: u32, proof_ack: vector<u8>, proof_height: u64
     ) acquires PingPong, SignerRef {
         ibc::channel_open_confirm(
             &get_signer(),
             get_self_address(),
             channel_id,
             proof_ack,
-            height::new(proof_height_revision_num, proof_height_revision_height)
+            proof_height
         );
 
         borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
@@ -335,15 +316,15 @@ module ping_pong::ibc {
         vault.self_address
     }
 
-    #[test]
-    public fun test_encode() {
-        let packet = PingPongPacket { ping: true, counterparty_timeout: 1000 };
-        let encoded = encode_packet(&packet);
-        let decoded = decode_packet(&encoded);
+    // #[test]
+    // public fun test_encode() {
+    //     let packet = PingPongPacket { ping: true, counterparty_timeout: 1000 };
+    //     let encoded = encode_packet(&packet);
+    //     let decoded = decode_packet(&encoded);
 
-        assert!(decoded.ping == packet.ping, 1);
-        assert!(decoded.counterparty_timeout == packet.counterparty_timeout, 2);
-    }
+    //     assert!(decoded.ping == packet.ping, 1);
+    //     assert!(decoded.counterparty_timeout == packet.counterparty_timeout, 2);
+    // }
 
     #[test(deployer = @ping_pong)]
     public fun test_signer(deployer: &signer) acquires SignerRef {

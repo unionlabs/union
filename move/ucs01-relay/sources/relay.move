@@ -1,7 +1,5 @@
 module ucs01::ibc {
     use ibc::ibc;
-    use ibc::channel;
-    use ibc::height;
     use ibc::packet::{Packet};
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self, Object};
@@ -12,13 +10,9 @@ module ucs01::ibc {
     use std::from_bcs;
     use std::bcs;
     use aptos_framework::fungible_asset::{Metadata};
-    #[test_only]
-    use aptos_framework::fungible_asset;
     use aptos_framework::signer;
     use aptos_std::smart_table::{Self, SmartTable};
     use std::vector;
-    #[test_only]
-    use std::option;
     use ucs01::ethabi;
 
     // Constants
@@ -57,17 +51,17 @@ module ucs01::ibc {
     }
 
     struct DenomToAddressPair has copy, drop, store {
-        source_channel: String,
+        source_channel: u32,
         denom: String
     }
 
     struct AddressToDenomPair has copy, drop, store {
-        source_channel: String,
+        source_channel: u32,
         denom: address
     }
 
     struct OutstandingPair has copy, drop, store {
-        source_channel: String,
+        source_channel: u32,
         token: address
     }
 
@@ -86,7 +80,7 @@ module ucs01::ibc {
     #[event]
     struct DenomCreated has copy, drop, store {
         packet_sequence: u64,
-        channel_id: String,
+        channel_id: u32,
         denom: String,
         token: address
     }
@@ -94,7 +88,7 @@ module ucs01::ibc {
     #[event]
     struct Received has copy, drop, store {
         packet_sequence: u64,
-        channel_id: String,
+        channel_id: u32,
         sender: vector<u8>,
         receiver: vector<u8>,
         denom: String,
@@ -105,7 +99,7 @@ module ucs01::ibc {
     #[event]
     struct Sent has copy, drop, store {
         packet_sequence: u64,
-        channel_id: String,
+        channel_id: u32,
         sender: vector<u8>,
         receiver: vector<u8>,
         denom: String,
@@ -116,7 +110,7 @@ module ucs01::ibc {
     #[event]
     struct Refunded has copy, drop, store {
         packet_sequence: u64,
-        channel_id: String,
+        channel_id: u32,
         sender: vector<u8>,
         receiver: vector<u8>,
         denom: String,
@@ -125,9 +119,8 @@ module ucs01::ibc {
     }
 
     // View/Pure Functions
-    public fun is_valid_version(version: String): bool {
-        let version_bytes = string::bytes(&version);
-        *version_bytes == VERSION
+    public fun is_valid_version(version_bytes: vector<u8>): bool {
+        version_bytes == VERSION
     }
 
     public fun starts_with(s: String, prefix: String): bool {
@@ -156,36 +149,31 @@ module ucs01::ibc {
         object::address_to_object<Metadata>(asset_addr)
     }
 
-    public fun is_from_channel(
-        port_id: String, channel_id: String, denom: String
-    ): bool {
-        let prefix = make_denom_prefix(port_id, channel_id);
+    public fun is_from_channel(channel_id: u32, denom: String): bool {
+        let prefix = make_denom_prefix(channel_id);
         starts_with(denom, prefix)
     }
 
-    public fun make_denom_prefix(port_id: String, channel_id: String): String {
-        let prefix = port_id;
-        string::append_utf8(&mut prefix, b"/");
-        string::append(&mut prefix, channel_id);
+    public fun make_denom_prefix(channel_id: u32): String {
+        let channel_id_bytes = bcs::to_bytes<u32>(&channel_id);
+        let prefix = string::utf8(channel_id_bytes);
         string::append_utf8(&mut prefix, b"/");
         prefix
     }
 
-    public fun make_foreign_denom(
-        port_id: String, channel_id: String, denom: String
-    ): String {
-        let foreign_denom = make_denom_prefix(port_id, channel_id);
+    public fun make_foreign_denom(channel_id: u32, denom: String): String {
+        let foreign_denom = make_denom_prefix(channel_id);
         string::append(&mut foreign_denom, denom);
         foreign_denom
     }
 
-    public fun get_denom_address(source_channel: String, denom: String): address acquires RelayStore {
+    public fun get_denom_address(source_channel: u32, denom: String): address acquires RelayStore {
         let store = borrow_global<RelayStore>(get_vault_addr());
         let pair = DenomToAddressPair { source_channel, denom };
         *smart_table::borrow_with_default(&store.denom_to_address, pair, &@0x0)
     }
 
-    public fun get_outstanding(source_channel: String, token: address): u64 acquires RelayStore {
+    public fun get_outstanding(source_channel: u32, token: address): u64 acquires RelayStore {
         let store = borrow_global<RelayStore>(get_vault_addr());
         let pair = OutstandingPair { source_channel, token };
         *smart_table::borrow_with_default(&store.outstanding, pair, &0)
@@ -207,7 +195,7 @@ module ucs01::ibc {
     }
 
     public fun increase_outstanding(
-        source_channel: String, token: address, amount: u64
+        source_channel: u32, token: address, amount: u64
     ) acquires RelayStore {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
         let pair = OutstandingPair { source_channel, token };
@@ -217,7 +205,7 @@ module ucs01::ibc {
     }
 
     public fun decrease_outstanding(
-        source_channel: String, token: address, amount: u64
+        source_channel: u32, token: address, amount: u64
     ) acquires RelayStore {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
         let pair = OutstandingPair { source_channel, token };
@@ -250,20 +238,13 @@ module ucs01::ibc {
     }
 
     public entry fun channel_open_init(
-        connection_hops: vector<String>,
-        ordering: u8,
-        counterparty_port_id: String,
-        counterparty_channel_id: String,
-        version: String
+        connection_id: u32, ordering: u8, version: vector<u8>
     ) acquires SignerRef {
-        let counterparty =
-            channel::new_counterparty(counterparty_port_id, counterparty_channel_id);
         ibc::channel_open_init(
             &get_signer(),
             get_self_address(),
-            connection_hops,
+            connection_id,
             ordering,
-            counterparty,
             version
         );
 
@@ -277,33 +258,33 @@ module ucs01::ibc {
     }
 
     public entry fun chan_open_try(
-        connection_hops: vector<String>,
-        ordering: u8,
-        counterparty_port_id: String,
-        counterparty_channel_id: String,
-        counterparty_version: String,
-        version: String,
+        channel_state: u8,
+        channel_order: u8,
+        connection_id: u32,
+        counterparty_channel_id: u32,
+        version: vector<u8>,
+        counterparty_version: vector<u8>,
         proof_init: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        proof_height: u64
     ) acquires SignerRef {
         ibc::channel_open_try(
             &get_signer(),
             get_self_address(),
-            connection_hops,
-            ordering,
-            channel::new_counterparty(counterparty_port_id, counterparty_channel_id),
-            counterparty_version,
+            channel_state,
+            channel_order,
+            connection_id,
+            counterparty_channel_id,
             version,
+            counterparty_version,
             proof_init,
-            height::new(proof_height_revision_num, proof_height_revision_height)
+            proof_height
         );
 
         if (!is_valid_version(version)) {
             abort E_INVALID_PROTOCOL_VERSION
         };
 
-        if (ordering != ORDER_UNORDERED) {
+        if (channel_order != ORDER_UNORDERED) {
             abort E_INVALID_PROTOCOL_ORDERING
         };
 
@@ -313,23 +294,21 @@ module ucs01::ibc {
     }
 
     public entry fun channel_open_ack(
-        channel_id: String,
-        counterparty_channel_id: String,
-        counterparty_version: String,
+        channel_id: u32,
+        counterparty_version: vector<u8>,
+        counterparty_channel_id: u32,
         proof_try: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        proof_height: u64
     ) acquires SignerRef {
         // Store the channel_id
         ibc::channel_open_ack(
             &get_signer(),
             get_self_address(),
-            // port_id,
             channel_id,
-            counterparty_channel_id,
             counterparty_version,
+            counterparty_channel_id,
             proof_try,
-            height::new(proof_height_revision_num, proof_height_revision_height)
+            proof_height
         );
         if (!is_valid_version(counterparty_version)) {
             abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
@@ -337,10 +316,7 @@ module ucs01::ibc {
     }
 
     public entry fun channel_open_confirm(
-        channel_id: String,
-        proof_ack: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        channel_id: u32, proof_ack: vector<u8>, proof_height: u64
     ) acquires SignerRef {
         ibc::channel_open_confirm(
             &get_signer(),
@@ -348,31 +324,27 @@ module ucs01::ibc {
             // port_id,
             channel_id,
             proof_ack,
-            height::new(proof_height_revision_num, proof_height_revision_height)
+            proof_height
         );
     }
 
-    public entry fun channel_close_init(_channel_id: String) {
+    public entry fun channel_close_init(_channel_id: u32) {
         abort E_UNSTOPPABLE
     }
 
-    public entry fun channel_close_confirm(_channel_id: String) {
+    public entry fun channel_close_confirm(_channel_id: u32) {
         abort E_UNSTOPPABLE
     }
 
     public entry fun timeout_packet(
         packet_sequence: u64,
-        packet_source_port: String,
-        packet_source_channel: String,
-        packet_destination_port: String,
-        packet_destination_channel: String,
+        packet_source_channel: u32,
+        packet_destination_channel: u32,
         packet_data: vector<u8>,
-        packet_timeout_revision_num: u64,
-        packet_timeout_revision_height: u64,
+        packet_timeout_height: u64,
         packet_timeout_timestamp: u64,
         proof: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64,
+        proof_height: u64,
         next_sequence_receive: u64
     ) acquires RelayStore, SignerRef {
         // Decode the packet data
@@ -381,24 +353,22 @@ module ucs01::ibc {
         // Call the refund_tokens function to refund the sender
         refund_tokens(packet_sequence, packet_source_channel, &relay_packet);
 
+        let packet =
+            ibc::packet::new(
+                packet_sequence,
+                packet_source_channel,
+                packet_destination_channel,
+                packet_data,
+                packet_timeout_height,
+                packet_timeout_timestamp
+            );
+
         ibc::timeout_packet(
             &get_signer(),
             get_self_address(),
-            ibc::packet::new(
-                packet_sequence,
-                packet_source_port,
-                packet_source_channel,
-                packet_destination_port,
-                packet_destination_channel,
-                packet_data,
-                height::new(
-                    packet_timeout_revision_num,
-                    packet_timeout_revision_height
-                ),
-                packet_timeout_timestamp
-            ),
+            packet,
             proof,
-            height::new(proof_height_revision_num, proof_height_revision_height),
+            proof_height,
             next_sequence_receive
         );
     }
@@ -569,12 +539,11 @@ module ucs01::ibc {
     ) acquires RelayStore, SignerRef {
         // Decode the RelayPacket from the IBC packet data
         let packet = decode_packet(*ibc::packet::data(&ibc_packet));
-        let source_channel = *ibc::packet::source_channel(&ibc_packet);
-        let destination_channel = *ibc::packet::destination_channel(&ibc_packet);
+        let source_channel = ibc::packet::source_channel(&ibc_packet);
+        let destination_channel = ibc::packet::destination_channel(&ibc_packet);
 
         // Create the denomination prefix based on source port and channel
-        let prefix =
-            make_denom_prefix(*ibc::packet::source_port(&ibc_packet), source_channel);
+        let prefix = make_denom_prefix(source_channel);
 
         // Get the receiver's address from the packet
         let receiver = from_bcs::to_address(packet.receiver);
@@ -622,12 +591,7 @@ module ucs01::ibc {
                 // Token originated from the counterparty chain, we need to mint the amount
 
                 // Construct the foreign denomination using the source and destination channels
-                let denom =
-                    make_foreign_denom(
-                        *ibc::packet::destination_port(&ibc_packet),
-                        destination_channel,
-                        token.denom
-                    );
+                let denom = make_foreign_denom(destination_channel, token.denom);
 
                 // Create a DenomToAddressPair for the foreign denomination
                 let pair = DenomToAddressPair {
@@ -739,7 +703,7 @@ module ucs01::ibc {
     }
 
     fun refund_tokens(
-        sequence: u64, channel_id: String, packet: &RelayPacket
+        sequence: u64, channel_id: u32, packet: &RelayPacket
     ) acquires RelayStore, SignerRef {
         let receiver = packet.receiver;
         let user_to_refund = from_bcs::to_address(packet.sender);
@@ -764,7 +728,7 @@ module ucs01::ibc {
                 if (starts_with(token_from_vec.denom, string::utf8(b"@"))) {
                     token_denom = string::sub_string(&token_denom, 1, 65);
                 };
-                let denom_address = from_bcs::to_address(hex_to_bytes(token_denom));
+                denom_address = from_bcs::to_address(hex_to_bytes(token_denom));
                 let token = get_metadata(denom_address);
                 decrease_outstanding(channel_id, denom_address, token_from_vec.amount);
                 primary_fungible_store::transfer(
@@ -793,113 +757,117 @@ module ucs01::ibc {
     }
 
     public entry fun recv_packet(
-        packet_sequence: u64,
-        packet_source_port: String,
-        packet_source_channel: String,
-        packet_destination_port: String,
-        packet_destination_channel: String,
-        packet_data: vector<u8>,
-        packet_timeout_revision_num: u64,
-        packet_timeout_revision_height: u64,
-        packet_timeout_timestamp: u64,
+        packet_sequences: vector<u64>,
+        packet_source_channels: vector<u32>,
+        packet_destination_channels: vector<u32>,
+        packet_datas: vector<vector<u8>>,
+        packet_timeout_heights: vector<u64>,
+        packet_timeout_timestamps: vector<u64>,
         proof: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        proof_height: u64
     ) acquires RelayStore, SignerRef {
-        let packet =
-            ibc::packet::new(
-                packet_sequence,
-                packet_source_port,
-                packet_source_channel,
-                packet_destination_port,
-                packet_destination_channel,
-                packet_data,
-                height::new(
-                    packet_timeout_revision_num, packet_timeout_revision_height
-                ),
-                packet_timeout_timestamp
+        let packets: vector<Packet> = vector::empty();
+        let i = 0;
+        while (i < vector::length(&packet_sequences)) {
+            vector::push_back(
+                &mut packets,
+                ibc::packet::new(
+                    *vector::borrow(&packet_sequences, i),
+                    *vector::borrow(&packet_source_channels, i),
+                    *vector::borrow(&packet_destination_channels, i),
+                    *vector::borrow(&packet_datas, i),
+                    *vector::borrow(&packet_timeout_heights, i),
+                    *vector::borrow(&packet_timeout_timestamps, i)
+                )
             );
+            i = i + 1;
+        };
 
         ibc::recv_packet(
             &get_signer(),
             get_self_address(),
-            packet,
+            packets,
             proof,
-            height::new(proof_height_revision_num, proof_height_revision_height),
+            proof_height,
             vector[1]
         );
-
-        on_recv_packet_processing(packet);
+        while (i < vector::length(&packets)) {
+            let packet = *vector::borrow(&packets, i);
+            on_recv_packet_processing(packet);
+        }
     }
 
     public entry fun acknowledge_packet(
-        packet_sequence: u64,
-        packet_source_port: String,
-        packet_source_channel: String,
-        packet_destination_port: String,
-        packet_destination_channel: String,
-        packet_data: vector<u8>,
-        packet_timeout_revision_num: u64,
-        packet_timeout_revision_height: u64,
-        packet_timeout_timestamp: u64,
-        acknowledgement: vector<u8>,
+        packet_sequences: vector<u64>,
+        packet_source_channels: vector<u32>,
+        packet_destination_channels: vector<u32>,
+        packet_datas: vector<vector<u8>>,
+        packet_timeout_heights: vector<u64>,
+        packet_timeout_timestamps: vector<u64>,
+        acknowledgements: vector<vector<u8>>,
         proof: vector<u8>,
-        proof_height_revision_num: u64,
-        proof_height_revision_height: u64
+        proof_height: u64
     ) acquires RelayStore, SignerRef {
-        let timeout_height =
-            height::new(packet_timeout_revision_num, packet_timeout_revision_height);
-        let proof_height =
-            height::new(proof_height_revision_num, proof_height_revision_height);
-
-        let packet =
-            ibc::packet::new(
-                packet_sequence,
-                packet_source_port,
-                packet_source_channel,
-                packet_destination_port,
-                packet_destination_channel,
-                packet_data,
-                timeout_height,
-                packet_timeout_timestamp
+        let packets: vector<Packet> = vector::empty();
+        let i = 0;
+        while (i < vector::length(&packet_sequences)) {
+            vector::push_back(
+                &mut packets,
+                ibc::packet::new(
+                    *vector::borrow(&packet_sequences, i),
+                    *vector::borrow(&packet_source_channels, i),
+                    *vector::borrow(&packet_destination_channels, i),
+                    *vector::borrow(&packet_datas, i),
+                    *vector::borrow(&packet_timeout_heights, i),
+                    *vector::borrow(&packet_timeout_timestamps, i)
+                )
             );
+            i = i + 1;
+        };
 
         ibc::acknowledge_packet(
             &get_signer(),
             get_self_address(),
-            packet,
-            acknowledgement,
+            packets,
+            acknowledgements,
             proof,
             proof_height
         );
 
-        if (vector::length(&acknowledgement) != ACK_LENGTH
-            || (
-                *vector::borrow(&acknowledgement, 0) != ACK_FAILURE
-                    && *vector::borrow(&acknowledgement, 0) != ACK_SUCCESS
-            )) {
-            abort E_INVALID_ACKNOWLEDGEMENT
-        };
+        i = 0;
+        while (i < vector::length(&acknowledgements)) {
+            let acknowledgement = *vector::borrow(&acknowledgements, i);
+            let packet = *vector::borrow(&packets, i);
 
-        if (*vector::borrow(&acknowledgement, 0) == ACK_FAILURE) {
-            let relay_packet = decode_packet(*ibc::packet::data(&packet));
-            refund_tokens(
-                ibc::packet::sequence(&packet),
-                *ibc::packet::source_channel(&packet),
-                &relay_packet
-            );
+            if (vector::length(&acknowledgement) != ACK_LENGTH
+                || (
+                    *vector::borrow(&acknowledgement, 0) != ACK_FAILURE
+                        && *vector::borrow(&acknowledgement, 0) != ACK_SUCCESS
+                )) {
+                abort E_INVALID_ACKNOWLEDGEMENT
+            };
+
+            if (*vector::borrow(&acknowledgement, 0) == ACK_FAILURE) {
+                let relay_packet = decode_packet(*ibc::packet::data(&packet));
+                refund_tokens(
+                    ibc::packet::sequence(&packet),
+                    ibc::packet::source_channel(&packet),
+                    &relay_packet
+                );
+            };
+
+            i = i + 1;
         };
     }
 
     public entry fun send(
         sender: &signer,
-        source_channel: String,
+        source_channel: u32,
         receiver: vector<u8>,
         denom_list: vector<address>,
         amount_list: vector<u64>,
         extension: String,
-        timeout_height_number: u64,
-        timeout_height_height: u64,
+        timeout_height: u64,
         timeout_timestamp: u64
     ) acquires RelayStore, SignerRef {
         let num_tokens = vector::length(&denom_list);
@@ -938,8 +906,6 @@ module ucs01::ibc {
             extension
         };
 
-        let timeout_height = height::new(timeout_height_number, timeout_height_height);
-
         let packet_sequence =
             ibc::ibc::send_packet(
                 &get_signer(),
@@ -973,7 +939,7 @@ module ucs01::ibc {
 
     public fun send_token(
         sender: &signer,
-        source_channel: String,
+        source_channel: u32,
         denom: address,
         amount: u64
     ): String acquires RelayStore, SignerRef {
@@ -1010,753 +976,667 @@ module ucs01::ibc {
         token_address
     }
 
-    #[test]
-    public fun decode_test() {
-        let relay =
-            decode_packet(
-                x"000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000201363462745291c711144011c1305e737dd74ace69a5576612745e29a2e4fa1b500000000000000000000000000000000000000000000000000000000000000144bde1d877da529ce4f78810b4b746bcc301c93800000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000085000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000414038616365626263323666303631373437383661623637376166323438353033333365646163303663633938633137363535353439666134393862383139393030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-            );
-
-        assert!(
-            relay.sender
-                == bcs::to_bytes(
-                    &@0x1363462745291c711144011c1305e737dd74ace69a5576612745e29a2e4fa1b5
-                ),
-            100
-        );
-        assert!(vector::length(&relay.tokens) == 1, 102);
-
-        let tok = vector::borrow(&relay.tokens, 0);
-        assert!(tok.amount == 133, 103);
-        assert!(
-            tok.denom
-                == string::utf8(
-                    b"@8acebbc26f06174786ab677af24850333edac06cc98c17655549fa498b819900"
-                ),
-            104
-        );
-        assert!(relay.extension == string::utf8(b""), 105);
-    }
-
-    #[test]
-    public fun test_is_valid_version() {
-        let valid_version = string::utf8(b"ucs01-relay-1");
-        let invalid_version = string::utf8(b"invalid-version");
-
-        // Test with valid version
-        assert!(is_valid_version(valid_version), 100);
-
-        // Test with invalid version
-        assert!(!is_valid_version(invalid_version), 101);
-    }
-
-    #[test]
-    public fun test_is_from_channel() {
-        let port_id = string::utf8(b"port-1");
-        let channel_id = string::utf8(b"channel-1");
-        let valid_denom = string::utf8(b"port-1/channel-1/denom");
-        let invalid_denom = string::utf8(b"other-port/other-channel/denom");
-
-        // Test with valid denom
-        assert!(
-            is_from_channel(port_id, channel_id, valid_denom),
-            200
-        );
-
-        // Test with invalid denom
-        assert!(
-            !is_from_channel(port_id, channel_id, invalid_denom),
-            201
-        );
-    }
-
-    #[test]
-    public fun test_make_denom_prefix() {
-        let port_id = string::utf8(b"port-1");
-        let channel_id = string::utf8(b"channel-1");
-        let expected_prefix = string::utf8(b"port-1/channel-1/");
-
-        let result = make_denom_prefix(port_id, channel_id);
-        assert!(result == expected_prefix, 300);
-    }
-
-    #[test]
-    public fun test_make_foreign_denom() {
-        let port_id = string::utf8(b"port-1");
-        let channel_id = string::utf8(b"channel-1");
-        let denom = string::utf8(b"denom");
-        let expected_foreign_denom = string::utf8(b"port-1/channel-1/denom");
-
-        let result = make_foreign_denom(port_id, channel_id, denom);
-        assert!(result == expected_foreign_denom, 400);
-    }
-
-    #[test(admin = @ucs01)]
-    public fun test_get_denom_address(admin: &signer) acquires RelayStore {
-        // Initialize the store in the admin's account
-        init_module(admin);
-
-        let source_channel = string::utf8(b"channel-1");
-        let denom = string::utf8(b"denom-1");
-        let expected_address: address = @0x1;
-
-        let pair = DenomToAddressPair { source_channel, denom };
-        let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        smart_table::upsert(&mut store.denom_to_address, pair, expected_address);
-
-        // Test getting the address
-        let result = get_denom_address(source_channel, denom);
-        assert!(result == expected_address, 500);
-    }
-
-    #[test(admin = @ucs01)]
-    public fun test_get_outstanding(admin: &signer) acquires RelayStore {
-        // Initialize the store in the admin's account
-        init_module(admin);
-
-        let source_channel = string::utf8(b"channel-1");
-        let token = @0x1;
-        let expected_amount: u64 = 1000;
-
-        // Set up the mapping in the Relay module (this is usually done through an entry function)
-        let pair = OutstandingPair { source_channel: source_channel, token: token };
-
-        let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        smart_table::upsert(&mut store.outstanding, pair, expected_amount);
-
-        // Test getting the outstanding amount
-        let result = get_outstanding(source_channel, token);
-        assert!(result == expected_amount, 600);
-    }
-
-    #[test(admin = @ucs01)]
-    public fun test_increase_outstanding(admin: &signer) acquires RelayStore {
-        // Initialize the store
-        let source_channel = string::utf8(b"channel-1");
-        let token_address: address = @0x1;
-        let initial_amount: u64 = 1000;
-
-        // Initialize the store in the admin's account
-        init_module(admin);
-
-        // Increase outstanding amount
-        increase_outstanding(source_channel, token_address, initial_amount);
-
-        // Verify that the outstanding amount is updated correctly
-        let outstanding_amount = get_outstanding(source_channel, token_address);
-        assert!(outstanding_amount == initial_amount, 700);
-    }
-
-    #[test(admin = @ucs01)]
-    public fun test_decrease_outstanding(admin: &signer) acquires RelayStore {
-        // Initialize the store
-        let source_channel = string::utf8(b"channel-1");
-        let token_address: address = @0x1;
-        let initial_amount: u64 = 1000;
-        let decrease_amount: u64 = 400;
-
-        // Initialize the store in the admin's account
-        init_module(admin);
-
-        // First, increase outstanding amount
-        increase_outstanding(source_channel, token_address, initial_amount);
-
-        // Decrease the outstanding amount
-        decrease_outstanding(source_channel, token_address, decrease_amount);
-
-        // Verify that the outstanding amount is updated correctly
-        let outstanding_amount = get_outstanding(source_channel, token_address);
-        let expected_amount = initial_amount - decrease_amount;
-        assert!(outstanding_amount == expected_amount, 701);
-    }
-
-    const TEST_NAME: vector<u8> = b"Test Coin";
-    const TEST_SYMBOL: vector<u8> = b"TST";
-    const TEST_DECIMALS: u8 = 8;
-    const TEST_ICON: vector<u8> = b"https://example.com/icon.png";
-    const TEST_PROJECT: vector<u8> = b"Test Project";
-
-    #[test(admin = @ucs01, bob = @0x1235)]
-    public fun test_send_token_valid_address(
-        admin: &signer, bob: &signer
-    ) acquires RelayStore, SignerRef {
-        // Initialize the store
-        init_module(admin);
-
-        let source_channel = string::utf8(b"channel-1");
-        let denom = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
-        let amount: u64 = 1000;
-
-        // let new_denom = string::utf8(b"new-denom");
-        let denom_str = string_utils::to_string_with_canonical_addresses(&denom);
-        // let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        // smart_table::upsert(&mut store.address_to_denom, pair, new_denom);
-        let admin = &get_signer();
-
-        ucs01::fa_coin::initialize(
-            admin,
-            string::utf8(TEST_NAME),
-            string::utf8(TEST_SYMBOL),
-            TEST_DECIMALS,
-            string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT),
-            IBC_APP_SEED
-        );
-
-        let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
-        let asset = get_metadata(asset_addr);
-        let bob_addr = signer::address_of(bob);
-        ucs01::fa_coin::mint_with_metadata(admin, bob_addr, amount, asset);
-
-        // Send tokens
-        let result_address = send_token(bob, source_channel, asset_addr, amount);
-
-        // Verify the result and outstanding balance
-        assert!(result_address == denom_str, 100);
-        let outstanding_balance = get_outstanding(source_channel, denom);
-        assert!(outstanding_balance == amount, 101);
-
-        let bob_balance = primary_fungible_store::balance(bob_addr, asset);
-        let ucs01_balance =
-            primary_fungible_store::balance(signer::address_of(&get_signer()), asset);
-        assert!(bob_balance == 0, 102);
-        assert!(ucs01_balance == 1000, 102);
-    }
-
-    #[test(admin = @ucs01, bob = @0x1235)]
-    public fun test_send_token_burn(admin: &signer, bob: &signer) acquires RelayStore, SignerRef {
-        // Initialize the store
-        init_module(admin);
-
-        let source_channel = string::utf8(b"channel-1");
-        let denom = @0x111111;
-        let amount: u64 = 1000;
-
-        let admin = &get_signer();
-        ucs01::fa_coin::initialize(
-            admin,
-            string::utf8(TEST_NAME),
-            string::utf8(TEST_SYMBOL),
-            TEST_DECIMALS,
-            string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT),
-            IBC_APP_SEED
-        );
-
-        let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
-        let asset = get_metadata(asset_addr);
-        let bob_addr = signer::address_of(bob);
-        ucs01::fa_coin::mint_with_metadata(admin, bob_addr, amount, asset);
-
-        // Upsert denom to address pair
-        let pair = AddressToDenomPair { source_channel, denom: asset_addr };
-        let new_denom = string::utf8(b"new-denom");
-
-        let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        smart_table::upsert(&mut store.address_to_denom, pair, new_denom);
-
-        // Send tokens
-
-        let supply_before = option::extract(&mut fungible_asset::supply(asset));
-        assert!(supply_before == 1000, 102);
-
-        let result_address = send_token(bob, source_channel, asset_addr, amount);
-
-        // Verify the result and outstanding balance
-        assert!(string::length(&result_address) != 0, 100);
-        let outstanding_balance = get_outstanding(source_channel, denom);
-        assert!(outstanding_balance == 0, 101);
-
-        let bob_balance = primary_fungible_store::balance(bob_addr, asset);
-        assert!(bob_balance == 0, 102);
-
-        let supply_after = option::extract(&mut fungible_asset::supply(asset));
-        assert!(supply_after == 0, 102);
-    }
-
-    #[test(admin = @ucs01)]
-    #[expected_failure(abort_code = E_INVALID_AMOUNT)]
-    public fun test_send_zero_amount(admin: &signer) acquires RelayStore, SignerRef {
-        // Initialize the store
-        init_module(admin);
-
-        let source_channel = string::utf8(b"channel-1");
-        let _denom = @0x111111;
-        let admin = &get_signer();
-        ucs01::fa_coin::initialize(
-            admin,
-            string::utf8(TEST_NAME),
-            string::utf8(TEST_SYMBOL),
-            TEST_DECIMALS,
-            string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT),
-            IBC_APP_SEED
-        );
-
-        let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
-        let _asset = get_metadata(asset_addr);
-
-        // Attempt to send zero amount
-        send_token(admin, source_channel, asset_addr, 0);
-    }
-
-    #[test]
-    public fun test_encode() {
-        let token = Token { denom: string::utf8(b"denom"), amount: 1000 };
-        let token2 = Token { denom: string::utf8(b"this is amazing"), amount: 3000 };
-        let token3 = Token { denom: string::utf8(b"insane cool"), amount: 3 };
-        let tokens = vector::empty<Token>();
-        vector::push_back(&mut tokens, token);
-        vector::push_back(&mut tokens, token2);
-        vector::push_back(&mut tokens, token3);
-
-        let sender = bcs::to_bytes(&@0x111111111111111111111);
-        let receiver = bcs::to_bytes(&@0x0000000000000000000000000000000000000033);
-        let extension = string::utf8(b"extension");
-        let packet = RelayPacket {
-            sender: sender,
-            receiver: receiver,
-            tokens: tokens,
-            extension: extension
-        };
-        let encoded = encode_packet(&packet);
-        let decoded = decode_packet(encoded);
-
-        assert!(decoded.sender == sender, 100);
-        assert!(decoded.receiver == receiver, 101);
-        assert!(decoded.extension == extension, 102);
-        let token = vector::borrow(&decoded.tokens, 0);
-        assert!(token.denom == string::utf8(b"denom"), 103);
-        assert!(token.amount == 1000, 104);
-        let token2 = vector::borrow(&decoded.tokens, 1);
-        assert!(token2.denom == string::utf8(b"this is amazing"), 105);
-        assert!(token2.amount == 3000, 106);
-        let token3 = vector::borrow(&decoded.tokens, 2);
-        assert!(token3.denom == string::utf8(b"insane cool"), 107);
-        assert!(token3.amount == 3, 108);
-    }
-
-    #[test(admin = @ucs01, alice = @0x1234)]
-    public fun test_refund_tokens(admin: &signer, alice: address) acquires RelayStore, SignerRef {
-        init_module(admin);
-
-        let source_channel = string::utf8(b"channel-1");
-        let amount: u64 = 1000;
-
-        let token_owner = &get_signer();
-
-        // Step 2: Mint some tokens to Alice
-        ucs01::fa_coin::initialize(
-            token_owner,
-            string::utf8(TEST_NAME),
-            string::utf8(TEST_SYMBOL),
-            TEST_DECIMALS,
-            string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT),
-            IBC_APP_SEED
-        );
-
-        let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
-        let asset = get_metadata(asset_addr);
-
-        // Step 3: Simulate sending tokens (for refund purposes)
-        let token = Token {
-            denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
-            amount: amount
-        };
-        let tokens = vector::empty<Token>();
-        vector::push_back(&mut tokens, token);
-
-        let relay_packet = RelayPacket {
-            sender: bcs::to_bytes(&alice),
-            receiver: bcs::to_bytes(&@0x0000000000000000000000000000000000000022),
-            tokens: tokens,
-            extension: string::utf8(b"extension")
-        };
-
-        // Insert mapping for the denom -> address
-        let pair = DenomToAddressPair {
-            source_channel,
-            denom: string_utils::to_string_with_canonical_addresses(&asset_addr)
-        };
-        let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        smart_table::upsert(&mut store.denom_to_address, pair, asset_addr);
-
-        // Step 4: Call the refund function
-        let sequence = 1;
-        refund_tokens(sequence, source_channel, &relay_packet);
-
-        // Step 5: Verify the results
-        let alice_balance = primary_fungible_store::balance(alice, asset);
-        assert!(alice_balance == amount, 100); // Alice should have received the refund
-
-    }
-
-    #[test(admin = @ucs01, alice = @0x1234)]
-    public fun test_refund_tokens_zero_address(
-        admin: &signer, alice: address
-    ) acquires RelayStore, SignerRef {
-        init_module(admin);
-
-        let source_channel = string::utf8(b"channel-1");
-        let amount: u64 = 1000;
-
-        let token_owner = &get_signer();
-
-        ucs01::fa_coin::initialize(
-            token_owner,
-            string::utf8(TEST_NAME),
-            string::utf8(TEST_SYMBOL),
-            TEST_DECIMALS,
-            string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT),
-            IBC_APP_SEED
-        );
-        let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
-
-        let asset = get_metadata(asset_addr);
-
-        ucs01::fa_coin::mint_with_metadata(
-            token_owner,
-            signer::address_of(token_owner),
-            1000,
-            asset
-        );
-
-        // Step 3: Simulate sending tokens (for refund purposes)
-        let token = Token {
-            denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
-            amount: amount
-        };
-        let tokens = vector::empty<Token>();
-        vector::push_back(&mut tokens, token);
-
-        let relay_packet = RelayPacket {
-            sender: bcs::to_bytes(&alice),
-            receiver: bcs::to_bytes(&@0x0000000000000000000000000000000000000022),
-            tokens: tokens,
-            extension: string::utf8(b"extension")
-        };
-        increase_outstanding(source_channel, asset_addr, amount);
-
-        let outstanding_balance = get_outstanding(source_channel, asset_addr);
-        assert!(outstanding_balance == 1000, 200); // The outstanding balance should be reduced to 0.
-
-        let sequence = 1;
-        refund_tokens(sequence, source_channel, &relay_packet);
-
-        let outstanding_balance = get_outstanding(source_channel, asset_addr);
-        assert!(outstanding_balance == 0, 200); // The outstanding balance should be reduced to 0.
-
-        let alice_balance = primary_fungible_store::balance(alice, asset);
-        assert!(alice_balance == 0, 201); // Alice should not receive any tokens in this case.
-    }
-
-    #[test(admin = @ucs01, alice = @0x1234, bob = @0x1235)]
-    public fun test_on_recv_packet_processing_local_token(
-        admin: &signer, alice: address, bob: address
-    ) acquires RelayStore, SignerRef {
-        // Step 1: Initialize the store
-        init_module(admin);
-
-        // Step 2: Setup the initial mappings for local tokens
-        let source_channel = string::utf8(b"channel-1");
-        let destination_channel = string::utf8(b"dest-channel");
-        let port_id = string::utf8(b"port-1");
-        let local_token_address = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
-
-        let token_owner = &get_signer();
-
-        // Mint some tokens to simulate the token creation on this chain
-        ucs01::fa_coin::initialize(
-            token_owner,
-            string::utf8(TEST_NAME),
-            string::utf8(TEST_SYMBOL),
-            TEST_DECIMALS,
-            string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT),
-            IBC_APP_SEED
-        );
-
-        let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
-
-        let asset = get_metadata(asset_addr);
-        // Step 3: Mint tokens to the relay module's account (escrow)
-        ucs01::fa_coin::mint_with_metadata(
-            token_owner,
-            signer::address_of(token_owner),
-            1000,
-            asset
-        );
-        increase_outstanding(source_channel, local_token_address, 1000);
-
-        // Step 4: Create the RelayPacket with a local token
-        let new_denom = make_denom_prefix(port_id, source_channel);
-        string::append(
-            &mut new_denom,
-            string_utils::to_string_with_canonical_addresses(&local_token_address)
-        );
-        let token = Token { denom: new_denom, amount: 500 };
-        let tokens = vector::empty<Token>();
-        vector::push_back(&mut tokens, token);
-
-        let relay_packet = RelayPacket {
-            sender: bcs::to_bytes(&alice),
-            receiver: bcs::to_bytes(&bob),
-            tokens: tokens,
-            extension: string::utf8(b"")
-        };
-
-        // Step 5: Create the IBC packet
-        let ibc_packet =
-            ibc::packet::new(
-                1, // sequence
-                port_id,
-                source_channel,
-                port_id,
-                destination_channel,
-                encode_packet(&relay_packet),
-                height::new(1, 100),
-                1000000
-            );
-
-        // Step 6: Process the IBC packet
-        on_recv_packet_processing(ibc_packet);
-
-        // Step 7: Verify the token was transferred to Bob
-        let bob_balance =
-            primary_fungible_store::balance(bob, get_metadata(local_token_address));
-        assert!(bob_balance == 500, 100); // Bob should have received the token
-
-        // Step 8: Verify the outstanding amount was decreased
-        let outstanding_balance = get_outstanding(source_channel, local_token_address);
-        assert!(outstanding_balance == 500, 101); // Outstanding should be reduced by 500
-    }
-
-    #[test(admin = @ucs01, alice = @0x1234, bob = @0x1235)]
-    public fun test_on_recv_packet_processing_foreign_token_denom_address_zero(
-        admin: &signer, alice: address, bob: address
-    ) acquires RelayStore, SignerRef {
-        // Step 1: Initialize the store
-        init_module(admin);
-
-        // Step 2: Set up mappings and mint tokens on the counterparty chain
-        let source_channel = string::utf8(b"channel-1");
-        let destination_channel = string::utf8(b"dest-channel");
-        let port_id = string::utf8(b"port-1");
-
-        // Step 3: Create a RelayPacket with a foreign token denomination
-        let foreign_denom = string::utf8(b"foreign-token-denom");
-        let token = Token { denom: foreign_denom, amount: 500 };
-        let tokens = vector::empty<Token>();
-        vector::push_back(&mut tokens, token);
-
-        let relay_packet = RelayPacket {
-            sender: bcs::to_bytes(&alice),
-            receiver: bcs::to_bytes(&bob),
-            tokens: tokens,
-            extension: string::utf8(b"")
-        };
-
-        // Step 4: Create the IBC packet
-        let ibc_packet =
-            ibc::packet::new(
-                1, // sequence
-                port_id,
-                source_channel,
-                port_id,
-                destination_channel,
-                encode_packet(&relay_packet),
-                height::new(1, 100),
-                1000000
-            );
-
-        // Step 5: Process the IBC packet (will enter the 'else' block since it's a foreign token)
-        on_recv_packet_processing(ibc_packet);
-
-        // Step 6: Verify that a new denomination was created and minting occurred
-        let _store = borrow_global_mut<RelayStore>(get_vault_addr());
-        // Construct the foreign denomination using the source and destination channels
-        let our_denom = make_foreign_denom(port_id, destination_channel, foreign_denom);
-        let denom_address = get_denom_address(source_channel, our_denom);
-        assert!(denom_address != @0x0, 100); // The new token address should have been created
-
-        // Step 7: Verify the token was minted to Bob's account
-        let bob_balance =
-            primary_fungible_store::balance(bob, get_metadata(denom_address));
-        assert!(bob_balance == 500, 101); // Bob should have received the minted foreign token
-    }
-
-    #[test(admin = @ucs01, alice = @0x1234, bob = @0x1235)]
-    public fun test_on_recv_packet_processing_foreign_token_existing_denom_address(
-        admin: &signer, alice: address, bob: address
-    ) acquires RelayStore, SignerRef {
-        // Step 1: Initialize the store
-        init_module(admin);
-
-        // Step 2: Set up mappings and mint tokens on the counterparty chain
-        let source_channel = string::utf8(b"channel-1");
-        let destination_channel = string::utf8(b"dest-channel");
-        let port_id = string::utf8(b"port-1");
-        let _foreign_denom = string::utf8(b"foreign-token-denom");
-        let token_owner = &get_signer();
-
-        ucs01::fa_coin::initialize(
-            token_owner,
-            string::utf8(TEST_NAME),
-            string::utf8(TEST_SYMBOL),
-            TEST_DECIMALS,
-            string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT),
-            IBC_APP_SEED
-        );
-        let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
-        let _asset = get_metadata(asset_addr);
-
-        let new_denom = make_denom_prefix(port_id, destination_channel);
-        string::append(
-            &mut new_denom,
-            string_utils::to_string_with_canonical_addresses(&asset_addr)
-        );
-        // Step 3: Insert an existing foreign token address into the store
-        let _existing_denom_address: address = @0x1;
-        let pair = DenomToAddressPair { source_channel: source_channel, denom: new_denom };
-
-        let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        smart_table::upsert(&mut store.denom_to_address, pair, asset_addr);
-
-        // Step 4: Create a RelayPacket with the foreign token denomination
-        let token = Token {
-            denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
-            amount: 500
-        };
-        let tokens = vector::empty<Token>();
-        vector::push_back(&mut tokens, token);
-
-        let relay_packet = RelayPacket {
-            sender: bcs::to_bytes(&alice),
-            receiver: bcs::to_bytes(&bob),
-            tokens: tokens,
-            extension: string::utf8(b"")
-        };
-
-        // Step 5: Create the IBC packet
-        let ibc_packet =
-            ibc::packet::new(
-                1, // sequence
-                port_id,
-                source_channel,
-                port_id,
-                destination_channel,
-                encode_packet(&relay_packet),
-                height::new(1, 100),
-                1000000
-            );
-
-        // Step 6: Process the IBC packet (will use the existing token address in the 'else' block)
-        on_recv_packet_processing(ibc_packet);
-
-        // Step 7: Verify that the existing token address was used
-
-        let denom_address = get_denom_address(source_channel, new_denom);
-        assert!(denom_address == asset_addr, 100); // It should be the same as the existing address
-
-        // Step 8: Verify the token was minted to Bob's account
-        let bob_balance = primary_fungible_store::balance(bob, get_metadata(asset_addr));
-        assert!(bob_balance == 500, 101); // Bob should have received the minted foreign token
-    }
-
-    #[test(admin = @ucs01, alice = @0x1234, bob = @0x1235)]
-    #[expected_failure(abort_code = E_INVALID_AMOUNT)]
-    public fun test_on_recv_packet_processing_local_token_revert_amount_zero(
-        admin: &signer, alice: address, bob: address
-    ) acquires RelayStore, SignerRef {
-        // Step 1: Initialize the store
-        init_module(admin);
-
-        // Step 2: Setup the initial mappings for local tokens
-        let source_channel = string::utf8(b"channel-1");
-        let destination_channel = string::utf8(b"dest-channel");
-        let port_id = string::utf8(b"port-1");
-        let local_token_address = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
-
-        // Mint some tokens to simulate the token creation on this chain
-        ucs01::fa_coin::initialize(
-            &get_signer(),
-            string::utf8(TEST_NAME),
-            string::utf8(TEST_SYMBOL),
-            TEST_DECIMALS,
-            string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT),
-            IBC_APP_SEED
-        );
-
-        let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
-        let asset = get_metadata(asset_addr);
-        // Step 3: Mint tokens to the relay module's account (escrow)
-        ucs01::fa_coin::mint_with_metadata(&get_signer(), @ucs01, 1000, asset);
-        increase_outstanding(source_channel, local_token_address, 1000);
-
-        // Step 4: Create the RelayPacket with a local token
-        let new_denom = make_denom_prefix(port_id, source_channel);
-        string::append(
-            &mut new_denom,
-            string_utils::to_string_with_canonical_addresses(&local_token_address)
-        );
-        let token = Token { denom: new_denom, amount: 0 };
-        let tokens = vector::empty<Token>();
-        vector::push_back(&mut tokens, token);
-
-        let relay_packet = RelayPacket {
-            sender: bcs::to_bytes(&alice),
-            receiver: bcs::to_bytes(&bob),
-            tokens: tokens,
-            extension: string::utf8(b"")
-        };
-
-        // Step 5: Create the IBC packet
-        let ibc_packet =
-            ibc::packet::new(
-                1, // sequence
-                port_id,
-                source_channel,
-                port_id,
-                destination_channel,
-                encode_packet(&relay_packet),
-                height::new(1, 100),
-                1000000
-            );
-
-        // Step 6: Process the IBC packet
-        on_recv_packet_processing(ibc_packet);
-
-        // Step 7: Verify the token was transferred to Bob
-        let bob_balance =
-            primary_fungible_store::balance(bob, get_metadata(local_token_address));
-        assert!(bob_balance == 500, 100); // Bob should have received the token
-
-        // Step 8: Verify the outstanding amount was decreased
-        let outstanding_balance = get_outstanding(source_channel, local_token_address);
-        assert!(outstanding_balance == 500, 101); // Outstanding should be reduced by 500
-    }
-
-    // #[test(admin = @ucs01, alice = @0x1234, bob = @0x1235, ibc_admin = @ibc)]
-    // public fun test_send_valid(admin: &signer, ibc_admin: &signer, alice: &signer, bob: address) acquires RelayStore, SignerRef {
-    //     // Initialize the store
-    //     init_module(admin);
-    //     ibc::init_module_public(ibc_admin);
-
-    //     let port_id = string::utf8(b"0x0000000000000000000000000000000000000000000000000004444444444444");
+    // #[test]
+    // public fun decode_test() {
+    //     let relay =
+    //         decode_packet(
+    //             x"000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000201363462745291c711144011c1305e737dd74ace69a5576612745e29a2e4fa1b500000000000000000000000000000000000000000000000000000000000000144bde1d877da529ce4f78810b4b746bcc301c93800000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000085000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000414038616365626263323666303631373437383661623637376166323438353033333365646163303663633938633137363535353439666134393862383139393030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    //         );
+
+    //     assert!(
+    //         relay.sender
+    //             == bcs::to_bytes(
+    //                 &@0x1363462745291c711144011c1305e737dd74ace69a5576612745e29a2e4fa1b5
+    //             ),
+    //         100
+    //     );
+    //     assert!(vector::length(&relay.tokens) == 1, 102);
+
+    //     let tok = vector::borrow(&relay.tokens, 0);
+    //     assert!(tok.amount == 133, 103);
+    //     assert!(
+    //         tok.denom
+    //             == string::utf8(
+    //                 b"@8acebbc26f06174786ab677af24850333edac06cc98c17655549fa498b819900"
+    //             ),
+    //         104
+    //     );
+    //     assert!(relay.extension == string::utf8(b""), 105);
+    // }
+
+    // #[test]
+    // public fun test_is_valid_version() {
+    //     let valid_version = string::utf8(b"ucs01-relay-1");
+    //     let invalid_version = string::utf8(b"invalid-version");
+
+    //     // Test with valid version
+    //     assert!(is_valid_version(valid_version), 100);
+
+    //     // Test with invalid version
+    //     assert!(!is_valid_version(invalid_version), 101);
+    // }
+
+    // #[test]
+    // public fun test_is_from_channel() {
+    //     let port_id = string::utf8(b"port-1");
     //     let channel_id = string::utf8(b"channel-1");
-    //     let connection_id = string::utf8(b"connection-1");
-    //     let client_id = string::utf8(b"client-1");
+    //     let valid_denom = string::utf8(b"port-1/channel-1/denom");
+    //     let invalid_denom = string::utf8(b"other-port/other-channel/denom");
 
-    //     ibc::test_fill_all_states(port_id, channel_id, connection_id, client_id);
+    //     // Test with valid denom
+    //     assert!(
+    //         is_from_channel(port_id, channel_id, valid_denom),
+    //         200
+    //     );
+
+    //     // Test with invalid denom
+    //     assert!(
+    //         !is_from_channel(port_id, channel_id, invalid_denom),
+    //         201
+    //     );
+    // }
+
+    // #[test]
+    // public fun test_make_foreign_denom() {
+    //     let port_id = string::utf8(b"port-1");
+    //     let channel_id = string::utf8(b"channel-1");
+    //     let denom = string::utf8(b"denom");
+    //     let expected_foreign_denom = string::utf8(b"port-1/channel-1/denom");
+
+    //     let result = make_foreign_denom(port_id, channel_id, denom);
+    //     assert!(result == expected_foreign_denom, 400);
+    // }
+
+    // #[test(admin = @ucs01)]
+    // public fun test_get_denom_address(admin: &signer) acquires RelayStore {
+    //     // Initialize the store in the admin's account
+    //     init_module(admin);
 
     //     let source_channel = string::utf8(b"channel-1");
-    //     let denom_list = vector::empty<address>();
-    //     let amount_list = vector::empty<u64>();
+    //     let denom = string::utf8(b"denom-1");
+    //     let expected_address: address = @0x1;
 
+    //     let pair = DenomToAddressPair { source_channel, denom };
+    //     let store = borrow_global_mut<RelayStore>(get_vault_addr());
+    //     smart_table::upsert(&mut store.denom_to_address, pair, expected_address);
+
+    //     // Test getting the address
+    //     let result = get_denom_address(source_channel, denom);
+    //     assert!(result == expected_address, 500);
+    // }
+
+    // #[test(admin = @ucs01)]
+    // public fun test_get_outstanding(admin: &signer) acquires RelayStore {
+    //     // Initialize the store in the admin's account
+    //     init_module(admin);
+
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let token = @0x1;
+    //     let expected_amount: u64 = 1000;
+
+    //     // Set up the mapping in the Relay module (this is usually done through an entry function)
+    //     let pair = OutstandingPair { source_channel: source_channel, token: token };
+
+    //     let store = borrow_global_mut<RelayStore>(get_vault_addr());
+    //     smart_table::upsert(&mut store.outstanding, pair, expected_amount);
+
+    //     // Test getting the outstanding amount
+    //     let result = get_outstanding(source_channel, token);
+    //     assert!(result == expected_amount, 600);
+    // }
+
+    // #[test(admin = @ucs01)]
+    // public fun test_increase_outstanding(admin: &signer) acquires RelayStore {
+    //     // Initialize the store
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let token_address: address = @0x1;
+    //     let initial_amount: u64 = 1000;
+
+    //     // Initialize the store in the admin's account
+    //     init_module(admin);
+
+    //     // Increase outstanding amount
+    //     increase_outstanding(source_channel, token_address, initial_amount);
+
+    //     // Verify that the outstanding amount is updated correctly
+    //     let outstanding_amount = get_outstanding(source_channel, token_address);
+    //     assert!(outstanding_amount == initial_amount, 700);
+    // }
+
+    // #[test(admin = @ucs01)]
+    // public fun test_decrease_outstanding(admin: &signer) acquires RelayStore {
+    //     // Initialize the store
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let token_address: address = @0x1;
+    //     let initial_amount: u64 = 1000;
+    //     let decrease_amount: u64 = 400;
+
+    //     // Initialize the store in the admin's account
+    //     init_module(admin);
+
+    //     // First, increase outstanding amount
+    //     increase_outstanding(source_channel, token_address, initial_amount);
+
+    //     // Decrease the outstanding amount
+    //     decrease_outstanding(source_channel, token_address, decrease_amount);
+
+    //     // Verify that the outstanding amount is updated correctly
+    //     let outstanding_amount = get_outstanding(source_channel, token_address);
+    //     let expected_amount = initial_amount - decrease_amount;
+    //     assert!(outstanding_amount == expected_amount, 701);
+    // }
+
+    // const TEST_NAME: vector<u8> = b"Test Coin";
+    // const TEST_SYMBOL: vector<u8> = b"TST";
+    // const TEST_DECIMALS: u8 = 8;
+    // const TEST_ICON: vector<u8> = b"https://example.com/icon.png";
+    // const TEST_PROJECT: vector<u8> = b"Test Project";
+
+    // #[test(admin = @ucs01, bob = @0x1235)]
+    // public fun test_send_token_valid_address(
+    //     admin: &signer, bob: &signer
+    // ) acquires RelayStore, SignerRef {
+    //     // Initialize the store
+    //     init_module(admin);
+
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let denom = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
+    //     let amount: u64 = 1000;
+
+    //     // let new_denom = string::utf8(b"new-denom");
+    //     let denom_str = string_utils::to_string_with_canonical_addresses(&denom);
+    //     // let store = borrow_global_mut<RelayStore>(get_vault_addr());
+    //     // smart_table::upsert(&mut store.address_to_denom, pair, new_denom);
+    //     let admin = &get_signer();
+
+    //     ucs01::fa_coin::initialize(
+    //         admin,
+    //         string::utf8(TEST_NAME),
+    //         string::utf8(TEST_SYMBOL),
+    //         TEST_DECIMALS,
+    //         string::utf8(TEST_ICON),
+    //         string::utf8(TEST_PROJECT),
+    //         IBC_APP_SEED
+    //     );
+
+    //     let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
+    //     let asset = get_metadata(asset_addr);
+    //     let bob_addr = signer::address_of(bob);
+    //     ucs01::fa_coin::mint_with_metadata(admin, bob_addr, amount, asset);
+
+    //     // Send tokens
+    //     let result_address = send_token(bob, source_channel, asset_addr, amount);
+
+    //     // Verify the result and outstanding balance
+    //     assert!(result_address == denom_str, 100);
+    //     let outstanding_balance = get_outstanding(source_channel, denom);
+    //     assert!(outstanding_balance == amount, 101);
+
+    //     let bob_balance = primary_fungible_store::balance(bob_addr, asset);
+    //     let ucs01_balance =
+    //         primary_fungible_store::balance(signer::address_of(&get_signer()), asset);
+    //     assert!(bob_balance == 0, 102);
+    //     assert!(ucs01_balance == 1000, 102);
+    // }
+
+    // #[test(admin = @ucs01, bob = @0x1235)]
+    // public fun test_send_token_burn(admin: &signer, bob: &signer) acquires RelayStore, SignerRef {
+    //     // Initialize the store
+    //     init_module(admin);
+
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let denom = @0x111111;
+    //     let amount: u64 = 1000;
+
+    //     let admin = &get_signer();
+    //     ucs01::fa_coin::initialize(
+    //         admin,
+    //         string::utf8(TEST_NAME),
+    //         string::utf8(TEST_SYMBOL),
+    //         TEST_DECIMALS,
+    //         string::utf8(TEST_ICON),
+    //         string::utf8(TEST_PROJECT),
+    //         IBC_APP_SEED
+    //     );
+
+    //     let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
+    //     let asset = get_metadata(asset_addr);
+    //     let bob_addr = signer::address_of(bob);
+    //     ucs01::fa_coin::mint_with_metadata(admin, bob_addr, amount, asset);
+
+    //     // Upsert denom to address pair
+    //     let pair = AddressToDenomPair { source_channel, denom: asset_addr };
+    //     let new_denom = string::utf8(b"new-denom");
+
+    //     let store = borrow_global_mut<RelayStore>(get_vault_addr());
+    //     smart_table::upsert(&mut store.address_to_denom, pair, new_denom);
+
+    //     // Send tokens
+
+    //     let supply_before = option::extract(&mut fungible_asset::supply(asset));
+    //     assert!(supply_before == 1000, 102);
+
+    //     let result_address = send_token(bob, source_channel, asset_addr, amount);
+
+    //     // Verify the result and outstanding balance
+    //     assert!(string::length(&result_address) != 0, 100);
+    //     let outstanding_balance = get_outstanding(source_channel, denom);
+    //     assert!(outstanding_balance == 0, 101);
+
+    //     let bob_balance = primary_fungible_store::balance(bob_addr, asset);
+    //     assert!(bob_balance == 0, 102);
+
+    //     let supply_after = option::extract(&mut fungible_asset::supply(asset));
+    //     assert!(supply_after == 0, 102);
+    // }
+
+    // #[test(admin = @ucs01)]
+    // #[expected_failure(abort_code = E_INVALID_AMOUNT)]
+    // public fun test_send_zero_amount(admin: &signer) acquires RelayStore, SignerRef {
+    //     // Initialize the store
+    //     init_module(admin);
+
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let _denom = @0x111111;
+    //     let admin = &get_signer();
+    //     ucs01::fa_coin::initialize(
+    //         admin,
+    //         string::utf8(TEST_NAME),
+    //         string::utf8(TEST_SYMBOL),
+    //         TEST_DECIMALS,
+    //         string::utf8(TEST_ICON),
+    //         string::utf8(TEST_PROJECT),
+    //         IBC_APP_SEED
+    //     );
+
+    //     let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
+    //     let _asset = get_metadata(asset_addr);
+
+    //     // Attempt to send zero amount
+    //     send_token(admin, source_channel, asset_addr, 0);
+    // }
+
+    // #[test]
+    // public fun test_encode() {
+    //     let token = Token { denom: string::utf8(b"denom"), amount: 1000 };
+    //     let token2 = Token { denom: string::utf8(b"this is amazing"), amount: 3000 };
+    //     let token3 = Token { denom: string::utf8(b"insane cool"), amount: 3 };
+    //     let tokens = vector::empty<Token>();
+    //     vector::push_back(&mut tokens, token);
+    //     vector::push_back(&mut tokens, token2);
+    //     vector::push_back(&mut tokens, token3);
+
+    //     let sender = bcs::to_bytes(&@0x111111111111111111111);
+    //     let receiver = bcs::to_bytes(&@0x0000000000000000000000000000000000000033);
+    //     let extension = string::utf8(b"extension");
+    //     let packet = RelayPacket {
+    //         sender: sender,
+    //         receiver: receiver,
+    //         tokens: tokens,
+    //         extension: extension
+    //     };
+    //     let encoded = encode_packet(&packet);
+    //     let decoded = decode_packet(encoded);
+
+    //     assert!(decoded.sender == sender, 100);
+    //     assert!(decoded.receiver == receiver, 101);
+    //     assert!(decoded.extension == extension, 102);
+    //     let token = vector::borrow(&decoded.tokens, 0);
+    //     assert!(token.denom == string::utf8(b"denom"), 103);
+    //     assert!(token.amount == 1000, 104);
+    //     let token2 = vector::borrow(&decoded.tokens, 1);
+    //     assert!(token2.denom == string::utf8(b"this is amazing"), 105);
+    //     assert!(token2.amount == 3000, 106);
+    //     let token3 = vector::borrow(&decoded.tokens, 2);
+    //     assert!(token3.denom == string::utf8(b"insane cool"), 107);
+    //     assert!(token3.amount == 3, 108);
+    // }
+
+    // #[test(admin = @ucs01, alice = @0x1234)]
+    // public fun test_refund_tokens(admin: &signer, alice: address) acquires RelayStore, SignerRef {
+    //     init_module(admin);
+
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let amount: u64 = 1000;
+
+    //     let token_owner = &get_signer();
+
+    //     // Step 2: Mint some tokens to Alice
+    //     ucs01::fa_coin::initialize(
+    //         token_owner,
+    //         string::utf8(TEST_NAME),
+    //         string::utf8(TEST_SYMBOL),
+    //         TEST_DECIMALS,
+    //         string::utf8(TEST_ICON),
+    //         string::utf8(TEST_PROJECT),
+    //         IBC_APP_SEED
+    //     );
+
+    //     let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
+    //     let asset = get_metadata(asset_addr);
+
+    //     // Step 3: Simulate sending tokens (for refund purposes)
+    //     let token = Token {
+    //         denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
+    //         amount: amount
+    //     };
+    //     let tokens = vector::empty<Token>();
+    //     vector::push_back(&mut tokens, token);
+
+    //     let relay_packet = RelayPacket {
+    //         sender: bcs::to_bytes(&alice),
+    //         receiver: bcs::to_bytes(&@0x0000000000000000000000000000000000000022),
+    //         tokens: tokens,
+    //         extension: string::utf8(b"extension")
+    //     };
+
+    //     // Insert mapping for the denom -> address
+    //     let pair = DenomToAddressPair {
+    //         source_channel,
+    //         denom: string_utils::to_string_with_canonical_addresses(&asset_addr)
+    //     };
+    //     let store = borrow_global_mut<RelayStore>(get_vault_addr());
+    //     smart_table::upsert(&mut store.denom_to_address, pair, asset_addr);
+
+    //     // Step 4: Call the refund function
+    //     let sequence = 1;
+    //     refund_tokens(sequence, source_channel, &relay_packet);
+
+    //     // Step 5: Verify the results
+    //     let alice_balance = primary_fungible_store::balance(alice, asset);
+    //     assert!(alice_balance == amount, 100); // Alice should have received the refund
+
+    // }
+
+    // #[test(admin = @ucs01, alice = @0x1234)]
+    // public fun test_refund_tokens_zero_address(
+    //     admin: &signer, alice: address
+    // ) acquires RelayStore, SignerRef {
+    //     init_module(admin);
+
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let amount: u64 = 1000;
+
+    //     let token_owner = &get_signer();
+
+    //     ucs01::fa_coin::initialize(
+    //         token_owner,
+    //         string::utf8(TEST_NAME),
+    //         string::utf8(TEST_SYMBOL),
+    //         TEST_DECIMALS,
+    //         string::utf8(TEST_ICON),
+    //         string::utf8(TEST_PROJECT),
+    //         IBC_APP_SEED
+    //     );
+    //     let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
+
+    //     let asset = get_metadata(asset_addr);
+
+    //     ucs01::fa_coin::mint_with_metadata(
+    //         token_owner,
+    //         signer::address_of(token_owner),
+    //         1000,
+    //         asset
+    //     );
+
+    //     // Step 3: Simulate sending tokens (for refund purposes)
+    //     let token = Token {
+    //         denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
+    //         amount: amount
+    //     };
+    //     let tokens = vector::empty<Token>();
+    //     vector::push_back(&mut tokens, token);
+
+    //     let relay_packet = RelayPacket {
+    //         sender: bcs::to_bytes(&alice),
+    //         receiver: bcs::to_bytes(&@0x0000000000000000000000000000000000000022),
+    //         tokens: tokens,
+    //         extension: string::utf8(b"extension")
+    //     };
+    //     increase_outstanding(source_channel, asset_addr, amount);
+
+    //     let outstanding_balance = get_outstanding(source_channel, asset_addr);
+    //     assert!(outstanding_balance == 1000, 200); // The outstanding balance should be reduced to 0.
+
+    //     let sequence = 1;
+    //     refund_tokens(sequence, source_channel, &relay_packet);
+
+    //     let outstanding_balance = get_outstanding(source_channel, asset_addr);
+    //     assert!(outstanding_balance == 0, 200); // The outstanding balance should be reduced to 0.
+
+    //     let alice_balance = primary_fungible_store::balance(alice, asset);
+    //     assert!(alice_balance == 0, 201); // Alice should not receive any tokens in this case.
+    // }
+
+    // #[test(admin = @ucs01, alice = @0x1234, bob = @0x1235)]
+    // public fun test_on_recv_packet_processing_local_token(
+    //     admin: &signer, alice: address, bob: address
+    // ) acquires RelayStore, SignerRef {
+    //     // Step 1: Initialize the store
+    //     init_module(admin);
+
+    //     // Step 2: Setup the initial mappings for local tokens
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let destination_channel = string::utf8(b"dest-channel");
+    //     let port_id = string::utf8(b"port-1");
+    //     let local_token_address = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
+
+    //     let token_owner = &get_signer();
+
+    //     // Mint some tokens to simulate the token creation on this chain
+    //     ucs01::fa_coin::initialize(
+    //         token_owner,
+    //         string::utf8(TEST_NAME),
+    //         string::utf8(TEST_SYMBOL),
+    //         TEST_DECIMALS,
+    //         string::utf8(TEST_ICON),
+    //         string::utf8(TEST_PROJECT),
+    //         IBC_APP_SEED
+    //     );
+
+    //     let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
+
+    //     let asset = get_metadata(asset_addr);
+    //     // Step 3: Mint tokens to the relay module's account (escrow)
+    //     ucs01::fa_coin::mint_with_metadata(
+    //         token_owner,
+    //         signer::address_of(token_owner),
+    //         1000,
+    //         asset
+    //     );
+    //     increase_outstanding(source_channel, local_token_address, 1000);
+
+    //     // Step 4: Create the RelayPacket with a local token
+    //     let new_denom = make_denom_prefix(port_id, source_channel);
+    //     string::append(
+    //         &mut new_denom,
+    //         string_utils::to_string_with_canonical_addresses(&local_token_address)
+    //     );
+    //     let token = Token { denom: new_denom, amount: 500 };
+    //     let tokens = vector::empty<Token>();
+    //     vector::push_back(&mut tokens, token);
+
+    //     let relay_packet = RelayPacket {
+    //         sender: bcs::to_bytes(&alice),
+    //         receiver: bcs::to_bytes(&bob),
+    //         tokens: tokens,
+    //         extension: string::utf8(b"")
+    //     };
+
+    //     // Step 5: Create the IBC packet
+    //     let ibc_packet =
+    //         ibc::packet::new(
+    //             1, // sequence
+    //             port_id,
+    //             source_channel,
+    //             port_id,
+    //             destination_channel,
+    //             encode_packet(&relay_packet),
+    //             height::new(1, 100),
+    //             1000000
+    //         );
+
+    //     // Step 6: Process the IBC packet
+    //     on_recv_packet_processing(ibc_packet);
+
+    //     // Step 7: Verify the token was transferred to Bob
+    //     let bob_balance =
+    //         primary_fungible_store::balance(bob, get_metadata(local_token_address));
+    //     assert!(bob_balance == 500, 100); // Bob should have received the token
+
+    //     // Step 8: Verify the outstanding amount was decreased
+    //     let outstanding_balance = get_outstanding(source_channel, local_token_address);
+    //     assert!(outstanding_balance == 500, 101); // Outstanding should be reduced by 500
+    // }
+
+    // #[test(admin = @ucs01, alice = @0x1234, bob = @0x1235)]
+    // public fun test_on_recv_packet_processing_foreign_token_denom_address_zero(
+    //     admin: &signer, alice: address, bob: address
+    // ) acquires RelayStore, SignerRef {
+    //     // Step 1: Initialize the store
+    //     init_module(admin);
+
+    //     // Step 2: Set up mappings and mint tokens on the counterparty chain
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let destination_channel = string::utf8(b"dest-channel");
+    //     let port_id = string::utf8(b"port-1");
+
+    //     // Step 3: Create a RelayPacket with a foreign token denomination
+    //     let foreign_denom = string::utf8(b"foreign-token-denom");
+    //     let token = Token { denom: foreign_denom, amount: 500 };
+    //     let tokens = vector::empty<Token>();
+    //     vector::push_back(&mut tokens, token);
+
+    //     let relay_packet = RelayPacket {
+    //         sender: bcs::to_bytes(&alice),
+    //         receiver: bcs::to_bytes(&bob),
+    //         tokens: tokens,
+    //         extension: string::utf8(b"")
+    //     };
+
+    //     // Step 4: Create the IBC packet
+    //     let ibc_packet =
+    //         ibc::packet::new(
+    //             1, // sequence
+    //             port_id,
+    //             source_channel,
+    //             port_id,
+    //             destination_channel,
+    //             encode_packet(&relay_packet),
+    //             height::new(1, 100),
+    //             1000000
+    //         );
+
+    //     // Step 5: Process the IBC packet (will enter the 'else' block since it's a foreign token)
+    //     on_recv_packet_processing(ibc_packet);
+
+    //     // Step 6: Verify that a new denomination was created and minting occurred
+    //     let _store = borrow_global_mut<RelayStore>(get_vault_addr());
+    //     // Construct the foreign denomination using the source and destination channels
+    //     let our_denom = make_foreign_denom(port_id, destination_channel, foreign_denom);
+    //     let denom_address = get_denom_address(source_channel, our_denom);
+    //     assert!(denom_address != @0x0, 100); // The new token address should have been created
+
+    //     // Step 7: Verify the token was minted to Bob's account
+    //     let bob_balance =
+    //         primary_fungible_store::balance(bob, get_metadata(denom_address));
+    //     assert!(bob_balance == 500, 101); // Bob should have received the minted foreign token
+    // }
+
+    // #[test(admin = @ucs01, alice = @0x1234, bob = @0x1235)]
+    // public fun test_on_recv_packet_processing_foreign_token_existing_denom_address(
+    //     admin: &signer, alice: address, bob: address
+    // ) acquires RelayStore, SignerRef {
+    //     // Step 1: Initialize the store
+    //     init_module(admin);
+
+    //     // Step 2: Set up mappings and mint tokens on the counterparty chain
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let destination_channel = string::utf8(b"dest-channel");
+    //     let port_id = string::utf8(b"port-1");
+    //     let _foreign_denom = string::utf8(b"foreign-token-denom");
+    //     let token_owner = &get_signer();
+
+    //     ucs01::fa_coin::initialize(
+    //         token_owner,
+    //         string::utf8(TEST_NAME),
+    //         string::utf8(TEST_SYMBOL),
+    //         TEST_DECIMALS,
+    //         string::utf8(TEST_ICON),
+    //         string::utf8(TEST_PROJECT),
+    //         IBC_APP_SEED
+    //     );
+    //     let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
+    //     let _asset = get_metadata(asset_addr);
+
+    //     let new_denom = make_denom_prefix(port_id, destination_channel);
+    //     string::append(
+    //         &mut new_denom,
+    //         string_utils::to_string_with_canonical_addresses(&asset_addr)
+    //     );
+    //     // Step 3: Insert an existing foreign token address into the store
+    //     let _existing_denom_address: address = @0x1;
+    //     let pair = DenomToAddressPair { source_channel: source_channel, denom: new_denom };
+
+    //     let store = borrow_global_mut<RelayStore>(get_vault_addr());
+    //     smart_table::upsert(&mut store.denom_to_address, pair, asset_addr);
+
+    //     // Step 4: Create a RelayPacket with the foreign token denomination
+    //     let token = Token {
+    //         denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
+    //         amount: 500
+    //     };
+    //     let tokens = vector::empty<Token>();
+    //     vector::push_back(&mut tokens, token);
+
+    //     let relay_packet = RelayPacket {
+    //         sender: bcs::to_bytes(&alice),
+    //         receiver: bcs::to_bytes(&bob),
+    //         tokens: tokens,
+    //         extension: string::utf8(b"")
+    //     };
+
+    //     // Step 5: Create the IBC packet
+    //     let ibc_packet =
+    //         ibc::packet::new(
+    //             1, // sequence
+    //             port_id,
+    //             source_channel,
+    //             port_id,
+    //             destination_channel,
+    //             encode_packet(&relay_packet),
+    //             height::new(1, 100),
+    //             1000000
+    //         );
+
+    //     // Step 6: Process the IBC packet (will use the existing token address in the 'else' block)
+    //     on_recv_packet_processing(ibc_packet);
+
+    //     // Step 7: Verify that the existing token address was used
+
+    //     let denom_address = get_denom_address(source_channel, new_denom);
+    //     assert!(denom_address == asset_addr, 100); // It should be the same as the existing address
+
+    //     // Step 8: Verify the token was minted to Bob's account
+    //     let bob_balance = primary_fungible_store::balance(bob, get_metadata(asset_addr));
+    //     assert!(bob_balance == 500, 101); // Bob should have received the minted foreign token
+    // }
+
+    // #[test(admin = @ucs01, alice = @0x1234, bob = @0x1235)]
+    // #[expected_failure(abort_code = E_INVALID_AMOUNT)]
+    // public fun test_on_recv_packet_processing_local_token_revert_amount_zero(
+    //     admin: &signer, alice: address, bob: address
+    // ) acquires RelayStore, SignerRef {
+    //     // Step 1: Initialize the store
+    //     init_module(admin);
+
+    //     // Step 2: Setup the initial mappings for local tokens
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let destination_channel = string::utf8(b"dest-channel");
+    //     let port_id = string::utf8(b"port-1");
+    //     let local_token_address = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
+
+    //     // Mint some tokens to simulate the token creation on this chain
     //     ucs01::fa_coin::initialize(
     //         &get_signer(),
     //         string::utf8(TEST_NAME),
@@ -1768,36 +1648,112 @@ module ucs01::ibc {
     //     );
 
     //     let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
+    //     let asset = get_metadata(asset_addr);
+    //     // Step 3: Mint tokens to the relay module's account (escrow)
+    //     ucs01::fa_coin::mint_with_metadata(&get_signer(), @ucs01, 1000, asset);
+    //     increase_outstanding(source_channel, local_token_address, 1000);
 
-    //     ucs01::fa_coin::mint_with_metadata(&get_signer(), signer::address_of(alice), 1000, get_metadata(asset_addr));
-
-    //     vector::push_back(&mut denom_list, asset_addr);
-    //     vector::push_back(&mut amount_list, 500);  // Send half of the minted amount
-
-    //     let extension = string::utf8(b"optional-extension");
-    //     let timeout_height_number = 1;
-    //     let timeout_height_height = 100;
-    //     let timeout_timestamp = 100000;
-
-    //     send(
-    //         alice,
-    //         source_channel,
-    //         bob,
-    //         denom_list,
-    //         amount_list,
-    //         extension,
-    //         timeout_height_number,
-    //         timeout_height_height,
-    //         timeout_timestamp
+    //     // Step 4: Create the RelayPacket with a local token
+    //     let new_denom = make_denom_prefix(port_id, source_channel);
+    //     string::append(
+    //         &mut new_denom,
+    //         string_utils::to_string_with_canonical_addresses(&local_token_address)
     //     );
+    //     let token = Token { denom: new_denom, amount: 0 };
+    //     let tokens = vector::empty<Token>();
+    //     vector::push_back(&mut tokens, token);
 
-    //     let outstanding_balance = get_outstanding(source_channel, asset_addr);
-    //     assert!(outstanding_balance == 500, 100);  // Only 500 tokens were sent
+    //     let relay_packet = RelayPacket {
+    //         sender: bcs::to_bytes(&alice),
+    //         receiver: bcs::to_bytes(&bob),
+    //         tokens: tokens,
+    //         extension: string::utf8(b"")
+    //     };
 
-    //     let ucs01_balance = primary_fungible_store::balance(@ucs01, get_metadata(asset_addr));
-    //     assert!(ucs01_balance == 500, 101);  // 500 tokens should be transferred to ucs01
+    //     // Step 5: Create the IBC packet
+    //     let ibc_packet =
+    //         ibc::packet::new(
+    //             1, // sequence
+    //             port_id,
+    //             source_channel,
+    //             port_id,
+    //             destination_channel,
+    //             encode_packet(&relay_packet),
+    //             height::new(1, 100),
+    //             1000000
+    //         );
 
-    //     let alice_balance = primary_fungible_store::balance(signer::address_of(alice), get_metadata(asset_addr));
-    //     assert!(alice_balance == 500, 102);  // Alice should have 500 tokens left after sending
+    //     // Step 6: Process the IBC packet
+    //     on_recv_packet_processing(ibc_packet);
+
+    //     // Step 7: Verify the token was transferred to Bob
+    //     let bob_balance =
+    //         primary_fungible_store::balance(bob, get_metadata(local_token_address));
+    //     assert!(bob_balance == 500, 100); // Bob should have received the token
+
+    //     // Step 8: Verify the outstanding amount was decreased
+    //     let outstanding_balance = get_outstanding(source_channel, local_token_address);
+    //     assert!(outstanding_balance == 500, 101); // Outstanding should be reduced by 500
     // }
+
+    // // #[test(admin = @ucs01, alice = @0x1234, bob = @0x1235, ibc_admin = @ibc)]
+    // // public fun test_send_valid(admin: &signer, ibc_admin: &signer, alice: &signer, bob: address) acquires RelayStore, SignerRef {
+    // //     // Initialize the store
+    // //     init_module(admin);
+    // //     ibc::init_module_public(ibc_admin);
+
+    // //     let port_id = string::utf8(b"0x0000000000000000000000000000000000000000000000000004444444444444");
+    // //     let channel_id = string::utf8(b"channel-1");
+    // //     let connection_id = string::utf8(b"connection-1");
+    // //     let client_id = string::utf8(b"client-1");
+
+    // //     ibc::test_fill_all_states(port_id, channel_id, connection_id, client_id);
+
+    // //     let source_channel = string::utf8(b"channel-1");
+    // //     let denom_list = vector::empty<address>();
+    // //     let amount_list = vector::empty<u64>();
+
+    // //     ucs01::fa_coin::initialize(
+    // //         &get_signer(),
+    // //         string::utf8(TEST_NAME),
+    // //         string::utf8(TEST_SYMBOL),
+    // //         TEST_DECIMALS,
+    // //         string::utf8(TEST_ICON),
+    // //         string::utf8(TEST_PROJECT),
+    // //         IBC_APP_SEED
+    // //     );
+
+    // //     let asset_addr = ucs01::fa_coin::get_metadata_address(IBC_APP_SEED);
+
+    // //     ucs01::fa_coin::mint_with_metadata(&get_signer(), signer::address_of(alice), 1000, get_metadata(asset_addr));
+
+    // //     vector::push_back(&mut denom_list, asset_addr);
+    // //     vector::push_back(&mut amount_list, 500);  // Send half of the minted amount
+
+    // //     let extension = string::utf8(b"optional-extension");
+    // //     let timeout_height_number = 1;
+    // //     let timeout_height_height = 100;
+    // //     let timeout_timestamp = 100000;
+
+    // //     send(
+    // //         alice,
+    // //         source_channel,
+    // //         bob,
+    // //         denom_list,
+    // //         amount_list,
+    // //         extension,
+    // //         timeout_height_number,
+    // //         timeout_height_height,
+    // //         timeout_timestamp
+    // //     );
+
+    // //     let outstanding_balance = get_outstanding(source_channel, asset_addr);
+    // //     assert!(outstanding_balance == 500, 100);  // Only 500 tokens were sent
+
+    // //     let ucs01_balance = primary_fungible_store::balance(@ucs01, get_metadata(asset_addr));
+    // //     assert!(ucs01_balance == 500, 101);  // 500 tokens should be transferred to ucs01
+
+    // //     let alice_balance = primary_fungible_store::balance(signer::address_of(alice), get_metadata(asset_addr));
+    // //     assert!(alice_balance == 500, 102);  // Alice should have 500 tokens left after sending
+    // // }
 }
