@@ -126,8 +126,8 @@ pub struct ForkDigest(pub Hash<4>);
 )]
 pub struct Domain(pub Hash<32>);
 
-#[rustfmt::skip]
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#domain-types>
+#[rustfmt::skip]
 impl DomainType {
     pub const BEACON_PROPOSER: Self                = Self(Hash::new(hex!("00000000")));
     pub const BEACON_ATTESTER: Self                = Self(Hash::new(hex!("01000000")));
