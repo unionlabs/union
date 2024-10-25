@@ -1,3 +1,4 @@
+use ssz::types::{List, Vector};
 use unionlabs::{
     hash::{H160, H256},
     uint::U256,
@@ -93,35 +94,35 @@ pub struct ExecutionPayloadSsz<
     pub excess_blob_gas: u64,
 }
 
-#[cfg(feature = "ssz")]
-impl<C> ExecutionPayload<C>
-where
-    C: BYTES_PER_LOGS_BLOOM
-        + MAX_EXTRA_DATA_BYTES
-        + MAX_BYTES_PER_TRANSACTION
-        + MAX_TRANSACTIONS_PER_PAYLOAD
-        + MAX_WITHDRAWALS_PER_PAYLOAD,
-{
-    #[must_use]
-    pub fn to_header(self) -> ExecutionPayloadHeader<C> {
-        ExecutionPayloadHeader {
-            parent_hash: self.parent_hash,
-            fee_recipient: self.fee_recipient,
-            state_root: self.state_root,
-            receipts_root: self.receipts_root,
-            logs_bloom: self.logs_bloom,
-            prev_randao: self.prev_randao,
-            block_number: self.block_number,
-            gas_limit: self.gas_limit,
-            gas_used: self.gas_used,
-            timestamp: self.timestamp,
-            extra_data: self.extra_data,
-            base_fee_per_gas: self.base_fee_per_gas,
-            block_hash: self.block_hash,
-            transactions_root: self.transactions.tree_hash_root().into(),
-            withdrawals_root: self.withdrawals.tree_hash_root().into(),
-            blob_gas_used: self.blob_gas_used,
-            excess_blob_gas: self.excess_blob_gas,
-        }
-    }
-}
+// #[cfg(feature = "ssz")]
+// impl<C> ExecutionPayload<C>
+// where
+//     C: BYTES_PER_LOGS_BLOOM
+//         + MAX_EXTRA_DATA_BYTES
+//         + MAX_BYTES_PER_TRANSACTION
+//         + MAX_TRANSACTIONS_PER_PAYLOAD
+//         + MAX_WITHDRAWALS_PER_PAYLOAD,
+// {
+//     #[must_use]
+//     pub fn to_header(self) -> ExecutionPayloadHeader<C> {
+//         ExecutionPayloadHeader {
+//             parent_hash: self.parent_hash,
+//             fee_recipient: self.fee_recipient,
+//             state_root: self.state_root,
+//             receipts_root: self.receipts_root,
+//             logs_bloom: self.logs_bloom,
+//             prev_randao: self.prev_randao,
+//             block_number: self.block_number,
+//             gas_limit: self.gas_limit,
+//             gas_used: self.gas_used,
+//             timestamp: self.timestamp,
+//             extra_data: self.extra_data,
+//             base_fee_per_gas: self.base_fee_per_gas,
+//             block_hash: self.block_hash,
+//             transactions_root: self.transactions.tree_hash_root().into(),
+//             withdrawals_root: self.withdrawals.tree_hash_root().into(),
+//             blob_gas_used: self.blob_gas_used,
+//             excess_blob_gas: self.excess_blob_gas,
+//         }
+//     }
+// }
