@@ -3,7 +3,7 @@ use unionlabs::bls::BlsSignature;
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SyncAggregate {
-    #[serde(with = "::serde_utils::hex_string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     pub sync_committee_bits: Vec<u8>,
     pub sync_committee_signature: BlsSignature,
 }

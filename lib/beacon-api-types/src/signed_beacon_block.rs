@@ -1,6 +1,6 @@
 use unionlabs::bls::BlsSignature;
 
-use crate::{BeaconBlock, BeaconBlockSsz};
+use crate::BeaconBlock;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -33,6 +33,6 @@ pub struct SignedBeaconBlockSsz<
         + crate::MAX_BLOB_COMMITMENTS_PER_BLOCK
         + crate::SYNC_COMMITTEE_SIZE,
 > {
-    pub message: BeaconBlockSsz<C>,
+    pub message: crate::BeaconBlockSsz<C>,
     pub signature: BlsSignature,
 }

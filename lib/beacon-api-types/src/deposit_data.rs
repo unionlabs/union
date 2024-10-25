@@ -9,7 +9,7 @@ use unionlabs::{
 pub struct DepositData {
     pub pubkey: BlsPublicKey,
     pub withdrawal_credentials: H256,
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub amount: u64,
     /// Signing over `DepositMessage`
     pub signature: BlsSignature,

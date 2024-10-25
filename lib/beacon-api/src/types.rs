@@ -3,10 +3,7 @@ use beacon_api_types::{
     PresetBaseKind, Version,
 };
 use serde::{Deserialize, Serialize};
-use unionlabs::{
-    bls::BlsSignature,
-    hash::{hash_v2::Hash, H256},
-};
+use unionlabs::{bls::BlsSignature, hash::H256};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BeaconHeaderData {

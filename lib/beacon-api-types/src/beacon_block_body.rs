@@ -5,7 +5,7 @@ use unionlabs::{
 #[cfg(feature = "ssz")]
 use {
     crate::{
-        sync_aggregate::SyncAggregateSsz, AttestationSsz, AttesterSlashingSsz, DepositSsz,
+        AttestationSsz, AttesterSlashingSsz, DepositSsz, ExecutionPayloadSsz, SyncAggregateSsz,
         BYTES_PER_LOGS_BLOOM, DEPOSIT_CONTRACT_TREE_DEPTH, MAX_ATTESTATIONS,
         MAX_ATTESTER_SLASHINGS, MAX_BLOB_COMMITMENTS_PER_BLOCK, MAX_BLS_TO_EXECUTION_CHANGES,
         MAX_BYTES_PER_TRANSACTION, MAX_DEPOSITS, MAX_EXTRA_DATA_BYTES, MAX_PROPOSER_SLASHINGS,
@@ -17,8 +17,7 @@ use {
 
 use crate::{
     sync_aggregate::SyncAggregate, Attestation, AttesterSlashing, Deposit, Eth1Data,
-    ExecutionPayload, ExecutionPayloadSsz, ProposerSlashing, SignedBlsToExecutionChange,
-    SignedVoluntaryExit,
+    ExecutionPayload, ProposerSlashing, SignedBlsToExecutionChange, SignedVoluntaryExit,
 };
 
 #[cfg(feature = "ssz")]

@@ -1,9 +1,9 @@
 use unionlabs::bls::BlsSignature;
 
-use crate::beacon_block_header::BeaconBlockHeader;
+use crate::BeaconBlockHeader;
 
-#[cfg(feature = "ssz")]
-#[derive(Debug, Clone, PartialEq, ssz::Ssz)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "ssz", derive(ssz::Ssz))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SignedBeaconBlockHeader {
     pub message: BeaconBlockHeader,

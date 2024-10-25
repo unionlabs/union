@@ -22,7 +22,7 @@ pub struct LightClientFinalityUpdate {
     /// Sync committee aggregate signature
     pub sync_aggregate: SyncAggregate,
     /// Slot at which the aggregate signature was created (untrusted)
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub signature_slot: u64,
 }
 
@@ -40,6 +40,6 @@ pub struct LightClientFinalityUpdateSsz<
     /// Sync committee aggregate signature
     pub sync_aggregate: SyncAggregateSsz<C>,
     /// Slot at which the aggregate signature was created (untrusted)
-    #[serde(with = "::serde_utils::string")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub signature_slot: u64,
 }
