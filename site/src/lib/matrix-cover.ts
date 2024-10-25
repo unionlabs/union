@@ -379,8 +379,8 @@ function initWebGL() {
     glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, currentRotation, [0, 1, 0])
 
     // Reduced mouse movement sensitivity
-    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, mouseY * 0.03, [1, 0, 0])
-    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, mouseX * 0.03, [0, 1, 0])
+    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, mouseY * 0.05, [1, 0, 0])
+    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, mouseX * 0.05, [0, 1, 0])
 
     // Set up attribute buffers
     {
