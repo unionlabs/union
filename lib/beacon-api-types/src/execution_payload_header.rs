@@ -4,6 +4,7 @@ use unionlabs::{
     uint::U256,
 };
 
+#[cfg(feature = "ssz")]
 use crate::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES};
 
 #[derive(Debug, Clone, PartialEq)]

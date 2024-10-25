@@ -1,3 +1,5 @@
+#[cfg(feature = "ssz")]
+use ssz::types::List;
 use unionlabs::bls::BlsSignature;
 
 use crate::AttestationData;

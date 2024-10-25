@@ -80,14 +80,10 @@ pub use crate::{
 pub use crate::{
     attestation::AttestationSsz, attester_slashing::AttesterSlashingSsz,
     beacon_block::BeaconBlockSsz, beacon_block_body::BeaconBlockBodySsz, deposit::DepositSsz,
-    execution_payload::ExecutionPayloadSsz, indexed_attestation::IndexedAttestationSsz,
-    light_client_bootstrap::LightClientBootstrapSsz,
+    execution_payload::ExecutionPayloadSsz, execution_payload_header::ExecutionPayloadHeaderSsz,
+    indexed_attestation::IndexedAttestationSsz, light_client_bootstrap::LightClientBootstrapSsz,
     light_client_finality_update::LightClientFinalityUpdateSsz,
-    signed_beacon_block::SignedBeaconBlockSsz,
-    signed_beacon_block_header::SignedBeaconBlockHeaderSsz,
-    signed_bls_to_execution_change::SignedBlsToExecutionChangeSsz,
-    signed_voluntary_exit::SignedVoluntaryExitSsz, signing_data::SigningDataSsz,
-    voluntary_exit::VoluntaryExitSsz, withdrawal::WithdrawalSsz,
+    signed_beacon_block::SignedBeaconBlockSsz, sync_aggregate::SyncAggregateSsz,
 };
 
 // hex_string_array_wrapper! {

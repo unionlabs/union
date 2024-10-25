@@ -1,10 +1,11 @@
-use macros::model;
 use ssz::Ssz;
+use unionlabs::bls::BlsSignature;
 
-use crate::{bls::BlsSignature, ethereum::beacon::voluntary_exit::VoluntaryExit};
+use crate::VoluntaryExit;
 
-#[model]
-#[derive(Ssz)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "ssz", derive(ssz::Ssz))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SignedVoluntaryExit {
     pub message: VoluntaryExit,
     pub signature: BlsSignature,

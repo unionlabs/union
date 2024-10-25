@@ -1,10 +1,14 @@
-use macros::model;
-use ssz::Ssz;
+use unionlabs::bls::BlsSignature;
 
-use crate::{bls::BlsSignature, ethereum::beacon::bls_to_execution_change::BlsToExecutionChange};
+use crate::BlsToExecutionChange;
 
-#[model]
-#[derive(Ssz)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(bound(serialize = "", deserialize = ""))
+)]
+#[cfg_attr(feature = "ssz", derive(ssz::Ssz))]
 pub struct SignedBlsToExecutionChange {
     message: BlsToExecutionChange,
     signature: BlsSignature,

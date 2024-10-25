@@ -1,10 +1,12 @@
+use unionlabs::hash::H256;
+
 use crate::DepositData;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    bound(serialize = "", deserialize = "")
+    serde(bound(serialize = "", deserialize = ""))
 )]
 pub struct Deposit {
     pub proof: Vec<H256>,
@@ -16,7 +18,7 @@ pub struct Deposit {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    bound(serialize = "", deserialize = "")
+    serde(bound(serialize = "", deserialize = ""))
 )]
 pub struct DepositSsz<C: crate::DEPOSIT_CONTRACT_TREE_DEPTH> {
     /// Merkle path to deposit root

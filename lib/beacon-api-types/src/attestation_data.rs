@@ -1,4 +1,3 @@
-use ssz::Ssz;
 use unionlabs::hash::H256;
 
 use crate::Checkpoint;

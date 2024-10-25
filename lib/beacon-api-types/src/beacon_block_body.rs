@@ -1,17 +1,23 @@
+use unionlabs::{
+    bls::BlsSignature,
+    hash::{hash_v2::Hash, H256},
+};
 #[cfg(feature = "ssz")]
 use {
-    ssz::{types::List, Ssz},
-    unionlabs::ethereum::config::{
+    crate::{
+        sync_aggregate::SyncAggregateSsz, AttestationSsz, AttesterSlashingSsz, DepositSsz,
         BYTES_PER_LOGS_BLOOM, DEPOSIT_CONTRACT_TREE_DEPTH, MAX_ATTESTATIONS,
         MAX_ATTESTER_SLASHINGS, MAX_BLOB_COMMITMENTS_PER_BLOCK, MAX_BLS_TO_EXECUTION_CHANGES,
         MAX_BYTES_PER_TRANSACTION, MAX_DEPOSITS, MAX_EXTRA_DATA_BYTES, MAX_PROPOSER_SLASHINGS,
         MAX_TRANSACTIONS_PER_PAYLOAD, MAX_VALIDATORS_PER_COMMITTEE, MAX_VOLUNTARY_EXITS,
         MAX_WITHDRAWALS_PER_PAYLOAD, SYNC_COMMITTEE_SIZE,
     },
+    ssz::{types::List, Ssz},
 };
 
 use crate::{
-    Attestation, Deposit, Eth1Data, ExecutionPayload, ProposerSlashing, SignedBlsToExecutionChange,
+    sync_aggregate::SyncAggregate, Attestation, AttesterSlashing, Deposit, Eth1Data,
+    ExecutionPayload, ExecutionPayloadSsz, ProposerSlashing, SignedBlsToExecutionChange,
     SignedVoluntaryExit,
 };
 
@@ -43,17 +49,17 @@ pub struct BeaconBlockBodySsz<
     pub eth1_data: Eth1Data,
     pub graffiti: H256,
     pub proposer_slashings: List<ProposerSlashing, C::MAX_PROPOSER_SLASHINGS>,
-    pub attester_slashings: List<AttesterSlashing<C>, C::MAX_ATTESTER_SLASHINGS>,
-    pub attestations: List<Attestation<C>, C::MAX_ATTESTATIONS>,
-    pub deposits: List<Deposit<C>, C::MAX_DEPOSITS>,
+    pub attester_slashings: List<AttesterSlashingSsz<C>, C::MAX_ATTESTER_SLASHINGS>,
+    pub attestations: List<AttestationSsz<C>, C::MAX_ATTESTATIONS>,
+    pub deposits: List<DepositSsz<C>, C::MAX_DEPOSITS>,
     pub voluntary_exits: List<SignedVoluntaryExit, C::MAX_VOLUNTARY_EXITS>,
-    pub sync_aggregate: SyncAggregate<C>,
-    pub execution_payload: ExecutionPayload<C>,
+    pub sync_aggregate: SyncAggregateSsz<C>,
+    pub execution_payload: ExecutionPayloadSsz<C>,
     pub bls_to_execution_changes: List<SignedBlsToExecutionChange, C::MAX_BLS_TO_EXECUTION_CHANGES>,
-    pub blob_kzg_commitments: List<KZGCommitment, C::MAX_BLOB_COMMITMENTS_PER_BLOCK>,
+    pub blob_kzg_commitments: List<Hash<48>, C::MAX_BLOB_COMMITMENTS_PER_BLOCK>,
 }
 
-#[derive(Debug, Clone, PartialEq, ssz::Ssz)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BeaconBlockBody {
     pub randao_reveal: BlsSignature,
@@ -67,5 +73,5 @@ pub struct BeaconBlockBody {
     pub sync_aggregate: SyncAggregate,
     pub execution_payload: ExecutionPayload,
     pub bls_to_execution_changes: Vec<SignedBlsToExecutionChange>,
-    pub blob_kzg_commitments: Vec<KZGCommitment>,
+    pub blob_kzg_commitments: Vec<Hash<48>>,
 }
