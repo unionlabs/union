@@ -1,9 +1,6 @@
 use beacon_api_types::{LightClientHeader, SyncAggregate};
 use serde::{Deserialize, Serialize};
 
-pub type NextSyncCommitteeBranch = [H256; floorlog2(NEXT_SYNC_COMMITTEE_INDEX)];
-pub type FinalityBranch = [H256; floorlog2(FINALIZED_ROOT_INDEX)];
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum LightClientUpdate {
     EpochChange {

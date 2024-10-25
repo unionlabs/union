@@ -33,6 +33,8 @@ pub mod indexed_attestation;
 pub mod light_client_bootstrap;
 pub mod light_client_finality_update;
 pub mod light_client_header;
+/// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/altair/light-client/sync-protocol.md#lightclientupdate>
+pub mod light_client_update;
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#proposerslashing>
 pub mod proposer_slashing;
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#signedbeaconblock>
@@ -63,11 +65,11 @@ use crate::fork::Fork;
 pub use crate::{
     attestation::Attestation, attestation_data::AttestationData,
     attester_slashing::AttesterSlashing, beacon_block::BeaconBlock,
-    beacon_block_body::BeaconBlockBody, bls_to_execution_change::BlsToExecutionChange,
-    checkpoint::Checkpoint, deposit::Deposit, deposit_data::DepositData, eth1_data::Eth1Data,
-    execution_payload::ExecutionPayload, fork_data::ForkData, fork_parameters::ForkParameters,
-    genesis_data::GenesisData, indexed_attestation::IndexedAttestation,
-    light_client_bootstrap::LightClientBootstrap,
+    beacon_block_body::BeaconBlockBody, beacon_block_header::BeaconBlockHeader,
+    bls_to_execution_change::BlsToExecutionChange, checkpoint::Checkpoint, deposit::Deposit,
+    deposit_data::DepositData, eth1_data::Eth1Data, execution_payload::ExecutionPayload,
+    fork_data::ForkData, fork_parameters::ForkParameters, genesis_data::GenesisData,
+    indexed_attestation::IndexedAttestation, light_client_bootstrap::LightClientBootstrap,
     light_client_finality_update::LightClientFinalityUpdate,
     light_client_header::LightClientHeader, proposer_slashing::ProposerSlashing,
     signed_beacon_block::SignedBeaconBlock, signed_beacon_block_header::SignedBeaconBlockHeader,
@@ -83,7 +85,8 @@ pub use crate::{
     execution_payload::ExecutionPayloadSsz, execution_payload_header::ExecutionPayloadHeaderSsz,
     indexed_attestation::IndexedAttestationSsz, light_client_bootstrap::LightClientBootstrapSsz,
     light_client_finality_update::LightClientFinalityUpdateSsz,
-    signed_beacon_block::SignedBeaconBlockSsz, sync_aggregate::SyncAggregateSsz,
+    light_client_header::LightClientHeaderSsz, signed_beacon_block::SignedBeaconBlockSsz,
+    sync_aggregate::SyncAggregateSsz, sync_committee::SyncCommitteeSsz,
 };
 
 // hex_string_array_wrapper! {

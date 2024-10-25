@@ -1,23 +1,6 @@
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct GenesisDataResponse {
-//     pub data: GenesisData,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct BeaconBlockRootResponse {
-//     pub data: BeaconBlockRoot,
-//     pub execution_optimistic: bool,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct BeaconBlockRoot {
-//     pub root: Root,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct BeaconHeaderResponse {
-//     pub data: BeaconHeaderData,
-// }
+use beacon_api_types::{light_client_update::LightClientUpdate, BeaconBlockHeader};
+use serde::{Deserialize, Serialize};
+use unionlabs::{bls::BlsSignature, hash::H256};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BeaconHeaderData {
@@ -33,117 +16,6 @@ pub struct BeaconHeaderSignature {
     pub signature: BlsSignature,
 }
 
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct FinalityCheckpointsResponse {
-//     pub data: FinalityCheckpoints,
-//     pub execution_optimistic: bool,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct FinalityCheckpoints {
-//     pub previous_justified: Checkpoint,
-//     pub current_justified: Checkpoint,
-//     pub finalized: Checkpoint,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct LightClientFinalityUpdateResponse<
-//     const SYNC_COMMITTEE_SIZE: usize,
-//     const BYTES_PER_LOGS_BLOOM: usize,
-//     const MAX_EXTRA_DATA_BYTES: usize,
-// > {
-//     pub data: LightClientFinalityUpdateData<
-//         SYNC_COMMITTEE_SIZE,
-//         BYTES_PER_LOGS_BLOOM,
-//         MAX_EXTRA_DATA_BYTES,
-//     >,
-// }
-
-// impl<
-//         const SYNC_COMMITTEE_SIZE: usize,
-//         const BYTES_PER_LOGS_BLOOM: usize,
-//         const MAX_EXTRA_DATA_BYTES: usize,
-//     >
-//     From<
-//         LightClientFinalityUpdateData<
-//             SYNC_COMMITTEE_SIZE,
-//             BYTES_PER_LOGS_BLOOM,
-//             MAX_EXTRA_DATA_BYTES,
-//         >,
-//     > for LightClientUpdate<SYNC_COMMITTEE_SIZE, BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES>
-// {
-//     fn from(
-//         value: LightClientFinalityUpdateData<
-//             SYNC_COMMITTEE_SIZE,
-//             BYTES_PER_LOGS_BLOOM,
-//             MAX_EXTRA_DATA_BYTES,
-//         >,
-//     ) -> Self {
-//         Self {
-//             attested_header: value.attested_header,
-//             next_sync_committee: None,
-//             finalized_header: value.finalized_header,
-//             finality_branch: value.finality_branch,
-//             sync_aggregate: value.sync_aggregate,
-//             signature_slot: value.signature_slot,
-//         }
-//     }
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct LightClientBootstrapResponse<
-//     const SYNC_COMMITTEE_SIZE: usize,
-//     const BYTES_PER_LOGS_BLOOM: usize,
-//     const MAX_EXTRA_DATA_BYTES: usize,
-// > {
-//     pub data:
-//         LightClientBootstrapData<SYNC_COMMITTEE_SIZE, BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES>,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// pub struct LightClientBootstrapData<
-//     const SYNC_COMMITTEE_SIZE: usize,
-//     const BYTES_PER_LOGS_BLOOM: usize,
-//     const MAX_EXTRA_DATA_BYTES: usize,
-// > {
-//     pub header: LightClientHeader<BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES>,
-//     pub current_sync_committee: SyncCommittee<SYNC_COMMITTEE_SIZE>,
-//     pub current_sync_committee_branch: [H256; CURRENT_SYNC_COMMITTEE_DEPTH],
-// }
-
-// impl<
-//         const SYNC_COMMITTEE_SIZE: usize,
-//         const BYTES_PER_LOGS_BLOOM: usize,
-//         const MAX_EXTRA_DATA_BYTES: usize,
-//     >
-//     From<LightClientBootstrapData<SYNC_COMMITTEE_SIZE, BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES>>
-//     for LightClientBootstrap<SYNC_COMMITTEE_SIZE, BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES>
-// {
-//     fn from(
-//         value: LightClientBootstrapData<
-//             SYNC_COMMITTEE_SIZE,
-//             BYTES_PER_LOGS_BLOOM,
-//             MAX_EXTRA_DATA_BYTES,
-//         >,
-//     ) -> Self {
-//         Self {
-//             header: value.header,
-//             current_sync_committee: value.current_sync_committee,
-//             current_sync_committee_branch: value.current_sync_committee_branch,
-//         }
-//     }
-// }
-
-use serde::{Deserialize, Serialize};
-use unionlabs::{
-    bls::BlsSignature,
-    hash::H256,
-    ibc::lightclients::ethereum::{
-        beacon_block_header::BeaconBlockHeader, fork::Fork, fork_parameters::ForkParameters,
-        light_client_update::UnboundedLightClientUpdate,
-    },
-};
-
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct LightClientUpdatesResponse(pub Vec<LightClientUpdateResponse>);
@@ -152,7 +24,7 @@ pub struct LightClientUpdatesResponse(pub Vec<LightClientUpdateResponse>);
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
 pub struct LightClientUpdateResponse {
     pub version: String,
-    pub data: UnboundedLightClientUpdate,
+    pub data: LightClientUpdate,
 }
 
 // #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
