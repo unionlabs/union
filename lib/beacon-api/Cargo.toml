@@ -7,6 +7,7 @@ version = "0.1.0"
 workspace = true
 
 [dependencies]
+beacon-api-types = { version = "0.1.0", path = "../beacon-api-types", features = ["serde"] }
 enumorph    = { workspace = true }
 hex         = { workspace = true, features = ["alloc"] }
 macros      = { workspace = true }

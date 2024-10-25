@@ -69,6 +69,7 @@ members = [
   "light-clients/cometbls-light-client/types",
 
   "light-clients/ethereum-light-client",
+  "light-clients/ethereum-light-client/types",
 
   "light-clients/evm-in-cosmos-light-client",
 
@@ -131,7 +132,7 @@ members = [
   "lib/voyager-core",
   "lib/subset-of",
   "lib/cometbft-types",
-  "lib/galois-rpc",
+  "lib/galois-rpc", "lib/beacon-api-types",
 ]
 
 [workspace.package]
@@ -169,8 +170,9 @@ scroll-light-client-types = { path = "light-clients/scroll-light-client/types", 
 
 contracts = { path = "generated/rust/contracts", default-features = false }
 
-ethereum-light-client = { path = "light-clients/ethereum-light-client", default-features = false }
-ethereum-verifier     = { path = "lib/ethereum-verifier", default-features = false }
+ethereum-light-client       = { path = "light-clients/ethereum-light-client", default-features = false }
+ethereum-light-client-types = { path = "light-clients/ethereum-light-client/types", default-features = false }
+ethereum-verifier           = { path = "lib/ethereum-verifier", default-features = false }
 
 scroll-api      = { path = "lib/scroll-api", default-features = false }
 scroll-codec    = { path = "lib/scroll-codec", default-features = false }

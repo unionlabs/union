@@ -2090,6 +2090,7 @@ dependencies = [
 name = "beacon-api"
 version = "0.1.0"
 dependencies = [
+ "beacon-api-types",
  "enumorph",
  "hex",
  "macros",
@@ -2101,6 +2102,18 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "unionlabs",
+]
+
+[[package]]
+name = "beacon-api-types"
+version = "0.1.0"
+dependencies = [
+ "hex-literal",
+ "serde",
+ "serde-utils",
+ "ssz",
+ "typenum",
  "unionlabs",
 ]
 
@@ -4779,6 +4792,17 @@ dependencies = [
  "sha3 0.10.8",
  "thiserror",
  "tiny-keccak",
+ "unionlabs",
+]
+
+[[package]]
+name = "ethereum-light-client-types"
+version = "0.1.0"
+dependencies = [
+ "hex-literal",
+ "protos",
+ "serde",
+ "thiserror",
  "unionlabs",
 ]
 

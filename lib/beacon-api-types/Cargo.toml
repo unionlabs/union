@@ -1,0 +1,29 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "beacon-api-types"
+repository   = { workspace = true }
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+hex-literal.workspace = true
+serde       = { workspace = true, optional = true, features = ["derive"] }
+serde-utils = { workspace = true, optional = true }
+ssz         = { workspace = true, optional = true }
+typenum.workspace = true
+unionlabs   = { workspace = true }
+
+[features]
+default = ["serde", "ssz"]
+serde = [
+  "dep:serde",
+  "dep:serde-utils",
+  # TODO: Feature gate this
+  # "unionlabs/serde",
+  # TODO: See TODO in lib/ssz/Cargo.toml
+  # "ssz?/serde",
+]
+ssz = ["dep:ssz"]

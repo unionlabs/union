@@ -137,7 +137,6 @@ pub struct BeaconHeaderSignature {
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bls::BlsSignature,
-    ethereum::{config::PresetBaseKind, Version},
     hash::H256,
     ibc::lightclients::ethereum::{
         beacon_block_header::BeaconBlockHeader, fork::Fork, fork_parameters::ForkParameters,
