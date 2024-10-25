@@ -62,14 +62,13 @@ use serde::{Deserialize, Serialize};
 use typenum::{NonZero, Unsigned};
 use unionlabs::hash::hash_v2::Hash;
 
-use crate::fork::Fork;
 pub use crate::{
     attestation::Attestation, attestation_data::AttestationData,
     attester_slashing::AttesterSlashing, beacon_block::BeaconBlock,
     beacon_block_body::BeaconBlockBody, beacon_block_header::BeaconBlockHeader,
     bls_to_execution_change::BlsToExecutionChange, checkpoint::Checkpoint, deposit::Deposit,
     deposit_data::DepositData, eth1_data::Eth1Data, execution_payload::ExecutionPayload,
-    fork_data::ForkData, fork_parameters::ForkParameters, genesis_data::GenesisData,
+    fork::Fork, fork_data::ForkData, fork_parameters::ForkParameters, genesis_data::GenesisData,
     indexed_attestation::IndexedAttestation, light_client_bootstrap::LightClientBootstrap,
     light_client_finality_update::LightClientFinalityUpdate,
     light_client_header::LightClientHeader, proposer_slashing::ProposerSlashing,

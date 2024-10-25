@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
-
-use crate::{bls::BlsPublicKey, errors::InvalidLength, hash::H256};
+use unionlabs::{bls::BlsPublicKey, hash::H256};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState {

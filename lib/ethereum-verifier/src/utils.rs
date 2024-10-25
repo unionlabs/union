@@ -16,7 +16,7 @@ use crate::{
 /// NOTE: This implementation is based on capella.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/fork.md#modified-compute_fork_version)
-pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: u64) -> Hash<4> {
+pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: u64) -> Version {
     if epoch >= fork_parameters.deneb.epoch {
         fork_parameters.deneb.version
     } else if epoch >= fork_parameters.capella.epoch {
@@ -78,10 +78,10 @@ pub fn compute_domain(
     let fork_data_root = compute_fork_data_root(fork_version, genesis_validators_root);
 
     let mut domain = [0; 32];
-    domain[..4].copy_from_slice(&domain_type.0);
+    domain[..4].copy_from_slice(domain_type.0.get());
     domain[4..].copy_from_slice(&fork_data_root.get()[..28]);
 
-    Domain(domain)
+    Domain(domain.into())
 }
 
 /// Return the 32-byte fork data root for the `current_version` and `genesis_validators_root`.

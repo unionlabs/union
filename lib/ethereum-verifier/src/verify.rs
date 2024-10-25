@@ -380,11 +380,8 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
 mod tests {
     use std::{cmp::Ordering, fs};
 
+    use beacon_api_types::{Mainnet, SyncCommittee};
     use serde::Deserialize;
-    use unionlabs::{
-        ethereum::config::{Mainnet, SEPOLIA},
-        ibc::lightclients::ethereum::{storage_proof::StorageProof, sync_committee::SyncCommittee},
-    };
 
     use super::*;
 

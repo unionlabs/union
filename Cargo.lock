@@ -1284,6 +1284,7 @@ dependencies = [
 name = "arbitrum-light-client-types"
 version = "0.1.0"
 dependencies = [
+ "ethereum-light-client-types",
  "hex-literal",
  "protos",
  "rlp",
@@ -4831,6 +4832,7 @@ version = "0.1.0"
 dependencies = [
  "beacon-api-types",
  "bytes",
+ "ethereum-light-client-types",
  "hash-db",
  "hash256-std-hasher",
  "hex",

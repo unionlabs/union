@@ -26,7 +26,7 @@ pub struct ClientState {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use std::sync::Arc;
+    use std::{str::FromStr, sync::Arc};
 
     use unionlabs::{
         errors::{InvalidLength, MissingField},
@@ -43,7 +43,7 @@ pub mod proto {
                 genesis_validators_root: value.genesis_validators_root.into(),
                 min_sync_committee_participants: value.min_sync_committee_participants,
                 genesis_time: value.genesis_time,
-                fork_parameters: Some(value.fork_parameters.into()),
+                fork_parameters: Some(fork_parameters_proto::into_proto(value.fork_parameters)),
                 seconds_per_slot: value.seconds_per_slot,
                 slots_per_epoch: value.slots_per_epoch,
                 epochs_per_sync_committee_period: value.epochs_per_sync_committee_period,
@@ -62,7 +62,7 @@ pub mod proto {
         #[error("invalid chain id: {0:?}")]
         ChainId(Arc<FromDecStrErr>),
         #[error("invalid fork parameters")]
-        ForkParameters(#[source] fork_parameters_proto::Error),
+        ForkParameters(#[from] fork_parameters_proto::Error),
         #[error("invalid genesis validators root")]
         GenesisValidatorsRoot(#[source] InvalidLength),
         #[error("invalid ibc commitment slot")]
@@ -86,9 +86,8 @@ pub mod proto {
                     .map_err(TryFromClientStateError::GenesisValidatorsRoot)?,
                 min_sync_committee_participants: value.min_sync_committee_participants,
                 genesis_time: value.genesis_time,
-                fork_parameters: required!(value.fork_parameters)?
-                    .try_into()
-                    .map_err(TryFromClientStateError::ForkParameters)?,
+                fork_parameters: required!(value.fork_parameters)
+                    .map(fork_parameters_proto::try_from_proto)??,
                 seconds_per_slot: value.seconds_per_slot,
                 slots_per_epoch: value.slots_per_epoch,
                 epochs_per_sync_committee_period: value.epochs_per_sync_committee_period,

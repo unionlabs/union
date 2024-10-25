@@ -1,4 +1,4 @@
-use beacon_api_types::{fork::Fork, ForkParameters};
+use beacon_api_types::{fork::Fork, ForkParameters, Version};
 use unionlabs::{
     errors::{InvalidLength, MissingField},
     required,
@@ -8,7 +8,7 @@ pub fn into_proto(
     value: ForkParameters,
 ) -> protos::union::ibc::lightclients::ethereum::v1::ForkParameters {
     protos::union::ibc::lightclients::ethereum::v1::ForkParameters {
-        genesis_fork_version: value.genesis_fork_version.into(),
+        genesis_fork_version: value.genesis_fork_version.0.into(),
         genesis_slot: value.genesis_slot,
         altair: Some(fork_into_proto(value.altair)),
         bellatrix: Some(fork_into_proto(value.bellatrix)),
@@ -40,22 +40,27 @@ pub fn try_from_proto(
         genesis_fork_version: proto
             .genesis_fork_version
             .try_into()
+            .map(Version)
             .map_err(Error::GenesisForkVersion)?,
         genesis_slot: proto.genesis_slot,
-        altair: required!(proto.altair)?.try_into().map_err(Error::Altair)?,
-        bellatrix: required!(proto.bellatrix)?
-            .try_into()
+        altair: required!(proto.altair)
+            .map(fork_try_from_proto)?
+            .map_err(Error::Altair)?,
+        bellatrix: required!(proto.bellatrix)
+            .map(fork_try_from_proto)?
             .map_err(Error::Bellatrix)?,
-        capella: required!(proto.capella)?
-            .try_into()
+        capella: required!(proto.capella)
+            .map(fork_try_from_proto)?
             .map_err(Error::Capella)?,
-        deneb: required!(proto.deneb)?.try_into().map_err(Error::Deneb)?,
+        deneb: required!(proto.deneb)
+            .map(fork_try_from_proto)?
+            .map_err(Error::Deneb)?,
     })
 }
 
 pub fn fork_into_proto(value: Fork) -> protos::union::ibc::lightclients::ethereum::v1::Fork {
     protos::union::ibc::lightclients::ethereum::v1::Fork {
-        version: value.version.into(),
+        version: value.version.0.into(),
         epoch: value.epoch,
     }
 }
@@ -70,7 +75,11 @@ fn fork_try_from_proto(
     value: protos::union::ibc::lightclients::ethereum::v1::Fork,
 ) -> Result<Fork, ForkError> {
     Ok(Fork {
-        version: value.version.try_into().map_err(ForkError::Version)?,
+        version: value
+            .version
+            .try_into()
+            .map(Version)
+            .map_err(ForkError::Version)?,
         epoch: value.epoch,
     })
 }

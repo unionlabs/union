@@ -10,27 +10,26 @@ workspace = true
 test-include = ["lib/ethereum-verifier/src/test/"]
 
 [dependencies]
-ssz = { workspace = true }
-
-serde-utils = { workspace = true }
-unionlabs   = { workspace = true, features = ["cosmwasm"] }
-
-bytes              = { workspace = true }
-hash-db            = { version = "0.16.0", default-features = false }
-hash256-std-hasher = { version = "0.15.2", default-features = false }
-hex                = { workspace = true, features = ["alloc"] }
-lazy_static        = { workspace = true }
-memory-db          = { version = "0.32.0", default-features = false }
-milagro_bls        = { workspace = true }
-primitive-types    = { workspace = true, features = ["rlp"] }
-rlp                = { workspace = true, features = ["derive", "std"] }
-serde              = { workspace = true, features = ["derive"] }
-sha2               = { workspace = true }
-sha3               = { workspace = true }
-thiserror          = { workspace = true }
-trie-db            = { version = "0.28", default-features = false }
-typenum            = { workspace = true, features = ["const-generics", "no_std"] }
-beacon-api-types.workspace = true
+beacon-api-types            = { workspace = true }
+bytes                       = { workspace = true }
+ethereum-light-client-types = { workspace = true }
+hash-db                     = { version = "0.16.0", default-features = false }
+hash256-std-hasher          = { version = "0.15.2", default-features = false }
+hex                         = { workspace = true, features = ["alloc"] }
+lazy_static                 = { workspace = true }
+memory-db                   = { version = "0.32.0", default-features = false }
+milagro_bls                 = { workspace = true }
+primitive-types             = { workspace = true, features = ["rlp"] }
+rlp                         = { workspace = true, features = ["derive", "std"] }
+serde                       = { workspace = true, features = ["derive"] }
+serde-utils                 = { workspace = true }
+sha2                        = { workspace = true }
+sha3                        = { workspace = true }
+ssz                         = { workspace = true }
+thiserror                   = { workspace = true }
+trie-db                     = { version = "0.28", default-features = false }
+typenum                     = { workspace = true, features = ["const-generics", "no_std"] }
+unionlabs                   = { workspace = true, features = ["cosmwasm"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

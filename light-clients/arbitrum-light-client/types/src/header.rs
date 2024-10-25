@@ -1,8 +1,5 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::ibc::{
-    core::client::height::Height,
-    lightclients::ethereum::{account_proof::AccountProof, storage_proof::StorageProof},
-};
+use unionlabs::{aptos::storage_proof::StorageProof, ibc::core::client::height::Height};
 
 use crate::L2Header;
 
@@ -18,13 +15,7 @@ pub struct Header {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use unionlabs::{
-        errors::MissingField,
-        ibc::lightclients::ethereum::{
-            account_proof::TryFromAccountProofError, storage_proof::TryFromStorageProofError,
-        },
-        impl_proto_via_try_from_into, required,
-    };
+    use unionlabs::{errors::MissingField, impl_proto_via_try_from_into, required};
 
     use crate::{l2_header, Header};
 

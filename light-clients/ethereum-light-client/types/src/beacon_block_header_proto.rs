@@ -23,7 +23,7 @@ pub enum Error {
     BodyRoot(#[source] InvalidLength),
 }
 
-fn try_from_proto(
+pub fn try_from_proto(
     value: protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader,
 ) -> Result<BeaconBlockHeader, Error> {
     Ok(BeaconBlockHeader {
