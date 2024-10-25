@@ -94,10 +94,7 @@ module ibc::light_client {
         let state = State { client_state: client_state, consensus_states: consensus_states };
 
         let store_constructor =
-            object::create_named_object(
-                ibc_signer,
-                bcs::to_bytes<u32>(&client_id)
-            );
+            object::create_named_object(ibc_signer, bcs::to_bytes<u32>(&client_id));
         let client_signer = object::generate_signer(&store_constructor);
 
         move_to(&client_signer, state);
@@ -286,10 +283,7 @@ module ibc::light_client {
     fun get_client_address(client_id: u32): address {
         let vault_addr = object::create_object_address(&@ibc, b"IBC_VAULT_SEED");
 
-        object::create_object_address(
-            &vault_addr,
-            bcs::to_bytes<u32>(&client_id)
-        )
+        object::create_object_address(&vault_addr, bcs::to_bytes<u32>(&client_id))
     }
 
     public fun new_client_state(

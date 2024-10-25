@@ -884,7 +884,7 @@ module ibc::ibc {
     // Sends a packet
     public fun send_packet(
         ibc_app: &signer,
-        source_port: address, 
+        source_port: address,
         source_channel: u32,
         timeout_height: u64,
         timeout_timestamp: u64,
