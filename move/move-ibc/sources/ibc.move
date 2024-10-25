@@ -49,7 +49,6 @@ module ibc::ibc {
     const E_UNSUPPORTED_VERSION: u64 = 1007;
     const E_INVALID_CONNECTION_STATE: u64 = 1008;
     const E_CONNECTION_ALREADY_EXISTS: u64 = 1009;
-    const E_INVALID_PROOF: u64 = 1010;
     const E_CONN_NOT_SINGLE_HOP: u64 = 1011;
     const E_CONN_NOT_SINGLE_VERSION: u64 = 1012;
     const E_UNSUPPORTED_FEATURE: u64 = 1013;
@@ -385,7 +384,7 @@ module ibc::ibc {
                 counterparty_connection_id,
                 expected_connection
             );
-        assert!(err == 0, E_INVALID_PROOF);
+        assert!(err == 0, err);
 
         event::emit(
             ConnectionOpenTry {
@@ -440,7 +439,7 @@ module ibc::ibc {
                 counterparty_connection_id,
                 expected_connection
             );
-        assert!(err == 0, E_INVALID_PROOF);
+        assert!(err == 0, err);
 
         connection_end::set_state(connection, CONN_STATE_TRYOPEN);
         connection_end::set_counterparty_connection_id(
@@ -505,7 +504,7 @@ module ibc::ibc {
                 counterparty_connection_id,
                 expected_connection
             );
-        assert!(err == 0, E_INVALID_PROOF);
+        assert!(err == 0, err);
 
         connection_end::set_state(connection, CONN_STATE_OPEN);
 
@@ -704,7 +703,7 @@ module ibc::ibc {
                 counterparty_channel_id,
                 expected_channel
             );
-        assert!(err == 0, E_INVALID_PROOF);
+        assert!(err == 0, err);
 
         let channel_id = generate_channel_identifier();
 
@@ -781,7 +780,7 @@ module ibc::ibc {
 
         let expected_channel =
             channel::new(
-                CHAN_STATE_INIT,
+                CHAN_STATE_TRYOPEN,
                 channel::ordering(&chan),
                 get_counterparty_connection(connection_id),
                 counterparty_channel_id,
@@ -796,7 +795,7 @@ module ibc::ibc {
                 counterparty_channel_id,
                 expected_channel
             );
-        assert!(err == 0, E_INVALID_PROOF);
+        assert!(err == 0, err);
 
         // TODO: Not sure if this upsert is required or not?
         smart_table::upsert(
@@ -885,7 +884,7 @@ module ibc::ibc {
     // Sends a packet
     public fun send_packet(
         ibc_app: &signer,
-        source_port: address, // TODO: Verify this
+        source_port: address, 
         source_channel: u32,
         timeout_height: u64,
         timeout_timestamp: u64,
@@ -945,9 +944,9 @@ module ibc::ibc {
         let l = vector::length(&packets);
         assert!(l > 0, E_NOT_ENOUGH_PACKETS);
 
-        let firstPacket = *vector::borrow(&packets, 0);
-        let source_channel = packet::source_channel(&firstPacket);
-        let destination_channel = packet::destination_channel(&firstPacket);
+        let first_packet = *vector::borrow(&packets, 0);
+        let source_channel = packet::source_channel(&first_packet);
+        let destination_channel = packet::destination_channel(&first_packet);
 
         let channel = ensure_channel_state(source_channel);
         let client_id = ensure_connection_state(channel::connection_id(&channel));
@@ -957,7 +956,7 @@ module ibc::ibc {
             if (l == 1) {
                 commitment_key = commitment::batch_receipts_commitment_key(
                     destination_channel,
-                    commitment::commit_packet(&firstPacket)
+                    commitment::commit_packet(&first_packet)
                 )
             } else {
                 commitment_key = commitment::batch_receipts_commitment_key(
@@ -976,7 +975,7 @@ module ibc::ibc {
                 );
 
             if (err != 0) {
-                abort E_INVALID_PROOF
+                abort err
             };
         };
 
@@ -1000,7 +999,7 @@ module ibc::ibc {
                 );
             };
 
-            let commitmentKey =
+            let commitment_key =
                 commitment::batch_receipts_commitment_key(
                     destination_channel,
                     commitment::commit_packet(&packet)
@@ -1009,7 +1008,7 @@ module ibc::ibc {
             let already_received = false;
 
             if (ordering == CHAN_ORDERING_UNORDERED) {
-                already_received = set_packet_receive(commitmentKey);
+                already_received = set_packet_receive(commitment_key);
             } else if (ordering == CHAN_ORDERING_ORDERED) {
                 if (intent) {
                     abort E_CANNOT_INTENT_ORDERED
@@ -1024,7 +1023,7 @@ module ibc::ibc {
                     event::emit(RecvPacket { packet: packet });
                 };
                 if (vector::length(&acknowledgement) > 0) {
-                    inner_write_acknowledgement(commitmentKey, acknowledgement);
+                    inner_write_acknowledgement(commitment_key, acknowledgement);
 
                     event::emit(WriteAcknowledgement { packet, acknowledgement });
                 };
@@ -1055,119 +1054,6 @@ module ibc::ibc {
             false,
             acknowledgement
         );
-
-        // let channel =
-        //     ensure_channel_state(
-        //         *packet::destination_port(&packet),
-        //         *packet::destination_channel(&packet)
-        //     );
-
-        // let port_id = address_to_string(port_id);
-        // assert!(port_id == *packet::destination_port(&packet), E_UNAUTHORIZED);
-
-        // assert!(
-        //     packet::source_port(&packet)
-        //         == channel::chan_counterparty_port_id(&channel),
-        //     E_SOURCE_AND_COUNTERPARTY_PORT_MISMATCH
-        // );
-
-        // assert!(
-        //     packet::source_channel(&packet)
-        //         == channel::chan_counterparty_channel_id(&channel),
-        //     E_SOURCE_AND_COUNTERPARTY_CHANNEL_MISMATCH
-        // );
-
-        // let connection_hop = *vector::borrow(channel::connection_hops(&channel), 0);
-        // let store = borrow_global<IBCStore>(get_vault_addr());
-
-        // let connection = smart_table::borrow(&store.connections, connection_hop);
-
-        // assert!(
-        //     connection_end::state(connection) == CONN_STATE_OPEN,
-        //     E_INVALID_CONNECTION_STATE
-        // );
-
-        // if (height::get_revision_height(&packet::timeout_height(&packet)) != 0) {
-        //     assert!(
-        //         block::get_current_block_height()
-        //             < height::get_revision_height(&packet::timeout_height(&packet)),
-        //         E_HEIGHT_TIMEOUT
-        //     );
-        // };
-
-        // let current_timestamp = timestamp::now_seconds() * 1_000_000_000; // 1e9
-        // if (packet::timeout_timestamp(&packet) != 0) {
-        //     assert!(
-        //         current_timestamp < packet::timeout_timestamp(&packet),
-        //         E_TIMESTAMP_TIMEOUT
-        //     );
-        // };
-
-        // let err =
-        //     verify_commitment(
-        //         connection,
-        //         proof_height,
-        //         proof,
-        //         commitment::packet_key(
-        //             *packet::source_port(&packet),
-        //             *packet::source_channel(&packet),
-        //             packet::sequence(&packet)
-        //         ),
-        //         packet::commitment(&packet)
-        //     );
-
-        // assert!(err == 0, err);
-
-        // let store = borrow_global_mut<IBCStore>(get_vault_addr());
-
-        // if (channel::ordering(&channel) == CHAN_ORDERING_UNORDERED) {
-        //     let receipt_commitment_key =
-        //         commitment::packet_receipt_key(
-        //             *packet::destination_port(&packet),
-        //             *packet::destination_channel(&packet),
-        //             packet::sequence(&packet)
-        //         );
-        //     let receipt =
-        //         table::borrow_with_default(
-        //             &store.commitments, receipt_commitment_key, &bcs::to_bytes(&0u8)
-        //         );
-        //     assert!(*receipt == bcs::to_bytes(&0u8), E_PACKET_ALREADY_RECEIVED);
-        //     table::upsert(
-        //         &mut store.commitments, receipt_commitment_key, bcs::to_bytes(&1u8)
-        //     );
-        // } else if (channel::ordering(&channel) == CHAN_ORDERING_ORDERED) { // ORDER_ORDERED
-        //     let expected_recv_sequence =
-        //         from_bcs::to_u64(
-        //             *table::borrow_with_default(
-        //                 &store.commitments,
-        //                 commitment::next_sequence_recv_commitment_key(
-        //                     *packet::destination_port(&packet),
-        //                     *packet::destination_channel(&packet)
-        //                 ),
-        //                 &bcs::to_bytes(&0u64)
-        //             )
-        //         );
-        //     assert!(
-        //         expected_recv_sequence == packet::sequence(&packet),
-        //         E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH
-        //     );
-        //     table::upsert(
-        //         &mut store.commitments,
-        //         commitment::next_sequence_recv_commitment_key(
-        //             *packet::destination_port(&packet),
-        //             packet::destination_channel(&packet)
-        //         ),
-        //         bcs::to_bytes(&(expected_recv_sequence + 1))
-        //     );
-        // } else {
-        //     abort E_UNKNOWN_CHANNEL_ORDERING
-        // };
-
-        // if (vector::length(&acknowledgement) > 0) {
-        //     write_acknowledgement(packet, acknowledgement);
-        // };
-
-        // event::emit(RecvPacket { packet: packet });
     }
 
     fun inner_write_acknowledgement(
@@ -1179,8 +1065,7 @@ module ibc::ibc {
         };
         let commitment = table::borrow(&store.commitments, commitment_key);
         assert!(
-            *commitment
-                == x"0100000000000000000000000000000000000000000000000000000000000000",
+            *commitment == COMMITMENT_MAGIC,
             E_ACK_ALREADY_EXIST
         );
         table::upsert(
@@ -1209,7 +1094,7 @@ module ibc::ibc {
 
     public fun acknowledge_packet(
         ibc_app: &signer,
-        port_id: address, // TODO: Verify this
+        port_id: address,
         packets: vector<packet::Packet>,
         acknowledgements: vector<vector<u8>>,
         proof: vector<u8>,
@@ -1219,9 +1104,9 @@ module ibc::ibc {
         let l = vector::length(&packets);
         assert!(l > 0, E_NOT_ENOUGH_PACKETS);
 
-        let firstPacket = *vector::borrow(&packets, 0);
-        let source_channel = packet::source_channel(&firstPacket);
-        let destination_channel = packet::destination_channel(&firstPacket);
+        let first_packet = *vector::borrow(&packets, 0);
+        let source_channel = packet::source_channel(&first_packet);
+        let destination_channel = packet::destination_channel(&first_packet);
 
         let channel = ensure_channel_state(source_channel);
         let client_id = ensure_connection_state(channel::connection_id(&channel));
@@ -1230,7 +1115,7 @@ module ibc::ibc {
         if (l == 1) {
             commitment_key = commitment::batch_receipts_commitment_key(
                 destination_channel,
-                commitment::commit_packet(&firstPacket)
+                commitment::commit_packet(&first_packet)
             )
         } else {
             commitment_key = commitment::batch_receipts_commitment_key(
@@ -1249,7 +1134,7 @@ module ibc::ibc {
             );
 
         if (err != 0) {
-            abort E_INVALID_PROOF
+            abort err
         };
 
         let ordering = channel::ordering(&channel);
@@ -1279,7 +1164,7 @@ module ibc::ibc {
 
     public fun timeout_packet(
         ibc_app: &signer,
-        port_id: address, // TODO: Verify this
+        port_id: address,
         packet: Packet,
         proof: vector<u8>,
         proof_height: u64,
@@ -1307,7 +1192,7 @@ module ibc::ibc {
                     commitment::next_sequence_recv_commitment_key(destination_channel),
                     bcs::to_bytes(&next_sequence_recv)
                 );
-            assert!(err == 0, E_INVALID_PROOF);
+            assert!(err == 0, err);
         } else if (ordering == CHAN_ORDERING_UNORDERED) {
             let commitment_key =
                 commitment::batch_receipts_commitment_key(
@@ -1315,7 +1200,7 @@ module ibc::ibc {
                 );
             let err =
                 verify_absent_commitment(client_id, proof_height, proof, commitment_key);
-            assert!(err == 0, E_INVALID_PROOF);
+            assert!(err == 0, err);
         } else {
             abort E_UNKNOWN_CHANNEL_ORDERING
         };
@@ -1431,7 +1316,6 @@ module ibc::ibc {
         *channel
     }
 
-    // Setter for nextChannelSequence in Commitments
     fun set_next_channel_sequence(sequence: u64) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         table::upsert(
@@ -1439,7 +1323,6 @@ module ibc::ibc {
         );
     }
 
-    // Setter for nextChannelSequence in Commitments
     fun set_next_sequence_recv(
         destination_channel: u32, received_sequence: u64
     ) acquires IBCStore {
@@ -1464,7 +1347,6 @@ module ibc::ibc {
         );
     }
 
-    // Setter for nextChannelSequence in Commitments
     fun set_next_sequence_ack(source_channel: u32, ack_sequence: u64) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
@@ -1484,7 +1366,6 @@ module ibc::ibc {
         );
     }
 
-    // Setter for nextChannelSequence in Commitments
     fun set_packet_receive(commitment_key: vector<u8>): bool acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 

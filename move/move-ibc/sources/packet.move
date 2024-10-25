@@ -2,7 +2,6 @@ module ibc::packet {
     use std::vector;
     use ibc::ethabi;
 
-    const COMMITMENT_NULL: vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
     struct Packet has copy, store, drop, key {
         sequence: u64,
         source_channel: u32,

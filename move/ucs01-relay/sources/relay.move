@@ -155,7 +155,7 @@ module ucs01::ibc {
     }
 
     public fun make_denom_prefix(channel_id: u32): String {
-        let channel_id_bytes = bcs::to_bytes<u8>(&(channel_id as u8)); // TODO: Verify this. Is it u8 or u32?
+        let channel_id_bytes = bcs::to_bytes<u32>(&channel_id);
         let prefix = string::utf8(channel_id_bytes);
         string::append_utf8(&mut prefix, b"/");
         prefix
@@ -1035,15 +1035,6 @@ module ucs01::ibc {
     //         201
     //     );
     // }
-
-    #[test]
-    public fun test_make_denom_prefix() {
-        let channel_id = 99;
-        let expected_prefix = string::utf8(b"c/");
-
-        let result = make_denom_prefix(channel_id);
-        assert!(result == expected_prefix, 300);
-    }
 
     // #[test]
     // public fun test_make_foreign_denom() {
