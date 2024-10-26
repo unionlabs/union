@@ -20,6 +20,7 @@ export type SameChainTransferParams = {
   baseUrl: string
   account: Account
   receiver: string
+  simulate?: boolean
   denomAddress: string
 }
 
@@ -45,12 +46,12 @@ export async function transferAssetFromAptos({
   memo = "transfer",
   amount,
   account,
+  baseUrl,
   receiver,
   denomAddress,
   sourceChannel,
-  relayContractAddress,
-  baseUrl,
-  simulate = false
+  simulate = false,
+  relayContractAddress
 }: TransferAssetFromAptosParams): Promise<Result<string, Error>> {
   try {
     if (!baseUrl) return err(new Error("Base URL for Aptos node not provided"))
@@ -103,9 +104,10 @@ export async function transferAssetFromAptos({
 export async function aptosSameChainTransfer({
   amount,
   account,
+  baseUrl,
   receiver,
   denomAddress,
-  baseUrl
+  simulate = false
 }: SameChainTransferParams): Promise<Result<string, Error>> {
   try {
     if (!baseUrl) return err(new Error("Base URL for Aptos node not provided"))
@@ -122,6 +124,17 @@ export async function aptosSameChainTransfer({
       }
     })
 
+    if (simulate) {
+      const simulationResult = await aptos.transaction.simulate.simple({
+        transaction,
+        signerPublicKey: account.publicKey
+      })
+
+      const resultItem = simulationResult.at(0)
+
+      if (!resultItem?.success) return err(new Error(`Simulation failed: ${simulationResult}`))
+    }
+
     const senderAuthenticator = aptos.transaction.sign({ signer: account, transaction })
 
     const pendingTransaction = await aptos.transaction.submit.simple({
@@ -135,37 +148,15 @@ export async function aptosSameChainTransfer({
   }
 }
 
-async function getBalance(
-  aptos: Aptos,
-  denomAddress: string,
-  accountAddress: string
-): Promise<Result<number, Error>> {
-  try {
-    const [balanceString] = await aptos.view<[string]>({
-      payload: {
-        function: "0x1::primary_fungible_store::balance",
-        typeArguments: ["0x1::object::ObjectCore"],
-        functionArguments: [accountAddress, denomAddress]
-      }
-    })
-
-    const balance = Number.parseInt(balanceString, 10)
-
-    return ok(balance)
-  } catch (error) {
-    return err(new Error(`Failed to fetch balance for account ${accountAddress}`))
-  }
-}
-
 export async function transferAssetFromAptosSimulate({
   memo = "transfer",
   amount,
   account,
+  baseUrl,
   receiver,
   denomAddress,
   sourceChannel,
-  relayContractAddress,
-  baseUrl
+  relayContractAddress
 }: TransferAssetFromAptosParams): Promise<Result<string, Error>> {
   try {
     if (!baseUrl) return err(new Error("Base URL for Aptos node not provided"))
@@ -203,5 +194,63 @@ export async function transferAssetFromAptosSimulate({
     return err(new Error(resultItem?.vm_status || "Simulation failed."))
   } catch (error) {
     return err(new Error(`Simulation failed ${error instanceof Error ? error.message : error}`))
+  }
+}
+
+export async function aptosSameChainTransferSimulate({
+  amount,
+  account,
+  baseUrl,
+  receiver,
+  denomAddress
+}: SameChainTransferParams): Promise<Result<string, Error>> {
+  try {
+    if (!baseUrl) return err(new Error("Base URL for Aptos node not provided"))
+
+    const config = new AptosConfig({ fullnode: baseUrl, network: Network.TESTNET })
+    const aptos = new Aptos(config)
+
+    const transaction = await aptos.transaction.build.simple({
+      sender: account.accountAddress,
+      data: {
+        function: "0x1::primary_fungible_store::transfer",
+        typeArguments: ["0x1::fungible_asset::Metadata"],
+        functionArguments: [denomAddress, receiver, amount]
+      }
+    })
+
+    const simulationResult = await aptos.transaction.simulate.simple({
+      transaction,
+      signerPublicKey: account.publicKey
+    })
+    const resultItem = simulationResult.at(0)
+
+    if (resultItem?.success) return ok(resultItem.vm_status || "Simulation succeeded.")
+
+    return err(new Error(resultItem?.vm_status || "Simulation failed."))
+  } catch (error) {
+    return err(new Error(`Simulation failed ${error instanceof Error ? error.message : error}`))
+  }
+}
+
+async function getBalance(
+  aptos: Aptos,
+  denomAddress: string,
+  accountAddress: string
+): Promise<Result<number, Error>> {
+  try {
+    const [balanceString] = await aptos.view<[string]>({
+      payload: {
+        function: "0x1::primary_fungible_store::balance",
+        typeArguments: ["0x1::object::ObjectCore"],
+        functionArguments: [accountAddress, denomAddress]
+      }
+    })
+
+    const balance = Number.parseInt(balanceString, 10)
+
+    return ok(balance)
+  } catch (error) {
+    return err(new Error(`Failed to fetch balance for account ${accountAddress}`))
   }
 }

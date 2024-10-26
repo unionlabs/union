@@ -53,7 +53,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       if (!account) return err(new Error("No cosmos signer found"))
       if (!gasPrice) return err(new Error("No gas price found"))
 
-      if (sourceChainId === "union-testnet-8" && destinationChainId === "union-testnet-8") {
+      if (sourceChainId === destinationChainId) {
         const transfer = await cosmosSameChainTransfer({
           rpcUrl,
           account,
@@ -158,8 +158,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       if (!account) return err(new Error("No cosmos signer found"))
       if (!gasPrice) return err(new Error("No gas price found"))
 
-      // Union to Union
-      if (sourceChainId === "union-testnet-8" && destinationChainId === "union-testnet-8") {
+      if (sourceChainId === destinationChainId) {
         return await cosmosSameChainTransferSimulate({
           receiver,
           account,

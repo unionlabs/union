@@ -1,10 +1,13 @@
 import {
   aptosSameChainTransfer,
   transferAssetFromAptos,
+  aptosSameChainTransferSimulate,
   transferAssetFromAptosSimulate
 } from "../transfer/aptos.ts"
-import { err, ok, type Result } from "neverthrow"
+import { cosmosChainId } from "./cosmos.ts"
+import { err, type Result } from "neverthrow"
 import type { Account } from "@aptos-labs/ts-sdk"
+import { bech32AddressToHex } from "../convert.ts"
 import type { TransferAssetsParameters } from "./types.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { createClient, fallback, type HttpTransport } from "viem"
@@ -35,6 +38,7 @@ export const createAptosClient = (parameters: AptosClientParameters) =>
 
       if (!rpcUrl) return err(new Error("No Aptos RPC URL found"))
       if (!account) return err(new Error("No Aptos account found"))
+
       if (parameters.chainId === destinationChainId) {
         const transfer = await aptosSameChainTransfer({
           amount,
@@ -43,8 +47,7 @@ export const createAptosClient = (parameters: AptosClientParameters) =>
           denomAddress,
           baseUrl: rpcUrl
         })
-        if (transfer.isErr()) return err(transfer.error)
-        return ok(transfer.value)
+        return transfer
       }
 
       const chainDetails = await getHubbleChainDetails({
@@ -56,9 +59,15 @@ export const createAptosClient = (parameters: AptosClientParameters) =>
       if (chainDetails.value.transferType === "pfm") {
         if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
         const pfmMemo = createPfmMemo({
-          receiver: "TODO",
           port: chainDetails.value.port,
-          channel: chainDetails.value.destinationChannel
+          channel: chainDetails.value.destinationChannel,
+          /**
+           * TODO:
+           * check if normal Aptos hex address is valid here or do we need to do some transformation
+           */
+          receiver: cosmosChainId.includes(destinationChainId)
+            ? bech32AddressToHex({ address: receiver })
+            : receiver
         })
         if (pfmMemo.isErr()) return err(pfmMemo.error)
         memo = pfmMemo.value
@@ -96,6 +105,16 @@ export const createAptosClient = (parameters: AptosClientParameters) =>
       if (!rpcUrl) return err(new Error("No Aptos RPC URL found"))
       if (!account) return err(new Error("No Aptos account found"))
 
+      if (parameters.chainId === destinationChainId) {
+        return await aptosSameChainTransferSimulate({
+          amount,
+          account,
+          receiver,
+          denomAddress,
+          baseUrl: rpcUrl
+        })
+      }
+
       const chainDetails = await getHubbleChainDetails({
         destinationChainId,
         sourceChainId: parameters.chainId
@@ -106,11 +125,16 @@ export const createAptosClient = (parameters: AptosClientParameters) =>
       if (chainDetails.value.transferType === "pfm") {
         if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
         const pfmMemo = createPfmMemo({
-          receiver: "TODO",
           port: chainDetails.value.port,
-          channel: chainDetails.value.destinationChannel
+          channel: chainDetails.value.destinationChannel,
+          /**
+           * TODO:
+           * check if normal Aptos hex address is valid here or do we need to do some transformation
+           */
+          receiver: cosmosChainId.includes(destinationChainId)
+            ? bech32AddressToHex({ address: receiver })
+            : receiver
         })
-
         if (pfmMemo.isErr()) return err(pfmMemo.error)
         memo = pfmMemo.value
       }

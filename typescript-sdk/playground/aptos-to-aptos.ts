@@ -6,8 +6,8 @@ import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
 import {
   http,
   createUnionClient,
-  type TransferAssetsParameters,
-  hexStringToUint8Array
+  hexStringToUint8Array,
+  type TransferAssetsParameters
 } from "#mod.ts"
 
 /* node --import=tsx playground/aptos-to-union.ts --private-key $PRIVATE_KEY */
