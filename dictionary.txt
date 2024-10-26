@@ -824,6 +824,7 @@ lnxk
 loaderreact
 lockb
 logformat
+loglevel
 logline
 logtostderr
 longhash
