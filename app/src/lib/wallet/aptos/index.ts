@@ -1,1 +1,7 @@
-export { aptosStore, aptosWalletsInformation, type AptosWalletId } from "./config.ts"
+export {
+  aptosStore,
+  getAptosWallet,
+  userAddressAptos,
+  type AptosWalletId,
+  aptosWalletsInformation
+} from "./config.ts"

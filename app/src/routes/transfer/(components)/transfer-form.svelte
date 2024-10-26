@@ -1,5 +1,6 @@
 <script lang="ts">
 import {
+  http,
   type ChainId,
   createPfmMemo,
   type EvmChainId,
@@ -8,13 +9,8 @@ import {
   evmChainFromChainId,
   bech32ToBech32Address
 } from "@unionlabs/client"
-import {
-  http,
-  custom,
-  switchChain,
-  getConnectorClient,
-  waitForTransactionReceipt
-} from "@wagmi/core"
+// } from "../../../../../typescript-sdk/dist"
+import { custom, switchChain, getConnectorClient, waitForTransactionReceipt } from "@wagmi/core"
 import { onMount } from "svelte"
 import { page } from "$app/stores"
 import { toast } from "svelte-sonner"
@@ -48,12 +44,16 @@ import { cosmosStore, getCosmosOfflineSigner } from "$/lib/wallet/cosmos/config.
 import { type Writable, writable, derived, get, type Readable } from "svelte/store"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 
+import { aptosStore, userAddressAptos, getAptosWallet } from "$lib/wallet/aptos"
+
 export let chains: Array<Chain>
+
 let userAddress: Readable<UserAddresses> = derived(
-  [userAddrCosmos, userAddrEvm],
-  ([$userAddrCosmos, $userAddrEvm]) => ({
+  [userAddrCosmos, userAddrEvm, userAddressAptos],
+  ([$userAddrCosmos, $userAddrEvm, $userAddressAptos]) => ({
     evm: $userAddrEvm,
-    cosmos: $userAddrCosmos
+    cosmos: $userAddrCosmos,
+    aptos: $userAddressAptos
   })
 )
 
@@ -138,6 +138,9 @@ let receiver = derived([toChain, userAddress], ([$toChain, $userAddress]) => {
         toPrefix: $toChain.addr_prefix
       })
     }
+    case "aptos": {
+      return $userAddress.aptos?.canonical
+    }
     default:
       return null
   }
@@ -212,13 +215,37 @@ const transfer = async () => {
     return toast.error("No evm wallet connected")
   if ($fromChain.rpc_type === "cosmos" && !$userAddress.cosmos)
     return toast.error("No cosmos wallet connected")
+
+  if ($fromChain.rpc_type === "aptos" && !$userAddress.aptos)
+    return toast.error("No aptos wallet connected")
+
   if (!$receiver) return toast.error("Invalid receiver")
 
   let supported = getSupportedAsset($fromChain, $asset.address)
   let decimals = supported?.decimals ?? 0
   let parsedAmount = parseUnits(amount, decimals)
 
-  if ($fromChain.rpc_type === "cosmos") {
+  if ($fromChain.rpc_type === "aptos") {
+    const { connectedWallet, connectionStatus } = get(aptosStore)
+
+    const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
+    if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`)
+
+    try {
+      const aptosWallet = getAptosWallet()
+      if (!aptosWallet) return toast.error("no aptos wallet")
+      const aptosAccount = await aptosWallet?.getAccount()
+      if (!aptosAccount) return toast.error("no aptos account")
+      const client = createUnionClient({
+        chainId: "2",
+        transport: http(`https://${rpcUrl}`),
+        account: aptosAccount as any
+      })
+    } catch (error) {
+      toast.error("yikes")
+      return
+    }
+  } else if ($fromChain.rpc_type === "cosmos") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
     if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
 
@@ -280,9 +307,6 @@ const transfer = async () => {
 
     if (stepBefore($transferState, "TRANSFERRING")) {
       try {
-        // const cosmosOfflineSigner = (await wallet.getOfflineSignerAuto($fromChainId, {
-        //   disableBalanceCheck: false
-        // })) as OfflineSigner
         const cosmosOfflineSigner = await getCosmosOfflineSigner({
           connectedWallet,
           chainId: $fromChainId
