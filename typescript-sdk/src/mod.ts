@@ -27,11 +27,11 @@ import {
   type CosmosClientParameters
 } from "./client/cosmos.ts"
 import {
-  moveChainId,
-  type MoveChainId,
-  createMoveClient,
-  type MoveClientParameters
-} from "./client/move.ts"
+  aptosChainId,
+  type AptosChainId,
+  createAptosClient,
+  type AptosClientParameters
+} from "./client/aptos.ts"
 export {
   truncateAddress,
   isValidEvmTxHash,
@@ -64,7 +64,7 @@ export { http, fallback } from "viem"
 
 type EvmClient = ReturnType<typeof createEvmClient>
 type CosmosClient = ReturnType<typeof createCosmosClient>
-type MoveClient = ReturnType<typeof createMoveClient>
+type AptosClient = ReturnType<typeof createAptosClient>
 
 /**
  * @example
@@ -125,8 +125,8 @@ export function createUnionClient(
  * ```
  */
 export function createUnionClient(
-  parameters: MoveClientParameters
-): ReturnType<typeof createMoveClient>
+  parameters: AptosClientParameters
+): ReturnType<typeof createAptosClient>
 
 /**
  * @example
@@ -142,22 +142,22 @@ export function createUnionClient(
  * ```
  */
 /**
- * Create Union Client for EVM, Cosmos, and Move
+ * Create Union Client for EVM, Cosmos, and Aptos
  */
 export function createUnionClient(
-  parameters: EvmClientParameters | CosmosClientParameters | MoveClientParameters
+  parameters: EvmClientParameters | CosmosClientParameters | AptosClientParameters
 ):
   | ReturnType<typeof createEvmClient>
   | ReturnType<typeof createCosmosClient>
-  | ReturnType<typeof createMoveClient> {
+  | ReturnType<typeof createAptosClient> {
   if (evmChainId.includes(parameters.chainId)) {
     return createEvmClient(parameters as EvmClientParameters)
   }
   if (cosmosChainId.includes(parameters.chainId)) {
     return createCosmosClient(parameters as CosmosClientParameters)
   }
-  if (moveChainId.includes(parameters.chainId)) {
-    return createMoveClient(parameters as MoveClientParameters)
+  if (aptosChainId.includes(parameters.chainId)) {
+    return createAptosClient(parameters as AptosClientParameters)
   }
   throw new Error("Invalid chain id")
 }
@@ -194,7 +194,7 @@ export function createMultiUnionClient<TChainId extends ChainId>(
       [KChainId in TChainId]: (
         | EvmClientParameters
         | CosmosClientParameters
-        | MoveClientParameters
+        | AptosClientParameters
       ) & { chainId: KChainId }
     }[TChainId]
   >
@@ -203,8 +203,8 @@ export function createMultiUnionClient<TChainId extends ChainId>(
     ? EvmClient
     : KChainId extends CosmosChainId
       ? CosmosClient
-      : KChainId extends MoveChainId
-        ? MoveClient
+      : KChainId extends AptosChainId
+        ? AptosClient
         : never
 } {
   return parameters.reduce(
@@ -218,8 +218,8 @@ export function createMultiUnionClient<TChainId extends ChainId>(
         ? EvmClient
         : KChainId extends CosmosChainId
           ? CosmosClient
-          : KChainId extends MoveChainId
-            ? MoveClient
+          : KChainId extends AptosChainId
+            ? AptosClient
             : never
     }
   )
@@ -230,14 +230,14 @@ export {
   evmChainId,
   type ChainId,
   cosmosChainId,
-  moveChainId,
+  aptosChainId,
   type EvmChainId,
   type CosmosChainId,
-  type MoveChainId,
+  type AptosChainId,
   evmChainFromChainId,
   type EvmClientParameters,
   type CosmosClientParameters,
-  type MoveClientParameters,
+  type AptosClientParameters,
   type TransferAssetsParameters,
   sepolia,
   scrollSepolia,

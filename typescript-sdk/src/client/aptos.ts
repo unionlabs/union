@@ -1,25 +1,25 @@
 import {
-  moveSameChainTransfer,
-  transferAssetFromMove,
-  transferAssetFromMoveSimulate
-} from "../transfer/move.ts"
+  aptosSameChainTransfer,
+  transferAssetFromAptos,
+  transferAssetFromAptosSimulate
+} from "../transfer/aptos.ts"
 import { err, ok, type Result } from "neverthrow"
 import type { Account } from "@aptos-labs/ts-sdk"
 import type { TransferAssetsParameters } from "./types.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { createClient, fallback, type HttpTransport } from "viem"
 
-export const moveChainId = ["2"] as const
+export const aptosChainId = ["2"] as const
 
-export type MoveChainId = `${(typeof moveChainId)[number]}`
+export type AptosChainId = `${(typeof aptosChainId)[number]}`
 
-export interface MoveClientParameters {
+export interface AptosClientParameters {
   account?: Account
-  chainId: MoveChainId
+  chainId: AptosChainId
   transport: HttpTransport
 }
 
-export const createMoveClient = (parameters: MoveClientParameters) =>
+export const createAptosClient = (parameters: AptosClientParameters) =>
   createClient({ transport: fallback([]) }).extend(_ => ({
     transferAsset: async ({
       memo,
@@ -30,13 +30,13 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
       destinationChainId,
       relayContractAddress,
       account = parameters.account
-    }: TransferAssetsParameters<MoveChainId>): Promise<Result<string, Error>> => {
+    }: TransferAssetsParameters<AptosChainId>): Promise<Result<string, Error>> => {
       const rpcUrl = parameters.transport({}).value?.url
 
-      if (!rpcUrl) return err(new Error("No Move RPC URL found"))
-      if (!account) return err(new Error("No Move account found"))
+      if (!rpcUrl) return err(new Error("No Aptos RPC URL found"))
+      if (!account) return err(new Error("No Aptos account found"))
       if (parameters.chainId === destinationChainId) {
-        const transfer = await moveSameChainTransfer({
+        const transfer = await aptosSameChainTransfer({
           amount,
           account,
           receiver,
@@ -67,7 +67,7 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
       const sourceChannel = chainDetails.value.sourceChannel
       relayContractAddress ??= chainDetails.value.relayContractAddress
 
-      const result = await transferAssetFromMove({
+      const result = await transferAssetFromAptos({
         memo,
         amount,
         account,
@@ -78,7 +78,7 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
         baseUrl: rpcUrl,
         relayContractAddress
       })
-      if (result.isErr()) return err(new Error(`Move transfer failed: ${result.error.message}`))
+      if (result.isErr()) return err(new Error(`Aptos transfer failed: ${result.error.message}`))
 
       return result
     },
@@ -90,11 +90,11 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
       destinationChainId,
       relayContractAddress,
       account = parameters.account
-    }: TransferAssetsParameters<MoveChainId>): Promise<Result<string, Error>> => {
+    }: TransferAssetsParameters<AptosChainId>): Promise<Result<string, Error>> => {
       const rpcUrl = parameters.transport({}).value?.url
 
-      if (!rpcUrl) return err(new Error("No Move RPC URL found"))
-      if (!account) return err(new Error("No Move account found"))
+      if (!rpcUrl) return err(new Error("No Aptos RPC URL found"))
+      if (!account) return err(new Error("No Aptos account found"))
 
       const chainDetails = await getHubbleChainDetails({
         destinationChainId,
@@ -118,7 +118,7 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
       const sourceChannel = chainDetails.value.sourceChannel
       relayContractAddress ??= chainDetails.value.relayContractAddress
 
-      const result = await transferAssetFromMoveSimulate({
+      const result = await transferAssetFromAptosSimulate({
         memo,
         amount,
         account,
@@ -128,7 +128,7 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
         baseUrl: rpcUrl,
         relayContractAddress
       })
-      if (!result) return err(new Error(`Move transfer failed`))
+      if (!result) return err(new Error(`Aptos transfer failed`))
 
       return result
     }

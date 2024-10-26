@@ -2,32 +2,32 @@ import { err, ok, type Result } from "neverthrow"
 import { Hex } from "node_modules/@aptos-labs/ts-sdk/dist/common"
 import { type Account, Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk"
 
-export type TransferAssetFromMoveParams = {
+export type TransferAssetFromAptosParams = {
   memo?: string
   amount: bigint
-  receiver: string // Receiver's address
-  account: Account // Sender's account address
-  denomAddress: string // The Move coin type resource address
-  sourceChannel: string // Source IBC channel
-  relayContractAddress: string // Contract address to call send function
-  baseUrl: string // Base URL of the Aptos full node
-  simulate?: boolean // Flag for simulation
+  receiver: string
+  account: Account
+  denomAddress: string
+  sourceChannel: string
+  relayContractAddress: string
+  baseUrl: string
+  simulate?: boolean
 }
 
 export type SameChainTransferParams = {
   amount: bigint
-  account: Account // Sender's account
-  receiver: string // Receiver's address
-  denomAddress: string // The Move coin type resource address
-  baseUrl: string // Base URL of the Aptos full node
+  account: Account
+  receiver: string
+  denomAddress: string
+  baseUrl: string
 }
 
 /**
- * Transfer an asset from the Move blockchain (e.g., Aptos) using the IBC `send` function, similar to EVM implementation.
+ * Transfer an asset from the Aptos blockchain (e.g., Aptos) using the IBC `send` function, similar to EVM implementation.
  *
  * @example
  * ```ts
- * const transfer = await transferAssetFromMove({
+ * const transfer = await transferAssetFromAptos({
  *   memo: "test",
  *   amount: BigInt(1),
  *   account: "0xSenderAccountAddress",
@@ -40,7 +40,7 @@ export type SameChainTransferParams = {
  * });
  * ```
  */
-export async function transferAssetFromMove({
+export async function transferAssetFromAptos({
   memo = "transfer",
   amount,
   account,
@@ -50,7 +50,7 @@ export async function transferAssetFromMove({
   relayContractAddress,
   baseUrl,
   simulate = false
-}: TransferAssetFromMoveParams): Promise<Result<string, Error>> {
+}: TransferAssetFromAptosParams): Promise<Result<string, Error>> {
   try {
     if (!baseUrl) return err(new Error("Base URL for Aptos node not provided"))
 
@@ -97,7 +97,7 @@ export async function transferAssetFromMove({
   }
 }
 
-export async function moveSameChainTransfer({
+export async function aptosSameChainTransfer({
   amount,
   account,
   receiver,
@@ -154,7 +154,7 @@ async function getBalance(
   }
 }
 
-export async function transferAssetFromMoveSimulate({
+export async function transferAssetFromAptosSimulate({
   memo = "transfer",
   amount,
   account,
@@ -163,7 +163,7 @@ export async function transferAssetFromMoveSimulate({
   sourceChannel,
   relayContractAddress,
   baseUrl
-}: TransferAssetFromMoveParams): Promise<Result<string, Error>> {
+}: TransferAssetFromAptosParams): Promise<Result<string, Error>> {
   try {
     if (!baseUrl) return err(new Error("Base URL for Aptos node not provided"))
 
