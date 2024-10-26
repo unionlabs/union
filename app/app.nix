@@ -18,16 +18,14 @@ _: {
     in
     {
       packages = {
-<<<<<<< HEAD
         app = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-yrqA4Qp7iiGvSo/Xk0G5adXdVqgK8nGYGdXtvLp7EPk=";
-=======
-        app = unstablePkgs.buildNpmPackage {
           npmDepsHash = "sha256-9zyLRjVpn+2oiI56I23sQTZvWoAy3FTd5P3xnE1HQGc=";
->>>>>>> 6459ba9e6 (chore: enable aptos in chains gate)
           src = ./.;
           sourceRoot = "app";
-          npmFlags = [ "--enable-pre-post-scripts" ];
+          npmFlags = [
+            "--loglevel=verbose"
+            "--enable-pre-post-scripts"
+          ];
           pname = packageJSON.name;
           inherit (packageJSON) version;
           nativeBuildInputs = deps;
