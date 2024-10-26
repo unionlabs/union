@@ -1,7 +1,7 @@
 import { err, ok, type Result } from "neverthrow"
 import { isValidBech32Address } from "../utilities/address.ts"
 import { bech32ToBytes, hexStringToUint8Array } from "../convert.ts"
-import { type Account, Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk"
+import { Aptos, Network, AptosConfig, type Account } from "@aptos-labs/ts-sdk"
 
 export type TransferAssetFromAptosParams = {
   memo?: string
@@ -90,6 +90,7 @@ export async function transferAssetFromAptos({
     }
 
     const senderAuthenticator = aptos.transaction.sign({ signer: account, transaction })
+
     const pendingTransaction = await aptos.transaction.submit.simple({
       transaction,
       senderAuthenticator

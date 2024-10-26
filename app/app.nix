@@ -18,8 +18,13 @@ _: {
     in
     {
       packages = {
+<<<<<<< HEAD
         app = jsPkgs.buildNpmPackage {
           npmDepsHash = "sha256-9zyLRjVpn+2oiI56I23sQTZvWoAy3FTd5P3xnE1HQGc=";
+=======
+        app = unstablePkgs.buildNpmPackage {
+          npmDepsHash = "sha256-5YKPPki7eVQP7Wc7+PhxZoYaDi6lHWPjzJNunp+1lVw=";
+>>>>>>> 61bb0410c (chore: update sdk)
           src = ./.;
           sourceRoot = "app";
           npmFlags = [
